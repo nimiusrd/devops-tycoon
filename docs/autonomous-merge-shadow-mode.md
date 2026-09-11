@@ -95,7 +95,7 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 | 状況 | ラベルの扱い |
 | --- | --- |
 | 観測のhead/base SHA、base ref、open/closed/merged、Draftが現在のPRと不一致 | 変更しない。新しい観測の表示を残す |
-| より新しい`(run_id, run_attempt)`または`observed_at`の観測がある | 未着手なら変更しない。一度書き始めたら`desired`まで完了する |
+| より新しい開始時刻（`run_started_at`）または`observed_at`の観測がある | 未着手なら変更しない。一度書き始めたら`desired`まで完了する。再実行はrun IDより開始時刻を優先する |
 | 観測していない通常ブランチの`push` run | 後着とは扱わない |
 | PR指定の`workflow_dispatch` | 指定したPRだけを後着とみなす |
 | 全体観測（schedule / `workflow_run` / default branch push / `shadow-all`） | open PRにだけ後着として効く。closed/merged PRは対象にしない |
@@ -106,7 +106,9 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 | ラベル書き込み失敗 | `publish` jobを失敗させる。SummaryとJSONはobserve側に残し、判定成功とは扱わない |
 
 同じPRを対象にする新しいShadow runがある場合も、未着手なら上書きしません。
-`publish` jobの並行グループはPR番号またはイベント名です。全イベントを1 groupにすると待機1件しか残らず、他PRのpendingが落ちます。
+後着判定は`run_started_at`（なければ`created_at` / 観測時刻）を優先し、古いrunの再実行が新しいIDの失敗runより後なら破棄しません。
+`observe` の並行グループだけ `cancel-in-progress: true` です。workflow全体はキャンセルせず、実行中の`publish`を保護します。
+`publish` jobの並行グループはPR番号またはイベント名で、`cancel-in-progress: false` です。全イベントを1 groupにすると待機1件しか残らず、他PRのpendingが落ちます。
 グループをまたぐ競合はpublisherの後着判定で吸収します。一度ラベル変更を始めた後は、後着判定で途中終了せず整合した1ラベルまで完了します。
 後着判定は現在のrunより新しいIDまでしか走査せず、履歴全体の取得失敗でpublishを止めません。
 `workflow_dispatch` の対象はrun名（`shadow-pr-N` / `shadow-all`）で区別します。

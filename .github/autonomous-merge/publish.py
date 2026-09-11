@@ -259,6 +259,27 @@ def run_targets_pr(
     return number in targets
 
 
+def run_started_at(run: dict) -> datetime | None:
+    raw = run.get("run_started_at") or run.get("created_at")
+    if not raw:
+        return None
+    return parse_time(raw)
+
+
+def current_started_at(
+    runs: list,
+    run_id: int,
+    observed_at: str | None = None,
+) -> datetime | None:
+    for run in runs:
+        if int(run["id"]) == int(run_id):
+            started = run_started_at(run)
+            if started is not None:
+                return started
+            break
+    return parse_time(observed_at) if observed_at else None
+
+
 def has_newer_run(
     runs: list,
     number: int,
@@ -266,15 +287,22 @@ def has_newer_run(
     run_attempt: int,
     default_branch: str | None = None,
     pr_open: bool = True,
+    observed_at: str | None = None,
 ) -> bool:
-    current = (int(run_id), int(run_attempt))
+    current_started = current_started_at(runs, run_id, observed_at)
+    current_key = (int(run_id), int(run_attempt))
     for run in runs:
         if run.get("status") not in ACTIVE_RUNS:
             continue
         if not run_targets_pr(run, number, default_branch, pr_open):
             continue
-        other = (int(run["id"]), int(run.get("run_attempt") or 1))
-        if other > current:
+        other_key = (int(run["id"]), int(run.get("run_attempt") or 1))
+        other_started = run_started_at(run)
+        if current_started is not None and other_started is not None:
+            if (other_started, *other_key) > (current_started, *current_key):
+                return True
+            continue
+        if other_key > current_key:
             return True
     return False
 
@@ -306,6 +334,7 @@ def skip_reason(
         run_attempt,
         default_branch,
         current_pr_state(current) == "OPEN",
+        observed_at(report),
     ):
         return "newer_run"
     stamp = observed_at(report)

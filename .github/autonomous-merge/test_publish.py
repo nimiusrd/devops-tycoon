@@ -305,6 +305,32 @@ class PublishTests(unittest.TestCase):
         self.assertFalse(has_newer_run(broadcast, 1, 10, 1, pr_open=False))
         self.assertIsNone(skip_reason(closed_report, closed, broadcast, 10, 1))
         self.assertEqual(skip_reason(closed_report, closed, newer, 10, 1), "newer_run")
+        rerun = {
+            "id": 10,
+            "run_attempt": 2,
+            "status": "in_progress",
+            "event": "workflow_dispatch",
+            "display_title": "shadow-pr-1",
+            "run_started_at": "2026-09-11T13:00:00Z",
+            "pull_requests": [],
+        }
+        failed_newer_id = {
+            "id": 11,
+            "run_attempt": 1,
+            "status": "completed",
+            "event": "pull_request_target",
+            "run_started_at": "2026-09-11T12:00:00Z",
+            "pull_requests": [{"number": 1}],
+        }
+        self.assertFalse(has_newer_run([failed_newer_id, rerun], 1, 10, 2))
+        self.assertIsNone(
+            skip_reason(report("WAITING"), current, [failed_newer_id, rerun], 10, 2)
+        )
+        later_start = {
+            **failed_newer_id,
+            "run_started_at": "2026-09-11T14:00:00Z",
+        }
+        self.assertTrue(has_newer_run([later_start, rerun], 1, 10, 2))
 
     def test_base_ref_mismatch_skips_without_sha_change(self):
         current = {

@@ -400,6 +400,60 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(len(_javascript_test_call_spans(source)), 1)
         self.assertEqual(len(_javascript_test_behavior_records(source.encode())), 1)
 
+    def test_tests_in_uncalled_class_and_object_methods_do_not_register_fake_tests(
+        self,
+    ) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "class Registrar {\n"
+            "  register() { test('class fake', () => expect(value).toBe(1)); }\n"
+            "}\n"
+            "const object = {\n"
+            "  register() { test('object fake', () => expect(value).toBe(1)); },\n"
+            "};\n"
+        )
+
+        self.assertEqual(_javascript_test_call_spans(source), ())
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
+    def test_called_class_method_contributes_test_behavior(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "class Registrar {\n"
+            "  register() { test('class live', () => expect(value).toBe(1)); }\n"
+            "}\n"
+            "const registrar = new Registrar();\n"
+            "test('outer', () => { registrar.register(); });\n"
+        )
+
+        self.assertEqual(len(_javascript_test_call_spans(source)), 2)
+        self.assertEqual(
+            _javascript_test_behavior_records(source.encode()),
+            (("()=>expect(value).toBe(1)", False),),
+        )
+
+    def test_relative_fixture_expect_requires_the_real_e2e_fixture_path(self) -> None:
+        source = (
+            "import { expect as check } from './fixtures';\n"
+            "check(value).toBe(1);"
+        )
+
+        self.assertEqual(_javascript_assertion_count(source), 0)
+        self.assertEqual(
+            _javascript_assertion_count(
+                source,
+                source_path="tests/e2e/widget.spec.ts",
+            ),
+            1,
+        )
+        self.assertEqual(
+            _javascript_assertion_count(
+                source,
+                source_path="tests/unit/widget.test.ts",
+            ),
+            0,
+        )
+
     def test_node_assert_shadowing_does_not_satisfy_verification(self) -> None:
         source = (
             "import { strict as assert } from 'node:assert/strict';\n"
@@ -741,6 +795,29 @@ class EvaluateTests(unittest.TestCase):
         )
 
         self.assertEqual(_javascript_assertion_count(source), 0)
+
+    def test_block_local_expect_shadow_does_not_hide_later_outer_expect(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('runs', () => {\n"
+            "  { const expect = fakeExpect; expect(value).toBe(1); }\n"
+            "  expect(value).toBe(2);\n"
+            "});\n"
+        )
+
+        self.assertEqual(_javascript_assertion_count(source), 1)
+
+    def test_swallowed_assertion_is_not_verification_but_rethrow_is(self) -> None:
+        swallowed = (
+            "import { expect, test } from 'vitest';\n"
+            "test('swallowed', () => {\n"
+            "  try { expect(value).toBe(1); } catch { return; }\n"
+            "});\n"
+        )
+        rethrown = swallowed.replace("catch { return; }", "catch { throw error; }")
+
+        self.assertEqual(_javascript_assertion_count(swallowed), 0)
+        self.assertEqual(_javascript_assertion_count(rethrown), 1)
 
     def test_runner_hook_assertions_contribute_to_test_behavior(self) -> None:
         base = (
@@ -1439,6 +1516,46 @@ class EvaluateTests(unittest.TestCase):
                     _test_shape(source.encode(), language="javascript"),
                     (1, 1),
                 )
+
+    def test_fast_check_property_with_zero_runs_does_not_satisfy_verification(self) -> None:
+        source = (
+            "import fc from 'fast-check';\n"
+            "import { expect, test } from 'vitest';\n"
+            "test('property', () => {\n"
+            "  fc.assert(fc.property(fc.integer(), value => expect(value).toBe(value)), "
+            "{ numRuns: 0 });\n"
+            "});\n"
+        )
+        active_source = source.replace("numRuns: 0", "numRuns: 1")
+
+        self.assertEqual(_test_shape(source.encode(), language="javascript"), (1, 0))
+        self.assertEqual(
+            _test_shape(active_source.encode(), language="javascript"),
+            (1, 1),
+        )
+
+    def test_option_assignment_is_resolved_at_test_registration_time(self) -> None:
+        active_after_assignment = (
+            "import { expect, test } from 'vitest';\n"
+            "const options = {};\n"
+            "test('active', options, () => expect(value).toBe(1));\n"
+            "options.skip = true;\n"
+        )
+        skipped_before_assignment = active_after_assignment.replace(
+            "test('active', options, () => expect(value).toBe(1));\n"
+            "options.skip = true;",
+            "options.skip = true;\n"
+            "test('skipped', options, () => expect(value).toBe(1));",
+        )
+
+        self.assertEqual(
+            _javascript_test_behavior_records(active_after_assignment.encode()),
+            (("()=>expect(value).toBe(1)", False),),
+        )
+        self.assertEqual(
+            _javascript_test_behavior_records(skipped_before_assignment.encode()),
+            (("()=>expect(value).toBe(1)", True),),
+        )
 
     def test_test_title_only_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -2148,7 +2265,8 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(
             _javascript_assertion_count(
                 "import { expect as check } from './fixtures'; "
-                "check(value).toBe(1);"
+                "check(value).toBe(1);",
+                source_path="tests/e2e/widget.spec.ts",
             ),
             1,
         )
@@ -2158,6 +2276,29 @@ class EvaluateTests(unittest.TestCase):
                 "expect(value).toBe(1);"
             ),
             0,
+        )
+
+    def test_pure_object_array_and_literal_statements_do_not_change_behavior(self) -> None:
+        base = (
+            "import { expect, test } from 'vitest';\n"
+            "test('case', () => { expect(value).toBe(1); });\n"
+        )
+        head = (
+            "import { expect, test } from 'vitest';\n"
+            "test('case', () => {\n"
+            "  const unused = { answer: 42, label: 'fixture' };\n"
+            "  [1, 2, 3];\n"
+            "  { enabled: true };\n"
+            "  expect(value).toBe(1);\n"
+            "});\n"
+        )
+
+        self.assertFalse(
+            _has_test_behavior_change(
+                base.encode(),
+                head.encode(),
+                language="javascript",
+            )
         )
 
     def test_test_callbacks_require_imported_unshadowed_runner_bindings(self) -> None:

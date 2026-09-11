@@ -494,7 +494,7 @@ def skip_reason(
     published_cache: dict | None = None,
 ) -> str | None:
     facts = observed_pr(report)
-    if (report.get("observations") or {}) and not observed_run_started_at(report):
+    if not observed_run_started_at(report):
         return "missing_run_started_at"
     if facts.get("head_sha") and facts["head_sha"] != current["head_sha"]:
         return "stale_sha"

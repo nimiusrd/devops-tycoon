@@ -981,9 +981,23 @@ class PublishTests(unittest.TestCase):
             skip_reason(payload, current, [], 10, 1),
             "missing_run_started_at",
         )
-        self.assertIsNone(
+        self.assertEqual(
             skip_reason(
                 {"decision": "INSUFFICIENT_DATA", "error": "API 403"},
+                current,
+                [],
+                10,
+                1,
+            ),
+            "missing_run_started_at",
+        )
+        self.assertIsNone(
+            skip_reason(
+                {
+                    "decision": "INSUFFICIENT_DATA",
+                    "error": "API 403",
+                    "observations": {"run_started_at": "2026-09-11T12:00:00Z"},
+                },
                 current,
                 [],
                 10,
@@ -1163,7 +1177,11 @@ class PublishTests(unittest.TestCase):
         status = publish_pr(
             api,
             1,
-            {"decision": "INSUFFICIENT_DATA", "error": "API 403"},
+            {
+                "decision": "INSUFFICIENT_DATA",
+                "error": "API 403",
+                "observations": {"run_started_at": "2026-09-11T12:00:00Z"},
+            },
             10,
             1,
             [],

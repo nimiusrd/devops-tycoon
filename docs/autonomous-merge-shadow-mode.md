@@ -119,7 +119,7 @@ fork由来PRの`pull_request_review`ではwrite tokenが降格されるため`pu
 
 PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
 スレッド解決や外部CIの状態変更など、直接購読しないイベントは毎時の再観測、または手動実行で反映します。
-CI完了時はイベントに含まれる古いSHAを使わず、現在openのPRと、close処理が未完了のclosed PR（`shadow/要マージ判断`・`shadow/CI・レビュー待ち`・`shadow/再観測が必要`）を改めて取得します。正常に`shadow/要対応`へ更新済みのclosed PRは再収集しません。`observe`はActions read権限で現在runの開始時刻をartifactへ残します。開始時刻はPRループの前に一度だけ取得します。取得失敗は`collection_errors`に記録し、publisherは公開しません。
+CI完了時はイベントに含まれる古いSHAを使わず、現在openのPRと、close処理が未完了のclosed PR（`shadow/要マージ判断`・`shadow/CI・レビュー待ち`・`shadow/再観測が必要`）を改めて取得します。正常に`shadow/要対応`へ更新済みのclosed PRは再収集しません。`observe`はActions read権限で現在runの開始時刻をartifactへ残します。開始時刻はPRループの前に一度だけ取得し、収集失敗の`collection-error.json`にも残します。取得失敗は`collection_errors`に記録し、publisherは開始時刻なしの観測も収集失敗も公開しません。
 通常ブランチのpushはジョブを実行せず、CI完了トリガーは自身を含めません。
 
 APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は部分的な成功として扱いません。

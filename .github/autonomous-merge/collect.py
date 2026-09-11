@@ -257,6 +257,25 @@ def stamp_current_run(
             facts["run_started_at"] = started
 
 
+def collection_error_report(
+    error: BaseException,
+    api: GitHub | None = None,
+    current_run: tuple[dict | None, list[str]] | None = None,
+) -> dict:
+    observations: dict = {}
+    holder = api or type("API", (), {"repository": "unused/unused"})()
+    stamp_current_run(
+        observations,
+        holder,
+        current_run if current_run is not None else (None, []),
+    )
+    return {
+        "decision": "INSUFFICIENT_DATA",
+        "error": str(error),
+        "observations": observations,
+    }
+
+
 def collect(
     api: GitHub,
     number: int,
@@ -416,12 +435,14 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     summary = []
     failed = False
+    api = None
+    current_run = None
     try:
         policy = load_policy(args.policy)
         api = GitHub(args.repository)
+        current_run = load_current_run(api)
         event = json.loads(args.event.read_text()) if args.event else {}
         numbers = targets(api, event, args.pr)
-        current_run = load_current_run(api)
         for number in numbers:
             facts = collect(api, number, sha(args.evaluator_sha), current_run)
             result = assess(facts, policy)
@@ -435,7 +456,7 @@ def main() -> int:
     except (CollectionError, OSError, KeyError, TypeError, ValueError) as error:
         failed = True
         # collection失敗も必ず今回のartifactへ保存する。
-        result = {"decision": "INSUFFICIENT_DATA", "error": str(error)}
+        result = collection_error_report(error, api, current_run)
         (args.output / "collection-error.json").write_text(json.dumps(result) + "\n")
         summary.append(
             "INSUFFICIENT_DATA: <code>" + html.escape(str(error)) + "</code>\n"

@@ -14,6 +14,7 @@ from collect import (
     CollectionError,
     GitHub,
     collect,
+    collection_error_report,
     load_current_run,
     main,
     stamp_current_run,
@@ -541,6 +542,57 @@ class CollectTests(unittest.TestCase):
         self.assertEqual(api.calls, 1)
         self.assertEqual(first["run_started_at"], "2026-09-11T12:00:00Z")
         self.assertEqual(second["run_started_at"], "2026-09-11T12:00:00Z")
+
+    def test_collection_error_report_keeps_original_run_started_at(self):
+        payload = collection_error_report(
+            CollectionError("boom"),
+            None,
+            ({"id": 9, "run_started_at": "2026-09-11T12:00:00Z"}, []),
+        )
+        self.assertEqual(payload["decision"], "INSUFFICIENT_DATA")
+        self.assertEqual(payload["error"], "boom")
+        self.assertEqual(
+            payload["observations"]["run_started_at"], "2026-09-11T12:00:00Z"
+        )
+
+    def test_main_writes_run_started_at_to_collection_error_artifact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = [
+                "collect.py",
+                "--repository",
+                "example/project",
+                "--pr",
+                "1",
+                "--policy",
+                str(Path(__file__).with_name("policy.toml")),
+                "--output",
+                directory,
+                "--evaluator-sha",
+                BASE,
+            ]
+            with (
+                patch("sys.argv", args),
+                patch.dict(
+                    "os.environ",
+                    {"GITHUB_RUN_ID": "9", "GITHUB_RUN_ATTEMPT": "1"},
+                ),
+                patch(
+                    "collect.load_current_run",
+                    return_value=(
+                        {"id": 9, "run_started_at": "2026-09-11T12:00:00Z"},
+                        [],
+                    ),
+                ),
+                patch("collect.targets", side_effect=CollectionError("boom")),
+            ):
+                self.assertEqual(main(), 1)
+            payload = json.loads(
+                (Path(directory) / "collection-error.json").read_text()
+            )
+            self.assertEqual(payload["decision"], "INSUFFICIENT_DATA")
+            self.assertEqual(
+                payload["observations"]["run_started_at"], "2026-09-11T12:00:00Z"
+            )
 
 
 if __name__ == "__main__":

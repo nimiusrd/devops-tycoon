@@ -1440,6 +1440,44 @@ def _javascript_arrow_expression_end(
     return end
 
 
+def _javascript_arrow_parameter_spans(
+    masked_source: str,
+    arrow_start: int,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None],
+    close_to_open: Mapping[int, int],
+    typed_parameter_open_indexes: Mapping[int, int],
+) -> tuple[int, tuple[tuple[int, int], ...]] | None:
+    """arrow直前のparameter範囲を、型注釈を跨いで後方走査する。"""
+
+    previous = arrow_start - 1
+    while previous >= 0 and masked_source[previous].isspace():
+        previous -= 1
+
+    parameter_open_index: int | None = None
+    if previous >= 0 and masked_source[previous] == ")":
+        parameter_open_index = close_to_open.get(previous)
+    else:
+        parameter_open_index = typed_parameter_open_indexes.get(arrow_start)
+
+    if parameter_open_index is not None:
+        parameter_spans = argument_span_index.get(parameter_open_index)
+        if parameter_spans is not None:
+            return parameter_open_index, parameter_spans
+
+    parameter_end = arrow_start
+    while parameter_end > 0 and masked_source[parameter_end - 1].isspace():
+        parameter_end -= 1
+    parameter_start = parameter_end
+    while parameter_start > 0 and (
+        masked_source[parameter_start - 1].isalnum()
+        or masked_source[parameter_start - 1] in "_$"
+    ):
+        parameter_start -= 1
+    if parameter_start == parameter_end:
+        return None
+    return parameter_start, ((parameter_start, parameter_end),)
+
+
 def _javascript_function_scopes(
     source: str,
     *,
@@ -1460,6 +1498,11 @@ def _javascript_function_scopes(
         )
         if close_index is not None:
             close_to_open[close_index] = open_index
+    typed_parameter_open_indexes = {
+        match.end() - 2: close_to_open[match.start()]
+        for match in re.finditer(r"\)(?=\s*:)[^;{}]*?=>", masked_source)
+        if match.start() in close_to_open
+    }
 
     scopes: list[tuple[int, int, int, frozenset[str]]] = []
     function_pattern = re.compile(
@@ -1495,28 +1538,16 @@ def _javascript_function_scopes(
 
     for arrow in re.finditer(r"=>", masked_source):
         arrow_start = arrow.start()
-        previous = arrow_start - 1
-        while previous >= 0 and masked_source[previous].isspace():
-            previous -= 1
-        if previous < 0:
+        parameter_info = _javascript_arrow_parameter_spans(
+            masked_source,
+            arrow_start,
+            argument_span_index,
+            close_to_open,
+            typed_parameter_open_indexes,
+        )
+        if parameter_info is None:
             continue
-        if masked_source[previous] == ")":
-            open_index = close_to_open.get(previous)
-            if open_index is None:
-                continue
-            parameter_start = open_index + 1
-            marker_start = open_index
-            parameter_spans = argument_span_index.get(open_index) or ()
-        else:
-            parameter_match = re.search(
-                r"[A-Za-z_$][A-Za-z0-9_$]*\s*$",
-                masked_source[: arrow_start + 1],
-            )
-            if parameter_match is None:
-                continue
-            parameter_start = parameter_match.start()
-            marker_start = parameter_start
-            parameter_spans = ((parameter_start, arrow_start),)
+        marker_start, parameter_spans = parameter_info
         body_start = arrow.end()
         while body_start < len(source) and source[body_start].isspace():
             body_start += 1
@@ -1573,6 +1604,58 @@ def _javascript_binding_shadowed_at(
     )
 
 
+def _javascript_function_scope_is_direct_call_argument(
+    masked_source: str,
+    scope_start: int,
+) -> bool:
+    """scopeが呼び出しの直接callback引数として渡されているか判定する。"""
+
+    previous = scope_start - 1
+    while previous >= 0 and masked_source[previous].isspace():
+        previous -= 1
+    if previous < 0:
+        return False
+    if masked_source[previous] in "(,":
+        return True
+
+    word_end = previous + 1
+    word_start = previous
+    while word_start >= 0 and (
+        masked_source[word_start].isalnum()
+        or masked_source[word_start] in "_$"
+    ):
+        word_start -= 1
+    if masked_source[word_start + 1 : word_end] != "async":
+        return False
+    previous = word_start
+    while previous >= 0 and masked_source[previous].isspace():
+        previous -= 1
+    return previous >= 0 and masked_source[previous] in "(,"
+
+
+def _javascript_named_function_scope_is_called(
+    masked_source: str,
+    scope_start: int,
+    body_start: int,
+    body_end: int,
+    end: int,
+) -> bool:
+    header = masked_source[scope_start:body_start]
+    name_match = re.match(
+        r"(?:async\s+)?function\s*\*?\s*"
+        r"(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*\(",
+        header,
+    )
+    if name_match is None:
+        return False
+    call_pattern = re.compile(
+        r"(?<![A-Za-z0-9_$?.])"
+        + re.escape(name_match.group("name"))
+        + r"\s*\("
+    )
+    return call_pattern.search(masked_source, body_end, end) is not None
+
+
 def _javascript_nested_function_ranges(
     source: str,
     start: int,
@@ -1581,7 +1664,7 @@ def _javascript_nested_function_ranges(
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
 ) -> tuple[tuple[int, int], ...]:
-    """outer callback以外のnested function bodyをassertion走査から除外する。"""
+    """未呼出しのnested function bodyだけをassertion走査から除外する。"""
 
     if function_scopes is None:
         scopes = (
@@ -1608,12 +1691,24 @@ def _javascript_nested_function_ranges(
     if not candidates:
         return ()
     outer = min(candidates, key=lambda scope: (scope[0], -scope[2]))
+    masked_source = _mask_javascript_literals(source)
     return tuple(
         (body_start, body_end)
         for scope_start, body_start, body_end, _ in scopes
         if scope_start != outer[0]
         and body_start < end
         and start < body_end
+        and not _javascript_named_function_scope_is_called(
+            masked_source,
+            scope_start,
+            body_start,
+            body_end,
+            end,
+        )
+        and not _javascript_function_scope_is_direct_call_argument(
+            masked_source,
+            scope_start,
+        )
     )
 
 
@@ -1891,8 +1986,9 @@ def _javascript_conditional_suite_is_disabled(
     arguments: Sequence[str],
 ) -> bool:
     condition = arguments[0].strip() if arguments else ""
-    return (modifier == "skipIf" and condition in {"true", "1"}) or (
-        modifier == "runIf" and condition in {"false", "0"}
+    return not (
+        (modifier == "skipIf" and condition in {"false", "0"})
+        or (modifier == "runIf" and condition in {"true", "1"})
     )
 
 

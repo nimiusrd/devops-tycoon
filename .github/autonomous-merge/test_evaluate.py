@@ -466,6 +466,69 @@ class EvaluateTests(unittest.TestCase):
                     self.assertTrue(result.test_changes)
                     self.assertEqual(result.verification_risk, 0)
 
+    def test_dynamic_conditional_tests_are_treated_as_disabled(self) -> None:
+        for conditional_call in (
+            "test.skipIf(process.env.CI)",
+            "test.runIf(process.env.CI)",
+        ):
+            with self.subTest(conditional_call=conditional_call):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
+                                "test('builds', () => expect(url).toBe('/'));\n"
+                            ),
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
+                                f"{conditional_call}('builds', () => expect(url).toBe('/app/'));\n"
+                            ),
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("src-fallback", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+                    self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_called_nested_helpers_and_callbacks_contribute_assertions(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('runs', () => {\n"
+            "  function verify() {\n"
+            "    expect(value).toBe(1);\n"
+            "  }\n"
+            "  verify();\n"
+            "  [value].forEach(() => expect(value).toBe(1));\n"
+            "});\n"
+        )
+
+        self.assertEqual(len(_javascript_test_behavior_records(source.encode())), 1)
+
+    def test_typed_arrow_parameter_shadowing_does_not_register_fake_tests(self) -> None:
+        source = (
+            "import { expect, test as runner } from 'vitest';\n"
+            "const register = (runner: typeof test): void => {\n"
+            "  runner('fake', () => expect(value).toBe(1));\n"
+            "};\n"
+            "runner('real', () => expect(value).toBe(1));\n"
+        )
+
+        calls = _javascript_test_call_spans(source)
+
+        self.assertEqual(len(calls), 1)
+
     def test_playwright_test_info_alias_modifiers_do_not_satisfy_verification(self) -> None:
         for modifier in ("skip", "fixme", "fail"):
             with self.subTest(modifier=modifier), tempfile.TemporaryDirectory() as directory:

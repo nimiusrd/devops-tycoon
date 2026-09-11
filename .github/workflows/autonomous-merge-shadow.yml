@@ -1,7 +1,7 @@
 name: Autonomous Merge Shadow
 run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number && format('shadow-pr-{0}', inputs.pr_number) || github.event_name == 'workflow_dispatch' && 'shadow-all' || github.event.pull_request.number && format('shadow-pr-{0}', github.event.pull_request.number) || format('shadow-{0}', github.event_name) }}
 
-# 観測はread-only。ラベル更新はpublish jobだけが行う。
+# 観測はread-only。ラベル定義はprepare-publish、PRラベル更新はpublish jobだけが行う。
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited, closed]
@@ -157,6 +157,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      issues: write
     steps:
       - name: Checkout trusted default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -164,7 +165,7 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
           sparse-checkout: .github/autonomous-merge
-      - name: Export shared run history
+      - name: Prepare labels and export shared run history
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

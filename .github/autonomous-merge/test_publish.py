@@ -1128,6 +1128,30 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(match["run_attempt"], 1)
         self.assertFalse(any(path.endswith("/actions/runs/5") for path in api.fetched))
 
+    def test_recent_runs_only_lists_in_progress_and_queued(self):
+        class Paging:
+            prefix = "/repos/example/project"
+
+            def __init__(self):
+                self.fetched = []
+
+            def request(self, path, body=None, method=None):
+                self.fetched.append(path)
+                return {"workflow_runs": []}
+
+        api = Paging()
+        list_recent_runs(api, "autonomous-merge-shadow.yml")
+        statuses = [
+            path.split("status=", 1)[1].split("&", 1)[0]
+            for path in api.fetched
+            if "status=" in path
+        ]
+        self.assertEqual(statuses, ["in_progress", "queued"])
+        self.assertEqual(
+            sum(1 for path in api.fetched if "/runs?" in path and "status=" not in path),
+            1,
+        )
+
     def test_shared_history_is_refreshed_before_first_write(self):
         api = FixtureAPI(["enhancement"])
         api.workflow_pages = [
@@ -1754,6 +1778,12 @@ class PublishTests(unittest.TestCase):
             ):
                 self.assertEqual(main(), 0)
             listed.assert_not_called()
+            label_gets = [
+                path
+                for verb, path, _ in api.calls
+                if verb == "GET" and path.startswith(f"{api.prefix}/labels/")
+            ]
+            self.assertEqual(label_gets, [])
             names = [item["name"] for item in api.pull["labels"]]
             self.assertIn("shadow/CI・レビュー待ち", names)
 
@@ -1780,6 +1810,12 @@ class PublishTests(unittest.TestCase):
             with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
                 self.assertEqual(main(), 0)
             self.assertEqual(json.loads(dest.read_text())[0]["id"], 20)
+            label_gets = [
+                path
+                for verb, path, _ in api.calls
+                if verb == "GET" and path.startswith(f"{api.prefix}/labels/")
+            ]
+            self.assertEqual(len(label_gets), len(DECISION_LABELS))
 
     def test_cli_noops_without_reports(self):
         with tempfile.TemporaryDirectory() as directory:

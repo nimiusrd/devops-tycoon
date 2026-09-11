@@ -27,6 +27,10 @@ ACTIVE_RUNS = {
     "requested",
 }
 LIVE_STATUSES = tuple(sorted(ACTIVE_RUNS - {"completed"}))
+# 書き込み直前は未完了の代表状態だけを取る。
+# pending / waiting / requested は queued / in_progress か直近一覧に載る。
+# 既知の未完了runは ID GET で補う。
+RECENT_LIVE_STATUSES = ("in_progress", "queued")
 
 DECISION_LABELS = {
     "SHADOW_CONDITIONS_MET": "shadow/要マージ判断",
@@ -284,7 +288,7 @@ def list_recent_runs(
                 continue
             records[run] = item
 
-    for status in LIVE_STATUSES:
+    for status in RECENT_LIVE_STATUSES:
         add(_workflow_run_page(api, f"{path}?status={status}&per_page=100&page=1"))
     add(_workflow_run_page(api, f"{path}?per_page=100&page=1"))
     if known:
@@ -766,6 +770,7 @@ def main() -> int:
     if args.export_runs:
         try:
             api = GitHub(args.repository)
+            ensure_labels(api)
             runs = list_relevant_runs(api, args.workflow, args.run_id)
             args.export_runs.parent.mkdir(parents=True, exist_ok=True)
             args.export_runs.write_text(json.dumps(runs) + "\n")
@@ -798,8 +803,8 @@ def main() -> int:
                 raise PublishError("invalid runs file")
             runs = loaded
         else:
+            ensure_labels(api)
             runs = list_relevant_runs(api, args.workflow, args.run_id)
-        ensure_labels(api)
         published_cache: dict = {}
         for number, report in reports:
             try:

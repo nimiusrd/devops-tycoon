@@ -80,7 +80,7 @@ GitHubのレビュー総合状態も併せて確認します。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
 - `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
-- `.github/workflows/autonomous-merge-shadow.yml`：default branchの信頼済みcollectorをread-onlyで実行し、SummaryとJSON artifactを保存する。ラベル更新は独立した`publish` jobだけが行う。
+- `.github/workflows/autonomous-merge-shadow.yml`：default branchの信頼済みcollectorをread-onlyで実行し、SummaryとJSON artifactを保存する。リポジトリラベル定義の準備は`prepare-publish`、PRラベルの更新は独立した`publish` / `publish-overflow` jobが行う。
 - `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
 
 JSONには正規化した観測事実、条件ごとの結果、観測時刻、head/base/test merge SHA、実行した評価器のSHA、policyとそのSHA-256を保存します。
@@ -110,7 +110,7 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 `observe` の並行グループだけ `cancel-in-progress: true` です。workflow全体はキャンセルせず、実行中の`publish`を保護します。
 `publish` jobは先頭256件をPR番号ごとのmatrixにします。257–512件目もPR番号ごとのoverflow matrixです。同じPRは同じconcurrency groupで直列化し、無関係なPRはpending枠を共有しません。`cancel-in-progress: false` です。対象が512件を超える場合は`GITHUB_RUN_NUMBER`で一覧を回転してから切り出すので、513件目以降も後続の定期観測で先頭側に入ります。
 一度ラベル変更を始めた後は、後着判定で途中終了せず管理ラベルが1つになるまで収束します。
-後着判定のrun履歴は`prepare-publish`が1回取得して各PRのpublish jobへ渡します。各PRの最初の書き込み直前に進行中runと直近1ページだけ再確認します。再取得した同じrun IDは共有履歴より優先し、履歴がページ上限まで埋まっている場合は部分履歴で続行せず失敗します。鮮度は同じ開始時刻同士で比較し、publisher単独再実行ではより古い`observed_at`を使います。観測artifactに`run_started_at`が無い場合は公開しません。ラベル更新は追加先行で、再追加後も競合ラベルを除去して一意な状態を確認します。公開先のない失敗broadcastと、publish jobが動かなかった成功runは後着にしません。後着になり得るrunだけjobsを`filter=all`で確認し、過去attemptの成功済みpublishも後着とします。結果はrun ID・attempt・status・conclusion単位で再利用します。jobs APIを確認できない場合は未公開と断定せず書き込みません。publisher単独再実行は観測artifactに残した元attemptの開始時刻を使います。書き込み直前のID再取得は、共有snapshot時点で未完了だった既知runだけに限定します。完了済みrunの更新は進行中statusと直近1ページで拾います。1 jobが複数PRを処理する場合、ラベル定義の確認はループ外で一度だけ行います。
+後着判定のrun履歴は`prepare-publish`が1回取得して各PRのpublish jobへ渡します。4つの管理ラベル定義も`prepare-publish`で一度だけ確認・作成し、`--runs-file`経路の各PR jobでは繰り返しません。各PRの最初の書き込み直前は`in_progress`・`queued`と直近1ページだけ再確認します。再取得した同じrun IDは共有履歴より優先し、履歴がページ上限まで埋まっている場合は部分履歴で続行せず失敗します。鮮度は同じ開始時刻同士で比較し、publisher単独再実行ではより古い`observed_at`を使います。観測artifactに`run_started_at`が無い場合は公開しません。ラベル更新は追加先行で、再追加後も競合ラベルを除去して一意な状態を確認します。公開先のない失敗broadcastと、publish jobが動かなかった成功runは後着にしません。後着になり得るrunだけjobsを`filter=all`で確認し、過去attemptの成功済みpublishも後着とします。結果はrun ID・attempt・status・conclusion単位で再利用します。jobs APIを確認できない場合は未公開と断定せず書き込みません。publisher単独再実行は観測artifactに残した元attemptの開始時刻を使います。書き込み直前のID再取得は、共有snapshot時点で未完了だった既知runだけに限定します。完了済みrunの更新は`in_progress`・`queued`と直近1ページで拾います。`--runs-file`を使わない単発実行では、ラベル定義の確認はPRループの外で一度だけ行います。
 `skipped`のrunは後着にしません。`cancelled`でも対象PRのpublish jobが完了していれば後着です。jobsを確認できない`cancelled`は未公開と断定せず書き込みません。`failure`でも観測レポートを出している場合は後着として扱います。publisher単独再実行は選択した観測artifactのattemptと`observed_at`で鮮度を判定します。
 `workflow_dispatch` の対象はrun名が`shadow-pr-N`または`shadow-all`に完全一致する場合だけ宣言として扱います。
 `workflow_run`とdefault branchの`push`は、RESTの`pull_requests`関連付けより先に全体観測として扱います。
@@ -130,7 +130,7 @@ workflow全体には15分の実行上限があります。多数のPRがある�
 必要環境はPython 3.11以上です。Pythonの外部依存はありません。
 GitHub tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。CLI引数には含めません。
 collectorの必要権限はContents / Pull requests / Checks / Commit statusesのreadです。
-publisherの必要権限はPull requestsとIssuesのwrite、Actionsのreadです。書き込み権限は`publish` jobだけに付けます。
+publisherの必要権限はPull requestsとIssuesのwrite、Actionsのreadです。リポジトリラベル定義の作成は`prepare-publish`にIssues writeを付け、PRラベルの更新は`publish` / `publish-overflow`だけが行います。
 
 本リポジトリではDev Container内から実行します。
 

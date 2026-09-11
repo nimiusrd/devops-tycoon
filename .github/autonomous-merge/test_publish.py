@@ -371,6 +371,31 @@ class PublishTests(unittest.TestCase):
             "run_started_at": "2026-09-11T14:00:00Z",
         }
         self.assertTrue(has_newer_run([later_start, rerun], 1, 10, 2))
+        earlier_start_later_observe = {
+            "id": 10,
+            "run_attempt": 1,
+            "status": "in_progress",
+            "event": "schedule",
+            "run_started_at": "2026-09-11T12:00:00Z",
+            "pull_requests": [],
+        }
+        later_start_peer = {
+            "id": 11,
+            "run_attempt": 1,
+            "status": "completed",
+            "event": "workflow_run",
+            "run_started_at": "2026-09-11T12:05:00Z",
+            "pull_requests": [{"number": 1}],
+        }
+        self.assertTrue(
+            has_newer_run(
+                [earlier_start_later_observe, later_start_peer],
+                1,
+                10,
+                1,
+                observed_at="2026-09-11T12:10:00+00:00",
+            )
+        )
         failed_collection = {
             "id": 60,
             "run_attempt": 1,

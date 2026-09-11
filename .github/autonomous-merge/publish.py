@@ -293,12 +293,15 @@ def current_started_at(
     run_id: int,
     observed_at: str | None = None,
 ) -> datetime | None:
-    if observed_at:
-        return parse_time(observed_at)
+    started = None
     for run in runs:
         if int(run["id"]) == int(run_id):
-            return run_started_at(run)
-    return None
+            started = run_started_at(run)
+            break
+    observed = parse_time(observed_at) if observed_at else None
+    if started and observed:
+        return min(started, observed)
+    return started or observed
 
 
 def has_newer_run(
@@ -547,6 +550,7 @@ def main() -> int:
     failed = False
     try:
         api = GitHub(args.repository)
+        runs = list_relevant_runs(api, args.workflow, args.run_id)
         for number, report in reports:
             try:
                 publish_pr(
@@ -555,6 +559,7 @@ def main() -> int:
                     report,
                     args.run_id,
                     args.run_attempt,
+                    runs,
                     workflow=args.workflow,
                     default_branch=args.default_branch,
                 )

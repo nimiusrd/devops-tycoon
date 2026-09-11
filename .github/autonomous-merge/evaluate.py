@@ -141,6 +141,17 @@ _JavaScriptScopeId = int | tuple[str, int] | None
 
 
 @dataclass(frozen=True)
+class _JavaScriptCallableBinding:
+    """静的に追跡できるfunction bindingと、その宣言位置を保持する。"""
+
+    name: str
+    kind: str
+    declaration_start: int
+    scope_id: _JavaScriptScopeId
+    function_index: int
+
+
+@dataclass(frozen=True)
 class _JavaScriptDisabledOptionIndex:
     """JavaScript test optionのbinding identityとlexical scopeを保持する。"""
 
@@ -936,10 +947,12 @@ _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND = re.compile(
     r"(?:^|[{,])\s*(?:skip|todo|fails)\s*(?=[,}])"
 )
 _JAVASCRIPT_OBJECT_VARIABLE = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*\{"
+    r"\b(?P<kind>const|let|var)\s+"
+    r"(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*\{"
 )
 _JAVASCRIPT_OBJECT_ALIAS = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*"
+    r"\b(?P<kind>const|let|var)\s+"
+    r"(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*"
     r"(?P<source>[A-Za-z_$][A-Za-z0-9_$]*)\b"
 )
 _JAVASCRIPT_OBJECT_SPREAD = re.compile(
@@ -1800,24 +1813,31 @@ def _javascript_binding_scope_index(
     if source is not None:
         if masked_source is None:
             masked_source = _mask_javascript_literals(source)
+        declaration_positions = {
+            *(match.start() for match in _JAVASCRIPT_EXPECT_SHADOW_DECLARATION.finditer(masked_source)),
+            *(
+                declaration_start
+                for declaration_start, _, _ in _javascript_destructured_declaration_bindings(
+                    masked_source
+                )
+            ),
+        }
+        function_scope_at = _javascript_function_scope_ids_at_positions(
+            function_scopes,
+            declaration_positions,
+        )
         for match in _JAVASCRIPT_EXPECT_SHADOW_DECLARATION.finditer(masked_source):
-            scope_index = _javascript_innermost_function_scope_index(
-                function_scopes,
-                match.start(),
-            )
+            scope_index = function_scope_at.get(match.start())
             if scope_index is None:
                 interval = (-1, len(source))
             else:
                 _, body_start, body_end, _ = function_scopes[scope_index]
                 interval = (body_start, body_end)
             intervals.setdefault(match.group("binding"), set()).add(interval)
-        for declaration_start, declaration_bindings in _javascript_destructured_declaration_bindings(
+        for declaration_start, _, declaration_bindings in _javascript_destructured_declaration_bindings(
             masked_source
         ):
-            scope_index = _javascript_innermost_function_scope_index(
-                function_scopes,
-                declaration_start,
-            )
+            scope_index = function_scope_at.get(declaration_start)
             if scope_index is None:
                 interval = (-1, len(source))
             else:
@@ -1853,6 +1873,34 @@ def _javascript_function_scope_start_index(
     function_scopes: Sequence[tuple[int, int, int, frozenset[str]]],
 ) -> tuple[int, ...]:
     return tuple(scope[0] for scope in function_scopes)
+
+
+def _javascript_function_scope_ids_at_positions(
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]],
+    positions: Iterable[int],
+) -> dict[int, int | None]:
+    """複数位置の最内側function scopeを一度の走査で求める。"""
+
+    ordered_scopes = tuple(
+        sorted(
+            enumerate(function_scopes),
+            key=lambda item: (item[1][1], -item[1][2]),
+        )
+    )
+    result: dict[int, int | None] = {}
+    active: list[tuple[int, tuple[int, int, int, frozenset[str]]]] = []
+    scope_index = 0
+    for position in sorted(set(positions)):
+        while scope_index < len(ordered_scopes) and ordered_scopes[scope_index][1][1] <= position:
+            scope = ordered_scopes[scope_index]
+            while active and active[-1][1][2] <= scope[1][1]:
+                active.pop()
+            active.append(scope)
+            scope_index += 1
+        while active and active[-1][1][2] <= position:
+            active.pop()
+        result[position] = active[-1][0] if active else None
+    return result
 
 
 def _javascript_innermost_function_scope_index(
@@ -2090,12 +2138,9 @@ def _javascript_direct_callback_callee_index(
                     masked_source[async_end].isalnum()
                     or masked_source[async_end] in "_$"
                 ):
-                    candidate = async_end
-                    while (
-                        candidate < argument_end
-                        and masked_source[candidate].isspace()
-                    ):
-                        candidate += 1
+                    # 同期Array methodは返却Promiseを待たないため、async
+                    # callback内のassertionを実行済みとは証明できない。
+                    continue
             if candidate < argument_end:
                 index.setdefault(candidate, callee)
     return index
@@ -2156,21 +2201,118 @@ def _javascript_function_scope_callable_name(
 ) -> str | None:
     """function/arrow scopeに付いた静的な呼出し名を返す。"""
 
+    binding = _javascript_function_scope_binding_info(
+        masked_source,
+        scope_start,
+        body_start,
+    )
+    return binding[0] if binding is not None else None
+
+
+def _javascript_function_scope_binding_info(
+    masked_source: str,
+    scope_start: int,
+    body_start: int,
+) -> tuple[str, str, int] | None:
+    """function/arrow scopeのbinding名、種別、宣言位置を返す。"""
+
     named_function = _javascript_named_function_scope_name(
         masked_source,
         scope_start,
         body_start,
     )
     if named_function is not None:
-        return named_function
+        return named_function, "function", scope_start
     prefix = masked_source[max(0, scope_start - 512) : scope_start]
     assignment = re.search(
-        r"(?:\b(?:const|let|var)\s+)?"
+        r"(?:^|[;{}\n])\s*(?:export\s+|default\s+)*"
+        r"(?:(?P<kind>const|let|var)\s+)?"
         r"(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
         r"(?::[^=\r\n]+)?=\s*(?:async\s*)?$",
         prefix,
     )
-    return assignment.group("name") if assignment is not None else None
+    if assignment is None:
+        return None
+    kind = assignment.group("kind") or "assignment"
+    declaration_group = "kind" if assignment.group("kind") is not None else "name"
+    declaration_start = max(0, scope_start - 512) + assignment.start(
+        declaration_group
+    )
+    return assignment.group("name"), kind, declaration_start
+
+
+def _javascript_lexical_scope_layout(
+    masked_source: str,
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]],
+) -> tuple[
+    tuple[tuple[_JavaScriptScopeId, int, int], ...],
+    Mapping[_JavaScriptScopeId, _JavaScriptScopeId],
+]:
+    """function bodyとbrace scopeの親子関係を一度の走査で構築する。"""
+
+    braced_end_index = _javascript_braced_end_index(masked_source, None)
+    function_body_starts = {body_start for _, body_start, _, _ in function_scopes}
+    scope_ranges: list[tuple[_JavaScriptScopeId, int, int]] = [
+        (index, body_start, body_end)
+        for index, (_, body_start, body_end, _) in enumerate(function_scopes)
+    ]
+    scope_ranges.extend(
+        (("block", open_index), open_index, close_index)
+        for open_index, close_index in braced_end_index.items()
+        if close_index is not None and open_index not in function_body_starts
+    )
+    ordered_ranges = sorted(
+        scope_ranges,
+        key=lambda item: (item[1], -item[2]),
+    )
+    parent_scopes: dict[_JavaScriptScopeId, _JavaScriptScopeId] = {}
+    active: list[tuple[_JavaScriptScopeId, int, int]] = []
+    for scope in ordered_ranges:
+        while active and active[-1][2] <= scope[1]:
+            active.pop()
+        parent_scopes[scope[0]] = active[-1][0] if active else None
+        active.append(scope)
+    return tuple(ordered_ranges), parent_scopes
+
+
+def _javascript_scope_ids_at_positions(
+    scope_ranges: Sequence[tuple[_JavaScriptScopeId, int, int]],
+    positions: Iterable[int],
+) -> dict[int, _JavaScriptScopeId]:
+    """複数位置の最内側scopeを、rangeの再走査なしで求める。"""
+
+    ordered_ranges = tuple(
+        sorted(scope_ranges, key=lambda item: (item[1], -item[2]))
+    )
+    ordered_positions = sorted(set(positions))
+    result: dict[int, _JavaScriptScopeId] = {}
+    active: list[tuple[_JavaScriptScopeId, int, int]] = []
+    range_index = 0
+    for position in ordered_positions:
+        while range_index < len(ordered_ranges) and ordered_ranges[range_index][1] <= position:
+            scope = ordered_ranges[range_index]
+            while active and active[-1][2] <= scope[1]:
+                active.pop()
+            active.append(scope)
+            range_index += 1
+        while active and active[-1][2] <= position:
+            active.pop()
+        result[position] = active[-1][0] if active else None
+    return result
+
+
+def _javascript_enclosing_function_scope(
+    scope_id: _JavaScriptScopeId,
+    parent_scopes: Mapping[_JavaScriptScopeId, _JavaScriptScopeId],
+) -> int | None:
+    """scope chainから最も内側のfunction scope indexを返す。"""
+
+    current = scope_id
+    while current is not None:
+        if isinstance(current, int):
+            return current
+        current = parent_scopes.get(current)
+    return None
 
 
 def _javascript_unreachable_function_ranges(
@@ -2204,36 +2346,173 @@ def _javascript_unreachable_function_ranges(
             argument_span_index=argument_span_index,
         )
     unreachable_ranges = _javascript_unreachable_test_ranges(source)
+    unreachable_starts = tuple(range_start for range_start, _ in unreachable_ranges)
 
     def is_unreachable(position: int) -> bool:
-        return any(
-            range_start <= position < range_end
-            for range_start, range_end in unreachable_ranges
+        range_index = bisect_right(unreachable_starts, position) - 1
+        return (
+            range_index >= 0
+            and unreachable_ranges[range_index][0] <= position
+            < unreachable_ranges[range_index][1]
         )
 
-    # function scopeは開始位置順に並んでいるが、bodyが入れ子になるため
-    # stackで親を求める。各scopeを全件比較しないので、大量のtest callbackでも
-    # 入力サイズに対して線形で処理できる。
-    ordered_indexes = sorted(
-        range(len(function_scopes)),
-        key=lambda index: (
-            function_scopes[index][0],
-            -function_scopes[index][2],
-        ),
+    scope_ranges, parent_scopes = _javascript_lexical_scope_layout(
+        masked_source,
+        function_scopes,
     )
-    parent_indexes: dict[int, int | None] = {}
-    active_indexes: list[int] = []
-    for index in ordered_indexes:
-        scope_start, body_start, body_end, _ = function_scopes[index]
-        while active_indexes and function_scopes[active_indexes[-1]][2] <= scope_start:
-            active_indexes.pop()
-        parent_indexes[index] = (
-            active_indexes[-1]
-            if active_indexes
-            and function_scopes[active_indexes[-1]][1] <= scope_start
-            else None
+    function_binding_info = {
+        index: _javascript_function_scope_binding_info(
+            masked_source,
+            scope_start,
+            body_start,
         )
-        active_indexes.append(index)
+        for index, (scope_start, body_start, _, _) in enumerate(function_scopes)
+    }
+    function_binding_info = {
+        index: info
+        for index, info in function_binding_info.items()
+        if info is not None
+    }
+
+    simple_declaration = re.compile(
+        r"\b(?P<kind>const|let|var|class)\s+"
+        r"(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\b"
+    )
+    declaration_matches = tuple(simple_declaration.finditer(masked_source))
+    call_pattern = re.compile(
+        r"(?<![A-Za-z0-9_$?.])"
+        r"(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*\("
+    )
+    call_matches = tuple(call_pattern.finditer(masked_source))
+    scope_positions = {
+        *(match.start() for match in declaration_matches),
+        *(match.start() for match in call_matches),
+        *(info[2] for info in function_binding_info.values()),
+        *(scope[0] for scope in function_scopes),
+    }
+    scope_at_position = _javascript_scope_ids_at_positions(
+        scope_ranges,
+        scope_positions,
+    )
+
+    def declaration_scope(
+        kind: str,
+        position: int,
+    ) -> _JavaScriptScopeId:
+        scope_id = scope_at_position.get(position)
+        if kind == "var":
+            return _javascript_enclosing_function_scope(scope_id, parent_scopes)
+        return scope_id
+
+    events: list[
+        tuple[
+            int,
+            int,
+            _JavaScriptScopeId,
+            str,
+            _JavaScriptCallableBinding | None,
+        ]
+    ] = []
+    for index, (_, body_start, _, parameter_names) in enumerate(function_scopes):
+        for name in parameter_names:
+            events.append((body_start, 0, index, name, None))
+    for match in declaration_matches:
+        kind = match.group("kind")
+        name = match.group("name")
+        position = match.start()
+        events.append(
+            (
+                position,
+                1,
+                declaration_scope(kind, position),
+                name,
+                None,
+            )
+        )
+    for index, (name, kind, declaration_start) in function_binding_info.items():
+        events.append(
+            (
+                declaration_start,
+                2,
+                declaration_scope(kind, declaration_start),
+                name,
+                _JavaScriptCallableBinding(
+                    name=name,
+                    kind=kind,
+                    declaration_start=declaration_start,
+                    scope_id=declaration_scope(kind, declaration_start),
+                    function_index=index,
+                ),
+            )
+        )
+    events.sort(key=lambda event: (event[0], event[1]))
+    bindings: dict[
+        tuple[_JavaScriptScopeId, str],
+        _JavaScriptCallableBinding | None,
+    ] = {}
+    for _, _, scope_id, name, binding in events:
+        bindings[(scope_id, name)] = binding
+
+    def resolve_binding(
+        name: str,
+        scope_id: _JavaScriptScopeId,
+    ) -> tuple[bool, _JavaScriptCallableBinding | None]:
+        current = scope_id
+        while True:
+            key = (current, name)
+            if key in bindings:
+                return True, bindings[key]
+            if current is None:
+                return False, None
+            current = parent_scopes.get(current)
+
+    parent_indexes = {
+        index: _javascript_enclosing_function_scope(
+            scope_at_position.get(scope_start),
+            parent_scopes,
+        )
+        for index, (scope_start, _, _, _) in enumerate(function_scopes)
+    }
+    header_ranges = tuple(
+        (scope_start, body_start)
+        for scope_start, body_start, _, _ in function_scopes
+    )
+    header_starts = tuple(start for start, _ in header_ranges)
+
+    def is_function_header(position: int) -> bool:
+        range_index = bisect_right(header_starts, position) - 1
+        return (
+            range_index >= 0
+            and header_ranges[range_index][0] <= position
+            < header_ranges[range_index][1]
+        )
+
+    call_edges: dict[int | None, set[int]] = {}
+    callable_names = frozenset(
+        info[0] for info in function_binding_info.values()
+    )
+    for match in call_matches:
+        name = match.group("name")
+        position = match.start()
+        if (
+            name not in callable_names
+            or is_function_header(position)
+            or is_unreachable(position)
+        ):
+            continue
+        found, binding = resolve_binding(
+            name,
+            scope_at_position.get(position),
+        )
+        if binding is None or not found:
+            continue
+        if binding.kind != "function" and binding.declaration_start > position:
+            continue
+        caller = _javascript_enclosing_function_scope(
+            scope_at_position.get(position),
+            parent_scopes,
+        )
+        call_edges.setdefault(caller, set()).add(binding.function_index)
 
     suite_scope_indexes: set[int] = set()
     for _, callback_start, callback_end, _ in suite_records:
@@ -2254,68 +2533,6 @@ def _javascript_unreachable_function_ranges(
                 )
             )
 
-    names = {
-        index: _javascript_function_scope_callable_name(
-            masked_source,
-            function_scopes[index][0],
-            function_scopes[index][1],
-        )
-        for index in range(len(function_scopes))
-    }
-
-    def is_function_header(position: int) -> bool:
-        return any(
-            names[index] is not None
-            and function_scopes[index][0] <= position < function_scopes[index][1]
-            for index in range(len(function_scopes))
-        )
-
-    def innermost_scope(position: int) -> int | None:
-        containing = [
-            (
-                function_scopes[index][2] - function_scopes[index][1],
-                index,
-            )
-            for index in range(len(function_scopes))
-            if function_scopes[index][1] <= position < function_scopes[index][2]
-        ]
-        return min(containing)[1] if containing else None
-
-    def called_from_scope(name: str, caller_index: int) -> bool:
-        _, body_start, body_end, _ = function_scopes[caller_index]
-        pattern = re.compile(
-            r"(?<![A-Za-z0-9_$?.])" + re.escape(name) + r"\s*\("
-        )
-        for match in pattern.finditer(masked_source, body_start, body_end):
-            position = match.start()
-            if (
-                is_unreachable(position)
-                or is_function_header(position)
-                or innermost_scope(position) != caller_index
-            ):
-                continue
-            return True
-        return False
-
-    def called_from_module(name: str, target_index: int) -> bool:
-        target_start, target_body_start, _, _ = function_scopes[target_index]
-        pattern = re.compile(
-            r"(?<![A-Za-z0-9_$?.])" + re.escape(name) + r"\s*\("
-        )
-        for match in pattern.finditer(masked_source):
-            position = match.start()
-            if position == target_start or is_unreachable(position):
-                continue
-            if any(
-                function_scopes[index][1] <= position < function_scopes[index][2]
-                for index in range(len(function_scopes))
-            ):
-                continue
-            if target_start <= position < target_body_start:
-                continue
-            return True
-        return False
-
     reachable: set[int] = set()
     changed = True
     while changed:
@@ -2326,7 +2543,6 @@ def _javascript_unreachable_function_ranges(
             parent = parent_indexes[index]
             if parent is not None and parent not in reachable:
                 continue
-            callable_name = names[index]
             is_direct_callback = (
                 direct_callback_callee_index.get(scope_start)
                 in _JAVASCRIPT_SYNCHRONOUS_CALLBACK_CALLEES
@@ -2335,14 +2551,7 @@ def _javascript_unreachable_function_ranges(
             is_called = (
                 is_direct_callback
                 or is_suite_callback
-                or (
-                    callable_name is not None
-                    and (
-                        called_from_module(callable_name, index)
-                        if parent is None
-                        else called_from_scope(callable_name, parent)
-                    )
-                )
+                or index in call_edges.get(parent, set())
             )
             if is_called:
                 reachable.add(index)
@@ -2773,23 +2982,87 @@ def _javascript_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     """組み込み名とrunner import aliasのsuite呼び出し範囲を返す。"""
 
     masked_source = _mask_javascript_literals(source)
+    function_scopes = _javascript_function_scopes_cached(source)
+    binding_scope_index = _javascript_binding_scope_index(
+        function_scopes,
+        source=source,
+        masked_source=masked_source,
+    )
+    test_bindings = _javascript_test_runner_bindings(
+        source,
+        masked_source=masked_source,
+    )
+    suite_aliases = _javascript_suite_aliases(source)
+    namespace_aliases = _javascript_suite_namespace_aliases(source)
+
+    def is_unshadowed(binding: str, position: int) -> bool:
+        return not _javascript_binding_shadowed_at(
+            source,
+            position,
+            binding,
+            function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
+        )
+
+    def root_binding(match: re.Match[str]) -> str | None:
+        root_match = re.match(
+            r"\b(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)",
+            masked_source[match.start() :],
+        )
+        return root_match.group("binding") if root_match is not None else None
+
+    def is_known_suite_call(match: re.Match[str]) -> bool:
+        binding = root_binding(match)
+        if binding is None:
+            return False
+        if binding in suite_aliases:
+            return is_unshadowed(binding, match.start())
+        if binding in test_bindings:
+            return is_unshadowed(binding, match.start())
+        return False
+
     spans = {
         (match.start(), match.end() - 1)
         for match in _JAVASCRIPT_SUITE_CALL.finditer(masked_source)
+        if is_known_suite_call(match)
     }
     suite_call_starts = {start for start, _ in spans}
-    alias_pattern = _javascript_suite_alias_call_pattern(_javascript_suite_aliases(source))
+    alias_pattern = _javascript_suite_alias_call_pattern(suite_aliases)
     if alias_pattern is not None:
         alias_matches = tuple(alias_pattern.finditer(masked_source))
-        spans.update((match.start(), match.end() - 1) for match in alias_matches)
-        suite_call_starts.update(match.start() for match in alias_matches)
+        spans.update(
+            (match.start(), match.end() - 1)
+            for match in alias_matches
+            if is_unshadowed(root_binding(match) or "", match.start())
+        )
+        suite_call_starts.update(start for start, _ in spans)
     namespace_pattern = _javascript_suite_namespace_call_pattern(
-        _javascript_suite_namespace_aliases(source)
+        namespace_aliases
     )
     if namespace_pattern is not None:
         namespace_matches = tuple(namespace_pattern.finditer(masked_source))
-        spans.update((match.start(), match.end() - 1) for match in namespace_matches)
-        suite_call_starts.update(match.start() for match in namespace_matches)
+        spans.update(
+            (match.start(), match.end() - 1)
+            for match in namespace_matches
+            if is_unshadowed(root_binding(match) or "", match.start())
+        )
+        suite_call_starts.update(start for start, _ in spans)
+    test_runner_suite_pattern = None
+    if test_bindings:
+        runner_names = "|".join(re.escape(name) for name in sorted(test_bindings))
+        test_runner_suite_pattern = re.compile(
+            r"(?<![A-Za-z0-9_$?.'\"`])\b(?P<binding>(?:"
+            + runner_names
+            + r"))\s*(?:\.\s*|\?\.\s*)describe"
+            r"(?:\s*(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+        )
+    if test_runner_suite_pattern is not None:
+        spans.update(
+            (match.start(), match.end() - 1)
+            for match in test_runner_suite_pattern.finditer(masked_source)
+            if is_unshadowed(match.group("binding"), match.start())
+        )
+        suite_call_starts.update(start for start, _ in spans)
     spans.update(_javascript_parameterized_suite_call_spans(source))
     spans.update(
         _javascript_conditional_suite_return_spans(
@@ -3122,45 +3395,24 @@ def _javascript_option_lexical_scope_layout(
 ]:
     """functionとbrace blockを結合したoption用lexical scopeを作る。"""
 
-    braced_end_index = _javascript_braced_end_index(masked_source, None)
-    function_body_starts = {body_start for _, body_start, _, _ in function_scopes}
-    scope_ranges: list[tuple[_JavaScriptScopeId, int, int]] = [
-        (index, body_start, body_end)
-        for index, (_, body_start, body_end, _) in enumerate(function_scopes)
-    ]
-    scope_ranges.extend(
-        (("block", open_index), open_index, close_index)
-        for open_index, close_index in braced_end_index.items()
-        if close_index is not None and open_index not in function_body_starts
-    )
-
-    parent_scopes: dict[_JavaScriptScopeId, _JavaScriptScopeId] = {}
-    for scope_id, scope_start, _ in scope_ranges:
-        containing = [
-            (other_end - other_start, other_id)
-            for other_id, other_start, other_end in scope_ranges
-            if other_id != scope_id
-            and other_start <= scope_start < other_end
-        ]
-        parent_scopes[scope_id] = (
-            min(containing, key=lambda item: item[0])[1]
-            if containing
-            else None
-        )
-    return tuple(scope_ranges), parent_scopes
+    return _javascript_lexical_scope_layout(masked_source, function_scopes)
 
 
 def _javascript_destructured_declaration_bindings(
     masked_source: str,
-) -> tuple[tuple[int, frozenset[str]], ...]:
+) -> tuple[tuple[int, str, frozenset[str]], ...]:
     """object/array destructuring declarationのbinding名と位置を返す。"""
 
     declaration_pattern = re.compile(
-        r"\b(?:const|let|var)\s*"
+        r"\b(?P<kind>const|let|var)\s*"
         r"(?P<pattern>\{[^{}\r\n]*\}|\[[^\[\]\r\n]*\])\s*="
     )
     return tuple(
-        (match.start(), _javascript_parameter_binding_names(match.group("pattern")))
+        (
+            match.start(),
+            match.group("kind"),
+            _javascript_parameter_binding_names(match.group("pattern")),
+        )
         for match in declaration_pattern.finditer(masked_source)
     )
 
@@ -3195,6 +3447,12 @@ def _javascript_disabled_test_option_index(
         ]
         return min(candidates, key=lambda item: item[0])[1] if candidates else None
 
+    def declaration_scope(kind: str, position: int) -> _JavaScriptScopeId:
+        scope_id = scope_at(position)
+        if kind == "var":
+            return _javascript_enclosing_function_scope(scope_id, parent_scopes)
+        return scope_id
+
     for index, (_, _, _, parameter_names) in enumerate(function_scopes):
         for name in parameter_names:
             bindings.setdefault((index, name), (False, ()))
@@ -3205,7 +3463,7 @@ def _javascript_disabled_test_option_index(
         object_end = braced_end_index.get(object_open_index)
         if object_end is None:
             continue
-        bindings[(scope_at(match.start()), match.group("name"))] = (
+        bindings[(declaration_scope(match.group("kind"), match.start()), match.group("name"))] = (
             _javascript_object_direct_option_info(
                 masked_source,
                 object_open_index,
@@ -3216,13 +3474,18 @@ def _javascript_disabled_test_option_index(
 
     object_aliases = tuple(_JAVASCRIPT_OBJECT_ALIAS.finditer(masked_source))
     for match in object_aliases:
-        key = (scope_at(match.start()), match.group("name"))
+        key = (
+            declaration_scope(match.group("kind"), match.start()),
+            match.group("name"),
+        )
         bindings.setdefault(key, (False, (match.group("source"),)))
 
-    for declaration_start, declaration_bindings in _javascript_destructured_declaration_bindings(
+    for declaration_start, kind, declaration_bindings in _javascript_destructured_declaration_bindings(
         masked_source
     ):
-        scope = scope_at(declaration_start)
+        scope = declaration_scope(kind, declaration_start)
+        if kind == "var":
+            scope = _javascript_enclosing_function_scope(scope, parent_scopes)
         for name in declaration_bindings:
             bindings.setdefault((scope, name), (False, ()))
 
@@ -5335,10 +5598,22 @@ def _javascript_test_behavior_text(callback: str) -> str:
     masked_callback = _mask_javascript_literals(callback)
     removable_spans: list[tuple[int, int]] = []
 
-    for match in re.finditer(
-        r"\bvoid\s*(?:0|\(\s*0\s*\))\s*;",
-        masked_callback,
-    ):
+    literal_void = re.compile(
+        r"\bvoid\s*(?:\(\s*)?"
+        r"(?:"
+        r"[-+]?(?:"
+        r"0[xX][0-9A-Fa-f](?:_?[0-9A-Fa-f])*|"
+        r"0[bB][01](?:_?[01])*|"
+        r"0[oO][0-7](?:_?[0-7])*|"
+        r"(?:\d(?:_?\d)*(?:\.\d(?:_?\d)*)?|\.\d(?:_?\d)*)"
+        r"(?:[eE][+-]?\d(?:_?\d)*)?"
+        r")(?:n)?|"
+        r"true|false|null|undefined|"
+        r"'(?:[^']*)'|\"(?:[^\"]*)\"|`[^`$]*`|"
+        r"/[^/\r\n]*/[A-Za-z]*"
+        r")\s*(?:\))?\s*;"
+    )
+    for match in literal_void.finditer(masked_callback):
         prefix = masked_callback[: match.start()].rstrip()
         if not prefix or prefix[-1] in "{;\n\r":
             removable_spans.append((match.start(), match.end()))

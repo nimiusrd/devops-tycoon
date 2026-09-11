@@ -17,6 +17,7 @@ from evaluate import (
     _javascript_call_argument_span_index,
     _javascript_disabled_test_option_variables,
     _javascript_assertion_count,
+    _javascript_suite_call_spans,
     _javascript_test_call_spans,
     _javascript_test_behavior_records,
     _line_changes,
@@ -607,6 +608,41 @@ class EvaluateTests(unittest.TestCase):
 
         self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
 
+    def test_same_named_inner_binding_does_not_reach_outer_helper(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "function register() {\n"
+            "  test('dead', () => expect(value).toBe(1));\n"
+            "}\n"
+            "{\n"
+            "  const register = () => {};\n"
+            "  register();\n"
+            "}\n"
+        )
+
+        self.assertEqual(_javascript_test_call_spans(source), ())
+
+    def test_many_uncalled_helpers_are_indexed_without_function_rescans(self) -> None:
+        source = "import { expect, test } from 'vitest';\n" + "\n".join(
+            f"function helper_{index}() {{ test('dead', () => expect(value).toBe(1)); }}"
+            for index in range(3200)
+        )
+
+        self.assertEqual(_javascript_test_call_spans(source), ())
+
+    def test_sync_array_async_callbacks_do_not_satisfy_verification(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('outer', () => {\n"
+            "  [1].forEach(async () => {\n"
+            "    await new Promise(() => {});\n"
+            "    expect(value).toBe(1);\n"
+            "  });\n"
+            "});\n"
+        )
+
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
     def test_tests_in_static_false_branches_do_not_satisfy_verification(self) -> None:
         source = (
             "import { expect, test } from 'vitest';\n"
@@ -664,6 +700,19 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertFalse(records[0][1])
         self.assertTrue(records[1][1])
+
+    def test_var_disabled_option_binding_uses_function_scope(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "var opts = {};\n"
+            "{ var opts = { skip: true }; }\n"
+            "test('skipped', opts, () => expect(value).toBe(1));\n"
+        )
+
+        records = _javascript_test_behavior_records(source.encode())
+
+        self.assertEqual(len(records), 1)
+        self.assertTrue(records[0][1])
 
     def test_assertions_in_static_false_branches_do_not_satisfy_verification(self) -> None:
         source = (
@@ -844,6 +893,7 @@ class EvaluateTests(unittest.TestCase):
                         {
                             "src/utils/assetUrl.ts": "export const url = '/';\n",
                             "tests/unit/utils/publicUrl.test.ts": (
+                                f"import {{ expect, test, {suite_name} }} from 'vitest';\n"
                                 f"{suite_name}('URL', () => "
                                 "test('builds the URL', () => expect(url).toBe('/')));\n"
                             ),
@@ -854,6 +904,7 @@ class EvaluateTests(unittest.TestCase):
                         {
                             "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                             "tests/unit/utils/publicUrl.test.ts": (
+                                f"import {{ expect, test, {suite_name} }} from 'vitest';\n"
                                 f"{suite_name}(\n"
                                 "  'URL',\n"
                                 "  { skip: true },\n"
@@ -2036,6 +2087,26 @@ class EvaluateTests(unittest.TestCase):
             (),
         )
 
+    def test_suite_callbacks_require_imported_unshadowed_runner_bindings(self) -> None:
+        fake_suite = (
+            "import { expect, test } from 'vitest';\n"
+            "const describe = (_title, _callback) => {};\n"
+            "describe('fake', () => {\n"
+            "  test('dead', () => expect(value).toBe(1));\n"
+            "});\n"
+        )
+        real_suite = (
+            "import { describe, expect, test } from 'vitest';\n"
+            "describe('real', () => {\n"
+            "  test('live', () => expect(value).toBe(1));\n"
+            "});\n"
+        )
+
+        self.assertEqual(_javascript_suite_call_spans(fake_suite), ())
+        self.assertEqual(len(_javascript_test_call_spans(fake_suite)), 0)
+        self.assertEqual(len(_javascript_suite_call_spans(real_suite)), 1)
+        self.assertEqual(len(_javascript_test_call_spans(real_suite)), 1)
+
     def test_nested_test_callbacks_fail_closed_before_behavior_scan(self) -> None:
         source = (
             "test('outer', () => {\n"
@@ -2083,22 +2154,32 @@ class EvaluateTests(unittest.TestCase):
             "import { expect, test } from '@playwright/test';\n"
             "test('renders', () => { expect(page).toBeVisible(); });\n"
         )
-        head = (
-            "import { expect, test } from '@playwright/test';\n"
-            "test('renders', () => {\n"
-            "  void 0;\n"
-            "  const unused = 1;\n"
-            "  expect(page).toBeVisible();\n"
-            "});\n"
-        )
+        for literal in (
+            "1",
+            "true",
+            "null",
+            "undefined",
+            "'text'",
+            "`text`",
+            "/text/",
+        ):
+            with self.subTest(literal=literal):
+                head = (
+                    "import { expect, test } from '@playwright/test';\n"
+                    "test('renders', () => {\n"
+                    f"  void {literal};\n"
+                    "  const unused = 1;\n"
+                    "  expect(page).toBeVisible();\n"
+                    "});\n"
+                )
 
-        self.assertFalse(
-            _has_test_behavior_change(
-                base.encode(),
-                head.encode(),
-                language="javascript",
-            )
-        )
+                self.assertFalse(
+                    _has_test_behavior_change(
+                        base.encode(),
+                        head.encode(),
+                        language="javascript",
+                    )
+                )
 
     def test_large_test_behavior_change_fails_closed_before_sequence_matching(self) -> None:
         base_text = "\n".join(

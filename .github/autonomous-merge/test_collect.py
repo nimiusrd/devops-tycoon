@@ -38,6 +38,15 @@ class FixtureAPI:
         self.drift = {}
         self.failure = None
         self.paths = []
+        self.files = [
+            {
+                "filename": "anything.go",
+                "status": "modified",
+                "additions": 3,
+                "deletions": 1,
+                "patch": "ignored source diff",
+            }
+        ]
 
     def graphql(self, number, selection):
         self.reads += 1
@@ -48,19 +57,12 @@ class FixtureAPI:
     def connection(self, number, name, fields):
         if self.failure:
             raise CollectionError(self.failure)
-        if name == "files":
-            return [
-                {
-                    "path": "anything.go",
-                    "changeType": "MODIFIED",
-                    "additions": 3,
-                    "deletions": 1,
-                }
-            ]
         return [{"isResolved": True} for _ in range(254)]
 
     def pages(self, path, key=None):
         self.paths.append(path)
+        if path.endswith("/files"):
+            return deepcopy(self.files)
         if path.endswith("/reviews"):
             return [
                 {
@@ -94,6 +96,45 @@ class FixtureAPI:
 
 
 class CollectTests(unittest.TestCase):
+    def test_workflow_changes_cannot_be_masked_by_same_name_success(self):
+        for change in [
+            {"filename": ".github/workflows/ci.yml", "status": "modified"},
+            {"filename": ".github/workflows/spoof.yaml", "status": "added"},
+            {"filename": ".github/workflows/ci.yml", "status": "removed"},
+            {
+                "filename": "archived/ci.yml",
+                "status": "renamed",
+                "previous_filename": ".github/workflows/ci.yml",
+            },
+            {
+                "filename": ".github/workflows/spoof.yml",
+                "status": "renamed",
+                "previous_filename": "example.yml",
+            },
+        ]:
+            with self.subTest(change=change):
+                api = FixtureAPI()
+                api.files[0].update(change)
+                result = collect(api, 1, BASE)
+                self.assertFalse(result["collection_errors"])
+                self.assertTrue(result["ci_definition_changes"])
+                self.assertEqual(
+                    assess(result, policy())["decision"], "HUMAN_REVIEW_REQUIRED"
+                )
+
+    def test_rename_requires_previous_path_and_preserves_ordinary_changes(self):
+        api = FixtureAPI()
+        api.files[0].update(status="renamed", previous_filename="before.rs")
+        result = collect(api, 1, BASE)
+        self.assertEqual(result["files"][0]["previous_path"], "before.rs")
+        self.assertEqual(result["ci_definition_changes"], [])
+        self.assertNotIn("patch", result["files"][0])
+        self.assertEqual(assess(result, policy())["decision"], "SHADOW_CONDITIONS_MET")
+        del api.files[0]["previous_filename"]
+        self.assertEqual(
+            assess(collect(api, 1, BASE), policy())["decision"], "INSUFFICIENT_DATA"
+        )
+
     def test_rerun_detected_without_any_pr_state_change(self):
         for add_run in [True, False]:
             with self.subTest(add_run=add_run):

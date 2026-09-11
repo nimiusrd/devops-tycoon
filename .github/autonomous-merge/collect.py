@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from evaluate import assess, load_policy, markdown, sha
+from evaluate import assess, load_policy, markdown, sha, string
 
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
@@ -222,7 +222,26 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
     try:
         before = normalized_pr(api.graphql(number, PR_FIELDS))
         facts["pr"] = before
-        files = api.connection(number, "files", "path changeType additions deletions")
+        # RESTの旧pathも使い、workflowディレクトリ外へのrenameを取りこぼさない。
+        # 同梱されるpatchやsource URLは参照・保存しない。
+        files = []
+        for raw in api.pages(f"/pulls/{number}/files"):
+            previous = (
+                string(raw["previous_filename"], "previous_filename")
+                if raw["status"] == "renamed"
+                else None
+            )
+            files.append(
+                {
+                    "path": string(raw["filename"], "filename"),
+                    "previous_path": previous,
+                    "changeType": "DELETED"
+                    if raw["status"] == "removed"
+                    else string(raw["status"], "file.status").upper(),
+                    "additions": raw["additions"],
+                    "deletions": raw["deletions"],
+                }
+            )
         if len({f["path"] for f in files}) != len(files):
             raise CollectionError("duplicate file metadata")
         facts["change"] = {
@@ -235,6 +254,15 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
             "mode_changes": None,
         }
         facts["files"] = files
+        # GitHub Actionsの共通規約。コードベース固有の重要pathは持たない。
+        facts["ci_definition_changes"] = sorted(
+            {
+                path
+                for file in files
+                for path in (file["path"], file["previous_path"])
+                if path is not None and path.startswith(".github/workflows/")
+            }
+        )
         if any(
             facts["change"][key] != before[key]
             for key in ("changed_files", "additions", "deletions")

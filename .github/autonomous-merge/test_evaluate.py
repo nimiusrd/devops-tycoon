@@ -60,6 +60,7 @@ def facts():
         "reviews": [],
         "unresolved_threads": 0,
         "ci_history": [],
+        "ci_definition_changes": [],
         "checks": [
             {
                 "kind": "check_run",
@@ -106,11 +107,19 @@ class EvaluateTests(unittest.TestCase):
         data["checks"][0]["conclusion"] = "failure"
         self.assertEqual(self.decision(data), "HUMAN_REVIEW_REQUIRED")
 
+    def test_changed_ci_definitions_require_human_review_despite_success(self):
+        data = facts()
+        data["ci_definition_changes"] = ["provider-defined/pipeline.yml"]
+        self.assertEqual(self.decision(data), "HUMAN_REVIEW_REQUIRED")
+        data["checks"][0].update(status="in_progress", conclusion=None)
+        self.assertEqual(self.decision(data), "HUMAN_REVIEW_REQUIRED")
+
     def test_unknown_data_never_becomes_success(self):
         for key in [
             "pr",
             "change",
             "checks",
+            "ci_definition_changes",
             "reviews",
             "unresolved_threads",
             "stable",
@@ -126,6 +135,8 @@ class EvaluateTests(unittest.TestCase):
             lambda f: f.update(stable=False),
             lambda f: f.update(stable="true"),
             lambda f: f.update(unresolved_threads=None),
+            lambda f: f.update(ci_definition_changes=None),
+            lambda f: f.update(ci_definition_changes=[None]),
             lambda f: f["change"].update(additions=-1),
             lambda f: f["pr"].update(head_sha="invalid"),
             lambda f: f["pr"].update(draft=None),

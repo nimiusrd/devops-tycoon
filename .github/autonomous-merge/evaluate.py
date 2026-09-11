@@ -194,6 +194,17 @@ def assess(facts: dict, policy: dict) -> dict:
             unresolved,
         )
 
+        definitions = facts["ci_definition_changes"]
+        if not isinstance(definitions, list):
+            raise EvaluationError("ci_definition_changes: list required")
+        for definition in definitions:
+            string(definition, "ci_definition_changes entry")
+        condition(
+            "unchanged_ci_definitions",
+            "blocked" if definitions else "pass",
+            definitions,
+        )
+
         checks = facts["checks"]
         for required in policy["required_checks"]:
             identity = check_identity(required)

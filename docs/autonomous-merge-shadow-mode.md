@@ -11,6 +11,7 @@ Git・PR・CIの共通メタデータから、観測時点で設定条件を満�
 | PR状態 | open / closed / merged、Draft | openかつready for reviewを要求 |
 | 競合・GitHubの総合状態 | `mergeable`、`mergeStateStatus`、`reviewDecision` | 競合なし・`CLEAN`を要求。GitHubが示す変更要求やレビュー待ちを尊重 |
 | 必須CI | check名、発行元、SHA、状態、結論 | policyで明示したすべてのcheckの実行成功を要求 |
+| CI定義の変更 | 検証定義の追加・変更・削除・移動 | CI成功でも人間確認。GitHub adapterは共通の`.github/workflows/`配下を旧・新pathで確認 |
 | 鮮度 | head / base / test mergeのSHA、PR更新時刻、PR・CI・レビューの再取得結果 | 再取得で差異があれば情報不足。古いSHAのCIや承認は流用しない |
 | レビュー | 各人の最新の承認・変更要求、承認時のSHA、未解決スレッド数 | 変更要求を尊重。承認人数とスレッド解決要件はpolicyで指定 |
 | 変更量・形態 | 追加・削除行数、ファイル数、追加・変更・削除・移動などのAPI分類 | 観測値として保存。必須条件を相殺しない |
@@ -29,7 +30,7 @@ GitHub側の設定変更はそれらの総合状態に反映されますが、�
 | --- | --- |
 | `SHADOW_CONDITIONS_MET` | 観測時点で設定した条件をすべて満たした。自動マージ許可ではない |
 | `WAITING` | CI未実行・実行中、Draft、必要承認不足、base追随待ちなど |
-| `HUMAN_REVIEW_REQUIRED` | CI失敗、競合、変更要求、未解決スレッド、GitHub側のブロックなど |
+| `HUMAN_REVIEW_REQUIRED` | CI定義の変更、CI失敗、競合、変更要求、未解決スレッド、GitHub側のブロックなど |
 | `INSUFFICIENT_DATA` | API失敗、権限不足、ページング上限、必須情報欠落、再取得時のPR・CI・レビューの変化など |
 
 複数条件に該当するときは、情報不足、人間確認、待機の順に優先し、個々の条件をすべてレポートへ記録します。
@@ -44,6 +45,12 @@ CIは現在のhead SHAと現在のtest merge SHAに対する結果だけを収�
 `skipped`・`neutral`・`cancelled`は成功とみなしません。必要なcheckが存在しない場合は待機です。
 Markdownだけの変更などでCIが起動しないPRも、pathから免除を推測せず待機として記録します。
 
+GitHub ActionsのApp IDは全workflowで共通なので、名前とApp IDだけでは実行内容の信頼性を証明できません。
+PRが検証定義を変更する場合は、同名の即時成功jobによる判定成立を防ぐため、必須CIが成功しても人間確認にします。
+GitHub adapterは[共通のworkflow配置](https://docs.github.com/en/actions/concepts/workflows-and-actions/workflows)である`.github/workflows/`配下の変更を`ci_definition_changes`へ正規化し、renameは旧・新pathの両方を調べます。
+評価器はこの事実だけを使い、リポジトリ固有のpath一覧やYAMLの意味解析を必要としません。
+既存workflowが呼ぶスクリプト・action・テストの実効性や、既存定義内の同名jobの妥当性までは検証しません。CI成功は実行結果の観測であり、安全性の証明ではありません。
+
 承認数は同じ人を重複して数えず、現在のheadに対する承認のみ数えます。
 コメントだけのレビューはその人の承認や変更要求を上書きしません。
 GitHub上でdismissされたレビューは承認として使いません。変更要求はhead更新だけでは解除しません。
@@ -56,7 +63,7 @@ GitHubのレビュー総合状態も併せて確認します。
 
 ## 実装の分離
 
-- `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。PRのsourceやartifactを取得・実行しない。
+- `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。source本文やartifactの個別取得・実行は行わず、ファイル一覧APIに同梱されるpatchも参照・保存しない。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
 - `.github/workflows/autonomous-merge-shadow.yml`：default branchの信頼済みcollectorを実行し、SummaryとJSON artifactを保存する。
@@ -112,9 +119,9 @@ python3 -B .github/autonomous-merge/evaluate.py \
 4. required checkや自動マージへ接続せず、観測を開始する。
 5. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
 
-パス一覧、言語別parser、テストファイル名の規約を移植する必要はありません。
+コードベース固有のパス一覧、言語別parser、テストファイル名の規約を移植する必要はありません。
 別ホスティングサービスへ展開するときは、同じ観測JSONを出力するadapterを追加し、評価器へは正規化した状態を渡します。
-現時点のGitHub固有の総合状態を他サービスでどう対応付けるかはadapter側の明示的な契約とします。
+現時点のGitHub固有の総合状態やCI定義の配置を他サービスでどう対応付けるかはadapter側の明示的な契約とします。
 
 ## 現段階の観測範囲
 

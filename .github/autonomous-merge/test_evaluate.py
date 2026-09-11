@@ -20,6 +20,7 @@ from evaluate import (
     _javascript_suite_call_spans,
     _javascript_test_call_spans,
     _javascript_test_behavior_records,
+    _test_shape,
     _line_changes,
     _markdown,
     _read_snapshot,
@@ -1386,6 +1387,59 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
 
+    def test_unused_helper_hook_does_not_change_test_behavior(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner_base = (
+                "import { beforeEach, expect, test } from 'vitest';\n"
+                "test('renders', () => expect(page).toBeVisible());\n"
+            )
+            owner_head = (
+                "import { beforeEach, expect, test } from 'vitest';\n"
+                "function registerHooks() {\n"
+                "  beforeEach(() => expect(1).toBe(2));\n"
+                "}\n"
+                "test('renders', () => expect(page).toBeVisible());\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/unit/widget.test.ts": owner_base,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/unit/widget.test.ts": owner_head,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_fast_check_property_callbacks_count_as_assertions(self) -> None:
+        for callback in (
+            "value => expect(value).toBe(value)",
+            "async value => { expect(value).toBe(value); }",
+        ):
+            with self.subTest(callback=callback):
+                source = (
+                    "import fc from 'fast-check';\n"
+                    "import { expect, test } from 'vitest';\n"
+                    "test('property', () => {\n"
+                    f"  fc.assert(fc.{'asyncProperty' if callback.startswith('async') else 'property'}(fc.integer(), {callback}));\n"
+                    "});\n"
+                )
+                self.assertEqual(
+                    _test_shape(source.encode(), language="javascript"),
+                    (1, 1),
+                )
+
     def test_test_title_only_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -1478,6 +1532,43 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+
+    def test_runtime_false_test_modifiers_remain_active(self) -> None:
+        for modifier in ("skip", "fixme", "fail"):
+            with self.subTest(modifier=modifier), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory) / "base"
+                head = Path(directory) / "head"
+                owner_base = (
+                    "import { expect, test } from '@playwright/test';\n"
+                    "test('renders', () => {\n"
+                    f"  test.{modifier}(false, 'condition is false');\n"
+                    "  expect(page).toBeVisible();\n"
+                    "});\n"
+                )
+                owner_head = owner_base.replace(
+                    "toBeVisible()",
+                    "toHaveText('updated')",
+                )
+                write_snapshot(
+                    base,
+                    {
+                        "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                        "tests/e2e/widget.spec.ts": owner_base,
+                    },
+                )
+                write_snapshot(
+                    head,
+                    {
+                        "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                        "tests/e2e/widget.spec.ts": owner_head,
+                    },
+                )
+
+                result = assess(base, head, POLICY)
+
+                self.assertNotIn("visual", result.missing_test_scopes)
+                self.assertTrue(result.test_changes)
+                self.assertEqual(result.test_removal_risk, 0)
 
     def test_test_info_skip_inside_test_body_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -3331,6 +3422,42 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
 
+    def test_vitest_snapshot_in_static_false_branch_does_not_satisfy_verification(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "import { expect, test } from 'vitest';\n"
+                "test('captures', () => {\n"
+                "  if (false) expect(value).toMatchSnapshot();\n"
+                "});\n"
+            )
+            base_snapshot = "// Vitest Snapshot v1\n\nexports[`captures 1`] = `value: 1`;\n"
+            head_snapshot = "// Vitest Snapshot v1\n\nexports[`captures 1`] = `value: 2`;\n"
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/unit/engine.test.ts": owner,
+                    "tests/unit/__snapshots__/engine.test.ts.snap": base_snapshot,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/unit/engine.test.ts": owner,
+                    "tests/unit/__snapshots__/engine.test.ts.snap": head_snapshot,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("simulation", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_unused_playwright_screenshot_helper_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -3341,6 +3468,47 @@ class EvaluateTests(unittest.TestCase):
                 "  return expect(page).toHaveScreenshot('widget.png');\n"
                 "}\n"
                 "test('smoke', () => expect(page).toBeVisible());\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nold"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nnew"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_nested_unused_playwright_screenshot_helper_does_not_satisfy_visual_verification(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "import { expect, test } from '@playwright/test';\n"
+                "test('smoke', () => {\n"
+                "  function unusedCapture(page) {\n"
+                "    return expect(page).toHaveScreenshot('widget.png');\n"
+                "  }\n"
+                "  expect(page).toBeVisible();\n"
+                "});\n"
             )
             write_snapshot(
                 base,

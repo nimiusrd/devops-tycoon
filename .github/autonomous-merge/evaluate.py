@@ -970,6 +970,19 @@ _JAVASCRIPT_SUITE_NAMESPACE_IMPORT = re.compile(
     r"\bimport\s*\*\s*as\s+(?P<alias>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
     r"from\s*['\"`](?:vitest|@playwright/test)['\"`]"
 )
+_JAVASCRIPT_FAST_CHECK_DEFAULT_IMPORT = re.compile(
+    r"\bimport\s+(?P<alias>[A-Za-z_$][A-Za-z0-9_$]*)"
+    r"(?:\s*,\s*(?:\{[^{}]*\}|\*\s+as\s+[A-Za-z_$][A-Za-z0-9_$]*))?\s+"
+    r"from\s*['\"`]fast-check['\"`]"
+)
+_JAVASCRIPT_FAST_CHECK_NAMESPACE_IMPORT = re.compile(
+    r"\bimport\s*\*\s*as\s+(?P<alias>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
+    r"from\s*['\"`]fast-check['\"`]"
+)
+_JAVASCRIPT_FAST_CHECK_REQUIRE = re.compile(
+    r"\b(?:const|let|var)\s+(?P<alias>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*"
+    r"require\s*\(\s*['\"`]fast-check['\"`]\s*\)"
+)
 _JAVASCRIPT_HOOK_NAMES = frozenset(
     {"afterAll", "afterEach", "beforeAll", "beforeEach"}
 )
@@ -1954,6 +1967,11 @@ _JAVASCRIPT_SYNCHRONOUS_CALLBACK_CALLEES = frozenset(
         "some",
     }
 )
+_JAVASCRIPT_FAST_CHECK_CALLBACK_MARKER = "fast-check-property"
+_JAVASCRIPT_PROVABLY_EXECUTED_CALLBACK_MARKERS = (
+    _JAVASCRIPT_SYNCHRONOUS_CALLBACK_CALLEES
+    | {_JAVASCRIPT_FAST_CHECK_CALLBACK_MARKER}
+)
 
 
 def _javascript_call_callee_name(
@@ -2113,6 +2131,13 @@ def _javascript_direct_callback_is_provably_synchronous(
 def _javascript_direct_callback_callee_index(
     masked_source: str,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None],
+    *,
+    source: str | None = None,
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
+    binding_scope_index: Mapping[
+        str,
+        tuple[tuple[int, ...], tuple[int, ...]],
+    ] | None = None,
 ) -> dict[int, str]:
     """直接callback引数の先頭位置からcallee名を引ける索引を作る。"""
 
@@ -2143,6 +2168,150 @@ def _javascript_direct_callback_callee_index(
                     continue
             if candidate < argument_end:
                 index.setdefault(candidate, callee)
+    if source is not None:
+        if function_scopes is None:
+            function_scopes = _javascript_function_scopes(
+                source,
+                argument_span_index=argument_span_index,
+            )
+        if binding_scope_index is None:
+            binding_scope_index = _javascript_binding_scope_index(
+                function_scopes,
+                source=source,
+                masked_source=masked_source,
+            )
+        index.update(
+            _javascript_fast_check_callback_callee_index(
+                source,
+                masked_source=masked_source,
+                argument_span_index=argument_span_index,
+                function_scopes=function_scopes,
+                binding_scope_index=binding_scope_index,
+            )
+        )
+    return index
+
+
+def _javascript_fast_check_namespace_aliases(
+    source: str,
+    *,
+    masked_source: str | None = None,
+) -> frozenset[str]:
+    """fast-check default/namespace/require bindingのaliasを取り出す。"""
+
+    if masked_source is None:
+        masked_source = _mask_javascript_literals(source)
+
+    def is_code_match(match: re.Match[str]) -> bool:
+        return (
+            match.start() < len(masked_source)
+            and masked_source[match.start()] == source[match.start()]
+        )
+
+    aliases: set[str] = set()
+    for pattern in (
+        _JAVASCRIPT_FAST_CHECK_DEFAULT_IMPORT,
+        _JAVASCRIPT_FAST_CHECK_NAMESPACE_IMPORT,
+        _JAVASCRIPT_FAST_CHECK_REQUIRE,
+    ):
+        aliases.update(
+            match.group("alias")
+            for match in pattern.finditer(source)
+            if is_code_match(match)
+        )
+    return frozenset(aliases)
+
+
+def _javascript_fast_check_callback_callee_index(
+    source: str,
+    *,
+    masked_source: str,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None],
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]],
+    binding_scope_index: Mapping[
+        str,
+        tuple[tuple[int, ...], tuple[int, ...]],
+    ],
+) -> dict[int, str]:
+    """fast-check property callbackの先頭位置からmarkerを引ける索引を作る。"""
+
+    aliases = _javascript_fast_check_namespace_aliases(
+        source,
+        masked_source=masked_source,
+    )
+    if not aliases:
+        return {}
+    alias_pattern = "|".join(re.escape(alias) for alias in sorted(aliases))
+    assert_pattern = re.compile(
+        r"(?P<binding>" + alias_pattern + r")\s*(?:\.\s*|\?\.\s*)assert\s*\("
+    )
+    property_pattern = re.compile(
+        r"\s*(?P<binding>" + alias_pattern + r")\s*(?:\.\s*|\?\.\s*)"
+        r"(?:property|asyncProperty)\s*\("
+    )
+    index: dict[int, str] = {}
+    for match in assert_pattern.finditer(masked_source):
+        binding = match.group("binding")
+        if _javascript_binding_shadowed_at(
+            source,
+            match.start(),
+            binding,
+            function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
+        ):
+            continue
+        assert_open_index = match.end() - 1
+        assert_arguments = argument_span_index.get(assert_open_index)
+        if not assert_arguments:
+            continue
+        property_start, property_end = assert_arguments[0]
+        property_match = property_pattern.match(
+            masked_source,
+            property_start,
+            property_end,
+        )
+        if property_match is None or property_match.group("binding") != binding:
+            continue
+        if _javascript_binding_shadowed_at(
+            source,
+            property_match.start(),
+            binding,
+            function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
+        ):
+            continue
+        property_open_index = property_match.end() - 1
+        property_arguments = argument_span_index.get(property_open_index)
+        if not property_arguments:
+            continue
+        callback_candidates: list[tuple[int, int, int]] = []
+        for callback_start, callback_end in reversed(property_arguments):
+            callback_source = masked_source[callback_start:callback_end]
+            if "=>" not in callback_source and re.search(
+                r"\bfunction\b",
+                callback_source,
+            ) is None:
+                continue
+            scopes = [
+                (scope_start, body_start, body_end)
+                for scope_start, body_start, body_end, _ in function_scopes
+                if callback_start <= scope_start < callback_end
+                and callback_start <= body_start < body_end <= callback_end
+            ]
+            if scopes:
+                callback_candidates.append(
+                    min(
+                        scopes,
+                        key=lambda scope: (
+                            scope[0],
+                            -(scope[2] - scope[1]),
+                        ),
+                    )
+                )
+            break
+        if callback_candidates:
+            scope_start, _, _ = callback_candidates[0]
+            index.setdefault(scope_start, _JAVASCRIPT_FAST_CHECK_CALLBACK_MARKER)
     return index
 
 
@@ -2150,11 +2319,11 @@ def _javascript_function_scope_is_direct_call_argument(
     direct_callback_callee_index: Mapping[int, str],
     scope_start: int,
 ) -> bool:
-    """既知の同期calleeの直接callback引数だけを実行済みと判定する。"""
+    """実行済みと証明できるcalleeの直接callback引数だけを判定する。"""
 
     return (
         direct_callback_callee_index.get(scope_start)
-        in _JAVASCRIPT_SYNCHRONOUS_CALLBACK_CALLEES
+        in _JAVASCRIPT_PROVABLY_EXECUTED_CALLBACK_MARKERS
     )
 
 
@@ -2339,6 +2508,8 @@ def _javascript_unreachable_function_ranges(
         direct_callback_callee_index = _javascript_direct_callback_callee_index(
             masked_source,
             argument_span_index,
+            source=source,
+            function_scopes=function_scopes,
         )
     if suite_records is None:
         suite_records = _javascript_suite_callback_records(
@@ -2544,8 +2715,10 @@ def _javascript_unreachable_function_ranges(
             if parent is not None and parent not in reachable:
                 continue
             is_direct_callback = (
-                direct_callback_callee_index.get(scope_start)
-                in _JAVASCRIPT_SYNCHRONOUS_CALLBACK_CALLEES
+                _javascript_function_scope_is_direct_call_argument(
+                    direct_callback_callee_index,
+                    scope_start,
+                )
             )
             is_suite_callback = index in suite_scope_indexes
             is_called = (
@@ -2620,6 +2793,8 @@ def _javascript_nested_function_ranges(
         direct_callback_callee_index = _javascript_direct_callback_callee_index(
             masked_source,
             argument_span_index,
+            source=source,
+            function_scopes=scopes,
         )
     unreachable_ranges = _javascript_unreachable_test_ranges(source)
 
@@ -3073,10 +3248,38 @@ def _javascript_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     return tuple(sorted(spans))
 
 
+def _javascript_call_has_literal_false_first_argument(
+    source: str,
+    call_start: int,
+    call_end: int,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None],
+) -> bool:
+    """modifier呼び出しの第1引数が静的なfalseか確認する。"""
+
+    if re.search(
+        r"(?:\.\s*|\?\.\s*)(?:skip|fixme|fail)\b"
+        r"|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|fail)['\"`]\s*\]",
+        source[call_start:call_end],
+    ) is None:
+        return False
+    open_index = call_end
+    while open_index < len(source) and source[open_index].isspace():
+        open_index += 1
+    if open_index >= len(source) or source[open_index] != "(":
+        return False
+    argument_spans = argument_span_index.get(open_index)
+    if not argument_spans:
+        return False
+    first_start, first_end = argument_spans[0]
+    return _mask_javascript_literals(source[first_start:first_end]).strip() == "false"
+
+
 def _javascript_disabled_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     """組み込み名とsuite aliasのdisabled modifier呼び出し範囲を返す。"""
 
     masked_source = _mask_javascript_literals(source)
+    argument_span_index = _javascript_call_argument_span_index(source)
     test_bindings = _javascript_test_runner_bindings(
         source,
         masked_source=masked_source,
@@ -3100,7 +3303,18 @@ def _javascript_disabled_call_spans(source: str) -> tuple[tuple[int, int], ...]:
             (match.start(), match.end())
             for match in namespace_pattern.finditer(masked_source)
         )
-    return tuple(sorted(spans))
+    return tuple(
+        sorted(
+            span
+            for span in spans
+            if not _javascript_call_has_literal_false_first_argument(
+                source,
+                span[0],
+                span[1],
+                argument_span_index=argument_span_index,
+            )
+        )
+    )
 
 
 def _javascript_conditional_suite_modifier_call(
@@ -3785,7 +3999,11 @@ def _vitest_snapshot_key_matches_title(snapshot_key: str, title: str) -> bool:
     return key_match is not None and key_match.group("title") == title
 
 
-def _vitest_snapshot_callback_records(source: str) -> tuple[tuple[str, bool], ...]:
+def _vitest_snapshot_callback_records(
+    source: str,
+    *,
+    unreachable_ranges: Sequence[tuple[int, int]] = (),
+) -> tuple[tuple[str, bool], ...]:
     """snapshot呼び出しごとに、所有testのtitleと無効化状態を返す。"""
 
     masked_source = _mask_javascript_literals(source)
@@ -3793,7 +4011,17 @@ def _vitest_snapshot_callback_records(source: str) -> tuple[tuple[str, bool], ..
     for _, body_start, body_end, disabled, title in _javascript_test_callback_records(source):
         if title is None:
             continue
-        if _VITEST_SNAPSHOT_CALL.search(masked_source, body_start, body_end):
+        if any(
+            not any(
+                range_start <= match.start() < range_end
+                for range_start, range_end in unreachable_ranges
+            )
+            for match in _VITEST_SNAPSHOT_CALL.finditer(
+                masked_source,
+                body_start,
+                body_end,
+            )
+        ):
             records.append((title, disabled))
     return tuple(records)
 
@@ -3827,6 +4055,39 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         if not snapshot_name.endswith(".png"):
             return False
         snapshot_stem = snapshot_name[: -len(".png")]
+        argument_span_index = _javascript_call_argument_span_index(source)
+        function_scopes = _javascript_function_scopes(
+            source,
+            argument_span_index=argument_span_index,
+        )
+        binding_scope_index = _javascript_binding_scope_index(
+            function_scopes,
+            source=source,
+            masked_source=_mask_javascript_literals(source),
+        )
+        direct_callback_callee_index = _javascript_direct_callback_callee_index(
+            _mask_javascript_literals(source),
+            argument_span_index,
+            source=source,
+            function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
+        )
+        nested_unreachable_ranges = tuple(
+            (
+                body_start,
+                body_end,
+                _javascript_nested_function_ranges(
+                    source,
+                    body_start,
+                    body_end,
+                    argument_span_index=argument_span_index,
+                    function_scopes=function_scopes,
+                    direct_callback_callee_index=direct_callback_callee_index,
+                    masked_source=_mask_javascript_literals(source),
+                ),
+            )
+            for _, body_start, body_end, _, _ in test_callback_records
+        )
         for match in _PLAYWRIGHT_SCREENSHOT_CALL.finditer(source):
             expected_name = match.group("name")
             if not expected_name.endswith(".png"):
@@ -3849,6 +4110,14 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
                     ) and not any(
                         range_start <= match.start() < range_end
                         for range_start, range_end in unreachable_test_ranges
+                    ) and not any(
+                        body_start <= match.start() < body_end
+                        and any(
+                            range_start <= match.start() < range_end
+                            for range_start, range_end in unreachable_ranges
+                        )
+                        for body_start, body_end, unreachable_ranges
+                        in nested_unreachable_ranges
                     ):
                     return True
         return False
@@ -3863,7 +4132,10 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         if not snapshot_text.startswith("// Vitest Snapshot v1"):
             return False
         keys = [match.group(2) for match in _VITEST_SNAPSHOT_KEY.finditer(snapshot_text)]
-        snapshot_callbacks = _vitest_snapshot_callback_records(source)
+        snapshot_callbacks = _vitest_snapshot_callback_records(
+            source,
+            unreachable_ranges=unreachable_test_ranges,
+        )
         return bool(
             keys
             and snapshot_callbacks
@@ -4573,6 +4845,9 @@ def _javascript_assertion_count(
         direct_callback_callee_index = _javascript_direct_callback_callee_index(
             masked_source,
             argument_span_index,
+            source=source,
+            function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
         )
     if node_assert_bindings is None:
         node_assert_bindings = _javascript_node_assert_bindings(
@@ -4746,6 +5021,9 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
     direct_callback_callee_index = _javascript_direct_callback_callee_index(
         masked_source,
         argument_span_index,
+        source=source,
+        function_scopes=function_scopes,
+        binding_scope_index=binding_scope_index,
     )
     node_assert_bindings = _javascript_node_assert_bindings(
         source,
@@ -5754,6 +6032,13 @@ def _javascript_hook_behavior_records(
     masked_source = _mask_javascript_literals(source)
     empty_suite_ranges = _javascript_empty_parameterized_suite_ranges(source)
     unreachable_ranges = _javascript_unreachable_test_ranges(source)
+    unreachable_function_ranges = _javascript_unreachable_function_ranges(
+        source,
+        function_scopes=function_scopes,
+        argument_span_index=argument_span_index,
+        direct_callback_callee_index=direct_callback_callee_index,
+        suite_records=suite_records,
+    )
     records: list[tuple[int, int, int, bool, str]] = []
     for call_start, open_index in _javascript_hook_call_spans(
         source,
@@ -5767,6 +6052,11 @@ def _javascript_hook_behavior_records(
         if any(start <= call_start < end for start, end in empty_suite_ranges):
             continue
         if any(start <= call_start < end for start, end in unreachable_ranges):
+            continue
+        if any(
+            start <= call_start < end
+            for start, end in unreachable_function_ranges
+        ):
             continue
         argument_spans = _javascript_call_argument_spans(
             source,
@@ -5857,6 +6147,9 @@ def _javascript_test_behavior_records(
     direct_callback_callee_index = _javascript_direct_callback_callee_index(
         masked_source,
         argument_span_index,
+        source=source,
+        function_scopes=function_scopes,
+        binding_scope_index=binding_scope_index,
     )
     node_assert_bindings = _javascript_node_assert_bindings(
         source,

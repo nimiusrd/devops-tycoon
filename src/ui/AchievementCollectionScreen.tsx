@@ -10,6 +10,7 @@ import { FAILURE_ENCYCLOPEDIA_DEFS } from '../sim/diagnosis';
 import { ACHIEVEMENT_DEFS, WIN_TITLE_DEFS, type MetaState } from '../state/meta';
 import { ResultOverlay } from './ResultOverlay';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
+import { VisualIcon } from './VisualIcon';
 
 export interface AchievementCollectionScreenProps {
   meta: MetaState;
@@ -125,7 +126,9 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                     data-testid={`failure-entry-${def.type}`}
                     data-unlocked={unlocked ? 'true' : 'false'}
                   >
-                    <span className="achievement-card-icon">{unlocked ? theme.icon : '🔒'}</span>
+                    <span className="achievement-card-icon">
+                      {unlocked ? <VisualIcon name={theme.icon} size="card" /> : '🔒'}
+                    </span>
                     <span className="achievement-card-label">{def.label}</span>
                     <p
                       className="achievement-card-hint"

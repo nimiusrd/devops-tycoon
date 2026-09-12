@@ -93,9 +93,11 @@ describe('実績・勝利称号・失敗図鑑のコレクション', () => {
     expect(content(screen.find(`win-title-${title.id}`))).toContain('🏆');
     expect(content(screen.find(`win-title-hint-${title.id}`))).toBe(title.description);
     expect(screen.find(`failure-entry-${failure.type}`).props['data-unlocked']).toBe('true');
-    expect(content(screen.find(`failure-entry-${failure.type}`))).toContain(
-      diagnosisTheme(failure.type).icon,
-    );
+    expect(
+      elements(screen.find(`failure-entry-${failure.type}`)).some(
+        (node) => node.props.name === diagnosisTheme(failure.type).icon,
+      ),
+    ).toBe(true);
     expect(content(screen.find(`failure-entry-hint-${failure.type}`))).toBe(
       `${failure.description} ${failure.lesson}`,
     );

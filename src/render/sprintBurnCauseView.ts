@@ -5,6 +5,7 @@
  */
 import { formatSpreadImpact } from './sprintEventView';
 import type { FireSprintEvent, SprintResult } from '../sim/types';
+import type { IconKey } from './visualIcons';
 
 export interface BurnCauseEntry {
   /** 安定キー。 */
@@ -12,7 +13,7 @@ export interface BurnCauseEntry {
   /** チェーン先頭の tick。 */
   tick: number;
   /** 先頭アイコン。 */
-  icon: string;
+  icon: IconKey;
   /** 因果チェーン本文。 */
   text: string;
   /** 見た目のトーン。 */
@@ -108,10 +109,10 @@ function toneForOutcome(
   return 'bad';
 }
 
-function iconForOutcome(kind: 'contain' | 'auto-contain' | 'spread' | 'open'): string {
-  if (kind === 'contain') return '🚒';
-  if (kind === 'auto-contain') return '🧯';
-  return '🔥';
+function iconForOutcome(kind: 'contain' | 'auto-contain' | 'spread' | 'open'): IconKey {
+  if (kind === 'contain') return 'contain';
+  if (kind === 'auto-contain') return 'autoContain';
+  return 'fire';
 }
 
 /**

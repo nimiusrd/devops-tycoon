@@ -6,12 +6,13 @@
  * 効果の実装本体は `src/sim/actions.ts`（描画非依存の純TS）。
  */
 import { ACTION_BALANCE_BY_ID } from './balance/actions';
+import type { IconKey } from '../render/visualIcons';
 import type { ActionDef } from '../sim/actions';
 
 export interface ActionContentDef {
   readonly id: string;
   readonly label: string;
-  readonly icon: string;
+  readonly icon: IconKey;
   readonly stabilizesFlow?: boolean;
   readonly description: string;
   readonly sideEffect: string;
@@ -23,7 +24,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'interruptReview',
     label: '割り込みレビュー',
-    icon: '🛂',
+    icon: 'interruptReview',
     stabilizesFlow: true,
     description: 'Review キューから複数 PR を即座に捌く',
     sideEffect: 'シニアHPを少量消費',
@@ -31,7 +32,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'splitPr',
     label: 'PR分割',
-    icon: '✂️',
+    icon: 'splitPr',
     stabilizesFlow: true,
     description: '巨大PRをドラッグして割り、レビューしやすくする（手戻り率↓）',
     sideEffect: '処理が一旦巻き戻る。士気とシニアHPを消費。運用安定なし',
@@ -39,7 +40,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'firefight',
     label: '緊急対応',
-    icon: '🔥',
+    icon: 'firefight',
     // RI-73 / F-1: 安定付与は猶予が短い／複数炎上のときだけ（actions.ts）。
     stabilizesFlow: true,
     tone: 'danger',
@@ -49,7 +50,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'assignTask',
     label: 'タスク差配',
-    icon: '🎯',
+    icon: 'assignTask',
     stabilizesFlow: true,
     description: 'タスクをレーンへドラッグ差配して一気に前進させる',
     sideEffect: '偏らせると士気が下がる',
@@ -57,7 +58,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'aiThrottle',
     label: 'AIスロットル',
-    icon: '🎚️',
+    icon: 'aiThrottle',
     stabilizesFlow: true,
     description:
       '新規タスクをAIなしにする。点火抑制は低リテラシー時、手戻り抑制は未熟なワークフロー時だけ',
@@ -66,7 +67,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'pairReview',
     label: 'ペアレビュー',
-    icon: '👥',
+    icon: 'pairReview',
     stabilizesFlow: true,
     description: '詰まったPRをペアで処理。AI Literacy が上がる',
     sideEffect: '集中力を消費し、再使用まで待ち時間がある',
@@ -74,7 +75,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'overtime',
     label: '残業号令',
-    icon: '📣',
+    icon: 'overtime',
     tone: 'heavy',
     description: '当スプリントのスループットを大幅ブースト',
     sideEffect: 'Morale・シニアHPが減少',
@@ -82,7 +83,7 @@ export const ACTION_CONTENT_DEFS = [
   {
     id: 'andon',
     label: 'アンドン',
-    icon: '⏸️',
+    icon: 'andon',
     // RI-73 / F-1: 運用安定は付けない。薄いキューでは士気追加＋シニアHP（actions.ts）。
     // 渋滞時は士気のみ。毎スプリント先止めは薄キュー罰で高くつく。
     stabilizesFlow: true,

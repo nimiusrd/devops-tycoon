@@ -79,7 +79,9 @@ describe('ドラフトの施策選択と引き直し', () => {
       'aria-label': 'Card Draft',
     });
     expect(content(screen.find('draft-sprint-no'))).toBe('スプリント2 に向けて、施策を1枚選ぶ');
-    expect(content(screen.find('draft-card-docs'))).toContain('発動 ⚡2');
+    expect(content(screen.find('draft-card-docs'))).toContain('発動');
+    expect(content(screen.find('draft-card-docs'))).toContain('集中力');
+    expect(content(screen.find('draft-card-docs'))).toContain('2');
     for (const id of screen.props.options) screen.click(`draft-card-${id}`);
     expect(screen.props.onPick).toHaveBeenNthCalledWith(1, 'docs');
     expect(screen.props.onPick).toHaveBeenNthCalledWith(2, 'copilot');

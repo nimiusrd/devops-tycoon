@@ -69,7 +69,7 @@ describe('sprintInterventionAnalysis（RI-54）', () => {
     );
     expect(view.showSection).toBe(true);
     expect(view.rows[0]).toEqual({ label: '捌いた PR', value: '6 件' });
-    expect(view.rows[3]).toEqual({ label: '集中力余り', value: '⚡4 / 8' });
+    expect(view.rows[3]).toEqual({ label: '集中力余り', value: '4 / 8', icon: 'focus' });
   });
 
   it('緊急対応の回数をコンボ守りとして数える', () => {
@@ -153,7 +153,7 @@ describe('sprintInterventionAnalysis（RI-54）', () => {
         ],
       }),
     );
-    expect(view.tip).toContain('集中力を ⚡5 残して終了');
+    expect(view.tip).toContain('集中力を 5 残して終了');
     expect(view.tip).toContain('Review待ちが最大 9 PR');
   });
 

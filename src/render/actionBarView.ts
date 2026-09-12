@@ -17,6 +17,7 @@ import {
 } from '../sim/actions';
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, OrgState, SprintState } from '../sim/types';
+import type { IconKey } from './visualIcons';
 
 export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'paused';
 export type ActionBarDisabledReason = Extract<ActionBlockReason, 'complete' | 'paused'>;
@@ -29,6 +30,7 @@ export interface ActionAvailability {
   blockMessage?: string;
   targetCount: number;
   targetBadge?: string;
+  targetBadgeIcon?: IconKey;
 }
 
 /** アクション別の対象数（常時発動系は 0）。 */
@@ -58,20 +60,20 @@ function isAlwaysAvailable(id: ActionId): boolean {
   return id === 'aiThrottle' || id === 'overtime' || id === 'andon';
 }
 
-function formatTargetBadge(id: ActionId, count: number): string | undefined {
-  if (isAlwaysAvailable(id)) return undefined;
+function formatTargetBadge(id: ActionId, count: number): { text?: string; icon?: IconKey } {
+  if (isAlwaysAvailable(id)) return {};
   switch (id) {
     case 'interruptReview':
     case 'pairReview':
-      return `PR ${count}`;
+      return { text: `PR ${count}` };
     case 'firefight':
-      return `🔥${count}`;
+      return { text: String(count), icon: 'fire' };
     case 'splitPr':
-      return count > 0 ? `${count}` : undefined;
+      return count > 0 ? { text: `${count}` } : {};
     case 'assignTask':
-      return count > 0 ? `${count}` : undefined;
+      return count > 0 ? { text: `${count}` } : {};
     default:
-      return undefined;
+      return {};
   }
 }
 
@@ -108,7 +110,8 @@ export function deriveActionAvailability(
       blockReason: disabledReason,
       blockMessage: BLOCK_MESSAGES[disabledReason],
       targetCount,
-      targetBadge: badge,
+      targetBadge: badge.text,
+      targetBadgeIcon: badge.icon,
     };
   }
 
@@ -123,7 +126,8 @@ export function deriveActionAvailability(
         actionId: id,
         canActivate: true,
         targetCount,
-        targetBadge: badge,
+        targetBadge: badge.text,
+        targetBadgeIcon: badge.icon,
       };
     }
     return {
@@ -135,7 +139,8 @@ export function deriveActionAvailability(
           ? (NO_TARGET_MESSAGES[id] ?? BLOCK_MESSAGES['no-target'])
           : BLOCK_MESSAGES[gate.reason],
       targetCount,
-      targetBadge: badge,
+      targetBadge: badge.text,
+      targetBadgeIcon: badge.icon,
     };
   }
 
@@ -143,7 +148,8 @@ export function deriveActionAvailability(
     actionId: id,
     canActivate: true,
     targetCount,
-    targetBadge: badge,
+    targetBadge: badge.text,
+    targetBadgeIcon: badge.icon,
   };
 }
 

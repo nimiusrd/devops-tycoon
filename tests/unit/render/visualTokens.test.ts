@@ -173,6 +173,20 @@ describe('visual tokens', () => {
     expect(applied.get('--visual-org-board-compact-max-width')).toBe(
       `${orgBoardCompactMaxWidthPx()}px`,
     );
+    expect(values['--visual-icon-size-hud']).toBe('16px');
+    expect(values['--visual-icon-size-card']).toBe('20px');
+    expect(values['--visual-icon-size-header']).toBe('24px');
+    expect(values['--visual-icon-size-action']).toBe('22px');
+    expect(applied.get('--visual-icon-size-hud')).toBe('16px');
+  });
+
+  it('判断アイコンの共有寸法を画面役割で固定する', () => {
+    expect(VISUAL_TOKENS.dimensions.icon).toEqual({
+      hud: 16,
+      card: 20,
+      header: 24,
+      action: 22,
+    });
   });
 
   it('カード可読下限高から部門ラベル再表示幅を導出する', () => {

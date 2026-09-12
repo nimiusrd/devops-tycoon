@@ -25,6 +25,7 @@ import { OrgInfraHubPill } from './OrgHub';
 import type { OrgPixiFieldHandle } from './OrgPixiField';
 import { usePixiRenderer } from './usePixiRenderer';
 import { Stat } from './Stat';
+import { VisualIcon } from './VisualIcon';
 
 /** Pixi 全社マップは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const OrgPixiField = lazyWebgl<ComponentProps<(typeof import('./OrgPixiField'))['OrgPixiField']>>(
@@ -91,7 +92,10 @@ export function OrgScreen({
           data-diagnosis={org.diagnosis}
           title={diagnosis.description}
         >
-          <span aria-hidden="true">{theme.icon}</span> {diagnosis.label}
+          <span aria-hidden="true">
+            <VisualIcon name={theme.icon} size="hud" />
+          </span>{' '}
+          {diagnosis.label}
         </span>
         <span className="org-rank">健全度 {org.healthRank}</span>
       </header>

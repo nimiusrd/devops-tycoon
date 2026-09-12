@@ -26,6 +26,7 @@ import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { copyToClipboard } from './copyToClipboard';
 import { useReplayContent } from './replayContent';
+import { VisualIcon } from './VisualIcon';
 
 const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind']>, string> = {
   exceeded: '超過達成',
@@ -150,7 +151,17 @@ export function RunResultScreen({
           {won ? 'QUARTER CLEARED' : (failureTheme?.eyebrow ?? 'GAME OVER')}
         </p>
         <div className={`run-end-badge ${won ? 'win' : 'lose'}`} data-testid="run-end-status">
-          {won ? '🏆 ' + (win?.label ?? '勝利') : `${failureTheme?.icon ?? '💥'} ${loseLabel}`}
+          {won ? (
+            <>
+              <VisualIcon name="victory" size="header" />
+              {win?.label ?? '勝利'}
+            </>
+          ) : (
+            <>
+              <VisualIcon name={failureTheme?.icon ?? 'defeat'} size="header" />
+              {loseLabel}
+            </>
+          )}
         </div>
         <p className="run-end-desc">{won ? win?.description : loseDescription}</p>
         {nextAction && (
@@ -176,7 +187,9 @@ export function RunResultScreen({
               title={collectedTitle.label}
               detail="あなたの組織に刻まれた称号"
             />
-            <p className="result-title-value">🏆 {collectedTitle.label}</p>
+            <p className="result-title-value">
+              <VisualIcon name="victory" size="hud" /> {collectedTitle.label}
+            </p>
             <p className="result-title-description">
               {titleInCollection
                 ? `コレクションに登録済み — ${collectedTitle.description}`
@@ -219,7 +232,10 @@ export function RunResultScreen({
         <div className="result-diagnosis">
           <p className="result-section-label">組織タイプ診断</p>
           <p className="diagnosis-type" data-testid="diagnosis">
-            <span aria-hidden="true">{theme.icon}</span> {diag.label}
+            <span aria-hidden="true">
+              <VisualIcon name={theme.icon} size="hud" />
+            </span>{' '}
+            {diag.label}
           </p>
           <p>{diag.description}</p>
           {failureEntry && (

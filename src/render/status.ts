@@ -19,6 +19,7 @@ import { eventMinSignalThreshold } from '../sim/run/events';
 import type { GoalAdjustmentId, StakeholderTrust } from '../sim/run/types';
 import type { OrgState, SimState, Task } from '../sim/types';
 import { clampSeniorHpDisplay } from './seniorHpDisplay';
+import type { IconKey } from './visualIcons';
 
 /** `review-freeze` イベント抽選の資格帯を定義から導出する。 */
 const REVIEW_FREEZE_EVENT = getEvent('review-freeze');
@@ -83,7 +84,7 @@ export interface StatusMetricView {
   id: StatusMetricId;
   feedbackKey?: HudMetricKey;
   label: string;
-  icon: string;
+  icon: IconKey;
   value: number | Grade | RiskLevel;
   unit?: string;
   direction: StatusMetricDirection;
@@ -406,7 +407,7 @@ export function deriveHudMetrics(
       id: 'delivery',
       feedbackKey: 'deliveryScore',
       label: '出荷ポイント',
-      icon: '📦',
+      icon: 'delivery',
       value: s.deliveryScore,
       unit: 'pt',
       direction: 'higher-better',
@@ -418,7 +419,7 @@ export function deriveHudMetrics(
     {
       id: 'devSpeed',
       label: '開発速度',
-      icon: '⚡',
+      icon: 'focus',
       value: s.devSpeed,
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
@@ -429,7 +430,7 @@ export function deriveHudMetrics(
     {
       id: 'reviewCapacity',
       label: 'レビュー耐性',
-      icon: '🛡',
+      icon: 'stability',
       value: s.reviewCapacity,
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
@@ -441,7 +442,7 @@ export function deriveHudMetrics(
     {
       id: 'quality',
       label: '品質',
-      icon: '✅',
+      icon: 'quality',
       value: s.quality,
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
@@ -453,7 +454,7 @@ export function deriveHudMetrics(
       id: 'security',
       feedbackKey: 'securityLevel',
       label: 'セキュリティ',
-      icon: '🔐',
+      icon: 'security',
       value: s.securityLevel,
       unit: '',
       direction: 'higher-better',
@@ -479,7 +480,7 @@ export function deriveHudMetrics(
       id: 'seniorHp',
       feedbackKey: 'seniorHpPct',
       label: 'シニア体力',
-      icon: '💪',
+      icon: 'seniorHp',
       value: s.seniorHpPct,
       unit: '%',
       direction: 'higher-better',
@@ -494,7 +495,7 @@ export function deriveHudMetrics(
       id: 'aiDependency',
       feedbackKey: 'aiDependencyPct',
       label: 'AI依存度',
-      icon: '🤖',
+      icon: 'aiDependency',
       value: s.aiDependencyPct,
       unit: '%',
       direction: 'lower-better',
@@ -512,7 +513,7 @@ export function deriveHudMetrics(
       id: 'techDebt',
       feedbackKey: 'techDebt',
       label: '技術的負債',
-      icon: '🧱',
+      icon: 'techDebt',
       value: s.techDebt,
       direction: 'lower-better',
       directionLabel: LOWER_BETTER,
@@ -524,7 +525,7 @@ export function deriveHudMetrics(
       id: 'morale',
       feedbackKey: 'morale',
       label: '士気',
-      icon: '✨',
+      icon: 'morale',
       value: s.morale,
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
@@ -537,7 +538,7 @@ export function deriveHudMetrics(
     {
       id: 'fireRisk',
       label: '炎上リスク',
-      icon: '🔥',
+      icon: 'fire',
       value: s.risk,
       direction: 'lower-better',
       directionLabel: LOWER_BETTER,

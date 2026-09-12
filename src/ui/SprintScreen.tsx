@@ -47,6 +47,7 @@ import {
   type PlayingSpeed,
 } from './sprintTempo';
 import { TutorialGuide } from './TutorialGuide';
+import { VisualIcon } from './VisualIcon';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
 const BOSS_SLOWMO_MS = 1_200;
@@ -345,11 +346,19 @@ export function SprintScreen({
       status={
         <div className="subbar" data-testid="sprint-subbar">
           <span className={`pill node-tag node-${kind}`}>
-            {isBoss
-              ? `★ ボス: ${boss?.name ?? ''}`
-              : isElite
-                ? '🔥 高負荷スプリント'
-                : '💻 通常スプリント'}
+            {isBoss ? (
+              `★ ボス: ${boss?.name ?? ''}`
+            ) : isElite ? (
+              <>
+                <VisualIcon name="fire" size="hud" />
+                高負荷スプリント
+              </>
+            ) : (
+              <>
+                <VisualIcon name="sprintNormal" size="hud" />
+                通常スプリント
+              </>
+            )}
           </span>
           {isBoss && boss && <span className="pill boss-goal">{boss.description}</span>}
           <div
@@ -393,8 +402,9 @@ export function SprintScreen({
             >
               <i style={{ width: `${burnPct}%` }} />
             </div>
-            <span className="meter-count" data-testid="fire-count">
-              🔥{incidents}
+            <span className="meter-count" data-testid="fire-count" data-count={incidents}>
+              <VisualIcon name="fire" size="hud" />
+              {incidents}
             </span>
           </div>
           <ComboBadge

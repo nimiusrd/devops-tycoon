@@ -336,10 +336,18 @@ export const VISUAL_TOKENS = {
         baseY: 292,
       },
     },
+    /** HTML 判断アイコンの共有寸法。個別 px を増やさず画面役割で選ぶ（#474）。 */
+    icon: {
+      hud: 16,
+      card: 20,
+      header: 24,
+      action: 22,
+    },
   },
 } as const;
 
 export type VisualTokens = typeof VISUAL_TOKENS;
+export type IconSize = keyof typeof VISUAL_TOKENS.dimensions.icon;
 
 /** 設計空間の比率。DOM の aspect-ratio と Pixi の contain-fit の両方で使う。 */
 export function designSpaceRatio(space: DesignSpace): number {
@@ -575,6 +583,10 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-dept-banner-line-gap': `${dimensions.department.banner.lineGap}px`,
     '--visual-dept-banner-tag-padding-x': `${dimensions.department.banner.tagPaddingX}px`,
     '--visual-dept-banner-tag-padding-y': `${dimensions.department.banner.tagPaddingY}px`,
+    '--visual-icon-size-hud': `${dimensions.icon.hud}px`,
+    '--visual-icon-size-card': `${dimensions.icon.card}px`,
+    '--visual-icon-size-header': `${dimensions.icon.header}px`,
+    '--visual-icon-size-action': `${dimensions.icon.action}px`,
     '--visual-color-text': colors.text,
     '--visual-color-text-dim': colors.textDim,
     '--visual-color-panel': colors.panel,

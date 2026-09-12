@@ -36,7 +36,7 @@ describe('sprintEventView（RI-52）', () => {
       },
     };
     const view = formatSprintEvent(event);
-    expect(view.icon).toBe('🛂');
+    expect(view.icon).toBe('interruptReview');
     expect(view.text).toContain('割り込みレビュー');
     expect(view.text).toContain('PR4件処理');
     expect(view.text).toContain('シニアHP -3');

@@ -31,6 +31,63 @@
   box-sizing: border-box;
 }
 
+.visual-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: -0.15em;
+  background-color: currentColor;
+  -webkit-mask: var(--visual-icon-mask) center / contain no-repeat;
+  mask: var(--visual-icon-mask) center / contain no-repeat;
+}
+.visual-icon-hud {
+  width: var(--visual-icon-size-hud);
+  height: var(--visual-icon-size-hud);
+}
+.visual-icon-card {
+  width: var(--visual-icon-size-card);
+  height: var(--visual-icon-size-card);
+}
+.visual-icon-header {
+  width: var(--visual-icon-size-header);
+  height: var(--visual-icon-size-header);
+}
+.visual-icon-action {
+  width: var(--visual-icon-size-action);
+  height: var(--visual-icon-size-action);
+}
+.visual-icon-tone-fire {
+  color: var(--visual-color-fire);
+}
+.visual-icon-tone-sun {
+  color: var(--visual-color-sun);
+}
+.visual-icon-tone-mint {
+  color: var(--visual-color-mint);
+}
+.visual-icon-tone-sky {
+  color: var(--visual-color-sky);
+}
+.visual-icon-tone-lav {
+  color: var(--visual-color-lav);
+}
+.visual-icon-tone-coral {
+  color: var(--visual-color-coral);
+}
+.visual-icon-tone-cream {
+  color: var(--visual-color-cream);
+}
+.visual-icon-tone-text {
+  color: var(--visual-color-text);
+}
+.visual-icon-tone-text-dim {
+  color: var(--visual-color-text-dim);
+}
+.visual-icon-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+}
+
 /*
  * シーン切替で document 高さが一瞬縮むと、残った scrollY の外側は html の
  * 既定白になる（#368）。ページ下地は盤面と同じトークンにし、アンカーによる
@@ -158,7 +215,8 @@ body {
   color: #c8ffe9;
 }
 .hud-compact-chip-icon {
-  font-size: 12px;
+  display: inline-flex;
+  line-height: 1;
 }
 .hud-compact-chip-label {
   color: var(--text-dim);
@@ -220,7 +278,7 @@ body {
 }
 .stat-icon {
   flex: 0 0 auto;
-  font-size: 13px;
+  display: inline-flex;
   line-height: 1;
 }
 .stat .k {
@@ -513,6 +571,9 @@ body {
   cursor: default;
 }
 .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   font-size: 12px;
   color: var(--text-dim);
   padding: 5px 12px;
@@ -1541,7 +1602,8 @@ body:has(.overlay-contained) {
 }
 .result-burn-cause-icon {
   flex: 0 0 auto;
-  line-height: 1.45;
+  display: inline-flex;
+  line-height: 1;
 }
 .result-burn-cause-text {
   flex: 1 1 auto;
@@ -1552,6 +1614,9 @@ body:has(.overlay-contained) {
   margin-bottom: 0.65rem;
 }
 .result-analysis-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3em;
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.5;
@@ -1603,6 +1668,9 @@ body:has(.overlay-contained) {
   line-height: 1.5;
 }
 .result-title-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   margin: 0;
   font-size: 1.25rem;
   font-weight: 900;
@@ -1786,7 +1854,8 @@ body:has(.overlay-contained) {
 }
 .event-ticker-icon {
   flex: 0 0 auto;
-  line-height: 1.2;
+  display: inline-flex;
+  line-height: 1;
 }
 .event-ticker-text {
   flex: 1 1 auto;
@@ -1866,7 +1935,7 @@ body:has(.overlay-contained) {
   color: var(--sun);
   text-shadow: 0 0 12px #ffd45c66;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 4px;
 }
 .focus-energy small {
@@ -2002,7 +2071,9 @@ body:has(.overlay-contained) {
   border-color: #ff5f5755;
 }
 .action .ico {
-  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 .action .name {
@@ -2050,6 +2121,9 @@ body:has(.overlay-contained) {
   gap: 2px 5px;
 }
 .action .cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: 11px;
   font-weight: 900;
   color: var(--sun);
@@ -2099,6 +2173,9 @@ body:has(.overlay-contained) {
   position: absolute;
   top: 4px;
   left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: 8px;
   font-weight: 900;
   padding: 2px 5px;
@@ -2170,6 +2247,9 @@ body:has(.overlay-contained) {
 .focus-feedback-pop {
   position: absolute;
   left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
   transform: translateX(-50%);
   font-size: 14px;
   font-weight: 900;
@@ -2199,6 +2279,9 @@ body:has(.overlay-contained) {
   line-height: 1.15;
 }
 .stability-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   white-space: nowrap;
 }
 .stability-status-value {
@@ -2307,14 +2390,28 @@ body:has(.overlay-contained) {
   color: #ffd08a;
 }
 .card-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: 13px;
   font-weight: 900;
   color: var(--sun);
 }
 .card-focus-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: 10px;
   font-weight: 800;
   color: var(--sky);
+  white-space: nowrap;
+}
+/* 文書幅を広げない（absolute は狭幅で scrollWidth を増やす）。 */
+.visually-hidden {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  overflow: hidden;
   white-space: nowrap;
 }
 .card-name {
@@ -3952,6 +4049,9 @@ button.card.card-readonly:disabled {
   animation: jamglow 0.8s ease-in-out infinite;
 }
 .meter-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -4990,6 +5090,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 
 /* ラン決着 */
 .run-end .run-end-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
   font-size: 28px;
   font-weight: 900;
   margin: 8px 0;
@@ -5016,6 +5119,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   margin: 4px 0 0;
 }
 .diagnosis-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   font-weight: 900;
   font-size: 18px;
   color: var(--sun);
@@ -5623,6 +5729,13 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 4px;
   font-size: 13.5px;
 }
+.growth-promote,
+.growth-leave,
+.growth-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
 .growth-promote {
   color: var(--sun);
 }
@@ -5748,6 +5861,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-head h2,
 .dept-head h2,
 .industry-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
   margin: 0;
   font-size: 20px;
 }

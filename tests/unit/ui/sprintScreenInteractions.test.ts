@@ -259,8 +259,8 @@ describe('SprintScreen の表示と親子の連携', () => {
   });
 
   it.each([
-    ['normal', 'big-release', '💻 通常スプリント'],
-    ['elite', 'big-release', '🔥 高負荷スプリント'],
+    ['normal', 'big-release', '通常スプリント'],
+    ['elite', 'big-release', '高負荷スプリント'],
     ['boss', 'big-release', '★ ボス: 大型リリース'],
     ['boss', 'unknown-boss', '★ ボス: '],
   ] as const)('%s / %s の種別と対応するボス条件を表示する', (kind, bossId, label) => {
@@ -290,7 +290,8 @@ describe('SprintScreen の表示と親子の連携', () => {
     const jam = elements(screen.find('jam-meter'));
     expect(jam.some((node) => node.props.className === 'meter jam')).toBe(true);
     expect(jam.find((node) => node.type === 'i')?.props.style).toEqual({ width: '100%' });
-    expect(content(screen.find('fire-count'))).toBe('🔥3');
+    expect(content(screen.find('fire-count'))).toBe('3');
+    expect(screen.find('fire-count').props['data-count']).toBe(3);
     expect(screen.find('fire-meter').props.className).toContain('burning');
     expect(
       elements(screen.find('fire-meter')).find((node) => node.type === 'i')?.props.style,
@@ -302,7 +303,8 @@ describe('SprintScreen の表示と親子の連携', () => {
       elements(screen.find('fire-meter')).find((node) => node.type === 'i')?.props.style,
     ).toEqual({ width: '0%' });
     screen.updateSprint({ tasks: [] });
-    expect(content(screen.find('fire-count'))).toBe('🔥0');
+    expect(content(screen.find('fire-count'))).toBe('0');
+    expect(screen.find('fire-count').props['data-count']).toBe(0);
     expect(screen.find('fire-meter').props.className).not.toContain('burning');
   });
 

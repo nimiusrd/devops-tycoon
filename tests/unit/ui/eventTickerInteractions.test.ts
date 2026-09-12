@@ -171,11 +171,11 @@ describe('EventTicker の表示とフォーカス', () => {
       );
 
       expect(rows.map(content)).toEqual([
-        '💔コンボ途切れ: 手戻り発生',
-        '🚒鎮火成功 → コンボ x6 継続',
-        '🚒鎮火成功 → コンボ x5 継続',
-        '🚒鎮火成功 → コンボ x4 継続',
-        '🚒鎮火成功 → コンボ x3 継続',
+        'コンボ途切れ: 手戻り発生',
+        '鎮火成功 → コンボ x6 継続',
+        '鎮火成功 → コンボ x5 継続',
+        '鎮火成功 → コンボ x4 継続',
+        '鎮火成功 → コンボ x3 継続',
       ]);
       expect(rows[0].props.className).toBe('event-ticker-row tone-bad');
       expect(rows[0].props.initial).toEqual(frozen ? undefined : { opacity: 0, x: 16 });

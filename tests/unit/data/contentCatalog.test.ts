@@ -123,7 +123,7 @@ describe('CONTENT_CATALOG', () => {
       projectAction({
         ...action,
         label: '表示文言変更',
-        icon: '🧪',
+        icon: 'fire',
         description: '説明変更',
         sideEffect: '副作用表示変更',
         tone: 'heavy',

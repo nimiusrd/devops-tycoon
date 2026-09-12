@@ -109,7 +109,8 @@ test('手札カードは明示した集中力費用を表示し、不足時だ�
   });
 
   const card = page.getByTestId('hand-card-copilot');
-  await expect(card).toContainText('⚡2');
+  await expect(card.locator('[data-icon="focus"]')).toBeVisible();
+  await expect(card).toContainText('2');
   await expect(card).toBeDisabled();
 });
 

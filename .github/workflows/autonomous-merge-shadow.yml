@@ -1,18 +1,12 @@
 name: Autonomous Merge Shadow
 
-# 観測専用。default branchの信頼済みcollectorだけを実行する。
+# CI完了時・手動の観測専用。定期観測はLabels workflowの日次実行に集約する。
+# default branchの信頼済みcollectorだけを実行する。
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited, closed]
-  pull_request_review:
-    types: [submitted, edited, dismissed]
-  push:
   workflow_run:
-    # 移植時に観測対象のCI workflow名へ変更する。自身の完了は購読しない。
-    workflows: ['CI', 'Autonomous Merge Tests']
+    # 必須checkを含むCIに集約し、PR更新・push・補助テスト完了との重複を減らす。
+    workflows: ['CI']
     types: [completed]
-  schedule:
-    - cron: '23 * * * *'
   workflow_dispatch:
     inputs:
       pr_number:
@@ -27,17 +21,11 @@ permissions:
   statuses: read
 
 concurrency:
-  group: autonomous-merge-shadow-${{ github.event.pull_request.number || github.event_name }}
+  group: autonomous-merge-shadow-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
   observe:
-    # 自己の完了イベントによる再帰実行と、通常ブランチpushとの二重観測を避ける。
-    if: >-
-      (github.event_name != 'workflow_run' ||
-       github.event.workflow_run.name != 'Autonomous Merge Shadow') &&
-      (github.event_name != 'push' ||
-       github.ref_name == github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

@@ -80,17 +80,40 @@ GitHubのレビュー総合状態も併せて確認します。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
 - `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
-- `.github/workflows/autonomous-merge-shadow.yml`：PR・レビュー・CIイベントに応じてread-onlyで観測し、SummaryとJSON artifactを保存する。
+- `.github/workflows/autonomous-merge-shadow.yml`：`CI`完了時・手動でread-onlyで観測し、SummaryとJSON artifactを保存する。
 - `.github/workflows/autonomous-merge-labels.yml`：1日1回・手動で全open PRをread-onlyで観測した後、独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
 - `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
 
 JSONには正規化した観測事実、条件ごとの結果、観測時刻、head/base/test merge SHA、実行した評価器のSHA、policyとそのSHA-256を保存します。
 履歴はActionsのrun IDとattemptで区別したartifactに30日間保持します。
 
+## 観測の目的・トリガー・更新頻度
+
+| workflow | 目的 | トリガー・対象 | 出力 |
+| --- | --- | --- | --- |
+| `Autonomous Merge Shadow` | 必須CI完了後の状態や、必要な時点の判断材料を記録する | `CI`の完了時は全open PR。手動実行は`pr_number`で指定したPR、空欄なら全open PR | SummaryとJSON artifact。ラベルは変更しない |
+| `Autonomous Merge Labels` | PR一覧の参考表示を定期更新し、CI以外の変化も観測する | 毎日09:43 JST（00:43 UTC）と手動実行で全open PR | SummaryとJSON artifact、PRラベル |
+
+Shadowの毎時cronは停止し、定期観測をLabelsの日次実行に集約します。
+PRの作成・更新とmainへのpushは通常`CI`を起動するため、直接のPR・pushトリガーを削除し、そのCI完了後に観測します。
+必須checkを含まない`Autonomous Merge Tests`の完了も購読しません。`CI`と補助テストの両方が動く変更での二重観測を減らします。
+CIの成功・失敗・キャンセルを問わず完了時に観測し、実行イベントの古いSHAではなく、その時点の全open PRの状態を取得します。
+自身やLabelsの完了は購読しません。観測・評価ロジックとread-only権限は変更しません。
+
+レビューの投稿・編集・dismiss、スレッド解決、Draft変更、close / merge、CI対象外の文書変更などは直接の観測トリガーにしません。
+これらの変化は、次の`CI`完了時、日次観測、または手動実行で反映します。通常は次の日次観測までの遅れを許容します。
+Actionsの実行遅延・キャンセル・API障害により、24時間以内の反映を保証するものではありません。
+直ちに判断材料が必要ならActionsの`Autonomous Merge Shadow`から **Run workflow** を実行し、必要に応じて`pr_number`を指定してください。
+ラベルも更新したい場合は`Autonomous Merge Labels`を手動実行します。
+
+CI完了の観測は同じconcurrency groupで実行中の古い観測をキャンセルし、後続runで全open PRを取得し直します。
+手動観測はCI完了とは別groupです。日次実行との時間的な重なりやCI再実行による重複は許容し、厳密な即時反映・重複排除のためのrun履歴追跡や複雑なキューは導入しません。
+各レポートは観測時点の記録であり、現在の状態は実行時刻と対象SHAを確認して判断します。
+
 ## ラベルの更新方針
 
 ラベルは1日1回（日本時間09:43、UTC 00:43）と`Autonomous Merge Labels`の手動実行で全体更新します。
-PR・レビュー・CIイベントによる`Autonomous Merge Shadow`の観測は継続しますが、ラベルは変更しません。
+`CI`完了時・手動の`Autonomous Merge Shadow`の観測では、ラベルは変更しません。
 ラベルは次回の更新成功まで古くなり得る参考表示です。即時反映や常時の正確性、自動マージ許可は保証しません。
 定期実行の遅延やAPI障害もあるため、24時間以内の反映を保証するものではありません。
 
@@ -115,10 +138,6 @@ GitHubの[concurrency](https://docs.github.com/en/actions/how-tos/write-workflow
 ラベル更新はトランザクションではなく、PRの再取得後の変更や、人による管理ラベルの同時編集までは排他しません。
 管理ラベルの自動更新元はこのworkflowだけとし、ラベル全件を置き換えるAPIは使いません。
 closed PRの回収では管理ラベルが残るPRだけを列挙し、削除前に状態を再確認します。通常のIssueは変更しません。
-
-観測・評価ロジックはラベル導入前と同じです。PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
-スレッド解決など直接購読しないイベントは毎時の観測または手動実行で反映します。
-通常ブランチのpushは観測jobを実行せず、CI完了トリガーは自身を含めません。
 
 APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は失敗として扱います。
 ラベルworkflowは各jobに15分の上限があります。大量PRで完走できない場合の分割処理は今回の対象外です。

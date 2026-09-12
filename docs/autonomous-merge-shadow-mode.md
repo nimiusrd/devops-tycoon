@@ -34,7 +34,7 @@ GitHub側の設定変更はそれらの総合状態に反映されますが、�
 | `HUMAN_REVIEW_REQUIRED` | CI定義の変更、CI失敗、競合、変更要求、未解決スレッド、GitHub側のブロックなど |
 | `INSUFFICIENT_DATA` | API失敗、権限不足、ページング上限、必須情報欠落、再取得時のPR・CI・レビューの変化など |
 
-PR一覧では次のラベルで4判定を区別します。管理対象ラベルは同時に最大1つです。無関係なラベルは変更しません。
+PR一覧では次のラベルで4判定を区別します。更新完了時の管理対象ラベルはopen PRごとに1つです。無関係なラベルは変更しません。
 
 | Decision | PRラベル | 次にすること |
 | --- | --- | --- |
@@ -43,8 +43,8 @@ PR一覧では次のラベルで4判定を区別します。管理対象ラベ�
 | `HUMAN_REVIEW_REQUIRED` | `shadow/要対応` | 競合・CI失敗・変更要求・未解決スレッドなどを人が解消する |
 | `INSUFFICIENT_DATA` | `shadow/再観測が必要` | 再実行するか、次の定期観測を待つ |
 
-ラベル説明とActionsの当該run Summaryから、観測時刻・対象SHA・JSON artifactへ辿れます。
-publisherが未作成なら4ラベルを作成します。branch protectionやrulesetsの必須チェックには登録しません。
+ラベル用の観測時刻・対象SHA・JSON artifactは、Actionsの`Autonomous Merge Labels`のrun Summaryで確認できます。
+publisherが未作成のラベル定義を作成します。branch protectionやrulesetsの必須チェックには登録しません。
 
 複数条件に該当するときは、情報不足、人間確認、待機の順に優先し、個々の条件をすべてレポートへ記録します。
 GitHubの集約状態が`BLOCKED`でも、必要承認不足やCI実行中など明示的な待機条件がある間は、その完了後に再評価します。別にCI失敗・変更要求などがある場合は人間確認を優先します。待機条件が解消しても`BLOCKED`なら人間確認とし、条件達成には引き続き`CLEAN`を要求します。
@@ -80,57 +80,56 @@ GitHubのレビュー総合状態も併せて確認します。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
 - `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
-- `.github/workflows/autonomous-merge-shadow.yml`：default branchの信頼済みcollectorをread-onlyで実行し、SummaryとJSON artifactを保存する。リポジトリラベル定義の準備は`prepare-publish`、PRラベルの更新は独立した`publish` / `publish-overflow` jobが行う。
+- `.github/workflows/autonomous-merge-shadow.yml`：PR・レビュー・CIイベントに応じてread-onlyで観測し、SummaryとJSON artifactを保存する。
+- `.github/workflows/autonomous-merge-labels.yml`：毎時・手動で全open PRをread-onlyで観測した後、独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
 - `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
 
 JSONには正規化した観測事実、条件ごとの結果、観測時刻、head/base/test merge SHA、実行した評価器のSHA、policyとそのSHA-256を保存します。
 履歴はActionsのrun IDとattemptで区別したartifactに30日間保持します。
-Summaryには当該観測runへのURLを追記します。PRコメントは作成・更新しません。
-collectorやpublisherがdefault branchにない初回導入中はbootstrapとして情報不足をSummaryへ記録し、ラベルは更新しません。
 
-## ラベルの失効と後着
+## ラベルの更新方針
 
-ラベルは「今も有効なマージ許可」ではなく、直近に成功したラベル更新です。publisherは書き込み直前にPRを再取得します。
+ラベルは毎時（43分）と`Autonomous Merge Labels`の手動実行で全体更新します。
+PR・レビュー・CIイベントによる`Autonomous Merge Shadow`の観測は継続しますが、ラベルは変更しません。
+ラベルは次回の更新成功まで古くなり得る参考表示です。即時反映や常時の正確性、自動マージ許可は保証しません。
+定期実行の遅延やAPI障害もあるため、1時間以内の反映を保証するものではありません。
+
+更新の仕組みは「全open PRの観測 → ラベル公開」の2 jobです。
+共通のconcurrency groupでworkflow全体を直列化し、`cancel-in-progress: false`で実行中の更新を後続runがキャンセルしないようにします。
+待機runが置き換わっても、次に実行するrunが全open PRを取得し直すため、個別PRのイベントをキューに保存する必要はありません。
+runの順番に依存せず、そのrunの実行時点の状態を観測します。過去run・jobの履歴走査やPR別matrixは使いません。
+
+publishは**同じrun ID・同じattempt**のartifactだけを読みます。過去attemptへのフォールバックはしません。
+publishだけを再実行すると新attemptの観測artifactが無いため失敗します。復旧には新しい手動実行、または**Re-run all jobs**で観測からやり直してください。
+GitHubの[concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)と[再実行](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)の仕様を前提とします。
 
 | 状況 | ラベルの扱い |
 | --- | --- |
-| 観測のhead/base SHA、base ref、open/closed/merged、Draftが現在のPRと不一致 | 変更しない。新しい観測の表示を残す |
-| より新しい開始時刻（`run_started_at`）または`observed_at`の観測がある | 未着手なら変更しない。一度書き始めたら`desired`まで完了する。再実行はrun IDより開始時刻を優先する |
-| 観測していない通常ブランチの`push` run | 後着とは扱わない |
-| PR指定の`workflow_dispatch` | 指定したPRだけを後着とみなす |
-| 全体観測（schedule / `workflow_run` / default branch push / `shadow-all`） | open PRに後着として効く。完了した全体run、および進行中でも対象PRのpublish jobが完了した全体runは、回収対象のclosed PRにも後着として効く |
-| 対象PRが分かる収集失敗 | `shadow/再観測が必要`を付け、`shadow/要マージ判断`を残さない |
-| 収集失敗だけでPR番号が分からない | どのPRも変更しない |
-| close / merge | evaluatorの`HUMAN_REVIEW_REQUIRED`を`shadow/要対応`として反映する |
-| 再評価待ち | 既存トリガー（PR更新、レビュー、CI完了、毎時cron、手動）で再観測する |
-| ラベル書き込み失敗 | `publish` jobを失敗させる。SummaryとJSONはobserve側に残し、判定成功とは扱わない |
+| 観測と現在のhead/base SHA・base ref・open状態・Draftが一致 | 4判定に対応するラベルを表示する |
+| 観測後にPRが変化、または対象PRの収集が情報不足 | `shadow/再観測が必要`にする |
+| 全体の収集失敗で対象PRが不明 | open PRの既存ラベルを維持し、runを失敗として記録する |
+| close / merge | 管理ラベルを取り除く。既にclosedで管理ラベルが残るPRも毎回回収する |
+| 追加・削除APIの失敗や手動キャンセル | 一時的に古いラベルや複数ラベルが残り得る。次回の更新で修復する |
 
-同じPRを対象にする新しいShadow runがある場合も、未着手なら上書きしません。
-後着判定は`run_started_at`（なければ`created_at` / 観測時刻）を優先し、古いrunの再実行が新しいIDの失敗runより後なら破棄しません。
-`observe` の並行グループだけ `cancel-in-progress: true` です。workflow全体はキャンセルせず、実行中の`publish`を保護します。
-`publish` jobは先頭256件をPR番号ごとのmatrixにします。257–512件目もPR番号ごとのoverflow matrixです。同じPRは同じconcurrency groupで直列化し、無関係なPRはpending枠を共有しません。`cancel-in-progress: false` です。対象が512件を超える場合は`GITHUB_RUN_NUMBER`で一覧を回転してから切り出すので、513件目以降も後続の定期観測で先頭側に入ります。
-一度ラベル変更を始めた後は、後着判定で途中終了せず管理ラベルが1つになるまで収束します。
-後着判定のrun履歴は`prepare-publish`が1回取得して各PRのpublish jobへ渡します。4つの管理ラベル定義も`prepare-publish`で一度だけ確認・作成し、`--runs-file`経路の各PR jobでは繰り返しません。各PRの最初の書き込み直前は`in_progress`・`queued`と直近1ページだけ再確認します。再取得した同じrun IDは共有履歴より優先し、履歴がページ上限まで埋まっている場合は部分履歴で続行せず失敗します。鮮度は同じ開始時刻同士で比較し、publisher単独再実行ではより古い`observed_at`を使います。観測artifactに`run_started_at`が無い場合は公開しません。ラベル更新は追加先行で、再追加後も競合ラベルを除去して一意な状態を確認します。公開先のない失敗broadcastと、publish jobが動かなかった成功runは後着にしません。後着になり得るrunだけjobsを`filter=all`で確認し、過去attemptの成功済みpublishも後着とします。結果はrun ID・attempt・status・conclusion単位で再利用します。jobs APIを確認できない場合は未公開と断定せず書き込みません。publisher単独再実行は観測artifactに残した元attemptの開始時刻を使います。書き込み直前のID再取得は、共有snapshot時点で未完了だった既知runだけに限定します。完了済みrunの更新は`in_progress`・`queued`と直近1ページで拾います。`--runs-file`を使わない単発実行では、ラベル定義の確認はPRループの外で一度だけ行います。
-`skipped`のrunは後着にしません。`cancelled`でも対象PRのpublish jobが完了していれば後着です。jobsを確認できない`cancelled`は未公開と断定せず書き込みません。`failure`でも観測レポートを出している場合は後着として扱います。publisher単独再実行は選択した観測artifactのattemptと`observed_at`で鮮度を判定します。
-`workflow_dispatch` の対象はrun名が`shadow-pr-N`または`shadow-all`に完全一致する場合だけ宣言として扱います。
-`workflow_run`とdefault branchの`push`は、RESTの`pull_requests`関連付けより先に全体観測として扱います。
-fork由来PRの`pull_request_review`ではwrite tokenが降格されるため`publish`を起動せず、scheduleやCI完了の後続観測でラベルを更新します。
-`publish`が単独再実行されたときは、同じrun IDの最新観測artifactへフォールバックします。
+書き込み直前にPRを再取得し、新ラベルの追加に成功してから旧管理ラベルだけを削除します。
+ラベル更新はトランザクションではなく、PRの再取得後の変更や、人による管理ラベルの同時編集までは排他しません。
+管理ラベルの自動更新元はこのworkflowだけとし、ラベル全件を置き換えるAPIは使いません。
+closed PRの回収では管理ラベルが残るPRだけを列挙し、削除前に状態を再確認します。通常のIssueは変更しません。
 
-PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
-スレッド解決や外部CIの状態変更など、直接購読しないイベントは毎時の再観測、または手動実行で反映します。
-CI完了時はイベントに含まれる古いSHAを使わず、現在openのPRと、close処理が未完了のclosed PR（`shadow/要マージ判断`・`shadow/CI・レビュー待ち`・`shadow/再観測が必要`）を改めて取得します。正常に`shadow/要対応`へ更新済みのclosed PRは再収集しません。`observe`はActions read権限で現在runの開始時刻をartifactへ残します。開始時刻はPRループの前に一度だけ取得し、収集失敗の`collection-error.json`にも残します。取得失敗は`collection_errors`に記録し、publisherは開始時刻なしの観測も収集失敗も公開しません。
-通常ブランチのpushはジョブを実行せず、CI完了トリガーは自身を含めません。
+観測・評価ロジックはラベル導入前と同じです。PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
+スレッド解決など直接購読しないイベントは毎時の観測または手動実行で反映します。
+通常ブランチのpushは観測jobを実行せず、CI完了トリガーは自身を含めません。
 
-APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は部分的な成功として扱いません。
-workflow全体には15分の実行上限があります。多数のPRがある場合は後続で分割実行を検討します。
+APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は失敗として扱います。
+ラベルworkflowは各jobに15分の上限があります。大量PRで完走できない場合の分割処理は今回の対象外です。
 
 ## ローカル実行と検証
 
 必要環境はPython 3.11以上です。Pythonの外部依存はありません。
 GitHub tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。CLI引数には含めません。
 collectorの必要権限はContents / Pull requests / Checks / Commit statusesのreadです。
-publisherの必要権限はPull requestsとIssuesのwrite、Actionsのreadです。リポジトリラベル定義の作成は`prepare-publish`にIssues writeを付け、PRラベルの更新は`publish` / `publish-overflow`だけが行います。
+publisherにはContents / Pull requestsのreadとIssuesのwriteを付けます。ラベル定義の作成とPRラベル更新は`publish` jobだけが行います。
+両jobともdefault branchのコードだけを実行し、PRのコードをwrite権限で実行しません。
 
 本リポジトリではDev Container内から実行します。
 
@@ -152,12 +151,6 @@ tokenはDev Containerへ環境変数として渡してください。CLI引数�
 python3 -B .github/autonomous-merge/evaluate.py \
   --facts /tmp/observations.json \
   --policy .github/autonomous-merge/policy.toml --format markdown
-
-python3 -B .github/autonomous-merge/publish.py \
-  --repository nimiusrd/devops-tycoon \
-  --report-dir /tmp/shadow-report \
-  --run-id 1 --run-attempt 1 \
-  --run-url https://github.com/nimiusrd/devops-tycoon/actions/runs/1
 ```
 
 ## 他コードベースへの展開
@@ -165,7 +158,7 @@ python3 -B .github/autonomous-merge/publish.py \
 1. collector、評価器、publisher、テスト、workflowを配置する。
 2. 信頼済みdefault branchのpolicyに、対象CIのcheck名と発行元、承認条件を設定する。
 3. Shadow workflowの`workflow_run.workflows`を対象CIのworkflow名に合わせる。テストworkflowのpush対象ブランチも合わせる。
-4. `publish` jobにだけPull requests / Issuesのwriteを付け、4つの`shadow/`ラベルは初回実行で作成する。branch protectionの必須チェックや自動マージには接続しない。
+4. ラベルworkflowの`publish` jobにだけIssuesのwriteを付ける。4つの`shadow/`ラベルは初回更新で作成する。branch protectionの必須チェックや自動マージには接続しない。
 5. required checkや自動マージへ接続せず、観測とラベル表示を開始する。
 6. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
 

@@ -12,18 +12,12 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from evaluate import assess, load_policy, markdown, sha, string
 
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
-RECOVERY_LABELS = (
-    "shadow/要マージ判断",
-    "shadow/CI・レビュー待ち",
-    "shadow/再観測が必要",
-)
 PR_FIELDS = """
 number state isDraft headRefOid baseRefOid baseRefName updatedAt
 mergeable mergeStateStatus reviewDecision
@@ -216,72 +210,7 @@ def decision_metadata(api: GitHub, number: int, pr: dict) -> dict:
     return metadata
 
 
-def load_current_run(api: GitHub) -> tuple[dict | None, list[str]]:
-    raw_id = os.environ.get("GITHUB_RUN_ID")
-    if not raw_id:
-        return None, []
-    request = getattr(api, "request", None)
-    prefix = getattr(api, "prefix", f"/repos/{api.repository}")
-    if not callable(request):
-        return None, []
-    try:
-        run = request(f"{prefix}/actions/runs/{int(raw_id)}")
-    except CollectionError as error:
-        return None, [str(error)]
-    if isinstance(run, dict):
-        if run.get("run_started_at") or run.get("created_at"):
-            return run, []
-        return run, ["missing run_started_at"]
-    return None, []
-
-
-def stamp_current_run(
-    facts: dict,
-    api: GitHub,
-    current_run: tuple[dict | None, list[str]] | None = None,
-) -> None:
-    raw_id = os.environ.get("GITHUB_RUN_ID")
-    raw_attempt = os.environ.get("GITHUB_RUN_ATTEMPT")
-    if raw_id:
-        facts["run_id"] = int(raw_id)
-    if raw_attempt:
-        facts["run_attempt"] = int(raw_attempt)
-    if current_run is None:
-        current_run = load_current_run(api)
-    run, errors = current_run
-    if errors:
-        facts.setdefault("collection_errors", []).extend(errors)
-    if isinstance(run, dict):
-        started = run.get("run_started_at") or run.get("created_at")
-        if started:
-            facts["run_started_at"] = started
-
-
-def collection_error_report(
-    error: BaseException,
-    api: GitHub | None = None,
-    current_run: tuple[dict | None, list[str]] | None = None,
-) -> dict:
-    observations: dict = {}
-    holder = api or type("API", (), {"repository": "unused/unused"})()
-    stamp_current_run(
-        observations,
-        holder,
-        current_run if current_run is not None else (None, []),
-    )
-    return {
-        "decision": "INSUFFICIENT_DATA",
-        "error": str(error),
-        "observations": observations,
-    }
-
-
-def collect(
-    api: GitHub,
-    number: int,
-    evaluator_sha: str,
-    current_run: tuple[dict | None, list[str]] | None = None,
-) -> dict:
+def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
     facts = {
         "schema_version": 2,
         "observed_at": datetime.now(timezone.utc).isoformat(),
@@ -290,7 +219,6 @@ def collect(
         "collection_errors": [],
         "stable": False,
     }
-    stamp_current_run(facts, api, current_run)
     try:
         before = normalized_pr(api.graphql(number, PR_FIELDS))
         facts["pr"] = before
@@ -390,33 +318,7 @@ def targets(api: GitHub, event: dict, requested: int | None) -> list[int]:
         return [event["pull_request"]["number"]]
     # CI完了時も全open PRを再評価する。base更新・fork・同じheadを持つ複数PRに対応。
     # 古いworkflow_run payloadのSHAを、現在のPRのSHAとして使わない。
-    # closeイベント失敗後も、管理ラベルが残る最近closedなPRを回収する。
-    open_prs = [p["number"] for p in api.pages("/pulls?state=open")]
-    recovered = labeled_closed_prs(api)
-    return sorted({*open_prs, *recovered})
-
-
-def labeled_closed_prs(api: GitHub) -> list[int]:
-    found = []
-    seen = set()
-    prefix = getattr(api, "prefix", f"/repos/{api.repository}")
-    for name in RECOVERY_LABELS:
-        path = (
-            f"{prefix}/issues?state=closed&labels={quote(name, safe='')}"
-            "&sort=updated&direction=desc&per_page=100&page=1"
-        )
-        batch = api.request(path)
-        if not isinstance(batch, list):
-            raise CollectionError("invalid REST page")
-        for item in batch:
-            if not isinstance(item, dict) or "pull_request" not in item:
-                continue
-            number = item.get("number")
-            if number in (None, "") or int(number) in seen:
-                continue
-            seen.add(int(number))
-            found.append(int(number))
-    return found
+    return [p["number"] for p in api.pages("/pulls?state=open")]
 
 
 def main() -> int:
@@ -435,16 +337,13 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     summary = []
     failed = False
-    api = None
-    current_run = None
     try:
         policy = load_policy(args.policy)
         api = GitHub(args.repository)
-        current_run = load_current_run(api)
         event = json.loads(args.event.read_text()) if args.event else {}
         numbers = targets(api, event, args.pr)
         for number in numbers:
-            facts = collect(api, number, sha(args.evaluator_sha), current_run)
+            facts = collect(api, number, sha(args.evaluator_sha))
             result = assess(facts, policy)
             (args.output / f"pr-{number}.json").write_text(
                 json.dumps(result, ensure_ascii=False, indent=2) + "\n"
@@ -456,7 +355,7 @@ def main() -> int:
     except (CollectionError, OSError, KeyError, TypeError, ValueError) as error:
         failed = True
         # collection失敗も必ず今回のartifactへ保存する。
-        result = collection_error_report(error, api, current_run)
+        result = {"decision": "INSUFFICIENT_DATA", "error": str(error)}
         (args.output / "collection-error.json").write_text(json.dumps(result) + "\n")
         summary.append(
             "INSUFFICIENT_DATA: <code>" + html.escape(str(error)) + "</code>\n"

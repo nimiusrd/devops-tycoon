@@ -1,62 +1,53 @@
-"""ラベル付け替え・後着防止・書き込み失敗を、外部へ書き込まず検証する。"""
+"""単一writerのラベル更新と、次回実行での失敗回復を検証する。"""
 
+import copy
+import io
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
+from urllib.parse import unquote
 
 from publish import (
     DECISION_LABELS,
     LABEL_DESCRIPTIONS,
     MANAGED_LABELS,
+    GitHub,
     PublishError,
+    cleanup_closed,
     encoded_label,
-    event_pr,
-    has_newer_run,
-    is_fresher,
-    list_recent_runs,
-    list_relevant_runs,
-    run_published_labels,
-    load_reports,
+    ensure_labels,
     main,
     publish_pr,
-    skip_reason,
-    sync_labels,
 )
 from test_evaluate import BASE, HEAD
 
-OTHER = "d" * 40
-RUN_URL = "https://github.com/example/project/actions/runs/9"
+WAITING = DECISION_LABELS["WAITING"]
+READY = DECISION_LABELS["SHADOW_CONDITIONS_MET"]
+UNKNOWN = DECISION_LABELS["INSUFFICIENT_DATA"]
 
 
-def report(decision, head=HEAD, base=BASE, observed="2026-09-11T12:00:00+00:00"):
+def report(decision="WAITING", number=1):
     return {
         "decision": decision,
         "observations": {
-            "observed_at": observed,
-            "run_started_at": observed,
+            "repository": "example/project",
             "pr": {
-                "number": 1,
-                "head_sha": head,
-                "base_sha": base,
-                "state": "OPEN",
-                "draft": False,
-                "base_ref": "trunk",
+                "number": number, "head_sha": HEAD, "base_sha": BASE,
+                "base_ref": "main", "state": "OPEN", "draft": False,
             },
         },
     }
 
 
-def pull(labels=None, head=HEAD, base=BASE, state="open", merged=False, draft=False):
+def pull(labels=(), state="open"):
     return {
-        "head": {"sha": head},
-        "base": {"sha": base, "ref": "trunk"},
-        "state": state,
-        "merged": merged,
-        "draft": draft,
-        "labels": [{"name": name} for name in (labels or [])],
+        "head": {"sha": HEAD}, "base": {"sha": BASE, "ref": "main"},
+        "state": state, "draft": False,
+        "labels": [{"name": name} for name in labels],
     }
 
 
@@ -64,1776 +55,229 @@ class FixtureAPI:
     repository = "example/project"
     prefix = "/repos/example/project"
 
-    def __init__(
-        self, labels=None, head=HEAD, base=BASE, state="open", merged=False, draft=False
-    ):
-        self.pull = pull(labels, head, base, state, merged, draft)
+    def __init__(self, labels=()):
+        self.pulls = {1: pull(labels)}
+        self.definitions = set(MANAGED_LABELS)
         self.calls = []
-        self.labels = {name: True for name in DECISION_LABELS.values()}
-        self.workflow_pages = [{"workflow_runs": []}]
+        self.fail = None
+        self.closed = []
 
-    def pages(self, path, key=None):
-        self.calls.append(("GET", path, None))
-        return []
+    def names(self, number=1):
+        return [item["name"] for item in self.pulls[number]["labels"]]
 
     def request(self, path, body=None, method=None):
         verb = method or ("POST" if body is not None else "GET")
         self.calls.append((verb, path, body))
-        if "/actions/workflows/" in path:
-            if "status=" in path:
-                return {"workflow_runs": []}
-            if self.workflow_pages:
-                return self.workflow_pages.pop(0)
-            return {"workflow_runs": []}
-        if "/pulls/" in path:
-            return self.pull
-        if "/labels/" in path and verb == "GET":
-            name = path.rsplit("/", 1)[-1]
-            if name in {encoded_label(item) for item in self.labels}:
-                return {"name": name}
-            raise PublishError(f"API GET {path}: HTTP 404")
-        if path.endswith("/labels") and verb == "POST":
-            if body and "name" in body:
-                self.labels[body["name"]] = True
+        if self.fail and self.fail(verb, path):
+            raise PublishError("API failure")
+        route = unquote(path.removeprefix(self.prefix)).split("/")
+        if route[1] == "pulls":
+            return copy.deepcopy(self.pulls[int(route[2])])
+        if route[1] == "labels":
+            if verb == "POST":
+                self.definitions.add(body["name"])
                 return body
-            if body and "labels" in body:
-                names = [item["name"] for item in self.pull["labels"]]
-                for label in body["labels"]:
-                    if label not in names:
-                        self.pull["labels"].append({"name": label})
-                return body
-        if verb == "DELETE" and "/labels/" in path:
-            encoded = path.rsplit("/", 1)[-1]
-            self.pull["labels"] = [
-                item
-                for item in self.pull["labels"]
-                if encoded_label(item["name"]) != encoded
-            ]
+            if "/".join(route[2:]) not in self.definitions:
+                raise PublishError("HTTP 404")
+            return {}
+        if route[1] == "issues":
+            number = int(route[2])
+            labels = self.pulls[number]["labels"]
+            if verb == "POST":
+                labels.extend(
+                    {"name": name} for name in body["labels"]
+                    if name not in self.names(number)
+                )
+            elif verb == "DELETE":
+                name = "/".join(route[4:])
+                labels[:] = [item for item in labels if item["name"] != name]
+            else:
+                raise AssertionError(verb)
             return None
-        return {}
+        raise AssertionError(path)
+
+    def pages(self, path):
+        self.calls.append(("GET", path, None))
+        return self.closed
 
 
 class PublishTests(unittest.TestCase):
-    def test_decision_labels_are_actionable_japanese_names(self):
-        self.assertEqual(
-            DECISION_LABELS,
-            {
-                "SHADOW_CONDITIONS_MET": "shadow/要マージ判断",
-                "WAITING": "shadow/CI・レビュー待ち",
-                "HUMAN_REVIEW_REQUIRED": "shadow/要対応",
-                "INSUFFICIENT_DATA": "shadow/再観測が必要",
-            },
-        )
-        for name, description in LABEL_DESCRIPTIONS.items():
-            self.assertLessEqual(len(description), 100, name)
-            self.assertTrue(name.startswith("shadow/"))
-
-    def test_replaces_managed_label_and_keeps_unrelated_ones(self):
-        api = FixtureAPI(["enhancement", "shadow/要マージ判断"])
-        status = publish_pr(
-            api, 1, report("WAITING"), 10, 1, [], None
-        )
-        self.assertEqual(status, "updated")
-        names = [item["name"] for item in api.pull["labels"]]
-        self.assertEqual(names.count("shadow/CI・レビュー待ち"), 1)
-        self.assertIn("enhancement", names)
-        self.assertNotIn("shadow/要マージ判断", names)
-        self.assertTrue(
-            any(
-                call[0] == "DELETE" and encoded_label("shadow/要マージ判断") in call[1]
-                for call in api.calls
-            )
-        )
-        self.assertFalse(any(call[0] == "PUT" for call in api.calls))
-
-    def test_all_decisions_are_published_idempotently(self):
+    def test_all_decisions_replace_only_managed_labels_and_are_idempotent(self):
         for decision, label in DECISION_LABELS.items():
             with self.subTest(decision=decision):
-                api = FixtureAPI([label])
-                status = publish_pr(api, 1, report(decision), 10, 1, [], None)
-                self.assertEqual(status, "unchanged")
-                names = [item["name"] for item in api.pull["labels"]]
-                self.assertEqual([name for name in names if name in MANAGED_LABELS], [label])
+                api = FixtureAPI(["enhancement", *MANAGED_LABELS])
+                self.assertEqual(publish_pr(api, 1, report(decision)), "updated")
+                self.assertCountEqual(api.names(), ["enhancement", label])
+                api.calls.clear()
+                self.assertEqual(publish_pr(api, 1, report(decision)), "unchanged")
+                self.assertTrue(all(verb == "GET" for verb, _, _ in api.calls))
+        self.assertTrue(all(len(text) <= 100 for text in LABEL_DESCRIPTIONS.values()))
 
-    def test_stale_sha_does_not_overwrite_current_labels(self):
-        api = FixtureAPI(["shadow/要対応"])
-        status = publish_pr(
-            api, 1, report("SHADOW_CONDITIONS_MET", head=OTHER), 10, 1, [], None
-        )
-        self.assertEqual(status, "skipped:stale_sha")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"]], ["shadow/要対応"]
-        )
-        self.assertFalse(
-            any(call[0] in {"POST", "DELETE"} and "/issues/" in call[1] for call in api.calls)
-        )
+    def test_pr_changes_are_marked_for_reobservation(self):
+        for key, value in {
+            "head_sha": "d" * 40, "base_sha": "d" * 40,
+            "base_ref": "release", "state": "CLOSED", "draft": True,
+        }.items():
+            with self.subTest(key=key):
+                api = FixtureAPI([READY])
+                data = report("SHADOW_CONDITIONS_MET")
+                data["observations"]["pr"][key] = value
+                publish_pr(api, 1, data)
+                self.assertEqual(api.names(), [UNKNOWN])
 
-    def test_newer_run_id_or_observed_at_is_skipped(self):
-        current = {
-            "number": 1,
-            "head_sha": HEAD,
-            "base_sha": BASE,
-            "base_ref": "trunk",
-            "state": "open",
-            "merged": False,
-            "draft": False,
-            "labels": ["shadow/CI・レビュー待ち"],
-        }
-        newer = [
-            {
-                "id": 20,
-                "run_attempt": 1,
-                "status": "completed",
-                "event": "pull_request_target",
-                "pull_requests": [{"number": 1}],
-            }
+    def test_collection_failure_without_pr_facts_expires_ready_label(self):
+        api = FixtureAPI([READY])
+        data = report("INSUFFICIENT_DATA")
+        del data["observations"]["pr"]
+        publish_pr(api, 1, data)
+        self.assertEqual(api.names(), [UNKNOWN])
+
+    def test_invalid_decision_or_wrong_report_identity_never_writes(self):
+        variants = [report("INVALID"), report(number=2), report()]
+        variants[-1]["observations"]["repository"] = "other/repo"
+        for data in variants:
+            with self.subTest(data=data):
+                api = FixtureAPI([READY])
+                with self.assertRaises(PublishError):
+                    publish_pr(api, 1, data)
+                self.assertEqual(api.names(), [READY])
+                self.assertTrue(all(verb == "GET" for verb, _, _ in api.calls))
+
+    def test_closed_pr_removes_all_managed_labels(self):
+        api = FixtureAPI(["bug", *MANAGED_LABELS])
+        api.pulls[1]["state"] = "closed"
+        publish_pr(api, 1, report())
+        self.assertEqual(api.names(), ["bug"])
+
+    def test_failed_add_preserves_old_label_then_next_run_repairs(self):
+        api = FixtureAPI([READY])
+        api.fail = lambda verb, path: verb == "POST"
+        with self.assertRaises(PublishError):
+            publish_pr(api, 1, report())
+        self.assertEqual(api.names(), [READY])
+        api.fail = None
+        publish_pr(api, 1, report())
+        self.assertEqual(api.names(), [WAITING])
+
+    def test_failed_delete_leaves_new_label_then_next_run_repairs(self):
+        api = FixtureAPI([READY, "bug"])
+        api.fail = lambda verb, path: verb == "DELETE"
+        with self.assertRaises(PublishError):
+            publish_pr(api, 1, report())
+        self.assertCountEqual(api.names(), [READY, WAITING, "bug"])
+        api.fail = None
+        publish_pr(api, 1, report())
+        self.assertCountEqual(api.names(), [WAITING, "bug"])
+
+    def test_cleanup_deduplicates_closed_prs_and_ignores_issues_and_reopened_prs(self):
+        api = FixtureAPI()
+        api.pulls = {1: pull([READY, "bug"], "closed"), 2: pull([WAITING])}
+        api.closed = [
+            {"number": 1, "pull_request": {}},
+            {"number": 2, "pull_request": {}},
+            {"number": 3},
         ]
-        self.assertTrue(has_newer_run(newer, 1, 10, 1))
-        self.assertEqual(
-            skip_reason(report("SHADOW_CONDITIONS_MET"), current, newer, 10, 1),
-            "newer_run",
-        )
-        older = [
-            {
-                "id": 8,
-                "run_attempt": 1,
-                "status": "completed",
-                "event": "pull_request_target",
-                "pull_requests": [{"number": 1}],
-            }
+        cleanup_closed(api)
+        self.assertEqual(api.names(1), ["bug"])
+        self.assertEqual(api.names(2), [WAITING])
+        self.assertEqual(sum("/pulls/1" in path for _, path, _ in api.calls), 1)
+
+    def test_definitions_created_once_then_reused(self):
+        api = FixtureAPI()
+        api.definitions.clear()
+        ensure_labels(api)
+        self.assertEqual(api.definitions, MANAGED_LABELS)
+        ensure_labels(api)
+        self.assertEqual(sum(verb == "POST" for verb, _, _ in api.calls), 4)
+
+    def run_main(self, directory, api):
+        args = [
+            "publish.py", "--repository", api.repository,
+            "--report-dir", str(directory),
         ]
-        self.assertIsNone(
-            skip_reason(report("SHADOW_CONDITIONS_MET"), current, older, 10, 1)
-        )
-        self.assertFalse(
-            is_fresher(
-                {
-                    "observed_at": "2026-09-11T12:00:00+00:00",
-                    "run_id": 10,
-                    "run_attempt": 1,
-                },
-                {
-                    "observed_at": "2026-09-11T13:00:00+00:00",
-                    "run_id": 9,
-                    "run_attempt": 1,
-                },
-            )
-        )
-        self.assertEqual(
-            skip_reason(
-                report("SHADOW_CONDITIONS_MET"),
-                current,
-                [],
-                10,
-                1,
-                {
-                    "observed_at": "2026-09-11T13:00:00+00:00",
-                    "run_id": 11,
-                    "run_attempt": 1,
-                },
-            ),
-            "stale_receipt",
-        )
-        broadcast = [
-            {
-                "id": 30,
-                "run_attempt": 1,
-                "status": "in_progress",
-                "event": "schedule",
-                "pull_requests": [],
-            }
-        ]
-        self.assertEqual(
-            skip_reason(report("WAITING"), current, broadcast, 10, 1),
-            "newer_run",
-        )
-        feature_push = [
-            {
-                "id": 40,
-                "run_attempt": 1,
-                "status": "completed",
-                "conclusion": "success",
-                "event": "push",
-                "head_branch": "feature",
-                "pull_requests": [],
-            }
-        ]
-        self.assertFalse(has_newer_run(feature_push, 1, 10, 1, "trunk"))
-        self.assertIsNone(
-            skip_reason(
-                report("WAITING"), current, feature_push, 10, 1, None, "trunk"
-            )
-        )
-        default_push = [
-            {
-                "id": 40,
-                "run_attempt": 1,
-                "status": "in_progress",
-                "conclusion": None,
-                "event": "push",
-                "head_branch": "trunk",
-                "pull_requests": [],
-            }
-        ]
-        self.assertEqual(
-            skip_reason(
-                report("WAITING"), current, default_push, 10, 1, None, "trunk"
-            ),
-            "newer_run",
-        )
-        dispatch_one = [
-            {
-                "id": 50,
-                "run_attempt": 1,
-                "status": "completed",
-                "event": "workflow_dispatch",
-                "display_title": "shadow-pr-1",
-                "pull_requests": [],
-            }
-        ]
-        self.assertTrue(has_newer_run(dispatch_one, 1, 10, 1))
-        self.assertFalse(has_newer_run(dispatch_one, 2, 10, 1))
-        invalid_dispatch = [
-            {
-                "id": 51,
-                "run_attempt": 1,
-                "status": "completed",
-                "event": "workflow_dispatch",
-                "display_title": "shadow-pr-123abc",
-                "pull_requests": [],
-            }
-        ]
-        self.assertFalse(has_newer_run(invalid_dispatch, 123, 10, 1))
-        substring_all = [
-            {
-                "id": 52,
-                "run_attempt": 1,
-                "status": "in_progress",
-                "event": "workflow_dispatch",
-                "display_title": "retry-shadow-all-now",
-                "pull_requests": [],
-            }
-        ]
-        self.assertFalse(has_newer_run(substring_all, 2, 10, 1))
-        associated_broadcast = [
-            {
-                "id": 53,
-                "run_attempt": 1,
-                "status": "in_progress",
-                "event": "workflow_run",
-                "pull_requests": [{"number": 1}],
-            }
-        ]
-        self.assertTrue(has_newer_run(associated_broadcast, 2, 10, 1))
-        dispatch_all = [
-            {
-                "id": 50,
-                "run_attempt": 1,
-                "status": "in_progress",
-                "event": "workflow_dispatch",
-                "display_title": "shadow-all",
-                "pull_requests": [],
-            }
-        ]
-        self.assertTrue(has_newer_run(dispatch_all, 2, 10, 1))
-        closed = {**current, "state": "closed"}
-        closed_report = report("HUMAN_REVIEW_REQUIRED")
-        closed_report["observations"]["pr"]["state"] = "CLOSED"
-        self.assertFalse(has_newer_run(broadcast, 1, 10, 1, pr_open=False))
-        self.assertIsNone(skip_reason(closed_report, closed, broadcast, 10, 1))
-        recovered = [
-            {
-                "id": 31,
-                "run_attempt": 1,
-                "status": "completed",
-                "conclusion": "success",
-                "event": "schedule",
-                "run_started_at": "2026-09-11T14:00:00Z",
-                "pull_requests": [],
-                "jobs": [{"name": "publish (1)", "conclusion": "success"}],
-            }
-        ]
-        live_published = {
-            "id": 32,
-            "run_attempt": 1,
-            "status": "in_progress",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
-        }
-        self.assertTrue(has_newer_run([live_published], 1, 10, 1, pr_open=False))
-        self.assertFalse(
-            has_newer_run(
-                [
-                    {
-                        **live_published,
-                        "jobs": [{"name": "observe", "conclusion": None}],
-                    }
-                ],
-                1,
-                10,
-                1,
-                pr_open=False,
-            )
-        )
-        self.assertTrue(has_newer_run(recovered, 1, 10, 1, pr_open=False))
-        self.assertFalse(
-            has_newer_run(
-                [
-                    {
-                        **recovered[0],
-                        "jobs": [{"name": "publish (2)", "conclusion": "success"}],
-                    }
-                ],
-                1,
-                10,
-                1,
-                pr_open=False,
-            )
-        )
-        self.assertEqual(skip_reason(closed_report, closed, recovered, 10, 1), "newer_run")
-        self.assertEqual(skip_reason(closed_report, closed, newer, 10, 1), "newer_run")
-        rerun = {
-            "id": 10,
-            "run_attempt": 2,
-            "status": "in_progress",
-            "event": "workflow_dispatch",
-            "display_title": "shadow-pr-1",
-            "run_started_at": "2026-09-11T13:00:00Z",
-            "pull_requests": [],
-        }
-        failed_newer_id = {
-            "id": 11,
-            "run_attempt": 1,
-            "status": "completed",
-            "event": "pull_request_target",
-            "run_started_at": "2026-09-11T12:00:00Z",
-            "pull_requests": [{"number": 1}],
-        }
-        self.assertFalse(has_newer_run([failed_newer_id, rerun], 1, 10, 2))
-        self.assertIsNone(
-            skip_reason(
-                report("WAITING", observed="2026-09-11T13:00:00+00:00"),
-                current,
-                [failed_newer_id, rerun],
-                10,
-                2,
-            )
-        )
-        later_start = {
-            **failed_newer_id,
-            "run_started_at": "2026-09-11T14:00:00Z",
-        }
-        self.assertTrue(has_newer_run([later_start, rerun], 1, 10, 2))
-        earlier_start_later_observe = {
-            "id": 10,
-            "run_attempt": 1,
-            "status": "in_progress",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T12:00:00Z",
-            "pull_requests": [],
-        }
-        later_start_peer = {
-            "id": 11,
-            "run_attempt": 1,
-            "status": "completed",
-            "event": "workflow_run",
-            "run_started_at": "2026-09-11T12:05:00Z",
-            "pull_requests": [{"number": 1}],
-            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
-        }
-        self.assertTrue(
-            has_newer_run(
-                [earlier_start_later_observe, later_start_peer],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:10:00+00:00",
-            )
-        )
-        failed_collection = {
-            "id": 60,
-            "run_attempt": 1,
-            "status": "completed",
-            "conclusion": "failure",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-        }
-        self.assertFalse(has_newer_run([failed_collection], 1, 10, 1))
-        self.assertIsNone(
-            skip_reason(report("WAITING"), current, [failed_collection], 10, 1)
-        )
-        failed_published = {
-            **failed_collection,
-            "jobs": [{"name": "publish (1)", "conclusion": "failure"}],
-        }
-        self.assertTrue(has_newer_run([failed_published], 1, 10, 1))
-        failed_targeted = {
-            "id": 61,
-            "run_attempt": 1,
-            "status": "completed",
-            "conclusion": "failure",
-            "event": "pull_request",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [{"number": 1}],
-        }
-        self.assertTrue(has_newer_run([failed_targeted], 1, 10, 1))
-        success_without_publish = {
-            "id": 62,
-            "run_attempt": 1,
-            "status": "completed",
-            "conclusion": "success",
-            "event": "pull_request_review",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [{"number": 1}],
-            "jobs": [{"name": "observe", "conclusion": "success"}],
-        }
-        self.assertFalse(has_newer_run([success_without_publish], 1, 10, 1))
-        self.assertTrue(
-            run_published_labels(
-                {**failed_collection, "jobs": None},
-                type(
-                    "Boom",
-                    (),
-                    {
-                        "pages": staticmethod(
-                            lambda path, key=None: (_ for _ in ()).throw(
-                                PublishError("API GET jobs: HTTP 502")
-                            )
-                        )
-                    },
-                )(),
-            )
-        )
-        self.assertEqual(
-            skip_reason(report("WAITING"), current, [failed_published], 10, 1),
-            "newer_run",
-        )
-        completed_old_id = {
-            "id": 5,
-            "run_attempt": 2,
-            "status": "completed",
-            "conclusion": "success",
-            "event": "workflow_dispatch",
-            "display_title": "shadow-pr-1",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-        }
-        self.assertTrue(
-            has_newer_run(
-                [completed_old_id],
-                1,
-                200,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-            )
-        )
-        self.assertIsNone(
-            skip_reason(
-                report("WAITING", observed="2026-09-11T12:00:00+00:00"),
-                current,
-                [
-                    {
-                        "id": 10,
-                        "run_attempt": 2,
-                        "status": "in_progress",
-                        "event": "workflow_dispatch",
-                        "display_title": "shadow-pr-1",
-                        "run_started_at": "2026-09-11T14:00:00Z",
-                    }
-                ],
-                10,
-                1,
-            )
-        )
-
-    def test_has_newer_run_fetches_jobs_only_for_later_runs(self):
-        older = {
-            "id": 5,
-            "run_attempt": 1,
-            "status": "completed",
-            "conclusion": "success",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T10:00:00Z",
-            "pull_requests": [],
-        }
-        newer = {
-            "id": 60,
-            "run_attempt": 1,
-            "status": "completed",
-            "conclusion": "success",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-        }
-
-        class JobsAPI:
-            def __init__(self):
-                self.paths = []
-
-            def pages(self, path, key=None):
-                self.paths.append(path)
-                return [{"name": "publish (1)", "conclusion": "success"}]
-
-        api = JobsAPI()
-        cache = {}
-        self.assertFalse(
-            has_newer_run(
-                [older],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-                api=api,
-                published_cache=cache,
-            )
-        )
-        self.assertEqual(api.paths, [])
-        self.assertTrue(
-            has_newer_run(
-                [newer],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-                api=api,
-                published_cache=cache,
-            )
-        )
-        self.assertEqual(len(api.paths), 1)
-        self.assertTrue(api.paths[0].endswith("/jobs?filter=all"))
-        self.assertTrue(
-            has_newer_run(
-                [newer],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-                api=api,
-                published_cache=cache,
-            )
-        )
-        self.assertEqual(len(api.paths), 1)
-
-    def test_published_cache_invalidates_when_attempt_or_status_changes(self):
-        live = {
-            "id": 60,
-            "run_attempt": 1,
-            "status": "in_progress",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-        }
-        cancelled = {
-            **live,
-            "status": "completed",
-            "conclusion": "cancelled",
-        }
-        cache = {}
-        cancelled_unpublished = {
-            **cancelled,
-            "jobs": [{"name": "observe", "conclusion": "cancelled"}],
-        }
-        cancelled_published = {
-            **cancelled,
-            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
-        }
-        self.assertTrue(
-            has_newer_run(
-                [live],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-                published_cache=cache,
-            )
-        )
-        self.assertFalse(
-            has_newer_run(
-                [cancelled_unpublished],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-                published_cache=cache,
-            )
-        )
-        self.assertTrue(
-            has_newer_run(
-                [cancelled_published],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-            )
-        )
-        self.assertTrue(
-            has_newer_run(
-                [cancelled],
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:00:00+00:00",
-            )
-        )
-
-    def test_base_ref_mismatch_skips_without_sha_change(self):
-        current = {
-            "number": 1,
-            "head_sha": HEAD,
-            "base_sha": BASE,
-            "base_ref": "release",
-            "state": "open",
-            "merged": False,
-            "draft": False,
-            "labels": ["shadow/要マージ判断"],
-        }
-        self.assertEqual(
-            skip_reason(report("SHADOW_CONDITIONS_MET"), current, [], 10, 1),
-            "stale_pr_state",
-        )
-
-    def test_draft_or_close_mismatch_skips_without_sha_change(self):
-        current = {
-            "number": 1,
-            "head_sha": HEAD,
-            "base_sha": BASE,
-            "base_ref": "trunk",
-            "state": "open",
-            "merged": False,
-            "draft": True,
-            "labels": ["shadow/要マージ判断"],
-        }
-        self.assertEqual(
-            skip_reason(report("SHADOW_CONDITIONS_MET"), current, [], 10, 1),
-            "stale_pr_state",
-        )
-        current["draft"] = False
-        current["state"] = "closed"
-        self.assertEqual(
-            skip_reason(report("SHADOW_CONDITIONS_MET"), current, [], 10, 1),
-            "stale_pr_state",
-        )
-        api = FixtureAPI(["shadow/要マージ判断"], draft=True)
-        status = publish_pr(api, 1, report("SHADOW_CONDITIONS_MET"), 10, 1, [])
-        self.assertEqual(status, "skipped:stale_pr_state")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"]], ["shadow/要マージ判断"]
-        )
-
-    def test_relevant_runs_stop_after_reaching_current_id(self):
-        pages = [
-            {
-                "workflow_runs": [
-                    {"id": 20 + n, "run_attempt": 1} for n in range(100)
-                ]
-            },
-            {
-                "workflow_runs": [
-                    {"id": 10, "run_attempt": 1},
-                    {"id": 5, "run_attempt": 1},
-                ]
-            },
-        ]
-
-        class Paging:
-            prefix = "/repos/example/project"
-            calls = []
-
-            def request(self, path, body=None, method=None):
-                self.calls.append(path)
-                if "status=" in path:
-                    return {"workflow_runs": []}
-                if not pages:
-                    return {"workflow_runs": []}
-                return pages.pop(0)
-
-        runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 10)
-        self.assertEqual(len(runs), 102)
-        self.assertEqual(
-            [path for path in Paging.calls if "status=" not in path],
-            [
-                "/repos/example/project/actions/workflows/"
-                "autonomous-merge-shadow.yml/runs?per_page=100&page=1",
-                "/repos/example/project/actions/workflows/"
-                "autonomous-merge-shadow.yml/runs?per_page=100&page=2",
-            ],
-        )
-
-    def test_live_older_run_is_included_without_full_history(self):
-        pages = [
-            {"workflow_runs": [{"id": 5, "run_attempt": 2, "status": "in_progress"}]},
-            {
-                "workflow_runs": [
-                    {"id": 20 + n, "run_attempt": 1} for n in range(100)
-                ]
-            },
-        ]
-
-        class Paging:
-            prefix = "/repos/example/project"
-            listed = False
-
-            def request(self, path, body=None, method=None):
-                if "status=in_progress" in path:
-                    return pages[0]
-                if "status=" in path:
-                    return {"workflow_runs": []}
-                if self.listed:
-                    return {"workflow_runs": []}
-                self.listed = True
-                return pages[1]
-
-        runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 200)
-        self.assertEqual({int(item["id"]) for item in runs}, {5, *range(20, 120)})
-
-    def test_completed_older_rerun_is_listed_after_current_id(self):
-        pages = [
-            {
-                "workflow_runs": [
-                    {"id": 200 + n, "run_attempt": 1} for n in range(100)
-                ]
-            },
-            {
-                "workflow_runs": [
-                    {
-                        "id": 5,
-                        "run_attempt": 2,
-                        "status": "completed",
-                        "run_started_at": "2026-09-11T14:00:00Z",
-                    }
-                ]
-            },
-        ]
-
-        class Paging:
-            prefix = "/repos/example/project"
-
-            def request(self, path, body=None, method=None):
-                if "status=" in path:
-                    return {"workflow_runs": []}
-                if not pages:
-                    return {"workflow_runs": []}
-                return pages.pop(0)
-
-        runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 200)
-        self.assertIn(5, {int(item["id"]) for item in runs})
-
-    def test_relevant_runs_fail_when_history_fills_page_limit(self):
-        class Paging:
-            prefix = "/repos/example/project"
-
-            def request(self, path, body=None, method=None):
-                if "status=" in path:
-                    return {"workflow_runs": []}
-                return {
-                    "workflow_runs": [
-                        {"id": 1000 + n, "run_attempt": 1} for n in range(100)
-                    ]
-                }
-
         with (
-            patch("publish.MAX_PAGES", 1),
-            self.assertRaises(PublishError) as error,
+            patch("sys.argv", args),
+            patch("publish.GitHub", return_value=api),
+            redirect_stdout(io.StringIO()),
         ):
-            list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 10)
-        self.assertIn("pagination limit", str(error.exception))
+            return main()
 
-    def test_recent_runs_prefer_refreshed_record_for_same_id(self):
-        known = [
-            {
-                "id": 5,
-                "run_attempt": 1,
-                "status": "completed",
-                "event": "schedule",
-                "run_started_at": "2026-09-11T10:00:00Z",
-                "pull_requests": [],
-            },
-            {
-                "id": 12,
-                "run_attempt": 1,
-                "status": "in_progress",
-                "event": "pull_request",
-                "run_started_at": "2026-09-11T12:00:00Z",
-                "pull_requests": [{"number": 1}],
-            },
-        ]
-        refreshed = {
-            "id": 5,
-            "run_attempt": 2,
-            "status": "in_progress",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-        }
-
-        class Paging:
-            prefix = "/repos/example/project"
-
-            def request(self, path, body=None, method=None):
-                if "status=in_progress" in path or "status=" not in path:
-                    return {"workflow_runs": [refreshed]}
-                return {"workflow_runs": []}
-
-        runs = list_recent_runs(Paging(), "autonomous-merge-shadow.yml", known)
-        match = next(item for item in runs if int(item["id"]) == 5)
-        self.assertEqual(match["run_attempt"], 2)
-        self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
-        self.assertTrue(has_newer_run(runs, 1, 12, 1))
-        self.assertFalse(has_newer_run(known, 1, 12, 1))
-
-    def test_recorded_attempt_start_keeps_retry_from_looking_newer(self):
-        data = report("WAITING", observed="2026-09-11T12:10:00+00:00")
-        data["observations"]["run_started_at"] = "2026-09-11T12:00:00Z"
-        current = {
-            "number": 1,
-            "head_sha": HEAD,
-            "base_sha": BASE,
-            "base_ref": "trunk",
-            "state": "open",
-            "merged": False,
-            "draft": False,
-            "labels": ["shadow/CI・レビュー待ち"],
-        }
-        runs = [
-            {
-                "id": 10,
-                "run_attempt": 2,
-                "status": "in_progress",
-                "event": "pull_request",
-                "run_started_at": "2026-09-11T14:00:00Z",
-                "pull_requests": [{"number": 1}],
-            },
-            {
-                "id": 11,
-                "run_attempt": 1,
-                "status": "completed",
-                "event": "schedule",
-                "run_started_at": "2026-09-11T12:05:00Z",
-                "pull_requests": [],
-                "jobs": [{"name": "publish (1)", "conclusion": "success"}],
-            },
-        ]
-        self.assertTrue(
-            has_newer_run(
-                runs,
-                1,
-                10,
-                1,
-                observed_at="2026-09-11T12:10:00+00:00",
-                recorded_started_at="2026-09-11T12:00:00Z",
-            )
-        )
-        self.assertEqual(skip_reason(data, current, runs, 10, 1), "newer_run")
-
-    def test_publish_matrix_keeps_per_pr_jobs_within_limit(self):
-        from publish import MAX_PUBLISH_MATRIX, overflow_prs, publish_matrix
-
-        self.assertEqual(publish_matrix([3, 1, 2]), ("per-pr", [1, 2, 3]))
-        self.assertEqual(overflow_prs([3, 1, 2]), [])
-        at_limit = list(range(1, MAX_PUBLISH_MATRIX + 1))
-        self.assertEqual(publish_matrix(at_limit), ("per-pr", at_limit))
-        self.assertEqual(overflow_prs(at_limit), [])
-        overflow = list(range(1, MAX_PUBLISH_MATRIX + 2))
-        self.assertEqual(
-            publish_matrix(overflow),
-            ("per-pr", list(range(1, MAX_PUBLISH_MATRIX + 1))),
-        )
-        self.assertEqual(overflow_prs(overflow), [MAX_PUBLISH_MATRIX + 1])
-
-    def test_publish_matrix_rotates_beyond_overflow_across_runs(self):
-        from publish import MAX_PUBLISH_MATRIX, overflow_prs, publish_matrix, rotate_prs
-
-        self.assertEqual(rotate_prs([], 9), [])
-        self.assertEqual(rotate_prs([3, 1, 2], 1), [2, 3, 1])
-        values = list(range(1, MAX_PUBLISH_MATRIX * 2 + 4))
-        leftover = values[MAX_PUBLISH_MATRIX * 2 :]
-        rotated = values[2:] + values[:2]
-        self.assertEqual(
-            publish_matrix(values, 2),
-            ("per-pr", rotated[:MAX_PUBLISH_MATRIX]),
-        )
-        self.assertEqual(
-            overflow_prs(values, 2),
-            rotated[MAX_PUBLISH_MATRIX : MAX_PUBLISH_MATRIX * 2],
-        )
-        covered = set(publish_matrix(values, MAX_PUBLISH_MATRIX * 2)[1]) | set(
-            overflow_prs(values, MAX_PUBLISH_MATRIX * 2)
-        )
-        self.assertTrue(set(leftover) <= covered)
-
-    def test_skip_reason_blocks_observation_without_run_started_at(self):
-        current = {
-            "number": 1,
-            "head_sha": HEAD,
-            "base_sha": BASE,
-            "base_ref": "trunk",
-            "state": "open",
-            "merged": False,
-            "draft": False,
-            "labels": ["shadow/CI・レビュー待ち"],
-        }
-        payload = report("WAITING")
-        del payload["observations"]["run_started_at"]
-        self.assertEqual(
-            skip_reason(payload, current, [], 10, 1),
-            "missing_run_started_at",
-        )
-        self.assertEqual(
-            skip_reason(
-                {"decision": "INSUFFICIENT_DATA", "error": "API 403"},
-                current,
-                [],
-                10,
-                1,
-            ),
-            "missing_run_started_at",
-        )
-        self.assertIsNone(
-            skip_reason(
-                {
-                    "decision": "INSUFFICIENT_DATA",
-                    "error": "API 403",
-                    "observations": {"run_started_at": "2026-09-11T12:00:00Z"},
-                },
-                current,
-                [],
-                10,
-                1,
-            )
-        )
-
-    def test_run_published_labels_uses_prior_attempt_and_cancelled_jobs(self):
-        cancelled = {
-            "id": 9,
-            "status": "completed",
-            "conclusion": "cancelled",
-            "event": "schedule",
-        }
-        self.assertTrue(
-            run_published_labels(
-                {
-                    **cancelled,
-                    "jobs": [
-                        {"name": "publish (1)", "conclusion": "success"},
-                        {"name": "observe", "conclusion": "cancelled"},
-                    ],
-                },
-                number=1,
-            )
-        )
-        self.assertFalse(
-            run_published_labels(
-                {
-                    **cancelled,
-                    "jobs": [{"name": "observe", "conclusion": "cancelled"}],
-                },
-                number=1,
-            )
-        )
-        self.assertTrue(run_published_labels(cancelled))
-
-        class JobsAPI:
-            def pages(self, path, key=None):
-                self.path = path
-                return [{"name": "publish (1)", "conclusion": "success"}]
-
-        api = JobsAPI()
-        self.assertTrue(run_published_labels(cancelled, api, 1))
-        self.assertEqual(api.path, "/actions/runs/9/jobs?filter=all")
-
-    def test_recent_runs_refresh_live_snapshot_run(self):
-        known = [
-            {
-                "id": 5,
-                "run_attempt": 1,
-                "status": "in_progress",
-                "event": "schedule",
-                "run_started_at": "2026-09-11T10:00:00Z",
-                "pull_requests": [],
-            }
-        ]
-        updated = {
-            "id": 5,
-            "run_attempt": 2,
-            "status": "completed",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
-        }
-
-        class Paging:
-            prefix = "/repos/example/project"
-
-            def request(self, path, body=None, method=None):
-                if path.endswith("/actions/runs/5"):
-                    return updated
-                return {"workflow_runs": []}
-
-        runs = list_recent_runs(
-            Paging(),
-            "autonomous-merge-shadow.yml",
-            known,
-            number=1,
-            run_id=200,
-        )
-        match = next(item for item in runs if int(item["id"]) == 5)
-        self.assertEqual(match["run_attempt"], 2)
-        self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
-
-    def test_recent_runs_skip_id_refresh_for_completed_known_run(self):
-        known = [
-            {
-                "id": 5,
-                "run_attempt": 1,
-                "status": "completed",
-                "event": "schedule",
-                "run_started_at": "2026-09-11T10:00:00Z",
-                "pull_requests": [],
-            }
-        ]
-        updated = {
-            "id": 5,
-            "run_attempt": 2,
-            "status": "completed",
-            "event": "schedule",
-            "run_started_at": "2026-09-11T14:00:00Z",
-            "pull_requests": [],
-        }
-
-        class Paging:
-            prefix = "/repos/example/project"
-
-            def __init__(self):
-                self.fetched = []
-
-            def request(self, path, body=None, method=None):
-                self.fetched.append(path)
-                if path.endswith("/actions/runs/5"):
-                    return updated
-                return {"workflow_runs": []}
-
-        api = Paging()
-        runs = list_recent_runs(
-            api,
-            "autonomous-merge-shadow.yml",
-            known,
-            number=1,
-            run_id=200,
-        )
-        match = next(item for item in runs if int(item["id"]) == 5)
-        self.assertEqual(match["run_attempt"], 1)
-        self.assertFalse(any(path.endswith("/actions/runs/5") for path in api.fetched))
-
-    def test_recent_runs_only_lists_in_progress_and_queued(self):
-        class Paging:
-            prefix = "/repos/example/project"
-
-            def __init__(self):
-                self.fetched = []
-
-            def request(self, path, body=None, method=None):
-                self.fetched.append(path)
-                return {"workflow_runs": []}
-
-        api = Paging()
-        list_recent_runs(api, "autonomous-merge-shadow.yml")
-        statuses = [
-            path.split("status=", 1)[1].split("&", 1)[0]
-            for path in api.fetched
-            if "status=" in path
-        ]
-        self.assertEqual(statuses, ["in_progress", "queued"])
-        self.assertEqual(
-            sum(1 for path in api.fetched if "/runs?" in path and "status=" not in path),
-            1,
-        )
-
-    def test_shared_history_is_refreshed_before_first_write(self):
-        api = FixtureAPI(["enhancement"])
-        api.workflow_pages = [
-            {
-                "workflow_runs": [
-                    {
-                        "id": 20,
-                        "run_attempt": 1,
-                        "status": "in_progress",
-                        "event": "schedule",
-                        "run_started_at": "2026-09-11T14:00:00Z",
-                        "pull_requests": [],
-                    }
-                ]
-            }
-        ]
-        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
-        self.assertEqual(status, "skipped:newer_run")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"]], ["enhancement"]
-        )
-
-    def test_write_is_skipped_when_newer_run_appears_before_labels(self):
-        api = FixtureAPI(["enhancement"])
-        api.workflow_pages = [
-            {"workflow_runs": []},
-            {
-                "workflow_runs": [
-                    {
-                        "id": 20,
-                        "run_attempt": 1,
-                        "status": "in_progress",
-                        "event": "schedule",
-                        "pull_requests": [],
-                    }
-                ]
-            },
-        ]
-        status = publish_pr(api, 1, report("WAITING"), 10, 1)
-        self.assertEqual(status, "skipped:newer_run")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"]], ["enhancement"]
-        )
-
-    def test_collection_error_expires_merge_judgment_label(self):
-        api = FixtureAPI(["enhancement", "shadow/要マージ判断"])
-        status = publish_pr(
-            api,
-            1,
-            {
-                "decision": "INSUFFICIENT_DATA",
-                "error": "API 403",
-                "observations": {"run_started_at": "2026-09-11T12:00:00Z"},
-            },
-            10,
-            1,
-            [],
-            None,
-        )
-        self.assertEqual(status, "updated")
-        names = [item["name"] for item in api.pull["labels"]]
-        self.assertIn("shadow/再観測が必要", names)
-        self.assertIn("enhancement", names)
-        self.assertNotIn("shadow/要マージ判断", names)
-
-    def test_closed_or_merged_pr_uses_human_review_label(self):
-        api = FixtureAPI(["shadow/要マージ判断"], state="closed", merged=True)
-        closed = report("HUMAN_REVIEW_REQUIRED")
-        closed["observations"]["pr"]["state"] = "MERGED"
-        status = publish_pr(api, 1, closed, 10, 1, [], None)
-        self.assertEqual(status, "updated")
-        names = [item["name"] for item in api.pull["labels"]]
-        self.assertEqual(
-            [name for name in names if name in MANAGED_LABELS], ["shadow/要対応"]
-        )
-
-    def test_write_failure_does_not_change_report_files(self):
+    def test_cli_continues_other_prs_after_failure_and_keeps_artifacts(self):
+        api = FixtureAPI([READY])
+        api.pulls[2] = pull([READY])
+        api.fail = lambda verb, path: verb == "POST" and "/issues/1/" in path
         with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            payload = report("WAITING")
-            (report_dir / "pr-1.json").write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
-            )
-            before = (report_dir / "pr-1.json").read_text()
-            event = report_dir / "event.json"
-            event.write_text(json.dumps({"pull_request": {"number": 1}}))
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                str(report_dir),
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-                "--event",
-                str(event),
-            ]
-            api = FixtureAPI(["enhancement"])
-            original = api.request
-
-            def failing(path, body=None, method=None):
-                verb = method or ("POST" if body is not None else "GET")
-                if verb == "POST" and path.endswith("/labels") and body and "labels" in body:
-                    raise PublishError("API POST /labels: HTTP 403")
-                return original(path, body, method)
-
-            api.request = failing
-            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
-                self.assertEqual(main(), 1)
-            self.assertEqual((report_dir / "pr-1.json").read_text(), before)
+            for number in [1, 2]:
+                Path(directory, f"pr-{number}.json").write_text(
+                    json.dumps(report(number=number))
+                )
+            before = {p.name: p.read_bytes() for p in Path(directory).iterdir()}
+            self.assertEqual(self.run_main(directory, api), 1)
+            self.assertEqual(api.names(1), [READY])
+            self.assertEqual(api.names(2), [WAITING])
             self.assertEqual(
-                [item["name"] for item in api.pull["labels"]], ["enhancement"]
+                before, {p.name: p.read_bytes() for p in Path(directory).iterdir()}
             )
+            api.fail = None
+            self.assertEqual(self.run_main(directory, api), 0)
+            self.assertEqual(api.names(1), [WAITING])
+            self.assertFalse(any("/actions/" in path for _, path, _ in api.calls))
 
-    def test_collection_error_without_pr_number_is_ignored(self):
+    def test_cli_reports_global_collection_failure_without_changing_open_labels(self):
+        api = FixtureAPI([READY])
         with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            (report_dir / "collection-error.json").write_text(
-                json.dumps({"decision": "INSUFFICIENT_DATA", "error": "boom"})
+            Path(directory, "collection-error.json").write_text(
+                '{"decision":"INSUFFICIENT_DATA"}'
             )
-            self.assertEqual(load_reports(report_dir, {}), [])
-            self.assertEqual(
-                load_reports(report_dir, {"pull_request": {"number": 7}}),
-                [(7, {"decision": "INSUFFICIENT_DATA", "error": "boom"})],
-            )
+            self.assertEqual(self.run_main(directory, api), 1)
+            self.assertEqual(api.names(), [READY])
 
-    def test_event_pr_reads_dispatch_input(self):
-        self.assertEqual(event_pr({"inputs": {"pr_number": "12"}}), 12)
-        self.assertIsNone(event_pr({"inputs": {"pr_number": ""}}))
+    def test_cli_handles_no_open_prs_and_rejects_missing_directory(self):
+        api = FixtureAPI([READY])
+        api.pulls[1]["state"] = "closed"
+        api.closed = [{"number": 1, "pull_request": {}}]
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.run_main(directory, api), 0)
+            self.assertEqual(api.names(), [])
+            self.assertEqual(self.run_main(Path(directory, "missing"), api), 1)
 
-    def test_japanese_label_names_are_percent_encoded(self):
-        self.assertEqual(
-            encoded_label("shadow/要マージ判断"),
-            "shadow%2F%E8%A6%81%E3%83%9E%E3%83%BC%E3%82%B8%E5%88%A4%E6%96%AD",
-        )
-        writes = []
+    def test_cli_rejects_malformed_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "pr-1.json").write_text("not json")
+            self.assertEqual(self.run_main(directory, FixtureAPI()), 1)
 
-        class Recording:
-            prefix = "/repos/example/project"
+    def test_http_delete_encodes_japanese_label_and_sends_no_body(self):
+        with patch("publish.urlopen") as opened:
+            opened.return_value.__enter__.return_value.read.return_value = b""
+            api = GitHub("example/project")
+            path = f"{api.prefix}/issues/1/labels/{encoded_label(WAITING)}"
+            self.assertIsNone(api.request(path, method="DELETE"))
+            req = opened.call_args.args[0]
+            self.assertEqual(req.method, "DELETE")
+            self.assertIsNone(req.data)
+            self.assertNotIn("待ち", req.full_url)
 
-            def request(self, path, body=None, method=None):
-                writes.append(
-                    (method or ("POST" if body is not None else "GET"), path, body)
-                )
-                return None
-
-        sync_labels(
-            Recording(),
-            3,
-            ["shadow/要マージ判断"],
-            "shadow/再観測が必要",
-        )
-        self.assertTrue(
-            any(
-                item[0] == "POST"
-                and item[2] == {"labels": ["shadow/再観測が必要"]}
-                for item in writes
-            )
-        )
-        delete = next(item for item in writes if item[0] == "DELETE")
-        self.assertEqual(
-            delete[1],
-            "/repos/example/project/issues/3/labels/"
-            + encoded_label("shadow/要マージ判断"),
-        )
-
-    def test_label_write_aborts_when_newer_run_appears_mid_sync(self):
-        writes = []
-
-        class Recording:
-            prefix = "/repos/example/project"
-
-            def request(self, path, body=None, method=None):
-                writes.append(
-                    (method or ("POST" if body is not None else "GET"), path, body)
-                )
-                return None
-
-        checks = iter(["newer_run"])
-        result, reason = sync_labels(
-            Recording(),
-            3,
-            ["shadow/要マージ判断"],
-            "shadow/再観測が必要",
-            lambda: next(checks),
-        )
-        self.assertEqual(reason, "newer_run")
-        self.assertEqual(result, [])
-        self.assertFalse(any(item[0] in {"POST", "DELETE"} for item in writes))
-
-    def test_started_sync_finishes_desired_label_despite_newer_run(self):
-        writes = []
-
-        class Recording:
-            prefix = "/repos/example/project"
-
-            def request(self, path, body=None, method=None):
-                writes.append(
-                    (method or ("POST" if body is not None else "GET"), path, body)
-                )
-                return None
-
-        checks = iter([None, "newer_run"])
-        result, reason = sync_labels(
-            Recording(),
-            3,
-            ["shadow/要マージ判断"],
-            "shadow/再観測が必要",
-            lambda: next(checks),
-        )
-        self.assertIsNone(reason)
-        self.assertEqual(
-            result,
-            ["add:shadow/再観測が必要", "remove:shadow/要マージ判断"],
-        )
-        self.assertEqual(
-            [item[0] for item in writes if item[0] in {"POST", "DELETE"}],
-            ["POST", "DELETE"],
-        )
-
-    def test_refresh_removes_managed_labels_added_by_a_peer(self):
-        api = FixtureAPI(["shadow/要マージ判断"])
-        original = api.request
-
-        def peer(path, body=None, method=None):
-            result = original(path, body, method)
-            verb = method or ("POST" if body is not None else "GET")
-            if verb == "POST" and body and "labels" in body:
-                names = [item["name"] for item in api.pull["labels"]]
-                if "shadow/要対応" not in names:
-                    api.pull["labels"].append({"name": "shadow/要対応"})
-            return result
-
-        api.request = peer
-        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
-        self.assertEqual(status, "updated")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
-            ["shadow/CI・レビュー待ち"],
-        )
-
-    def test_final_pass_removes_peer_label_after_readd(self):
-        api = FixtureAPI([])
-        original = api.request
-        deletes = {"n": 0}
-
-        def competing_publisher(path, body=None, method=None):
-            result = original(path, body, method)
-            verb = method or ("POST" if body is not None else "GET")
-            desired = "shadow/CI・レビュー待ち"
-            peer = "shadow/要対応"
-            names = [item["name"] for item in api.pull["labels"]]
-            if verb == "POST" and body and "labels" in body and peer not in names:
-                api.pull["labels"].append({"name": peer})
-            if verb == "DELETE":
-                deletes["n"] += 1
-                if deletes["n"] == 1:
-                    api.pull["labels"] = [
-                        item
-                        for item in api.pull["labels"]
-                        if item["name"] != desired
-                    ]
-                    if not any(item["name"] == peer for item in api.pull["labels"]):
-                        api.pull["labels"].append({"name": peer})
-            return result
-
-        api.request = competing_publisher
-        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
-        self.assertEqual(status, "updated")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
-            ["shadow/CI・レビュー待ち"],
-        )
-
-    def test_final_pass_readds_desired_after_peer_deletes_it(self):
-        api = FixtureAPI([])
-        original = api.request
-        deletes = {"n": 0}
-
-        def competing_publisher(path, body=None, method=None):
-            result = original(path, body, method)
-            verb = method or ("POST" if body is not None else "GET")
-            desired = "shadow/CI・レビュー待ち"
-            peer = "shadow/要対応"
-            names = [item["name"] for item in api.pull["labels"]]
-            if (
-                verb == "POST"
-                and body
-                and "labels" in body
-                and deletes["n"] < 2
-                and peer not in names
-            ):
-                api.pull["labels"].append({"name": peer})
-            if verb == "DELETE":
-                deletes["n"] += 1
-                api.pull["labels"] = [
-                    item for item in api.pull["labels"] if item["name"] != desired
-                ]
-                if deletes["n"] == 1 and not any(
-                    item["name"] == peer for item in api.pull["labels"]
-                ):
-                    api.pull["labels"].append({"name": peer})
-            return result
-
-        api.request = competing_publisher
-        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
-        self.assertEqual(status, "updated")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
-            ["shadow/CI・レビュー待ち"],
-        )
-
-    def test_sync_readds_desired_after_peer_removes_it(self):
-        api = FixtureAPI(["shadow/要マージ判断"])
-        original = api.request
-
-        def wipe(path, body=None, method=None):
-            result = original(path, body, method)
-            verb = method or ("POST" if body is not None else "GET")
-            if verb == "DELETE":
-                api.pull["labels"] = [
-                    item
-                    for item in api.pull["labels"]
-                    if item["name"] not in MANAGED_LABELS
-                ]
-            return result
-
-        api.request = wipe
-        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
-        self.assertEqual(status, "updated")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
-            ["shadow/CI・レビュー待ち"],
-        )
-
-    def test_empty_remote_labels_are_not_replaced_by_cache(self):
-        api = FixtureAPI(["shadow/CI・レビュー待ち"])
-        original = api.request
-        seen = {"n": 0}
-
-        def emptied(path, body=None, method=None):
-            result = original(path, body, method)
-            if path.endswith("/pulls/1"):
-                seen["n"] += 1
-                if seen["n"] == 3:
-                    return {**api.pull, "labels": []}
-            return result
-
-        api.request = emptied
-        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
-        self.assertEqual(status, "updated")
-        self.assertEqual(
-            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
-            ["shadow/CI・レビュー待ち"],
-        )
-
-    def test_concurrent_label_create_422_is_reused(self):
-        api = FixtureAPI([])
-        api.labels = {}
-        original = api.request
-
-        def conflict(path, body=None, method=None):
-            verb = method or ("POST" if body is not None else "GET")
-            if path.endswith("/labels") and verb == "POST" and body and "name" in body:
-                api.labels[body["name"]] = True
-                raise PublishError(f"API POST {path}: HTTP 422")
-            return original(path, body, method)
-
-        api.request = conflict
-        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
-        self.assertEqual(status, "updated")
-        self.assertIn("shadow/CI・レビュー待ち", [item["name"] for item in api.pull["labels"]])
-
-    def test_missing_repo_labels_are_created_once(self):
-        api = FixtureAPI([])
-        api.labels = {}
-        publish_pr(api, 1, report("WAITING"), 10, 1, [], None)
-        created = [
-            call[2]["name"]
-            for call in api.calls
-            if call[0] == "POST" and call[1].endswith("/labels") and call[2] and "name" in call[2]
-        ]
-        self.assertEqual(sorted(created), sorted(DECISION_LABELS.values()))
-
-    def test_http_delete_uses_method_and_empty_body(self):
-        from publish import GitHub
-
-        api = GitHub("example/project")
-        with patch("publish.urlopen", return_value=__import__("io").BytesIO(b"")) as request:
-            self.assertIsNone(
-                api.request(
-                    "/repos/example/project/issues/1/labels/shadow%2Fwaiting",
-                    method="DELETE",
-                )
-            )
-            sent = request.call_args.args[0]
-            self.assertEqual(sent.get_method(), "DELETE")
-            self.assertIsNone(sent.data)
-
-    def test_http_failure_is_not_treated_as_published(self):
-        from publish import GitHub
-
-        api = GitHub("example/project")
-        with patch(
-            "publish.urlopen",
-            side_effect=HTTPError(
-                "https://api.github.com/repos/example/project/labels",
-                403,
-                "forbidden",
-                {},
-                None,
-            ),
-        ):
+    def test_http_failure_is_not_success(self):
+        error = HTTPError("https://example.com", 403, "Forbidden", {}, None)
+        with patch("publish.urlopen", side_effect=error):
             with self.assertRaisesRegex(PublishError, "HTTP 403"):
-                api.request("/repos/example/project/labels", {"name": "shadow/要対応"})
+                GitHub("example/project").request(
+                    "/repos/example/project/labels", {"name": WAITING}
+                )
 
-    def test_cli_publishes_report_and_keeps_unrelated_labels(self):
-        with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            (report_dir / "pr-1.json").write_text(
-                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
-            )
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                str(report_dir),
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-            ]
-            api = FixtureAPI(["enhancement"])
-            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
-                self.assertEqual(main(), 0)
-            names = [item["name"] for item in api.pull["labels"]]
-            self.assertIn("shadow/CI・レビュー待ち", names)
-            self.assertIn("enhancement", names)
-
-    def test_cli_pr_flag_skips_other_reports(self):
-        with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            (report_dir / "pr-1.json").write_text(
-                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
-            )
-            (report_dir / "pr-2.json").write_text(
-                json.dumps(report("HUMAN_REVIEW_REQUIRED"), ensure_ascii=False) + "\n"
-            )
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                str(report_dir),
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-                "--pr",
-                "1",
-            ]
-            api = FixtureAPI(["enhancement"])
-            seen = []
-            original = api.request
-
-            def track(path, body=None, method=None):
-                seen.append(path)
-                return original(path, body, method)
-
-            api.request = track
-            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
-                self.assertEqual(main(), 0)
-            self.assertTrue(any("/pulls/1" in path for path in seen))
-            self.assertFalse(any("/pulls/2" in path for path in seen))
-            names = [item["name"] for item in api.pull["labels"]]
-            self.assertIn("shadow/CI・レビュー待ち", names)
-            self.assertNotIn("shadow/要対応", names)
-
-    def test_cli_shard_flag_skips_other_reports(self):
-        with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            (report_dir / "pr-1.json").write_text(
-                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
-            )
-            (report_dir / "pr-2.json").write_text(
-                json.dumps(report("HUMAN_REVIEW_REQUIRED"), ensure_ascii=False) + "\n"
-            )
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                str(report_dir),
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-                "--shard",
-                "1",
-            ]
-            api = FixtureAPI(["enhancement"])
-            seen = []
-            original = api.request
-
-            def track(path, body=None, method=None):
-                seen.append(path)
-                return original(path, body, method)
-
-            api.request = track
-            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
-                self.assertEqual(main(), 0)
-            self.assertTrue(any("/pulls/1" in path for path in seen))
-            self.assertFalse(any("/pulls/2" in path for path in seen))
-
-    def test_cli_only_prs_flag_skips_other_reports(self):
-        with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            (report_dir / "pr-1.json").write_text(
-                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
-            )
-            (report_dir / "pr-2.json").write_text(
-                json.dumps(report("HUMAN_REVIEW_REQUIRED"), ensure_ascii=False) + "\n"
-            )
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                str(report_dir),
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-                "--only-prs",
-                "[2]",
-            ]
-            api = FixtureAPI(["enhancement"])
-            seen = []
-            original = api.request
-
-            def track(path, body=None, method=None):
-                seen.append(path)
-                return original(path, body, method)
-
-            api.request = track
-            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
-                self.assertEqual(main(), 0)
-            self.assertFalse(any("/pulls/1" in path for path in seen))
-            self.assertTrue(any("/pulls/2" in path for path in seen))
-
-    def test_cli_ensures_labels_once_for_multiple_prs(self):
-        with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            (report_dir / "pr-1.json").write_text(
-                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
-            )
-            (report_dir / "pr-2.json").write_text(
-                json.dumps(report("HUMAN_REVIEW_REQUIRED"), ensure_ascii=False) + "\n"
-            )
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                str(report_dir),
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-            ]
-            api = FixtureAPI(["enhancement"])
-            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
-                self.assertEqual(main(), 0)
-            label_gets = [
-                path
-                for verb, path, _ in api.calls
-                if verb == "GET" and "/labels/" in path
-            ]
-            self.assertEqual(len(label_gets), len(DECISION_LABELS))
-
-    def test_cli_uses_shared_runs_file_instead_of_listing(self):
-        with tempfile.TemporaryDirectory() as directory:
-            report_dir = Path(directory)
-            (report_dir / "pr-1.json").write_text(
-                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
-            )
-            runs_file = Path(directory) / "runs.json"
-            runs_file.write_text("[]\n")
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                str(report_dir),
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-                "--runs-file",
-                str(runs_file),
-            ]
-            api = FixtureAPI(["enhancement"])
-            with (
-                patch("sys.argv", args),
-                patch("publish.GitHub", return_value=api),
-                patch("publish.list_relevant_runs") as listed,
-            ):
-                self.assertEqual(main(), 0)
-            listed.assert_not_called()
-            label_gets = [
-                path
-                for verb, path, _ in api.calls
-                if verb == "GET" and path.startswith(f"{api.prefix}/labels/")
-            ]
-            self.assertEqual(label_gets, [])
-            names = [item["name"] for item in api.pull["labels"]]
-            self.assertIn("shadow/CI・レビュー待ち", names)
-
-    def test_cli_export_runs_writes_shared_history(self):
-        with tempfile.TemporaryDirectory() as directory:
-            dest = Path(directory) / "runs.json"
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--run-id",
-                "10",
-                "--export-runs",
-                str(dest),
-            ]
-            api = FixtureAPI()
-            api.workflow_pages = [
-                {
-                    "workflow_runs": [
-                        {"id": 20, "run_attempt": 1, "status": "completed"}
-                    ]
-                }
-            ]
-            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
-                self.assertEqual(main(), 0)
-            self.assertEqual(json.loads(dest.read_text())[0]["id"], 20)
-            label_gets = [
-                path
-                for verb, path, _ in api.calls
-                if verb == "GET" and path.startswith(f"{api.prefix}/labels/")
-            ]
-            self.assertEqual(len(label_gets), len(DECISION_LABELS))
-
-    def test_cli_noops_without_reports(self):
-        with tempfile.TemporaryDirectory() as directory:
-            args = [
-                "publish.py",
-                "--repository",
-                "example/project",
-                "--report-dir",
-                directory,
-                "--run-id",
-                "10",
-                "--run-attempt",
-                "1",
-                "--run-url",
-                RUN_URL,
-            ]
-            with patch("sys.argv", args):
-                self.assertEqual(main(), 0)
+    def test_closed_listing_reads_all_pages_and_rejects_truncation(self):
+        api = GitHub("example/project")
+        with patch.object(
+            api, "request", side_effect=[[{}] * 100, [{"number": 101}]]
+        ) as request:
+            self.assertEqual(len(api.pages("/issues?state=closed")), 101)
+            self.assertIn("&per_page=100&page=2", request.call_args.args[0])
+        with (
+            patch("publish.MAX_PAGES", 2),
+            patch.object(api, "request", return_value=[{}] * 100),
+        ):
+            with self.assertRaisesRegex(PublishError, "pagination limit"):
+                api.pages("/issues?state=closed")
 
 
 if __name__ == "__main__":

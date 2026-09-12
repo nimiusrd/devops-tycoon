@@ -9,17 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 
-from collect import (
-    RECOVERY_LABELS,
-    CollectionError,
-    GitHub,
-    collect,
-    collection_error_report,
-    load_current_run,
-    main,
-    stamp_current_run,
-    targets,
-)
+from collect import CollectionError, GitHub, collect, main, targets
 from evaluate import assess
 from test_evaluate import BASE, HEAD, MERGE, policy
 
@@ -102,10 +92,6 @@ class FixtureAPI:
                     "conclusion": "success",
                 },
             ]
-        return []
-
-    def request(self, path, body=None):
-        self.paths.append(path)
         return []
 
 
@@ -453,18 +439,8 @@ class CollectTests(unittest.TestCase):
             self.assertEqual(
                 targets(api, {"workflow_run": {"head_sha": BASE}}, None), [1, 2]
             )
-        api.request = lambda path, body=None: (
-            [{"number": 9, "pull_request": {}}]
-            if "/issues?" in path
-            else []
-        )
-        with patch.object(api, "pages", return_value=[{"number": 1}, {"number": 2}]):
-            self.assertEqual(
-                targets(api, {"workflow_run": {"head_sha": BASE}}, None), [1, 2, 9]
-            )
         with self.assertRaises(CollectionError):
             targets(api, {}, -1)
-        self.assertNotIn("shadow/要対応", RECOVERY_LABELS)
 
     def test_graphql_state_query_omits_unused_cursor_variable(self):
         api = GitHub("example/project")
@@ -476,123 +452,6 @@ class CollectTests(unittest.TestCase):
                 1, "reviewThreads(first: 100, after: $cursor) { nodes { isResolved } }"
             )
             self.assertIn("$cursor: String", request.call_args.args[1]["query"])
-
-    def test_collect_records_current_run_start_time(self):
-        api = FixtureAPI()
-        api.prefix = "/repos/example/project"
-        api.request = lambda path: {
-            "id": 9,
-            "run_started_at": "2026-09-11T12:00:00Z",
-        }
-        with patch.dict(
-            "os.environ", {"GITHUB_RUN_ID": "9", "GITHUB_RUN_ATTEMPT": "1"}
-        ):
-            facts = collect(api, 1, BASE)
-        self.assertEqual(facts["run_id"], 9)
-        self.assertEqual(facts["run_attempt"], 1)
-        self.assertEqual(facts["run_started_at"], "2026-09-11T12:00:00Z")
-
-    def test_stamp_current_run_records_api_failure(self):
-        class Boom:
-            repository = "example/project"
-            prefix = "/repos/example/project"
-
-            def request(self, path):
-                raise CollectionError("API GET run: HTTP 403")
-
-        facts = {"collection_errors": []}
-        with patch.dict("os.environ", {"GITHUB_RUN_ID": "9"}):
-            stamp_current_run(facts, Boom())
-        self.assertEqual(facts["collection_errors"], ["API GET run: HTTP 403"])
-        self.assertNotIn("run_started_at", facts)
-
-    def test_stamp_current_run_records_missing_start_time(self):
-        class Empty:
-            repository = "example/project"
-            prefix = "/repos/example/project"
-
-            def request(self, path):
-                return {"id": 9}
-
-        facts = {"collection_errors": []}
-        with patch.dict("os.environ", {"GITHUB_RUN_ID": "9"}):
-            stamp_current_run(facts, Empty())
-        self.assertEqual(facts["collection_errors"], ["missing run_started_at"])
-        self.assertNotIn("run_started_at", facts)
-
-    def test_stamp_current_run_reuses_prefetched_run(self):
-        class Counting:
-            repository = "example/project"
-            prefix = "/repos/example/project"
-            calls = 0
-
-            def request(self, path):
-                self.calls += 1
-                return {"id": 9, "run_started_at": "2026-09-11T12:00:00Z"}
-
-        api = Counting()
-        with patch.dict(
-            "os.environ", {"GITHUB_RUN_ID": "9", "GITHUB_RUN_ATTEMPT": "1"}
-        ):
-            cached = load_current_run(api)
-            first = {"collection_errors": []}
-            second = {"collection_errors": []}
-            stamp_current_run(first, api, cached)
-            stamp_current_run(second, api, cached)
-        self.assertEqual(api.calls, 1)
-        self.assertEqual(first["run_started_at"], "2026-09-11T12:00:00Z")
-        self.assertEqual(second["run_started_at"], "2026-09-11T12:00:00Z")
-
-    def test_collection_error_report_keeps_original_run_started_at(self):
-        payload = collection_error_report(
-            CollectionError("boom"),
-            None,
-            ({"id": 9, "run_started_at": "2026-09-11T12:00:00Z"}, []),
-        )
-        self.assertEqual(payload["decision"], "INSUFFICIENT_DATA")
-        self.assertEqual(payload["error"], "boom")
-        self.assertEqual(
-            payload["observations"]["run_started_at"], "2026-09-11T12:00:00Z"
-        )
-
-    def test_main_writes_run_started_at_to_collection_error_artifact(self):
-        with tempfile.TemporaryDirectory() as directory:
-            args = [
-                "collect.py",
-                "--repository",
-                "example/project",
-                "--pr",
-                "1",
-                "--policy",
-                str(Path(__file__).with_name("policy.toml")),
-                "--output",
-                directory,
-                "--evaluator-sha",
-                BASE,
-            ]
-            with (
-                patch("sys.argv", args),
-                patch.dict(
-                    "os.environ",
-                    {"GITHUB_RUN_ID": "9", "GITHUB_RUN_ATTEMPT": "1"},
-                ),
-                patch(
-                    "collect.load_current_run",
-                    return_value=(
-                        {"id": 9, "run_started_at": "2026-09-11T12:00:00Z"},
-                        [],
-                    ),
-                ),
-                patch("collect.targets", side_effect=CollectionError("boom")),
-            ):
-                self.assertEqual(main(), 1)
-            payload = json.loads(
-                (Path(directory) / "collection-error.json").read_text()
-            )
-            self.assertEqual(payload["decision"], "INSUFFICIENT_DATA")
-            self.assertEqual(
-                payload["observations"]["run_started_at"], "2026-09-11T12:00:00Z"
-            )
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@
 import { getBoss } from '../../data/bosses';
 import { PACING_BALANCE } from '../../data/balance/pacing';
 import { RUN_BALANCE } from '../../data/balance/run';
+import { resolveEasyNormalTaskFloor } from '../../rd/issue476Experiment';
 import { combineEffects, deckEffects } from '../cards';
 import { clamp } from '../clamp';
 import { foldFormationEffects } from '../member';
@@ -57,7 +58,8 @@ export function eliteTaskMul(difficulty: DifficultyId): number {
  * 絶対下限30秒は `minCompleteTick` 側で担保する。
  */
 export function normalTaskFloor(difficulty: DifficultyId): number {
-  return NORMAL_TASK_FLOORS[difficulty];
+  const floor = NORMAL_TASK_FLOORS[difficulty];
+  return difficulty === 'easy' ? resolveEasyNormalTaskFloor(floor) : floor;
 }
 
 /**

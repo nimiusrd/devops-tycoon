@@ -1,9 +1,9 @@
 name: Autonomous Merge Labels
 
-# ラベルは毎時・手動の全体更新。イベント駆動の観測はShadow workflowに残す。
+# ラベルは1日1回・手動の全体更新。イベント駆動の観測はShadow workflowに残す。
 on:
   schedule:
-    - cron: '43 * * * *'
+    - cron: '43 0 * * *' # 日本時間09:43
   workflow_dispatch:
 
 permissions:

@@ -81,7 +81,7 @@ GitHubのレビュー総合状態も併せて確認します。
 - `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
 - `.github/workflows/autonomous-merge-shadow.yml`：PR・レビュー・CIイベントに応じてread-onlyで観測し、SummaryとJSON artifactを保存する。
-- `.github/workflows/autonomous-merge-labels.yml`：毎時・手動で全open PRをread-onlyで観測した後、独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
+- `.github/workflows/autonomous-merge-labels.yml`：1日1回・手動で全open PRをread-onlyで観測した後、独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
 - `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
 
 JSONには正規化した観測事実、条件ごとの結果、観測時刻、head/base/test merge SHA、実行した評価器のSHA、policyとそのSHA-256を保存します。
@@ -89,10 +89,10 @@ JSONには正規化した観測事実、条件ごとの結果、観測時刻、h
 
 ## ラベルの更新方針
 
-ラベルは毎時（43分）と`Autonomous Merge Labels`の手動実行で全体更新します。
+ラベルは1日1回（日本時間09:43、UTC 00:43）と`Autonomous Merge Labels`の手動実行で全体更新します。
 PR・レビュー・CIイベントによる`Autonomous Merge Shadow`の観測は継続しますが、ラベルは変更しません。
 ラベルは次回の更新成功まで古くなり得る参考表示です。即時反映や常時の正確性、自動マージ許可は保証しません。
-定期実行の遅延やAPI障害もあるため、1時間以内の反映を保証するものではありません。
+定期実行の遅延やAPI障害もあるため、24時間以内の反映を保証するものではありません。
 
 更新の仕組みは「全open PRの観測 → ラベル公開」の2 jobです。
 共通のconcurrency groupでworkflow全体を直列化し、`cancel-in-progress: false`で実行中の更新を後続runがキャンセルしないようにします。

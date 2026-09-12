@@ -118,6 +118,7 @@ describe('DeckBar の閲覧と手札発動', () => {
     });
     const card = screen.find('hand-card-docs');
     expect(card.props.disabled).toBe(disabled);
+    expect(content(card)).toContain('集中力');
     expect(screen.find('deck').props['data-paused']).toBe(String(paused));
     expect(String(card.props.title).includes('一時停止中はカードを発動できない')).toBe(paused);
     screen.click('hand-card-docs');

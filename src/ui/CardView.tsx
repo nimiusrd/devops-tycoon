@@ -81,6 +81,7 @@ export function CardView({
           <span className="card-cost">
             {onPlay && playCostValue !== undefined ? (
               <VisualIconText name="focus" size="card">
+                <span className="visually-hidden">集中力 </span>
                 {playCostValue}
               </VisualIconText>
             ) : (
@@ -91,6 +92,7 @@ export function CardView({
             <span className="card-focus-cost">
               発動
               <VisualIconText name="focus" size="hud">
+                <span className="visually-hidden"> 集中力 </span>
                 {playCostValue}
               </VisualIconText>
             </span>

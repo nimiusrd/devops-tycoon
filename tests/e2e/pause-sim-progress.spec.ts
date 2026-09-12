@@ -73,7 +73,10 @@ test('❚❚ 中は出荷ポイント・レーン・炎上タイマーが進ま�
   const stillPaused = await progressSnapshot(page);
   expect(stillPaused).toEqual(paused);
   await expect(page.getByTestId('hud-compact-delivery')).toContainText(`${paused.deliveryScore}pt`);
-  await expect(page.getByTestId('fire-count')).toHaveText(`🔥${paused.fireCount}`);
+  await expect(page.getByTestId('fire-count')).toHaveAttribute(
+    'data-count',
+    String(paused.fireCount),
+  );
 
   await page.getByTestId('speed-1x').click();
   await expect(page.getByTestId('speed-1x')).toHaveAttribute('aria-pressed', 'true');

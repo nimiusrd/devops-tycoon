@@ -112,7 +112,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
     const view = planBurnCauseLog(makeResult({ incidents: 1, fireEvents }));
 
     expect(view.entries).toHaveLength(1);
-    expect(view.entries[0]).toMatchObject({ icon: '🔥', tone: 'warn', tick: 9 });
+    expect(view.entries[0]).toMatchObject({ icon: 'fire', tone: 'warn', tick: 9 });
     expect(view.entries[0].text).toBe('t9: PR#4 が 延焼で点火 → 未解決のまま終了');
     expect(view.tip).toContain('燃え残った火');
   });

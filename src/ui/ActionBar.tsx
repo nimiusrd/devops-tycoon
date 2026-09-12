@@ -21,6 +21,7 @@ import { INTERRUPT_REVIEW_COUNT } from '../sim/actions';
 import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { ManagerPortrait } from './ManagerPortrait';
 import { useResponsiveMode } from './responsiveMode';
+import { VisualIcon, VisualIconText } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1000;
 
@@ -47,7 +48,8 @@ const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }
 
 interface FocusPop {
   id: number;
-  text: string;
+  sign: '-' | '+';
+  amount: number;
   tone: 'cost' | 'refund';
 }
 
@@ -76,7 +78,9 @@ function FocusFeedbackPops({ pops }: { pops: FocusPop[] }) {
             exit={{ y: -32, opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
           >
-            {pop.text}
+            {pop.sign}
+            <VisualIcon name="focus" size="hud" />
+            {pop.amount}
           </motion.span>
         ))}
       </AnimatePresence>
@@ -136,13 +140,16 @@ export function ActionBar({
   const nextPopId = useRef(0);
   const lastFeedbackNonce = useRef<number | null>(null);
 
-  const pushFocusPop = useCallback((text: string, tone: FocusPop['tone']) => {
-    const pop: FocusPop = { id: nextPopId.current++, text, tone };
-    setFocusPops((cur) => [...cur, pop]);
-    window.setTimeout(() => {
-      setFocusPops((cur) => cur.filter((p) => p.id !== pop.id));
-    }, FEEDBACK_TTL_MS);
-  }, []);
+  const pushFocusPop = useCallback(
+    (sign: FocusPop['sign'], amount: number, tone: FocusPop['tone']) => {
+      const pop: FocusPop = { id: nextPopId.current++, sign, amount, tone };
+      setFocusPops((cur) => [...cur, pop]);
+      window.setTimeout(() => {
+        setFocusPops((cur) => cur.filter((p) => p.id !== pop.id));
+      }, FEEDBACK_TTL_MS);
+    },
+    [],
+  );
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -158,9 +165,9 @@ export function ActionBar({
     (id: ActionId, outcome: InterventionOutcome) => {
       if (outcome.ok && outcome.effect) {
         const { focusCost, focusRefund, gaugeGain } = outcome.effect;
-        pushFocusPop(`-⚡${focusCost}`, 'cost');
+        pushFocusPop('-', focusCost, 'cost');
         if (focusRefund && focusRefund > 0) {
-          pushFocusPop(`+⚡${focusRefund}`, 'refund');
+          pushFocusPop('+', focusRefund, 'refund');
         }
         if (gaugeGain > 0) {
           setGaugeFlash(true);
@@ -225,7 +232,8 @@ export function ActionBar({
         <div className="focus-body">
           <div className="focus-label">マネジメント集中力</div>
           <div className="focus-energy" data-testid="focus">
-            ⚡{focus}
+            <VisualIcon name="focus" size="header" />
+            {focus}
             <small>/{config.focusMax}</small>
             <FocusFeedbackPops pops={focusPops} />
           </div>
@@ -244,7 +252,10 @@ export function ActionBar({
               data-testid="stability-status"
               title={`運用安定: 残り ${stabilityRing.remaining} tick`}
             >
-              <span className="stability-status-label">🛡 運用安定</span>
+              <span className="stability-status-label">
+                <VisualIcon name="stability" size="hud" />
+                運用安定
+              </span>
               <strong className="stability-status-value">
                 残り {stabilityRing.remaining} tick
               </strong>
@@ -321,7 +332,9 @@ export function ActionBar({
             : !ready && availability.blockMessage
               ? `利用不可: ${availability.blockMessage}。`
               : '';
-          const targetLabel = availability.targetBadge ? `対象 ${availability.targetBadge}。` : '';
+          const targetLabel = availability.targetBadge
+            ? `対象 ${availability.targetBadgeIcon === 'fire' ? '炎上 ' : ''}${availability.targetBadge}。`
+            : '';
           const modLabel = modRing.active ? `効果残り ${modRing.remaining} tick。` : '';
           return (
             <button
@@ -334,14 +347,19 @@ export function ActionBar({
               disabled={!ready && !armed}
               onClick={() => handleAction(a.id)}
               title={tooltip}
-              aria-label={`${a.label}。コスト⚡${a.cost}。${targetLabel}${modLabel}${statusLabel}${tooltip}`}
+              aria-label={`${a.label}。集中力コスト ${a.cost}。${targetLabel}${modLabel}${statusLabel}${tooltip}`}
             >
               {availability.targetBadge && (
                 <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>
+                  {availability.targetBadgeIcon && (
+                    <VisualIcon name={availability.targetBadgeIcon} size="hud" />
+                  )}
                   {availability.targetBadge}
                 </span>
               )}
-              <span className="ico">{a.icon}</span>
+              <span className="ico">
+                <VisualIcon name={a.icon} size="action" />
+              </span>
               <span className="name">{a.label}</span>
               {!ready && !armed && availability.blockMessage && (
                 <span className="action-block-reason" data-testid={`action-reason-${a.id}`}>
@@ -362,7 +380,11 @@ export function ActionBar({
                 </span>
               )}
               <span className="action-resources">
-                <span className="cost">⚡{a.cost}</span>
+                <span className="cost">
+                  <VisualIconText name="focus" size="hud">
+                    {a.cost}
+                  </VisualIconText>
+                </span>
                 <span
                   className="action-gauge-gain"
                   data-testid={`action-gauge-${a.id}`}

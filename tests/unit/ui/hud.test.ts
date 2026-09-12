@@ -14,7 +14,7 @@ function metric(
   return {
     id,
     label: id,
-    icon: '',
+    icon: 'delivery',
     value: 0,
     direction: 'higher-better',
     directionLabel: '高いほど良い',

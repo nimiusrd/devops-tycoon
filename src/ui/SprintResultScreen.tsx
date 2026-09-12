@@ -19,6 +19,7 @@ import { BaselineComparisonChart } from './BaselineComparisonChart';
 import { SprintTimelineChart } from './SprintTimelineChart';
 import { RewardCeremony } from './JuicyEffects';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
+import { VisualIcon, VisualIconText } from './VisualIcon';
 
 interface Row {
   label: string;
@@ -173,7 +174,7 @@ export function SprintResultScreen({
                     data-testid="result-burn-cause-entry"
                   >
                     <span className="result-burn-cause-icon" aria-hidden="true">
-                      {entry.icon}
+                      <VisualIcon name={entry.icon} size="hud" />
                     </span>
                     <span className="result-burn-cause-text">{entry.text}</span>
                   </li>
@@ -196,12 +197,22 @@ export function SprintResultScreen({
                 {analysis.rows.map((row) => (
                   <div className="result-row" key={row.label}>
                     <dt>{row.label}</dt>
-                    <dd>{row.value}</dd>
+                    <dd>
+                      {row.icon ? (
+                        <VisualIconText name={row.icon} size="hud">
+                          {row.value}
+                        </VisualIconText>
+                      ) : (
+                        row.value
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>
               <p className="result-analysis-tip" data-testid="result-intervention-tip">
-                💡 {analysis.tip}
+                <VisualIconText name="tip" size="hud">
+                  {analysis.tip}
+                </VisualIconText>
               </p>
             </div>
           )}
@@ -223,16 +234,21 @@ export function SprintResultScreen({
               <ul className="growth-list">
                 {growth.promotions.map((p) => (
                   <li key={`p-${p.id}`} className="growth-promote">
-                    🎉 {p.name} が{rankLabel(p.to)}に昇格
+                    <VisualIcon name="ceremonyPromote" size="hud" />
+                    {p.name} が{rankLabel(p.to)}に昇格
                   </li>
                 ))}
                 {growth.wentOnLeave.map((w) => (
                   <li key={`l-${w.id}`} className="growth-leave">
-                    😴 {w.name} が休職に入った
+                    <VisualIcon name="ceremonyLeave" size="hud" />
+                    {w.name} が休職に入った
                   </li>
                 ))}
                 {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
-                  <li className="growth-level">💪 {growth.leveledUp.length}人がレベルアップ</li>
+                  <li className="growth-level">
+                    <VisualIcon name="ceremonyLevelUp" size="hud" />
+                    {growth.leveledUp.length}人がレベルアップ
+                  </li>
                 )}
               </ul>
             </div>

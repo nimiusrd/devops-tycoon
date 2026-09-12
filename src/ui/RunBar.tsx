@@ -27,6 +27,7 @@ import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { formatSigned } from './formatSigned';
 import { useReplayContent } from './replayContent';
+import { VisualIcon } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1600;
 
@@ -198,7 +199,10 @@ export function RunBar({
         aria-live="polite"
       >
         <span className="pill diagnosis" title={diag.description}>
-          <span aria-hidden="true">{theme.icon}</span> {diag.label}
+          <span aria-hidden="true">
+            <VisualIcon name={theme.icon} size="hud" />
+          </span>{' '}
+          {diag.label}
         </span>
         <span className="diagnosis-warning">{theme.warning}</span>
       </div>

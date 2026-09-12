@@ -4,10 +4,12 @@
  * `SprintResult` を読むだけの純関数。描画・状態は知らない（第22.2）。
  */
 import type { SprintResult } from '../sim/types';
+import type { IconKey } from './visualIcons';
 
 export interface InterventionAnalysisRow {
   label: string;
   value: string;
+  icon?: IconKey;
 }
 
 export interface InterventionAnalysisView {
@@ -52,7 +54,7 @@ function deriveTip(result: SprintResult, reviewedPr: number, firefightSaves: num
   }
 
   if (!hasInterventions(result)) {
-    return '介入なしで終了。次は Review 渋滞や炎上のタイミングで ⚡ を試してみよう。';
+    return '介入なしで終了。次は Review 渋滞や炎上のタイミングで集中力を試してみよう。';
   }
 
   if (firefightSaves >= 2 && autoContainCount === 0 && spread === 0) {
@@ -62,9 +64,9 @@ function deriveTip(result: SprintResult, reviewedPr: number, firefightSaves: num
   if (focusRemaining >= Math.max(3, Math.ceil(focusMax * 0.4))) {
     const peakQueue = reviewQueueMax;
     if (peakQueue >= 6) {
-      return `集中力を ⚡${focusRemaining} 残して終了 → Review待ちが最大 ${peakQueue} PR のとき、割り込みレビュー（⚡3）の余地があった。`;
+      return `集中力を ${focusRemaining} 残して終了 → Review待ちが最大 ${peakQueue} PR のとき、割り込みレビュー（集中力 3）の余地があった。`;
     }
-    return `集中力を ⚡${focusRemaining} 残して終了 → 渋滞ピーク時に割り込みの余地があった。次はピーク前に ⚡ を使おう。`;
+    return `集中力を ${focusRemaining} 残して終了 → 渋滞ピーク時に割り込みの余地があった。次はピーク前に集中力を使おう。`;
   }
 
   if (reviewQueueMax >= 8 && (actionCounts.interruptReview ?? 0) === 0) {
@@ -75,7 +77,7 @@ function deriveTip(result: SprintResult, reviewedPr: number, firefightSaves: num
     return `割り込みで PR ${reviewedPr} 件を捌いた。渋滞ピークとタイミングを合わせるとさらに効く。`;
   }
 
-  return '介入は発動した。タイムラインのマーカーと重ねて、ピーク時の ⚡ 使いを振り返ろう。';
+  return '介入は発動した。タイムラインのマーカーと重ねて、ピーク時の集中力の使いを振り返ろう。';
 }
 
 /** リザルト用の介入分析ビューを導出する。 */
@@ -93,7 +95,8 @@ export function planInterventionAnalysis(result: SprintResult): InterventionAnal
     },
     {
       label: '集中力余り',
-      value: `⚡${result.focusRemaining} / ${result.focusMax}`,
+      value: `${result.focusRemaining} / ${result.focusMax}`,
+      icon: 'focus',
     },
   ];
 

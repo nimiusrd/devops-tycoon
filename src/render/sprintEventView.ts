@@ -5,13 +5,14 @@
  */
 import { getAction } from '../data/actions';
 import type { SprintEvent } from '../sim/types';
+import { resolveIconKey, type IconKey } from './visualIcons';
 
 /** ティッカー 1 行の表示データ。 */
 export interface SprintEventView {
   /** 安定キー（tick + kind + 補助）。 */
   key: string;
-  /** 先頭アイコン（絵文字）。 */
-  icon: string;
+  /** 先頭アイコン（意味キー）。 */
+  icon: IconKey;
   /** 本文。 */
   text: string;
   /** 見た目のトーン。 */
@@ -29,7 +30,7 @@ function formatIntervention(
 ): SprintEventView {
   const { effect } = event;
   const def = getAction(effect.actionId);
-  const icon = def?.icon ?? '⚡';
+  const icon = resolveIconKey(def?.icon, 'focus');
   const label = def?.label ?? effect.actionId;
   const parts: string[] = [];
 
@@ -51,7 +52,7 @@ function formatIntervention(
     parts.push(`AI Literacy +${Math.round(effect.literacyGain)}`);
   }
   if (effect.focusRefund != null && effect.focusRefund > 0) {
-    parts.push(`⚡+${effect.focusRefund}`);
+    parts.push(`集中力 +${effect.focusRefund}`);
   }
 
   const detail = parts.length > 0 ? `: ${parts.join(' / ')}` : '';
@@ -117,14 +118,14 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
       if (event.brokeCombo) {
         return {
           key: `${event.tick}:contain:${event.taskId}`,
-          icon: '🚒',
+          icon: 'contain',
           text: '先消し鎮火 → コンボ切断',
           tone: 'warn',
         };
       }
       return {
         key: `${event.tick}:contain:${event.taskId}`,
-        icon: '🚒',
+        icon: 'contain',
         text: `鎮火成功 → コンボ x${event.combo} 継続`,
         tone: 'good',
       };
@@ -140,7 +141,7 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
               : '延焼';
       return {
         key: `${event.tick}:combo-break:${event.reason}:${event.taskId ?? ''}`,
-        icon: '💔',
+        icon: 'comboBreak',
         text: `コンボ途切れ: ${reasonLabel}`,
         tone: 'bad',
       };
@@ -149,7 +150,7 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
     case 'ignite':
       return {
         key: `${event.tick}:ignite:${event.taskId}:${event.source}`,
-        icon: '🔥',
+        icon: 'fire',
         text:
           event.source === 'spread' ? '点火! 延焼で隣の PR が炎上' : '点火! Review 落ち PR が炎上',
         tone: 'warn',
@@ -158,7 +159,7 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
     case 'auto-contain':
       return {
         key: `${event.tick}:auto-contain:${event.taskId}`,
-        icon: '🧯',
+        icon: 'autoContain',
         text: `自動鎮火 / シニアHP -${Math.round(event.hpCost)}`,
         tone: 'bad',
       };
@@ -166,7 +167,7 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
     case 'spread':
       return {
         key: `${event.tick}:spread:${event.taskId}:${event.spreadToTaskId ?? ''}`,
-        icon: '🔥',
+        icon: 'fire',
         text: formatSpreadText(event),
         tone: 'bad',
       };

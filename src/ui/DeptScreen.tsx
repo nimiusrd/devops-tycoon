@@ -20,6 +20,7 @@ import { TeamNavigator } from './TeamNavigator';
 import { EffectTagList } from './EffectTagList';
 import { usePixiRenderer } from './usePixiRenderer';
 import { Stat } from './Stat';
+import { VisualIcon } from './VisualIcon';
 
 /** Pixi 部署盤面は動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const DeptPixiBoard = lazyWebgl<DeptPixiBoardProps>(() =>
@@ -73,7 +74,10 @@ export function DeptScreen({
     <div className="dept-screen" data-testid="dept-screen">
       <header className="dept-head">
         <span className="dot" style={{ background: dept.def.color }} />
-        <h2>🏢 {dept.def.name}</h2>
+        <h2>
+          <VisualIcon name="department" size="header" />
+          {dept.def.name}
+        </h2>
         <span className="dept-health" data-health={dept.health}>
           {HEALTH_LABEL[dept.health]}
         </span>

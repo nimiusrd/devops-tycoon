@@ -147,7 +147,8 @@ describe('deriveActionAvailability（RI-51）', () => {
     const sprint = makeSprint(org, [burningTask(0), burningTask(1)]);
     const availability = deriveActionAvailability(sprint, 'firefight');
     expect(availability.canActivate).toBe(true);
-    expect(availability.targetBadge).toBe('🔥2');
+    expect(availability.targetBadge).toBe('2');
+    expect(availability.targetBadgeIcon).toBe('fire');
   });
 
   it('complete 指定時は完了理由で無効', () => {

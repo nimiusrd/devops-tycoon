@@ -187,7 +187,7 @@ describe('RestScreen の休息・採用・施策強化', () => {
     screen.click('rest-upgrade');
     expect(content(screen.find('rest-upgrade-card-docs-0'))).toContain('次: Lv.2');
     expect(content(screen.find('rest-upgrade-card-docs-1'))).toContain('次: Lv.4');
-    expect(content(screen.find('rest-upgrade-card-docs-1'))).toContain('発動 ⚡');
+    expect(content(screen.find('rest-upgrade-card-docs-1'))).toContain('発動');
     expect(onChoose).not.toHaveBeenCalled();
     screen.click('rest-upgrade-cancel');
     expect(screen.has('rest-upgrade-cards')).toBe(false);

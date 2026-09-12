@@ -34,6 +34,7 @@ import {
   tickerListKeyDelta,
   wheelDeltaYInCssPixels,
 } from './eventTickerPointer';
+import { VisualIcon } from './VisualIcon';
 
 /** 同時表示する最大件数。コンボ HUD の履歴判定と同じ窓を使う。 */
 const TICKER_LIMIT = COMBO_HUD_EVENT_WINDOW;
@@ -235,7 +236,7 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
               data-testid={`event-ticker-row-${row.tone}`}
             >
               <span className="event-ticker-icon" aria-hidden="true">
-                {row.icon}
+                <VisualIcon name={row.icon} size="hud" />
               </span>
               <span className="event-ticker-text">{row.text}</span>
             </li>
@@ -253,7 +254,7 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >
                 <span className="event-ticker-icon" aria-hidden="true">
-                  {row.icon}
+                  <VisualIcon name={row.icon} size="hud" />
                 </span>
                 <span className="event-ticker-text">{row.text}</span>
               </motion.li>

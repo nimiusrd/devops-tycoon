@@ -24,6 +24,7 @@ import type { OrgState, Task } from '../sim/types';
 import { formatSigned } from './formatSigned';
 import { pickCompactMetrics } from './hudCompact';
 import { useResponsiveMode } from './responsiveMode';
+import { VisualIcon } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1000;
 
@@ -104,7 +105,7 @@ function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: Ac
       <div className="stat-head">
         <div className="stat-label">
           <span className="stat-icon" aria-hidden="true">
-            {metric.icon}
+            <VisualIcon name={metric.icon} size="hud" />
           </span>
           <span className="k">{metric.label}</span>
         </div>
@@ -183,7 +184,7 @@ function CompactChip({
       title={`${metric.label}: ${valueText}`}
     >
       <span className="hud-compact-chip-icon" aria-hidden="true">
-        {metric.icon}
+        <VisualIcon name={metric.icon} size="hud" />
       </span>
       <span className="hud-compact-chip-label">{metric.label}</span>
       <span className="hud-compact-chip-value">{valueText}</span>

@@ -5,12 +5,13 @@
  */
 import { getAction } from '../data/actions';
 import type { ActionId, SprintEvent, TimelineSample } from '../sim/types';
+import { resolveIconKey, type IconKey } from './visualIcons';
 
 export interface TimelineMarker {
   tick: number;
   actionId: ActionId;
   label: string;
-  icon: string;
+  icon: IconKey;
   /** SVG 上の x 座標。 */
   x: number;
 }
@@ -100,7 +101,7 @@ export function extractInterventionMarkers(
       tick: e.tick,
       actionId: e.effect.actionId,
       label: def?.label ?? e.effect.actionId,
-      icon: def?.icon ?? '⚡',
+      icon: resolveIconKey(def?.icon, 'focus'),
       x,
     });
   }

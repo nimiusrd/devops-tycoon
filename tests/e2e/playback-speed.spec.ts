@@ -90,7 +90,7 @@ test('❚❚ はトグルでき、1x / 2x でも再開でき、停止中は手�
   const playableCard = page.getByTestId(cardTestId);
   const titleAt1x = await playableCard.getAttribute('title');
   if (!titleAt1x) throw new Error('手札のツールチップが空');
-  expect(titleAt1x).toContain('発動 ⚡');
+  expect(titleAt1x).toContain('発動 集中力');
 
   await expect(speed1x).toHaveAttribute('aria-pressed', 'true');
   await expect(pauseBtn).toHaveAttribute('aria-pressed', 'false');

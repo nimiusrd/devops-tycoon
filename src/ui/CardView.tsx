@@ -10,6 +10,7 @@ import type { CardDef } from '../sim/types';
 import type { WhatIfPreview as WhatIfPreviewData } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
 import { WhatIfPreview } from './WhatIfPreview';
+import { VisualIconText } from './VisualIcon';
 
 export interface CardViewProps {
   def: CardDef;
@@ -43,7 +44,7 @@ function handCardTitle(
   playCostValue: number | undefined,
   disabledReason?: string,
 ): string {
-  const tooltip = `${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`;
+  const tooltip = `${formatCardTooltip(def, level)} / 発動 集中力 ${playCostValue ?? '?'}`;
   return disabledReason ? `${tooltip} / ${disabledReason}` : tooltip;
 }
 
@@ -72,15 +73,27 @@ export function CardView({
   ]
     .filter(Boolean)
     .join(' ');
-  const costLabel = onPlay && playCostValue !== undefined ? `⚡${playCostValue}` : String(def.cost);
   const inner = (
     <>
       <div className="card-head">
         <span className={`card-rarity rarity-${def.rarity}`}>{RARITY_LABEL[def.rarity]}</span>
         <span className="card-costs">
-          <span className="card-cost">{costLabel}</span>
+          <span className="card-cost">
+            {onPlay && playCostValue !== undefined ? (
+              <VisualIconText name="focus" size="card">
+                {playCostValue}
+              </VisualIconText>
+            ) : (
+              def.cost
+            )}
+          </span>
           {!onPlay && playCostValue !== undefined && (
-            <span className="card-focus-cost">発動 ⚡{playCostValue}</span>
+            <span className="card-focus-cost">
+              発動
+              <VisualIconText name="focus" size="hud">
+                {playCostValue}
+              </VisualIconText>
+            </span>
           )}
         </span>
       </div>

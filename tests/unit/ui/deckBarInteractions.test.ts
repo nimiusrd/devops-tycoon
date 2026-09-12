@@ -93,8 +93,8 @@ describe('DeckBar の閲覧と手札発動', () => {
     const screen = mountDeck({ deck, hand: [2, 99, 0, -1], focus: 2, playable: true, onPlay });
     expect(screen.all('hand-card-docs')).toHaveLength(2);
     expect(screen.all('hand-card-copilot')).toHaveLength(0);
-    expect(content(screen.find('hand-card-docs', 0))).toContain('⚡1');
-    expect(content(screen.find('hand-card-docs', 1))).toContain('⚡2');
+    expect(content(screen.find('hand-card-docs', 0))).toContain('1');
+    expect(content(screen.find('hand-card-docs', 1))).toContain('2');
     screen.click('hand-card-docs', 0);
     screen.click('hand-card-docs', 1);
     expect(onPlay.mock.calls).toEqual([[2], [0]]);

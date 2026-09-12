@@ -25,8 +25,8 @@ describe('スプリントティッカーの効果と履歴', () => {
       }),
     ).toEqual({
       key: '12:intervention:pairReview:0,3',
-      icon: '👥',
-      text: 'ペアレビュー: PR2件処理 / AI Literacy +2 / ⚡+2',
+      icon: 'pairReview',
+      text: 'ペアレビュー: PR2件処理 / AI Literacy +2 / 集中力 +2',
       tone: 'info',
     });
   });
@@ -48,7 +48,7 @@ describe('スプリントティッカーの効果と履歴', () => {
       }),
     ).toEqual({
       key: '13:intervention:splitPr:0',
-      icon: '✂️',
+      icon: 'splitPr',
       text: 'PR分割: 1件に適用 / シニアHP -1 / 士気 -2',
       tone: 'warn',
     });
@@ -70,7 +70,7 @@ describe('スプリントティッカーの効果と履歴', () => {
       }),
     ).toEqual({
       key: '14:intervention:aiThrottle:',
-      icon: '🎚️',
+      icon: 'aiThrottle',
       text: 'AIスロットル',
       tone: 'info',
     });
@@ -79,7 +79,7 @@ describe('スプリントティッカーの効果と履歴', () => {
   it('自動鎮火は HP コストを丸め、コンボ途切れとは別の警告を表示する', () => {
     expect(formatSprintEvent({ tick: 15, kind: 'auto-contain', taskId: 0, hpCost: 2.6 })).toEqual({
       key: '15:auto-contain:0',
-      icon: '🧯',
+      icon: 'autoContain',
       text: '自動鎮火 / シニアHP -3',
       tone: 'bad',
     });
@@ -87,13 +87,13 @@ describe('スプリントティッカーの効果と履歴', () => {
       formatSprintEvent({ tick: 15, kind: 'combo-break', reason: 'auto-contain', taskId: 0 }),
     ).toEqual({
       key: '15:combo-break:auto-contain:0',
-      icon: '💔',
+      icon: 'comboBreak',
       text: 'コンボ途切れ: 自動鎮火',
       tone: 'bad',
     });
     expect(formatSprintEvent({ tick: 16, kind: 'combo-break', reason: 'spread' })).toEqual({
       key: '16:combo-break:spread:',
-      icon: '💔',
+      icon: 'comboBreak',
       text: 'コンボ途切れ: 延焼',
       tone: 'bad',
     });
@@ -102,7 +102,7 @@ describe('スプリントティッカーの効果と履歴', () => {
   it('実測損失がゼロの延焼には、旧記録向けの負債・士気説明を補わない', () => {
     expect(
       formatSprintEvent({ tick: 16, kind: 'spread', taskId: 0, debtGain: 0, moraleCost: 0 }),
-    ).toEqual({ key: '16:spread:0:', icon: '🔥', text: '延焼!', tone: 'bad' });
+    ).toEqual({ key: '16:spread:0:', icon: 'fire', text: '延焼!', tone: 'bad' });
   });
 
   it.each([

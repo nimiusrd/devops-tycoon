@@ -382,7 +382,10 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
   await expect(page.getByTestId('rest')).toBeVisible({ timeout: 5000 });
   await page.getByTestId('rest-upgrade').click();
   await expect(page.getByTestId('rest-upgrade-cards')).toBeVisible();
-  await expect(page.getByTestId(`rest-upgrade-card-${target.defId}-0`)).toContainText('発動 ⚡1');
+  await expect(page.getByTestId(`rest-upgrade-card-${target.defId}-0`)).toContainText('発動');
+  await expect(
+    page.getByTestId(`rest-upgrade-card-${target.defId}-0`).locator('[data-icon="focus"]'),
+  ).toBeVisible();
   await page.getByTestId(`rest-upgrade-card-${target.defId}-0`).click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
 
@@ -403,7 +406,7 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
   });
   expect(nextSprint.pending.focusMaxAdd).toBe(2);
   expect(nextSprint.focusMax).toBeGreaterThan(0);
-  await expect(page.getByTestId('focus')).toContainText('⚡');
+  await expect(page.getByTestId('focus').locator('[data-icon="focus"]')).toBeVisible();
 });
 
 test('RI-78: ドラフトとショップのカード選択前に発動コストを表示する', async ({ page }) => {
@@ -423,7 +426,8 @@ test('RI-78: ドラフトとショップのカード選択前に発動コスト�
     g.playCard(-1); // revision bump でドラフト画面を反映
   });
 
-  await expect(page.getByTestId('draft-card-devin')).toContainText('発動 ⚡4');
+  await expect(page.getByTestId('draft-card-devin')).toContainText('発動');
+  await expect(page.getByTestId('draft-card-devin').locator('[data-icon="focus"]')).toBeVisible();
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;

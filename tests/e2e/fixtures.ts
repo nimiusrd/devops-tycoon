@@ -155,7 +155,7 @@ export async function advanceCurrentSprintToBurning(page: Page): Promise<number[
     }
     throw new Error(`未鎮火 Incident へ到達しない: phase=${state.phase} guard=${guard}`);
   });
-  await expect(page.getByTestId('fire-count')).not.toHaveText('🔥0');
+  await expect(page.getByTestId('fire-count')).not.toHaveAttribute('data-count', '0');
   return taskIds;
 }
 

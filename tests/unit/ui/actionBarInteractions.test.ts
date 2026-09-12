@@ -200,7 +200,7 @@ describe('ActionBar の状態表示', () => {
       'data-responsive-width': 'narrow',
       'data-responsive-height': 'short',
     });
-    expect(content(bar.find('focus'))).toBe('⚡6/8');
+    expect(content(bar.find('focus'))).toBe('6/8');
     const pips = elements(bar.byClass('pips')[0]).filter((node) => node.type === 'i');
     expect(pips.map((node) => node.props.className)).toEqual([
       'on',
@@ -215,10 +215,10 @@ describe('ActionBar の状態表示', () => {
     expect(bar.find('combo-gauge').props['data-gauge']).toBe(0.37);
     expect(elements(bar.find('combo-gauge'))[1].props.style).toEqual({ width: '37%' });
     expect(content(bar.find('action-badge-interruptReview'))).toBe('PR 1');
-    expect(content(bar.find('action-badge-firefight'))).toBe('🔥1');
+    expect(content(bar.find('action-badge-firefight'))).toBe('1');
     expect(content(bar.find('action-badge-assignTask'))).toBe('2');
     expect(bar.find('action-interruptReview').props['aria-label']).toContain(
-      '割り込みレビュー。コスト⚡3。対象 PR 1。',
+      '割り込みレビュー。集中力コスト 3。対象 PR 1。',
     );
     expect(bar.find('action-assignTask').props.title).toContain('クリックで武装');
     expect(bar.byClass('action').every((node) => node.props.disabled === false)).toBe(true);
@@ -326,7 +326,7 @@ describe('ActionBar の武装と担当選択', () => {
     bar.click('action-splitPr');
     expect(onAction).toHaveBeenCalledExactlyOnceWith('splitPr');
     expect(bar.props.onArm).not.toHaveBeenCalled();
-    expect(bar.byClass('focus-feedback-cost').map(content)).toEqual(['-⚡2']);
+    expect(bar.byClass('focus-feedback-cost').map(content)).toEqual(['-2']);
   });
 
   it('通常アクションは武装を解除してから対象を省略して発動する', () => {
@@ -388,7 +388,7 @@ describe('ActionBar の発動結果 feedback', () => {
       });
     const bar = mountActionBar({ onAction });
     bar.click('action-pairReview');
-    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-⚡2', '+⚡1']);
+    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-2', '+1']);
     expect(bar.find('combo-gauge').props.className).toContain(' flash');
     expect(bar.query('action-toast')).toBeUndefined();
 
@@ -397,10 +397,10 @@ describe('ActionBar の発動結果 feedback', () => {
     bar.advance(1);
     expect(bar.find('combo-gauge').props.className).not.toContain(' flash');
     bar.click('action-overtime');
-    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-⚡2', '+⚡1', '-⚡4']);
+    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-2', '+1', '-4']);
     expect(bar.find('combo-gauge').props.className).not.toContain(' flash');
     bar.advance(500);
-    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-⚡4']);
+    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-4']);
     bar.advance(500);
     expect(bar.byClass('focus-feedback-pop')).toHaveLength(0);
     expect(onAction).toHaveBeenNthCalledWith(1, 'pairReview');
@@ -448,7 +448,7 @@ describe('ActionBar の発動結果 feedback', () => {
       },
     };
     const bar = mountActionBar({ outcomeFeedback: feedback });
-    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-⚡1']);
+    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-1']);
     bar.advance(1000);
     expect(bar.byClass('focus-feedback-pop')).toHaveLength(0);
     bar.update({ outcomeFeedback: { ...feedback } });
@@ -467,7 +467,7 @@ describe('ActionBar の発動結果 feedback', () => {
     bar.advance(1000);
     expect(bar.query('action-toast')).toBeUndefined();
     bar.update({ outcomeFeedback: { ...feedback, nonce: 2 } });
-    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-⚡1']);
+    expect(bar.byClass('focus-feedback-pop').map(content)).toEqual(['-1']);
     expect(bar.props.onAction).not.toHaveBeenCalled();
     expect(bar.props.onArm).not.toHaveBeenCalled();
   });

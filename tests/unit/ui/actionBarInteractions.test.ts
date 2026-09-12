@@ -263,9 +263,7 @@ describe('ActionBar の状態表示', () => {
     sprint.modifiers.overtimeUntilTick = 10 + OVERTIME_TICKS / 2;
     const bar = mountActionBar({ sprint, sprintTick: 10 });
 
-    expect(content(bar.find('stability-status'))).toBe(
-      `🛡 運用安定残り ${STABILITY_TICKS / 2} tick`,
-    );
+    expect(content(bar.find('stability-status'))).toBe(`運用安定残り ${STABILITY_TICKS / 2} tick`);
     expect(elements(bar.byClass('stability-status-meter')[0])[1].props.style).toEqual({
       width: '50%',
     });

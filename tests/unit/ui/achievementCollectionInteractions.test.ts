@@ -95,7 +95,7 @@ describe('実績・勝利称号・失敗図鑑のコレクション', () => {
     expect(screen.find(`failure-entry-${failure.type}`).props['data-unlocked']).toBe('true');
     expect(
       elements(screen.find(`failure-entry-${failure.type}`)).some(
-        (node) => node.props['data-icon'] === diagnosisTheme(failure.type).icon,
+        (node) => node.props.name === diagnosisTheme(failure.type).icon,
       ),
     ).toBe(true);
     expect(content(screen.find(`failure-entry-hint-${failure.type}`))).toBe(

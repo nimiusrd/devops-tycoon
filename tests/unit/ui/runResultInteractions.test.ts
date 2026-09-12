@@ -133,7 +133,7 @@ describe('RunResultScreen の勝敗・報酬表示', () => {
         }),
       });
       expect(screen.find('run-result').props['data-quarter-outcome']).toBe('shutdown');
-      expect(content(screen.find('run-end-status'))).toBe('⏹️ PR 凍結');
+      expect(content(screen.find('run-end-status'))).toBe('PR 凍結');
       // ラベルは敗因優先。shutdown の助言は四半期の継続条件を優先する。
       expect(content(screen.find('lose-next-action'))).toContain(
         '信頼・予算・士気・シニアHPのどの下限が先に危ないか',

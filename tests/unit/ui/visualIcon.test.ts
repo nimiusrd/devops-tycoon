@@ -23,7 +23,8 @@ describe('VisualIcon', () => {
     const labeled = VisualIconText({ name: 'focus', size: 'card', children: 3 });
     expect(labeled.props.className).toBe('visual-icon-text');
     const child = labeled.props.children[0];
-    expect(child.props['data-icon']).toBe('focus');
+    expect(child.props.name).toBe('focus');
+    expect(child.props.size).toBe('card');
     expect(labeled.props.children[1]).toBe(3);
   });
 });

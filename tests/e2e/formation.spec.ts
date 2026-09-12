@@ -50,6 +50,60 @@ test('編成（Setup）画面でメンバーの配置と AI 配布を切り替�
   await expect(page.getByTestId('board')).toBeVisible();
 });
 
+const NARROW_SETUP_VIEWPORTS = [
+  { name: 'phone-se', width: 320, height: 568 },
+  { name: 'phone', width: 390, height: 844 },
+  { name: 'tablet-portrait', width: 768, height: 1024 },
+] as const;
+
+test.describe('narrow setup is a reachable 1-column stack', () => {
+  for (const viewport of NARROW_SETUP_VIEWPORTS) {
+    test(`${viewport.name} ${viewport.width}x${viewport.height} で配置と開始が1カラムで到達できる`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/?seed=formation-narrow-1col');
+      await page.getByTestId('difficulty-normal').click();
+      await page.getByTestId('start-run').click();
+      await expect(page.getByTestId('setup')).toBeVisible();
+
+      const heading = page.locator('.formation-head .draft-title');
+      const begin = page.getByTestId('begin-sprint');
+      const headingBox = await heading.boundingBox();
+      const beginBox = await begin.boundingBox();
+      const panelBox = await page.locator('.formation-panel').boundingBox();
+      if (!headingBox || !beginBox || !panelBox) {
+        throw new Error('編成見出し / 開始ボタン / パネルの bounding box が取得できない');
+      }
+      expect(beginBox.y, `${viewport.name} で開始ボタンが見出しと横並びのまま`).toBeGreaterThan(
+        headingBox.y + headingBox.height - 1,
+      );
+      expect(beginBox.width, `${viewport.name} で開始ボタンが全幅になっていない`).toBeGreaterThan(
+        panelBox.width * 0.8,
+      );
+
+      const firstMember = page.getByTestId('formation-member-m0');
+      const secondMember = page.getByTestId('formation-member-m1');
+      const firstBox = await firstMember.boundingBox();
+      const secondBox = await secondMember.boundingBox();
+      if (!firstBox || !secondBox) throw new Error('編成カードの bounding box が取得できない');
+      expect(secondBox.y, `${viewport.name} で編成グリッドが1列になっていない`).toBeGreaterThan(
+        firstBox.y + firstBox.height - 8,
+      );
+
+      await page.getByTestId('assign-m2-coding').scrollIntoViewIfNeeded();
+      await expect(page.getByTestId('assign-m2-coding')).toBeInViewport();
+      await begin.scrollIntoViewIfNeeded();
+      await expect(begin).toBeInViewport();
+
+      const noHorizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      );
+      expect(noHorizontalOverflow, `${viewport.name} で横スクロールが発生している`).toBe(true);
+    });
+  }
+});
+
 test('ランバーにメンバーの表情が表示される（表情演出 / 第12.2）', async ({ page }) => {
   await page.goto('/?seed=faces-smoke');
   await page.getByTestId('difficulty-easy').click();

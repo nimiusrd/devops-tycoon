@@ -442,6 +442,17 @@ class CollectTests(unittest.TestCase):
         with self.assertRaises(CollectionError):
             targets(api, {}, -1)
 
+    def test_closed_event_targets_ended_pr_without_listing_open_prs(self):
+        api = FixtureAPI()
+        for merged in (False, True):
+            with self.subTest(merged=merged), patch.object(api, "pages") as pages:
+                event = {
+                    "action": "closed",
+                    "pull_request": {"number": 9, "state": "closed", "merged": merged},
+                }
+                self.assertEqual(targets(api, event, None), [9])
+                pages.assert_not_called()
+
     def test_graphql_state_query_omits_unused_cursor_variable(self):
         api = GitHub("example/project")
         response = {"data": {"repository": {"pullRequest": {"number": 1}}}}

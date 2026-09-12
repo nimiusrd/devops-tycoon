@@ -2,7 +2,8 @@
 
 Git・PR・CIの共通メタデータから、観測時点で設定条件を満たしているかを記録するPoCです。
 ソースの意味、テストの有効性、コードベース固有の重要pathを解析しません。
-自動マージ、承認、required checkの登録、PRコメントやラベルの変更も行いません。
+自動マージ、承認、required checkの登録、PRコメントの継続更新は行いません。
+判定結果の表示だけを、専用のPRラベルで更新します。ラベルは自動マージ許可ではなく、直近の観測時点の状態です。
 
 ## 判断材料と判定
 
@@ -32,6 +33,18 @@ GitHub側の設定変更はそれらの総合状態に反映されますが、�
 | `WAITING` | CI未実行・実行中、Draft、必要承認不足、base追随待ちなど |
 | `HUMAN_REVIEW_REQUIRED` | CI定義の変更、CI失敗、競合、変更要求、未解決スレッド、GitHub側のブロックなど |
 | `INSUFFICIENT_DATA` | API失敗、権限不足、ページング上限、必須情報欠落、再取得時のPR・CI・レビューの変化など |
+
+PR一覧では次のラベルで4判定を区別します。更新完了時の管理対象ラベルはopen PRごとに1つです。無関係なラベルは変更しません。
+
+| Decision | PRラベル | 次にすること |
+| --- | --- | --- |
+| `SHADOW_CONDITIONS_MET` | `shadow/要マージ判断` | 自動マージはしない。人がマージ可否を判断する |
+| `WAITING` | `shadow/CI・レビュー待ち` | CI完了・Draft解除・承認・base追随などを待つ |
+| `HUMAN_REVIEW_REQUIRED` | `shadow/要対応` | 競合・CI失敗・変更要求・未解決スレッドなどを人が解消する |
+| `INSUFFICIENT_DATA` | `shadow/再観測が必要` | 再実行するか、次の定期観測を待つ |
+
+ラベル用の観測時刻・対象SHA・JSON artifactは、Actionsの`Autonomous Merge Labels`のrun Summaryで確認できます。
+publisherが未作成のラベル定義を作成します。branch protectionやrulesetsの必須チェックには登録しません。
 
 複数条件に該当するときは、情報不足、人間確認、待機の順に優先し、個々の条件をすべてレポートへ記録します。
 GitHubの集約状態が`BLOCKED`でも、必要承認不足やCI実行中など明示的な待機条件がある間は、その完了後に再評価します。別にCI失敗・変更要求などがある場合は人間確認を優先します。待機条件が解消しても`BLOCKED`なら人間確認とし、条件達成には引き続き`CLEAN`を要求します。
@@ -63,31 +76,60 @@ GitHubのレビュー総合状態も併せて確認します。
 
 ## 実装の分離
 
-- `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。source本文やartifactの個別取得・実行は行わず、ファイル一覧APIに同梱されるpatchも参照・保存しない。
+- `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。source本文やartifactの個別取得・実行は行わず、ファイル一覧APIに同梱されるpatchも参照・保存しない。書き込みは行わない。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
+- `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
-- `.github/workflows/autonomous-merge-shadow.yml`：default branchの信頼済みcollectorを実行し、SummaryとJSON artifactを保存する。
-- `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器のテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
+- `.github/workflows/autonomous-merge-shadow.yml`：PR・レビュー・CIイベントに応じてread-onlyで観測し、SummaryとJSON artifactを保存する。
+- `.github/workflows/autonomous-merge-labels.yml`：1日1回・手動で全open PRをread-onlyで観測した後、独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
+- `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
 
 JSONには正規化した観測事実、条件ごとの結果、観測時刻、head/base/test merge SHA、実行した評価器のSHA、policyとそのSHA-256を保存します。
 履歴はActionsのrun IDとattemptで区別したartifactに30日間保持します。
-PRに「現在も有効」と見えるコメントを維持しないため、pointer label・コメント探索・古い判定の書き換えは不要です。
-このPRを初めて導入する時点では旧workflowはdefault branchにないため、旧コメントの移行処理はありません。
 
-PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
-スレッド解決や外部CIの状態変更など、直接購読しないイベントは毎時の再観測、または手動実行で反映します。
-CI完了時はイベントに含まれる古いSHAを使わず、現在openのPRを改めて取得します。
-通常ブランチのpushはジョブを実行せず、CI完了トリガーは自身を含めません。
-新しいcollectorがdefault branchにない初回導入中はbootstrapとして情報不足をSummaryへ記録します。
+## ラベルの更新方針
 
-APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は部分的な成功として扱いません。
-workflow全体には15分の実行上限があります。多数のPRがある場合は後続で分割実行を検討します。
+ラベルは1日1回（日本時間09:43、UTC 00:43）と`Autonomous Merge Labels`の手動実行で全体更新します。
+PR・レビュー・CIイベントによる`Autonomous Merge Shadow`の観測は継続しますが、ラベルは変更しません。
+ラベルは次回の更新成功まで古くなり得る参考表示です。即時反映や常時の正確性、自動マージ許可は保証しません。
+定期実行の遅延やAPI障害もあるため、24時間以内の反映を保証するものではありません。
+
+更新の仕組みは「全open PRの観測 → ラベル公開」の2 jobです。
+共通のconcurrency groupでworkflow全体を直列化し、`cancel-in-progress: false`で実行中の更新を後続runがキャンセルしないようにします。
+待機runが置き換わっても、次に実行するrunが全open PRを取得し直すため、個別PRのイベントをキューに保存する必要はありません。
+runの順番に依存せず、そのrunの実行時点の状態を観測します。過去run・jobの履歴走査やPR別matrixは使いません。
+
+publishは**同じrun ID・同じattempt**のartifactだけを読みます。過去attemptへのフォールバックはしません。
+publishだけを再実行すると新attemptの観測artifactが無いため失敗します。復旧には新しい手動実行、または**Re-run all jobs**で観測からやり直してください。
+GitHubの[concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)と[再実行](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)の仕様を前提とします。
+
+| 状況 | ラベルの扱い |
+| --- | --- |
+| 観測と現在のhead/base SHA・base ref・open状態・Draftが一致 | 4判定に対応するラベルを表示する |
+| 観測後にPRが変化、または対象PRの収集が情報不足 | `shadow/再観測が必要`にする |
+| 全体の収集失敗で対象PRが不明 | open PRの既存ラベルを維持し、runを失敗として記録する |
+| close / merge | 管理ラベルを取り除く。既にclosedで管理ラベルが残るPRも毎回回収する |
+| 追加・削除APIの失敗や手動キャンセル | 一時的に古いラベルや複数ラベルが残り得る。次回の更新で修復する |
+
+書き込み直前にPRを再取得し、新ラベルの追加に成功してから旧管理ラベルだけを削除します。
+ラベル更新はトランザクションではなく、PRの再取得後の変更や、人による管理ラベルの同時編集までは排他しません。
+管理ラベルの自動更新元はこのworkflowだけとし、ラベル全件を置き換えるAPIは使いません。
+closed PRの回収では管理ラベルが残るPRだけを列挙し、削除前に状態を再確認します。通常のIssueは変更しません。
+
+観測・評価ロジックはラベル導入前と同じです。PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
+スレッド解決など直接購読しないイベントは毎時の観測または手動実行で反映します。
+通常ブランチのpushは観測jobを実行せず、CI完了トリガーは自身を含めません。
+
+APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は失敗として扱います。
+ラベルworkflowは各jobに15分の上限があります。大量PRで完走できない場合の分割処理は今回の対象外です。
 
 ## ローカル実行と検証
 
 必要環境はPython 3.11以上です。Pythonの外部依存はありません。
-GitHubへのread-only tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。
-必要権限はContents / Pull requests / Checks / Commit statusesのreadです。書き込み・管理者権限は要求しません。
+GitHub tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。CLI引数には含めません。
+collectorの必要権限はContents / Pull requests / Checks / Commit statusesのreadです。
+publisherにはContents / Pull requestsのreadとIssuesのwriteを付けます。ラベル定義の作成とPRラベル更新は`publish` jobだけが行います。
+両jobともdefault branchのコードだけを実行し、PRのコードをwrite権限で実行しません。
 
 本リポジトリではDev Container内から実行します。
 
@@ -113,11 +155,12 @@ python3 -B .github/autonomous-merge/evaluate.py \
 
 ## 他コードベースへの展開
 
-1. collector、評価器、テスト、workflowを配置する。
+1. collector、評価器、publisher、テスト、workflowを配置する。
 2. 信頼済みdefault branchのpolicyに、対象CIのcheck名と発行元、承認条件を設定する。
 3. Shadow workflowの`workflow_run.workflows`を対象CIのworkflow名に合わせる。テストworkflowのpush対象ブランチも合わせる。
-4. required checkや自動マージへ接続せず、観測を開始する。
-5. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
+4. ラベルworkflowの`publish` jobにだけIssuesのwriteを付ける。4つの`shadow/`ラベルは初回更新で作成する。branch protectionの必須チェックや自動マージには接続しない。
+5. required checkや自動マージへ接続せず、観測とラベル表示を開始する。
+6. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
 
 コードベース固有のパス一覧、言語別parser、テストファイル名の規約を移植する必要はありません。
 別ホスティングサービスへ展開するときは、同じ観測JSONを出力するadapterを追加し、評価器へは正規化した状態を渡します。

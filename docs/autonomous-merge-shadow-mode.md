@@ -145,6 +145,46 @@ closed PRの回収では管理ラベルが残るPRだけを列挙し、削除前
 APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は失敗として扱います。
 ラベルworkflowは各jobに15分の上限があります。大量PRで完走できない場合の分割処理は今回の対象外です。
 
+## 観測中の状態変化・終了コードの診断
+
+collectorは初回と再取得のPR・CI・レビューの正規化メタデータを比較します。
+一致しない場合は`stable=false`のまま`INSUFFICIENT_DATA`とし、条件達成には読み替えません。
+CIが実行中というだけなら`WAITING`ですが、観測の間にCI状態が変わった場合は鮮度不一致です。
+
+Summaryの「観測間の変化」とJSONの`observations.observation_changes`に、変わった項目だけを記録します。
+各項目には`group`、`identity`、`field`、`before`、`after`があります。
+PRは`head_sha`・`updated_at`等のフィールド、CIはkind・SHA・IDと名前・producer、レビューはIDとauthorで識別します。
+レコードの追加・削除は`field=record`で、存在しない側を`null`にします。未解決スレッドは個々の本文やIDを取得せず、比較対象の件数（`count`）の変化を示します。
+値は既存の正規化済みメタデータだけを使い、source本文・patch・レビュー本文・tokenは保存しません。
+`[]`は比較対象の変化なし、`null`は再取得未完了です。旧artifactではこのキー自体がありません。
+これは既存の比較範囲の診断であり、同じ未解決件数のまま別スレッドが解決・未解決になった場合などを追加検出するものではありません。
+
+jobログはPRごとのJSON行に`decision`と`reason`を出力します。
+`reason=freshness_mismatch`は取得を完了した観測間の不一致、`collection_error`はAPI失敗・権限不足・取得データ不正などの収集エラーです。
+収集エラーの詳細は`collection_errors`（全体エラーでは`error`）、不一致の分類は`changed_groups`、詳細な前後値は指定されたJSON artifactとSummaryで確認します。
+その他の情報不足は`insufficient_data`、通常の判定完了は`evaluated`です。
+
+終了コードは従来どおりです。レポート保存の成功と条件判定の成功は別です。
+
+| 判定・状態 | collector終了コード | Actionsの観測job（他のstepが成功した場合） |
+| --- | --- | --- |
+| `SHADOW_CONDITIONS_MET` | 0 | success |
+| `WAITING` | 0 | success |
+| `HUMAN_REVIEW_REQUIRED` | 0 | success |
+| `INSUFFICIENT_DATA`（鮮度不一致を含む） | 1 | failure |
+| 全体の収集失敗 | 1 | failure |
+| 対象PRなし | 0 | success |
+
+複数PRのうち1件でも情報不足なら全体の終了コードは1です。最後のログ行に`collector_exit_code`を記録します。
+Summaryとartifactは観測stepの失敗時も保存を試みますが、キャンセル・タイムアウト・保存自体の失敗では生成されないことがあります。
+Shadowは必須CIではなく、failureだけでAPI障害やPR自体の不具合とは断定できません。
+Labelsの`publish`は従来どおり`observe`のsuccess/failure双方から実行され、同じattemptのレポートを使用します。
+対象PRの情報不足は`shadow/再観測が必要`、対象不明の全体収集失敗では既存ラベルを維持します。公開が成功しても観測jobのfailureは残ります。
+
+状態が落ち着いた後、Actionsの`Autonomous Merge Shadow`で **Run workflow** を実行し、`pr_number`を指定して再観測してください。
+ラベルも更新したい場合は`Autonomous Merge Labels`の新しい手動実行、または **Re-run all jobs** を使います。publishだけの再実行は使いません。
+次のCI完了時のShadow観測や、Labelsの日次観測を待つこともできます。自動リトライ・過去run走査は導入していません。
+
 ## ローカル実行と検証
 
 必要環境はPython 3.11以上です。Pythonの外部依存はありません。

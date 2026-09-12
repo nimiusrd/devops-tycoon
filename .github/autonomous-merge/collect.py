@@ -210,6 +210,49 @@ def decision_metadata(api: GitHub, number: int, pr: dict) -> dict:
     return metadata
 
 
+def observation_changes(before: dict, after: dict) -> list[dict]:
+    """許可済みの正規化メタデータだけから、変更フィールドと前後値を残す。"""
+    changes = []
+
+    def compare(group, old, new, identity=None):
+        for field in sorted(old.keys() | new.keys()):
+            if old.get(field) != new.get(field):
+                changes.append({
+                    "group": group,
+                    "identity": identity,
+                    "field": field,
+                    "before": old.get(field),
+                    "after": new.get(field),
+                })
+
+    compare("pr", before["pr"], after["pr"])
+    compare(
+        "unresolved_threads",
+        {"count": before["unresolved_threads"]},
+        {"count": after["unresolved_threads"]},
+    )
+    for group in ("reviews", "checks"):
+        keys = ("id",) if group == "reviews" else ("kind", "sha", "id")
+        old = {tuple(r[k] for k in keys): r for r in before[group]}
+        new = {tuple(r[k] for k in keys): r for r in after[group]}
+        for key in sorted(old.keys() | new.keys()):
+            identity = dict(zip(keys, key))
+            if key not in old or key not in new:
+                changes.append({
+                    "group": group, "identity": identity, "field": "record",
+                    "before": old.get(key), "after": new.get(key),
+                })
+            else:
+                # 名前とproducerも、差分の識別に必要な既存メタデータだけを使う。
+                identity.update({
+                    k: old[key][k]
+                    for k in ("name", "app_id", "creator", "author")
+                    if k in old[key]
+                })
+                compare(group, old[key], new[key], identity)
+    return changes
+
+
 def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
     facts = {
         "schema_version": 2,
@@ -218,6 +261,7 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
         "evaluator_sha": evaluator_sha,
         "collection_errors": [],
         "stable": False,
+        "observation_changes": None,
     }
     try:
         before = normalized_pr(api.graphql(number, PR_FIELDS))
@@ -303,6 +347,10 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
             },
         }
         facts["stable"] = all(facts["rechecked"].values())
+        facts["observation_changes"] = observation_changes(
+            {"pr": before, **initial_metadata},
+            {"pr": after, **confirmed_metadata},
+        )
         facts["observed_at"] = datetime.now(timezone.utc).isoformat()
     except (CollectionError, KeyError, TypeError, ValueError) as error:
         facts["collection_errors"].append(str(error))
@@ -349,6 +397,22 @@ def main() -> int:
                 json.dumps(result, ensure_ascii=False, indent=2) + "\n"
             )
             summary.append(markdown(result))
+            reason = (
+                "collection_error" if facts["collection_errors"]
+                else "freshness_mismatch" if not facts["stable"]
+                else "insufficient_data" if result["decision"] == "INSUFFICIENT_DATA"
+                else "evaluated"
+            )
+            # JSONで改行をescapeし、外部メタデータをActionsコマンドとして出力しない。
+            print(json.dumps({
+                "pr": number, "decision": result["decision"], "reason": reason,
+                "collection_errors": facts["collection_errors"],
+                "changed_groups": [
+                    key for key, same in facts.get("rechecked", {}).items()
+                    if not same
+                ],
+                "report": f"pr-{number}.json",
+            }, ensure_ascii=False))
             failed = failed or result["decision"] == "INSUFFICIENT_DATA"
         if not numbers:
             summary.append("評価対象のopen PRはありません。\n")
@@ -356,11 +420,13 @@ def main() -> int:
         failed = True
         # collection失敗も必ず今回のartifactへ保存する。
         result = {"decision": "INSUFFICIENT_DATA", "error": str(error)}
+        print(json.dumps({**result, "reason": "collection_error"}, ensure_ascii=False))
         (args.output / "collection-error.json").write_text(json.dumps(result) + "\n")
         summary.append(
             "INSUFFICIENT_DATA: <code>" + html.escape(str(error)) + "</code>\n"
         )
     (args.output / "summary.md").write_text("\n".join(summary))
+    print(json.dumps({"collector_exit_code": int(failed)}))
     return int(failed)
 
 

@@ -10,7 +10,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from collect import CollectionError, GitHub, collect, main, targets
-from evaluate import assess
+from evaluate import assess, markdown
 from test_evaluate import BASE, HEAD, MERGE, policy
 
 
@@ -164,6 +164,18 @@ class CollectTests(unittest.TestCase):
                 result = collect(api, 1, BASE)
                 self.assertTrue(result["rechecked"]["pr"])
                 self.assertFalse(result["rechecked"]["checks"])
+                changes = result["observation_changes"]
+                summary = markdown(assess(result, policy()))
+                self.assertIn("identity", summary)
+                self.assertIn("check_run", summary)
+                self.assertIn("in_progress", summary)
+                if add_run:
+                    self.assertEqual(changes[0]["field"], "record")
+                    self.assertIsNone(changes[0]["before"])
+                    self.assertEqual(changes[0]["after"]["id"], 3)
+                else:
+                    self.assertEqual({c["field"] for c in changes}, {"status", "conclusion"})
+                    self.assertEqual(changes[0]["identity"]["name"], "Test")
                 self.assertEqual(
                     assess(result, policy())["decision"], "INSUFFICIENT_DATA"
                 )
@@ -189,9 +201,14 @@ class CollectTests(unittest.TestCase):
                 return records
 
             api.pages = changing
-            self.assertEqual(
-                assess(collect(api, 1, BASE), policy())["decision"], "INSUFFICIENT_DATA"
-            )
+            facts = collect(api, 1, BASE)
+            self.assertEqual(assess(facts, policy())["decision"], "INSUFFICIENT_DATA")
+            if fail:
+                self.assertIsNone(facts["observation_changes"])
+            else:
+                change = facts["observation_changes"][0]
+                self.assertEqual(change["identity"]["kind"], "status")
+                self.assertEqual(change["after"]["name"], "External CI")
 
     def test_reviews_and_thread_resolution_are_also_rechecked(self):
         api = FixtureAPI()
@@ -204,9 +221,12 @@ class CollectTests(unittest.TestCase):
             return records
 
         api.pages = changing_reviews
-        self.assertEqual(
-            assess(collect(api, 1, BASE), policy())["decision"], "INSUFFICIENT_DATA"
-        )
+        facts = collect(api, 1, BASE)
+        self.assertEqual(assess(facts, policy())["decision"], "INSUFFICIENT_DATA")
+        self.assertEqual(facts["observation_changes"][0], {
+            "group": "reviews", "identity": {"id": 1, "author": "reviewer"},
+            "field": "state", "before": "APPROVED", "after": "CHANGES_REQUESTED",
+        })
         api = FixtureAPI()
         original_connection = api.connection
         thread_reads = 0
@@ -223,6 +243,10 @@ class CollectTests(unittest.TestCase):
         api.connection = changing_threads
         result = collect(api, 1, BASE)
         self.assertFalse(result["rechecked"]["unresolved_threads"])
+        self.assertEqual(result["observation_changes"], [{
+            "group": "unresolved_threads", "identity": None,
+            "field": "count", "before": 0, "after": 1,
+        }])
         self.assertEqual(assess(result, policy())["decision"], "INSUFFICIENT_DATA")
 
     def test_metadata_order_changes_do_not_invalidate_observation(self):
@@ -237,6 +261,76 @@ class CollectTests(unittest.TestCase):
         self.assertEqual(
             assess(collect(api, 1, BASE), policy())["decision"], "SHADOW_CONDITIONS_MET"
         )
+
+    def test_removed_records_and_summary_escape_only_normalized_metadata(self):
+        api = FixtureAPI()
+        original = api.pages
+
+        def changing(path, key=None):
+            records = original(path, key)
+            if path.endswith("/reviews"):
+                records[0]["body"] = "SECRET REVIEW BODY"
+                if api.paths.count(path) == 2:
+                    return []
+            return records
+
+        api.pages = changing
+        api.drift = {"baseRefName": "<script>alert(1)</script>"}
+        result = assess(collect(api, 1, BASE), policy())
+        changes = result["observations"]["observation_changes"]
+        self.assertEqual(changes[0]["field"], "base_ref")
+        self.assertEqual(changes[0]["before"], "trunk")
+        self.assertEqual(changes[1]["field"], "record")
+        self.assertIsNone(changes[1]["after"])
+        self.assertEqual(changes[1]["before"]["id"], 1)
+        encoded = json.dumps(result)
+        summary = markdown(result)
+        self.assertNotIn("SECRET REVIEW BODY", encoded)
+        self.assertNotIn("ignored source diff", encoded)
+        self.assertNotIn("<script>", summary)
+        self.assertIn("&lt;script&gt;", summary)
+        self.assertIn("base_ref", summary)
+        self.assertIn("reviews", summary)
+
+    def test_cli_distinguishes_drift_errors_and_decisions_without_changing_exit_code(self):
+        for scenario, expected, reason, exit_code in [
+            ("stable", "SHADOW_CONDITIONS_MET", "evaluated", 0),
+            ("waiting", "WAITING", "evaluated", 0),
+            ("human", "HUMAN_REVIEW_REQUIRED", "evaluated", 0),
+            ("drift", "INSUFFICIENT_DATA", "freshness_mismatch", 1),
+            ("api", "INSUFFICIENT_DATA", "collection_error", 1),
+        ]:
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as directory:
+                api = FixtureAPI()
+                if scenario == "waiting":
+                    api.state["isDraft"] = True
+                elif scenario == "human":
+                    api.state["mergeable"] = "CONFLICTING"
+                elif scenario == "drift":
+                    api.drift = {"updatedAt": "2026-09-11T13:00:00Z"}
+                elif scenario == "api":
+                    api.failure = "API 403"
+                args = ["collect.py", "--repository", api.repository, "--pr", "1",
+                        "--policy", str(Path(__file__).with_name("policy.toml")),
+                        "--output", directory, "--evaluator-sha", BASE]
+                output = io.StringIO()
+                with (
+                    patch("sys.argv", args),
+                    patch("collect.GitHub", return_value=api),
+                    patch("collect.load_policy", return_value=policy()),
+                    patch("sys.stdout", output),
+                ):
+                    self.assertEqual(main(), exit_code)
+                report = json.loads((Path(directory) / "pr-1.json").read_text())
+                self.assertEqual(report["decision"], expected)
+                logs = [json.loads(line) for line in output.getvalue().splitlines()]
+                self.assertEqual(logs[0]["reason"], reason)
+                self.assertEqual(logs[-1]["collector_exit_code"], exit_code)
+                if scenario == "drift":
+                    self.assertEqual(logs[0]["collection_errors"], [])
+                    self.assertEqual(logs[0]["changed_groups"], ["pr"])
+                    self.assertEqual(report["observations"]["observation_changes"][0]["field"], "updated_at")
+                    self.assertIn("updated_at", (Path(directory) / "summary.md").read_text())
 
     def test_http_transport_sends_json_and_rejects_graphql_errors(self):
         api = GitHub("example/project")

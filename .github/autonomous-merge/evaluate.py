@@ -303,6 +303,15 @@ def markdown(result: dict) -> str:
     ]
     for item in result["conditions"]:
         lines.append("- " + safe(item))
+    lines.extend(["", "### 観測間の変化", ""])
+    changes = facts.get("observation_changes")
+    if changes is None:
+        lines.append("差分情報なし（再取得未完了、または旧形式の観測）。")
+    elif not changes:
+        lines.append("比較した正規化メタデータに変化はありません。")
+    else:
+        for change in changes:
+            lines.append("- " + safe(change))
     return "\n".join(lines) + "\n"
 
 

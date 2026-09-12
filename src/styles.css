@@ -2448,7 +2448,7 @@ button.card.card-readonly:disabled {
 }
 
 :root[data-responsive-width='narrow'] .hud-metrics {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 :root[data-responsive-width='narrow'] .actions {
   grid-template-columns: repeat(4, 1fr);
@@ -2534,6 +2534,8 @@ button.card.card-readonly:disabled {
   --tc-cyan: #78ddff;
   --tc-amber: #ffc66d;
   --tc-pink: #ff7edb;
+  /* #466 / #475: ドック実高 + 16px。short / narrow で上書きする。 */
+  --title-dock-reserve: 148px;
   position: relative;
   isolation: isolate;
   height: 100dvh;
@@ -2726,6 +2728,7 @@ button.card.card-readonly:disabled {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 4vw;
+  scroll-padding-bottom: var(--title-dock-reserve);
 }
 .title-content {
   position: relative;
@@ -2733,7 +2736,7 @@ button.card.card-readonly:disabled {
   margin: 0 auto;
   width: 100%;
   display: block;
-  padding-bottom: 20px;
+  padding-bottom: var(--title-dock-reserve);
 }
 .title-command .title-head {
   max-width: 760px;
@@ -3520,7 +3523,7 @@ button.card.card-readonly:disabled {
   .title-command .title-logo {
     font-size: 46px;
   }
-  .title-command .difficulty-grid {
+  :root[data-responsive-width='wide'] .title-command .difficulty-grid {
     grid-template-columns: 1fr 1fr;
   }
   .title-trial-section,
@@ -3653,31 +3656,38 @@ button.card.card-readonly:disabled {
     font-size: 22px;
   }
 }
-/* 高さモード short（responsiveModeCore.shortMaxHeight=720）向けの縮退。新規全体 breakpoint ではない。 */
-@media (max-height: 720px) {
-  .title-topbar {
-    height: 56px;
-  }
-  .title-command .title-head {
-    padding: 16px 0 12px;
-  }
-  .title-hero-badges {
-    display: none;
-  }
-  .title-launch-dock .title-daily > b,
-  .title-launch-dock .title-daily > small,
-  .title-launch-dock .title-mission {
-    display: none;
-  }
-  .title-launch-dock .title-daily {
-    padding: 6px 12px;
-  }
-  .title-launch-dock .title-launch-row {
-    min-height: 0;
-  }
-  .title-launch-dock .title-launch {
-    min-height: 52px;
-  }
+/* short / narrow のタイトル縮退。境界は responsiveModeCore を正本にする。 */
+:root[data-responsive-width='narrow'] .title-screen.title-command {
+  --title-dock-reserve: 120px;
+}
+:root[data-responsive-height='short'] .title-screen.title-command {
+  --title-dock-reserve: 88px;
+}
+:root[data-responsive-width='narrow'][data-responsive-height='short'] .title-screen.title-command {
+  --title-dock-reserve: 72px;
+}
+:root[data-responsive-height='short'] .title-topbar {
+  height: 56px;
+}
+:root[data-responsive-height='short'] .title-command .title-head {
+  padding: 16px 0 12px;
+}
+:root[data-responsive-height='short'] .title-hero-badges {
+  display: none;
+}
+:root[data-responsive-height='short'] .title-launch-dock .title-daily > b,
+:root[data-responsive-height='short'] .title-launch-dock .title-daily > small,
+:root[data-responsive-height='short'] .title-launch-dock .title-mission {
+  display: none;
+}
+:root[data-responsive-height='short'] .title-launch-dock .title-daily {
+  padding: 6px 12px;
+}
+:root[data-responsive-height='short'] .title-launch-dock .title-launch-row {
+  min-height: 0;
+}
+:root[data-responsive-height='short'] .title-launch-dock .title-launch {
+  min-height: 72px;
 }
 @media (prefers-reduced-motion: reduce) {
   .board.iso-office,
@@ -5381,12 +5391,6 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 8px;
 }
 
-:root[data-responsive-width='narrow'] .difficulty-grid,
-:root[data-responsive-width='narrow'] .shop-grid,
-:root[data-responsive-width='narrow'] .evolution-branches {
-  grid-template-columns: 1fr;
-}
-
 /* ===== Phase 4: キャラクター育成 / 編成 ===== */
 
 .roster-pill {
@@ -5634,6 +5638,14 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 :root[data-responsive-width='narrow'] .evolution-branches,
 :root[data-responsive-width='narrow'] .formation-grid {
   grid-template-columns: 1fr;
+}
+:root[data-responsive-width='narrow'] .formation-head {
+  flex-direction: column;
+  align-items: stretch;
+}
+:root[data-responsive-width='narrow'] .formation-head .primary-button,
+:root[data-responsive-width='narrow'] .formation-head .formation-close {
+  width: 100%;
 }
 
 /* ===== Phase 5: 組織スケール / ズーム階層（第4.7〜4.11） ===== */

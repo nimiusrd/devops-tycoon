@@ -129,3 +129,45 @@ test.describe('title launch CTA first view', () => {
     });
   }
 });
+
+const CARD_DOCK_VIEWPORTS = [
+  { name: 'phone-se', width: 320, height: 568 },
+  { name: 'phone', width: 390, height: 844 },
+  { name: 'tablet-portrait', width: 768, height: 1024 },
+  { name: 'title-dock-1280', width: 1280, height: 800 },
+] as const;
+
+test.describe('title difficulty cards stay above launch dock', () => {
+  for (const viewport of CARD_DOCK_VIEWPORTS) {
+    test(`${viewport.name} ${viewport.width}x${viewport.height} でカード下端がドックに隠れない`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/?seed=title-launch-cta');
+      await expect(page.getByTestId('title')).toBeVisible();
+
+      await page.locator('.difficulty-card:not([disabled])').last().click();
+      const lastCard = page.locator('.difficulty-card').last();
+      await lastCard.scrollIntoViewIfNeeded();
+
+      const cardBox = await readBox(lastCard, '難易度カード下端');
+      const dockBox = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');
+      expect(
+        overlaps(cardBox, dockBox),
+        `${viewport.name} で難易度カード下端が固定ドックに隠れている`,
+      ).toBe(false);
+
+      const startRun = page.getByTestId('start-run');
+      await expect(startRun).toBeVisible();
+      const startBox = await readBox(startRun, '開始 CTA');
+      expect(
+        overlaps(cardBox, startBox),
+        `${viewport.name} でカード選択とラン開始が同時に破綻している`,
+      ).toBe(false);
+      await expect(page.getByTestId('start-daily-run')).toBeVisible();
+
+      await startRun.click();
+      await expect(page.getByTestId('setup')).toBeVisible();
+    });
+  }
+});

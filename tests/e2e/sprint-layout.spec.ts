@@ -862,6 +862,26 @@ test('デスクトップ幅の展開KPIは出荷ポイント・セキュリテ�
   }
 });
 
+test('狭幅の展開HUDは1列になり、要約チップ行は維持する', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await beginPublicSprint(page, { seed: 'devops-tycoon' });
+  await waitForLayoutFrame(page);
+
+  const hud = page.getByTestId('hud');
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  const compactRow = page.locator('.hud-compact-row');
+  await expect(compactRow).toBeVisible();
+
+  await page.getByTestId('hud-toggle').click();
+  await expect(hud).toHaveAttribute('data-compact', 'false');
+
+  const first = await page.getByTestId('hud-delivery').boundingBox();
+  const second = await page.getByTestId('hud-devSpeed').boundingBox();
+  if (!first || !second) throw new Error('展開HUD指標の bounding box が取得できない');
+  expect(second.y, '展開HUDが2列のまま並んでいる').toBeGreaterThan(first.y + first.height - 4);
+  expect(Math.abs(second.x - first.x), '展開HUDの2つ目が横にずれている').toBeLessThan(8);
+});
+
 test('狭幅の要約KPIは出荷ポイントを省略せず、展開時も正式名を保持する', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await beginPublicSprint(page, { seed: 'devops-tycoon' });

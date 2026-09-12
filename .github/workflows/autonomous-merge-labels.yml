@@ -1,6 +1,6 @@
 name: Autonomous Merge Labels
 
-# 定期観測とラベル更新は1日1回・手動に集約。CI完了時の観測はShadow workflowが担う。
+# 定期観測とラベル更新は1日1回・手動に集約。CI完了時・PR終了時の観測はShadow workflowが担う。
 on:
   schedule:
     - cron: '43 0 * * *' # 日本時間09:43

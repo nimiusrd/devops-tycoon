@@ -1,8 +1,11 @@
 name: Autonomous Merge Shadow
 
-# CI完了時・手動の観測専用。定期観測はLabels workflowの日次実行に集約する。
+# CI完了時・PR終了時・手動の観測専用。定期観測はLabels workflowの日次実行に集約する。
 # default branchの信頼済みcollectorだけを実行する。
 on:
+  pull_request_target:
+    # 全open PRの観測では拾えないclose / merge後の終端状態を記録する。
+    types: [closed]
   workflow_run:
     # 必須checkを含むCIに集約し、PR更新・push・補助テスト完了との重複を減らす。
     workflows: ['CI']
@@ -21,7 +24,7 @@ permissions:
   statuses: read
 
 concurrency:
-  group: autonomous-merge-shadow-${{ github.event_name }}
+  group: autonomous-merge-shadow-${{ github.event.pull_request.number || github.event_name }}
   cancel-in-progress: true
 
 jobs:

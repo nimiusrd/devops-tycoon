@@ -385,6 +385,15 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     summary = []
     failed = False
+    manifest = {
+        "version": 1,
+        "repository": args.repository,
+        "run_id": os.environ.get("GITHUB_RUN_ID"),
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "reports": [],
+        "collection_failed": False,
+    }
     try:
         policy = load_policy(args.policy)
         api = GitHub(args.repository)
@@ -396,6 +405,7 @@ def main() -> int:
             (args.output / f"pr-{number}.json").write_text(
                 json.dumps(result, ensure_ascii=False, indent=2) + "\n"
             )
+            manifest["reports"].append(number)
             summary.append(markdown(result))
             reason = (
                 "collection_error" if facts["collection_errors"]
@@ -418,6 +428,7 @@ def main() -> int:
             summary.append("評価対象のopen PRはありません。\n")
     except (CollectionError, OSError, KeyError, TypeError, ValueError) as error:
         failed = True
+        manifest["collection_failed"] = True
         # collection失敗も必ず今回のartifactへ保存する。
         result = {"decision": "INSUFFICIENT_DATA", "error": str(error)}
         print(json.dumps({**result, "reason": "collection_error"}, ensure_ascii=False))
@@ -426,6 +437,9 @@ def main() -> int:
             "INSUFFICIENT_DATA: <code>" + html.escape(str(error)) + "</code>\n"
         )
     (args.output / "summary.md").write_text("\n".join(summary))
+    (args.output / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    )
     print(json.dumps({"collector_exit_code": int(failed)}))
     return int(failed)
 

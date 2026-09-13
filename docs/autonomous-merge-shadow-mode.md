@@ -3,7 +3,40 @@
 Git・PR・CIの共通メタデータから、観測時点で設定条件を満たしているかを記録するPoCです。
 ソースの意味、テストの有効性、コードベース固有の重要pathを解析しません。
 自動マージ、承認、required checkの登録、PRコメントの継続更新は行いません。
-判定結果の表示だけを、専用のPRラベルで更新します。ラベルは自動マージ許可ではなく、直近の観測時点の状態です。
+判定結果の表示だけを、参考用Checkと専用のPRラベルで更新します。どちらも自動マージ許可ではなく、直近の観測時点の記録です。
+
+実測の進捗と証跡は[Issue #479の検証記録](./autonomous-merge-shadow-validation.md)を参照してください。
+
+## PR画面から結果を確認する
+
+PRのChecksにある`Autonomous Merge Shadow / PR #<番号>`から、対象run・attemptのSummaryとArtifactsへ移動できます。
+Checkの本文にも、観測時刻・観測head/base・評価器SHA・policy指紋・条件別理由・JSONファイル名を表示します。
+Checkは常に`completed / neutral`です。緑・赤のCI判定へ置き換えず、本文の判定と対象SHAを読んでください。必須Checkへ登録しません。
+
+| 表示 | 意味・操作 |
+| --- | --- |
+| Checkがない | 未導入、イベント未処理、公開失敗、またはforkの紐付け制約。Actionsで起動・収集・公開のどこまで進んだか確認する |
+| 未観測：CI完了・再観測待ち | 軽量なイベント表示だけを作成した。本観測JSONはまだない。CI完了か手動観測を待つ |
+| 観測済み：4判定 | 表示された時刻・head/baseで観測した結果。後からの変更に対する保証ではない |
+| 再観測が必要 | 情報不足、または公開時にPR状態が変わっていた。状態が落ち着いてから手動観測する |
+| 未観測：古いSHAの記録 | 保存JSONは過去のheadのもの。現在のheadへ条件達成を引き継がず、再観測する |
+
+`Autonomous Merge Check Markers`はPR作成・再開・head更新・baseの変更・Draft変更と、対象CIの実行開始を受けて未観測表示だけを作ります。
+タイトル・本文だけの編集では表示を更新しません。CI開始イベントはそのrunだけを再取得し、完了済み・過去attempt・現在のhead/test merge/baseに対応しないものを無視します。
+本観測の頻度は従来どおりです。レビュー・スレッドの変更やCIを起動しないbase更新は、日次・手動等の次の観測で反映します。
+
+CI完了経由のobserve job自体はdefault branchのSHAに紐づくため、以前はPRのChecksから見えませんでした。
+PR終了経由ではobserve jobもPR側に見える場合があります。参考用Checkはイベント元のSHAではなく、APIで確認したPRのheadへ公開します。
+forkのpushはChecks APIの`pull_requests`へ紐づかない制約があります。forkでChecksから辿れない場合は、ActionsのShadow runのSummaryから対象PR番号とSHAを確認してください。
+
+ShadowとLabelsは観測後に同じ参考用Checkを更新します。Labelsだけが、その後にラベルを更新します。
+Checkの更新は単一のjob concurrency groupで直列化します。現在head上の管理Checkだけを読み、PR番号・発行元Appを照合し、古い観測や遅延した未観測イベントで新しい記録を上書きしません。
+同じheadを持つ別PRには別のCheck名を使います。公開直前のPR再取得で変更を検出した場合は書込みを止め、jobを失敗にします。
+待機jobはGitHubのconcurrencyによって置き換わることがあり、即時・全イベントの公開は保証しません。次の観測で修復します。
+
+Checkの作成が別の収集中に起きた場合、従来の鮮度比較が変化を検出して情報不足となり得ます。
+既存Checkの本文更新では、collectorが比較するID・SHA・status・conclusionは変わりません。比較から自身を除外する特例や自動リトライは追加していません。
+公開失敗・タイムアウト時は以前の時点の表示が残り得ます。表示時刻とSHAを必ず確認してください。
 
 ## 判断材料と判定
 
@@ -79,13 +112,18 @@ GitHubのレビュー総合状態も併せて確認します。
 - `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。source本文やartifactの個別取得・実行は行わず、ファイル一覧APIに同梱されるpatchも参照・保存しない。書き込みは行わない。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
 - `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
+- `.github/autonomous-merge/publish_checks.py`：参考用Checkと未観測表示を公開する。判定の再計算やラベル更新はしない。
+- `.github/autonomous-merge/replay.py`：明示した信頼済みSHAの評価器と保存policyで、ネットワーク取得なしにレポート全体の一致を確認する。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
 - `.github/workflows/autonomous-merge-shadow.yml`：`CI`完了時・PR終了時・手動でread-onlyで観測し、SummaryとJSON artifactを保存する。
 - `.github/workflows/autonomous-merge-labels.yml`：1日1回・手動で全open PRをread-onlyで観測した後、独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
 - `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
+- `.github/workflows/autonomous-merge-checks.yml`：PR・CI開始イベントから軽量な未観測表示だけを公開する。
 
 JSONには正規化した観測事実、条件ごとの結果、観測時刻、head/base/test merge SHA、実行した評価器のSHA、policyとそのSHA-256を保存します。
 履歴はActionsのrun IDとattemptで区別したartifactに30日間保持します。
+`manifest.json`にはrepository、run ID、attempt、対象レポート番号と全体収集の成否を保存します。Check publisherは同じrun・attemptのmanifestに列挙されたJSONだけを読みます。
+manifestがない旧artifact、別attempt、全体収集失敗はCheckへ公開しません。欠落・公開失敗はjob failureとして記録します。既存レポートのschema version 2と評価器の4判定は変更していません。
 
 ## 観測の目的・トリガー・更新頻度
 
@@ -191,7 +229,8 @@ Labelsの`publish`は従来どおり`observe`のsuccess/failure双方から実�
 GitHub tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。CLI引数には含めません。
 collectorの必要権限はContents / Pull requests / Checks / Commit statusesのreadです。
 publisherにはContents / Pull requestsのreadとIssuesのwriteを付けます。ラベル定義の作成とPRラベル更新は`publish` jobだけが行います。
-両jobともdefault branchのコードだけを実行し、PRのコードをwrite権限で実行しません。
+Check publisherにはContents / Pull requestsのreadとChecksのwriteを付けます。未観測表示のjobだけはイベント元runの再取得にActionsのreadも必要です。
+観測・公開jobはdefault branchのコードだけを実行し、PRのコードをwrite権限で実行しません。
 
 本リポジトリではDev Container内から実行します。
 
@@ -217,12 +256,57 @@ python3 -B .github/autonomous-merge/evaluate.py \
 
 ## 他コードベースへの展開
 
-1. collector、評価器、publisher、テスト、workflowを配置する。
+1. `.github/autonomous-merge/`のPython一式とpolicy、4つの`autonomous-merge-*.yml`を導入PRで配置し、レビュー後に信頼済みdefault branchへ反映する。Python 3.11以上、外部Python依存なしで実行できる。初回PR上だけの配置やbootstrapの成功は導入検証の完了に数えない。
 2. 信頼済みdefault branchのpolicyに、対象CIのcheck名と発行元、承認条件を設定する。
-3. Shadow workflowの`workflow_run.workflows`を対象CIのworkflow名に合わせる。テストworkflowのpush対象ブランチも合わせる。
+3. ShadowとCheck Markersの`workflow_run.workflows`を対象CIのworkflow名（YAMLの`name`）に合わせる。policyのcheck名はjobの表示名であり、workflow名とは異なる。テストworkflowのpush対象ブランチも合わせる。観測・公開のcheckout先は`repository.default_branch`から取得する。
 4. ラベルworkflowの`publish` jobにだけIssuesのwriteを付ける。4つの`shadow/`ラベルは初回更新で作成する。branch protectionの必須チェックや自動マージには接続しない。
 5. required checkや自動マージへ接続せず、観測とラベル表示を開始する。
 6. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
+
+GitHub Actionsの実行と必要なjob権限が許可されていることを確認します。tokenはworkflowの`github.token`から環境変数へ渡し、policyやCLI引数に保存しません。
+手動実行と定期実行にはworkflowがdefault branchに存在する必要があります。日次はLabelsの09:43 JST（00:43 UTC）で、遅延・停止する場合があります。
+導入後はopenの検証PRを作り、Shadowの**Run workflow**で`pr_number`を指定してください。ラベルも含む確認はLabelsを手動実行し、日次runでも対象PRが含まれることを確認します。
+
+### Artifactの取得と同じ評価器での再評価
+
+runの**Artifacts**から`shadow-observations-<run ID>-<attempt>`または`shadow-labels-<run ID>-<attempt>`を取得します。
+CLIを使う場合は、対象リポジトリのActions artifactを読める認証が必要です。期限切れ・権限不足を対象PRなしとして扱わないでください。
+
+```bash
+gh run download <run ID> --repo <owner/repo> \
+  --name shadow-observations-<run ID>-<attempt> --dir /tmp/shadow-artifact
+```
+
+Actionsの**Checkout trusted default branch**のログから実行されたSHAを確認し、JSONの`observations.evaluator_sha`と一致させます。
+以下はそのコミットがローカルGitに存在する状態で実行します。存在しなければ先に取得してください。再評価コマンド自身はfetchやAPI通信をしません。
+artifactに書かれた任意のSHAを自動でコード実行することは避け、実行者が確認したSHAを明示します。
+
+```bash
+devcontainer exec --workspace-folder . python3 -B .github/autonomous-merge/replay.py \
+  --report /tmp/shadow-artifact/pr-<PR番号>.json \
+  --evaluator-sha <確認した40桁のSHA>
+```
+
+`/tmp/shadow-artifact`は実行するコンテナ内に配置してください。移植先のDev Containerにworkspaceラベル指定が必要なら、そのリポジトリの実行手順に従います。
+このコマンドは保存policyを使い、判定・条件・policy指紋を含むレポート全体の一致時だけ終了コード0を返します。現在のpolicyファイルに置き換えません。
+
+### nimius-playerの設定例
+
+検証先は`nimiusrd/nimius-player`（default branch `main`、Tauri/Rust/React）です。
+共通コードはそのまま使用し、Shadow/Check Markersの購読を`frontend`、`tauri-rust`、`css`へ変更します。
+policyにはGitHub Actions App ID `15368`の次の7 checkを列挙します。
+
+- `Lint & format`
+- `Unit tests (coverage)`
+- `npm audit`
+- `E2E (Playwright)`
+- `Windows compile check`
+- `tauri-rust`
+- `css`
+
+最低承認数0、未解決スレッドなし、日次09:43 JSTは共通設定です。
+各CIにはpath filterがあります。一部のCIだけが起動するPRでは、残る必須checkが欠けるため`WAITING`になります。
+言語や変更pathから免除せず、CI未起動を成功として補いません。具体的な導入結果と未検証項目は[検証記録](./autonomous-merge-shadow-validation.md)へ記載します。
 
 コードベース固有のパス一覧、言語別parser、テストファイル名の規約を移植する必要はありません。
 別ホスティングサービスへ展開するときは、同じ観測JSONを出力するadapterを追加し、評価器へは正規化した状態を渡します。

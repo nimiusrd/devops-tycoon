@@ -77,3 +77,38 @@ jobs:
           path: shadow-report/
           if-no-files-found: warn
           retention-days: 30
+
+  publish-checks:
+    needs: observe
+    if: ${{ !cancelled() && (needs.observe.result == 'success' || needs.observe.result == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: autonomous-merge-check-writer
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/autonomous-merge
+      - name: Download this attempt's observations
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: shadow-observations-${{ github.run_id }}-${{ github.run_attempt }}
+          path: shadow-report
+      - name: Publish reference Checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: shadow-observations-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          if [[ ! -f .github/autonomous-merge/publish_checks.py ]]; then
+            echo '未導入: Check publisherがdefault branchにありません。' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 -B .github/autonomous-merge/publish_checks.py --report-dir shadow-report --artifact-name "$ARTIFACT_NAME"

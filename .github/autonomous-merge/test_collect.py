@@ -323,6 +323,11 @@ class CollectTests(unittest.TestCase):
                     self.assertEqual(main(), exit_code)
                 report = json.loads((Path(directory) / "pr-1.json").read_text())
                 self.assertEqual(report["decision"], expected)
+                manifest = json.loads((Path(directory) / "manifest.json").read_text())
+                self.assertEqual(manifest["repository"], api.repository)
+                self.assertEqual(manifest["reports"], [1])
+                # PR単位のAPI失敗でもそのPRのレポートは公開対象に残る。
+                self.assertFalse(manifest["collection_failed"])
                 logs = [json.loads(line) for line in output.getvalue().splitlines()]
                 self.assertEqual(logs[0]["reason"], reason)
                 self.assertEqual(logs[-1]["collector_exit_code"], exit_code)

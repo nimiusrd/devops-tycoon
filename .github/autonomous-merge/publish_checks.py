@@ -15,7 +15,8 @@ from urllib.parse import quote
 from publish import DECISION_LABELS, GitHub, MAX_PAGES, PublishError
 
 CHECK_PREFIX = "Autonomous Merge Shadow / PR #"
-EXTERNAL_PREFIX = "shadow-v1"
+EXTERNAL_PREFIX = "shadow-v2"
+LEGACY_PREFIX = "shadow-v1"
 ACTIONS_APP_ID = 15368
 
 
@@ -83,9 +84,9 @@ def managed_checks(api: GitHub, number: int, head: str) -> list:
         if record["name"] == name
         and record["head_sha"] == head
         and record["app"]["id"] == ACTIONS_APP_ID
-        and (record.get("external_id") or "").startswith(
-            f"{EXTERNAL_PREFIX}:{number}:"
-        )
+        and (record.get("external_id") or "").startswith(tuple(
+            f"{prefix}:{number}:" for prefix in (EXTERNAL_PREFIX, LEGACY_PREFIX)
+        ))
     ]
 
 
@@ -97,7 +98,10 @@ def write_check(api: GitHub, current: dict, at: str, title: str, summary: str,
     # 一度だけ作成したCheckを更新する。異常な既存メタデータは黙って上書きしない。
     if existing:
         latest = max(existing, key=check_time)
-        if check_time(latest) >= incoming and latest["external_id"].endswith("|" + state_hash(current)):
+        legacy = latest["external_id"].startswith(LEGACY_PREFIX + ":")
+        # v1のハッシュから更新前の状態は復元できない。新しいイベント・観測が
+        # 届くまでは時刻だけで既存記録を保護し、その更新時にv2へ移行する。
+        if check_time(latest) >= incoming and (legacy or latest["external_id"].endswith("|" + state_hash(current))):
             return "newer_or_same_observation_kept"
         # 同じheadでもbase等が変わった場合は古い表示を失効させる。
         # その際にも時刻のwatermarkは戻さない。

@@ -1,6 +1,7 @@
 """Checkの現在SHA・公開順・権限境界を、実APIを書き換えず検証する。"""
 
 import json
+import hashlib
 import os
 import tempfile
 import unittest
@@ -11,7 +12,7 @@ from unittest.mock import patch
 from evaluate import assess
 from publish import PublishError
 from publish_checks import (
-    CHECK_PREFIX, main, managed_checks, mark_event, publish_directory, publish_report,
+    CHECK_PREFIX, main, managed_checks, mark_event, publish_directory, publish_report, snapshot,
 )
 from test_evaluate import BASE, HEAD, MERGE, facts, policy
 
@@ -123,6 +124,22 @@ class CheckTests(unittest.TestCase):
         publish_report(api, 1, report(), URL, ARTIFACT)
         self.assertEqual(len(api.writes), 1)
         self.assertIn("SHADOW_CONDITIONS_MET", api.checks[0]["output"]["title"])
+
+    def test_legacy_check_keeps_watermark_and_migrates_on_newer_observation(self):
+        api = FixtureAPI()
+        payload = deepcopy(api.prs[1])
+        publish_report(api, 1, report(at=LATER), URL, ARTIFACT)
+        old_hash = hashlib.sha256(json.dumps(snapshot(payload), sort_keys=True).encode()).hexdigest()
+        api.checks[0]["external_id"] = f"shadow-v1:1:{LATER}|{old_hash}"
+        api.prs[1]["updated_at"] = "2026-09-11T14:00:00+00:00"
+        mark_event(api, {"pull_request": payload, "action": "synchronize"}, URL)
+        self.assertEqual(len(api.writes), 1)
+        self.assertIn("SHADOW_CONDITIONS_MET", api.checks[0]["output"]["title"])
+        value = report(at="2026-09-11T15:00:00+00:00")
+        value["observations"]["pr"]["updated_at"] = api.prs[1]["updated_at"]
+        publish_report(api, 1, value, URL, ARTIFACT)
+        self.assertEqual(len(api.checks), 1)
+        self.assertTrue(api.checks[0]["external_id"].startswith("shadow-v2:"))
 
     def test_new_head_never_inherits_old_conditions_met(self):
         api = FixtureAPI()

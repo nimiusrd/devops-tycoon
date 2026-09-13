@@ -57,16 +57,16 @@ CI が実行中なら必須 Check 条件は waiting です。ただし GitHub �
 
 ## オフライン再評価・自動検証
 
-両リポジトリから保存した新 Action の PR レポート **26 件すべて**を、Docker の `--network none`、ソースの読み取り専用 mount、Python 3.11 の `-I -B` で再評価しました。明示したローカル Git と信頼済み Action SHA `fb9e82eadd7e56467b762102597ad8a77d47d82d` から `git archive` で評価器・依存モジュールを取得し、保存した観測・policy・出所だけで元レポート全体と一致、終了コード 0 でした。26 件には全 open PR 観測で得た他 PR と、移行 PR 終了時のレポートも含みます。旧形式や旧 SHA との比較は行っていません。
+この公開リポジトリから保存した新 Action の PR レポート **14 件すべて**を、Docker の `--network none`、ソースの読み取り専用 mount、Python 3.11 の `-I -B` で再評価しました。明示したローカル Git と信頼済み Action SHA `fb9e82eadd7e56467b762102597ad8a77d47d82d` から `git archive` で評価器・依存モジュールを取得し、保存した観測・policy・出所だけで元レポート全体と一致、終了コード 0 でした。14 件には全 open PR 観測で得た他 PR と、移行 PR 終了時のレポートも含みます。旧形式や旧 SHA との比較は行っていません。
 
-利用者の再評価コマンドは[利用案内](./pr-merge-readiness.md)からリンクした固定版 README の `replay` を参照してください。
+利用者の再評価コマンドは[利用案内](./pr-merge-readiness.md)からリンクした Action README の `replay` を参照してください。評価器には保存したレポートと一致する信頼済み Action SHA を指定します。
 
 Action の Dev Container と [main CI](https://github.com/nimiusrd/pr-merge-readiness-action/actions/runs/34765377704) で Python 113 テスト、Ruff lint・format、YAML・生成物の検証が成功しました。入力・設定矛盾、SHA 不一致、設定途中変更、モジュール混入、権限不足、artifact 欠落・別 attempt、公開失敗後のラベル抑止、遅延結果を含みます。100 ファイル × 10 PR で履歴要求が run 全体 100 以下、失敗要求の消費、PR 間 cache、base 変更、run 間分離も自動検証しました。
 
 ## Artifact の保存設定と再実行の制約
 
-保持期間は 30 日に設定しています。nimius-player の [run 34766780386 / attempt 2](https://github.com/nimiusrd/nimius-player/actions/runs/34766780386/attempts/2) では、今回の名前 `pr-merge-readiness-34766780386-2` と manifest の attempt 2、期限 `2026-10-13T16:13:26Z` を確認しました。
+保持期間は[共通 workflow](https://github.com/nimiusrd/pr-merge-readiness-action/blob/fb9e82eadd7e56467b762102597ad8a77d47d82d/.github/workflows/readiness.yml)で 30 日に設定しています。
 
-一方、同じ run の全 job 再実行後、取得済みだった attempt 1 の artifact は GitHub API から取得できなくなりました。前 attempt のファイルは再実行前に Git 外へ保存しており、そのコピーもオフライン再評価しています。[upload-artifact #585](https://github.com/actions/upload-artifact/issues/585) にも同種の報告があります。30日の保存設定は、GitHub 上で削除・再実行された artifact の再取得を保証するものではありません。
+同じ run の全 job 再実行で前 attempt の artifact が取得できなくなる場合については、公開されている [upload-artifact #585](https://github.com/actions/upload-artifact/issues/585) を参照してください。30日の保存設定は、GitHub 上で削除・再実行された artifact の再取得を保証するものではありません。
 
 再観測には新しい **Run workflow** を使い、同じ run を再実行する場合は必要な artifact を先に Git 外へ保存してください。Action は別 run／attempt への fallback や旧 artifact の変換を行いません。

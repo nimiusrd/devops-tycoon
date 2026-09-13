@@ -4,7 +4,7 @@ PR の準備状況は [独立 Action v0.2.0](https://github.com/nimiusrd/pr-merg
 
 - 設定: [`.github/pr-merge-readiness.toml`](../.github/pr-merge-readiness.toml)
 - 生成入口: [`.github/workflows/pr-merge-readiness.yml`](../.github/workflows/pr-merge-readiness.yml)
-- 詳細・データ契約・replay: [Action README](https://github.com/nimiusrd/pr-merge-readiness-action/tree/68a4aa9a0b4778452fc7f74d77c48d508d62bfe2)
+- 詳細・設定例・replay: [Action の最新 README](https://github.com/nimiusrd/pr-merge-readiness-action#readme)
 
 Python 3.14 を uv 0.12.13 で管理し、実行・CI・Dev Container の設定は独立 Action 側に集約しています。Action の開発検証は pytest・Ruff・mypy strict を使用します。
 

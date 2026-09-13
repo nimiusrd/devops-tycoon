@@ -1,0 +1,225 @@
+{
+  "schema_version": 2,
+  "mode": "shadow",
+  "decision": "INSUFFICIENT_DATA",
+  "conditions": [
+    {
+      "name": "freshness",
+      "status": "unknown",
+      "detail": "PR, CI or reviews changed between samples; recollect"
+    },
+    {
+      "name": "open_pr",
+      "status": "pass",
+      "detail": "OPEN"
+    },
+    {
+      "name": "ready_for_review",
+      "status": "waiting",
+      "detail": true
+    },
+    {
+      "name": "mergeable",
+      "status": "pass",
+      "detail": "MERGEABLE"
+    },
+    {
+      "name": "github_review",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "name": "change_requests",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "name": "current_head_approvals",
+      "status": "pass",
+      "detail": {
+        "actual": 0,
+        "required": 0
+      }
+    },
+    {
+      "name": "review_threads",
+      "status": "pass",
+      "detail": 0
+    },
+    {
+      "name": "unchanged_ci_definitions",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "name": "required_check:Lint & Unit (Vitest)",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "app_id": 15368,
+        "id": 103512729806,
+        "sha": "2a5f5f47240713d72f24a5afa49a1d8caa7f01c5",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:E2E (Playwright)",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368,
+        "id": 103512729904,
+        "sha": "2a5f5f47240713d72f24a5afa49a1d8caa7f01c5",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "github_merge_state",
+      "status": "pass",
+      "detail": "CLEAN"
+    }
+  ],
+  "observations": {
+    "schema_version": 2,
+    "observed_at": "2026-09-12T06:47:47.264195+00:00",
+    "repository": "nimiusrd/devops-tycoon",
+    "evaluator_sha": "a69573a34d1f2d9eedc825f2338fddd71dd6937d",
+    "collection_errors": [],
+    "stable": false,
+    "observation_changes": [
+      {
+        "group": "pr",
+        "identity": null,
+        "field": "updated_at",
+        "before": "2026-09-12T06:36:11Z",
+        "after": "2026-09-12T06:47:46Z"
+      }
+    ],
+    "pr": {
+      "number": 487,
+      "state": "OPEN",
+      "draft": true,
+      "head_sha": "2a5f5f47240713d72f24a5afa49a1d8caa7f01c5",
+      "base_sha": "a69573a34d1f2d9eedc825f2338fddd71dd6937d",
+      "base_ref": "main",
+      "updated_at": "2026-09-12T06:36:11Z",
+      "merge_sha": "683e8ff526b79c1cfead90d8b78e560d1ab7df0d",
+      "mergeable": "MERGEABLE",
+      "merge_state": "CLEAN",
+      "review_decision": null,
+      "additions": 162,
+      "deletions": 34,
+      "changed_files": 4
+    },
+    "change": {
+      "changed_files": 4,
+      "additions": 162,
+      "deletions": 34,
+      "types": {
+        "MODIFIED": 4
+      },
+      "binary_files": null,
+      "mode_changes": null
+    },
+    "files": [
+      {
+        "path": "src/styles.css",
+        "previous_path": null,
+        "changeType": "MODIFIED",
+        "additions": 46,
+        "deletions": 34
+      },
+      {
+        "path": "tests/e2e/formation.spec.ts",
+        "previous_path": null,
+        "changeType": "MODIFIED",
+        "additions": 54,
+        "deletions": 0
+      },
+      {
+        "path": "tests/e2e/sprint-layout.spec.ts",
+        "previous_path": null,
+        "changeType": "MODIFIED",
+        "additions": 20,
+        "deletions": 0
+      },
+      {
+        "path": "tests/e2e/title-launch.spec.ts",
+        "previous_path": null,
+        "changeType": "MODIFIED",
+        "additions": 42,
+        "deletions": 0
+      }
+    ],
+    "ci_definition_changes": [],
+    "reviews": [],
+    "unresolved_threads": 0,
+    "checks": [
+      {
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "app_id": 15368,
+        "id": 103512729806,
+        "sha": "2a5f5f47240713d72f24a5afa49a1d8caa7f01c5",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368,
+        "id": 103512729904,
+        "sha": "2a5f5f47240713d72f24a5afa49a1d8caa7f01c5",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "ci_history": [
+      {
+        "sha": "2a5f5f47240713d72f24a5afa49a1d8caa7f01c5",
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "2a5f5f47240713d72f24a5afa49a1d8caa7f01c5",
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      }
+    ],
+    "rechecked": {
+      "pr": false,
+      "reviews": true,
+      "unresolved_threads": true,
+      "checks": true
+    }
+  },
+  "policy": {
+    "version": 2,
+    "mode": "shadow",
+    "minimum_approvals": 0,
+    "require_resolved_threads": true,
+    "required_checks": [
+      {
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368
+      }
+    ]
+  },
+  "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85"
+}

@@ -1,5 +1,7 @@
 # Autonomous Merge Shadow Mode
 
+> 旧実装の移行前資料です。現在の入口・運用手順は [PR Merge Readiness](./pr-merge-readiness.md) を参照してください。移行後の検証が完了したら旧実装を整理します。
+
 Git・PR・CIの共通メタデータから、観測時点で設定条件を満たしているかを記録するPoCです。
 ソースの意味、テストの有効性、コードベース固有の重要pathを解析しません。
 自動マージ、承認、required checkの登録、PRコメントの継続更新は行いません。

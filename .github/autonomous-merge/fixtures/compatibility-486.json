@@ -1,0 +1,150 @@
+{
+  "baseline_commit": "90c6ac5136011de264cd3c2413e20b3e24fde48b",
+  "description": "分割前の出力全文のSHA-256。時刻・run 42/attempt 2とFixtureAPIを固定。",
+  "evaluate_cli": {
+    "legacy/json": {
+      "exit_code": 0,
+      "stdout_sha256": "f428fbceaec8805006fbf15a6dd22db6667f9052fcb67bd17296367c544b7e00",
+      "stderr": ""
+    },
+    "legacy/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "43e70dee6a4eb5c3513f047ed49dfc4f868fd1ae7a9d8b50f17011324eb071cc",
+      "stderr": ""
+    },
+    "null/json": {
+      "exit_code": 0,
+      "stdout_sha256": "b83c34f1988790b64aea6531936c28b2a06a3f455b55f8ab462e4e41b965e147",
+      "stderr": ""
+    },
+    "null/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "43e70dee6a4eb5c3513f047ed49dfc4f868fd1ae7a9d8b50f17011324eb071cc",
+      "stderr": ""
+    },
+    "empty/json": {
+      "exit_code": 0,
+      "stdout_sha256": "fb45a3742d48b7a2376d879c6ffbb094244324af0531578e6e5a84ea37ac279b",
+      "stderr": ""
+    },
+    "empty/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "801d72cac0d8a283f8f1e8133aa1bc3494aa4eaa1f0b63a4aef402eb486275f7",
+      "stderr": ""
+    },
+    "drift/json": {
+      "exit_code": 0,
+      "stdout_sha256": "d40235330c48f93e719b57663c9ec5b1080e36a52aae47e78dc3ec364042550e",
+      "stderr": ""
+    },
+    "drift/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "64aff97639703bc133ea726a75539dfe5675c8bb363cdd3778fd450efcc955c7",
+      "stderr": ""
+    },
+    "waiting/json": {
+      "exit_code": 0,
+      "stdout_sha256": "5fa2b171c7736df9b97373fafff7bc1f05428e66d0d8523159d50f4327804826",
+      "stderr": ""
+    },
+    "waiting/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "6380ba1582391807d0eb02bdfbf338ab9a6e8d3785f32f5fd7a9d6e25996774a",
+      "stderr": ""
+    },
+    "human/json": {
+      "exit_code": 0,
+      "stdout_sha256": "53d8de9a9bc569d2ac8795f86f08485e2166a69a546da0f12d237f01916c7717",
+      "stderr": ""
+    },
+    "human/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "ad27683b9c5fda887bdaf79d596242339b4cbc1d139ed6c8c498c78f6af4f7c0",
+      "stderr": ""
+    },
+    "missing/json": {
+      "exit_code": 0,
+      "stdout_sha256": "8c0f03fd9d3158d7f6616e703a18a0416de83bf39c22c925782428d3ca203fce",
+      "stderr": ""
+    },
+    "missing/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "c6d9f3ff4357cdf35544e8f872534211df78f5246b768021535c5cb9a15e0004",
+      "stderr": ""
+    },
+    "invalid/json": {
+      "exit_code": 0,
+      "stdout_sha256": "3ff0416c286d4c1cf47182c8d68a41d3a3ccc3a68effcf21b5528579ff1b484c",
+      "stderr": ""
+    },
+    "invalid/markdown": {
+      "exit_code": 0,
+      "stdout_sha256": "5bdd80271441d1332c60a32a50fbaed91e78b4ec5ac7e28c8f1bd1c54d6aeb55",
+      "stderr": ""
+    }
+  },
+  "collector": {
+    "stable": {
+      "exit_code": 0,
+      "stdout_sha256": "a778fb121a310c631742918fb5ccc45ad8f95ddebc00e4194f0f69f3b2f8e262",
+      "files": {
+        "manifest.json": "1875a9eca32a6662302f2cece723eb8d9fb5db06bf5d55f85638033d33e8d7ce",
+        "pr-1.json": "4f17309791f1b062033ca4b22956bfa4de46de91115bd920c11edaf43dcb5e42",
+        "summary.md": "4d98300162063ff4c1852feca054aa4d0d927c114c8b41f403ab2bcb36c19e66"
+      }
+    },
+    "waiting": {
+      "exit_code": 0,
+      "stdout_sha256": "beab75c179adb33ea8a45ea2535188cba3bf7faafc077b8f6c913832c2f38f19",
+      "files": {
+        "manifest.json": "1875a9eca32a6662302f2cece723eb8d9fb5db06bf5d55f85638033d33e8d7ce",
+        "pr-1.json": "8038bd8873eea0dbe90de24f26220a7258c01c57fcedd8b1a54c4c39be46029e",
+        "summary.md": "33af9388f3e454ddbc6e764323e888d7a53cb0401453fdccf9b2e2b70144690a"
+      }
+    },
+    "human": {
+      "exit_code": 0,
+      "stdout_sha256": "d0c8781b20ead4a3b58495164224547e0f10794dc7bd1f954a199a2ebb966444",
+      "files": {
+        "manifest.json": "1875a9eca32a6662302f2cece723eb8d9fb5db06bf5d55f85638033d33e8d7ce",
+        "pr-1.json": "1f8aff5af8c55b33c11c18bb2600ce98675472ddc6293266e885841fe7b93ddb",
+        "summary.md": "bf40e5c4d7e5be92386eb6888b5e8ea8d1c8edd1aaa1739f1d468f703c26a3c3"
+      }
+    },
+    "drift": {
+      "exit_code": 1,
+      "stdout_sha256": "a4bec553a10f050060ec3c652e687f12511ee77613cd45af0e02a9ae62711484",
+      "files": {
+        "manifest.json": "1875a9eca32a6662302f2cece723eb8d9fb5db06bf5d55f85638033d33e8d7ce",
+        "pr-1.json": "6afeee187fedf35c11711aa1ab979d2ca064a22a376e06bed4c53654e164250e",
+        "summary.md": "5c76fdfa4d156fa2d06d58222d2fc88f73d45a204ac2dedea3626cc7b62b96a3"
+      }
+    },
+    "api": {
+      "exit_code": 1,
+      "stdout_sha256": "87761cbc9e716093e4c7fbd8f235ddef3613ab27ceb65cf14729b29b645fd8ee",
+      "files": {
+        "manifest.json": "1875a9eca32a6662302f2cece723eb8d9fb5db06bf5d55f85638033d33e8d7ce",
+        "pr-1.json": "c94a2eb5ade7aa2803aa48581c61db576cc157c5ee3b1ddc7a3a9b6e5bbfbce3",
+        "summary.md": "a61e0cb34b83d63a957f9ad620cd9668bfb339d1faef195dc91ba99b89030675"
+      }
+    },
+    "no_targets": {
+      "exit_code": 0,
+      "stdout_sha256": "a01ead4bcbbb9beed42b6dea15869b6dcc846eabfd84b1189939fd6d388f0883",
+      "files": {
+        "manifest.json": "f9abf7e6fba7c7da5b569b6f52975ce1a1a92b47f00095d725ef53b0b79a47a4",
+        "summary.md": "1af7b00378219348814d7236c2b5e6db3cff87abc38a04e325a623ea041ee1ce"
+      }
+    },
+    "target_error": {
+      "exit_code": 1,
+      "stdout_sha256": "426514457a60f9eff3a5c6e885fae5f05817ecef23cb925a3836453fb55997b1",
+      "files": {
+        "collection-error.json": "ccc0000246ad2cd84feefdb8b1bfd24d4cdbeb14ed70851f4669fe957ba30526",
+        "manifest.json": "a7a58d9c6c8c5a20ef30e96d63610c2d2548039f136e6fffed0d29c1b64d4594",
+        "summary.md": "3cd306b9fce25569a2de75c749c22876321435e73c03f3531ba3339d45fdb752"
+      }
+    }
+  }
+}

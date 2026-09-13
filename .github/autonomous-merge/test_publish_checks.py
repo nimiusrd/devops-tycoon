@@ -14,7 +14,7 @@ from publish import PublishError
 from publish_checks import (
     CHECK_PREFIX, main, managed_checks, mark_event, publish_directory, publish_report, snapshot,
 )
-from test_evaluate import BASE, HEAD, MERGE, facts, policy
+from test_support import BASE, HEAD, MERGE, facts, policy
 
 AT = "2026-09-11T12:00:00+00:00"
 LATER = "2026-09-11T13:00:00+00:00"

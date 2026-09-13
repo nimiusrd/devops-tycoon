@@ -7,73 +7,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from evaluate import EvaluationError, assess, load_policy, markdown
-
-HEAD = "a" * 40
-BASE = "b" * 40
-MERGE = "c" * 40
-
-
-def policy():
-    return {
-        "version": 2,
-        "mode": "shadow",
-        "minimum_approvals": 0,
-        "require_resolved_threads": True,
-        "required_checks": [{"kind": "check_run", "name": "Test", "app_id": 1}],
-    }
-
-
-def facts():
-    return {
-        "schema_version": 2,
-        "observed_at": "2026-09-11T12:00:00+00:00",
-        "repository": "example/project",
-        "evaluator_sha": BASE,
-        "collection_errors": [],
-        "stable": True,
-        "pr": {
-            "number": 1,
-            "state": "OPEN",
-            "draft": False,
-            "head_sha": HEAD,
-            "base_sha": BASE,
-            "merge_sha": MERGE,
-            "mergeable": "MERGEABLE",
-            "merge_state": "CLEAN",
-            "review_decision": None,
-        },
-        "change": {
-            "additions": 10,
-            "deletions": 2,
-            "changed_files": 1,
-            "types": {"MODIFIED": 1},
-        },
-        "files": [
-            {
-                "path": "whatever.rs",
-                "changeType": "MODIFIED",
-                "additions": 10,
-                "deletions": 2,
-            }
-        ],
-        "reviews": [],
-        "unresolved_threads": 0,
-        "ci_history": [],
-        "ci_definition_changes": [],
-        "checks": [
-            {
-                "kind": "check_run",
-                "name": "Test",
-                "app_id": 1,
-                "sha": HEAD,
-                "id": 1,
-                "status": "completed",
-                "conclusion": "success",
-            }
-        ],
-    }
-
+from contracts import EvaluationError
+from evaluate import assess, load_policy
+from test_support import BASE, HEAD, MERGE, facts, policy
 
 class EvaluateTests(unittest.TestCase):
     def decision(self, data, config=None):
@@ -379,15 +315,6 @@ class EvaluateTests(unittest.TestCase):
         ]:
             with self.subTest(change=change), self.assertRaises(EvaluationError):
                 assess(facts(), {**policy(), **change})
-
-    def test_markdown_escapes_pr_derived_text(self):
-        data = facts()
-        data["pr"]["base_ref"] = "<script>alert(1)</script>\n![x](https://bad)"
-        text = markdown(assess(data, policy()))
-        self.assertNotIn("<script>", text)
-        self.assertIn("&lt;script&gt;", text)
-        self.assertIn(HEAD, text)
-        self.assertIn("2026-09-11", text)
 
     def test_policy_fingerprint_is_stable_and_sensitive_to_configuration(self):
         config = policy()

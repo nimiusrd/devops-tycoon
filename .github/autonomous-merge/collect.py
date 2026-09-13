@@ -14,7 +14,12 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from evaluate import assess, load_policy, markdown, sha, string
+from contracts import (
+    DecisionMetadata, Manifest, ObservationChange, Observations,
+    PullRequest, sha, string,
+)
+from evaluate import assess, load_policy
+from report import markdown
 
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
@@ -133,7 +138,7 @@ query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
         raise CollectionError("GraphQL pagination limit exceeded")
 
 
-def normalized_pr(raw: dict) -> dict:
+def normalized_pr(raw: dict) -> PullRequest:
     merge = raw["potentialMergeCommit"]
     return {
         "number": raw["number"],
@@ -153,7 +158,7 @@ def normalized_pr(raw: dict) -> dict:
     }
 
 
-def decision_metadata(api: GitHub, number: int, pr: dict) -> dict:
+def decision_metadata(api: GitHub, number: int, pr: PullRequest) -> DecisionMetadata:
     """判定に使うCI・レビュー状態を同じ方法で再取得できるようにする。"""
     metadata = {}
     reviews = api.pages(f"/pulls/{number}/reviews")
@@ -210,7 +215,7 @@ def decision_metadata(api: GitHub, number: int, pr: dict) -> dict:
     return metadata
 
 
-def observation_changes(before: dict, after: dict) -> list[dict]:
+def observation_changes(before: dict, after: dict) -> list[ObservationChange]:
     """許可済みの正規化メタデータだけから、変更フィールドと前後値を残す。"""
     changes = []
 
@@ -253,8 +258,8 @@ def observation_changes(before: dict, after: dict) -> list[dict]:
     return changes
 
 
-def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
-    facts = {
+def collect(api: GitHub, number: int, evaluator_sha: str) -> Observations:
+    facts: Observations = {
         "schema_version": 2,
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "repository": api.repository,
@@ -385,7 +390,7 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     summary = []
     failed = False
-    manifest = {
+    manifest: Manifest = {
         "version": 1,
         "repository": args.repository,
         "run_id": os.environ.get("GITHUB_RUN_ID"),

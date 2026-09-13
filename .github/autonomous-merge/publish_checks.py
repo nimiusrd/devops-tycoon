@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 
+from contracts import Assessment
+
 from publish import DECISION_LABELS, GitHub, MAX_PAGES, PublishError
 
 CHECK_PREFIX = "Autonomous Merge Shadow / PR #"
@@ -140,7 +142,7 @@ def heading(current: dict, run_url: str) -> str:
     )
 
 
-def publish_report(api: GitHub, number: int, report: dict, run_url: str,
+def publish_report(api: GitHub, number: int, report: Assessment, run_url: str,
                    artifact: str) -> str:
     decision = report["decision"]
     facts = report["observations"]

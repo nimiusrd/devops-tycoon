@@ -115,7 +115,11 @@ GitHubのレビュー総合状態も併せて確認します。
 
 ## 実装の分離
 
+共有型・必須項目・欠落値の意味は[データ契約](./autonomous-merge-contracts.md)を参照してください。
+
 - `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。source本文やartifactの個別取得・実行は行わず、ファイル一覧APIに同梱されるpatchも参照・保存しない。書き込みは行わない。
+- `.github/autonomous-merge/contracts.py`：観測・policy・判定結果・manifestの型と共有検証。型注釈で実行時検証を代替しない。
+- `.github/autonomous-merge/report.py`：判定済みの結果からSummaryを生成する。判定・収集処理を呼ばない。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
 - `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
 - `.github/autonomous-merge/publish_checks.py`：参考用Checkと未観測表示を公開する。判定の再計算やラベル更新はしない。
@@ -296,7 +300,7 @@ devcontainer exec --workspace-folder . python3 -B .github/autonomous-merge/repla
 ```
 
 `/tmp/shadow-artifact`は実行するコンテナ内に配置してください。移植先のDev Containerにworkspaceラベル指定が必要なら、そのリポジトリの実行手順に従います。
-このコマンドは保存policyを使い、判定・条件・policy指紋を含むレポート全体の一致時だけ終了コード0を返します。現在のpolicyファイルに置き換えません。
+このコマンドは保存policyを使い、判定・条件・policy指紋を含むレポート全体の一致時だけ終了コード0を返します。現在のpolicyファイルに置き換えません。評価器と分離した依存モジュールも同じSHAから読み、現在のcheckoutのモジュールを混ぜずに実行します。分割前の単独評価器にも対応します。
 
 ### nimius-playerの設定例
 

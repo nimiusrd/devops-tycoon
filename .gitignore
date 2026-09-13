@@ -25,6 +25,9 @@ reports/
 /.github/autonomous-merge/evidence/
 /docs/shadow-observations/
 /shadow-report/
+/readiness-report/
+/preparation-report/
+/evidence/
 
 # logs
 logs/

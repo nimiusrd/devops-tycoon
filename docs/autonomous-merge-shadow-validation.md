@@ -65,7 +65,9 @@ devops-tycoonでは2026-09-13 14:20:26 JSTに作成された`event=schedule`の[
 
 `stale_change_review_days = 30`を追加し、base側の最終変更から30日超の既存ファイルを含むPRで、人間の承認を要求します。詳細は[利用ガイド](./autonomous-merge-shadow-mode.md#変更間隔と人間レビュー)を参照してください。
 
-Dev ContainerでPython全110件が成功しました。新しい条件では30日ちょうど・直後、rename・新規追加、人間/Bot・所属・head・dismissの違い、履歴欠落・API失敗・上限、baseやレビュー情報の取得中の変化を検証しています。collectorが出力したartifact形式のJSONを、保存policy・時刻・履歴で別Pythonプロセスから再評価し、ネットワークを禁止した状態で全体一致を確認しました。
+Dev ContainerでPython全114件が成功しました。新しい条件では30日ちょうど・直後、rename・新規追加、人間/Bot・所属・head・dismissの違い、履歴欠落・API失敗・上限、baseやレビュー情報の取得中の変化を検証しています。collectorが出力したartifact形式のJSONを、保存policy・時刻・履歴で別Pythonプロセスから再評価し、ネットワークを禁止した状態で全体一致を確認しました。
+
+履歴照会の負荷は、`workflow_run`から100ファイルずつの10PRを処理するCLIテストで確認しました。同じbase・pathを共有する場合も、全PRで異なる場合もrun全体の履歴要求は100回に収まります。共有時は全PRの履歴を取得し、上限で取得できない場合も対象PRすべてのartifactと理由を保存します。要求失敗の予算消費、取得前の予算判定、base変更時の再取得、予算消費後のcache再利用と新規ファイルの処理、run間での予算・cacheの分離も検証しています。
 
 この条件を有効にした実GitHub Actionsでの観測・Check・ラベル公開は未実測です。上記の導入時の実測記録と保存JSONは、この条件を追加する前のpolicyによる結果です。
 

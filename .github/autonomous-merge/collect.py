@@ -25,6 +25,7 @@ from report import markdown
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 MAX_HISTORY_FILES = 100
+MAX_HISTORY_REQUESTS = 100
 PR_FIELDS = """
 number state isDraft headRefOid baseRefOid baseRefName updatedAt
 mergeable mergeStateStatus reviewDecision
@@ -265,32 +266,53 @@ def observation_changes(before: dict, after: dict) -> list[ObservationChange]:
     return changes
 
 
-def collect_change_history(api: GitHub, base_sha: str, files: list[ChangedFile]) -> ChangeHistory:
-    base = sha(base_sha)
-    paths = [(file["path"], file_history_path(file)) for file in files]
-    if sum(path is not None for _, path in paths) > MAX_HISTORY_FILES:
-        raise CollectionError("change history file limit exceeded")
-    history: ChangeHistory = {"base_sha": base, "files": []}
-    for path, previous in paths:
-        record = {"path": path, "history_path": previous,
-                  "last_commit_sha": None, "last_changed_at": None}
-        if previous is not None:
-            # base SHAで固定する。PR headの新しいコミットで経過日数をリセットしない。
-            # 最終変更1件だけを読み、過去runやartifactの一覧は走査しない。
-            query = urlencode({"sha": base, "path": previous, "per_page": 1})
-            commits = api.request(f"{api.prefix}/commits?{query}")
-            if not isinstance(commits, list) or len(commits) != 1:
-                raise CollectionError(f"last change unavailable: {previous}")
-            last = commits[0]
-            at = last["commit"]["committer"]["date"]
-            timestamp(at, "last_changed_at")
-            record.update(last_commit_sha=sha(last["sha"]), last_changed_at=at)
-        history["files"].append(record)
-    return history
+class ChangeHistoryCollector:
+    """同じrun・リポジトリの全PRで履歴照会の予算と成功結果を共有する。"""
+
+    def __init__(self, api: GitHub):
+        self.api = api
+        self.requests = 0
+        self.cache: dict[tuple[str, str], tuple[str, str]] = {}
+
+    def collect(self, base_sha: str, files: list[ChangedFile]) -> ChangeHistory:
+        base = sha(base_sha)
+        paths = [(file["path"], file_history_path(file)) for file in files]
+        if sum(path is not None for _, path in paths) > MAX_HISTORY_FILES:
+            raise CollectionError("change history file limit exceeded")
+        missing = {(base, previous) for _, previous in paths if previous is not None} - self.cache.keys()
+        if self.requests + len(missing) > MAX_HISTORY_REQUESTS:
+            # 完了できないPRには残り予算を使わず、後続PRの取得余地を残す。
+            raise CollectionError(
+                f"change history run request limit exceeded: "
+                f"{self.requests}/{MAX_HISTORY_REQUESTS} used, {len(missing)} needed"
+            )
+        history: ChangeHistory = {"base_sha": base, "files": []}
+        for path, previous in paths:
+            record = {"path": path, "history_path": previous,
+                      "last_commit_sha": None, "last_changed_at": None}
+            if previous is not None:
+                key = (base, previous)
+                if key not in self.cache:
+                    # base SHAで固定する。PR headで日数をリセットせず、base更新時は再取得する。
+                    query = urlencode({"sha": base, "path": previous, "per_page": 1})
+                    # 失敗した要求もrun全体の上限に含める。
+                    self.requests += 1
+                    commits = self.api.request(f"{self.api.prefix}/commits?{query}")
+                    if not isinstance(commits, list) or len(commits) != 1:
+                        raise CollectionError(f"last change unavailable: {previous}")
+                    last = commits[0]
+                    at = last["commit"]["committer"]["date"]
+                    timestamp(at, "last_changed_at")
+                    self.cache[key] = (sha(last["sha"]), at)
+                commit, at = self.cache[key]
+                record.update(last_commit_sha=commit, last_changed_at=at)
+            history["files"].append(record)
+        return history
 
 
 def collect(
     api: GitHub, number: int, evaluator_sha: str, *, include_change_history: bool = False,
+    history_collector: ChangeHistoryCollector | None = None,
 ) -> Observations:
     facts: Observations = {
         "schema_version": 2,
@@ -355,7 +377,8 @@ def collect(
         )
         facts.update(initial_metadata)
         if include_change_history:
-            facts["change_history"] = collect_change_history(api, before["base_sha"], files)
+            collector = history_collector if history_collector is not None else ChangeHistoryCollector(api)
+            facts["change_history"] = collector.collect(before["base_sha"], files)
         histories = {}
         for check in facts["checks"]:
             key = (
@@ -443,10 +466,12 @@ def main() -> int:
         api = GitHub(args.repository)
         event = json.loads(args.event.read_text()) if args.event else {}
         numbers = targets(api, event, args.pr)
+        history_collector = ChangeHistoryCollector(api)
         for number in numbers:
             facts = collect(
                 api, number, sha(args.evaluator_sha),
                 include_change_history="stale_change_review_days" in policy,
+                history_collector=history_collector,
             )
             result = assess(facts, policy)
             (args.output / f"pr-{number}.json").write_text(

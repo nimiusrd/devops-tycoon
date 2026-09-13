@@ -73,7 +73,7 @@ collectorの終了コードは、全体収集失敗またはいずれかのPRが
 - 分割前のmain（`90c6ac5136011de264cd3c2413e20b3e24fde48b`）で、4判定・診断情報の欠落/null/空配列・不正入力のJSON/Markdown CLI出力を採取しています。
 - `test_compatibility.py`は固定した入力・時刻・run/attemptで、標準出力・artifact全ファイルのSHA-256と終了コードを`fixtures/compatibility-486.json`と比較します。採取時の完全な出力から算出した値であり、変更後の実装から期待値を生成しません。
 - `test_evaluate.py`は条件判定、`test_contracts.py`は共有検証、`test_report.py`は表示、`test_collect.py`はAPI正規化・鮮度・収集失敗を担当します。共通入力例は`test_support.py`に置きます。
-- `test_change_history.py`は30日境界、base・rename元への履歴照会、人間承認の条件、取得失敗・上限、collectorが生成したartifactのオフライン再評価を検証します。旧policyの互換性スナップショットは更新しません。
+- `test_change_history.py`は30日境界、base・rename元への履歴照会、人間承認の条件、取得失敗・PR単位とrun全体の上限、PR間の履歴再利用、collectorが生成したartifactのオフライン再評価を検証します。旧policyの互換性スナップショットは更新しません。
 - `replay.py`はローカルGitの信頼済みSHAから`evaluate.py`と同じ版の`contracts.py`・`report.py`を取り出し、現在のcheckoutや`PYTHONPATH`を除外したPythonプロセスで評価します。分割前の単独評価器も実行でき、依存ファイルが欠けた分割後の評価器は失敗します。fetch・API通信は行いません。
 
 運用・再観測・artifact取得の手順は[利用ガイド](./autonomous-merge-shadow-mode.md)を参照してください。

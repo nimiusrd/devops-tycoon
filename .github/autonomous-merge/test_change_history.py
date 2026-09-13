@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
 
-from collect import CollectionError, collect, main
+from collect import ChangeHistoryCollector, CollectionError, collect, main
 from contracts import EvaluationError
 from evaluate import assess, load_policy
 from replay import replay
@@ -73,6 +73,25 @@ class HistoryAPI(FixtureAPI):
                 review["user"]["type"] = self.actor
                 review["author_association"] = "OWNER"
         return values
+
+
+class MultiPRHistoryAPI(HistoryAPI):
+    def __init__(self, *, shared_paths):
+        super().__init__()
+        self.shared_paths = shared_paths
+
+    def graphql(self, number, selection):
+        self.state.update(number=number, changedFiles=100, additions=300, deletions=100)
+        self.files = [{
+            "filename": f"{0 if self.shared_paths else number}/file-{index}.go",
+            "status": "modified", "additions": 3, "deletions": 1,
+        } for index in range(100)]
+        return super().graphql(number, selection)
+
+    def pages(self, path, key=None):
+        if path == "/pulls?state=open":
+            return [{"number": number} for number in range(1, 11)]
+        return super().pages(path, key)
 
 
 def observe(api):
@@ -213,6 +232,101 @@ class ChangeAgeTests(unittest.TestCase):
 
 
 class HistoryCollectionTests(unittest.TestCase):
+    def test_workflow_run_shares_budget_and_cache_across_all_open_prs(self):
+        for shared in (False, True):
+            with self.subTest(shared=shared), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                event = root / "event.json"
+                event.write_text(json.dumps({"workflow_run": {"head_sha": HEAD}}))
+                output = root / "artifact"
+                api = MultiPRHistoryAPI(shared_paths=shared)
+                args = ["collect.py", "--repository", api.repository, "--event", str(event),
+                        "--policy", str(root / "policy.toml"), "--output", str(output),
+                        "--evaluator-sha", BASE]
+                with (patch("sys.argv", args), patch("collect.GitHub", return_value=api),
+                      patch("collect.load_policy", return_value=config()),
+                      patch("collect.datetime") as clock, patch("sys.stdout", io.StringIO())):
+                    clock.now.return_value = AT
+                    self.assertEqual(main(), 0 if shared else 1)
+                # 100ファイル × 10PRでもrun全体で100要求に収まる。
+                self.assertEqual(len(api.history_requests), 100)
+                manifest = json.loads((output / "manifest.json").read_text())
+                self.assertEqual(manifest["reports"], list(range(1, 11)))
+                self.assertFalse(manifest["collection_failed"])
+                for number in manifest["reports"]:
+                    report = json.loads((output / f"pr-{number}.json").read_text())
+                    self.assertEqual(report["observations"]["pr"]["number"], number)
+                    if shared or number == 1:
+                        self.assertEqual(report["decision"], "HUMAN_REVIEW_REQUIRED")
+                        self.assertEqual(len(report["observations"]["change_history"]["files"]), 100)
+                    else:
+                        self.assertEqual(report["decision"], "INSUFFICIENT_DATA")
+                        errors = report["observations"]["collection_errors"]
+                        self.assertEqual(errors, [
+                            "change history run request limit exceeded: 100/100 used, 100 needed"
+                        ])
+                        self.assertNotIn("change_history", report["observations"])
+                        self.assertIn(errors[0], (output / "summary.md").read_text())
+
+    def test_budget_preflight_preserves_capacity_for_later_prs_and_base_changes(self):
+        api = HistoryAPI()
+        collector = ChangeHistoryCollector(api)
+        files = [{"path": "one.go", "changeType": "MODIFIED"}]
+        with patch("collect.MAX_HISTORY_REQUESTS", 2):
+            first = collector.collect(BASE, files)
+            too_many = [{"path": path, "changeType": "MODIFIED"} for path in ("two.go", "three.go")]
+            with self.assertRaisesRegex(CollectionError, "1/2 used, 2 needed"):
+                collector.collect(BASE, too_many)
+            self.assertEqual(len(api.history_requests), 1)
+            # rename先だけが異なるPRは旧pathの履歴を共有する。返却値の変更はcacheに影響しない。
+            first["files"][0]["last_commit_sha"] = HEAD
+            rename = [{"path": "renamed.go", "previous_path": "one.go", "changeType": "RENAMED"}]
+            renamed = collector.collect(BASE, rename)
+            self.assertEqual(renamed["files"][0]["path"], "renamed.go")
+            self.assertEqual(renamed["files"][0]["last_commit_sha"], OLD)
+            self.assertEqual(len(api.history_requests), 1)
+            # 同じpathでも別baseは再取得し、残り1要求で処理できる。
+            api.commits[0]["sha"] = HEAD
+            updated = collector.collect(HEAD, files)
+            self.assertEqual(updated["files"][0]["last_commit_sha"], HEAD)
+            self.assertEqual(parse_qs(urlsplit(api.history_requests[-1]).query)["sha"], [HEAD])
+            self.assertEqual(len(api.history_requests), 2)
+            # 予算消費後も既存cacheと新規ファイルだけのPRを処理できる。
+            self.assertEqual(collector.collect(BASE, files)["files"][0]["last_commit_sha"], OLD)
+            added = collector.collect(BASE, [{"path": "new.go", "changeType": "ADDED"}])
+            self.assertIsNone(added["files"][0]["last_changed_at"])
+            with self.assertRaisesRegex(CollectionError, "2/2 used, 2 needed"):
+                collector.collect(BASE, too_many)
+            self.assertEqual(len(api.history_requests), 2)
+
+    def test_failed_requests_also_consume_the_run_budget(self):
+        for failure in ("http", "invalid"):
+            with self.subTest(failure=failure), patch("collect.MAX_HISTORY_REQUESTS", 1):
+                api = HistoryAPI()
+                if failure == "http":
+                    api.history_failure = "API history: HTTP 403"
+                else:
+                    api.commits = []
+                collector = ChangeHistoryCollector(api)
+                files = [{"path": "one.go", "changeType": "MODIFIED"}]
+                with self.assertRaises(CollectionError):
+                    collector.collect(BASE, files)
+                api.history_failure = None
+                with self.assertRaisesRegex(CollectionError, "1/1 used, 1 needed"):
+                    collector.collect(BASE, files)
+                self.assertEqual(len(api.history_requests), 1)
+
+    def test_new_run_does_not_reuse_the_previous_budget_or_cache(self):
+        api = HistoryAPI()
+        files = [{"path": "one.go", "changeType": "MODIFIED"}]
+        with patch("collect.MAX_HISTORY_REQUESTS", 1):
+            first = ChangeHistoryCollector(api).collect(BASE, files)
+            api.commits[0]["sha"] = HEAD
+            second = ChangeHistoryCollector(api).collect(BASE, files)
+        self.assertEqual(len(api.history_requests), 2)
+        self.assertEqual(first["files"][0]["last_commit_sha"], OLD)
+        self.assertEqual(second["files"][0]["last_commit_sha"], HEAD)
+
     def test_base_and_rename_source_are_pinned_and_query_values_are_encoded(self):
         api = HistoryAPI()
         previous = "古い dir/a&b?#.go"

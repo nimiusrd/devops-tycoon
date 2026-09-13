@@ -20,7 +20,10 @@ def replay(report: dict, evaluator_sha: str) -> dict:
     namespace = {"__name__": "shadow_replay_evaluator"}
     # SHAはartifactから自動選択しない。実行者が確認した信頼済みコミットに限る。
     exec(compile(source, "recorded-evaluate.py", "exec"), namespace)
-    return namespace["assess"](report["observations"], report["policy"])
+    result = namespace["assess"](report["observations"], report["policy"])
+    # 評価器内のtupleも、collectorが保存するJSONではarrayになる。
+    # 同じ保存形式へ変換して比較し、評価ロジック自体は変更しない。
+    return json.loads(json.dumps(result))
 
 
 def main() -> int:

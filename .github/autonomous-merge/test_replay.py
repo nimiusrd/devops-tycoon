@@ -29,6 +29,15 @@ class ReplayTests(unittest.TestCase):
                 replay(assess(facts(), policy()), "d" * 40)
             git.assert_not_called()
 
+    def test_saved_missing_check_identity_replays_as_json_array(self):
+        source = Path(__file__).with_name("evaluate.py").read_text()
+        saved_facts = facts()
+        saved_facts["checks"] = []
+        report = json.loads(json.dumps(assess(saved_facts, policy())))
+        self.assertEqual(report["decision"], "WAITING")
+        with patch("replay.subprocess.run", return_value=subprocess.CompletedProcess([], 0, source)):
+            self.assertEqual(replay(report, BASE), report)
+
     def test_tampered_decision_conditions_or_fingerprint_fail_cli(self):
         source = Path(__file__).with_name("evaluate.py").read_text()
         for change in ({"decision": "WAITING"}, {"conditions": []}, {"policy_sha256": "wrong"}):

@@ -23,7 +23,7 @@ from publish import (
     main,
     publish_pr,
 )
-from test_evaluate import BASE, HEAD
+from test_support import BASE, HEAD
 
 WAITING = DECISION_LABELS["WAITING"]
 READY = DECISION_LABELS["SHADOW_CONDITIONS_MET"]

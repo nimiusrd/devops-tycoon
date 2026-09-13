@@ -10,8 +10,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from collect import CollectionError, GitHub, collect, main, targets
-from evaluate import assess, markdown
-from test_evaluate import BASE, HEAD, MERGE, policy
+from evaluate import assess
+from report import markdown
+from test_support import BASE, HEAD, MERGE, policy
 
 
 class FixtureAPI:

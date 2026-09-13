@@ -5,43 +5,18 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import html
 import json
-import re
 import tomllib
 from pathlib import Path
 from typing import Any
 
-
-class EvaluationError(ValueError):
-    """欠落・不正なデータを成功として扱わない。"""
-
-
-def integer(value: Any, name: str) -> int:
-    if type(value) is not int or value < 0:
-        raise EvaluationError(f"{name}: non-negative integer required")
-    return value
+from contracts import (
+    Assessment, ConditionStatus, EvaluationError, Observations, Policy,
+    RequiredCheck, boolean, integer, sha, string,
+)
 
 
-def string(value: Any, name: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise EvaluationError(f"{name}: non-empty string required")
-    return value
-
-
-def boolean(value: Any, name: str) -> bool:
-    if type(value) is not bool:
-        raise EvaluationError(f"{name}: boolean required")
-    return value
-
-
-def sha(value: Any) -> str:
-    if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{40}", value):
-        raise EvaluationError("invalid commit SHA")
-    return value
-
-
-def validate_policy(policy: dict) -> dict:
+def validate_policy(policy: Policy) -> Policy:
     if policy.get("version") != 2 or policy.get("mode") != "shadow":
         raise EvaluationError("version=2 / mode=shadow required")
     integer(policy["minimum_approvals"], "minimum_approvals")
@@ -70,21 +45,21 @@ def validate_policy(policy: dict) -> dict:
     return policy
 
 
-def load_policy(path: Path) -> dict:
+def load_policy(path: Path) -> Policy:
     with path.open("rb") as stream:
         return validate_policy(tomllib.load(stream))
 
 
-def check_identity(check: dict) -> tuple:
+def check_identity(check: RequiredCheck) -> tuple:
     kind = check["kind"]
     producer = check["app_id"] if kind == "check_run" else check["creator"]
     return kind, check["name"], producer
 
 
-def assess(facts: dict, policy: dict) -> dict:
+def assess(facts: Observations, policy: Policy) -> Assessment:
     """欠落はINSUFFICIENT_DATA。規模やソース内容は必須条件を相殺しない。"""
     validate_policy(policy)
-    result = {
+    result: Assessment = {
         "schema_version": 2,
         "mode": "shadow",
         "decision": "INSUFFICIENT_DATA",
@@ -96,7 +71,7 @@ def assess(facts: dict, policy: dict) -> dict:
         ).hexdigest(),
     }
 
-    def condition(name: str, status: str, detail: Any) -> None:
+    def condition(name: str, status: ConditionStatus, detail: Any) -> None:
         result["conditions"].append({"name": name, "status": status, "detail": detail})
 
     try:
@@ -276,46 +251,9 @@ def assess(facts: dict, policy: dict) -> dict:
     return result
 
 
-def markdown(result: dict) -> str:
-    def safe(value: Any) -> str:
-        return "<code>" + html.escape(json.dumps(value, ensure_ascii=False)) + "</code>"
-
-    facts = result["observations"]
-    lines = [
-        "## Autonomous Merge Shadow",
-        "",
-        "観測時点の仮判定です。マージ許可・安全性の証明には使用しません。",
-        "",
-        "判定: " + safe(result["decision"]),
-        "",
-        "観測時刻: " + safe(facts.get("observed_at")),
-        "",
-        "対象: " + safe(facts.get("pr")),
-        "",
-        "変更量・形態（判定には加点しない）: " + safe(facts.get("change")),
-        "",
-        "CI履歴（不安定さの原因は推測しない）: " + safe(facts.get("ci_history")),
-        "",
-        "評価器: " + safe(facts.get("evaluator_sha")),
-        "",
-        "Policy SHA-256: " + safe(result["policy_sha256"]),
-        "",
-    ]
-    for item in result["conditions"]:
-        lines.append("- " + safe(item))
-    lines.extend(["", "### 観測間の変化", ""])
-    changes = facts.get("observation_changes")
-    if changes is None:
-        lines.append("差分情報なし（再取得未完了、または旧形式の観測）。")
-    elif not changes:
-        lines.append("比較した正規化メタデータに変化はありません。")
-    else:
-        for change in changes:
-            lines.append("- " + safe(change))
-    return "\n".join(lines) + "\n"
-
-
 def main() -> None:
+    from report import markdown
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--facts", type=Path, required=True)
     parser.add_argument("--policy", type=Path, required=True)

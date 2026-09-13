@@ -12,6 +12,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from contracts import Assessment
+
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
@@ -137,7 +139,7 @@ def ensure_labels(api: GitHub) -> None:
                 api.request(path)
 
 
-def desired_label(report: dict, current: dict, repository: str, number: int) -> str | None:
+def desired_label(report: Assessment, current: dict, repository: str, number: int) -> str | None:
     """PRが変化していれば情報不足、closedなら表示を取り除く。"""
     decision = report.get("decision")
     if decision not in DECISION_LABELS:
@@ -183,7 +185,7 @@ def sync_labels(api: GitHub, number: int, names: list[str], desired: str | None)
     return "updated" if changed else "unchanged"
 
 
-def publish_pr(api: GitHub, number: int, report: dict) -> str:
+def publish_pr(api: GitHub, number: int, report: Assessment) -> str:
     current = api.request(f"{api.prefix}/pulls/{number}")
     desired = desired_label(report, current, api.repository, number)
     return sync_labels(api, number, [item["name"] for item in current["labels"]], desired)

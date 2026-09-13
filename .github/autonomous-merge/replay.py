@@ -2,28 +2,55 @@
 """信頼済みSHAの評価器と保存JSONだけで再評価する。ネットワーク取得は行わない。"""
 
 import argparse
+import io
 import json
 import subprocess
+import sys
+import tarfile
+import tempfile
 from pathlib import Path
 
-from evaluate import sha
+from contracts import Assessment, sha
 
 
-def replay(report: dict, evaluator_sha: str) -> dict:
+def replay(report: Assessment, evaluator_sha: str) -> Assessment:
     expected = sha(evaluator_sha)
     if report["observations"]["evaluator_sha"] != expected:
         raise ValueError("report evaluator SHA does not match the trusted SHA")
-    source = subprocess.run(
-        ["git", "show", f"{expected}:.github/autonomous-merge/evaluate.py"],
-        check=True, capture_output=True, text=True,
+    # SHAはartifactから自動選択しない。依存モジュールも同じ信頼済みSHAから読む。
+    prefix = ".github/autonomous-merge/"
+    archive = subprocess.run(
+        ["git", "archive", "--format=tar", expected, prefix],
+        check=True, capture_output=True,
     ).stdout
-    namespace = {"__name__": "shadow_replay_evaluator"}
-    # SHAはartifactから自動選択しない。実行者が確認した信頼済みコミットに限る。
-    exec(compile(source, "recorded-evaluate.py", "exec"), namespace)
-    result = namespace["assess"](report["observations"], report["policy"])
+    with tempfile.TemporaryDirectory(prefix="shadow-replay-") as directory:
+        root = Path(directory)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as sources:
+            for name in ("evaluate.py", "contracts.py", "report.py"):
+                try:
+                    member = sources.getmember(prefix + name)
+                except KeyError:
+                    # 分割前の評価器はevaluate.pyだけで動く。
+                    continue
+                if not member.isfile():
+                    raise ValueError("evaluator module must be a regular file")
+                (root / name).write_bytes(sources.extractfile(member).read())
+        # -Iで現在のcheckoutやPYTHONPATHを除外する。古い/新しい評価器を
+        # 同じプロセスで再評価しても、sys.modulesのキャッシュを共有しない。
+        run = subprocess.run(
+            [sys.executable, "-I", "-B", "-c", """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from evaluate import assess
+report = json.load(sys.stdin)
+print(json.dumps(assess(report["observations"], report["policy"])))
+""", str(root)],
+            input=json.dumps(report), check=True, capture_output=True, text=True,
+            cwd=root,
+        )
     # 評価器内のtupleも、collectorが保存するJSONではarrayになる。
     # 同じ保存形式へ変換して比較し、評価ロジック自体は変更しない。
-    return json.loads(json.dumps(result))
+    return json.loads(run.stdout)
 
 
 def main() -> int:
@@ -39,7 +66,8 @@ def main() -> int:
         print(json.dumps({"matches": same, "decision": result["decision"],
                           "policy_sha256": result["policy_sha256"]}))
         return int(not same)
-    except (OSError, KeyError, TypeError, ValueError, subprocess.CalledProcessError) as error:
+    except (OSError, KeyError, TypeError, ValueError, tarfile.TarError,
+            subprocess.CalledProcessError) as error:
         print(json.dumps({"matches": False, "error": str(error)}))
         return 1
 

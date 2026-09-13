@@ -1,4 +1,5 @@
-# action_ref は利用する release の実 SHA に置き換えてください。
+# この公開リポジトリの運用設定です。action_ref は利用する release の実 SHA に固定します。
+# 汎用例: https://github.com/nimiusrd/pr-merge-readiness-action/blob/main/examples/multiple-workflows.toml
 version = 1
 action_ref = "68a4aa9a0b4778452fc7f74d77c48d508d62bfe2"
 

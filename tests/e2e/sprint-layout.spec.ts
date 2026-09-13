@@ -888,7 +888,11 @@ test('初回スプリントで開発速度と集中力のアイコン形が分�
     { width: 1280, height: 800 },
   ]) {
     await page.setViewportSize(viewport);
-    await beginPublicSprint(page, { seed: 'devops-tycoon' });
+    await page.goto('/?seed=devops-tycoon');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    await page.getByTestId('begin-sprint').click();
+    await expect(page.getByTestId('action-bar')).toBeVisible();
     await waitForLayoutFrame(page);
 
     const hud = page.getByTestId('hud');

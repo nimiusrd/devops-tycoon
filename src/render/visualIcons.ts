@@ -9,6 +9,7 @@ import { publicUrl } from '../utils/publicUrl';
 export const ICON_KEYS = [
   'fire',
   'focus',
+  'pace',
   'stability',
   'delivery',
   'quality',
@@ -69,6 +70,7 @@ export interface IconCatalogEntry {
 export const ICON_CATALOG: Record<IconKey, IconCatalogEntry> = {
   fire: { file: 'fire.svg', tone: 'fire' },
   focus: { file: 'focus.svg', tone: 'sun' },
+  pace: { file: 'pace.svg', tone: 'sky' },
   stability: { file: 'stability.svg', tone: 'mint' },
   delivery: { file: 'delivery.svg', tone: 'sky' },
   quality: { file: 'quality.svg', tone: 'mint' },

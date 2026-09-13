@@ -1,0 +1,62 @@
+{
+  "network": "socket.connect and socket.getaddrinfo forbidden",
+  "exit_code": 0,
+  "results": [
+    {
+      "report": "docs/shadow-observations/devops-tycoon/34731536809-1/pr-493.json",
+      "evaluator_sha": "ce102648b69aed73195823188e761977d529e571",
+      "decision": "HUMAN_REVIEW_REQUIRED",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/devops-tycoon/34733205454-1/pr-494.json",
+      "evaluator_sha": "0b67f39251b9753f2cf7400d9996dd7688642ba8",
+      "decision": "HUMAN_REVIEW_REQUIRED",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/devops-tycoon/34733401829-1/pr-494.json",
+      "evaluator_sha": "0b67f39251b9753f2cf7400d9996dd7688642ba8",
+      "decision": "INSUFFICIENT_DATA",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/devops-tycoon/34733942476-1/pr-494.json",
+      "evaluator_sha": "c6018ddfe554454df08fbc9b0f4465b562fed8bc",
+      "decision": "INSUFFICIENT_DATA",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/devops-tycoon/34734081199-1/pr-494.json",
+      "evaluator_sha": "c6018ddfe554454df08fbc9b0f4465b562fed8bc",
+      "decision": "SHADOW_CONDITIONS_MET",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/devops-tycoon/34734163954-1/pr-494.json",
+      "evaluator_sha": "c6018ddfe554454df08fbc9b0f4465b562fed8bc",
+      "decision": "HUMAN_REVIEW_REQUIRED",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/34679050876-1/pr-480.json",
+      "evaluator_sha": "a69573a34d1f2d9eedc825f2338fddd71dd6937d",
+      "decision": "HUMAN_REVIEW_REQUIRED",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/34679050876-1/pr-487.json",
+      "evaluator_sha": "a69573a34d1f2d9eedc825f2338fddd71dd6937d",
+      "decision": "INSUFFICIENT_DATA",
+      "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85",
+      "matches": true
+    }
+  ]
+}

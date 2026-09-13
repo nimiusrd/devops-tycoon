@@ -1,0 +1,15 @@
+{
+  "run_url": "https://github.com/nimiusrd/nimius-player/actions/runs/34732839373/attempts/1",
+  "event": "workflow_dispatch",
+  "jobs": [
+    { "id": 103658728109, "name": "observe", "status": "completed", "conclusion": "success" },
+    {
+      "id": 103658753957,
+      "name": "publish-checks",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    { "id": 103658773961, "name": "publish", "status": "completed", "conclusion": "failure" }
+  ],
+  "labels": []
+}

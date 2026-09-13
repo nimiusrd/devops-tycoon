@@ -1,0 +1,29 @@
+{
+  "run_url": "https://github.com/nimiusrd/nimius-player/actions/runs/34733314996/attempts/1",
+  "jobs": [
+    {
+      "id": 103660041543,
+      "name": "observe",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-13T02:32:51Z",
+      "completed_at": "2026-09-13T02:33:01Z"
+    },
+    {
+      "id": 103660065346,
+      "name": "publish-checks",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-13T02:33:04Z",
+      "completed_at": "2026-09-13T02:33:14Z"
+    },
+    {
+      "id": 103660088157,
+      "name": "publish",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-13T02:33:16Z",
+      "completed_at": "2026-09-13T02:33:26Z"
+    }
+  ]
+}

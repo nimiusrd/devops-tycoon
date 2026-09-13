@@ -1,0 +1,16 @@
+{
+  "fetched_at": "2026-09-13 02:42:00 UTC",
+  "id": 103660586537,
+  "name": "Autonomous Merge Shadow / PR #494",
+  "head_sha": "f303d32259e222416ba838624d362e83b3043a73",
+  "status": "completed",
+  "conclusion": "neutral",
+  "external_id": "shadow-v2:494:2026-09-13T02:41:07+00:00|dff70140af4a6dacb9a6419dd7aae8b7e028eb07e20bf8ac0cb16be515fa4dd2",
+  "output": {
+    "title": "未観測：CI完了・再観測待ち",
+    "summary": "観測時点の参考表示です。自動マージ許可・必須CIではありません。\n\nPR: #494 / 表示対象head: <code>f303d32259e222416ba838624d362e83b3043a73</code>\n\n現在のbase: <code>codex/shadow-validation-base-479-v2</code> <code>b77b0528e4de4bdcbd27f61e8241675b46efc2f7</code>\n\n[このrun・attemptのSummaryとArtifacts](https://github.com/nimiusrd/devops-tycoon/actions/runs/34733649981/attempts/1)\n\n未観測イベント時刻: <code>2026-09-13T02:41:07Z</code>\n\nこの表示では収集・評価を実行していません。CI完了後の観測、日次観測、または手動観測を待ってください。観測JSONはまだありません。\n",
+    "text": null,
+    "annotations_count": 0,
+    "annotations_url": "https://api.github.com/repos/nimiusrd/devops-tycoon/check-runs/103660586537/annotations"
+  }
+}

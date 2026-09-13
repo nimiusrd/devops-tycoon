@@ -1,0 +1,281 @@
+{
+  "schema_version": 2,
+  "mode": "shadow",
+  "decision": "HUMAN_REVIEW_REQUIRED",
+  "conditions": [
+    {
+      "name": "freshness",
+      "status": "pass",
+      "detail": "PR, CI and reviews agree in both samples"
+    },
+    {
+      "name": "open_pr",
+      "status": "blocked",
+      "detail": "CLOSED"
+    },
+    {
+      "name": "ready_for_review",
+      "status": "pass",
+      "detail": false
+    },
+    {
+      "name": "mergeable",
+      "status": "pass",
+      "detail": "MERGEABLE"
+    },
+    {
+      "name": "github_review",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "name": "change_requests",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "name": "current_head_approvals",
+      "status": "pass",
+      "detail": {
+        "actual": 0,
+        "required": 0
+      }
+    },
+    {
+      "name": "review_threads",
+      "status": "pass",
+      "detail": 0
+    },
+    {
+      "name": "unchanged_ci_definitions",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "name": "required_check:Lint & Unit (Vitest)",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "app_id": 15368,
+        "id": 103660568219,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:E2E (Playwright)",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368,
+        "id": 103660568290,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "github_merge_state",
+      "status": "blocked",
+      "detail": "UNSTABLE"
+    }
+  ],
+  "observations": {
+    "schema_version": 2,
+    "observed_at": "2026-09-13T02:54:04.086801+00:00",
+    "repository": "nimiusrd/devops-tycoon",
+    "evaluator_sha": "c6018ddfe554454df08fbc9b0f4465b562fed8bc",
+    "collection_errors": [],
+    "stable": true,
+    "observation_changes": [],
+    "pr": {
+      "number": 494,
+      "state": "CLOSED",
+      "draft": false,
+      "head_sha": "f303d32259e222416ba838624d362e83b3043a73",
+      "base_sha": "b77b0528e4de4bdcbd27f61e8241675b46efc2f7",
+      "base_ref": "codex/shadow-validation-base-479-v2",
+      "updated_at": "2026-09-13T02:53:52Z",
+      "merge_sha": "a15dd48e6d9bc2b1f0a640adebc10db4ec54da39",
+      "mergeable": "MERGEABLE",
+      "merge_state": "UNSTABLE",
+      "review_decision": null,
+      "additions": 4,
+      "deletions": 0,
+      "changed_files": 1
+    },
+    "change": {
+      "changed_files": 1,
+      "additions": 4,
+      "deletions": 0,
+      "types": {
+        "ADDED": 1
+      },
+      "binary_files": null,
+      "mode_changes": null
+    },
+    "files": [
+      {
+        "path": ".github/autonomous-merge/validation.json",
+        "previous_path": null,
+        "changeType": "ADDED",
+        "additions": 4,
+        "deletions": 0
+      }
+    ],
+    "ci_definition_changes": [],
+    "reviews": [
+      {
+        "id": 5189122608,
+        "author": "nimiusrd",
+        "state": "COMMENTED",
+        "commit_sha": "13c6a502421b0a05d113e2a3a5223ea21261439b",
+        "submitted_at": "2026-09-13T02:31:32Z"
+      }
+    ],
+    "unresolved_threads": 0,
+    "checks": [
+      {
+        "kind": "check_run",
+        "name": "Autonomous Merge Shadow / PR #494",
+        "app_id": 15368,
+        "id": 103660586537,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "neutral"
+      },
+      {
+        "kind": "check_run",
+        "name": "publish-checks",
+        "app_id": 15368,
+        "id": 103660567574,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "app_id": 15368,
+        "id": 103660568219,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368,
+        "id": 103660568290,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "test",
+        "app_id": 15368,
+        "id": 103660568687,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "publish-checks",
+        "app_id": 15368,
+        "id": 103661022046,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "observe",
+        "app_id": 15368,
+        "id": 103662417787,
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "status": "in_progress",
+        "conclusion": null
+      }
+    ],
+    "ci_history": [
+      {
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "kind": "check_run",
+        "name": "Autonomous Merge Shadow / PR #494",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "kind": "check_run",
+        "name": "publish-checks",
+        "producer": 15368,
+        "records": 2,
+        "failure_before_success": false
+      },
+      {
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "kind": "check_run",
+        "name": "test",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "f303d32259e222416ba838624d362e83b3043a73",
+        "kind": "check_run",
+        "name": "observe",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      }
+    ],
+    "rechecked": {
+      "pr": true,
+      "reviews": true,
+      "unresolved_threads": true,
+      "checks": true
+    }
+  },
+  "policy": {
+    "version": 2,
+    "mode": "shadow",
+    "minimum_approvals": 0,
+    "require_resolved_threads": true,
+    "required_checks": [
+      {
+        "kind": "check_run",
+        "name": "Lint & Unit (Vitest)",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368
+      }
+    ]
+  },
+  "policy_sha256": "a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85"
+}

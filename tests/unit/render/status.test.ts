@@ -128,6 +128,16 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       expect(metric.directionLabel.length).toBeGreaterThan(0);
       expect(metric.help.length).toBeGreaterThan(0);
     }
+    expect(metrics.find((m) => m.id === 'devSpeed')).toMatchObject({
+      icon: 'pace',
+    });
+  });
+
+  it('開発速度は集中力と別 IconKey を使う', () => {
+    const metrics = deriveHudMetrics(withOrg({}).org, []);
+    const devSpeed = metrics.find((m) => m.id === 'devSpeed');
+    expect(devSpeed?.icon).toBe('pace');
+    expect(devSpeed?.icon).not.toBe('focus');
   });
 
   it('セキュリティ水準が50未満なら注意チップを出す（RI-87）', () => {

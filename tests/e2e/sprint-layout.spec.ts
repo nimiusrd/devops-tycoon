@@ -882,6 +882,40 @@ test('狭幅の展開HUDは1列になり、要約チップ行は維持する', a
   expect(Math.abs(second.x - first.x), '展開HUDの2つ目が横にずれている').toBeLessThan(8);
 });
 
+test('初回スプリントで開発速度と集中力のアイコン形が分かれる', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 800 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await beginPublicSprint(page, { seed: 'devops-tycoon' });
+    await waitForLayoutFrame(page);
+
+    const hud = page.getByTestId('hud');
+    if ((await hud.getAttribute('data-compact')) === 'true') {
+      await page.getByTestId('hud-toggle').click();
+      await expect(hud).toHaveAttribute('data-compact', 'false');
+    }
+
+    const speedIcon = page.getByTestId('hud-devSpeed').locator('[data-icon="pace"]');
+    const focusIcon = page.getByTestId('focus').locator('[data-icon="focus"]');
+    await expect(
+      speedIcon,
+      `${viewport.width}x${viewport.height} で開発速度アイコンが見えない`,
+    ).toBeVisible();
+    await expect(
+      focusIcon,
+      `${viewport.width}x${viewport.height} で集中力アイコンが見えない`,
+    ).toBeVisible();
+    await expect(speedIcon).toHaveAttribute('data-icon', 'pace');
+    await expect(focusIcon).toHaveAttribute('data-icon', 'focus');
+    expect(
+      await speedIcon.getAttribute('data-icon'),
+      `${viewport.width}x${viewport.height} で開発速度が集中力と同形`,
+    ).not.toBe(await focusIcon.getAttribute('data-icon'));
+  }
+});
+
 test('狭幅の要約KPIは出荷ポイントを省略せず、展開時も正式名を保持する', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await beginPublicSprint(page, { seed: 'devops-tycoon' });

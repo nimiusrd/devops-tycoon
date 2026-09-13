@@ -49,7 +49,10 @@ def code(value) -> str:
 
 
 def state_hash(current: dict) -> str:
-    return hashlib.sha256(json.dumps(current, sort_keys=True).encode()).hexdigest()
+    # タイトル・本文・コメントでも変わる時刻は、遅延イベントの失効判定に使わない。
+    # 観測と公開直前の鮮度比較ではsnapshotのupdated_atを引き続き照合する。
+    state = {key: value for key, value in current.items() if key != "updated_at"}
+    return hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest()
 
 
 def check_time(record: dict) -> datetime:

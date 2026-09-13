@@ -112,6 +112,18 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(len(api.checks), 1)
         self.assertEqual(api.writes[-1][2], "PATCH")
 
+    def test_title_edit_does_not_let_delayed_marker_erase_newer_observation(self):
+        api = FixtureAPI()
+        payload = deepcopy(api.prs[1])
+        publish_report(api, 1, report(at=LATER), URL, ARTIFACT)
+        api.prs[1]["updated_at"] = "2026-09-11T14:00:00+00:00"
+        mark_event(api, {"pull_request": deepcopy(api.prs[1]), "action": "edited",
+                         "changes": {"title": {"from": "old"}}}, URL)
+        mark_event(api, {"pull_request": payload, "action": "synchronize"}, URL)
+        publish_report(api, 1, report(), URL, ARTIFACT)
+        self.assertEqual(len(api.writes), 1)
+        self.assertIn("SHADOW_CONDITIONS_MET", api.checks[0]["output"]["title"])
+
     def test_new_head_never_inherits_old_conditions_met(self):
         api = FixtureAPI()
         publish_report(api, 1, report(), URL, ARTIFACT)

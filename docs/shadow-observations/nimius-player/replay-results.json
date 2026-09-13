@@ -1,0 +1,90 @@
+{
+  "network": "socket.connect and socket.getaddrinfo forbidden",
+  "exit_code": 0,
+  "results": [
+    {
+      "report": "docs/shadow-observations/nimius-player/34731698963-1/pr-225.json",
+      "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "decision": "HUMAN_REVIEW_REQUIRED",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34731815139-1/pr-225.json",
+      "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "decision": "WAITING",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34731964723-1/pr-225.json",
+      "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "decision": "HUMAN_REVIEW_REQUIRED",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34732127960-1/pr-225.json",
+      "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "decision": "WAITING",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34732228918-1/pr-225.json",
+      "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "decision": "INSUFFICIENT_DATA",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34732406682-1/pr-225.json",
+      "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "decision": "SHADOW_CONDITIONS_MET",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34732617034-1/pr-225.json",
+      "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "decision": "SHADOW_CONDITIONS_MET",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34732779391-1/pr-225.json",
+      "evaluator_sha": "48f7c394e8db39b853f887387624097c8c5f648b",
+      "decision": "SHADOW_CONDITIONS_MET",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34732839373-1/pr-225.json",
+      "evaluator_sha": "48f7c394e8db39b853f887387624097c8c5f648b",
+      "decision": "SHADOW_CONDITIONS_MET",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34732896011-1/pr-225.json",
+      "evaluator_sha": "48f7c394e8db39b853f887387624097c8c5f648b",
+      "decision": "HUMAN_REVIEW_REQUIRED",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34733314996-1/pr-225.json",
+      "evaluator_sha": "7c18fc579a2ae7eb8851f4c0c13509ab2548f0e9",
+      "decision": "SHADOW_CONDITIONS_MET",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    },
+    {
+      "report": "docs/shadow-observations/nimius-player/34733372023-1/pr-225.json",
+      "evaluator_sha": "7c18fc579a2ae7eb8851f4c0c13509ab2548f0e9",
+      "decision": "SHADOW_CONDITIONS_MET",
+      "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9",
+      "matches": true
+    }
+  ]
+}

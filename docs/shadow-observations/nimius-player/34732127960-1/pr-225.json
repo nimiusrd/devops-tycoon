@@ -1,0 +1,408 @@
+{
+  "schema_version": 2,
+  "mode": "shadow",
+  "decision": "WAITING",
+  "conditions": [
+    {
+      "name": "freshness",
+      "status": "pass",
+      "detail": "PR, CI and reviews agree in both samples"
+    },
+    {
+      "name": "open_pr",
+      "status": "pass",
+      "detail": "OPEN"
+    },
+    {
+      "name": "ready_for_review",
+      "status": "pass",
+      "detail": false
+    },
+    {
+      "name": "mergeable",
+      "status": "pass",
+      "detail": "MERGEABLE"
+    },
+    {
+      "name": "github_review",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "name": "change_requests",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "name": "current_head_approvals",
+      "status": "pass",
+      "detail": {
+        "actual": 0,
+        "required": 0
+      }
+    },
+    {
+      "name": "review_threads",
+      "status": "pass",
+      "detail": 0
+    },
+    {
+      "name": "unchanged_ci_definitions",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "name": "required_check:Lint & format",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "Lint & format",
+        "app_id": 15368,
+        "id": 103655424571,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:Unit tests (coverage)",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "Unit tests (coverage)",
+        "app_id": 15368,
+        "id": 103655424595,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:npm audit",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "npm audit",
+        "app_id": 15368,
+        "id": 103655424576,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:E2E (Playwright)",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368,
+        "id": 103655424499,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:Windows compile check",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "Windows compile check",
+        "app_id": 15368,
+        "id": 103655424917,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:tauri-rust",
+      "status": "pass",
+      "detail": {
+        "kind": "check_run",
+        "name": "tauri-rust",
+        "app_id": 15368,
+        "id": 103655424993,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    },
+    {
+      "name": "required_check:css",
+      "status": "waiting",
+      "detail": {
+        "reason": "missing",
+        "identity": ["check_run", "css", 15368]
+      }
+    },
+    {
+      "name": "github_merge_state",
+      "status": "pass",
+      "detail": "CLEAN"
+    }
+  ],
+  "observations": {
+    "schema_version": 2,
+    "observed_at": "2026-09-13T02:04:53.210715+00:00",
+    "repository": "nimiusrd/nimius-player",
+    "evaluator_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+    "collection_errors": [],
+    "stable": true,
+    "observation_changes": [],
+    "pr": {
+      "number": 225,
+      "state": "OPEN",
+      "draft": false,
+      "head_sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+      "base_sha": "73626f145b5faa3c6ce47ac45aad4fe9ad88998d",
+      "base_ref": "codex/shadow-validation-base-479",
+      "updated_at": "2026-09-13T01:58:52Z",
+      "merge_sha": "2812e1856ed01ffd59a8f9c718f45a74f75528e9",
+      "mergeable": "MERGEABLE",
+      "merge_state": "CLEAN",
+      "review_decision": null,
+      "additions": 3,
+      "deletions": 0,
+      "changed_files": 1
+    },
+    "change": {
+      "changed_files": 1,
+      "additions": 3,
+      "deletions": 0,
+      "types": {
+        "ADDED": 1
+      },
+      "binary_files": null,
+      "mode_changes": null
+    },
+    "files": [
+      {
+        "path": ".github/autonomous-merge/validation.md",
+        "previous_path": null,
+        "changeType": "ADDED",
+        "additions": 3,
+        "deletions": 0
+      }
+    ],
+    "ci_definition_changes": [],
+    "reviews": [
+      {
+        "id": 5189009794,
+        "author": "nimiusrd",
+        "state": "COMMENTED",
+        "commit_sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "submitted_at": "2026-09-13T01:58:52Z"
+      }
+    ],
+    "unresolved_threads": 0,
+    "checks": [
+      {
+        "kind": "check_run",
+        "name": "Autonomous Merge Shadow / PR #225",
+        "app_id": 15368,
+        "id": 103655440199,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "neutral"
+      },
+      {
+        "kind": "check_run",
+        "name": "publish-checks",
+        "app_id": 15368,
+        "id": 103655424120,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "test",
+        "app_id": 15368,
+        "id": 103655424415,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368,
+        "id": 103655424499,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "Lint & format",
+        "app_id": 15368,
+        "id": 103655424571,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "npm audit",
+        "app_id": 15368,
+        "id": 103655424576,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "Unit tests (coverage)",
+        "app_id": 15368,
+        "id": 103655424595,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "Windows compile check",
+        "app_id": 15368,
+        "id": 103655424917,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "kind": "check_run",
+        "name": "tauri-rust",
+        "app_id": 15368,
+        "id": 103655424993,
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "ci_history": [
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "Autonomous Merge Shadow / PR #225",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "publish-checks",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "test",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "Lint & format",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "npm audit",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "Unit tests (coverage)",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "Windows compile check",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      },
+      {
+        "sha": "02ec5d6c4f6f79601b138d5151a65e263f32ddea",
+        "kind": "check_run",
+        "name": "tauri-rust",
+        "producer": 15368,
+        "records": 1,
+        "failure_before_success": false
+      }
+    ],
+    "rechecked": {
+      "pr": true,
+      "reviews": true,
+      "unresolved_threads": true,
+      "checks": true
+    }
+  },
+  "policy": {
+    "version": 2,
+    "mode": "shadow",
+    "minimum_approvals": 0,
+    "require_resolved_threads": true,
+    "required_checks": [
+      {
+        "kind": "check_run",
+        "name": "Lint & format",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "Unit tests (coverage)",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "npm audit",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "E2E (Playwright)",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "Windows compile check",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "tauri-rust",
+        "app_id": 15368
+      },
+      {
+        "kind": "check_run",
+        "name": "css",
+        "app_id": 15368
+      }
+    ]
+  },
+  "policy_sha256": "76fec5b30fc6c20b025231a5597ebc3564faa2264d9199453af9b907aaec01b9"
+}

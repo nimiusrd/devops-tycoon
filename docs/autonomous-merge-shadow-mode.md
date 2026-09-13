@@ -31,6 +31,9 @@ forkのpushはChecks APIの`pull_requests`へ紐づかない制約がありま�
 
 ShadowとLabelsは観測後に同じ参考用Checkを更新します。Labelsだけが、その後にラベルを更新します。
 Checkの更新は単一のjob concurrency groupで直列化します。現在head上の管理Checkだけを読み、PR番号・発行元Appを照合し、古い観測や遅延した未観測イベントで新しい記録を上書きしません。
+
+Checkの表示グループはGitHubが紐づけたCheck suiteに従い、更新後も同じグループに残ります。GitHub Actions発行のCheckでは標準の詳細リンクがGitHub側のURLになるため、本文の「このrun・attemptのSummaryとArtifacts」を使って最新の観測へ移動してください。
+管理メタデータは`shadow-v2`形式です。旧`shadow-v1`のCheckは古いイベントで上書きせず、新しいイベント・観測が届いた更新時に同じCheckのまま移行します。
 同じheadを持つ別PRには別のCheck名を使います。公開直前のPR再取得で変更を検出した場合は書込みを止め、jobを失敗にします。
 待機jobはGitHubのconcurrencyによって置き換わることがあり、即時・全イベントの公開は保証しません。次の観測で修復します。
 
@@ -228,7 +231,7 @@ Labelsの`publish`は従来どおり`observe`のsuccess/failure双方から実�
 必要環境はPython 3.11以上です。Pythonの外部依存はありません。
 GitHub tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。CLI引数には含めません。
 collectorの必要権限はContents / Pull requests / Checks / Commit statusesのreadです。
-publisherにはContents / Pull requestsのreadとIssuesのwriteを付けます。ラベル定義の作成とPRラベル更新は`publish` jobだけが行います。
+ラベルpublisherにはContentsのreadとIssues / Pull requestsのwriteを付けます。ラベル定義の作成とPRラベル更新は`publish` jobだけが行います。
 Check publisherにはContents / Pull requestsのreadとChecksのwriteを付けます。未観測表示のjobだけはイベント元runの再取得にActionsのreadも必要です。
 観測・公開jobはdefault branchのコードだけを実行し、PRのコードをwrite権限で実行しません。
 
@@ -259,7 +262,7 @@ python3 -B .github/autonomous-merge/evaluate.py \
 1. `.github/autonomous-merge/`のPython一式とpolicy、4つの`autonomous-merge-*.yml`を導入PRで配置し、レビュー後に信頼済みdefault branchへ反映する。Python 3.11以上、外部Python依存なしで実行できる。初回PR上だけの配置やbootstrapの成功は導入検証の完了に数えない。
 2. 信頼済みdefault branchのpolicyに、対象CIのcheck名と発行元、承認条件を設定する。
 3. ShadowとCheck Markersの`workflow_run.workflows`を対象CIのworkflow名（YAMLの`name`）に合わせる。policyのcheck名はjobの表示名であり、workflow名とは異なる。テストworkflowのpush対象ブランチも合わせる。観測・公開のcheckout先は`repository.default_branch`から取得する。
-4. ラベルworkflowの`publish` jobにだけIssuesのwriteを付ける。4つの`shadow/`ラベルは初回更新で作成する。branch protectionの必須チェックや自動マージには接続しない。
+4. ラベルworkflowの`publish` jobにだけ`issues: write`と`pull-requests: write`を付ける。PRへのラベル付与で403になった実測に基づき、PR書込権限もこのjobへ限定する。4つの`shadow/`ラベルは初回更新で作成する。branch protectionの必須チェックや自動マージには接続しない。
 5. required checkや自動マージへ接続せず、観測とラベル表示を開始する。
 6. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
 
@@ -280,6 +283,8 @@ gh run download <run ID> --repo <owner/repo> \
 Actionsの**Checkout trusted default branch**のログから実行されたSHAを確認し、JSONの`observations.evaluator_sha`と一致させます。
 以下はそのコミットがローカルGitに存在する状態で実行します。存在しなければ先に取得してください。再評価コマンド自身はfetchやAPI通信をしません。
 artifactに書かれた任意のSHAを自動でコード実行することは避け、実行者が確認したSHAを明示します。
+
+比較はcollectorと同じJSON形式で行います。評価器内のtupleは保存時に配列になるため、その型変換だけを揃えて判定・条件・policy指紋を含む全体を照合します。
 
 ```bash
 devcontainer exec --workspace-folder . python3 -B .github/autonomous-merge/replay.py \

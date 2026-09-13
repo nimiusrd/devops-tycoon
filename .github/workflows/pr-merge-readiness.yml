@@ -29,11 +29,11 @@ permissions:
 jobs:
   validate:
     if: github.event_name == 'pull_request' || github.event_name == 'push'
-    uses: nimiusrd/pr-merge-readiness-action/.github/workflows/validate.yml@fb9e82eadd7e56467b762102597ad8a77d47d82d
+    uses: nimiusrd/pr-merge-readiness-action/.github/workflows/validate.yml@68a4aa9a0b4778452fc7f74d77c48d508d62bfe2
     with:
       config-path: ".github/pr-merge-readiness.toml"
       output-path: ".github/workflows/pr-merge-readiness.yml"
-      action-ref: fb9e82eadd7e56467b762102597ad8a77d47d82d
+      action-ref: 68a4aa9a0b4778452fc7f74d77c48d508d62bfe2
   readiness:
     if: github.event_name != 'pull_request' && github.event_name != 'push'
     permissions:
@@ -43,9 +43,9 @@ jobs:
       statuses: read
       issues: write
       pull-requests: write
-    uses: nimiusrd/pr-merge-readiness-action/.github/workflows/readiness.yml@fb9e82eadd7e56467b762102597ad8a77d47d82d
+    uses: nimiusrd/pr-merge-readiness-action/.github/workflows/readiness.yml@68a4aa9a0b4778452fc7f74d77c48d508d62bfe2
     with:
       config-path: ".github/pr-merge-readiness.toml"
-      action-ref: fb9e82eadd7e56467b762102597ad8a77d47d82d
+      action-ref: 68a4aa9a0b4778452fc7f74d77c48d508d62bfe2
       pr-number: ${{ inputs.pr-number || '' }}
       update-labels: ${{ inputs.update-labels || false }}

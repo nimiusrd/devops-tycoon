@@ -1,6 +1,6 @@
 # action_ref は利用する release の実 SHA に置き換えてください。
 version = 1
-action_ref = "fb9e82eadd7e56467b762102597ad8a77d47d82d"
+action_ref = "68a4aa9a0b4778452fc7f74d77c48d508d62bfe2"
 
 [ci]
 workflows = ["CI"]

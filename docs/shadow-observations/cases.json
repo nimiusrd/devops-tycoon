@@ -142,5 +142,13 @@
     "attempt": 1,
     "scenario": "専用PR終了",
     "expected": "open_pr=blocked、CLOSEDを過去の観測として表示"
+  },
+  {
+    "repository": "nimiusrd/devops-tycoon",
+    "pr": 494,
+    "run_id": 34740054982,
+    "attempt": 1,
+    "scenario": "日次schedule",
+    "expected": "CI条件はpass。GitHub総合状態を尊重し、観測→Check→ラベルを公開"
   }
 ]

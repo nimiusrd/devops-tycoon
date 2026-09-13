@@ -12,8 +12,8 @@ CI 開始・PR 状態変更では未観測表示、CI 完了では全 open PR、
 
 Actions の **PR Merge Readiness → Run workflow** で手動観測できます。番号を空にすると全 open PR、指定するとその PR が対象です。ラベル更新は番号を空にして `update-labels` を有効にします。観測 → Check → ラベルの順に実行し、Check 公開失敗時はラベルを更新しません。
 
-artifact は `pr-merge-readiness-RUN_ID-ATTEMPT` に `pr-番号.json`、`manifest.json`、`summary.md` を保存し、保持は 30 日です。収集失敗時も今回の JSON と Summary が残ります。人間の判断や GitHub 本来のマージ条件を代替しません。
+artifact は `pr-merge-readiness-RUN_ID-ATTEMPT` に `pr-番号.json`、`manifest.json`、`summary.md` を保存し、保持期間を 30 日に設定します。収集失敗時も今回の JSON と Summary が残ります。同じ run の全 job 再実行では、GitHub 側で前 attempt の artifact が取得できなくなる挙動を実測しました。再観測には新しい **Run workflow** を使い、再実行する場合は必要な artifact を先に Git 外へ保存してください。人間の判断や GitHub 本来のマージ条件を代替しません。
 
 設定を変更したら、固定 SHA の Action を取得し、このリポジトリのルートから `python3 -I -B /path/to/action/cli.py generate-workflow --config .github/pr-merge-readiness.toml --output .github/workflows/pr-merge-readiness.yml` を実行します。生成物の手編集は避け、共通検証 workflow の `--check` で一致を確認します。
 
-[Issue #499](https://github.com/nimiusrd/devops-tycoon/issues/499) の移行では、新入口追加と旧 3 writer workflow の停止を一括で行います。旧 Python・policy・テストは移行後の実測確認まで保持し、次の整理 PR で削除します。ロールバックは移行変更の revert による入口の一括切替です。旧 artifact と新 artifact の変換は行いません。実測 JSON は Git に入れず、文書に run URL・attempt・各 SHA・期待値と実測値を記録します。
+[移行 PR #501](https://github.com/nimiusrd/devops-tycoon/pull/501) で新入口追加と旧 3 writer workflow の停止を一括で行い、[実測検証](./pr-merge-readiness-validation-499.md) 後に旧 Python・policy・テストを削除しました。ロールバックでは、この整理変更と移行変更の両方を revert した **1 本の PR** で旧実装の復元と入口の切替をまとめます。旧 artifact と新 artifact の変換は行いません。実測 JSON は Git に入れず、文書に run URL・attempt・各 SHA・期待値と実測値を記録します。

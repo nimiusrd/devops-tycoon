@@ -221,7 +221,7 @@ def mark_event(api: GitHub, event: dict, run_url: str) -> list:
             continue
         summary = heading(current, run_url) + (
             f"未観測イベント時刻: {code(at)}\n\n"
-            "この表示では収集・評価を実行していません。CI完了後の観測、日次観測、"
+            "この表示では収集・評価を実行していません。CI完了後の観測、"
             "または手動観測を待ってください。観測JSONはまだありません。\n"
         )
         results.append({"pr": number, "result": write_check(

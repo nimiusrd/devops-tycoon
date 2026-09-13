@@ -1,6 +1,6 @@
 name: Autonomous Merge Shadow
 
-# CI完了時・PR終了時・手動の観測専用。定期観測はLabels workflowの日次実行に集約する。
+# CI完了時・PR終了時・手動の観測専用。定期実行は行わない。
 # default branchの信頼済みcollectorだけを実行する。
 on:
   pull_request_target:

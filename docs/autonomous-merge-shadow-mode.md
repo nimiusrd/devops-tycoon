@@ -26,7 +26,7 @@ Checkは常に`completed / neutral`です。緑・赤のCI判定へ置き換え�
 
 `Autonomous Merge Check Markers`はPR作成・再開・head更新・baseの変更・Draft変更と、対象CIの実行開始を受けて未観測表示だけを作ります。
 タイトル・本文だけの編集では表示を更新しません。CI開始イベントはそのrunだけを再取得し、完了済み・過去attempt・現在のhead/test merge/baseに対応しないものを無視します。
-本観測の頻度は従来どおりです。レビュー・スレッドの変更やCIを起動しないbase更新は、日次・手動等の次の観測で反映します。
+レビュー・スレッドの変更やCIを起動しないbase更新は、次の対象CI完了時または手動観測で反映します。定期観測は行いません。
 
 CI完了経由のobserve job自体はdefault branchのSHAに紐づくため、以前はPRのChecksから見えませんでした。
 PR終了経由ではobserve jobもPR側に見える場合があります。参考用Checkはイベント元のSHAではなく、APIで確認したPRのheadへ公開します。
@@ -80,7 +80,7 @@ PR一覧では次のラベルで4判定を区別します。更新完了時の�
 | `SHADOW_CONDITIONS_MET` | `shadow/要マージ判断` | 自動マージはしない。人がマージ可否を判断する |
 | `WAITING` | `shadow/CI・レビュー待ち` | CI完了・Draft解除・承認・base追随などを待つ |
 | `HUMAN_REVIEW_REQUIRED` | `shadow/要対応` | 競合・CI失敗・変更要求・未解決スレッドなどを人が解消する |
-| `INSUFFICIENT_DATA` | `shadow/再観測が必要` | 再実行するか、次の定期観測を待つ |
+| `INSUFFICIENT_DATA` | `shadow/再観測が必要` | Labelsを手動で再実行する |
 
 ラベル用の観測時刻・対象SHA・JSON artifactは、Actionsの`Autonomous Merge Labels`のrun Summaryで確認できます。
 publisherが未作成のラベル定義を作成します。branch protectionやrulesetsの必須チェックには登録しません。
@@ -122,7 +122,7 @@ GitHubのレビュー総合状態も併せて確認します。
 - `.github/autonomous-merge/replay.py`：明示した信頼済みSHAの評価器と保存policyで、ネットワーク取得なしにレポート全体の一致を確認する。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
 - `.github/workflows/autonomous-merge-shadow.yml`：`CI`完了時・PR終了時・手動でread-onlyで観測し、SummaryとJSON artifactを保存する。
-- `.github/workflows/autonomous-merge-labels.yml`：1日1回・手動で全open PRをread-onlyで観測した後、独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
+- `.github/workflows/autonomous-merge-labels.yml`：手動で全open PRをread-onlyで観測し、Check公開後に独立した`publish` jobがラベルを更新する。観測開始から公開完了までworkflow全体を直列実行する。
 - `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
 - `.github/workflows/autonomous-merge-checks.yml`：PR・CI開始イベントから軽量な未観測表示だけを公開する。
 
@@ -135,36 +135,36 @@ manifestがない旧artifact、別attempt、全体収集失敗はCheckへ公開�
 
 | workflow | 目的 | トリガー・対象 | 出力 |
 | --- | --- | --- | --- |
-| `Autonomous Merge Shadow` | 必須CI完了後・PR終了時の状態や、必要な時点の判断材料を記録する | `CI`の完了時は全open PR。PRのclose / merge時は対象PR。手動実行は`pr_number`で指定したPR、空欄なら全open PR | SummaryとJSON artifact。ラベルは変更しない |
-| `Autonomous Merge Labels` | PR一覧の参考表示を定期更新し、CI以外の変化も観測する | 毎日09:43 JST（00:43 UTC）と手動実行で全open PR | SummaryとJSON artifact、PRラベル |
+| `Autonomous Merge Shadow` | 対象CI完了後・PR終了時の状態や、必要な時点の判断材料を記録する | 対象CIの完了時は全open PR。PRのclose / merge時は対象PR。手動実行は`pr_number`で指定したPR、空欄なら全open PR | SummaryとJSON artifact、参考用Check。ラベルは変更しない |
+| `Autonomous Merge Labels` | 必要な時点でPR一覧の参考表示を更新する | 手動実行で全open PR | SummaryとJSON artifact、参考用Check、PRラベル |
 
-Shadowの毎時cronは停止し、定期観測をLabelsの日次実行に集約します。
+2026-09-13の利用者指定により、Shadow・Labelsとも定期実行は行いません。
 PRの作成・更新とmainへのpushは通常`CI`を起動するため、PR作成・更新とpushの直接トリガーを削除し、そのCI完了後に観測します。
 必須checkを含まない`Autonomous Merge Tests`の完了も購読しません。`CI`と補助テストの両方が動く変更での二重観測を減らします。
-CIの成功・失敗・キャンセルを問わず完了時に観測し、実行イベントの古いSHAではなく、その時点の全open PRの状態を取得します。
+CI完了は、対象workflowのrun全体が`completed`になった時点です。devops-tycoonでは`CI`、nimius-playerでは`frontend`・`tauri-rust`・`css`のそれぞれが対象です。個別jobの成功時ではなく、そのworkflow内の処理が終了した時点で起動します。nimius-playerの3 workflowすべてが終わるのをまとめて待つ仕組みではありません。
+PRの作成・更新、mainへのpush、CI再実行など、対象workflowの起動経路を問わず、成功・失敗・キャンセルの完了を観測します。実行イベントの古いSHAではなく、その時点の全open PRの状態を取得します。
 自身やLabelsの完了は購読しません。観測・評価ロジックとread-only権限は変更しません。
 
-close / mergeは`pull_request_target: closed`で対象PRを観測し、Summary／JSON artifactに終端状態を記録します。日次観測はopen PRだけを対象とするため、この経路を残します。
-終了イベントの観測に失敗した場合は、対象PR番号を指定して手動で再観測してください。ラベル削除はLabelsの次回更新が担当します。
+close / mergeは`pull_request_target: closed`で対象PRを観測し、Summary／JSON artifactに終端状態を記録します。全open PRの観測では終了したPRを取得しないため、この経路を残します。
+終了イベントの観測に失敗した場合は、対象PR番号を指定して手動で再観測してください。ラベル削除はLabelsの次回手動更新が担当します。
 
 レビューの投稿・編集・dismiss、スレッド解決、Draft変更、CI対象外の文書変更などは直接の観測トリガーにしません。
-これらの変化は、次の`CI`完了時、日次観測、または手動実行で反映します。通常は次の日次観測までの遅れを許容します。
-Actionsの実行遅延・キャンセル・API障害により、24時間以内の反映を保証するものではありません。
+これらの変化は、次の対象CI完了時または手動実行で反映します。対象CIが実行されなければ自動では再観測されません。
 直ちに判断材料が必要ならActionsの`Autonomous Merge Shadow`から **Run workflow** を実行し、必要に応じて`pr_number`を指定してください。
 ラベルも更新したい場合は`Autonomous Merge Labels`を手動実行します。
 
 CI完了の観測は同じconcurrency groupで実行中の古い観測をキャンセルし、後続runで全open PRを取得し直します。
-終了イベントはPR番号ごとのgroupに分け、別PRの終了やCI完了でキャンセルされないようにします。手動観測もCI完了とは別groupです。日次実行との時間的な重なりやCI再実行による重複は許容し、厳密な即時反映・重複排除のためのrun履歴追跡や複雑なキューは導入しません。
+終了イベントはPR番号ごとのgroupに分け、別PRの終了やCI完了でキャンセルされないようにします。手動観測もCI完了とは別groupです。手動実行との時間的な重なりやCI再実行による重複は許容し、厳密な即時反映・重複排除のためのrun履歴追跡や複雑なキューは導入しません。
 各レポートは観測時点の記録であり、現在の状態は実行時刻と対象SHAを確認して判断します。
 
 ## ラベルの更新方針
 
-ラベルは1日1回（日本時間09:43、UTC 00:43）と`Autonomous Merge Labels`の手動実行で全体更新します。
+ラベルは`Autonomous Merge Labels`の手動実行時だけ全体更新します。
 `CI`完了時・PR終了時・手動の`Autonomous Merge Shadow`の観測では、ラベルは変更しません。
 ラベルは次回の更新成功まで古くなり得る参考表示です。即時反映や常時の正確性、自動マージ許可は保証しません。
-定期実行の遅延やAPI障害もあるため、24時間以内の反映を保証するものではありません。
+手動実行するまでは以前のラベルが残り、更新時刻の保証はありません。
 
-更新の仕組みは「全open PRの観測 → ラベル公開」の2 jobです。
+更新の仕組みは「全open PRの観測 → Check公開 → ラベル公開」の3 jobです。
 共通のconcurrency groupでworkflow全体を直列化し、`cancel-in-progress: false`で実行中の更新を後続runがキャンセルしないようにします。
 待機runが置き換わっても、次に実行するrunが全open PRを取得し直すため、個別PRのイベントをキューに保存する必要はありません。
 runの順番に依存せず、そのrunの実行時点の状態を観測します。過去run・jobの履歴走査やPR別matrixは使いません。
@@ -227,7 +227,7 @@ Labelsの`publish`は従来どおり`observe`のsuccess/failure双方から実�
 
 状態が落ち着いた後、Actionsの`Autonomous Merge Shadow`で **Run workflow** を実行し、`pr_number`を指定して再観測してください。
 ラベルも更新したい場合は`Autonomous Merge Labels`の新しい手動実行、または **Re-run all jobs** を使います。publishだけの再実行は使いません。
-次のCI完了時のShadow観測や、Labelsの日次観測を待つこともできます。自動リトライ・過去run走査は導入していません。
+Checkは次の対象CI完了時のShadow観測でも更新されます。ラベルを更新する場合はLabelsを手動実行してください。自動リトライ・過去run走査は導入していません。
 
 ## ローカル実行と検証
 
@@ -270,8 +270,8 @@ python3 -B .github/autonomous-merge/evaluate.py \
 6. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
 
 GitHub Actionsの実行と必要なjob権限が許可されていることを確認します。tokenはworkflowの`github.token`から環境変数へ渡し、policyやCLI引数に保存しません。
-手動実行と定期実行にはworkflowがdefault branchに存在する必要があります。日次はLabelsの09:43 JST（00:43 UTC）で、遅延・停止する場合があります。
-導入後はopenの検証PRを作り、Shadowの**Run workflow**で`pr_number`を指定してください。ラベルも含む確認はLabelsを手動実行し、日次runでも対象PRが含まれることを確認します。
+手動実行にはworkflowがdefault branchに存在する必要があります。日次などの定期実行は設定しません。
+導入後はopenの検証PRを作り、Shadowの**Run workflow**で`pr_number`を指定してください。ラベルも含む確認はLabelsを手動実行し、そのrunのJSONに対象PRが含まれることを確認します。
 
 ### Artifactの取得と同じ評価器での再評価
 
@@ -312,7 +312,7 @@ policyにはGitHub Actions App ID `15368`の次の7 checkを列挙します。
 - `tauri-rust`
 - `css`
 
-最低承認数0、未解決スレッドなし、日次09:43 JSTは共通設定です。
+最低承認数0、未解決スレッドなしは共通設定です。両リポジトリとも定期実行は行わず、ラベル更新は手動実行のみです。
 各CIにはpath filterがあります。一部のCIだけが起動するPRでは、残る必須checkが欠けるため`WAITING`になります。
 言語や変更pathから免除せず、CI未起動を成功として補いません。具体的な導入結果と未検証項目は[検証記録](./autonomous-merge-shadow-validation.md)へ記載します。
 

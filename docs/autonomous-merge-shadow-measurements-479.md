@@ -84,7 +84,7 @@
 - 参考用Check自身も収集対象に含まれています。本文を更新した後の再観測でもfreshnessはpassになりました。CI完了と収集が重なった34732228918 / 34733401829では、実際に変わったCIのID・status・conclusionをobservation_changesへ残し、終了コード1で情報不足を報告しました。
 - Labels初回はobserveとpublish-checksが成功した後、publishがHTTP 403で失敗しました。[job記録](./shadow-observations/nimius-player/labels-jobs.json)。Issues: write / PullRequests: readだったラベルpublisherへPR書込権限を付け、再実行では3 jobが成功し、`shadow/要マージ判断`が付与されました。[再検証記録](./shadow-observations/nimius-player/labels-retest-jobs.json)。[jobの開始・終了時刻](./shadow-observations/nimius-player/labels-job-times.json)でもCheck公開完了後にラベルpublisherが開始したことを確認しました。観測JSONの判定が条件達成でも、初回のラベル公開成功とは扱いません。
 
-## devops-tycoonの日次schedule
+## devops-tycoonの日次schedule（廃止前の実測）
 
 `event=schedule`のrun 34740054982 / attempt 1は2026-09-13 14:20:26 JSTに作成され、14:21:16 JSTに成功しました。定義上の09:43 JSTより遅れて実行されたrunです。artifact `shadow-labels-34740054982-1`（ID `10312013722`）から対象#494のJSONとmanifestを取得しました。対象PRなしのrunではありません。
 
@@ -104,6 +104,6 @@
 
 ## 実測とテストの境界
 
-API権限不足・取得中の変化は上記の実測でも確認しました。古い結果の到着、複数PRが同じheadを持つ場合、別attempt・artifact欠落、公開直前の変化などはPythonテストで補っています。devops-tycoonの日次scheduleは上記runで確認済みです。残る実測はnimius-playerのscheduleイベントによる日次実行です。手動Labelsの成功を日次scheduleの成功として数えません。
+API権限不足・取得中の変化は上記の実測でも確認しました。古い結果の到着、複数PRが同じheadを持つ場合、別attempt・artifact欠落、公開直前の変化などはPythonテストで補っています。devops-tycoonの日次scheduleは廃止前に上記runで確認しました。2026-09-13の利用者指定により両リポジトリの日次実行を廃止し、nimius-playerの日次実測は対象外とします。手動Labelsの成功を日次scheduleの成功として数えません。
 
 fork PRの実表示は未実測ですが、2026-09-13の利用者指定により、今回の検証対象・完了条件から外します。外部協力者の信頼性はShadowの条件判定とは別に判断し、fork経由のPRは原則として自動マージしない方針です。対象外としたケースを実測成功として数えません。

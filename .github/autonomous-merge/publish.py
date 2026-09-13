@@ -42,7 +42,7 @@ LABEL_DESCRIPTIONS = {
         "詳細はActionsのAutonomous Merge Labels。"
     ),
     "shadow/再観測が必要": (
-        "直近のShadow観測が失敗または鮮度不足。再実行か次の定期観測を待つ。"
+        "直近のShadow観測が失敗または鮮度不足。Labelsを手動で再実行する。"
         "詳細はActionsのAutonomous Merge Labels。"
     ),
 }

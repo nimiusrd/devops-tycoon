@@ -55,11 +55,12 @@ Checkの作成が別の収集中に起きた場合、従来の鮮度比較が変
 | 鮮度 | head / base / test mergeのSHA、PR更新時刻、PR・CI・レビューの再取得結果 | 再取得で差異があれば情報不足。古いSHAのCIや承認は流用しない |
 | レビュー | 各人の最新の承認・変更要求、承認時のSHA、未解決スレッド数 | 変更要求を尊重。承認人数とスレッド解決要件はpolicyで指定 |
 | 変更量・形態 | 追加・削除行数、ファイル数、追加・変更・削除・移動などのAPI分類 | 観測値として保存。必須条件を相殺しない |
+| 変更間隔 | base SHA上の対象ファイルの最終変更コミット・committer日時、観測時点の経過秒数 | 30日超の既存ファイルがあれば、現在headへの人間の承認を要求。履歴の欠落・不整合は情報不足 |
 | CI履歴 | 同じSHA・check・発行元に対する履歴、失敗記録の後の成功 | 観測のみ。flaky testなどの原因は推測しない |
 
 `policy.toml`には、必須checkの識別子とレビュー条件だけを指定します。
 Check Runは名前とGitHub App ID、legacy commit statusはcontext名と発行者loginで照合します。
-このリポジトリの初期設定は`Lint & Unit (Vitest)`と`E2E (Playwright)`、最低承認数0、未解決スレッドなしです。
+このリポジトリの設定は`Lint & Unit (Vitest)`と`E2E (Playwright)`、通常の最低承認数0、未解決スレッドなし、変更間隔のレビュー閾値30日です。
 最低承認数0でも、GitHub側がレビューを要求していれば条件達成にはしません。
 この一覧はShadow用の明示的な条件で、branch protectionやrulesetsの全要件を自動取得したものではありません。
 GitHub側の設定変更はそれらの総合状態に反映されますが、本PoCはマージ要件を網羅的に証明しません。
@@ -70,7 +71,7 @@ GitHub側の設定変更はそれらの総合状態に反映されますが、�
 | --- | --- |
 | `SHADOW_CONDITIONS_MET` | 観測時点で設定した条件をすべて満たした。自動マージ許可ではない |
 | `WAITING` | CI未実行・実行中、Draft、必要承認不足、base追随待ちなど |
-| `HUMAN_REVIEW_REQUIRED` | CI定義の変更、CI失敗、競合、変更要求、未解決スレッド、GitHub側のブロックなど |
+| `HUMAN_REVIEW_REQUIRED` | CI定義の変更、CI失敗、競合、変更要求、未解決スレッド、30日超の変更間隔に対する人間承認不足、GitHub側のブロックなど |
 | `INSUFFICIENT_DATA` | API失敗、権限不足、ページング上限、必須情報欠落、再取得時のPR・CI・レビューの変化など |
 
 PR一覧では次のラベルで4判定を区別します。更新完了時の管理対象ラベルはopen PRごとに1つです。無関係なラベルは変更しません。
@@ -88,6 +89,40 @@ publisherが未作成のラベル定義を作成します。branch protectionや
 複数条件に該当するときは、情報不足、人間確認、待機の順に優先し、個々の条件をすべてレポートへ記録します。
 GitHubの集約状態が`BLOCKED`でも、必要承認不足やCI実行中など明示的な待機条件がある間は、その完了後に再評価します。別にCI失敗・変更要求などがある場合は人間確認を優先します。待機条件が解消しても`BLOCKED`なら人間確認とし、条件達成には引き続き`CLEAN`を要求します。
 APIの取得失敗を空配列や0件で代用しません。必須CI一覧が空のpolicyは設定エラーです。
+
+## 変更間隔と人間レビュー
+
+`policy.toml`の`stale_change_review_days = 30`により、今回変更する既存ファイルのうち1件でも、base側の最終変更から観測時刻までの経過時間が30日を超えた場合に`stale_change_review: blocked`を記録します。他に情報不足がなければ判定は`HUMAN_REVIEW_REQUIRED`です。30日ちょうどは閾値以内です。1日を86,400秒として比較し、表示用の整数日数に丸めて判定しません。
+
+履歴は[GitHubのコミット一覧API](https://docs.github.com/en/rest/commits/commits#list-commits)に、取得済みの`base_sha`と対象pathを指定して最後の1件を照会します。PR head内の新しいコミットや別ファイルの変更で経過時間をリセットしません。最終変更時刻には返却されたコミットのcommitter日時を使います。これはコミットの記録時刻であり、前回のレビュー時刻・PRのマージ時刻を表すものではありません。
+
+| ファイルの状態 | 扱い |
+| --- | --- |
+| 既存ファイルの変更・削除 | baseの同じpathで履歴を取得 |
+| rename | 今回のPRの旧pathで履歴を取得 |
+| 新規追加・コピー | `new`として記録。前回変更が存在しないため、この日数条件の対象外。他のCI・レビュー条件は適用 |
+| 履歴なし・取得失敗・日時不正・未来日時・baseや対象一覧の不一致 | `INSUFFICIENT_DATA`。新規ファイルや直近の変更とみなさない |
+
+API負荷を制限するため、履歴を照会する既存ファイルは1PRにつき最大100件、履歴APIへの要求は失敗分も含めてrun全体で最大100回です。同じrun・リポジトリ内では、base SHAと履歴照会pathが一致する成功結果をPR間で再利用します。baseが異なる場合や別runでは再取得します。取得したbaseは最後のPR再取得でも照合し、途中のbase更新は鮮度不一致にします。
+
+PRの未取得履歴に必要な要求数が残り予算を超える場合、そのPRの履歴APIは呼ばず、`INSUFFICIENT_DATA`として使用数・上限・必要数をartifactに残します。後続PRの観測は続け、残り予算内で取得できるPR、取得済み履歴だけで足りるPR、新規追加・コピーだけのPRは引き続き評価します。全open PRを対象とする`workflow_run`でも予算はPRごとにリセットしません。この上限は履歴照会に対するもので、レビュー・Checks等の通常のメタデータ照会は別です。
+
+閾値を超えたPRでは、現在のhead SHAに対する有効な人間の`APPROVED`レビューが1件あれば、この条件を解除します。[レビューAPI](https://docs.github.com/en/rest/pulls/reviews#list-reviews-for-a-pull-request)の`user.type = User`かつ`author_association`が`OWNER`・`MEMBER`・`COLLABORATOR`のレビューだけを数えます。Bot、外部の投稿者、古いheadへの承認、dismiss済みのレビューは数えません。承認候補の本人種別・所属情報が欠けている場合は情報不足です。CI失敗・変更要求・未解決スレッドなど、他の条件は承認で相殺しません。
+
+レビューの投稿は直接の観測トリガーではないため、承認後すぐに更新する場合はShadowを手動実行します。ラベルも更新する場合はLabelsを手動実行します。
+
+### artifactに保存する情報
+
+既存の`pr-<PR番号>.json`に以下を含めます。新しい証跡ファイルをGitへ追加する必要はありません。
+
+- `observations.change_history`：照会したbase SHA、各対象path・履歴照会path、最終変更コミットSHA・committer日時。新規ファイルの履歴値はnull。
+- `observations.reviews`：人間承認の照合に使う本人種別・所属情報。CI・レビューの再取得比較にも含めます。
+- `conditions`内の`stale_change_review.detail`：閾値、観測時刻、base SHA、ファイルごとの経過秒数と`stale` / `within_threshold` / `new`、必要な人間承認数と採用したレビューID。
+- `policy.stale_change_review_days`とpolicy指紋：実際に使用した閾値。
+
+Summaryと参考用Checkには条件と理由を表示します。再評価は保存した`observed_at`・履歴・policyを使い、実行時の時計や追加API取得には依存しません。したがって、後日同じartifactを同じ評価器SHAで再評価しても結果は変わりません。現在のPRを判断するには新しく観測します。
+
+レビュー閾値とartifactの保持期間は別設定です。保持期間は引き続き30日とし、証跡の保管は[保存方針](#証跡の保存方針)に従います。古いartifactを再評価する互換性のため、`stale_change_review_days`を含まない旧policyではこの条件を追加しません。設定があるのに履歴がない場合は情報不足にします。
 
 ## CIとレビューの鮮度
 
@@ -145,7 +180,7 @@ manifestがない旧artifact、別attempt、全体収集失敗はCheckへ公開�
 2026-09-13の利用者指定により、Shadow・Labelsとも定期実行は行いません。
 PRの作成・更新とmainへのpushは通常`CI`を起動するため、PR作成・更新とpushの直接トリガーを削除し、そのCI完了後に観測します。
 必須checkを含まない`Autonomous Merge Tests`の完了も購読しません。`CI`と補助テストの両方が動く変更での二重観測を減らします。
-CI完了は、対象workflowのrun全体が`completed`になった時点です。devops-tycoonでは`CI`、nimius-playerでは`frontend`・`tauri-rust`・`css`のそれぞれが対象です。個別jobの成功時ではなく、そのworkflow内の処理が終了した時点で起動します。nimius-playerの3 workflowすべてが終わるのをまとめて待つ仕組みではありません。
+CI完了は、`CI` workflowのrun全体が`completed`になった時点です。個別jobの成功時ではなく、そのworkflow内の処理が終了した時点で起動します。
 PRの作成・更新、mainへのpush、CI再実行など、対象workflowの起動経路を問わず、成功・失敗・キャンセルの完了を観測します。実行イベントの古いSHAではなく、その時点の全open PRの状態を取得します。
 自身やLabelsの完了は購読しません。観測・評価ロジックとread-only権限は変更しません。
 
@@ -269,13 +304,18 @@ python3 -B .github/autonomous-merge/evaluate.py \
 1. `.github/autonomous-merge/`のPython一式とpolicy、4つの`autonomous-merge-*.yml`を導入PRで配置し、レビュー後に信頼済みdefault branchへ反映する。Python 3.11以上、外部Python依存なしで実行できる。初回PR上だけの配置やbootstrapの成功は導入検証の完了に数えない。
 2. 信頼済みdefault branchのpolicyに、対象CIのcheck名と発行元、承認条件を設定する。
 3. ShadowとCheck Markersの`workflow_run.workflows`を対象CIのworkflow名（YAMLの`name`）に合わせる。policyのcheck名はjobの表示名であり、workflow名とは異なる。テストworkflowのpush対象ブランチも合わせる。観測・公開のcheckout先は`repository.default_branch`から取得する。
-4. ラベルworkflowの`publish` jobにだけ`issues: write`と`pull-requests: write`を付ける。PRへのラベル付与で403になった実測に基づき、PR書込権限もこのjobへ限定する。4つの`shadow/`ラベルは初回更新で作成する。branch protectionの必須チェックや自動マージには接続しない。
+4. ラベルworkflowの`publish` jobにだけ`issues: write`と`pull-requests: write`を付ける。PR書込権限もこのjobへ限定する。4つの`shadow/`ラベルは初回更新で作成する。branch protectionの必須チェックや自動マージには接続しない。
 5. required checkや自動マージへ接続せず、観測とラベル表示を開始する。
 6. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
 
 GitHub Actionsの実行と必要なjob権限が許可されていることを確認します。tokenはworkflowの`github.token`から環境変数へ渡し、policyやCLI引数に保存しません。
 手動実行にはworkflowがdefault branchに存在する必要があります。日次などの定期実行は設定しません。
 導入後はopenの検証PRを作り、Shadowの**Run workflow**で`pr_number`を指定してください。ラベルも含む確認はLabelsを手動実行し、そのrunのJSONに対象PRが含まれることを確認します。
+
+必須checkが欠ける場合は`WAITING`とし、言語や変更pathから免除してCI未起動を成功として補いません。
+コードベース固有のパス一覧、言語別parser、テストファイル名の規約を移植する必要はありません。
+別ホスティングサービスへ展開するときは、同じ観測JSONを出力するadapterを追加し、評価器へは正規化した状態を渡します。
+現時点のGitHub固有の総合状態やCI定義の配置を他サービスでどう対応付けるかはadapter側の明示的な契約とします。
 
 ### Artifactの取得と同じ評価器での再評価
 
@@ -299,30 +339,18 @@ devcontainer exec --workspace-folder . python3 -B .github/autonomous-merge/repla
   --evaluator-sha <確認した40桁のSHA>
 ```
 
-`/tmp/shadow-artifact`は実行するコンテナ内に配置してください。移植先のDev Containerにworkspaceラベル指定が必要なら、そのリポジトリの実行手順に従います。
+`/tmp/shadow-artifact`は実行するコンテナ内に配置してください。
 このコマンドは保存policyを使い、判定・条件・policy指紋を含むレポート全体の一致時だけ終了コード0を返します。現在のpolicyファイルに置き換えません。評価器と分離した依存モジュールも同じSHAから読み、現在のcheckoutのモジュールを混ぜずに実行します。分割前の単独評価器にも対応します。
 
-### nimius-playerの設定例
+### 証跡の保存方針
 
-検証先は`nimiusrd/nimius-player`（default branch `main`、Tauri/Rust/React）です。
-共通コードはそのまま使用し、Shadow/Check Markersの購読を`frontend`、`tauri-rust`、`css`へ変更します。
-policyにはGitHub Actions App ID `15368`の次の7 checkを列挙します。
+Gitで管理するのは、[検証記録](./autonomous-merge-shadow-validation.md)と[実測詳細](./autonomous-merge-shadow-measurements-479.md)に記載する結果の要約、run URL・attempt、対象PR・SHA、artifact名、再評価の成否です。対象は`nimiusrd/devops-tycoon`に限定します。他コードベースの設定や実測結果は、それぞれの管理先へ記録してください。
 
-- `Lint & format`
-- `Unit tests (coverage)`
-- `npm audit`
-- `E2E (Playwright)`
-- `Windows compile check`
-- `tauri-rust`
-- `css`
+観測JSON・manifest・API応答・再評価結果JSONはGitで管理しません。観測JSONとmanifestはActions artifactsへ保存し、取得したコピーや検証時のAPI応答・再評価結果はローカルで扱います。`.github/autonomous-merge/evidence/`、旧保存先の`docs/shadow-observations/`、collectorの出力先`shadow-report/`は`.gitignore`で除外します。文書からローカルの証跡ファイルへのリンクは作りません。
 
-最低承認数0、未解決スレッドなしは共通設定です。両リポジトリとも定期実行は行わず、ラベル更新は手動実行のみです。
-各CIにはpath filterがあります。一部のCIだけが起動するPRでは、残る必須checkが欠けるため`WAITING`になります。
-言語や変更pathから免除せず、CI未起動を成功として補いません。具体的な導入結果と未検証項目は[検証記録](./autonomous-merge-shadow-validation.md)へ記載します。
+Actions artifactsの保持期間は現行workflowで30日です。長期保管が必要な証跡は期限内にGit外の保管先へ退避し、文書に取得元と保管先を記録してください。期限切れ後はrun URLだけではJSONを復元・再評価できません。API応答や再評価結果JSONを別途取得した場合、それらが元artifactに含まれるとは限りません。
 
-コードベース固有のパス一覧、言語別parser、テストファイル名の規約を移植する必要はありません。
-別ホスティングサービスへ展開するときは、同じ観測JSONを出力するadapterを追加し、評価器へは正規化した状態を渡します。
-現時点のGitHub固有の総合状態やCI定義の配置を他サービスでどう対応付けるかはadapter側の明示的な契約とします。
+ローカルコピーが元artifactからの抜粋の場合、manifestには未保存のPRが含まれることがあります。抜粋ディレクトリをpublisherの入力として使用しないでください。
 
 ## 現段階の観測範囲
 

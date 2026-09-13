@@ -8,6 +8,7 @@ Observationsは収集失敗で途中までの辞書になるため、取得前�
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from typing import Any, Literal, NotRequired, TypedDict
 
 Decision = Literal[
@@ -37,6 +38,8 @@ class Policy(TypedDict):
     minimum_approvals: int
     require_resolved_threads: bool
     required_checks: list[RequiredCheck]
+    # 未指定の旧policyでは変更間隔の条件を評価しない。
+    stale_change_review_days: NotRequired[int]
 
 
 class PullRequest(TypedDict):
@@ -79,6 +82,8 @@ class Review(TypedDict):
     state: str
     commit_sha: str | None
     submitted_at: str | None
+    author_type: NotRequired[str | None]
+    author_association: NotRequired[str | None]
 
 
 class ChangeSize(TypedDict):
@@ -96,6 +101,18 @@ class ChangedFile(TypedDict):
     changeType: str
     additions: int
     deletions: int
+
+
+class FileHistory(TypedDict):
+    path: str
+    history_path: str | None
+    last_commit_sha: str | None
+    last_changed_at: str | None
+
+
+class ChangeHistory(TypedDict):
+    base_sha: str
+    files: list[FileHistory]
 
 
 class CIHistory(TypedDict):
@@ -131,6 +148,7 @@ class Observations(TypedDict):
     pr: NotRequired[PullRequest]
     change: NotRequired[ChangeSize]
     files: NotRequired[list[ChangedFile]]
+    change_history: NotRequired[ChangeHistory]
     reviews: NotRequired[list[Review]]
     unresolved_threads: NotRequired[int]
     checks: NotRequired[list[Check]]
@@ -193,3 +211,23 @@ def sha(value: Any) -> str:
     if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{40}", value):
         raise EvaluationError("invalid commit SHA")
     return value
+
+
+def timestamp(value: Any, name: str) -> datetime:
+    parsed = datetime.fromisoformat(string(value, name))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise EvaluationError(f"{name}: timezone required")
+    return parsed
+
+
+def file_history_path(file: ChangedFile) -> str | None:
+    """追加・コピーは新規。renameではbaseに存在する旧pathを調べる。"""
+    path = string(file["path"], "file.path")
+    change = file["changeType"]
+    if change in {"ADDED", "COPIED"}:
+        return None
+    if change == "RENAMED":
+        return string(file["previous_path"], "file.previous_path")
+    if change in {"MODIFIED", "DELETED", "CHANGED", "UNCHANGED"}:
+        return path
+    raise EvaluationError("unknown file changeType")

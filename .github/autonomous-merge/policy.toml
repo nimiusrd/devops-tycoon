@@ -5,6 +5,10 @@ mode = "shadow"
 minimum_approvals = 0
 require_resolved_threads = true
 
+# base側の最終変更から30日超の既存ファイルは、現在headへの人間の承認を要求する。
+# Actions artifactの保持期間とは独立したレビュー条件。
+stale_change_review_days = 30
+
 # GitHub側のマージ条件も別途尊重する。この一覧はShadow観測用の明示的な条件であり、
 # branch protection / rulesetsの全要件を自動取得・再現したものではない。
 # Check Runは名前と発行元App IDを照合し、同名の別Appを成功として受理しない。

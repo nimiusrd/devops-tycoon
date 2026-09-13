@@ -34,6 +34,11 @@ def markdown(result: Assessment) -> str:
         "Policy SHA-256: " + safe(result["policy_sha256"]),
         "",
     ]
+    if "stale_change_review_days" in result["policy"]:
+        lines.extend([
+            "前回変更からの経過日数の閾値（超過時は現在headへの人間の承認が必要）: "
+            + safe(result["policy"]["stale_change_review_days"]), "",
+        ])
     for item in result["conditions"]:
         lines.append("- " + safe(item))
     lines.extend(["", "### 観測間の変化", ""])

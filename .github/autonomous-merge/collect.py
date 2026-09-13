@@ -12,17 +12,19 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from contracts import (
-    DecisionMetadata, Manifest, ObservationChange, Observations,
-    PullRequest, sha, string,
+    ChangedFile, ChangeHistory, DecisionMetadata, Manifest, ObservationChange, Observations,
+    PullRequest, file_history_path, sha, string, timestamp,
 )
 from evaluate import assess, load_policy
 from report import markdown
 
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
+MAX_HISTORY_FILES = 100
 PR_FIELDS = """
 number state isDraft headRefOid baseRefOid baseRefName updatedAt
 mergeable mergeStateStatus reviewDecision
@@ -158,7 +160,9 @@ def normalized_pr(raw: dict) -> PullRequest:
     }
 
 
-def decision_metadata(api: GitHub, number: int, pr: PullRequest) -> DecisionMetadata:
+def decision_metadata(
+    api: GitHub, number: int, pr: PullRequest, *, include_review_identity: bool = False,
+) -> DecisionMetadata:
     """判定に使うCI・レビュー状態を同じ方法で再取得できるようにする。"""
     metadata = {}
     reviews = api.pages(f"/pulls/{number}/reviews")
@@ -169,6 +173,9 @@ def decision_metadata(api: GitHub, number: int, pr: PullRequest) -> DecisionMeta
             "state": r["state"],
             "commit_sha": r["commit_id"],
             "submitted_at": r["submitted_at"],
+            **({"author_type": (r["user"] or {}).get("type"),
+                "author_association": r.get("author_association")}
+               if include_review_identity else {}),
         }
         for r in reviews
     ]
@@ -258,7 +265,33 @@ def observation_changes(before: dict, after: dict) -> list[ObservationChange]:
     return changes
 
 
-def collect(api: GitHub, number: int, evaluator_sha: str) -> Observations:
+def collect_change_history(api: GitHub, base_sha: str, files: list[ChangedFile]) -> ChangeHistory:
+    base = sha(base_sha)
+    paths = [(file["path"], file_history_path(file)) for file in files]
+    if sum(path is not None for _, path in paths) > MAX_HISTORY_FILES:
+        raise CollectionError("change history file limit exceeded")
+    history: ChangeHistory = {"base_sha": base, "files": []}
+    for path, previous in paths:
+        record = {"path": path, "history_path": previous,
+                  "last_commit_sha": None, "last_changed_at": None}
+        if previous is not None:
+            # base SHAで固定する。PR headの新しいコミットで経過日数をリセットしない。
+            # 最終変更1件だけを読み、過去runやartifactの一覧は走査しない。
+            query = urlencode({"sha": base, "path": previous, "per_page": 1})
+            commits = api.request(f"{api.prefix}/commits?{query}")
+            if not isinstance(commits, list) or len(commits) != 1:
+                raise CollectionError(f"last change unavailable: {previous}")
+            last = commits[0]
+            at = last["commit"]["committer"]["date"]
+            timestamp(at, "last_changed_at")
+            record.update(last_commit_sha=sha(last["sha"]), last_changed_at=at)
+        history["files"].append(record)
+    return history
+
+
+def collect(
+    api: GitHub, number: int, evaluator_sha: str, *, include_change_history: bool = False,
+) -> Observations:
     facts: Observations = {
         "schema_version": 2,
         "observed_at": datetime.now(timezone.utc).isoformat(),
@@ -317,8 +350,12 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> Observations:
             for key in ("changed_files", "additions", "deletions")
         ):
             raise CollectionError("PR file totals mismatch")
-        initial_metadata = decision_metadata(api, number, before)
+        initial_metadata = decision_metadata(
+            api, number, before, include_review_identity=include_change_history,
+        )
         facts.update(initial_metadata)
+        if include_change_history:
+            facts["change_history"] = collect_change_history(api, before["base_sha"], files)
         histories = {}
         for check in facts["checks"]:
             key = (
@@ -342,7 +379,9 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> Observations:
             }
             for key, checks in histories.items()
         ]
-        confirmed_metadata = decision_metadata(api, number, before)
+        confirmed_metadata = decision_metadata(
+            api, number, before, include_review_identity=include_change_history,
+        )
         after = normalized_pr(api.graphql(number, PR_FIELDS))
         facts["rechecked"] = {
             "pr": before == after,
@@ -405,7 +444,10 @@ def main() -> int:
         event = json.loads(args.event.read_text()) if args.event else {}
         numbers = targets(api, event, args.pr)
         for number in numbers:
-            facts = collect(api, number, sha(args.evaluator_sha))
+            facts = collect(
+                api, number, sha(args.evaluator_sha),
+                include_change_history="stale_change_review_days" in policy,
+            )
             result = assess(facts, policy)
             (args.output / f"pr-{number}.json").write_text(
                 json.dumps(result, ensure_ascii=False, indent=2) + "\n"

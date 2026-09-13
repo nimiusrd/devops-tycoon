@@ -12,7 +12,7 @@ from typing import Any
 
 from contracts import (
     Assessment, ConditionStatus, EvaluationError, Observations, Policy,
-    RequiredCheck, boolean, integer, sha, string,
+    RequiredCheck, boolean, file_history_path, integer, sha, string, timestamp,
 )
 
 
@@ -21,6 +21,10 @@ def validate_policy(policy: Policy) -> Policy:
         raise EvaluationError("version=2 / mode=shadow required")
     integer(policy["minimum_approvals"], "minimum_approvals")
     boolean(policy["require_resolved_threads"], "require_resolved_threads")
+    if "stale_change_review_days" in policy:
+        days = integer(policy["stale_change_review_days"], "stale_change_review_days")
+        if days == 0:
+            raise EvaluationError("stale_change_review_days must be positive")
     checks = policy["required_checks"]
     if not isinstance(checks, list) or not checks:
         raise EvaluationError(
@@ -54,6 +58,42 @@ def check_identity(check: RequiredCheck) -> tuple:
     kind = check["kind"]
     producer = check["app_id"] if kind == "check_run" else check["creator"]
     return kind, check["name"], producer
+
+
+def change_ages(facts: Observations, days: int) -> list[dict[str, Any]]:
+    """保存時刻とbaseの履歴だけで計算する。現在時刻・API・作業ツリーに依存しない。"""
+    observed_at = timestamp(facts["observed_at"], "observed_at")
+    history = facts["change_history"]
+    if sha(history["base_sha"]) != sha(facts["pr"]["base_sha"]):
+        raise EvaluationError("change_history base SHA mismatch")
+    files, records = facts["files"], history["files"]
+    if not isinstance(files, list) or not isinstance(records, list):
+        raise EvaluationError("change_history and files must be lists")
+    expected = {string(file["path"], "file.path"): file_history_path(file) for file in files}
+    indexed = {string(record["path"], "history.path"): record for record in records}
+    if (len(expected) != len(files) or len(indexed) != len(records)
+            or expected.keys() != indexed.keys()
+            or len(files) != integer(facts["change"]["changed_files"], "changed_files")):
+        raise EvaluationError("change_history file set mismatch")
+    ages = []
+    for path, history_path in sorted(expected.items()):
+        record = indexed[path]
+        if record["history_path"] != history_path:
+            raise EvaluationError("change_history path mismatch")
+        if history_path is None:
+            if record["last_commit_sha"] is not None or record["last_changed_at"] is not None:
+                raise EvaluationError("new file must have null prior history")
+            age_seconds = None
+            status = "new"
+        else:
+            sha(record["last_commit_sha"])
+            changed_at = timestamp(record["last_changed_at"], "last_changed_at")
+            age_seconds = (observed_at - changed_at).total_seconds()
+            if age_seconds < 0:
+                raise EvaluationError("last_changed_at is after observed_at")
+            status = "stale" if age_seconds > days * 86400 else "within_threshold"
+        ages.append({**record, "age_seconds": age_seconds, "status": status})
+    return ages
 
 
 def assess(facts: Observations, policy: Policy) -> Assessment:
@@ -162,6 +202,27 @@ def assess(facts: Observations, policy: Policy) -> Assessment:
             "pass" if approvals >= policy["minimum_approvals"] else "waiting",
             {"actual": approvals, "required": policy["minimum_approvals"]},
         )
+        if "stale_change_review_days" in policy:
+            days = policy["stale_change_review_days"]
+            ages = change_ages(facts, days)
+            stale = any(file["status"] == "stale" for file in ages)
+            human_reviews = []
+            if stale:
+                for review in latest.values():
+                    if review["state"] != "APPROVED" or review["commit_sha"] != head:
+                        continue
+                    actor = string(review["author_type"], "review.author_type")
+                    association = string(review["author_association"], "review.author_association")
+                    if actor == "User" and association in {"OWNER", "MEMBER", "COLLABORATOR"}:
+                        human_reviews.append(review["id"])
+            condition(
+                "stale_change_review",
+                "blocked" if stale and not human_reviews else "pass",
+                {"threshold_days": days, "observed_at": facts["observed_at"],
+                 "base_sha": facts["pr"]["base_sha"], "files": ages,
+                 "required_human_approvals": int(stale),
+                 "human_approval_review_ids": sorted(human_reviews)},
+            )
         unresolved = integer(facts["unresolved_threads"], "unresolved_threads")
         condition(
             "review_threads",

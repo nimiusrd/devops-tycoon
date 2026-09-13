@@ -11,6 +11,7 @@
 | 評価器SHA | Policy SHA-256 |
 | --- | --- |
 | `0b67f39251b9753f2cf7400d9996dd7688642ba8` | `a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85` |
+| `0d8f67cebfefde2310afd92d2e43a1affeace31a` | `a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85` |
 | `c6018ddfe554454df08fbc9b0f4465b562fed8bc` | `a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85` |
 | `ce102648b69aed73195823188e761977d529e571` | `a5613e48c2cf63fe8c468b3abb09a484fc12adc1429025596df6e6bda91efd85` |
 
@@ -22,6 +23,7 @@
 | CI完了経由・PR再取得の変化 / CIが成功していても再取得でPRが変わればINSUFFICIENT_DATA | [run 34733942476 / attempt 1](https://github.com/nimiusrd/devops-tycoon/actions/runs/34733942476/attempts/1)、[pr-494.json](./shadow-observations/devops-tycoon/34733942476-1/pr-494.json) | `INSUFFICIENT_DATA`。freshness=unknown（PR, CI or reviews changed between samples; recollect） |
 | 新head/base・スレッド解決・CI完了後の再観測 / SHADOW_CONDITIONS_MET、未解決件数0 | [run 34734081199 / attempt 1](https://github.com/nimiusrd/devops-tycoon/actions/runs/34734081199/attempts/1)、[pr-494.json](./shadow-observations/devops-tycoon/34734081199-1/pr-494.json) | `SHADOW_CONDITIONS_MET`。全条件pass |
 | 専用PR終了 / open_pr=blocked、CLOSEDを過去の観測として表示 | [run 34734163954 / attempt 1](https://github.com/nimiusrd/devops-tycoon/actions/runs/34734163954/attempts/1)、[pr-494.json](./shadow-observations/devops-tycoon/34734163954-1/pr-494.json) | `HUMAN_REVIEW_REQUIRED`。open_pr=blocked（CLOSED）; github_merge_state=blocked（UNSTABLE） |
+| 日次schedule / CI条件はpass。GitHub総合状態を尊重し、観測→Check→ラベルを公開 | [run 34740054982 / attempt 1](https://github.com/nimiusrd/devops-tycoon/actions/runs/34740054982/attempts/1)、[pr-494.json](./shadow-observations/devops-tycoon/34740054982-1/pr-494.json) | `HUMAN_REVIEW_REQUIRED`。github_merge_state=blocked（UNSTABLE）。その他の条件はpass。3 job成功、neutral Checkとshadow/要対応ラベルを確認 |
 
 | Run | PR | 観測時刻 | head SHA | base SHA |
 | --- | --- | --- | --- | --- |
@@ -31,6 +33,7 @@
 | 34733942476 / 1 | #494 | `2026-09-13T02:48:33.906646+00:00` | `f303d32259e222416ba838624d362e83b3043a73` | `b77b0528e4de4bdcbd27f61e8241675b46efc2f7` |
 | 34734081199 / 1 | #494 | `2026-09-13T02:51:59.148873+00:00` | `f303d32259e222416ba838624d362e83b3043a73` | `b77b0528e4de4bdcbd27f61e8241675b46efc2f7` |
 | 34734163954 / 1 | #494 | `2026-09-13T02:54:04.086801+00:00` | `f303d32259e222416ba838624d362e83b3043a73` | `b77b0528e4de4bdcbd27f61e8241675b46efc2f7` |
+| 34740054982 / 1 | #494 | `2026-09-13T05:20:39.595173+00:00` | `f303d32259e222416ba838624d362e83b3043a73` | `b77b0528e4de4bdcbd27f61e8241675b46efc2f7` |
 
 ## nimiusrd/nimius-player
 
@@ -81,10 +84,26 @@
 - 参考用Check自身も収集対象に含まれています。本文を更新した後の再観測でもfreshnessはpassになりました。CI完了と収集が重なった34732228918 / 34733401829では、実際に変わったCIのID・status・conclusionをobservation_changesへ残し、終了コード1で情報不足を報告しました。
 - Labels初回はobserveとpublish-checksが成功した後、publishがHTTP 403で失敗しました。[job記録](./shadow-observations/nimius-player/labels-jobs.json)。Issues: write / PullRequests: readだったラベルpublisherへPR書込権限を付け、再実行では3 jobが成功し、`shadow/要マージ判断`が付与されました。[再検証記録](./shadow-observations/nimius-player/labels-retest-jobs.json)。[jobの開始・終了時刻](./shadow-observations/nimius-player/labels-job-times.json)でもCheck公開完了後にラベルpublisherが開始したことを確認しました。観測JSONの判定が条件達成でも、初回のラベル公開成功とは扱いません。
 
+## devops-tycoonの日次schedule（廃止前の実測）
+
+`event=schedule`のrun 34740054982 / attempt 1は2026-09-13 14:20:26 JSTに作成され、14:21:16 JSTに成功しました。定義上の09:43 JSTより遅れて実行されたrunです。artifact `shadow-labels-34740054982-1`（ID `10312013722`）から対象#494のJSONとmanifestを取得しました。対象PRなしのrunではありません。
+
+| Job | ID | 開始（UTC） | 終了（UTC） | 結果 |
+| --- | --- | --- | --- | --- |
+| observe | 103678130055 | 05:20:29 | 05:20:54 | success |
+| publish-checks | 103678179753 | 05:20:56 | 05:21:03 | success |
+| publish | 103678195140 | 05:21:05 | 05:21:15 | success |
+
+参考用Check `103660586537`は`completed / neutral`で、JSONと同じ判定、head/base、評価器SHA、policy指紋と同run・attemptへのリンクを表示しました。ラベルは`shadow/要対応`でした。[公開時点のAPI記録](./shadow-observations/devops-tycoon/34740054982-1/publication.json)と[照合結果](./shadow-observations/devops-tycoon/34740054982-1/verification.json)を保存しています。記録SHAの評価器によるオフライン再評価も全体一致・終了コード0でした。保存後に専用PR #494をマージせず閉じています。
+
+必須CI2件とfreshnessはpassですが、GitHub総合状態`UNSTABLE`を尊重し`HUMAN_REVIEW_REQUIRED`となりました。同じheadにはキャンセルされたmarker job `103662661162`も残っていました。`UNSTABLE`との因果はこの実測だけでは断定しません。参考用Check自体はneutralです。
+
 ## オフライン再評価
 
 保存JSONのobservationsとpolicyを、上表の信頼済みSHAにあるevaluate.pyへ渡しました。ネットワーク取得は行いません。評価器内部のtupleをcollectorと同じJSON配列へ正規化し、レポート全体を比較します。[devops-tycoonの再評価結果](./shadow-observations/devops-tycoon/replay-results.json)と[nimius-playerの再評価結果](./shadow-observations/nimius-player/replay-results.json)へ結果を保存します。socket.connectとsocket.getaddrinfoを拒否した状態で実行し、終了コード0を確認しました。
 
 ## 実測とテストの境界
 
-API権限不足・取得中の変化は上記の実測でも確認しました。古い結果の到着、複数PRが同じheadを持つ場合、別attempt・artifact欠落、公開直前の変化などはPythonテストで補っています。fork PRの実表示と、次回09:43 JSTのscheduleイベントによる日次実行は未実測です。手動Labelsの成功を日次scheduleの成功として数えません。
+API権限不足・取得中の変化は上記の実測でも確認しました。古い結果の到着、複数PRが同じheadを持つ場合、別attempt・artifact欠落、公開直前の変化などはPythonテストで補っています。devops-tycoonの日次scheduleは廃止前に上記runで確認しました。2026-09-13の利用者指定により両リポジトリの日次実行を廃止し、nimius-playerの日次実測は対象外とします。手動Labelsの成功を日次scheduleの成功として数えません。
+
+fork PRの実表示は未実測ですが、2026-09-13の利用者指定により、今回の検証対象・完了条件から外します。外部協力者の信頼性はShadowの条件判定とは別に判断し、fork経由のPRは原則として自動マージしない方針です。対象外としたケースを実測成功として数えません。

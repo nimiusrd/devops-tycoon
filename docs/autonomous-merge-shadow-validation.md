@@ -5,9 +5,12 @@
 ## 状態
 
 参考用Check・manifest・オフライン再評価を両リポジトリへ導入し、専用PRで状態遷移を実測しました。
-日次scheduleとfork PRは未実測のため、Issueは未完了です。
-default branch導入後の実測が揃うまで、Issueの受け入れ条件を完了扱いにしません。
+利用者指定の検証範囲では、観測・Check・ラベル公開とオフライン再評価の実測を完了しました。2026-09-13の指定により日次実行を廃止し、nimius-playerの日次実測は完了条件から外します。日次停止の変更は両リポジトリの導入対象です。
 workflow成功、bootstrap、対象PRなしは状態遷移の成功証跡に数えません。
+
+2026-09-13の利用者指定により、fork経由のPRは今回の検証対象・完了条件から外します。
+外部協力者の信頼性はShadowの条件判定とは別に判断し、fork経由のPRは原則として自動マージしない運用方針です。
+forkでの動作を確認済みとするものではありません。
 
 ## 既存の実測と確認範囲
 
@@ -55,12 +58,14 @@ Rust・React・CSSのpath filterにより、全7 checkが起動しないPRを`WA
 | head更新・base更新 | #494で実測 | #225で実測 | 新headに別Checkを作成し、base変更時は未観測 |
 | PR終了 | #494の終了runで確認 | #225の終了runでCLOSEDを保存 | 終了時も現在headのneutral Checkとして記録 |
 | Labelsの手動実行 | 既存PRのラベルを検証で変更しないため未実行 | #225で3 job成功・ラベル付与 | Check公開後にラベルpublisherを実行 |
-| 日次schedule | 次回09:43 JST待ち | 次回09:43 JST待ち | 手動Labelsを日次scheduleの実測と混同しない |
+| 日次schedule（廃止） | 廃止前のrun 34740054982 / attempt 1で#494の観測・Check・ラベル更新と再評価を確認 | 対象外（未実測） | 利用者指定で両リポジトリの定期実行を廃止。移植先の日次実測を完了条件から除外 |
 | 一部CIが未起動 | 共通コードを移植先で実測 | css欠落でWAITING | policyの必須Checkをpathで免除しない |
-| fork PRの表示 | 未実測 | 未実測 | 検証用の別ownerのforkが未指定。API作成とPR画面の紐付けは別に確認が必要 |
+| fork PRの表示 | 対象外（未実測） | 対象外（未実測） | 外部協力者の信頼性を別途判断し、原則自動マージしない方針により、今回の完了条件から除外 |
 | 保存JSONのオフライン再評価 | 保存した各JSONを記録SHAで再評価 | 保存した各JSONを記録SHAで再評価 | 判定・条件・policy指紋を含む全体一致。結果JSONを実測詳細から参照 |
 
-日次の次回予定は2026-09-14 09:43 JST（遅延する場合あり）です。devops-tycoon #494とnimius-player #225を再開して日次の観測対象として残します。次回runに対象PRが含まれることと、観測・Check公開・ラベル更新の成功を確認してから、この欄を更新してください。
+devops-tycoonでは2026-09-13 14:20:26 JSTに作成された`event=schedule`の[run 34740054982 / attempt 1](https://github.com/nimiusrd/devops-tycoon/actions/runs/34740054982/attempts/1)を実測しました。定義は09:43 JSTで、実際のrun作成は遅れていました。対象#494のJSON・Check・ラベル更新とオフライン再評価を確認し、専用PRはマージせず閉じました。[照合結果](./shadow-observations/devops-tycoon/34740054982-1/verification.json)と[公開時点のAPI記録](./shadow-observations/devops-tycoon/34740054982-1/publication.json)を保存しています。
+
+nimius-playerの日次実測は行いません。利用者指定による日次実行の廃止に合わせ、検証再開の予約を停止し、専用PR #225はマージせず閉じました。日次廃止後のCheckは対象CI完了時・PR終了時・手動実行で更新し、ラベルはLabelsの手動実行時だけ更新します。
 
 ## 自動テストで補うケース
 

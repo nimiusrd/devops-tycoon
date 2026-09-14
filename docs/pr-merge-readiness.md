@@ -14,7 +14,11 @@ CI 開始・PR 状態変更では未観測表示、CI 完了では全 open PR、
 
 Actions の **PR Merge Readiness → Run workflow** で手動観測できます。番号を空にすると全 open PR、指定するとその PR が対象です。ラベル更新は番号を空にして `update-labels` を有効にします。Action が実イベントから入力を読み、観測 → artifact 保存 → Check → ラベルの順に実行します。保存失敗時は公開を止め、Check 公開失敗時はラベルを更新しません。
 
-job は観測と公開に必要な権限をまとめて持ちます。設定検証時も共通の権限設定ですが、Action は検証経路で読み取りだけを行い、観測・公開へ進みません。PR のソースコードを checkout・実行しません。`autonomous-merge-check-writer` で設定検証から公開まで job 全体を直列化します。実行中の job は自動キャンセルしませんが、GitHub の既定の待機枠では新しい job が以前の待機中 job を置き換える場合があります。
+job は観測と公開に必要な権限をまとめて持ちます。設定検証時も共通の権限設定ですが、Action は検証経路で読み取りだけを行い、観測・公開へ進みません。PR のソースコードを checkout・実行しません。
+
+workflow を編集できる書き込み権限者は信頼対象です。GitHub ではこの権限者が `permissions` 自体も編集できるため、Action の検証経路や同じ workflow 内の job 分離は workflow 定義の改変を防ぐ境界ではありません。外部 fork の `pull_request` は GitHub の読み取り専用 token 制限に従います。[GitHub の権限設定](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository)を参照してください。
+
+`autonomous-merge-check-writer` で設定検証から公開まで job 全体を直列化します。`cancel-in-progress: false` と `queue: max` により、実行中の job を止めず、手動ラベル要求を含む最大100件を待機させます。後続の通常イベントは既存の待機要求を置き換えません。待機枠が満杯の場合は追加の要求がキャンセルされるため、その手動要求は空きができてから再実行してください。[GitHub のキュー仕様](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)に従います。
 
 artifact は `pr-merge-readiness-RUN_ID-ATTEMPT` に `pr-番号.json`、`manifest.json`、`summary.md` を保存し、保持期間を 30 日に設定します。収集失敗時も今回の JSON と Summary が残ります。同じ run の全 job 再実行では、GitHub 側で前 attempt の artifact が取得できなくなる挙動を実測しました。再観測には新しい **Run workflow** を使い、再実行する場合は必要な artifact を先に Git 外へ保存してください。人間の判断や GitHub 本来のマージ条件を代替しません。
 

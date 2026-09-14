@@ -419,7 +419,7 @@ export function deriveHudMetrics(
     {
       id: 'devSpeed',
       label: '開発速度',
-      icon: 'focus',
+      icon: 'pace',
       value: s.devSpeed,
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,

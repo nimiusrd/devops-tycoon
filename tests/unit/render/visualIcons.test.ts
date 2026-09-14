@@ -15,6 +15,8 @@ describe('visualIcons', () => {
       expect(entry.file).toMatch(/^[a-z0-9-]+\.svg$/);
       expect(getIconUrl(key)).toContain(`assets/icons/${entry.file}`);
     }
+    expect(ICON_CATALOG.pace).toEqual({ file: 'pace.svg', tone: 'sky' });
+    expect(ICON_CATALOG.focus.file).not.toBe(ICON_CATALOG.pace.file);
   });
 
   it('未知キーは集中力へ寄せ、絵文字フォールバックを出さない', () => {

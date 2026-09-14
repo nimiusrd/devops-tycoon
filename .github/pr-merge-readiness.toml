@@ -1,10 +1,7 @@
-# この公開リポジトリの運用設定です。action_ref は利用する release の実 SHA に固定します。
-# 汎用例: https://github.com/nimiusrd/pr-merge-readiness-action/blob/main/examples/multiple-workflows.toml
-version = 1
-action_ref = "21fa2df95fc615847ba7e1a24e9c77bd5d1323fb"
-
-[ci]
-workflows = ["CI"]
+# この公開リポジトリの運用設定です。action_ref は version 2 対応の実装 SHA に固定します。
+# 汎用例: https://github.com/nimiusrd/pr-merge-readiness-action/blob/main/examples/review-policy.toml
+version = 2
+action_ref = "27ca8908b993e93eb319c70e7231fa7fd1999b05"
 
 [review]
 minimum_approvals = 0
@@ -14,13 +11,3 @@ stale_change_review_days = 30
 [publication]
 checks = true
 labels = "manual"
-
-[[ci.required_checks]]
-kind = "check_run"
-name = "Lint & Unit (Vitest)"
-app_id = 15368
-
-[[ci.required_checks]]
-kind = "check_run"
-name = "E2E (Playwright)"
-app_id = 15368

@@ -1,0 +1,43 @@
+# uses と TOML の action_ref を同じ40桁 SHA に固定します。
+name: PR Merge Readiness
+
+on:
+  workflow_run:
+    workflows: [CI] # Match ci.workflows in the TOML configuration.
+    types: [in_progress, completed]
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review, converted_to_draft, closed]
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR number (empty = all open PRs)
+        type: string
+        default: ''
+      update-labels:
+        description: Update labels for all open PRs
+        type: boolean
+        default: false
+  pull_request:
+    paths: [.github/pr-merge-readiness.toml, .github/workflows/pr-merge-readiness.yml]
+  push:
+    paths: [.github/pr-merge-readiness.toml, .github/workflows/pr-merge-readiness.yml]
+
+permissions: {}
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: autonomous-merge-check-writer
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      actions: read
+      statuses: read
+      checks: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: nimiusrd/pr-merge-readiness-action@21fa2df95fc615847ba7e1a24e9c77bd5d1323fb

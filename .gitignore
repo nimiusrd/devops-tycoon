@@ -21,6 +21,14 @@ blob-report/
 reports/
 .stryker-tmp/
 
+# Shadow観測の証跡（ローカルコピー・取得したレポート）
+/.github/autonomous-merge/evidence/
+/docs/shadow-observations/
+/shadow-report/
+/readiness-report/
+/preparation-report/
+/evidence/
+
 # logs
 logs/
 *.log

@@ -1,5 +1,8 @@
 dist
 node_modules
+# 固定版 Action が決定的に生成し、共通 workflow の --check で検証する。
+.github/workflows/pr-merge-readiness.yml
+.github/pr-merge-readiness.toml
 coverage
 playwright-report
 test-results

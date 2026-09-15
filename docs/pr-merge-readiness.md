@@ -44,6 +44,8 @@ artifact は `pr-merge-readiness-RUN_ID-ATTEMPT` に `pr-番号.json`、`manifes
 
 Action SHA を更新する PR では、default branch に残る旧 `action_ref` と新しい実行 SHA の照合が `config/action SHA mismatch` で失敗し、参考用の readiness 処理は観測・公開へ進みません。通常の必須 CI とレビューで移行内容を検証し、マージ後に default branch の Run workflow で観測・参考 Check を確認します。readiness job は必須 Check に登録しません。起動条件の移行を戻す場合は、workflow と TOML をまとめて revert します。
 
+移行前に作成した既存 PR は、main を取り込んで PR head の TOML と workflow を新しい SHA に揃えてください。旧 `action_ref` のままでは新しい Action の検証に失敗します。取り込み前の観測には main の Run workflow を使えます。
+
 [移行 PR #501](https://github.com/nimiusrd/devops-tycoon/pull/501) で新入口追加と旧 3 writer workflow の停止を一括で行い、[実測検証](./pr-merge-readiness-validation-499.md) 後に旧 Python・policy・テストを削除しました。ロールバックでは、この整理変更と移行変更の両方を revert した **1 本の PR** で旧実装の復元と入口の切替をまとめます。旧 artifact と新 artifact の変換は行いません。実測 JSON は Git に入れず、文書に run URL・attempt・各 SHA・期待値と実測値を記録します。
 
 今回の version 2 への切替を戻す場合は、Action SHA・TOML・workflow をまとめて revert し、v0.4.0 の設定と CI イベントを使う構成へ戻します。旧ラベルが必要な場合は旧版の手動同期を実行します。artifact の変換は行いません。

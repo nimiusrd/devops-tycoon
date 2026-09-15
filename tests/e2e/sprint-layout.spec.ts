@@ -1404,6 +1404,33 @@ async function injectSpreadTickerEvents(page: Page): Promise<void> {
   });
 }
 
+/** 定常フレームでは各出来事本文が次行の上端を超えない（#457）。 */
+async function assertTickerRowTextsDoNotOverlap(page: Page, label: string): Promise<void> {
+  const overlap = await page.locator('.event-ticker-list').evaluate((list) => {
+    const texts = [...list.querySelectorAll<HTMLElement>('.event-ticker-text')];
+    const rows = [...list.querySelectorAll<HTMLElement>('.event-ticker-row')];
+    for (let i = 0; i < texts.length - 1; i += 1) {
+      const current = texts[i].getBoundingClientRect();
+      const nextRow = rows[i + 1]?.getBoundingClientRect();
+      if (!nextRow) continue;
+      if (current.bottom > nextRow.top + 1) {
+        return {
+          overlapped: true,
+          index: i,
+          currentBottom: current.bottom,
+          nextTop: nextRow.top,
+        };
+      }
+    }
+    return { overlapped: false };
+  });
+  expect(
+    overlap.overlapped,
+    `${label}: 出来事テキストが隣行と重なる` +
+      ('index' in overlap ? `（${overlap.index + 1}行目）` : ''),
+  ).toBe(false);
+}
+
 /** 狭い盤面でも5件の延焼行が、スクロール後（またはそのまま）リスト可視領域に入る。 */
 async function assertSpreadTickerRowsReachable(page: Page, label: string): Promise<void> {
   const list = page.getByTestId('event-ticker-list');
@@ -1995,6 +2022,10 @@ test.describe('延焼文言の DOM レイアウト', () => {
         textFits,
         `延焼ティッカーが横に溢れている（${viewport.width}x${viewport.height}）`,
       ).toBe(true);
+      await assertTickerRowTextsDoNotOverlap(
+        page,
+        `延焼ティッカー ${viewport.width}x${viewport.height}`,
+      );
       await assertSpreadTickerRowsReachable(
         page,
         `延焼ティッカー ${viewport.width}x${viewport.height}`,

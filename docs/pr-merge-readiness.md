@@ -1,12 +1,12 @@
 # PR Merge Readiness
 
-PR の準備状況は [pull_request 自動観測対応の独立 Action](https://github.com/nimiusrd/pr-merge-readiness-action/commit/8354fe9105cbb98132dc8d68f3250a6978ccefd6) により観測します。固定 SHA は `8354fe9105cbb98132dc8d68f3250a6978ccefd6` です。参考 Check の名前は `Autonomous Merge Shadow / PR #番号`、conclusion は常に `neutral` です。
+PR の準備状況は [Python 同梱バイナリ版の独立 Action](https://github.com/nimiusrd/pr-merge-readiness-action/releases/tag/v0.4.0) により観測します。固定 SHA は配布用コミット `107e80a91574e277ea3c13e41aeff7710cae77e2` です。参考 Check の名前は `Autonomous Merge Shadow / PR #番号`、conclusion は常に `neutral` です。
 
 - 設定: [`.github/pr-merge-readiness.toml`](../.github/pr-merge-readiness.toml)
 - 通常の workflow: [`.github/workflows/pr-merge-readiness.yml`](../.github/workflows/pr-merge-readiness.yml)
 - 詳細・設定例・replay: [Action の最新 README](https://github.com/nimiusrd/pr-merge-readiness-action#readme)
 
-Python 3.14 を uv 0.12.13 で管理し、Python 実装と開発環境は独立 Action 側で管理します。このリポジトリの通常の workflow は **1 job・1 step** で Composite Action を呼びます。既定の `run` が設定検証・観測・公開・artifact 保存を選び、順序を管理します。Action の開発検証は pytest・Ruff・mypy strict を使用します。
+Python 3.14 と開発・ビルド依存は独立 Action 側で uv 0.12.13 により管理します。リリース時に PyInstaller で Linux x64・arm64 向けのバイナリを生成し、このリポジトリでは **1 job・1 step** で Composite Action を呼びます。実行時は固定した配布用コミットのバイナリを使うため、uv・Python の導入、依存解決、ビルドは不要です。既定の `run` が設定検証・観測・公開・artifact 保存を選び、順序を管理します。Action の開発検証は pytest・Ruff・mypy strict を使用します。
 
 CI の実行状態は GitHub Checks で確認します。この Action は CI の結果・再実行履歴・`mergeStateStatus` を集約しません。設定は version 2、承認数 0、スレッド解決必須、変更間隔のレビュー閾値 30 日、Check 有効、ラベル手動です。既存ファイルの base 側の最終変更から 30 日を超える場合は、現在 head に対する所属確認済みの人間レビューを要求します。CI 定義ファイルの変更もレビュー条件として扱います。
 
@@ -38,7 +38,7 @@ artifact は `pr-merge-readiness-RUN_ID-ATTEMPT` に `pr-番号.json`、`manifes
 
 観測・レポートは schema version 2、manifest は version 1 です。JSON と Summary には PR 状態を含む判定と、レビュー・変更履歴だけのラベル用判定を記録します。旧 schema version 1 のレポートを新しい Action で再評価することはできません。
 
-設定と workflow は直接編集します。Action 更新時は TOML の `action_ref` と1か所の `uses:` を同じ公開済み SHA に変更します。Action 自身の SHA は実際の参照から取得するため、`action-ref` 入力は不要です。通常 PR の `pull_request` は PR head の TOML を検証後、default branch の設定で観測・公開します。不正な提案設定では観測へ進みません。`push` は push 対象 SHA の TOML を検証して終了します。運用イベントでは default branch の設定 SHA を一度確定し、最後まで同じ設定を使用します。生成 CLI と再利用可能 workflow は使いません。
+設定と workflow は直接編集します。Action 更新時は TOML の `action_ref` と1か所の `uses:` を、バイナリを含む同じ公開済みの配布用 SHA に変更します。ソースだけの main の SHA は使用できません。Action 自身の SHA は実際の参照から取得するため、`action-ref` 入力は不要です。通常 PR の `pull_request` は PR head の TOML を検証後、default branch の設定で観測・公開します。不正な提案設定では観測へ進みません。`push` は push 対象 SHA の TOML を検証して終了します。運用イベントでは default branch の設定 SHA を一度確定し、最後まで同じ設定を使用します。生成 CLI と再利用可能 workflow は使いません。
 
 自動観測と Check 公開は、設定を検証したイベントの head SHA に固定します。待機中・観測中の追加 push で head が変わった場合は診断を保存して判定・公開を止め、観測後に変わった場合も Check 公開を省略します。新しい PR イベントで再評価します。
 
@@ -48,4 +48,4 @@ Action SHA を更新する PR では、default branch に残る旧 `action_ref` 
 
 [移行 PR #501](https://github.com/nimiusrd/devops-tycoon/pull/501) で新入口追加と旧 3 writer workflow の停止を一括で行い、[実測検証](./pr-merge-readiness-validation-499.md) 後に旧 Python・policy・テストを削除しました。ロールバックでは、この整理変更と移行変更の両方を revert した **1 本の PR** で旧実装の復元と入口の切替をまとめます。旧 artifact と新 artifact の変換は行いません。実測 JSON は Git に入れず、文書に run URL・attempt・各 SHA・期待値と実測値を記録します。
 
-今回の version 2 への切替を戻す場合は、Action SHA・TOML・workflow をまとめて revert し、v0.4.0 の設定と CI イベントを使う構成へ戻します。旧ラベルが必要な場合は旧版の手動同期を実行します。artifact の変換は行いません。
+version 2 への切替を戻す場合は、Action SHA・TOML・workflow をまとめて revert し、設定 version 1 と CI イベントを使う旧実装の構成へ戻します。旧ラベルが必要な場合は旧版の手動同期を実行します。artifact の変換は行いません。

@@ -1,7 +1,7 @@
-# この公開リポジトリの運用設定です。action_ref は version 2 対応の実装 SHA に固定します。
+# この公開リポジトリの運用設定です。action_ref は v0.4.0 のバイナリ同梱 SHA に固定します。
 # 汎用例: https://github.com/nimiusrd/pr-merge-readiness-action/blob/main/examples/review-policy.toml
 version = 2
-action_ref = "8354fe9105cbb98132dc8d68f3250a6978ccefd6"
+action_ref = "107e80a91574e277ea3c13e41aeff7710cae77e2"
 
 [review]
 minimum_approvals = 0

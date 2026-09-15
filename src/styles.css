@@ -1842,8 +1842,10 @@ body:has(.overlay-contained) {
   line-height: 1.35;
   color: #e8eef8;
   box-shadow: 0 2px 8px #0006;
-  /* 退場で height が縮むとき、折り返し本文が隣行へはみ出さない（#457）。 */
+  /* 退場で height が縮むとき、折り返し本文が隣行へはみ出さない（#457）。
+   * overflow: hidden は flex 項目の自動最小サイズを 0 にするので、縮ませない。 */
   overflow: hidden;
+  flex-shrink: 0;
 }
 .event-ticker-row.tone-good {
   border-color: color-mix(in srgb, var(--mint, #57e08f) 45%, transparent);

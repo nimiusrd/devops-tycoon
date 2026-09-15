@@ -1404,29 +1404,30 @@ async function injectSpreadTickerEvents(page: Page): Promise<void> {
   });
 }
 
-/** 定常フレームでは各出来事本文が次行の上端を超えない（#457）。 */
+/** 定常フレームでは各出来事本文が自行列と次行の上端を超えない（#457）。 */
 async function assertTickerRowTextsDoNotOverlap(page: Page, label: string): Promise<void> {
   const overlap = await page.locator('.event-ticker-list').evaluate((list) => {
-    const texts = [...list.querySelectorAll<HTMLElement>('.event-ticker-text')];
     const rows = [...list.querySelectorAll<HTMLElement>('.event-ticker-row')];
-    for (let i = 0; i < texts.length - 1; i += 1) {
-      const current = texts[i].getBoundingClientRect();
+    for (let i = 0; i < rows.length; i += 1) {
+      const text = rows[i].querySelector<HTMLElement>('.event-ticker-text');
+      if (!text) continue;
+      const current = text.getBoundingClientRect();
+      const row = rows[i].getBoundingClientRect();
+      if (current.bottom > row.bottom + 1) {
+        return { overlapped: true, index: i, reason: 'row' as const };
+      }
       const nextRow = rows[i + 1]?.getBoundingClientRect();
-      if (!nextRow) continue;
-      if (current.bottom > nextRow.top + 1) {
-        return {
-          overlapped: true,
-          index: i,
-          currentBottom: current.bottom,
-          nextTop: nextRow.top,
-        };
+      if (nextRow && current.bottom > nextRow.top + 1) {
+        return { overlapped: true, index: i, reason: 'next' as const };
       }
     }
     return { overlapped: false };
   });
+  const where =
+    overlap.overlapped && 'reason' in overlap ? (overlap.reason === 'row' ? '自行列' : '隣行') : '';
   expect(
     overlap.overlapped,
-    `${label}: 出来事テキストが隣行と重なる` +
+    `${label}: 出来事テキストが${where}と重なる` +
       ('index' in overlap ? `（${overlap.index + 1}行目）` : ''),
   ).toBe(false);
 }

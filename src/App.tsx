@@ -49,6 +49,7 @@ import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
+import { Issue476DebugHud } from './rd/Issue476DebugHud';
 
 const AchievementCollectionScreen = lazy(() =>
   import('./ui/AchievementCollectionScreen').then((m) => ({
@@ -518,6 +519,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             />
           )}
         </Suspense>
+        <Issue476DebugHud />
       </>
     );
   }
@@ -827,6 +829,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           </Suspense>
         </div>
       )}
+      <Issue476DebugHud
+        sprintNumber={displayedQuarterSprintIndex(state)}
+        result={phase === 'result' ? state.lastResult : null}
+        taskCount={state.sprint?.config.taskCount}
+        seniorHp={state.org.seniorHp}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@
  * 難易度は組織の初期パラメータ・タスク量・全体係数・初期予算を、
  * 試練はスコア倍率と引き換えの追加ルールを表す。データ駆動（architecture §4.3）。
  */
+import { resolveEasyTaskCountMul } from '../rd/issue476Experiment';
 import type { ScenarioOrg } from '../sim/scenarios';
 import type { CardEffects } from '../sim/run/types';
 import type { DifficultyId } from '../sim/run/types';
@@ -144,7 +145,10 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
 
 /** 難易度定義を取得する（未知は normal にフォールバック）。 */
 export function getDifficulty(id: DifficultyId): DifficultyDef {
-  return DIFFICULTY_DEFS[id] ?? DIFFICULTY_DEFS.normal;
+  const def = DIFFICULTY_DEFS[id] ?? DIFFICULTY_DEFS.normal;
+  if (id !== 'easy') return def;
+  const taskCountMul = resolveEasyTaskCountMul(def.taskCountMul);
+  return taskCountMul === def.taskCountMul ? def : { ...def, taskCountMul };
 }
 
 export interface TrialDef {

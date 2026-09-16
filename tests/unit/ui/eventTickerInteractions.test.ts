@@ -1,7 +1,10 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const hooks = vi.hoisted(() => ({ effects: [] as (() => void | (() => void))[] }));
+const hooks = vi.hoisted(() => ({
+  effects: [] as (() => void | (() => void))[],
+  reducedMotion: false,
+}));
 
 // Node 環境では ref の接続と effect の開始・解除だけを代行する。
 // JSX と入力判定・スクロール処理は実装をそのまま実行する。
@@ -9,6 +12,10 @@ vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useRef: (initial: unknown) => ({ current: initial }),
   useEffect: (effect: () => void | (() => void)) => hooks.effects.push(effect),
+}));
+vi.mock('framer-motion', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('framer-motion')>()),
+  useReducedMotion: () => hooks.reducedMotion,
 }));
 
 import { registerBoardDragHitTest } from '../../../src/render/boardDragHit';
@@ -137,6 +144,7 @@ function touches(...ys: number[]) {
 afterEach(() => {
   cleanups.splice(0).forEach((cleanup) => cleanup());
   hooks.effects = [];
+  hooks.reducedMotion = false;
   registerBoardDragHitTest(null);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -179,6 +187,17 @@ describe('EventTicker の表示とフォーカス', () => {
       ]);
       expect(rows[0].props.className).toBe('event-ticker-row tone-bad');
       expect(rows[0].props.initial).toEqual(frozen ? undefined : { opacity: 0, x: 16 });
+      expect(rows[0].props.exit).toEqual(
+        frozen
+          ? undefined
+          : {
+              opacity: 0,
+              height: 0,
+              paddingTop: 0,
+              paddingBottom: 0,
+              overflow: 'hidden',
+            },
+      );
       expect(content(ticker.find('event-ticker-now'))).toBe('現在 COMBO ×8');
       expect(ticker.find('event-ticker-heading').props.disabled).toBe(false);
       expect(ticker.find('event-ticker-list').props.tabIndex).toBe(0);
@@ -189,6 +208,19 @@ describe('EventTicker の表示とフォーカス', () => {
       expect(ticker.list.focus).toHaveBeenCalledWith({ preventScroll: true });
     },
   );
+
+  it('prefers-reduced-motion では入場・退場アニメを付けない', () => {
+    hooks.reducedMotion = true;
+    const ticker = mountTicker({ events: sampleEvents, frozen: false });
+    const rows = ticker.nodes.filter((node) =>
+      String(node.props['data-testid']).startsWith('event-ticker-row-'),
+    );
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].props.initial).toBeUndefined();
+    expect(rows[0].props.exit).toBeUndefined();
+    expect(content(rows[0])).toContain('炎上');
+  });
 });
 
 describe('EventTicker に接続されたホイール操作', () => {

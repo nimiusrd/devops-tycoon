@@ -6,16 +6,17 @@
  *
  * DS-01: リストは常に pointer-events: none。フォーカス中も盤面ドラッグを通す。
  * DS-06 / DS-08: 見出しの click と修飾なしホイール、キーボードで全行へ到達する。
+ * DS-09: prefers-reduced-motion では入場・退場アニメを止め、静的行だけを出す。
  * 溢れたリストは touch/pen の pointerdown 時点でパンを確保し、境界キーでも外側を動かさない。
  */
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { COMBO_HUD_EVENT_WINDOW, shouldShowLiveComboHint } from '../render/sprintComboView';
 import {
   clientPointHitsRegisteredBoardDrag,
   hasRegisteredBoardDragHitTest,
 } from '../render/boardDragHit';
-import { formatRecentSprintEvents } from '../render/sprintEventView';
+import { formatRecentSprintEvents, type SprintEventView } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 import {
   applyTickerListScroll,
@@ -38,6 +39,26 @@ import { VisualIcon } from './VisualIcon';
 
 /** 同時表示する最大件数。コンボ HUD の履歴判定と同じ窓を使う。 */
 const TICKER_LIMIT = COMBO_HUD_EVENT_WINDOW;
+
+/** 退場中に行高が縮んでも本文が隣行へはみ出さない（#457）。 */
+const TICKER_ROW_EXIT = {
+  opacity: 0,
+  height: 0,
+  paddingTop: 0,
+  paddingBottom: 0,
+  overflow: 'hidden',
+} as const;
+
+function tickerRowBody(row: SprintEventView) {
+  return (
+    <>
+      <span className="event-ticker-icon" aria-hidden="true">
+        <VisualIcon name={row.icon} size="hud" />
+      </span>
+      <span className="event-ticker-text">{row.text}</span>
+    </>
+  );
+}
 
 /** フォーカス中のリストを矢印 / Page / Home / End でスクロールする（DS-08）。 */
 function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
@@ -70,6 +91,8 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
   const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
   const listRef = useRef<HTMLUListElement>(null);
+  const reduceMotion = useReducedMotion() ?? false;
+  const still = frozen || reduceMotion;
 
   useEffect(() => {
     const list = listRef.current;
@@ -228,17 +251,14 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
         aria-labelledby="event-ticker-heading"
         onKeyDown={handleTickerListKeyDown}
       >
-        {frozen ? (
+        {still ? (
           rows.map((row) => (
             <li
               key={row.key}
               className={`event-ticker-row tone-${row.tone}`}
               data-testid={`event-ticker-row-${row.tone}`}
             >
-              <span className="event-ticker-icon" aria-hidden="true">
-                <VisualIcon name={row.icon} size="hud" />
-              </span>
-              <span className="event-ticker-text">{row.text}</span>
+              {tickerRowBody(row)}
             </li>
           ))
         ) : (
@@ -250,13 +270,10 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
                 data-testid={`event-ticker-row-${row.tone}`}
                 initial={{ opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                exit={TICKER_ROW_EXIT}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >
-                <span className="event-ticker-icon" aria-hidden="true">
-                  <VisualIcon name={row.icon} size="hud" />
-                </span>
-                <span className="event-ticker-text">{row.text}</span>
+                {tickerRowBody(row)}
               </motion.li>
             ))}
           </AnimatePresence>

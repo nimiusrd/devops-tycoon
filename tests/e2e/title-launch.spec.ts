@@ -2,7 +2,7 @@
  * タイトル画面の開始 CTA がファーストビューで使え、フッターに隠れない契約（#358）。
  */
 import { expect, test } from './fixtures';
-import type { Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 const VIEWPORTS = [
   { name: 'phone-se', width: 320, height: 568 },
@@ -137,6 +137,60 @@ const CARD_DOCK_VIEWPORTS = [
   { name: 'title-dock-1280', width: 1280, height: 800 },
 ] as const;
 
+async function assertTitleShellKeepsDockInFlow(
+  page: Page,
+  viewport: { name: string; width: number; height: number },
+): Promise<{ scrollBox: Box; dockBox: Box }> {
+  const title = page.getByTestId('title');
+  const shell = await title.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      overflowY: style.overflowY,
+      display: style.display,
+      reserve: style.getPropertyValue('--title-dock-reserve').trim(),
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    };
+  });
+  expect(shell.display, `${viewport.name} のタイトル面が grid ではない`).toBe('grid');
+  expect(
+    shell.overflowY === 'hidden' || shell.overflowY === 'clip',
+    `${viewport.name} のタイトル面が縦スクロールする`,
+  ).toBe(true);
+  expect(shell.reserve, `${viewport.name} が --title-dock-reserve に依存している`).toBe('');
+  expect(
+    shell.scrollHeight,
+    `${viewport.name} のタイトル面が親スクロールを持っている`,
+  ).toBeLessThanOrEqual(shell.clientHeight + 1);
+
+  const scrollBox = await readBox(page.getByTestId('title-scroll'), 'タイトルのスクロール面');
+  const dockBox = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');
+  expect(
+    overlaps(scrollBox, dockBox),
+    `${viewport.name} でスクロール面とドックの矩形が交差している`,
+  ).toBe(false);
+  expect(
+    scrollBox.y + scrollBox.height,
+    `${viewport.name} でスクロール面がドックより下にある`,
+  ).toBeLessThanOrEqual(dockBox.y + 1);
+  return { scrollBox, dockBox };
+}
+
+function assertCardClearOfDock(
+  cardBox: Box,
+  dockBox: Box,
+  viewportName: string,
+  label: string,
+): void {
+  expect(overlaps(cardBox, dockBox), `${viewportName} で${label}がドックと交差している`).toBe(
+    false,
+  );
+  expect(
+    cardBox.y + cardBox.height,
+    `${viewportName} で${label}の下端がドックに隠れている`,
+  ).toBeLessThanOrEqual(dockBox.y + 1);
+}
+
 test.describe('title difficulty cards stay above launch dock', () => {
   for (const viewport of CARD_DOCK_VIEWPORTS) {
     test(`${viewport.name} ${viewport.width}x${viewport.height} でカード下端がドックに隠れない`, async ({
@@ -146,16 +200,33 @@ test.describe('title difficulty cards stay above launch dock', () => {
       await page.goto('/?seed=title-launch-cta');
       await expect(page.getByTestId('title')).toBeVisible();
 
+      const { scrollBox, dockBox } = await assertTitleShellKeepsDockInFlow(page, viewport);
+
+      const easyCard = page.getByTestId('difficulty-easy');
+      await expect(easyCard).toBeVisible();
+      const easyVisible = intersect(await readBox(easyCard, 'Easyカード'), scrollBox);
+      if (easyVisible) {
+        expect(
+          overlaps(easyVisible, dockBox),
+          `${viewport.name} で初見の Easy カードがドックに隠れている`,
+        ).toBe(false);
+      }
+
+      await easyCard.scrollIntoViewIfNeeded();
+      assertCardClearOfDock(
+        await readBox(easyCard, 'Easyカード（スクロール後）'),
+        await readBox(page.getByTestId('title-launch-dock'), '開始ドック'),
+        viewport.name,
+        'Easyカード全文',
+      );
+
       await page.locator('.difficulty-card:not([disabled])').last().click();
       const lastCard = page.locator('.difficulty-card').last();
       await lastCard.scrollIntoViewIfNeeded();
 
       const cardBox = await readBox(lastCard, '難易度カード下端');
-      const dockBox = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');
-      expect(
-        overlaps(cardBox, dockBox),
-        `${viewport.name} で難易度カード下端が固定ドックに隠れている`,
-      ).toBe(false);
+      const dockAfterScroll = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');
+      assertCardClearOfDock(cardBox, dockAfterScroll, viewport.name, '難易度カード下端');
 
       const startRun = page.getByTestId('start-run');
       await expect(startRun).toBeVisible();
@@ -164,6 +235,10 @@ test.describe('title difficulty cards stay above launch dock', () => {
         overlaps(cardBox, startBox),
         `${viewport.name} でカード選択とラン開始が同時に破綻している`,
       ).toBe(false);
+      expect(
+        startBox.y + startBox.height,
+        `${viewport.name} でラン開始がビューポート外`,
+      ).toBeLessThanOrEqual(viewport.height + 1);
       await expect(page.getByTestId('start-daily-run')).toBeVisible();
 
       await startRun.click();

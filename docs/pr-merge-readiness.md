@@ -1,6 +1,6 @@
 # PR Merge Readiness
 
-PR の準備状況は [Python 同梱バイナリ版の独立 Action](https://github.com/nimiusrd/pr-merge-readiness-action/releases/tag/v0.4.0) により観測します。固定 SHA は配布用コミット `107e80a91574e277ea3c13e41aeff7710cae77e2` です。参考 Check の名前は `Autonomous Merge Shadow / PR #番号`、conclusion は常に `neutral` です。
+PR の準備状況は [Python 同梱バイナリ版の独立 Action v0.5.1](https://github.com/nimiusrd/pr-merge-readiness-action/releases/tag/v0.5.1) により観測します。固定 SHA は Immutable Release の配布用コミット `38abf77191ca0801d10dd6bd8c9d387bdad4b911` です。参考 Check の名前は `Autonomous Merge Shadow / PR #番号`、conclusion は常に `neutral` です。
 
 - 設定: [`.github/pr-merge-readiness.toml`](../.github/pr-merge-readiness.toml)
 - 通常の workflow: [`.github/workflows/pr-merge-readiness.yml`](../.github/workflows/pr-merge-readiness.yml)
@@ -8,11 +8,12 @@ PR の準備状況は [Python 同梱バイナリ版の独立 Action](https://git
 
 Python 3.14 と開発・ビルド依存は独立 Action 側で uv 0.12.13 により管理します。リリース時に PyInstaller で Linux x64・arm64 向けのバイナリを生成し、このリポジトリでは **1 job・1 step** で Composite Action を呼びます。実行時は固定した配布用コミットのバイナリを使うため、uv・Python の導入、依存解決、ビルドは不要です。既定の `run` が設定検証・観測・公開・artifact 保存を選び、順序を管理します。Action の開発検証は pytest・Ruff・mypy strict を使用します。
 
-CI の実行状態は GitHub Checks で確認します。この Action は CI の結果・再実行履歴・`mergeStateStatus` を集約しません。設定は version 2、承認数 0、スレッド解決必須、変更間隔のレビュー閾値 30 日、Check 有効、ラベル手動です。既存ファイルの base 側の最終変更から 30 日を超える場合は、現在 head に対する所属確認済みの人間レビューを要求します。CI 定義ファイルの変更もレビュー条件として扱います。
+CI の実行状態は GitHub Checks で確認します。この Action は CI の結果・再実行履歴・`mergeStateStatus` を集約しません。設定は version 2、承認数 0、スレッド解決必須、変更間隔のレビュー閾値 30 日、Check 有効、ラベル自動更新です。既存ファイルの base 側の最終変更から 30 日を超える場合は、現在 head に対する所属確認済みの人間レビューを要求します。CI 定義ファイルの変更もレビュー条件として扱います。
 
 | タイミング | トリガー | 処理 |
 | --- | --- | --- |
-| 通常 PR の作成・再開・コミット追加・Draft 切替・base 変更・終了 | `pull_request` | PR head の TOML を検証後、default branch の設定で当該 PR を観測し、レポート・参考 Check を更新 |
+| 通常 PR の作成・再開・コミット追加・Draft 切替・base 変更 | `pull_request` | PR head の TOML を検証後、default branch の設定で当該 PR を観測し、レポート・参考 Check・ラベルを更新 |
+| 通常 PR の終了 | `pull_request: closed` | 当該 PR を観測してレポート・参考 Check を更新し、当該 PR の管理ラベルを除去 |
 | タイトル・本文だけの編集 | `pull_request: edited` | 起動後に処理をスキップ |
 | fork・Dependabot・作成元リポジトリが削除された PR | `pull_request` | 設定取得・観測・公開をスキップ |
 | 設定・workflow の push | パス限定の `push` | push 対象 SHA の TOML 検証のみ |
@@ -26,7 +27,9 @@ CI 開始・完了・再実行、承認・スレッド解決、base ブランチ
 
 ラベルは `shadow/レビュー条件充足`・`shadow/レビュー待ち`・`shadow/要対応`・`shadow/再観測が必要` です。レビューと変更履歴だけを表し、CI の実行状態や Draft・競合・open/closed 状態をラベル判定に含めません。head・base・レビュー内容の変化は再観測対象です。PR 状態を含む判定は参考 Check・レポートで確認できます。
 
-Actions の **PR Merge Readiness → Run workflow** で手動観測できます。番号を空にすると全 open PR、指定するとその PR が対象です。ラベル更新は番号を空にして `update-labels` を有効にします。Action が実イベントから入力を読み、観測 → artifact 保存 → Check → ラベルの順に実行します。保存失敗時は公開を止め、Check 公開失敗時はラベルを更新しません。
+`publication.labels = "auto"` により、自動実行はイベント元 PR だけのラベルを同期します。他の PR の一括更新・終了済み PR の清掃は手動同期で行います。自動更新を止める場合は `"manual"`、手動同期も止める場合は `"off"` に変更します。設定変更だけでは既存ラベルを除去しません。
+
+Actions の **PR Merge Readiness → Run workflow** で手動観測できます。番号を空にすると全 open PR、指定するとその PR が対象です。手動のラベル更新は `auto` 設定でも番号を空にして `update-labels` を有効にします。Action が実イベントから入力を読み、観測 → artifact 保存 → Check → ラベルの順に実行します。保存失敗時は公開を止め、Check 公開失敗時はラベルを更新しません。
 
 job は観測と公開に必要な権限をまとめて持ちます。設定検証時も共通の権限設定ですが、Action は検証経路で読み取りだけを行い、観測・公開へ進みません。PR のソースコードを checkout・実行しません。
 
@@ -38,13 +41,13 @@ artifact は `pr-merge-readiness-RUN_ID-ATTEMPT` に `pr-番号.json`、`manifes
 
 観測・レポートは schema version 2、manifest は version 1 です。JSON と Summary には PR 状態を含む判定と、レビュー・変更履歴だけのラベル用判定を記録します。旧 schema version 1 のレポートを新しい Action で再評価することはできません。
 
-設定と workflow は直接編集します。Action 更新時は TOML の `action_ref` と1か所の `uses:` を、バイナリを含む同じ公開済みの配布用 SHA に変更します。ソースだけの main の SHA は使用できません。Action 自身の SHA は実際の参照から取得するため、`action-ref` 入力は不要です。通常 PR の `pull_request` は PR head の TOML を検証後、default branch の設定で観測・公開します。不正な提案設定では観測へ進みません。`push` は push 対象 SHA の TOML を検証して終了します。運用イベントでは default branch の設定 SHA を一度確定し、最後まで同じ設定を使用します。生成 CLI と再利用可能 workflow は使いません。
+設定と workflow は直接編集します。Action 更新時は1か所の `uses:` を、バイナリを含む公開済みの配布用 SHA に変更します。TOML の `action_ref` は不要で、既存設定に残っていても読み捨てます。設定の互換性は `version` と各項目で検証します。ソースだけの main の SHA は使用できません。Action 自身の SHA は実際の参照から取得するため、`action-ref` 入力は不要です。通常 PR の `pull_request` は PR head の TOML を検証後、default branch の設定で観測・公開します。不正な提案設定では観測へ進みません。`push` は push 対象 SHA の TOML を検証して終了します。運用イベントでは default branch の設定 SHA を一度確定し、最後まで同じ設定を使用します。生成 CLI と再利用可能 workflow は使いません。
 
-自動観測と Check 公開は、設定を検証したイベントの head SHA に固定します。待機中・観測中の追加 push で head が変わった場合は診断を保存して判定・公開を止め、観測後に変わった場合も Check 公開を省略します。新しい PR イベントで再評価します。
+自動観測と Check・ラベル公開は、設定を検証したイベントの head SHA に固定します。待機中・観測中の追加 push で head が変わった場合は診断を保存して判定・公開を止め、観測後に変わった場合も Check・ラベル公開を省略します。新しい PR イベントで再評価します。
 
-Action SHA を更新する PR では、default branch に残る旧 `action_ref` と新しい実行 SHA の照合が `config/action SHA mismatch` で失敗し、参考用の readiness 処理は観測・公開へ進みません。通常の必須 CI とレビューで移行内容を検証し、マージ後に default branch の Run workflow で観測・参考 Check を確認します。readiness job は必須 Check に登録しません。起動条件の移行を戻す場合は、workflow と TOML をまとめて revert します。
+v0.5.1 は設定と Action の SHA の一致を要求しないため、default branch に旧 `action_ref` が残る更新 PR でも観測・公開できます。自動ラベル設定は default branch への反映後に有効になります。更新 PR では CI・readiness の成功を確認し、マージ後の通常 PR 作成・更新でラベル付与を確認します。readiness job は必須 Check に登録しません。v0.4.0 / v0.5.0 へ切り戻す場合は、workflow と TOML をまとめて戻し、旧版が必要とする `action_ref` も復元します。
 
-移行前に作成した既存 PR は、main を取り込んで PR head の TOML と workflow を新しい SHA に揃えてください。旧 `action_ref` のままでは新しい Action の検証に失敗します。取り込み前の観測には main の Run workflow を使えます。
+移行前に作成した既存 PR は、main を取り込んで workflow を新しい SHA に更新してください。v0.5.1 では TOML に旧 `action_ref` が残っていても検証は成功します。取り込み前の観測には main の Run workflow を使えます。
 
 [移行 PR #501](https://github.com/nimiusrd/devops-tycoon/pull/501) で新入口追加と旧 3 writer workflow の停止を一括で行い、[実測検証](./pr-merge-readiness-validation-499.md) 後に旧 Python・policy・テストを削除しました。ロールバックでは、この整理変更と移行変更の両方を revert した **1 本の PR** で旧実装の復元と入口の切替をまとめます。旧 artifact と新 artifact の変換は行いません。実測 JSON は Git に入れず、文書に run URL・attempt・各 SHA・期待値と実測値を記録します。
 

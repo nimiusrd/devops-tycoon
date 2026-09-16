@@ -1,12 +1,8 @@
 # この公開リポジトリの運用設定です。Action の版は workflow の uses で管理します。
 # 汎用例: https://github.com/nimiusrd/pr-merge-readiness-action/blob/main/examples/review-policy.toml
-version = 2
+version = 3
 
 [review]
 minimum_approvals = 0
 require_resolved_threads = true
 stale_change_review_days = 30
-
-[publication]
-checks = true
-labels = "auto"

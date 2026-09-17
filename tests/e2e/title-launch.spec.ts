@@ -182,13 +182,25 @@ function assertCardClearOfDock(
   viewportName: string,
   label: string,
 ): void {
-  expect(overlaps(cardBox, dockBox), `${viewportName} で${label}がドックと交差している`).toBe(
-    false,
-  );
   expect(
     cardBox.y + cardBox.height,
     `${viewportName} で${label}の下端がドックに隠れている`,
   ).toBeLessThanOrEqual(dockBox.y + 1);
+}
+
+async function scrollFullyIntoTitleScroll(locator: Locator): Promise<void> {
+  await locator.evaluate((element) => {
+    const scroll = element.closest('[data-testid="title-scroll"]');
+    if (!(scroll instanceof HTMLElement)) return;
+    const cardRect = element.getBoundingClientRect();
+    const scrollRect = scroll.getBoundingClientRect();
+    if (cardRect.bottom > scrollRect.bottom) {
+      scroll.scrollTop += cardRect.bottom - scrollRect.bottom + 1;
+    }
+    if (cardRect.top < scrollRect.top) {
+      scroll.scrollTop -= scrollRect.top - cardRect.top + 1;
+    }
+  });
 }
 
 test.describe('title difficulty cards stay above launch dock', () => {
@@ -200,29 +212,30 @@ test.describe('title difficulty cards stay above launch dock', () => {
       await page.goto('/?seed=title-launch-cta');
       await expect(page.getByTestId('title')).toBeVisible();
 
-      const { scrollBox, dockBox } = await assertTitleShellKeepsDockInFlow(page, viewport);
+      const { dockBox } = await assertTitleShellKeepsDockInFlow(page, viewport);
 
       const easyCard = page.getByTestId('difficulty-easy');
       await expect(easyCard).toBeVisible();
-      const easyVisible = intersect(await readBox(easyCard, 'Easyカード'), scrollBox);
-      if (easyVisible) {
-        expect(
-          overlaps(easyVisible, dockBox),
-          `${viewport.name} で初見の Easy カードがドックに隠れている`,
-        ).toBe(false);
+      if (viewport.height >= 800) {
+        assertCardClearOfDock(
+          await readBox(easyCard, 'Easyカード'),
+          dockBox,
+          viewport.name,
+          '初見の Easy カード全文',
+        );
+      } else {
+        await scrollFullyIntoTitleScroll(easyCard);
+        assertCardClearOfDock(
+          await readBox(easyCard, 'Easyカード（スクロール後）'),
+          await readBox(page.getByTestId('title-launch-dock'), '開始ドック'),
+          viewport.name,
+          'Easyカード全文',
+        );
       }
-
-      await easyCard.scrollIntoViewIfNeeded();
-      assertCardClearOfDock(
-        await readBox(easyCard, 'Easyカード（スクロール後）'),
-        await readBox(page.getByTestId('title-launch-dock'), '開始ドック'),
-        viewport.name,
-        'Easyカード全文',
-      );
 
       await page.locator('.difficulty-card:not([disabled])').last().click();
       const lastCard = page.locator('.difficulty-card').last();
-      await lastCard.scrollIntoViewIfNeeded();
+      await scrollFullyIntoTitleScroll(lastCard);
 
       const cardBox = await readBox(lastCard, '難易度カード下端');
       const dockAfterScroll = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');

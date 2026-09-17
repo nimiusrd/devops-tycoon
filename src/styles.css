@@ -2843,7 +2843,7 @@ button.card.card-readonly:disabled {
 }
 .title-command .title-head {
   max-width: 760px;
-  padding: 42px 0 30px;
+  padding: 20px 0 12px;
   text-align: left;
 }
 .title-eyebrow {
@@ -2863,7 +2863,7 @@ button.card.card-readonly:disabled {
   box-shadow: 0 0 12px var(--tc-cyan);
 }
 .title-command .title-logo {
-  margin: 14px 0 16px;
+  margin: 8px 0;
   color: #f7f9ff;
   font-size: clamp(40px, 5vw, 72px);
   font-weight: 850;
@@ -2896,7 +2896,7 @@ button.card.card-readonly:disabled {
 .title-command .title-meta {
   justify-content: flex-start;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
 }
@@ -2904,7 +2904,7 @@ button.card.card-readonly:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 .title-hero-badges span {
   padding: 7px 10px;
@@ -3016,7 +3016,7 @@ button.card.card-readonly:disabled {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  padding: 14px;
+  padding: 10px;
   background: linear-gradient(180deg, rgba(120, 221, 255, 0.08), rgba(255, 255, 255, 0.02));
 }
 .title-command .difficulty-card {
@@ -3624,7 +3624,7 @@ button.card.card-readonly:disabled {
     display: none;
   }
   .title-command .title-head {
-    padding: 28px 0 20px;
+    padding: 16px 0 10px;
   }
   .title-command .title-logo {
     font-size: 46px;
@@ -3769,6 +3769,7 @@ button.card.card-readonly:disabled {
 :root[data-responsive-height='short'] .title-command .title-head {
   padding: 16px 0 12px;
 }
+:root[data-responsive-width='narrow'] .title-hero-badges,
 :root[data-responsive-height='short'] .title-hero-badges {
   display: none;
 }

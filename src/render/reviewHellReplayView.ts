@@ -112,10 +112,11 @@ export function planReviewHellReplay(blob: ReplayBlob): ReviewHellReplayView {
   const preferredKeyframeIndex = peakIndex ?? fallbackTerminalIndex(blob.keyframes);
   const reviewQueuePeak = resolvePeak(blob, preferredKeyframeIndex);
   const preferred = blob.keyframes[preferredKeyframeIndex];
-  const preferredLabel =
+  const preferredLabel = formatReplayKeyframeLabel(
     preferred?.label ??
-    (preferred ? labelForReplayKeyframe(preferred.frame, blob.outcome.diagnosis) : undefined) ??
-    'キーフレーム';
+      (preferred ? labelForReplayKeyframe(preferred.frame, blob.outcome.diagnosis) : undefined) ??
+      'キーフレーム',
+  );
 
   const bestResult: SprintResult | null | undefined =
     peakIndex !== null ? blob.keyframes[peakIndex]?.frame.lastResult : preferred?.frame.lastResult;
@@ -133,9 +134,30 @@ export function planReviewHellReplay(blob: ReplayBlob): ReviewHellReplayView {
   };
 }
 
+/** 結果画面の「レビュー待ち最大 N件」と同じ用語。 */
+export function reviewQueuePeakCountLabel(peak: number): string {
+  return `レビュー待ち最大 ${peak}件`;
+}
+
+/**
+ * 保存済みキーフレームの英語ラベルを一覧表示用の日本語へ揃える。
+ * 新規記録は `labelForReplayKeyframe` が日本語を書く。旧レコード互換。
+ */
+export function formatReplayKeyframeLabel(label: string): string {
+  const reviewPeak = /^Review peak (\d+)$/.exec(label);
+  if (reviewPeak) return reviewQueuePeakCountLabel(Number(reviewPeak[1]));
+  const sprintResult = /^Sprint result(?: (\d+))?$/.exec(label);
+  if (sprintResult) {
+    return sprintResult[1] ? `スプリント結果 ${sprintResult[1]}` : 'スプリント結果';
+  }
+  const quarterPeak = /^四半期 \(peak (\d+)\)$/.exec(label);
+  if (quarterPeak) return `四半期（${reviewQueuePeakCountLabel(Number(quarterPeak[1]))}）`;
+  return label;
+}
+
 /**
  * キーフレーム収集時の表示ラベル（RI-34‴）。
- * result は Review peak、終端は診断ラベル、他はフェーズ名。
+ * result はレビュー待ち最大、終端は診断ラベル、他はフェーズ名。
  */
 export function labelForReplayKeyframe(
   frame: RunReplayFrame,
@@ -144,15 +166,17 @@ export function labelForReplayKeyframe(
   if (frame.phase === 'result') {
     const peak = frame.lastResult?.reviewQueueMax ?? frame.totals.reviewQueuePeak;
     if (typeof peak === 'number' && Number.isFinite(peak)) {
-      return `Review peak ${peak}`;
+      return reviewQueuePeakCountLabel(peak);
     }
-    return 'Sprint result';
+    return 'スプリント結果';
   }
   if (frame.phase === 'setup') return '編成';
   if (frame.phase === 'draft') return 'カードドラフト';
   if (frame.phase === 'quarterReview') {
     const peak = frame.totals.reviewQueuePeak;
-    return Number.isFinite(peak) && peak > 0 ? `四半期 (peak ${peak})` : '四半期レビュー';
+    return Number.isFinite(peak) && peak > 0
+      ? `四半期（${reviewQueuePeakCountLabel(peak)}）`
+      : '四半期レビュー';
   }
   if (frame.phase === 'won' || frame.phase === 'lost') {
     if (diagnosis === 'reviewHell') return diagnosisView('reviewHell').label;
@@ -180,7 +204,7 @@ export function planReviewHellResultSummary(
   return {
     show: true,
     title: 'レビュー地獄リプレイ',
-    peakLabel: `レビュー待ち最大 ${result.reviewQueueMax}件`,
+    peakLabel: reviewQueuePeakCountLabel(result.reviewQueueMax),
     lesson: REVIEW_HELL_LESSON,
   };
 }

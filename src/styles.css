@@ -1277,6 +1277,13 @@ body:has(.overlay-contained) {
 .sprint-result-card .result-hero {
   flex: 0 0 auto;
 }
+.sprint-result-card .result-hero .result-title {
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.sprint-result-card .result-hero .result-title .result-section-label {
+  text-align: center;
+}
 .overlay-contained .sprint-result-card {
   overflow: hidden;
 }

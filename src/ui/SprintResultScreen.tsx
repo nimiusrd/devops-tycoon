@@ -1,7 +1,7 @@
 /**
  * スプリントリザルト画面（SPEC 第4.6 / #470）。
  *
- * 評定と主CTAを先に見せ、完了・出荷・シニア体力・炎上を要約し、内訳は折りたたむ。
+ * 評定・称号と主CTAを先に見せ、完了・出荷・シニア体力・炎上を要約し、内訳は折りたたむ。
  */
 import { useRef, useState } from 'react';
 import { getAction } from '../data/actions';
@@ -17,7 +17,6 @@ import type { ActionId, SprintResult } from '../sim/types';
 import { BaselineComparisonChart } from './BaselineComparisonChart';
 import { SprintTimelineChart } from './SprintTimelineChart';
 import { RewardCeremony } from './JuicyEffects';
-import { nextTitleCeremonyStarted } from './sprintResultCeremony';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { VisualIcon, VisualIconText } from './VisualIcon';
 
@@ -96,7 +95,6 @@ export function SprintResultScreen({
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [titleCeremonyStarted, setTitleCeremonyStarted] = useState(false);
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
   const gradeView = planSprintGradeView(result);
@@ -152,6 +150,17 @@ export function SprintResultScreen({
                 </div>
               ))}
             </dl>
+            <div className="result-title">
+              <p className="result-section-label">称号</p>
+              <RewardCeremony
+                kind="title"
+                title={result.title}
+                detail="このスプリントの称号を獲得"
+              />
+              <p className="result-title-value" data-testid="result-title">
+                「{result.title}」
+              </p>
+            </div>
             <div className="result-actions overlay-actions">
               <button
                 type="button"
@@ -189,26 +198,9 @@ export function SprintResultScreen({
             className="result-details"
             data-testid="result-details"
             open={detailsOpen}
-            onToggle={(event) => {
-              const open = event.currentTarget.open;
-              setDetailsOpen(open);
-              setTitleCeremonyStarted((started) => nextTitleCeremonyStarted(started, open));
-            }}
+            onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
           >
             <summary>内訳とタイムライン</summary>
-            <div className="result-title">
-              <p className="result-section-label">称号</p>
-              {titleCeremonyStarted ? (
-                <RewardCeremony
-                  kind="title"
-                  title={result.title}
-                  detail="このスプリントの称号を獲得"
-                />
-              ) : null}
-              <p className="result-title-value" data-testid="result-title">
-                「{result.title}」
-              </p>
-            </div>
             <dl className="result-rows">
               {buildDetailRows(result).map((row) => (
                 <div className="result-row" key={row.label}>

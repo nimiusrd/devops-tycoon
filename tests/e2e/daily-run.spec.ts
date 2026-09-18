@@ -112,6 +112,8 @@ test('Daily無介入 Sprint 1 は評価 B でも危機の読みと内訳が見�
   });
 
   await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-title')).toContainText('シニア過労メーカー');
+  await expect(page.getByTestId('reward-ceremony-title')).toBeVisible();
   await openSprintResultDetails(page);
   await expect(page.getByTestId('result-grade')).toHaveText('B');
   await expect(page.getByTestId('result-grade-caption')).toContainText(
@@ -120,7 +122,6 @@ test('Daily無介入 Sprint 1 は評価 B でも危機の読みと内訳が見�
   await expect(page.getByTestId('result-grade-breakdown')).toBeVisible();
   await expect(page.getByTestId('result-grade-tip')).toContainText('出荷点を母数');
   await expect(page.getByTestId('result-diagnosis-text')).toContainText('燃え尽き寸前');
-  await expect(page.getByTestId('result-title')).toContainText('シニア過労メーカー');
 });
 
 test('中断ランがあるときデイリー開始は確認し、戻るとセーブを残す', async ({ page }) => {

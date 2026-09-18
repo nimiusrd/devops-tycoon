@@ -19,7 +19,7 @@ import {
   SprintResultScreen,
   type SprintResultScreenProps,
 } from '../../../src/ui/SprintResultScreen';
-import { nextTitleCeremonyStarted } from '../../../src/ui/sprintResultCeremony';
+import { RewardCeremony } from '../../../src/ui/JuicyEffects';
 import { completeSprint, makeOrg } from '../helpers/runEngineFixtures';
 
 type ElementProps = Record<string, unknown> & { children?: ReactNode };
@@ -54,6 +54,9 @@ function mountResult(overrides: Partial<SprintResultScreenProps> = {}) {
     find,
     onContinue,
     has: (id: string) => nodes.some((item) => item.props['data-testid'] === id),
+    ceremony(kind: string) {
+      return nodes.find((item) => item.type === RewardCeremony && item.props.kind === kind);
+    },
     row(label: string) {
       const row = nodes.find(
         (item) =>
@@ -76,15 +79,6 @@ const emptyGrowth: GrowthOutcome = {
   wentOnLeave: [],
   docGain: 0,
 };
-
-describe('SprintResultScreen の称号演出', () => {
-  it('最初の展開だけで開始し、閉じても再マウントしない', () => {
-    expect(nextTitleCeremonyStarted(false, false)).toBe(false);
-    expect(nextTitleCeremonyStarted(false, true)).toBe(true);
-    expect(nextTitleCeremonyStarted(true, false)).toBe(true);
-    expect(nextTitleCeremonyStarted(true, true)).toBe(true);
-  });
-});
 
 describe('SprintResultScreen の結果表示と進行', () => {
   it('集計値と正の介入回数を表示し、カードドラフトへ進む', () => {
@@ -119,8 +113,12 @@ describe('SprintResultScreen の結果表示と進行', () => {
     expect(screen.find('sprint-result').props['aria-label']).toBe('スプリント結果');
     expect(content(screen.find('result-hero'))).toContain('スプリント結果');
     expect(content(screen.find('result-hero'))).not.toContain('SPRINT RESULT');
+    expect(content(screen.find('result-hero'))).toContain('「小さく出すチーム」');
     expect(screen.has('result-details')).toBe(true);
-    expect(screen.has('reward-ceremony-title')).toBe(false);
+    expect(screen.ceremony('title')?.props).toMatchObject({
+      title: '小さく出すチーム',
+      detail: 'このスプリントの称号を獲得',
+    });
     expect(screen.has('result-restart')).toBe(false);
     screen.click('result-continue');
     expect(screen.onContinue).toHaveBeenCalledOnce();

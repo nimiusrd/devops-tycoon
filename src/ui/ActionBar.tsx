@@ -21,6 +21,7 @@ import { INTERRUPT_REVIEW_COUNT } from '../sim/actions';
 import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { ManagerPortrait } from './ManagerPortrait';
 import { useResponsiveMode } from './responsiveMode';
+import { TermTip } from './TermTip';
 import { VisualIcon, VisualIconText } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1000;
@@ -230,7 +231,9 @@ export function ActionBar({
           <ManagerPortrait />
         </div>
         <div className="focus-body">
-          <div className="focus-label">マネジメント集中力</div>
+          <div className="focus-label">
+            <TermTip termId="focus" placement="up" />
+          </div>
           <div className="focus-energy" data-testid="focus">
             <VisualIcon name="focus" size="header" />
             {focus}

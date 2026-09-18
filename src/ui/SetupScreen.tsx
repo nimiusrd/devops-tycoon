@@ -14,6 +14,7 @@ import type { RunState } from '../sim/run/types';
 import { DeckBar } from './DeckBar';
 import { FormationGrid } from './FormationScreen';
 import { QuarterOkr } from './QuarterOkr';
+import { TermTip } from './TermTip';
 
 export interface SetupScreenProps {
   state: RunState;
@@ -75,6 +76,11 @@ export function SetupScreen({
                   ? '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。'
                   : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'}
             </p>
+            <div className="setup-term-tips" data-testid="setup-term-tips">
+              <TermTip termId="pr" />
+              <TermTip termId="aiLiteracy" />
+              <TermTip termId="rework" />
+            </div>
           </div>
           <button
             type="button"

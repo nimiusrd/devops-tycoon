@@ -9,12 +9,21 @@
  */
 import { useEffect, useState } from 'react';
 import type { GameHandle } from '../game';
+import type { GlossaryTermId } from '../data/glossary';
 import { TUTORIAL_STEPS, type TutorialStepId } from './tutorial';
+import { TermTip } from './TermTip';
 
 export interface TutorialGuideProps {
   game: GameHandle;
   onDismiss: () => void;
 }
+
+const STEP_GLOSSARY: Record<TutorialStepId, readonly GlossaryTermId[]> = {
+  'action-bar': ['focus', 'spread'],
+  'senior-hp': ['seniorHp'],
+  'jam-meter': ['pr', 'rework'],
+  'combo-gauge': [],
+};
 
 export function TutorialGuide({ game, onDismiss }: TutorialGuideProps) {
   const [index, setIndex] = useState(0);
@@ -63,6 +72,13 @@ export function TutorialGuide({ game, onDismiss }: TutorialGuideProps) {
           {step.title}
         </h3>
         <p className="tutorial-guide-body">{step.body}</p>
+        {STEP_GLOSSARY[step.id].length > 0 ? (
+          <div className="tutorial-guide-terms" data-testid={`tutorial-terms-${step.id}`}>
+            {STEP_GLOSSARY[step.id].map((termId) => (
+              <TermTip key={termId} termId={termId} testId={`tutorial-term-${termId}`} />
+            ))}
+          </div>
+        ) : null}
         <div className="tutorial-guide-actions">
           <button type="button" className="btn" data-testid="tutorial-skip" onClick={onDismiss}>
             スキップ

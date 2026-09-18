@@ -5022,6 +5022,73 @@ button.card.card-readonly:disabled {
   justify-content: flex-end;
   gap: 8px;
 }
+.tutorial-guide-terms,
+.setup-term-tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0 0 12px;
+}
+.term-tip {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+}
+.term-tip-summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 2px;
+  cursor: help;
+  list-style: none;
+  color: var(--sky);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  font: inherit;
+}
+.term-tip-summary::-webkit-details-marker,
+.term-tip-summary::marker {
+  display: none;
+  content: '';
+}
+.term-tip-summary:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+.term-tip-panel {
+  position: static;
+  z-index: 6;
+  min-width: 0;
+  max-width: min(36rem, 100%);
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.setup-term-tips .term-tip[open],
+.tutorial-guide-terms .term-tip[open] {
+  flex: 1 0 100%;
+}
+.term-tip[data-placement='up'] .term-tip-panel {
+  position: absolute;
+  left: 0;
+  right: auto;
+  bottom: calc(100% + 6px);
+  top: auto;
+  margin: 0;
+  min-width: 12em;
+  max-width: min(16em, 70vw);
+}
+details.term-tip:not([open]) .term-tip-panel {
+  display: none;
+}
 body[data-tutorial-step='action-bar'] [data-testid='action-bar'],
 body[data-tutorial-step='senior-hp'] [data-testid='hud-seniorHp'],
 body[data-tutorial-step='jam-meter'] [data-testid='jam-meter'],

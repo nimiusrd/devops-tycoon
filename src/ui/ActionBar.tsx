@@ -232,7 +232,7 @@ export function ActionBar({
         </div>
         <div className="focus-body">
           <div className="focus-label">
-            <TermTip termId="focus" />
+            <TermTip termId="focus" placement="up" />
           </div>
           <div className="focus-energy" data-testid="focus">
             <VisualIcon name="focus" size="header" />

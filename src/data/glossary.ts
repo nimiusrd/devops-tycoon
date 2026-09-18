@@ -33,11 +33,11 @@ export const GLOSSARY: Record<GlossaryTermId, GlossaryEntry> = {
   },
   seniorHp: {
     term: 'シニア体力',
-    definition: '尽きると敗北する組織全体の余力。',
+    definition: '1%以下で敗北する組織全体の余力。',
   },
   aiLiteracy: {
     term: 'AIリテラシー',
-    definition: 'AIを使いこなす力。低いと依存だけ残る。',
+    definition: '低いと手戻りが増える。依存が高いと敗北する。',
   },
   rework: {
     term: '手戻り',

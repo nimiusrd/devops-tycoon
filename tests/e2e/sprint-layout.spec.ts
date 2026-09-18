@@ -540,12 +540,10 @@ async function stabilizeDomForScreenshot(page: Page): Promise<void> {
       }
     `,
   });
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      }),
-  );
+  await page.evaluate(async () => {
+    await document.fonts.load('16px "WenQuanYi Zen Hei"');
+    await document.fonts.ready;
+  });
 }
 
 async function waitForLayoutFrame(page: Page): Promise<void> {

@@ -27,13 +27,13 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: 'action-bar',
     targetTestId: 'action-bar',
     title: '介入バー',
-    body: '下のカードで現場に介入する。集中力を消費する。',
+    body: '下のカードで現場に介入する。ペアレビューでリテラシーを上げる。',
   },
   {
     id: 'senior-hp',
     targetTestId: 'hud-seniorHp',
     title: 'シニア体力',
-    body: '0になると負け。炎上の自動鎮火で大きく減る。',
+    body: '1%以下で負け。炎上の自動鎮火で大きく減る。',
   },
   {
     id: 'jam-meter',

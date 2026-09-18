@@ -21,6 +21,9 @@ describe('glossary（#469）', () => {
     expect(GLOSSARY.aiLiteracy.term).toBe('AIリテラシー');
     expect(GLOSSARY.rework.term).toBe('手戻り');
     expect(GLOSSARY.focus.term).toBe('マネジメント集中力');
+    expect(GLOSSARY.aiLiteracy.definition).toContain('手戻り');
+    expect(GLOSSARY.aiLiteracy.definition).toContain('敗北');
+    expect(GLOSSARY.aiLiteracy.definition).not.toContain('依存だけ');
     for (const id of GLOSSARY_TERM_IDS) {
       const { term, definition } = GLOSSARY[id];
       expect(term.length).toBeGreaterThan(0);

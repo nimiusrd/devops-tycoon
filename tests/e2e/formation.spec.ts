@@ -22,9 +22,13 @@ test('編成（Setup）画面でメンバーの配置と AI 配布を切り替�
   await rework.locator('summary').click();
   await expect(page.getByTestId('term-tip-rework-panel')).toBeVisible();
   await expect(page.getByTestId('term-tip-rework-panel')).toContainText('作り直し');
-  await page.keyboard.press('Escape');
+  await page.getByTestId('term-tip-pr').locator('summary').click();
+  await expect(page.getByTestId('term-tip-pr-panel')).toBeVisible();
   await expect(page.getByTestId('term-tip-rework-panel')).toBeHidden();
-  await expect(rework.locator('summary')).toBeFocused();
+  await page.getByTestId('term-tip-pr').locator('summary').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('term-tip-pr-panel')).toBeHidden();
+  await expect(page.getByTestId('term-tip-pr').locator('summary')).toBeFocused();
 
   // 初期ロスターの3メンバーが表示される（m0/m1/m2）。
   await expect(page.getByTestId('formation-member-m0')).toBeVisible();

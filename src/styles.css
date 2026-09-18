@@ -5118,6 +5118,16 @@ button.card.card-readonly:disabled {
 .tutorial-guide-terms .term-tip[open] {
   flex: 1 0 100%;
 }
+.term-tip[data-placement='up'] .term-tip-panel {
+  position: absolute;
+  left: 0;
+  right: auto;
+  bottom: calc(100% + 6px);
+  top: auto;
+  margin: 0;
+  min-width: 12em;
+  max-width: min(16em, 70vw);
+}
 details.term-tip:not([open]) .term-tip-panel {
   display: none;
 }

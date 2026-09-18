@@ -24,6 +24,8 @@ describe('TermTip', () => {
     const summary = nodes.find((node) => node.type === 'summary');
     const panel = nodes.find((node) => node.props['data-testid'] === 'term-tip-rework-panel');
     expect(details?.type).toBe('details');
+    expect(details?.props.name).toBe('glossary-term-tip');
+    expect(details?.props['data-placement']).toBe('inline');
     expect(content(summary)).toBe('手戻り');
     expect(content(panel)).toBe(GLOSSARY.rework.definition);
     expect(panel?.props.role).toBe('note');
@@ -62,5 +64,13 @@ describe('TermTip', () => {
     (details?.props.onKeyDown as (next: typeof event) => void)(event);
     expect(event.preventDefault).not.toHaveBeenCalled();
     expect(root.querySelector).not.toHaveBeenCalled();
+  });
+
+  it('介入バー向けは上向き配置を付け、同じ name で排他開閉する', () => {
+    const tree = TermTip({ termId: 'focus', placement: 'up' });
+    const nodes = elements(tree);
+    const details = nodes.find((node) => node.props['data-testid'] === 'term-tip-focus');
+    expect(details?.props.name).toBe('glossary-term-tip');
+    expect(details?.props['data-placement']).toBe('up');
   });
 });

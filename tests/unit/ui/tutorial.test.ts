@@ -46,12 +46,12 @@ describe('チュートリアルクエリ（RI-60）', () => {
       expect(body.split('。').filter(Boolean).length).toBeLessThanOrEqual(2);
     }
     const actionBar = TUTORIAL_STEPS.find((step) => step.id === 'action-bar');
-    expect(actionBar?.body).toBe('下のカードで現場に介入する。集中力を消費する。');
+    expect(actionBar?.body).toBe('下のカードで現場に介入する。ペアレビューでリテラシーを上げる。');
     expect(actionBar?.body).not.toContain('緊急対応');
     expect(actionBar?.body).not.toContain('アンドン');
     expect(actionBar?.body).not.toContain('AIスロットル');
     const seniorHp = TUTORIAL_STEPS.find((step) => step.id === 'senior-hp');
-    expect(seniorHp?.body).toBe('0になると負け。炎上の自動鎮火で大きく減る。');
+    expect(seniorHp?.body).toBe('1%以下で負け。炎上の自動鎮火で大きく減る。');
     expect(seniorHp?.body).toContain('自動鎮火');
     expect(seniorHp?.body).not.toContain('抽象値');
     expect(seniorHp?.body).not.toContain('休息');

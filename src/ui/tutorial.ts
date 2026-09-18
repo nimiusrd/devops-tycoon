@@ -33,7 +33,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: 'senior-hp',
     targetTestId: 'hud-seniorHp',
     title: 'シニア体力',
-    body: '1%以下で負け。炎上の自動鎮火で大きく減る。',
+    body: '1%以下で負け。自動鎮火前に緊急対応で鎮火する。',
   },
   {
     id: 'jam-meter',

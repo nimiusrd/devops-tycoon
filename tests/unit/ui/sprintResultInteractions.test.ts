@@ -114,6 +114,7 @@ describe('SprintResultScreen の結果表示と進行', () => {
     expect(content(screen.find('result-hero'))).toContain('スプリント結果');
     expect(content(screen.find('result-hero'))).not.toContain('SPRINT RESULT');
     expect(content(screen.find('result-hero'))).toContain('「小さく出すチーム」');
+    expect(content(screen.find('result-hero'))).toContain('レビュー介入が出荷を支えた。');
     expect(screen.has('result-details')).toBe(true);
     expect(screen.ceremony('title')?.props).toMatchObject({
       title: '小さく出すチーム',

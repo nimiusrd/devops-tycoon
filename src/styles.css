@@ -1284,6 +1284,12 @@ body:has(.overlay-contained) {
 .sprint-result-card .result-hero .result-title .result-section-label {
   text-align: center;
 }
+.sprint-result-card .result-hero .result-diagnosis,
+.sprint-result-card .result-hero .result-growth,
+.sprint-result-card .result-hero .result-burn-cause,
+.sprint-result-card .result-hero .result-intervention-analysis {
+  margin-bottom: 0.65rem;
+}
 .overlay-contained .sprint-result-card {
   overflow: hidden;
 }

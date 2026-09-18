@@ -1,7 +1,7 @@
 /**
  * スプリントリザルト画面（SPEC 第4.6 / #470）。
  *
- * 評定・称号と主CTAを先に見せ、完了・出荷・シニア体力・炎上を要約し、内訳は折りたたむ。
+ * 評定・称号・診断と主CTAを先に見せ、完了・出荷・シニア体力・炎上を要約し、数値内訳は折りたたむ。
  */
 import { useRef, useState } from 'react';
 import { getAction } from '../data/actions';
@@ -161,6 +161,35 @@ export function SprintResultScreen({
                 「{result.title}」
               </p>
             </div>
+            <div className="result-diagnosis">
+              <p className="result-section-label">診断</p>
+              <p data-testid="result-diagnosis-text">{result.diagnosis}</p>
+            </div>
+            {growth && hasGrowthNews(growth) && (
+              <div className="result-growth" data-testid="result-growth">
+                <p className="result-section-label">チームの動き</p>
+                <ul className="growth-list">
+                  {growth.promotions.map((p) => (
+                    <li key={`p-${p.id}`} className="growth-promote">
+                      <VisualIcon name="ceremonyPromote" size="hud" />
+                      {p.name} が{rankLabel(p.to)}に昇格
+                    </li>
+                  ))}
+                  {growth.wentOnLeave.map((w) => (
+                    <li key={`l-${w.id}`} className="growth-leave">
+                      <VisualIcon name="ceremonyLeave" size="hud" />
+                      {w.name} が休職に入った
+                    </li>
+                  ))}
+                  {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
+                    <li className="growth-level">
+                      <VisualIcon name="ceremonyLevelUp" size="hud" />
+                      {growth.leveledUp.length}人がレベルアップ
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
             <div className="result-actions overlay-actions">
               <button
                 type="button"
@@ -193,37 +222,6 @@ export function SprintResultScreen({
                 {continueDisabledReason}
               </p>
             ) : null}
-          </div>
-          <details
-            className="result-details"
-            data-testid="result-details"
-            open={detailsOpen}
-            onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
-          >
-            <summary>内訳とタイムライン</summary>
-            <dl className="result-rows">
-              {buildDetailRows(result).map((row) => (
-                <div className="result-row" key={row.label}>
-                  <dt>{row.label}</dt>
-                  <dd>{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <div className="result-grade-breakdown" data-testid="result-grade-breakdown">
-              <p className="result-section-label">評価の内訳</p>
-              <dl className="result-rows result-analysis-rows">
-                {gradeView.rows.map((row) => (
-                  <div className="result-row" key={row.label}>
-                    <dt>{row.label}</dt>
-                    <dd>{row.value}</dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="result-analysis-tip" data-testid="result-grade-tip">
-                {gradeView.tip}
-              </p>
-            </div>
-            <SprintTimelineChart timeline={result.timeline} events={result.events} />
             {burnLog.showSection && (
               <div className="result-burn-cause" data-testid="result-burn-cause">
                 <p className="result-section-label">なぜ燃えたか</p>
@@ -280,36 +278,38 @@ export function SprintResultScreen({
                 </p>
               </div>
             )}
-            <BaselineComparisonChart result={result} />
-            <div className="result-diagnosis">
-              <p className="result-section-label">診断</p>
-              <p data-testid="result-diagnosis-text">{result.diagnosis}</p>
+          </div>
+          <details
+            className="result-details"
+            data-testid="result-details"
+            open={detailsOpen}
+            onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+          >
+            <summary>内訳とタイムライン</summary>
+            <dl className="result-rows">
+              {buildDetailRows(result).map((row) => (
+                <div className="result-row" key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="result-grade-breakdown" data-testid="result-grade-breakdown">
+              <p className="result-section-label">評価の内訳</p>
+              <dl className="result-rows result-analysis-rows">
+                {gradeView.rows.map((row) => (
+                  <div className="result-row" key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="result-analysis-tip" data-testid="result-grade-tip">
+                {gradeView.tip}
+              </p>
             </div>
-            {growth && hasGrowthNews(growth) && (
-              <div className="result-growth" data-testid="result-growth">
-                <p className="result-section-label">チームの動き</p>
-                <ul className="growth-list">
-                  {growth.promotions.map((p) => (
-                    <li key={`p-${p.id}`} className="growth-promote">
-                      <VisualIcon name="ceremonyPromote" size="hud" />
-                      {p.name} が{rankLabel(p.to)}に昇格
-                    </li>
-                  ))}
-                  {growth.wentOnLeave.map((w) => (
-                    <li key={`l-${w.id}`} className="growth-leave">
-                      <VisualIcon name="ceremonyLeave" size="hud" />
-                      {w.name} が休職に入った
-                    </li>
-                  ))}
-                  {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
-                    <li className="growth-level">
-                      <VisualIcon name="ceremonyLevelUp" size="hud" />
-                      {growth.leveledUp.length}人がレベルアップ
-                    </li>
-                  )}
-                </ul>
-              </div>
-            )}
+            <SprintTimelineChart timeline={result.timeline} events={result.events} />
+            <BaselineComparisonChart result={result} />
           </details>
         </div>
       </div>

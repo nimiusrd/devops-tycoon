@@ -134,7 +134,7 @@ describe('BaselineComparisonChart', () => {
       data: [
         { name: '出荷', baseline: 42, actual: 50 },
         { name: '延焼', baseline: 2, actual: 0 },
-        { name: 'Max Combo', baseline: 3, actual: 5 },
+        { name: '最大コンボ', baseline: 3, actual: 5 },
       ],
       margin: { top: 8, right: 8, left: 0, bottom: 0 },
     });
@@ -259,6 +259,16 @@ describe('JuicyEffects', () => {
     expect(byType(terse, 'small')).toHaveLength(0);
     expect(mocks.playSfx).toHaveBeenCalledTimes(2);
     expect(mocks.playSfx).toHaveBeenNthCalledWith(1, 'ceremony');
+  });
+
+  it('動きを減らす設定では入場の変形を即時化する', () => {
+    mocks.reducedMotion = true;
+    const tree = expand(RewardCeremony({ kind: 'title', title: '新称号' }));
+    expect(find(tree, 'reward-ceremony-title').props).toMatchObject({
+      initial: { opacity: 1, scale: 1, y: 0 },
+      animate: { opacity: 1, scale: 1, y: 0 },
+      transition: { duration: 0 },
+    });
   });
 });
 

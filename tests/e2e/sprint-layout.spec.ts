@@ -1192,7 +1192,7 @@ test.describe('RI-94 レイアウト契約', () => {
     await advanceCurrentSprintToResult(page);
     await expect(page.getByTestId('sprint-result')).toBeVisible();
     await expect(
-      page.locator('.result-row').filter({ hasText: 'シニア体力' }).locator('dd'),
+      page.locator('.result-highlights .result-row').filter({ hasText: 'シニア体力' }).locator('dd'),
     ).toHaveText(/^\d+$/);
     await stabilizeDomForScreenshot(page);
 
@@ -1250,6 +1250,7 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
     await expect(page.getByTestId('result-title')).toBeVisible();
     await expect(page.getByTestId('reward-ceremony-title')).toBeVisible();
+    await expect(page.getByTestId('result-diagnosis-text')).toBeVisible();
 
     await openSprintResultDetails(page);
 

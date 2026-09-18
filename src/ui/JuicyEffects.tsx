@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAudio } from '../audio/useAudio';
 
 export type RewardCeremonyKind = 'relic' | 'evolution' | 'grade-s' | 'title';
@@ -47,6 +47,8 @@ export function RewardCeremony({
   detail?: string;
 }) {
   const { playSfx } = useAudio();
+  const reduceMotion = useReducedMotion() ?? false;
+  const settled = { opacity: 1, scale: 1, y: 0 };
   useEffect(() => {
     playSfx('ceremony');
   }, [kind, title, playSfx]);
@@ -55,9 +57,9 @@ export function RewardCeremony({
     <motion.div
       className={`reward-ceremony reward-ceremony-${kind}`}
       data-testid={`reward-ceremony-${kind}`}
-      initial={{ opacity: 0, scale: 0.78, y: 12 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 340, damping: 20 }}
+      initial={reduceMotion ? settled : { opacity: 0, scale: 0.78, y: 12 }}
+      animate={settled}
+      transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 340, damping: 20 }}
     >
       <span className="reward-ceremony-sparkles" aria-hidden="true">
         ✦ · ✧ · ✦

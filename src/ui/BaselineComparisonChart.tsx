@@ -28,14 +28,18 @@ export interface BaselineComparisonChartProps {
   result: SprintResult;
 }
 
-function chartData(result: SprintResult): { name: string; baseline: number; actual: number }[] {
+function chartData(
+  result: SprintResult,
+  view: BaselineComparisonView,
+): { name: string; baseline: number; actual: number }[] {
   const baseline = result.baseline;
   if (!baseline) return [];
-  return [
-    { name: '出荷', baseline: baseline.delivered, actual: result.delivered },
-    { name: '延焼', baseline: baseline.spread, actual: result.spread },
-    { name: 'Max Combo', baseline: baseline.maxCombo, actual: result.maxCombo },
-  ];
+  const values = {
+    delivered: { baseline: baseline.delivered, actual: result.delivered },
+    spread: { baseline: baseline.spread, actual: result.spread },
+    maxCombo: { baseline: baseline.maxCombo, actual: result.maxCombo },
+  };
+  return view.rows.map((row) => ({ name: row.label, ...values[row.key] }));
 }
 
 function BaselineRows({ view }: { view: BaselineComparisonView }) {
@@ -66,7 +70,7 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
   const view = planBaselineComparison(result);
   if (!view.showSection || !result.baseline) return null;
 
-  const data = chartData(result);
+  const data = chartData(result, view);
 
   return (
     <div className="result-baseline-comparison" data-testid="result-baseline-comparison">

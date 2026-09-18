@@ -67,10 +67,10 @@ describe('sprintGradeView', () => {
     expect(view.caption).toBe('大きな危機を出しつつ出荷した（健全比 76%）');
     expect(view.rows).toEqual([
       { label: '出荷', value: '576pt' },
-      { label: 'Rework', value: '−15pt（3件）' },
-      { label: 'Incident', value: '−60pt（10件）' },
+      { label: '手戻り', value: '−15pt（3件）' },
+      { label: '炎上', value: '−60pt（10件）' },
       { label: '延焼', value: '−10pt（1回）' },
-      { label: 'シニアHP', value: '−54.6pt（-98）' },
+      { label: 'シニア体力', value: '−54.6pt（-98）' },
       { label: '健全比', value: '76% → B' },
     ]);
     expect(view.tip).toContain('出荷点を母数');
@@ -96,7 +96,7 @@ describe('sprintGradeView', () => {
     expect(view.caption).toBe('出荷に対する健全比 96%');
     expect(view.rows).toEqual([
       { label: '出荷', value: '100pt' },
-      { label: 'Rework', value: '−5pt（1件）' },
+      { label: '手戻り', value: '−5pt（1件）' },
       { label: '安定介入', value: '+0.9%（2回）' },
       { label: '健全比', value: '96% → S' },
     ]);
@@ -194,8 +194,8 @@ describe('sprintGradeView', () => {
       }),
     );
 
-    expect(view.rows.find((row) => row.label === 'シニアHP')).toEqual({
-      label: 'シニアHP',
+    expect(view.rows.find((row) => row.label === 'シニア体力')).toEqual({
+      label: 'シニア体力',
       value: '−54.9pt（-98）',
     });
     expect(view.ratioPct).toBe(Math.round(gradeRatio * 100));
@@ -219,7 +219,7 @@ describe('sprintGradeView', () => {
       { label: '出荷', value: '100pt' },
       { label: '評価', value: 'S' },
     ]);
-    expect(view.rows.some((row) => row.label === 'Rework')).toBe(false);
+    expect(view.rows.some((row) => row.label === '手戻り')).toBe(false);
     expect(view.tip).toContain('評価内訳の記録がありません');
     expect(view.tip).not.toContain('ペナルティが少なく');
   });
@@ -243,7 +243,7 @@ describe('sprintGradeView', () => {
     expect(view.ratioPct).toBe(80);
     expect(view.rows).toEqual([
       { label: '出荷', value: '100pt' },
-      { label: 'Rework', value: '−20pt（1件）' },
+      { label: '手戻り', value: '−20pt（1件）' },
       { label: '健全比', value: '80% → A' },
     ]);
   });

@@ -584,7 +584,7 @@ async function exposeResultCardForScreenshot(page: Page): Promise<void> {
         flex: none !important;
       }
       .result-overlay > .sprint-result-card {
-        min-height: 408px !important;
+        min-height: 528px !important;
       }
       .overlay-scroll {
         overflow: visible !important;

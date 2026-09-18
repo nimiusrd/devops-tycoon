@@ -41,21 +41,23 @@ describe('チュートリアルクエリ（RI-60）', () => {
     expect(TUTORIAL_STEPS.find((step) => step.id === 'senior-hp')).toMatchObject({
       targetTestId: 'hud-seniorHp',
     });
+    const bodies = TUTORIAL_STEPS.map((step) => step.body);
+    for (const body of bodies) {
+      expect(body.split('。').filter(Boolean).length).toBeLessThanOrEqual(2);
+    }
     const actionBar = TUTORIAL_STEPS.find((step) => step.id === 'action-bar');
-    expect(actionBar?.body).toContain('緊急対応');
-    expect(actionBar?.body).toContain('アンドン');
-    expect(actionBar?.body).toContain('AIスロットル');
+    expect(actionBar?.body).toBe('下のカードで現場に介入する。ペアレビューでリテラシーを上げる。');
+    expect(actionBar?.body).not.toContain('緊急対応');
+    expect(actionBar?.body).not.toContain('アンドン');
+    expect(actionBar?.body).not.toContain('AIスロットル');
     const seniorHp = TUTORIAL_STEPS.find((step) => step.id === 'senior-hp');
-    expect(seniorHp?.body).toContain('抽象値');
+    expect(seniorHp?.body).toBe('1%以下で負け。自動鎮火前に緊急対応で鎮火する。');
     expect(seniorHp?.body).toContain('自動鎮火');
-    expect(seniorHp?.body).toContain('燃え尽き');
-    expect(seniorHp?.body).toContain('休息');
-    expect(seniorHp?.body).not.toContain('緊急対応');
+    expect(seniorHp?.body).toContain('緊急対応');
+    expect(seniorHp?.body).not.toContain('抽象値');
+    expect(seniorHp?.body).not.toContain('休息');
     expect(seniorHp?.body).not.toContain('アンドン');
     expect(seniorHp?.body).not.toContain('AIスロットル');
-    expect(seniorHp?.body).not.toContain('リテラシーが低いとき');
-    expect(seniorHp?.body).not.toContain('工程ずれ');
-    expect(seniorHp?.body).not.toContain('アンドンやAIスロットルで流入');
   });
 
   it('ensureTutorialQuery は未指定時だけ off を付与し明示値は尊重する', () => {

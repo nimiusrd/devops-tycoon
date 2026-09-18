@@ -21,10 +21,10 @@ import type { DiagnosisType, DifficultyId, QuarterOutcome, WinType } from '../si
 import { CURRENT_RUN_RULESET, type RunRulesetIdentity } from './runPersistence';
 
 /**
- * 現行チュートリアル内容の版（RI-67）。
+ * 現行チュートリアル内容の版（RI-67 / #467）。
  * `src/ui/tutorial.ts` のガイド内容と同期させる。
  */
-export const TUTORIAL_CONTENT_VERSION = 6;
+export const TUTORIAL_CONTENT_VERSION = 9;
 
 /** 旧 RI-60（3ステップ）完了セーブの版。 */
 export const LEGACY_TUTORIAL_VERSION = 1;

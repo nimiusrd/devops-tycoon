@@ -4,7 +4,6 @@
  * sim 決定論の外側（UI 層のみ）。`?tutorial=` は E2E / 強制再表示用のフック。
  */
 import { TUTORIAL_CONTENT_VERSION } from '../state/meta';
-import { SENIOR_HP_HOWTO_BODY } from './howToPlayContent';
 
 export { LEGACY_TUTORIAL_VERSION, TUTORIAL_CONTENT_VERSION } from '../state/meta';
 
@@ -22,19 +21,19 @@ export interface TutorialStep {
   body: string;
 }
 
-/** 初回ラン限定ガイド（介入バー → シニア体力 → レビュー渋滞 → コンボ）。 */
+/** 初回ラン限定ガイド（介入バー → シニア体力 → レビュー渋滞 → コンボ）。各 step は 2 文までに抑える。 */
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     id: 'action-bar',
     targetTestId: 'action-bar',
     title: '介入バー',
-    body: 'マネジメント集中力を使って現場へ介入します。緊急対応は複数炎上や延焼直前（タイマーが短いとき）だけが本命で、余裕のある先消しは高コストです。アンドンは既存キューを捌く猶予、AIスロットルは新規タスクをAIなしにします。点火の抑制はリテラシーが低いときだけ、手戻りの抑制はワークフローが未熟なときだけで効きます。前提度が高く成熟しているときは工程ずれで手戻りが増えることがあります。品質・PR分割は手戻り率だけを下げます。ペアレビューは詰まったPRを処理しつつAI Literacyを上げ、依存度が高くてもリテラシーが低いままだと敗北するので早めに使いましょう。編成で review や稼働人数を増やすと、レビュー単価とシニア消耗が薄まり燃え尽きにくくなります。',
+    body: '下のカードで現場に介入する。ペアレビューでリテラシーを上げる。',
   },
   {
     id: 'senior-hp',
     targetTestId: 'hud-seniorHp',
     title: 'シニア体力',
-    body: SENIOR_HP_HOWTO_BODY,
+    body: '1%以下で負け。自動鎮火前に緊急対応で鎮火する。',
   },
   {
     id: 'jam-meter',

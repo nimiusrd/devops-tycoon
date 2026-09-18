@@ -157,9 +157,11 @@ test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続�
 
   await page.getByTestId('tutorial-next').click();
   await expect(page.getByTestId('tutorial-step-senior-hp')).toBeVisible();
-  await expect(page.getByTestId('tutorial-guide')).toContainText('抽象値');
+  await expect(page.getByTestId('tutorial-guide')).toContainText('1%以下で負け');
   await expect(page.getByTestId('tutorial-guide')).toContainText('自動鎮火');
+  await expect(page.getByTestId('tutorial-guide')).toContainText('緊急対応');
   await expect(page.getByTestId('tutorial-guide')).not.toContainText('アンドン');
+  await expect(page.getByTestId('tutorial-guide')).not.toContainText('抽象値');
   await page.getByTestId('tutorial-next').click();
   await expect(page.getByTestId('tutorial-step-jam-meter')).toBeVisible();
   await page.getByTestId('tutorial-next').click();

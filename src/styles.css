@@ -5101,13 +5101,11 @@ button.card.card-readonly:disabled {
   outline-offset: 2px;
 }
 .term-tip-panel {
-  position: absolute;
+  position: static;
   z-index: 6;
-  left: 0;
-  top: calc(100% + 6px);
-  min-width: 12em;
-  max-width: min(16em, 70vw);
-  margin: 0;
+  min-width: 0;
+  max-width: min(36rem, 100%);
+  margin: 6px 0 0;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -5115,6 +5113,10 @@ button.card.card-readonly:disabled {
   color: var(--text);
   font-size: 12px;
   line-height: 1.5;
+}
+.setup-term-tips .term-tip[open],
+.tutorial-guide-terms .term-tip[open] {
+  flex: 1 0 100%;
 }
 details.term-tip:not([open]) .term-tip-panel {
   display: none;

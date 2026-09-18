@@ -96,12 +96,71 @@ test.describe('narrow setup is a reachable 1-column stack', () => {
       await begin.scrollIntoViewIfNeeded();
       await expect(begin).toBeInViewport();
 
-      const noHorizontalOverflow = await page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
-      );
-      expect(noHorizontalOverflow, `${viewport.name} で横スクロールが発生している`).toBe(true);
+      const overflow = await page.evaluate(() => {
+        const setup = document.querySelector('[data-testid="setup"]');
+        const panel = document.querySelector('.formation-panel');
+        const app = document.querySelector('.app');
+        const setupBox = setup?.getBoundingClientRect();
+        const panelBox = panel?.getBoundingClientRect();
+        return {
+          html: document.documentElement.scrollWidth <= window.innerWidth + 1,
+          setup: setup === null || setup.scrollWidth <= setup.clientWidth + 1,
+          app: app === null || app.scrollWidth <= app.clientWidth + 1,
+          panelFits:
+            setup === null ||
+            panel === null ||
+            Math.ceil(panel.getBoundingClientRect().width) <= setup.clientWidth + 1,
+          panelInViewport: panelBox === null || panelBox.right <= window.innerWidth + 1,
+          setupInViewport: setupBox === null || setupBox.right <= window.innerWidth + 1,
+        };
+      });
+      expect(overflow.html, `${viewport.name} でページ横スクロールが発生している`).toBe(true);
+      expect(overflow.app, `${viewport.name} で .app が横にはみ出している`).toBe(true);
+      expect(overflow.setup, `${viewport.name} で編成コンテナが横スクロールしている`).toBe(true);
+      expect(overflow.panelFits, `${viewport.name} で編成パネルが親幅を超えている`).toBe(true);
+      expect(
+        overflow.panelInViewport,
+        `${viewport.name} で編成パネルがビューポート右端を超えている`,
+      ).toBe(true);
+      expect(
+        overflow.setupInViewport,
+        `${viewport.name} で編成コンテナがビューポート右端を超えている`,
+      ).toBe(true);
     });
   }
+});
+
+test('SETUP 390×844 は報告 seed でもページと編成パネルの横スクロールが無い（#489）', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?seed=devops-tycoon&tutorial=off');
+  await page.getByTestId('difficulty-easy').click();
+  await page.getByTestId('start-run').click();
+  const setup = page.getByTestId('setup');
+  await expect(setup).toBeVisible();
+  await expect(page.locator('.formation-panel')).toBeVisible();
+
+  const overflow = await page.evaluate(() => {
+    const setupEl = document.querySelector('[data-testid="setup"]');
+    const panel = document.querySelector('.formation-panel');
+    const cards = [...document.querySelectorAll('.formation-member, .map-banner, .setup-okr')];
+    return {
+      html: document.documentElement.scrollWidth <= window.innerWidth + 1,
+      setup: setupEl === null || setupEl.scrollWidth <= setupEl.clientWidth + 1,
+      panelFits:
+        setupEl === null ||
+        panel === null ||
+        Math.ceil(panel.getBoundingClientRect().width) <= setupEl.clientWidth + 1,
+      cardsInViewport: cards.every(
+        (card) => card.getBoundingClientRect().right <= window.innerWidth + 1,
+      ),
+    };
+  });
+  expect(overflow.html, 'ページ横スクロールが発生している').toBe(true);
+  expect(overflow.setup, '編成コンテナが横スクロールしている').toBe(true);
+  expect(overflow.panelFits, '編成パネルが親幅を超えている').toBe(true);
+  expect(overflow.cardsInViewport, '主要カードがビューポート幅を超えている').toBe(true);
 });
 
 test('ランバーにメンバーの表情が表示される（表情演出 / 第12.2）', async ({ page }) => {

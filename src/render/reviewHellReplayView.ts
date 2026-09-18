@@ -180,7 +180,7 @@ export function planReviewHellResultSummary(
   return {
     show: true,
     title: 'レビュー地獄リプレイ',
-    peakLabel: `Review Queue Max ${result.reviewQueueMax} PR`,
+    peakLabel: `レビュー待ち最大 ${result.reviewQueueMax}件`,
     lesson: REVIEW_HELL_LESSON,
   };
 }

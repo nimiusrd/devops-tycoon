@@ -320,7 +320,7 @@ describe('reviewHellReplayView（RI-34‴）', () => {
       }),
     ).toMatchObject({
       title: 'レビュー地獄リプレイ',
-      peakLabel: 'Review Queue Max 20 PR',
+      peakLabel: 'レビュー待ち最大 20件',
     });
   });
 });

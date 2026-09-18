@@ -150,6 +150,8 @@ test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続�
 
   await expect(page.getByTestId('tutorial-guide')).toBeVisible();
   await expect(page.getByTestId('tutorial-step-action-bar')).toBeVisible();
+  await expect(page.getByTestId('tutorial-term-focus')).toBeVisible();
+  await expect(page.getByTestId('tutorial-term-spread')).toBeVisible();
   await expect(page.getByTestId('action-bar')).toBeVisible();
   await expect(page.getByTestId('hud-seniorHp')).toBeVisible();
   await expect(page.getByTestId('jam-meter')).toBeVisible();

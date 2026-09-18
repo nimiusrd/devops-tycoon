@@ -88,6 +88,9 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.text()).toContain('編成 — スプリント開始前に配置とAIを決める');
     expect(screen.text()).toContain('誰に配るかこのタイミングで見直そう');
     expect(content(screen.find('setup-okr'))).toContain('今四半期の OKR');
+    expect(content(screen.find('term-tip-pr'))).toContain('PR');
+    expect(content(screen.find('term-tip-aiLiteracy'))).toContain('AIリテラシー');
+    expect(content(screen.find('term-tip-rework'))).toContain('手戻り');
     expect(screen.has('setup-elite-pending')).toBe(false);
     expect(screen.has('setup-boss-pending')).toBe(false);
     expect(screen.has('deck')).toBe(false);

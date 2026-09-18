@@ -17,6 +17,23 @@ test('編成（Setup）画面でメンバーの配置と AI 配布を切り替�
   await page.getByTestId('start-run').click();
   // ラン開始直後は編成（Setup）。
   await expect(page.getByTestId('setup')).toBeVisible();
+  await expect(page.getByTestId('setup-term-tips')).toBeVisible();
+  const prSummary = page.getByTestId('term-tip-pr').locator('summary');
+  const prHit = await prSummary.boundingBox();
+  if (!prHit) throw new Error('PRチップの bounding box が取得できない');
+  expect(prHit.width, 'PRチップのタップ幅が 24px 未満').toBeGreaterThanOrEqual(24);
+  expect(prHit.height, 'PRチップのタップ高が 24px 未満').toBeGreaterThanOrEqual(24);
+  const rework = page.getByTestId('term-tip-rework');
+  await rework.locator('summary').click();
+  await expect(page.getByTestId('term-tip-rework-panel')).toBeVisible();
+  await expect(page.getByTestId('term-tip-rework-panel')).toContainText('作り直し');
+  await page.getByTestId('term-tip-pr').locator('summary').click();
+  await expect(page.getByTestId('term-tip-pr-panel')).toBeVisible();
+  await expect(page.getByTestId('term-tip-rework-panel')).toBeHidden();
+  await page.getByTestId('term-tip-pr').locator('summary').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('term-tip-pr-panel')).toBeHidden();
+  await expect(page.getByTestId('term-tip-pr').locator('summary')).toBeFocused();
 
   // 初期ロスターの3メンバーが表示される（m0/m1/m2）。
   await expect(page.getByTestId('formation-member-m0')).toBeVisible();
@@ -66,6 +83,16 @@ test.describe('narrow setup is a reachable 1-column stack', () => {
       await page.getByTestId('difficulty-normal').click();
       await page.getByTestId('start-run').click();
       await expect(page.getByTestId('setup')).toBeVisible();
+      const prHit = await page.getByTestId('term-tip-pr').locator('summary').boundingBox();
+      if (!prHit) throw new Error(`${viewport.name} で PRチップの bounding box が取得できない`);
+      expect(
+        prHit.width,
+        `${viewport.name} で PRチップのタップ幅が 24px 未満`,
+      ).toBeGreaterThanOrEqual(24);
+      expect(
+        prHit.height,
+        `${viewport.name} で PRチップのタップ高が 24px 未満`,
+      ).toBeGreaterThanOrEqual(24);
 
       const heading = page.locator('.formation-head .draft-title');
       const begin = page.getByTestId('begin-sprint');

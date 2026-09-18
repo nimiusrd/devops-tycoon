@@ -5,6 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useRef: (initial: unknown) => ({ current: initial }),
+  useState: (initial: unknown) => [
+    typeof initial === 'function' ? (initial as () => unknown)() : initial,
+    vi.fn(),
+  ],
 }));
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
 
@@ -106,6 +110,7 @@ describe('SprintResultScreen の結果表示と進行', () => {
     expect(content(screen.find('result-hero'))).toContain('スプリント結果');
     expect(content(screen.find('result-hero'))).not.toContain('SPRINT RESULT');
     expect(screen.has('result-details')).toBe(true);
+    expect(screen.has('reward-ceremony-title')).toBe(false);
     expect(screen.has('result-restart')).toBe(false);
     screen.click('result-continue');
     expect(screen.onContinue).toHaveBeenCalledOnce();

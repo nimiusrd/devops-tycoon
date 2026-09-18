@@ -1277,6 +1277,10 @@ body:has(.overlay-contained) {
 .sprint-result-card .result-hero {
   flex: 0 0 auto;
 }
+.overlay-contained .sprint-result-card {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .sprint-result-card .result-eyebrow {
   letter-spacing: 0.08em;
 }

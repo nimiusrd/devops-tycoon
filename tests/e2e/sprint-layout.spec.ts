@@ -13,6 +13,7 @@ import {
   advanceCurrentResultToDraft,
   beginCurrentSetupSprint,
   beginPublicSprint,
+  openSprintResultDetails,
 } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
 import { ACTION_DEFS } from '../../src/data/actions';
@@ -1244,6 +1245,8 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     await expect(overlay).toHaveClass(/overlay-contained/);
     await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
 
+    await openSprintResultDetails(page);
+
     const before = await readOverlayScrollMetrics(page, 'sprint-result');
     expect(before.overlayTop, 'オーバーレイ上端が viewport 外').toBeLessThanOrEqual(1);
     expect(before.overlayHeight, 'オーバーレイが viewport より高い').toBeLessThanOrEqual(
@@ -2068,6 +2071,7 @@ test.describe('延焼文言の DOM レイアウト', () => {
     await injectSpreadResultEvents(page);
 
     await expect(page.getByTestId('sprint-result')).toBeVisible();
+    await openSprintResultDetails(page);
     await expect(page.getByTestId('result-burn-cause')).toBeVisible();
     await expect(page.getByText(SPREAD_RESULT_CHAIN)).toBeVisible();
     await expect(page.getByText(SPREAD_RESULT_IMPACT)).toBeVisible();

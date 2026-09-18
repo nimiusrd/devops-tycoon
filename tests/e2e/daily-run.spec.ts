@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { expect, test, openSprintResultDetails } from './fixtures';
 import { dailySeed } from '../../src/state/meta';
 import type { RunSaveSummary } from '../../src/state/runPersistence';
 
@@ -112,6 +112,7 @@ test('Daily無介入 Sprint 1 は評価 B でも危機の読みと内訳が見�
   });
 
   await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await openSprintResultDetails(page);
   await expect(page.getByTestId('result-grade')).toHaveText('B');
   await expect(page.getByTestId('result-grade-caption')).toContainText(
     '大きな危機を出しつつ出荷した',

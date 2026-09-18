@@ -3,7 +3,7 @@
  *
  * 評定と主CTAを先に見せ、完了・出荷・シニア体力・炎上を要約し、内訳は折りたたむ。
  */
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
 import { formatSprintResultSeniorHp } from '../render/seniorHpDisplay';
@@ -94,6 +94,7 @@ export function SprintResultScreen({
 }: SprintResultScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
   const gradeView = planSprintGradeView(result);
@@ -182,7 +183,11 @@ export function SprintResultScreen({
           ) : null}
         </div>
         <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={0}>
-          <details className="result-details" data-testid="result-details">
+          <details
+            className="result-details"
+            data-testid="result-details"
+            onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+          >
             <summary>内訳とタイムライン</summary>
             <dl className="result-rows">
               {buildDetailRows(result).map((row) => (
@@ -270,11 +275,13 @@ export function SprintResultScreen({
             </div>
             <div className="result-title">
               <p className="result-section-label">称号</p>
-              <RewardCeremony
-                kind="title"
-                title={result.title}
-                detail="このスプリントの称号を獲得"
-              />
+              {detailsOpen ? (
+                <RewardCeremony
+                  kind="title"
+                  title={result.title}
+                  detail="このスプリントの称号を獲得"
+                />
+              ) : null}
               <p className="result-title-value" data-testid="result-title">
                 「{result.title}」
               </p>

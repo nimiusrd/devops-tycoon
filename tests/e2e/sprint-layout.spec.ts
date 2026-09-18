@@ -689,6 +689,29 @@ test('狭幅で展開したKPIをsetupからsprintへ維持する', async ({ pag
   await expect(page.getByTestId('hud-toggle')).toHaveAttribute('aria-expanded', 'true');
 });
 
+test('広幅の初見SETUPでもHUDは要約4指標で、KPI詳細から全指標へ到達できる', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?seed=hud-compact-first-look');
+  await page.getByTestId('difficulty-easy').click();
+  await page.getByTestId('start-run').click();
+
+  const hud = page.getByTestId('hud');
+  await expect(page.getByTestId('setup')).toBeVisible();
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  await expect(hud).toHaveAttribute('data-responsive-width', 'wide');
+  await expect(page.getByTestId('hud-compact')).toBeVisible();
+  await expect(hud.locator('.hud-compact-chip')).toHaveCount(4);
+  await expect(page.getByTestId('hud-toggle')).toHaveText('KPI詳細');
+
+  await page.getByTestId('hud-toggle').click();
+  await expect(hud).toHaveAttribute('data-compact', 'false');
+  await expect(page.getByTestId('hud-toggle')).toHaveText('KPIを畳む');
+  await expect(page.getByTestId('hud-delivery')).toBeVisible();
+  await expect(page.getByTestId('hud-devSpeed')).toBeVisible();
+  await expect(page.getByTestId('hud-security')).toBeVisible();
+  await expect(hud.locator('.stat')).toHaveCount(10);
+});
+
 test('デスクトップ幅で sprint-subbar と board が重ならない', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await beginPublicSprint(page, { seed: 'sprint-layout-ri69' });

@@ -5,7 +5,7 @@
  * 技術的負債・士気・炎上リスクを表示する。炎上リスクは工程状態であり、士気チップには載せない。
  * ラン中は組織状態（持続）と進行中スプリントのタスクから導出する（第22.2）。
  *
- * RI-70: 狭幅では KPI を折り畳み要約し、盤面と介入バーを1画面に収める。
+ * RI-70 / #468: 初見は幅に関係なく KPI を折り畳み要約し、盤面と介入バーを1画面に収める。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -157,12 +157,10 @@ export interface HudProps {
   getInitialPreviousSnapshot?: (scope: HudSnapshotScope) => HudMetricSnapshot | null;
   /** 親がHUD非表示期間をまたいで最後の表示値を保持するための通知。 */
   onSnapshotCaptured?: (snapshot: HudMetricSnapshot, scope: HudSnapshotScope) => void;
-  /** 狭幅時のKPI展開状態。未指定時はHUD内部で管理する。 */
+  /** KPI展開状態。未指定時はHUD内部で管理し、初期値は要約表示。 */
   expanded?: boolean;
-  /** 狭幅時のKPI展開状態が変わったときの通知。 */
+  /** KPI展開状態が変わったときの通知。 */
   onExpandedChange?: (expanded: boolean) => void;
-  /** 盤面を主役にしたい画面では、広幅でも要約表示を既定にする。 */
-  preferCompact?: boolean;
 }
 
 function CompactChip({
@@ -217,7 +215,6 @@ export function Hud({
   onSnapshotCaptured,
   expanded: expandedProp,
   onExpandedChange,
-  preferCompact = false,
 }: HudProps) {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
@@ -228,12 +225,10 @@ export function Hud({
   const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveHudFeedback[]>([]);
   const responsiveMode = useResponsiveMode();
-  const narrow = responsiveMode.width === 'narrow';
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
   const expanded = expandedProp ?? uncontrolledExpanded;
-  // スプリント中は広幅でも要約を既定にし、盤面へ高さを返す。
-  const canCompact = narrow || preferCompact;
-  const compact = canCompact && !expanded;
+  // 広幅でも要約を既定にし、詳細は KPI詳細 で展開する。
+  const compact = !expanded;
   const compactMetrics = useMemo(() => pickCompactMetrics(metrics), [metrics]);
 
   useEffect(() => {
@@ -303,18 +298,16 @@ export function Hud({
       data-responsive-width={responsiveMode.width}
       data-responsive-height={responsiveMode.height}
     >
-      {canCompact && (
-        <button
-          type="button"
-          className="hud-toggle"
-          data-testid="hud-toggle"
-          aria-expanded={expanded}
-          aria-controls="hud-metrics"
-          onClick={toggleExpanded}
-        >
-          {expanded ? 'KPIを畳む' : 'KPI詳細'}
-        </button>
-      )}
+      <button
+        type="button"
+        className="hud-toggle"
+        data-testid="hud-toggle"
+        aria-expanded={expanded}
+        aria-controls="hud-metrics"
+        onClick={toggleExpanded}
+      >
+        {expanded ? 'KPIを畳む' : 'KPI詳細'}
+      </button>
       {compact ? (
         <div className="hud-compact-row" id="hud-metrics" data-testid="hud-compact">
           {compactMetrics.map((metric) => (

@@ -172,7 +172,26 @@ afterEach(() => {
 });
 
 describe('Hud の表示と展開操作', () => {
-  it('広幅では各指標の値・方向・警告を表示し、炎上リスクは独立した状態にする', () => {
+  it('広幅でも初期は要約4指標で、KPI詳細から全指標へ到達できる', () => {
+    const screen = mountHud();
+    expect(screen.find('hud').props['data-compact']).toBe('true');
+    expect(screen.find('hud-toggle').props).toMatchObject({
+      'aria-expanded': false,
+      'aria-controls': 'hud-metrics',
+    });
+    expect(content(screen.find('hud-toggle'))).toBe('KPI詳細');
+    expect(screen.has('hud-compact')).toBe(true);
+    expect(screen.has('hud-compact-delivery')).toBe(true);
+    expect(screen.has('stat-delivery')).toBe(false);
+    screen.clickToggle();
+    expect(screen.find('hud').props['data-compact']).toBe('false');
+    expect(content(screen.find('hud-toggle'))).toBe('KPIを畳む');
+    expect(screen.has('stat-delivery')).toBe(true);
+    expect(screen.has('hud-devSpeed')).toBe(true);
+    expect(screen.has('hud-security')).toBe(true);
+  });
+
+  it('広幅の展開時は各指標の値・方向・警告を表示し、炎上リスクは独立した状態にする', () => {
     const org = {
       ...createOrgState('default', true),
       deliveryScore: 12,
@@ -180,9 +199,9 @@ describe('Hud の表示と展開操作', () => {
       morale: 20,
       securityLevel: 10,
     };
-    const screen = mountHud({ org, reviewQueuePeak: 100 });
+    const screen = mountHud({ org, reviewQueuePeak: 100, expanded: true });
     expect(screen.find('hud').props['data-compact']).toBe('false');
-    expect(screen.has('hud-toggle')).toBe(false);
+    expect(screen.find('hud-toggle').props['aria-expanded']).toBe(true);
     expect(content(screen.find('stat-delivery'))).toBe('12pt');
     expect(screen.find('hud-delivery').props['aria-label']).toContain(
       '出荷ポイント: 12pt。高いほど良い',
@@ -232,9 +251,9 @@ describe('Hud の表示と展開操作', () => {
     expect(screen.find('hud').props['data-compact']).toBe('true');
   });
 
-  it('広幅の要約指定でも展開は親の値に従い、操作は次の値を通知する', () => {
+  it('広幅でも展開は親の値に従い、操作は次の値を通知する', () => {
     const onExpandedChange = vi.fn();
-    const screen = mountHud({ preferCompact: true, expanded: false, onExpandedChange });
+    const screen = mountHud({ expanded: false, onExpandedChange });
     screen.clickToggle();
     expect(onExpandedChange).toHaveBeenLastCalledWith(true);
     expect(screen.find('hud').props['data-compact']).toBe('true');
@@ -258,7 +277,7 @@ describe('Hud のスナップショットと差分フィードバック', () => 
     );
     screen.changeOrg({ ...screen.props.org });
     expect(getInitialPreviousSnapshot).toHaveBeenCalledTimes(1);
-    expect(screen.feedback('hud-delivery')).toEqual([]);
+    expect(screen.feedback('hud-compact-delivery')).toEqual([]);
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -274,7 +293,6 @@ describe('Hud のスナップショットと差分フィードバック', () => 
     const onSnapshotCaptured = vi.fn();
     const screen = mountHud({
       org: { ...createOrgState('default', true), deliveryScore: 4 },
-      preferCompact: true,
       getInitialPreviousSnapshot,
       onSnapshotCaptured,
     });
@@ -293,7 +311,7 @@ describe('Hud のスナップショットと差分フィードバック', () => 
   });
 
   it('古い差分の期限では後から更新された同じ指標と別指標の差分を消さない', () => {
-    const screen = mountHud();
+    const screen = mountHud({ expanded: true });
     screen.changeOrg({ deliveryScore: 2 });
     expect(screen.feedback('hud-delivery')).toEqual(['+2']);
     screen.advance(500);
@@ -318,7 +336,7 @@ describe('Hud のスナップショットと差分フィードバック', () => 
     const orgScale = { ...state.orgScale, shipping: 100, morale: 60 };
     const getInitialPreviousSnapshot = vi.fn(() => null);
     const onSnapshotCaptured = vi.fn();
-    const screen = mountHud({ getInitialPreviousSnapshot, onSnapshotCaptured });
+    const screen = mountHud({ getInitialPreviousSnapshot, onSnapshotCaptured, expanded: true });
     screen.changeOrg({ deliveryScore: 3 });
     expect(screen.feedback('hud-delivery')).toEqual(['+3']);
     expect(vi.getTimerCount()).toBe(1);
@@ -341,7 +359,7 @@ describe('Hud のスナップショットと差分フィードバック', () => 
 
   it('アンマウントで複数世代の差分タイマーをすべて解除する', () => {
     const onSnapshotCaptured = vi.fn();
-    const screen = mountHud({ onSnapshotCaptured });
+    const screen = mountHud({ onSnapshotCaptured, expanded: true });
     screen.changeOrg({ deliveryScore: 2 });
     screen.changeOrg({ techDebt: 4 });
     expect(screen.feedback('hud-delivery')).toEqual(['+2']);

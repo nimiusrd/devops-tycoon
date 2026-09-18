@@ -2635,24 +2635,29 @@ button.card.card-readonly:disabled {
   --tc-cyan: #78ddff;
   --tc-amber: #ffc66d;
   --tc-pink: #ff7edb;
-  /* #466 / #475: ドック実高 + 16px。short / narrow で上書きする。 */
-  --title-dock-reserve: 148px;
+  /* #466: topbar / スクロール面 / ドックを実高で積み、親はスクロールしない。 */
   position: relative;
   isolation: isolate;
   height: 100dvh;
   max-height: 100dvh;
-  min-height: 100dvh;
+  min-height: 0;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   background: #050713;
   color: #f5f7ff;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  row-gap: 1px;
+  grid-template-areas:
+    'topbar'
+    'scroll'
+    'dock';
   max-width: none;
 }
 .title-world {
+  grid-area: 1 / 1 / -1 / -1;
   position: absolute;
   inset: 0;
   z-index: -2;
@@ -2741,7 +2746,7 @@ button.card.card-readonly:disabled {
   animation-delay: -4s;
 }
 .title-topbar {
-  flex: 0 0 auto;
+  grid-area: topbar;
   height: 82px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -2822,14 +2827,16 @@ button.card.card-readonly:disabled {
   font-size: 14px;
 }
 .title-scroll {
+  grid-area: scroll;
   position: relative;
-  flex: 1 1 auto;
-  min-height: min(6rem, 18dvh);
+  align-self: stretch;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 4vw;
-  scroll-padding-bottom: var(--title-dock-reserve);
 }
 .title-content {
   position: relative;
@@ -2837,11 +2844,10 @@ button.card.card-readonly:disabled {
   margin: 0 auto;
   width: 100%;
   display: block;
-  padding-bottom: var(--title-dock-reserve);
 }
 .title-command .title-head {
   max-width: 760px;
-  padding: 42px 0 30px;
+  padding: 20px 0 12px;
   text-align: left;
 }
 .title-eyebrow {
@@ -2861,7 +2867,7 @@ button.card.card-readonly:disabled {
   box-shadow: 0 0 12px var(--tc-cyan);
 }
 .title-command .title-logo {
-  margin: 14px 0 16px;
+  margin: 8px 0;
   color: #f7f9ff;
   font-size: clamp(40px, 5vw, 72px);
   font-weight: 850;
@@ -2894,7 +2900,7 @@ button.card.card-readonly:disabled {
 .title-command .title-meta {
   justify-content: flex-start;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
 }
@@ -2902,7 +2908,7 @@ button.card.card-readonly:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 .title-hero-badges span {
   padding: 7px 10px;
@@ -3000,6 +3006,9 @@ button.card.card-readonly:disabled {
   margin: 0;
   padding: 0;
 }
+.title-command .title-difficulty-section {
+  padding-bottom: 16px;
+}
 .title-command .title-section-label {
   position: absolute;
   width: 1px;
@@ -3011,7 +3020,7 @@ button.card.card-readonly:disabled {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  padding: 14px;
+  padding: 10px;
   background: linear-gradient(180deg, rgba(120, 221, 255, 0.08), rgba(255, 255, 255, 0.02));
 }
 .title-command .difficulty-card {
@@ -3328,7 +3337,9 @@ button.card.card-readonly:disabled {
   color: #fff;
 }
 .title-launch-dock {
-  flex: 0 0 auto;
+  grid-area: dock;
+  align-self: end;
+  min-width: 0;
   z-index: 8;
   padding: 8px 4vw calc(14px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--tc-line);
@@ -3619,7 +3630,7 @@ button.card.card-readonly:disabled {
     display: none;
   }
   .title-command .title-head {
-    padding: 28px 0 20px;
+    padding: 16px 0 10px;
   }
   .title-command .title-logo {
     font-size: 46px;
@@ -3758,21 +3769,13 @@ button.card.card-readonly:disabled {
   }
 }
 /* short / narrow のタイトル縮退。境界は responsiveModeCore を正本にする。 */
-:root[data-responsive-width='narrow'] .title-screen.title-command {
-  --title-dock-reserve: 120px;
-}
-:root[data-responsive-height='short'] .title-screen.title-command {
-  --title-dock-reserve: 88px;
-}
-:root[data-responsive-width='narrow'][data-responsive-height='short'] .title-screen.title-command {
-  --title-dock-reserve: 72px;
-}
 :root[data-responsive-height='short'] .title-topbar {
   height: 56px;
 }
 :root[data-responsive-height='short'] .title-command .title-head {
   padding: 16px 0 12px;
 }
+:root[data-responsive-width='narrow'] .title-hero-badges,
 :root[data-responsive-height='short'] .title-hero-badges {
   display: none;
 }

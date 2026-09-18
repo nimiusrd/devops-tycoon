@@ -2,7 +2,8 @@
  * タイトル画面の開始 CTA がファーストビューで使え、フッターに隠れない契約（#358）。
  */
 import { expect, test } from './fixtures';
-import type { Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveModeCore';
 
 const VIEWPORTS = [
   { name: 'phone-se', width: 320, height: 568 },
@@ -15,8 +16,16 @@ const VIEWPORTS = [
 
 type Box = { x: number; y: number; width: number; height: number };
 
-function overlaps(a: Box, b: Box): boolean {
-  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+/** 隣接する grid 行は丸めで 1px 交差することがある。視覚的な隠れは 2px 超えてから見る。 */
+const LAYOUT_SLOP_PX = 2;
+
+function overlaps(a: Box, b: Box, slop = 0): boolean {
+  return (
+    a.x + slop < b.x + b.width &&
+    a.x + a.width > b.x + slop &&
+    a.y + slop < b.y + b.height &&
+    a.y + a.height > b.y + slop
+  );
 }
 
 function intersect(a: Box, b: Box): Box | null {
@@ -33,8 +42,13 @@ function visibleInViewport(box: Box, viewport: { width: number; height: number }
 }
 
 async function readBox(locator: Locator, label: string): Promise<Box> {
-  const box = await locator.boundingBox();
-  if (!box) throw new Error(`${label} の bounding box が取得できない`);
+  const box = await locator.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  });
+  if (!box || (box.width <= 0 && box.height <= 0)) {
+    throw new Error(`${label} の bounding box が取得できない`);
+  }
   return box;
 }
 
@@ -137,6 +151,112 @@ const CARD_DOCK_VIEWPORTS = [
   { name: 'title-dock-1280', width: 1280, height: 800 },
 ] as const;
 
+async function assertTitleShellKeepsDockInFlow(
+  page: Page,
+  viewport: { name: string; width: number; height: number },
+): Promise<{ scrollBox: Box; dockBox: Box }> {
+  const expectedHeight =
+    viewport.height <= RESPONSIVE_BREAKPOINTS.shortMaxHeight ? 'short' : 'normal';
+  const expectedWidth = viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth ? 'narrow' : 'wide';
+  await expect(page.locator('html')).toHaveAttribute('data-responsive-height', expectedHeight);
+  await expect(page.locator('html')).toHaveAttribute('data-responsive-width', expectedWidth);
+  await page.evaluate(() => document.fonts?.ready ?? Promise.resolve());
+
+  const title = page.getByTestId('title');
+  const shell = await title.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      overflowY: style.overflowY,
+      display: style.display,
+      reserve: style.getPropertyValue('--title-dock-reserve').trim(),
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    };
+  });
+  expect(shell.display, `${viewport.name} のタイトル面が grid ではない`).toBe('grid');
+  expect(
+    shell.overflowY === 'hidden' || shell.overflowY === 'clip',
+    `${viewport.name} のタイトル面が縦スクロールする`,
+  ).toBe(true);
+  expect(shell.reserve, `${viewport.name} が --title-dock-reserve に依存している`).toBe('');
+  expect(
+    shell.scrollHeight,
+    `${viewport.name} のタイトル面が親スクロールを持っている`,
+  ).toBeLessThanOrEqual(shell.clientHeight + 1);
+
+  let settled: { scrollBox: Box; dockBox: Box } | null = null;
+  await expect
+    .poll(async () => {
+      const scrollBox = await readBox(page.getByTestId('title-scroll'), 'タイトルのスクロール面');
+      const dockBox = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');
+      const clear =
+        !overlaps(scrollBox, dockBox, LAYOUT_SLOP_PX) &&
+        scrollBox.y + scrollBox.height <= dockBox.y + LAYOUT_SLOP_PX;
+      if (clear) settled = { scrollBox, dockBox };
+      return clear;
+    })
+    .toBe(true);
+  if (!settled) {
+    throw new Error(`${viewport.name} でスクロール面とドックの矩形が交差している`);
+  }
+  return settled;
+}
+
+function assertCardClearOfDock(
+  cardBox: Box,
+  dockBox: Box,
+  viewportName: string,
+  label: string,
+): void {
+  expect(
+    cardBox.y + cardBox.height,
+    `${viewportName} で${label}の下端がドックに隠れている`,
+  ).toBeLessThanOrEqual(dockBox.y + LAYOUT_SLOP_PX);
+}
+
+async function scrollFullyIntoTitleScroll(locator: Locator): Promise<void> {
+  await locator.evaluate((element, slack) => {
+    const scroll = element.closest('[data-testid="title-scroll"]');
+    if (!(scroll instanceof HTMLElement)) return;
+    const cardRect = element.getBoundingClientRect();
+    const scrollRect = scroll.getBoundingClientRect();
+    if (cardRect.bottom > scrollRect.bottom - slack) {
+      scroll.scrollTop += Math.ceil(cardRect.bottom - scrollRect.bottom + slack);
+    }
+    if (cardRect.top < scrollRect.top + slack) {
+      scroll.scrollTop -= Math.ceil(scrollRect.top - cardRect.top + slack);
+    }
+  }, LAYOUT_SLOP_PX);
+}
+
+async function assertCardScrolledClearOfDock(
+  page: Page,
+  card: Locator,
+  viewportName: string,
+  label: string,
+): Promise<Box> {
+  let settled: Box | null = null;
+  await expect
+    .poll(async () => {
+      await scrollFullyIntoTitleScroll(card);
+      const cardBox = await readBox(card, label);
+      const scrollBox = await readBox(page.getByTestId('title-scroll'), 'タイトルのスクロール面');
+      const dockBox = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');
+      const visible = intersect(cardBox, scrollBox);
+      const fullyInScroll =
+        cardBox.y >= scrollBox.y - LAYOUT_SLOP_PX &&
+        cardBox.y + cardBox.height <= scrollBox.y + scrollBox.height + LAYOUT_SLOP_PX;
+      const hiddenByDock = visible ? overlaps(visible, dockBox, LAYOUT_SLOP_PX) : true;
+      if (fullyInScroll && !hiddenByDock) settled = cardBox;
+      return { fullyInScroll, hiddenByDock };
+    })
+    .toMatchObject({ fullyInScroll: true, hiddenByDock: false });
+  if (!settled) {
+    throw new Error(`${viewportName} で${label}の矩形がドックと交差している`);
+  }
+  return settled;
+}
+
 test.describe('title difficulty cards stay above launch dock', () => {
   for (const viewport of CARD_DOCK_VIEWPORTS) {
     test(`${viewport.name} ${viewport.width}x${viewport.height} でカード下端がドックに隠れない`, async ({
@@ -146,24 +266,41 @@ test.describe('title difficulty cards stay above launch dock', () => {
       await page.goto('/?seed=title-launch-cta');
       await expect(page.getByTestId('title')).toBeVisible();
 
+      const { dockBox } = await assertTitleShellKeepsDockInFlow(page, viewport);
+
+      const easyCard = page.getByTestId('difficulty-easy');
+      await expect(easyCard).toBeVisible();
+      if (viewport.height >= 800) {
+        assertCardClearOfDock(
+          await readBox(easyCard, 'Easyカード'),
+          dockBox,
+          viewport.name,
+          '初見の Easy カード全文',
+        );
+      } else {
+        await assertCardScrolledClearOfDock(page, easyCard, viewport.name, 'Easyカード全文');
+      }
+
       await page.locator('.difficulty-card:not([disabled])').last().click();
       const lastCard = page.locator('.difficulty-card').last();
-      await lastCard.scrollIntoViewIfNeeded();
-
-      const cardBox = await readBox(lastCard, '難易度カード下端');
-      const dockBox = await readBox(page.getByTestId('title-launch-dock'), '開始ドック');
-      expect(
-        overlaps(cardBox, dockBox),
-        `${viewport.name} で難易度カード下端が固定ドックに隠れている`,
-      ).toBe(false);
+      const cardBox = await assertCardScrolledClearOfDock(
+        page,
+        lastCard,
+        viewport.name,
+        '難易度カード下端',
+      );
 
       const startRun = page.getByTestId('start-run');
       await expect(startRun).toBeVisible();
       const startBox = await readBox(startRun, '開始 CTA');
       expect(
-        overlaps(cardBox, startBox),
+        overlaps(cardBox, startBox, LAYOUT_SLOP_PX),
         `${viewport.name} でカード選択とラン開始が同時に破綻している`,
       ).toBe(false);
+      expect(
+        startBox.y + startBox.height,
+        `${viewport.name} でラン開始がビューポート外`,
+      ).toBeLessThanOrEqual(viewport.height + 1);
       await expect(page.getByTestId('start-daily-run')).toBeVisible();
 
       await startRun.click();

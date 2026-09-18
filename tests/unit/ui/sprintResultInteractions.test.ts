@@ -19,6 +19,7 @@ import {
   SprintResultScreen,
   type SprintResultScreenProps,
 } from '../../../src/ui/SprintResultScreen';
+import { nextTitleCeremonyStarted } from '../../../src/ui/sprintResultCeremony';
 import { completeSprint, makeOrg } from '../helpers/runEngineFixtures';
 
 type ElementProps = Record<string, unknown> & { children?: ReactNode };
@@ -75,6 +76,15 @@ const emptyGrowth: GrowthOutcome = {
   wentOnLeave: [],
   docGain: 0,
 };
+
+describe('SprintResultScreen の称号演出', () => {
+  it('最初の展開だけで開始し、閉じても再マウントしない', () => {
+    expect(nextTitleCeremonyStarted(false, false)).toBe(false);
+    expect(nextTitleCeremonyStarted(false, true)).toBe(true);
+    expect(nextTitleCeremonyStarted(true, false)).toBe(true);
+    expect(nextTitleCeremonyStarted(true, true)).toBe(true);
+  });
+});
 
 describe('SprintResultScreen の結果表示と進行', () => {
   it('集計値と正の介入回数を表示し、カードドラフトへ進む', () => {

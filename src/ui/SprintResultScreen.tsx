@@ -17,6 +17,7 @@ import type { ActionId, SprintResult } from '../sim/types';
 import { BaselineComparisonChart } from './BaselineComparisonChart';
 import { SprintTimelineChart } from './SprintTimelineChart';
 import { RewardCeremony } from './JuicyEffects';
+import { nextTitleCeremonyStarted } from './sprintResultCeremony';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { VisualIcon, VisualIconText } from './VisualIcon';
 
@@ -94,7 +95,7 @@ export function SprintResultScreen({
 }: SprintResultScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [titleCeremonyStarted, setTitleCeremonyStarted] = useState(false);
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
   const gradeView = planSprintGradeView(result);
@@ -186,12 +187,16 @@ export function SprintResultScreen({
           <details
             className="result-details"
             data-testid="result-details"
-            onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+            onToggle={(event) => {
+              setTitleCeremonyStarted((started) =>
+                nextTitleCeremonyStarted(started, event.currentTarget.open),
+              );
+            }}
           >
             <summary>内訳とタイムライン</summary>
             <div className="result-title">
               <p className="result-section-label">称号</p>
-              {detailsOpen ? (
+              {titleCeremonyStarted ? (
                 <RewardCeremony
                   kind="title"
                   title={result.title}

@@ -1,6 +1,6 @@
 # Shadow実測詳細（Issue #479）
 
-> これは旧実装による Issue #479 の履歴です。現在の操作は[利用案内](./pr-merge-readiness.md)、独立 Action の実測は[Issue #499 検証記録](./pr-merge-readiness-validation-499.md)を参照してください。旧実装は削除済みで、この文書の旧形式を新 Action に入力することはできません。
+> これは旧実装による Issue #479 の履歴です。現在の操作は[Action の公式ドキュメント](https://github.com/nimiusrd/pr-merge-readiness-action)、独立 Action の実測は[Issue #499 検証記録](./pr-merge-readiness-validation-499.md)を参照してください。旧実装は削除済みで、この文書の旧形式を新 Action に入力することはできません。
 
 2026-09-13にActionsのGITHUB_TOKENで収集しました。実行成功とShadowの判定は別々に確認します。本文のSHA・policy・条件は保存JSONから転記しています。
 

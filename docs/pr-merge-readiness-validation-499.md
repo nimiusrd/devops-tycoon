@@ -59,7 +59,7 @@ CI が実行中なら必須 Check 条件は waiting です。ただし GitHub �
 
 この公開リポジトリから保存した新 Action の PR レポート **14 件すべて**を、Docker の `--network none`、ソースの読み取り専用 mount、Python 3.11 の `-I -B` で再評価しました。明示したローカル Git と信頼済み Action SHA `fb9e82eadd7e56467b762102597ad8a77d47d82d` から `git archive` で評価器・依存モジュールを取得し、保存した観測・policy・出所だけで元レポート全体と一致、終了コード 0 でした。14 件には全 open PR 観測で得た他 PR と、移行 PR 終了時のレポートも含みます。旧形式や旧 SHA との比較は行っていません。
 
-この記録の再評価コマンドは[検証時の Action README](https://github.com/nimiusrd/pr-merge-readiness-action/blob/fb9e82eadd7e56467b762102597ad8a77d47d82d/README.md) の `replay` を参照してください。評価器には保存したレポートと一致する信頼済み Action SHA を指定します。現在の v0.6.0 は `replay` を提供しません。
+この記録の再評価コマンドは[検証時の Action README](https://github.com/nimiusrd/pr-merge-readiness-action/blob/fb9e82eadd7e56467b762102597ad8a77d47d82d/README.md) の `replay` を参照してください。評価器には保存したレポートと一致する信頼済み Action SHA を指定します。v0.6.0 以降は `replay` を提供しません。
 
 Action の Dev Container と [main CI](https://github.com/nimiusrd/pr-merge-readiness-action/actions/runs/34765377704) で Python 113 テスト、Ruff lint・format、YAML・生成物の検証が成功しました。入力・設定矛盾、SHA 不一致、設定途中変更、モジュール混入、権限不足、artifact 欠落・別 attempt、公開失敗後のラベル抑止、遅延結果を含みます。100 ファイル × 10 PR で履歴要求が run 全体 100 以下、失敗要求の消費、PR 間 cache、base 変更、run 間分離も自動検証しました。
 

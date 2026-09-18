@@ -1,15 +1,18 @@
 # PR Merge Readiness
 
-PR のレビュー・変更履歴は [Python 同梱バイナリ版の独立 Action v0.6.0](https://github.com/nimiusrd/pr-merge-readiness-action/releases/tag/v0.6.0) により観測します。固定 SHA は Immutable Release の配布用コミット `568c7441e16afa46db11bc84f1e4708e6525a404` です。結果は管理ラベルと Actions の実行サマリーに表示します。
+PR の変更履歴に基づく追加確認事項は [Python 同梱バイナリ版の独立 Action v0.7.0](https://github.com/nimiusrd/pr-merge-readiness-action/releases/tag/v0.7.0) により観測します。固定 SHA は Immutable Release の配布用コミット `fc422aad51c2a719cc7b625afb5e3939b4f52868` です。結果は管理ラベルと Actions の実行サマリーに表示します。
 
 - 設定: [`.github/pr-merge-readiness.toml`](../.github/pr-merge-readiness.toml)
 - 通常の workflow: [`.github/workflows/pr-merge-readiness.yml`](../.github/workflows/pr-merge-readiness.yml)
-- 詳細・設定例: [v0.6.0 の README](https://github.com/nimiusrd/pr-merge-readiness-action/blob/568c7441e16afa46db11bc84f1e4708e6525a404/README.md)
-- 移行仕様: [v0.6.0 の運用と移行](https://github.com/nimiusrd/pr-merge-readiness-action/blob/568c7441e16afa46db11bc84f1e4708e6525a404/docs/workflow.md)
+- 詳細・設定例: [v0.7.0 の README](https://github.com/nimiusrd/pr-merge-readiness-action/blob/fc422aad51c2a719cc7b625afb5e3939b4f52868/README.md)
+- 移行仕様: [v0.7.0 の運用と移行](https://github.com/nimiusrd/pr-merge-readiness-action/blob/fc422aad51c2a719cc7b625afb5e3939b4f52868/docs/workflow.md)
+- GitHub 側のマージ条件: [v0.7.0 の推奨 Ruleset](https://github.com/nimiusrd/pr-merge-readiness-action/blob/fc422aad51c2a719cc7b625afb5e3939b4f52868/docs/rulesets.md)
 
 このリポジトリでは **1 job・1 step** で Composite Action を呼びます。配布用コミットには Python 3.14 を同梱した Linux x64・arm64 向けバイナリがあり、実行時の Python・uv 導入や依存解決、ビルドは不要です。PR のソースコードを checkout・実行しません。
 
-設定は version 3、承認数 0、スレッド解決必須、変更間隔のレビュー閾値 30 日です。既存ファイルの base 側の最終変更から 30 日を超える場合は、現在 head に対する所属確認済みの人間の承認を要求します。変更要求・未解決スレッド・CI 定義ファイルの変更も対応事項として扱います。CI の実行結果・再実行履歴・`mergeStateStatus` は集約せず、GitHub Checks で確認します。
+設定は version 4、変更間隔のレビュー閾値 30 日です。既存ファイルの base 側の最終変更から 30 日を超える場合は、現在 head に対する OWNER・MEMBER・COLLABORATOR の人間の承認を要求します。追加ファイルは対象外、rename は旧パスの履歴を使用します。この履歴条件が承認を要求する場合だけレビュー一覧を取得し、同じ人による後続の変更要求・承認取り消しはその人の承認を無効にします。コメントだけのレビューは承認を取り消しません。
+
+一般の必要承認数・変更要求・承認の鮮度・未解決スレッド・CI の結果は GitHub の PR 画面・Ruleset・Checks で確認します。CI 定義を含むすべてのパスに同じ履歴条件を適用し、パスだけを理由に追加確認を要求しません。CI 定義の担当者レビューが必要な場合は CODEOWNERS と Ruleset で管理します。Action の更新では Ruleset は変更されません。これまでの `require_resolved_threads = true` による観測はなくなるため、会話解決をマージ条件にする場合は GitHub 側で設定します。
 
 | タイミング | トリガー | 処理 |
 | --- | --- | --- |
@@ -27,12 +30,11 @@ CI 開始・完了・再実行、承認・スレッド解決、base ブランチ
 
 | 管理ラベル | 意味 |
 | --- | --- |
-| `shadow/要対応事項なし` | 自動確認の範囲で、レビュー・変更履歴の条件を満たしている |
-| `shadow/レビュー待ち` | 必要な承認を待っている |
-| `shadow/要対応` | 変更要求・未解決スレッド・変更履歴・CI 定義の変更への対応が必要 |
+| `shadow/要対応事項なし` | 変更履歴に基づく追加確認事項がない |
+| `shadow/要対応` | 変更履歴に基づく追加の人間レビューが必要 |
 | `shadow/再観測が必要` | 情報が不足している、または観測・公開の間にレビュー対象が変わった |
 
-ラベルはレビューと変更履歴だけを表します。Draft・競合・PR の open/closed 状態は実行サマリーで別に確認します。ラベルは人間の判断や GitHub 本来のマージ条件を代替しません。PR ごとの情報不足はサマリーと再観測ラベルで示し、Action は失敗になります。承認待ちだけなら Action は成功します。
+ラベルと実行サマリーは変更履歴に基づく追加確認の状態だけを表し、レビュー完了・CI 成功・マージ許可を意味しません。Draft・競合・GitHub のレビュー判定・未解決スレッドは取得しません。PR の状態と GitHub 本来のマージ条件は PR 画面で確認します。PR ごとの情報不足はサマリーと再観測ラベルで示し、Action は失敗になります。履歴に基づく追加レビューが必要なだけなら Action は成功します。旧 `shadow/レビュー待ち` は次回のラベル同期で除去します。
 
 Actions の **PR Merge Readiness → Run workflow** で手動観測できます。番号を指定するとその PR、空欄にすると全 open PR と終了済み PR の管理ラベルが同期対象です。実行対象のラベルは毎回更新されます。`update-labels` 入力と `[publication]` 設定は廃止され、観測だけを行うモードはありません。
 
@@ -44,10 +46,12 @@ job は `contents: read`・`pull-requests: write`・`issues: write` を持ちま
 
 `autonomous-merge-check-writer` で設定検証からラベル更新まで job 全体を直列化します。旧版と同じ group を維持し、`cancel-in-progress: false` と `queue: max` で実行中の job を止めずに待機させます。待機枠が満杯で要求がキャンセルされた場合は、空きができてから再実行してください。
 
-設定と workflow は直接編集します。Action 更新時は `uses:` を、バイナリを含む公開済みの配布用40桁 SHA に固定します。ソースだけの SHA は使用できません。設定は `version` と `[review]` の3項目だけで、`action_ref` や `[publication]` などの旧キーが残ると検証エラーになります。
+設定と workflow は直接編集します。Action 更新時は `uses:` を、バイナリを含む公開済みの配布用40桁 SHA に固定します。ソースだけの SHA は使用できません。設定は `version = 4` と `[review]` の `stale_change_review_days` だけで、`minimum_approvals`・`require_resolved_threads`・`action_ref`・`[publication]` などの旧キーが残ると検証エラーになります。
 
-v0.5.1 からの移行では、設定 version 3 と v0.6.0 の workflow を同じコミットで default branch に反映します。v0.5.1 は version 3 に対応せず、v0.6.0 は version 2 に対応しません。移行 PR で v0.6.0 を実行すると、提案設定の検証後、default branch に残る version 2 の読み取りで失敗します。readiness job は必須 Check に登録しません。反映後、PR 番号を空欄にした Run workflow でラベル同期と実行サマリーを確認します。既存 PR も main を取り込んで workflow と設定をまとめて更新してください。
+v0.6.0 からの移行では、設定 version 4 と v0.7.0 の workflow を同じコミットで default branch に反映します。`minimum_approvals` と `require_resolved_threads` を削除し、`stale_change_review_days = 30` は維持します。v0.6.0 は version 4 に対応せず、v0.7.0 は version 3 に対応しません。移行 PR で v0.7.0 を実行すると、提案設定の検証後、default branch に残る version 3 の読み取りで失敗します。旧 workflow の実行でも提案された version 4 は拒否されます。readiness job は必須 Check に登録しません。反映後、PR 番号を空欄にした Run workflow でラベル同期と実行サマリーを確認します。既存 PR も main を取り込んで workflow と設定をまとめて更新してください。
 
-v0.6.0 では参考 Check `Autonomous Merge Shadow / PR #番号` の公開、JSON artifact・manifest の保存、CLI の `replay` が廃止されました。過去の Check は履歴として残ります。過去 artifact を再評価する場合は、保存レポートの Action SHA と一致する信頼済みの旧版を使用してください。v0.5.1 へ切り戻す場合は workflow と TOML をまとめて戻し、version 2 と `[publication]` を復元します。
+v0.6.0 へ切り戻す場合は workflow と TOML をまとめて戻し、配布用 SHA `568c7441e16afa46db11bc84f1e4708e6525a404`・`version = 3`・`minimum_approvals = 0`・`require_resolved_threads = true` を復元します。その後、Run workflow でラベルを同期します。
 
-[移行 PR #501](https://github.com/nimiusrd/devops-tycoon/pull/501) と [Issue #499 の実測検証](./pr-merge-readiness-validation-499.md) は独立 Action 導入時の履歴です。そこに記録された Check・artifact・schema は当時の版の仕様であり、v0.6.0 の検証結果ではありません。独立 Action 導入前へ戻す場合は、旧実装の整理変更と移行変更をともに revert した1本の PR で旧実装の復元と入口の切替をまとめます。artifact の変換は行いません。
+v0.6.0 以降は参考 Check `Autonomous Merge Shadow / PR #番号` の公開、JSON artifact・manifest の保存、CLI の `replay` を提供しません。過去の Check は履歴として残ります。過去 artifact を再評価する場合は、保存レポートの Action SHA と一致する信頼済みの旧版を使用してください。
+
+[移行 PR #501](https://github.com/nimiusrd/devops-tycoon/pull/501) と [Issue #499 の実測検証](./pr-merge-readiness-validation-499.md) は独立 Action 導入時の履歴です。そこに記録された Check・artifact・schema は当時の版の仕様であり、v0.7.0 の検証結果ではありません。独立 Action 導入前へ戻す場合は、旧実装の整理変更と移行変更をともに revert した1本の PR で旧実装の復元と入口の切替をまとめます。artifact の変換は行いません。

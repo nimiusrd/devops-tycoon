@@ -1278,8 +1278,7 @@ body:has(.overlay-contained) {
   flex: 0 0 auto;
 }
 .overlay-contained .sprint-result-card {
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
 }
 .sprint-result-card .result-eyebrow {
   letter-spacing: 0.08em;
@@ -1313,6 +1312,14 @@ body:has(.overlay-contained) {
 .result-details > summary::marker {
   display: none;
   content: '';
+}
+.result-details > summary::after {
+  content: '＋';
+  margin-left: auto;
+  color: var(--text-dim);
+}
+.result-details[open] > summary::after {
+  content: '−';
 }
 .result-details > summary:focus-visible {
   outline: 2px solid var(--sky);

@@ -1262,6 +1262,12 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
 
     await expect(page.getByTestId('result-continue')).toBeInViewport({ ratio: 1 });
     await expect(page.getByTestId('result-restart')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId('reward-ceremony-title')).toBeInViewport();
+    const openMarker = await page
+      .getByTestId('result-details')
+      .locator('summary')
+      .evaluate((el) => getComputedStyle(el, '::after').content);
+    expect(openMarker).toMatch(/−|-/);
 
     await page.getByTestId('overlay-scroll').evaluate((element) => {
       element.scrollTop = element.scrollHeight;

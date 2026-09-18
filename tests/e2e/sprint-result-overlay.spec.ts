@@ -96,6 +96,11 @@ test('1280×800 では評定と主CTAがスクロールなしで見え、ユー�
   await expect(page.getByTestId('result-hero')).not.toContainText('SPRINT RESULT');
   await expect(page.getByTestId('result-hero')).not.toContainText('PERFECT DELIVERY');
   await expect(page.getByTestId('result-details')).not.toHaveAttribute('open');
+  const detailsMarker = await page
+    .getByTestId('result-details')
+    .locator('summary')
+    .evaluate((el) => getComputedStyle(el, '::after').content);
+  expect(detailsMarker).toMatch(/＋|\+/);
 
   const grade = page.getByTestId('result-grade');
   const continueBtn = page.getByTestId('result-continue');

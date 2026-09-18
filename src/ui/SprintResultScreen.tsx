@@ -113,82 +113,95 @@ export function SprintResultScreen({
       tabIndex={-1}
     >
       <div className="result-card sprint-result-card">
-        <div className="result-hero" data-testid="result-hero">
-          <p className="result-eyebrow">スプリント結果</p>
-          {hellSummary.show ? (
-            <div
-              className="result-review-hell-summary"
-              data-testid="result-review-hell-summary"
-              role="status"
-            >
-              <p className="result-section-label">{hellSummary.title}</p>
-              <p data-testid="result-review-hell-peak">{hellSummary.peakLabel}</p>
-              <p className="result-analysis-tip" data-testid="result-review-hell-lesson">
-                {hellSummary.lesson}
-              </p>
-            </div>
-          ) : null}
-          <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
-            {result.grade}
-          </div>
-          <p className="result-grade-caption" data-testid="result-grade-caption">
-            {gradeView.caption}
-          </p>
-          {isSpecialGrade(result.grade) && (
-            <RewardCeremony
-              kind="grade-s"
-              title="完璧な出荷"
-              detail="評価 S — チームの流れがきらめいた"
-            />
-          )}
-          <dl className="result-rows result-highlights">
-            {buildHighlightRows(result).map((row) => (
-              <div className="result-row" key={row.label}>
-                <dt>{row.label}</dt>
-                <dd>{row.value}</dd>
+        <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={0}>
+          <div className="result-hero" data-testid="result-hero">
+            <p className="result-eyebrow">スプリント結果</p>
+            {hellSummary.show ? (
+              <div
+                className="result-review-hell-summary"
+                data-testid="result-review-hell-summary"
+                role="status"
+              >
+                <p className="result-section-label">{hellSummary.title}</p>
+                <p data-testid="result-review-hell-peak">{hellSummary.peakLabel}</p>
+                <p className="result-analysis-tip" data-testid="result-review-hell-lesson">
+                  {hellSummary.lesson}
+                </p>
               </div>
-            ))}
-          </dl>
-          <div className="result-actions overlay-actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={onContinue}
-              disabled={continueDisabled}
-              title={continueDisabledReason}
-              data-testid="result-continue"
-            >
-              {continueLabel}
-            </button>
-            {onAbandon && (
+            ) : null}
+            <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
+              {result.grade}
+            </div>
+            <p className="result-grade-caption" data-testid="result-grade-caption">
+              {gradeView.caption}
+            </p>
+            {isSpecialGrade(result.grade) && (
+              <RewardCeremony
+                kind="grade-s"
+                title="完璧な出荷"
+                detail="評価 S — チームの流れがきらめいた"
+              />
+            )}
+            <dl className="result-rows result-highlights">
+              {buildHighlightRows(result).map((row) => (
+                <div className="result-row" key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="result-actions overlay-actions">
               <button
                 type="button"
-                className="btn"
-                onClick={onAbandon}
-                data-testid="result-restart"
-                title={
-                  replayMode
-                    ? undefined
-                    : '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません'
-                }
+                className="btn btn-primary"
+                onClick={onContinue}
+                disabled={continueDisabled}
+                title={continueDisabledReason}
+                data-testid="result-continue"
               >
-                {resolvedAbandonLabel}
+                {continueLabel}
               </button>
-            )}
+              {onAbandon && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={onAbandon}
+                  data-testid="result-restart"
+                  title={
+                    replayMode
+                      ? undefined
+                      : '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません'
+                  }
+                >
+                  {resolvedAbandonLabel}
+                </button>
+              )}
+            </div>
+            {continueDisabled && continueDisabledReason ? (
+              <p className="result-continue-hint" data-testid="result-continue-hint">
+                {continueDisabledReason}
+              </p>
+            ) : null}
           </div>
-          {continueDisabled && continueDisabledReason ? (
-            <p className="result-continue-hint" data-testid="result-continue-hint">
-              {continueDisabledReason}
-            </p>
-          ) : null}
-        </div>
-        <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={0}>
           <details
             className="result-details"
             data-testid="result-details"
             onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
           >
             <summary>内訳とタイムライン</summary>
+            <div className="result-title">
+              <p className="result-section-label">称号</p>
+              {detailsOpen ? (
+                <RewardCeremony
+                  kind="title"
+                  title={result.title}
+                  detail="このスプリントの称号を獲得"
+                />
+              ) : null}
+              <p className="result-title-value" data-testid="result-title">
+                「{result.title}」
+              </p>
+            </div>
             <dl className="result-rows">
               {buildDetailRows(result).map((row) => (
                 <div className="result-row" key={row.label}>
@@ -272,19 +285,6 @@ export function SprintResultScreen({
             <div className="result-diagnosis">
               <p className="result-section-label">診断</p>
               <p data-testid="result-diagnosis-text">{result.diagnosis}</p>
-            </div>
-            <div className="result-title">
-              <p className="result-section-label">称号</p>
-              {detailsOpen ? (
-                <RewardCeremony
-                  kind="title"
-                  title={result.title}
-                  detail="このスプリントの称号を獲得"
-                />
-              ) : null}
-              <p className="result-title-value" data-testid="result-title">
-                「{result.title}」
-              </p>
             </div>
             {growth && hasGrowthNews(growth) && (
               <div className="result-growth" data-testid="result-growth">

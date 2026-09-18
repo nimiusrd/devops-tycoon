@@ -16,6 +16,14 @@ import type { ResumeRisk } from '../state/resumeRisk';
 import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
+import {
+  ISSUE_476_VARIANTS,
+  issue476Knobs,
+  issue476VariantLabel,
+  resolveIssue476VariantFromLocation,
+  writeIssue476VariantToLocation,
+  type Issue476Variant,
+} from '../rd/issue476Experiment';
 import { publicUrl } from '../utils/publicUrl';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
@@ -197,6 +205,8 @@ export function TitleScreen({
   const startDailyButtonRef = useRef<HTMLButtonElement>(null);
   const [resumeConfirmOpen, setResumeConfirmOpen] = useState(false);
   const resumeBtnRef = useRef<HTMLButtonElement>(null);
+  const [rdVariant, setRdVariant] = useState<Issue476Variant>(resolveIssue476VariantFromLocation);
+  const rdKnobs = issue476Knobs(rdVariant);
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -474,6 +484,9 @@ export function TitleScreen({
               <span className="pill">
                 試練 <b>{trials.length}</b>
               </span>
+              <span className="pill" data-testid="rd476-active">
+                R&D #476 <b>{issue476VariantLabel(rdVariant)}</b>
+              </span>
             </div>
           </header>
 
@@ -490,6 +503,46 @@ export function TitleScreen({
                 <i /> 準備完了
               </span>
             </div>
+
+            <section className="title-section title-rd476-section" data-testid="rd476-picker">
+              <div className="title-section-copy">
+                <span className="title-step">R&D</span>
+                <p>
+                  <b>Issue #476 実験（本番バランスではない）</b>
+                  <small>
+                    S 閾値と Easy 納品ペースを独立に切り替える。既定は baseline。再ビルド不要（
+                    ?rd=baseline|threshold|pace）
+                  </small>
+                </p>
+              </div>
+              <div className="trial-row">
+                {ISSUE_476_VARIANTS.map((id) => (
+                  <button
+                    type="button"
+                    key={id}
+                    className={`trial-chip${rdVariant === id ? ' on' : ''}`}
+                    data-testid={`rd476-${id}`}
+                    onClick={() => {
+                      writeIssue476VariantToLocation(id);
+                      setRdVariant(id);
+                    }}
+                    title={
+                      id === 'threshold'
+                        ? 'S 閾値だけ上げる'
+                        : id === 'pace'
+                          ? 'Easy 納品ペースだけ締める'
+                          : '現行ライブ値'
+                    }
+                  >
+                    {issue476VariantLabel(id)}
+                  </button>
+                ))}
+              </div>
+              <p className="title-rd476-knobs" data-testid="rd476-knobs">
+                S {rdKnobs.gradeThresholdS} / Easy floor {rdKnobs.easyNormalTaskFloor} / mul{' '}
+                {rdKnobs.easyTaskCountMul}
+              </p>
+            </section>
 
             <section className="title-section title-difficulty-section">
               <h2 className="title-section-label">難易度</h2>

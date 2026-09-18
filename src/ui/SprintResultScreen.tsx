@@ -95,6 +95,7 @@ export function SprintResultScreen({
 }: SprintResultScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [titleCeremonyStarted, setTitleCeremonyStarted] = useState(false);
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
@@ -187,10 +188,11 @@ export function SprintResultScreen({
           <details
             className="result-details"
             data-testid="result-details"
+            open={detailsOpen}
             onToggle={(event) => {
-              setTitleCeremonyStarted((started) =>
-                nextTitleCeremonyStarted(started, event.currentTarget.open),
-              );
+              const open = event.currentTarget.open;
+              setDetailsOpen(open);
+              setTitleCeremonyStarted((started) => nextTitleCeremonyStarted(started, open));
             }}
           >
             <summary>内訳とタイムライン</summary>

@@ -1192,7 +1192,10 @@ test.describe('RI-94 レイアウト契約', () => {
     await advanceCurrentSprintToResult(page);
     await expect(page.getByTestId('sprint-result')).toBeVisible();
     await expect(
-      page.locator('.result-highlights .result-row').filter({ hasText: 'シニア体力' }).locator('dd'),
+      page
+        .locator('.result-highlights .result-row')
+        .filter({ hasText: 'シニア体力' })
+        .locator('dd'),
     ).toHaveText(/^\d+$/);
     await stabilizeDomForScreenshot(page);
 

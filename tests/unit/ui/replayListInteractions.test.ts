@@ -272,13 +272,28 @@ describe('ReplayListScreen の選択と閲覧', () => {
     );
     expect(content(screen.find('replay-item-review-hell'))).toContain('敗北 (reviewFreeze)');
     expect(content(screen.find('replay-review-hell-badge'))).toBe('レビュー地獄');
-    expect(content(screen.find('replay-review-hell-peak'))).toBe('Review peak 17');
+    expect(content(screen.find('replay-review-hell-peak'))).toBe('レビュー待ち最大 17件');
     expect(content(screen.find('replay-review-hell-lesson'))).not.toBe('');
     screen.click('replay-review-hell-open');
     expect(onOpen).toHaveBeenCalledExactlyOnceWith('review-hell', 1);
 
     screen.click('replay-item-normal');
     expect(screen.query('replay-review-hell-panel')).toBeUndefined();
+  });
+
+  it('保存済みの英語キーフレームラベルを日本語で表示する', () => {
+    const replay = makeReplay('legacy-en');
+    replay.keyframes[0] = { ...replay.keyframes[0]!, label: 'Review peak 9' };
+    replay.keyframes.push({
+      phase: 'result',
+      label: 'Sprint result',
+      frame: replay.keyframes[0]!.frame,
+    });
+    const screen = mountReplayList({ replays: [replay] });
+    expect(content(screen.find('replay-keyframe-0'))).toContain('レビュー待ち最大 9件');
+    expect(content(screen.find('replay-keyframe-0'))).not.toContain('Review peak');
+    expect(content(screen.find('replay-keyframe-2'))).toContain('スプリント結果');
+    expect(content(screen.find('replay-keyframe-2'))).not.toContain('Sprint result');
   });
 });
 

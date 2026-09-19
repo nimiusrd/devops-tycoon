@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures';
+import { expect, test, openSprintResultDetails } from './fixtures';
 import { STABILITY_COMBO_CAP, comboMultiplier, deliveryComboMultiplier } from '../../src/sim/model';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
@@ -330,6 +330,7 @@ test('炎上があったリザルトに「なぜ燃えたか」解説を表示�
   expect(summary.incidents).toBeGreaterThan(0);
   expect(summary.fireEvents).toBeGreaterThan(0);
   await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await openSprintResultDetails(page);
   await expect(page.getByTestId('result-burn-cause')).toBeVisible();
   await expect(page.getByTestId('result-burn-cause-headline')).toContainText('点火');
   await expect(page.getByTestId('result-burn-cause-entry').first()).toBeVisible();
@@ -352,6 +353,7 @@ test('介入ありのリザルトに無介入ベースライン比較を表示�
   });
 
   await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await openSprintResultDetails(page);
   await expect(page.getByTestId('result-baseline-comparison')).toBeVisible();
   await expect(page.getByTestId('result-baseline-row-delivered')).toContainText(
     `${result.baseline!.delivered} pt → ${result.delivered} pt`,

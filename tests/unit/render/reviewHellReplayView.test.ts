@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   findPeakResultKeyframeIndex,
+  formatReplayKeyframeLabel,
   isReviewHellReplay,
   labelForReplayKeyframe,
   planReviewHellReplay,
@@ -130,6 +131,7 @@ describe('reviewHellReplayView（RI-34‴）', () => {
     expect(view.title).toBe('レビュー地獄リプレイ');
     expect(view.reviewQueuePeak).toBe(22);
     expect(view.preferredKeyframeIndex).toBe(2);
+    expect(view.preferredLabel).toBe('レビュー待ち最大 22件');
     expect(view.lesson).toContain('レビュー枠');
     expect(view.burnHeadline).toContain('点火');
   });
@@ -247,7 +249,7 @@ describe('reviewHellReplayView（RI-34‴）', () => {
     const view = planReviewHellReplay(makeHellBlob([{ phase: 'result', frame: result }]));
 
     expect(view.reviewQueuePeak).toBe(11);
-    expect(view.preferredLabel).toBe('Review peak 11');
+    expect(view.preferredLabel).toBe('レビュー待ち最大 11件');
     expect(view.burnHeadline).toBeUndefined();
   });
 
@@ -255,7 +257,7 @@ describe('reviewHellReplayView（RI-34‴）', () => {
     const setup = baseFrame('lbl');
     expect(labelForReplayKeyframe(setup)).toBe('編成');
     expect(labelForReplayKeyframe(withResult(setup, makeResult({ reviewQueueMax: 16 })))).toBe(
-      'Review peak 16',
+      'レビュー待ち最大 16件',
     );
     const draft: RunReplayFrame = { ...structuredClone(setup), phase: 'draft', draft: ['docs'] };
     expect(labelForReplayKeyframe(draft)).toBe('カードドラフト');
@@ -269,14 +271,14 @@ describe('reviewHellReplayView（RI-34‴）', () => {
       setup,
       makeResult({ reviewQueueMax: Number.POSITIVE_INFINITY }),
     );
-    expect(labelForReplayKeyframe(invalidResult)).toBe('Sprint result');
+    expect(labelForReplayKeyframe(invalidResult)).toBe('スプリント結果');
 
     const quarter: RunReplayFrame = {
       ...structuredClone(setup),
       phase: 'quarterReview',
       totals: { ...setup.totals, reviewQueuePeak: 6 },
     };
-    expect(labelForReplayKeyframe(quarter)).toBe('四半期 (peak 6)');
+    expect(labelForReplayKeyframe(quarter)).toBe('四半期（レビュー待ち最大 6件）');
     expect(
       labelForReplayKeyframe({
         ...quarter,
@@ -320,7 +322,16 @@ describe('reviewHellReplayView（RI-34‴）', () => {
       }),
     ).toMatchObject({
       title: 'レビュー地獄リプレイ',
-      peakLabel: 'Review Queue Max 20 PR',
+      peakLabel: 'レビュー待ち最大 20件',
     });
+  });
+
+  it('formatReplayKeyframeLabel は保存済み英語ラベルを日本語へ揃える', () => {
+    expect(formatReplayKeyframeLabel('Review peak 21')).toBe('レビュー待ち最大 21件');
+    expect(formatReplayKeyframeLabel('Sprint result')).toBe('スプリント結果');
+    expect(formatReplayKeyframeLabel('Sprint result 2')).toBe('スプリント結果 2');
+    expect(formatReplayKeyframeLabel('四半期 (peak 6)')).toBe('四半期（レビュー待ち最大 6件）');
+    expect(formatReplayKeyframeLabel('編成')).toBe('編成');
+    expect(formatReplayKeyframeLabel('レビュー待ち最大 9件')).toBe('レビュー待ち最大 9件');
   });
 });

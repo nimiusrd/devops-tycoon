@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { expect, test, openSprintResultDetails } from './fixtures';
 import { dailySeed } from '../../src/state/meta';
 import type { RunSaveSummary } from '../../src/state/runPersistence';
 
@@ -112,14 +112,19 @@ test('Daily無介入 Sprint 1 は評価 B でも危機の読みと内訳が見�
   });
 
   await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-title')).toContainText('シニア過労メーカー');
+  await expect(page.getByTestId('reward-ceremony-title')).toBeVisible();
+  await expect(page.getByTestId('result-diagnosis-text')).toContainText('燃え尽き寸前');
+  await openSprintResultDetails(page);
   await expect(page.getByTestId('result-grade')).toHaveText('B');
   await expect(page.getByTestId('result-grade-caption')).toContainText(
     '大きな危機を出しつつ出荷した',
   );
   await expect(page.getByTestId('result-grade-breakdown')).toBeVisible();
+  await expect(page.getByTestId('result-grade-breakdown')).toContainText('炎上');
+  await expect(page.getByTestId('result-grade-breakdown')).not.toContainText('Incident');
+  await expect(page.getByTestId('result-grade-breakdown')).not.toContainText('Rework');
   await expect(page.getByTestId('result-grade-tip')).toContainText('出荷点を母数');
-  await expect(page.getByTestId('result-diagnosis-text')).toContainText('燃え尽き寸前');
-  await expect(page.getByTestId('result-title')).toContainText('シニア過労メーカー');
 });
 
 test('中断ランがあるときデイリー開始は確認し、戻るとセーブを残す', async ({ page }) => {

@@ -13,6 +13,7 @@ import {
   advanceCurrentResultToDraft,
   beginCurrentSetupSprint,
   beginPublicSprint,
+  openSprintResultDetails,
 } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
 import { ACTION_DEFS } from '../../src/data/actions';
@@ -539,12 +540,10 @@ async function stabilizeDomForScreenshot(page: Page): Promise<void> {
       }
     `,
   });
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      }),
-  );
+  await page.evaluate(async () => {
+    await document.fonts.load('16px "WenQuanYi Zen Hei"');
+    await document.fonts.ready;
+  });
 }
 
 async function waitForLayoutFrame(page: Page): Promise<void> {
@@ -581,6 +580,9 @@ async function exposeResultCardForScreenshot(page: Page): Promise<void> {
         min-height: 0 !important;
         overflow: visible !important;
         flex: none !important;
+      }
+      .result-overlay > .sprint-result-card {
+        min-height: 528px !important;
       }
       .overlay-scroll {
         overflow: visible !important;
@@ -1188,7 +1190,10 @@ test.describe('RI-94 レイアウト契約', () => {
     await advanceCurrentSprintToResult(page);
     await expect(page.getByTestId('sprint-result')).toBeVisible();
     await expect(
-      page.locator('.result-row').filter({ hasText: 'Senior HP' }).locator('dd'),
+      page
+        .locator('.result-highlights .result-row')
+        .filter({ hasText: 'シニア体力' })
+        .locator('dd'),
     ).toHaveText(/^\d+$/);
     await stabilizeDomForScreenshot(page);
 
@@ -1198,7 +1203,8 @@ test.describe('RI-94 レイアウト契約', () => {
     await exposeResultCardForScreenshot(page);
     await expect(resultCard).toHaveScreenshot('sprint-layout-result-overlay-card.png', {
       animations: 'disabled',
-      maxDiffPixelRatio: 0.02,
+      // CI とローカルの日本語フォント計量差（約 4%）を吸収する。
+      maxDiffPixelRatio: 0.05,
     });
   });
 });
@@ -1243,6 +1249,11 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     await expect(overlay).toBeVisible();
     await expect(overlay).toHaveClass(/overlay-contained/);
     await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
+    await expect(page.getByTestId('result-title')).toBeVisible();
+    await expect(page.getByTestId('reward-ceremony-title')).toBeVisible();
+    await expect(page.getByTestId('result-diagnosis-text')).toBeVisible();
+
+    await openSprintResultDetails(page);
 
     const before = await readOverlayScrollMetrics(page, 'sprint-result');
     expect(before.overlayTop, 'オーバーレイ上端が viewport 外').toBeLessThanOrEqual(1);
@@ -1255,6 +1266,12 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
 
     await expect(page.getByTestId('result-continue')).toBeInViewport({ ratio: 1 });
     await expect(page.getByTestId('result-restart')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId('reward-ceremony-title')).toBeInViewport();
+    const openMarker = await page
+      .getByTestId('result-details')
+      .locator('summary')
+      .evaluate((el) => getComputedStyle(el, '::after').content);
+    expect(openMarker).toMatch(/−|-/);
 
     await page.getByTestId('overlay-scroll').evaluate((element) => {
       element.scrollTop = element.scrollHeight;
@@ -2068,6 +2085,7 @@ test.describe('延焼文言の DOM レイアウト', () => {
     await injectSpreadResultEvents(page);
 
     await expect(page.getByTestId('sprint-result')).toBeVisible();
+    await openSprintResultDetails(page);
     await expect(page.getByTestId('result-burn-cause')).toBeVisible();
     await expect(page.getByText(SPREAD_RESULT_CHAIN)).toBeVisible();
     await expect(page.getByText(SPREAD_RESULT_IMPACT)).toBeVisible();

@@ -6,7 +6,11 @@
  */
 import { useRef, useState, type ChangeEvent } from 'react';
 import { diagnosisView } from '../sim/diagnosis';
-import { planReviewHellReplay } from '../render/reviewHellReplayView';
+import {
+  formatReplayKeyframeLabel,
+  planReviewHellReplay,
+  reviewQueuePeakCountLabel,
+} from '../render/reviewHellReplayView';
 import { formatReplayRuleset } from './replayRuleset';
 import { resolveSelectedReplayId } from './replayListSelection';
 import { ResultOverlay } from './ResultOverlay';
@@ -116,12 +120,12 @@ export function ReplayListScreen({
       data-testid="replay-list"
       role="dialog"
       aria-modal="true"
-      aria-label="Replays"
+      aria-label="リプレイ"
       tabIndex={-1}
     >
       <div className="meta-shop-panel replay-list-panel">
         <div className="result-overlay-body" tabIndex={0}>
-          <p className="result-eyebrow">REPLAY</p>
+          <p className="result-eyebrow">リプレイ</p>
           <h2 className="draft-title">保存済みランの閲覧</h2>
           <p className="meta-shop-lead">
             キーフレームを選んで、当時の盤面を読み取り専用で確認します。
@@ -188,7 +192,7 @@ export function ReplayListScreen({
                           className="replay-review-hell-peak"
                           data-testid="replay-review-hell-peak"
                         >
-                          Review peak {hellView.reviewQueuePeak}
+                          {reviewQueuePeakCountLabel(hellView.reviewQueuePeak)}
                         </p>
                         {hellView.burnHeadline ? (
                           <p className="replay-review-hell-burn">{hellView.burnHeadline}</p>
@@ -218,7 +222,9 @@ export function ReplayListScreen({
                             onClick={() => onOpen(selected.id, index)}
                           >
                             <b>{frame.phase}</b>
-                            {frame.label ? <span>{frame.label}</span> : null}
+                            {frame.label ? (
+                              <span>{formatReplayKeyframeLabel(frame.label)}</span>
+                            ) : null}
                             <i>開く →</i>
                           </button>
                         </li>

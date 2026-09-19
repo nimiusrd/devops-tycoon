@@ -81,3 +81,34 @@ test('SPRINT RESULT 中は KPI詳細／ラン詳細にフォーカスもクリ�
   await page.getByTestId('result-continue').click();
   await expect(overlay).toHaveCount(0);
 });
+
+test('1280×800 では評定と主CTAがスクロールなしで見え、ユーザー向け英語ラベルがない', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await beginPublicSprint(page, { seed: 'issue-470-result-ja-0' });
+  await advanceCurrentSprintToResult(page);
+
+  const overlay = page.getByTestId('sprint-result');
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toHaveAttribute('aria-label', 'スプリント結果');
+  await expect(page.getByTestId('result-hero')).toContainText('スプリント結果');
+  await expect(page.getByTestId('result-hero')).not.toContainText('SPRINT RESULT');
+  await expect(page.getByTestId('result-hero')).not.toContainText('PERFECT DELIVERY');
+  await expect(page.getByTestId('result-details')).not.toHaveAttribute('open');
+  const detailsMarker = await page
+    .getByTestId('result-details')
+    .locator('summary')
+    .evaluate((el) => getComputedStyle(el, '::after').content);
+  expect(detailsMarker).toMatch(/＋|\+/);
+
+  const grade = page.getByTestId('result-grade');
+  const continueBtn = page.getByTestId('result-continue');
+  await expect(grade).toBeInViewport();
+  await expect(continueBtn).toBeInViewport();
+  const gradeBox = await grade.boundingBox();
+  const continueBox = await continueBtn.boundingBox();
+  if (!gradeBox || !continueBox) throw new Error('評定または主CTAの位置が取れない');
+  expect(gradeBox.y).toBeGreaterThanOrEqual(0);
+  expect(continueBox.y + continueBox.height).toBeLessThanOrEqual(800);
+});

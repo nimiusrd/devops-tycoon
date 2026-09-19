@@ -68,7 +68,7 @@ export function planBaselineComparison(result: SprintResult): BaselineComparison
       },
       {
         key: 'maxCombo',
-        label: 'Max Combo',
+        label: '最大コンボ',
         baseline: `x${baseline.maxCombo}`,
         actual: `x${result.maxCombo}`,
         delta: signed(comboDelta, ''),

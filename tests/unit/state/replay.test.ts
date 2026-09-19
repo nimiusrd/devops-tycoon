@@ -901,7 +901,7 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(setup?.label).toBe('編成');
     const result = replay!.keyframes.find((k) => k.phase === 'result');
     if (result) {
-      expect(result.label).toMatch(/Review peak \d+/);
+      expect(result.label).toMatch(/レビュー待ち最大 \d+件/);
     }
   });
 

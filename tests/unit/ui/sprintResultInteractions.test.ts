@@ -5,6 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useRef: (initial: unknown) => ({ current: initial }),
+  useState: (initial: unknown) => [
+    typeof initial === 'function' ? (initial as () => unknown)() : initial,
+    vi.fn(),
+  ],
 }));
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
 
@@ -15,6 +19,7 @@ import {
   SprintResultScreen,
   type SprintResultScreenProps,
 } from '../../../src/ui/SprintResultScreen';
+import { RewardCeremony } from '../../../src/ui/JuicyEffects';
 import { completeSprint, makeOrg } from '../helpers/runEngineFixtures';
 
 type ElementProps = Record<string, unknown> & { children?: ReactNode };
@@ -49,6 +54,9 @@ function mountResult(overrides: Partial<SprintResultScreenProps> = {}) {
     find,
     onContinue,
     has: (id: string) => nodes.some((item) => item.props['data-testid'] === id),
+    ceremony(kind: string) {
+      return nodes.find((item) => item.type === RewardCeremony && item.props.kind === kind);
+    },
     row(label: string) {
       const row = nodes.find(
         (item) =>
@@ -90,18 +98,28 @@ describe('SprintResultScreen の結果表示と進行', () => {
         diagnosis: 'レビュー介入が出荷を支えた。',
       }),
     });
-    expect(screen.row('Done')).toBe('12 tasks');
-    expect(screen.row('Delivered')).toBe('84 pt');
-    expect(screen.row('Max Combo')).toBe('x4');
-    expect(screen.row('AI Assisted')).toBe('75%');
-    expect(screen.row('Review Queue Max')).toBe('9 PR');
-    expect(screen.row('Rework')).toBe('3 tasks');
-    expect(screen.row('Incidents')).toBe('2 (鎮火 1 / 延焼 1)');
+    expect(screen.row('完了')).toBe('12件');
+    expect(screen.row('出荷')).toBe('84pt');
+    expect(screen.row('最大コンボ')).toBe('×4');
+    expect(screen.row('AI支援')).toBe('75%');
+    expect(screen.row('レビュー待ち最大')).toBe('9件');
+    expect(screen.row('手戻り')).toBe('3件');
+    expect(screen.row('鎮火 / 延焼')).toBe('1 / 1');
     expect(screen.row('介入')).toBe('割り込みレビュー×3 / 緊急対応×1');
     expect(content(screen.find('result-diagnosis-text'))).toBe('レビュー介入が出荷を支えた。');
     expect(content(screen.find('result-title'))).toBe('「小さく出すチーム」');
     expect(content(screen.find('result-intervention-tip'))).toContain('延焼 1 件');
     expect(content(screen.find('result-continue'))).toBe('カードドラフトへ →');
+    expect(screen.find('sprint-result').props['aria-label']).toBe('スプリント結果');
+    expect(content(screen.find('result-hero'))).toContain('スプリント結果');
+    expect(content(screen.find('result-hero'))).not.toContain('SPRINT RESULT');
+    expect(content(screen.find('result-hero'))).toContain('「小さく出すチーム」');
+    expect(content(screen.find('result-hero'))).toContain('レビュー介入が出荷を支えた。');
+    expect(screen.has('result-details')).toBe(true);
+    expect(screen.ceremony('title')?.props).toMatchObject({
+      title: '小さく出すチーム',
+      detail: 'このスプリントの称号を獲得',
+    });
     expect(screen.has('result-restart')).toBe(false);
     screen.click('result-continue');
     expect(screen.onContinue).toHaveBeenCalledOnce();
@@ -110,7 +128,7 @@ describe('SprintResultScreen の結果表示と進行', () => {
   it('介入も成長ニュースもなければ分析を省略し、残量不明のシニア HP を捏造しない', () => {
     const screen = mountResult({ result: makeResult({ timeline: [] }), growth: emptyGrowth });
     expect(screen.row('介入')).toBe('なし');
-    expect(screen.row('Senior HP')).toBe('—');
+    expect(screen.row('シニア体力')).toBe('—');
     expect(screen.has('result-intervention-analysis')).toBe(false);
     expect(screen.has('result-burn-cause')).toBe(false);
     expect(screen.has('result-growth')).toBe(false);
@@ -134,7 +152,7 @@ describe('SprintResultScreen の結果表示と進行', () => {
     });
     expect(content(screen.find('result-grade'))).toBe('S');
     expect(content(screen.find('result-grade-caption'))).toContain('100%');
-    expect(screen.row('Senior HP')).toBe('58');
+    expect(screen.row('シニア体力')).toBe('58');
     expect(content(screen.find('result-burn-cause-entry'))).toContain(
       't10: PR#7 が Review 落ちで点火 → t12 緊急対応で鎮火',
     );
@@ -154,7 +172,7 @@ describe('SprintResultScreen の結果表示と進行', () => {
       continueDisabledReason: 'これが最後の記録です',
       onAbandon,
     });
-    expect(content(screen.find('result-review-hell-peak'))).toBe('Review Queue Max 18 PR');
+    expect(content(screen.find('result-review-hell-peak'))).toBe('レビュー待ち最大 18件');
     expect(content(screen.find('result-review-hell-lesson')).length).toBeGreaterThan(0);
     expect(screen.find('result-continue').props).toMatchObject({
       disabled: true,

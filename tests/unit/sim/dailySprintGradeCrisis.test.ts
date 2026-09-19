@@ -55,10 +55,8 @@ describe('Daily 無介入 Sprint 1 の評価と危機の読み（#364）', () =>
     const view = planSprintGradeView(result);
     expect(view.caption).toContain('大きな危機を出しつつ出荷した');
     expect(view.tip).toContain('出荷点を母数');
-    expect(view.rows.some((row) => row.label === 'Incident' && row.value.includes('10件'))).toBe(
-      true,
-    );
-    expect(view.rows.some((row) => row.label === 'シニアHP' && row.value.includes('-98'))).toBe(
+    expect(view.rows.some((row) => row.label === '炎上' && row.value.includes('10件'))).toBe(true);
+    expect(view.rows.some((row) => row.label === 'シニア体力' && row.value.includes('-98'))).toBe(
       true,
     );
   });

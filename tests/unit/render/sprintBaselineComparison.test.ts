@@ -70,7 +70,7 @@ describe('sprintBaselineComparison（RI-55）', () => {
       },
       {
         key: 'maxCombo',
-        label: 'Max Combo',
+        label: '最大コンボ',
         baseline: 'x3',
         actual: 'x5',
         delta: '+2',

@@ -145,6 +145,8 @@ test('ラン完了後にリプレイ一覧からキーフレームを read-only 
   await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
   await page.getByTestId('open-replays').click();
   await expect(page.getByTestId('replay-list')).toBeVisible();
+  await expect(page.getByTestId('replay-list')).not.toContainText('Review peak');
+  await expect(page.getByTestId('replay-list')).not.toContainText('Sprint result');
   await expect(page.getByTestId('replay-ruleset').first()).toContainText('v');
   await page.getByTestId('replay-keyframe-0').click();
 
@@ -256,7 +258,9 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   await expect(page.getByTestId('replay-list')).toBeVisible();
   await expect(page.getByTestId('replay-review-hell-badge')).toBeVisible();
   await expect(page.getByTestId('replay-review-hell-panel')).toBeVisible();
-  await expect(page.getByTestId('replay-review-hell-peak')).toContainText('21');
+  await expect(page.getByTestId('replay-review-hell-peak')).toHaveText('レビュー待ち最大 21件');
+  await expect(page.getByTestId('replay-keyframe-1')).toContainText('レビュー待ち最大 21件');
+  await expect(page.getByTestId('replay-list')).not.toContainText('Review peak');
   await page.getByTestId('replay-review-hell-open').click();
 
   await expect(page.getByTestId('replay-mode-banner')).toBeVisible();
@@ -265,7 +269,7 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   await expect(page.getByTestId('result-review-hell-summary')).toBeVisible();
   await expect(page.getByTestId('result-review-hell-peak')).toContainText('21');
   await expect(
-    page.locator('.result-row').filter({ hasText: 'Senior HP' }).locator('dd'),
+    page.locator('.result-highlights .result-row').filter({ hasText: 'シニア体力' }).locator('dd'),
   ).toHaveText('—');
   await assertKeyframeViewerInViewport(page);
 });
@@ -615,6 +619,8 @@ test('リプレイの「カードドラフトへ」で次のドラフトキー�
 
   await page.getByTestId('open-replays').click();
   await expect(page.getByTestId('replay-list')).toBeVisible();
+  await expect(page.getByTestId('replay-keyframe-1')).toContainText('スプリント結果');
+  await expect(page.getByTestId('replay-list')).not.toContainText('Sprint result');
   await page.getByTestId('replay-keyframe-1').click();
 
   await expect(page.getByTestId('sprint-result')).toBeVisible();

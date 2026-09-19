@@ -1274,6 +1274,73 @@ body:has(.overlay-contained) {
   box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.5);
   text-align: center;
 }
+.sprint-result-card .result-hero {
+  flex: 0 0 auto;
+}
+.sprint-result-card .result-hero .result-title {
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.sprint-result-card .result-hero .result-title .result-section-label {
+  text-align: center;
+}
+.sprint-result-card .result-hero .result-diagnosis,
+.sprint-result-card .result-hero .result-growth,
+.sprint-result-card .result-hero .result-burn-cause,
+.sprint-result-card .result-hero .result-intervention-analysis {
+  margin-bottom: 0.65rem;
+}
+.overlay-contained .sprint-result-card {
+  overflow: hidden;
+}
+.sprint-result-card .result-eyebrow {
+  letter-spacing: 0.08em;
+}
+.sprint-result-card .result-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.25rem;
+  text-align: left;
+}
+.sprint-result-card .result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.result-details {
+  text-align: left;
+}
+.result-details > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--sky);
+  list-style: none;
+}
+.result-details > summary::-webkit-details-marker,
+.result-details > summary::marker {
+  display: none;
+  content: '';
+}
+.result-details > summary::after {
+  content: '＋';
+  margin-left: auto;
+  color: var(--text-dim);
+}
+.result-details[open] > summary::after {
+  content: '−';
+}
+.result-details > summary:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+.result-details[open] > summary {
+  margin-bottom: 8px;
+}
 .result-eyebrow {
   margin: 0;
   font-size: 0.75rem;
@@ -4576,8 +4643,10 @@ button.card.card-readonly:disabled {
 }
 .result-review-hell-summary {
   margin: 0 0 12px;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, #c45c5c 45%, transparent);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
   text-align: left;
 }
 .result-review-hell-summary p {

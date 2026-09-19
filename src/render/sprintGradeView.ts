@@ -170,13 +170,13 @@ export function planSprintGradeView(result: SprintResult): SprintGradeView {
   if (penalties) {
     if (penalties.rework > 0) {
       rows.push({
-        label: 'Rework',
+        label: '手戻り',
         value: `${formatPoints(-penalties.rework)}（${result.rework}件）`,
       });
     }
     if (penalties.incident > 0) {
       rows.push({
-        label: 'Incident',
+        label: '炎上',
         value: `${formatPoints(-penalties.incident)}（${result.incidents}件）`,
       });
     }
@@ -188,7 +188,7 @@ export function planSprintGradeView(result: SprintResult): SprintGradeView {
     }
     if (penalties.hp > 0) {
       rows.push({
-        label: 'シニアHP',
+        label: 'シニア体力',
         value: `${formatPoints(-penalties.hp)}（${result.seniorHpDelta}）`,
       });
     }

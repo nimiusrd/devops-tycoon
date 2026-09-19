@@ -194,6 +194,17 @@ export async function advanceCurrentSprintToResult(page: Page): Promise<RunState
   return state;
 }
 
+/** 折りたたんだスプリント結果の内訳を開き、評価・因果・タイムラインを可視にする。 */
+export async function openSprintResultDetails(page: Page): Promise<void> {
+  const details = page.getByTestId('result-details');
+  await expect(details).toBeVisible();
+  const opened = await details.evaluate((el) => el instanceof HTMLDetailsElement && el.open);
+  if (!opened) {
+    await details.locator('summary').click();
+  }
+  await expect(details).toHaveAttribute('open', '');
+}
+
 /** スプリント結果からカードドラフトへ進む。 */
 export async function advanceCurrentResultToDraft(page: Page): Promise<RunState> {
   const state = await page.evaluate(() => {

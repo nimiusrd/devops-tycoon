@@ -847,14 +847,16 @@ body {
 .rd-board-overlay {
   position: absolute;
   inset: 0;
-  z-index: var(--visual-layer-sprint-legend);
+  z-index: 16;
   pointer-events: none;
 }
 
 .rd-board-picker {
   position: absolute;
-  top: 10px;
-  right: 12px;
+  top: auto;
+  right: auto;
+  bottom: 10px;
+  left: 12px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -865,7 +867,7 @@ body {
   background: var(--panel);
   color: var(--text);
   pointer-events: auto;
-  max-width: 46%;
+  max-width: 56%;
 }
 
 .rd-board-picker-title,
@@ -908,7 +910,8 @@ body {
   border-radius: 50%;
   box-sizing: border-box;
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 0.85;
+  background: color-mix(in srgb, var(--sky) 12%, transparent);
 }
 
 .rd-hit-ring.is-fire {

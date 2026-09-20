@@ -148,7 +148,17 @@ export function planRdSignalMarkers(scene: BoardScenePlan): RdSignalMarker[] {
 
   const review = scene.stations.find((station) => station.lane === 'review');
   if (review?.hot) {
-    markers.push({ id: 'congestion', label: '渋滞', x: review.x, y: review.y - 42 });
+    const reviewDots = scene.dots.filter((dot) => dot.lane === 'review' && !dot.motion);
+    const pile = reviewDots.reduce<BoardDotPlan | undefined>(
+      (best, dot) => (best && best.x >= dot.x ? best : dot),
+      undefined,
+    );
+    markers.push({
+      id: 'congestion',
+      label: '渋滞',
+      x: (pile?.x ?? review.x) + 36,
+      y: (pile?.y ?? review.y) - 24,
+    });
   }
 
   const spreadDot = dotById(scene, RD_SPREAD_TARGET_TASK_ID);

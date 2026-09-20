@@ -1450,12 +1450,14 @@ async function expandEventTicker(page: Page): Promise<void> {
   const ticker = page.getByTestId('event-ticker');
   const list = page.getByTestId('event-ticker-list');
   if (await heading.isDisabled()) return;
-  if ((await ticker.getAttribute('data-expanded')) !== 'true') {
-    // Playwright の touch+mouse 合成 click はトグルを二重発火しうるので DOM click にする。
-    await heading.evaluate((element: HTMLElement) => element.click());
-  }
-  await expect(ticker).toHaveAttribute('data-expanded', 'true');
-  await expect(list).toBeVisible();
+  await expect(async () => {
+    if ((await ticker.getAttribute('data-expanded')) !== 'true') {
+      // Playwright の touch+mouse 合成 click はトグルを二重発火しうるので DOM click にする。
+      await heading.evaluate((element: HTMLElement) => element.click());
+    }
+    expect(await ticker.getAttribute('data-expanded')).toBe('true');
+    await expect(list).toBeVisible();
+  }).toPass();
 }
 
 async function assertTickerRowTextsDoNotOverlap(page: Page, label: string): Promise<void> {

@@ -347,6 +347,10 @@ describe('SprintScreen の表示と親子の連携', () => {
     screen.child(EventTicker).onExpandedChange?.(true);
     screen.flush();
     expect(screen.child(EventTicker).expanded).toBe(true);
+    screen.update({ eventTickerExpanded: false, onEventTickerExpandedChange: vi.fn() });
+    expect(screen.child(EventTicker).expanded).toBe(false);
+    screen.child(EventTicker).onExpandedChange?.(true);
+    expect(screen.props.onEventTickerExpandedChange).toHaveBeenCalledWith(true);
     expect(screen.child(PointPops)).toMatchObject({
       deliveryScore: state.org.deliveryScore,
       teamId: state.activeTeamId,

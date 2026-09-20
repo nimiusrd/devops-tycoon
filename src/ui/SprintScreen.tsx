@@ -84,6 +84,9 @@ export interface SprintScreenProps {
   onTutorialDismiss?: () => void;
   /** ガイド表示中の pause 所有に使う（チャンク読込後にマウントされる）。 */
   game?: GameHandle;
+  /** 出来事ティッカーの展開。未指定時は画面内部で管理する。 */
+  eventTickerExpanded?: boolean;
+  onEventTickerExpandedChange?: (expanded: boolean) => void;
 }
 
 export function SprintScreen({
@@ -98,6 +101,8 @@ export function SprintScreen({
   showTutorial = false,
   onTutorialDismiss,
   game,
+  eventTickerExpanded: eventTickerExpandedProp,
+  onEventTickerExpandedChange,
 }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
@@ -129,7 +134,8 @@ export function SprintScreen({
   const [slowMoPlan, setSlowMoPlan] = useState({ clearedIncidentCount: 0 });
   const [attentionKey, setAttentionKey] = useState(0);
   const [attentionPlan, setAttentionPlan] = useState<AttentionPausePlan>(IDLE_ATTENTION);
-  const [eventTickerExpanded, setEventTickerExpanded] = useState(false);
+  const [uncontrolledEventTickerExpanded, setUncontrolledEventTickerExpanded] = useState(false);
+  const eventTickerExpanded = eventTickerExpandedProp ?? uncontrolledEventTickerExpanded;
   // 完了中・別スプリントの武装は無効（effect で setState しない）。
   const armedId =
     sprint && !sprint.complete && armed.sprintId === state.currentSprintId ? armed.id : null;
@@ -335,6 +341,14 @@ export function SprintScreen({
     onTutorialDismiss?.();
   }, [onTutorialDismiss, setPlaybackSpeed]);
 
+  const handleEventTickerExpandedChange = useCallback(
+    (expanded: boolean) => {
+      if (eventTickerExpandedProp === undefined) setUncontrolledEventTickerExpanded(expanded);
+      onEventTickerExpandedChange?.(expanded);
+    },
+    [eventTickerExpandedProp, onEventTickerExpandedChange],
+  );
+
   if (!sprint) return null;
 
   const kind = state.currentSprintKind;
@@ -468,7 +482,7 @@ export function SprintScreen({
               liveCombo={liveCombo}
               frozen={overlayFrozen}
               expanded={eventTickerExpanded}
-              onExpandedChange={setEventTickerExpanded}
+              onExpandedChange={handleEventTickerExpandedChange}
             />
           </AspectStage>
         </main>

@@ -48,6 +48,7 @@ import {
 } from './sprintTempo';
 import { TutorialGuide } from './TutorialGuide';
 import { VisualIcon } from './VisualIcon';
+import { healthTag } from '../render/teamHealthTheme';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
 const BOSS_SLOWMO_MS = 1_200;
@@ -323,6 +324,16 @@ export function SprintScreen({
     [onPlayCard, playbackSpeed],
   );
 
+  // 初回ガイド中・直後は再生するまで走らせない（#471）。
+  useEffect(() => {
+    if (showTutorial) setPlaybackSpeed(0);
+  }, [showTutorial, setPlaybackSpeed]);
+
+  const handleTutorialDismiss = useCallback(() => {
+    setPlaybackSpeed(0);
+    onTutorialDismiss?.();
+  }, [onTutorialDismiss, setPlaybackSpeed]);
+
   if (!sprint) return null;
 
   const kind = state.currentSprintKind;
@@ -391,6 +402,15 @@ export function SprintScreen({
             <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
               <i style={{ width: `${jamPct}%` }} />
             </div>
+            <span className="meter-count" data-testid="jam-count">
+              {queue}
+            </span>
+            {queue >= 12 && (
+              <span className="meter-alert" data-testid="jam-alert">
+                <VisualIcon name="reviewHell" size="hud" />
+                {healthTag('reviewHell')}
+              </span>
+            )}
           </div>
           <div
             className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
@@ -404,7 +424,7 @@ export function SprintScreen({
             </div>
             <span className="meter-count" data-testid="fire-count" data-count={incidents}>
               <VisualIcon name="fire" size="hud" />
-              {incidents}
+              {incidents > 0 ? `炎上 ${incidents}` : incidents}
             </span>
           </div>
           <ComboBadge
@@ -472,7 +492,7 @@ export function SprintScreen({
       }
       overlays={
         showTutorial && onTutorialDismiss && game ? (
-          <TutorialGuide game={game} onDismiss={onTutorialDismiss} />
+          <TutorialGuide game={game} onDismiss={handleTutorialDismiss} />
         ) : null
       }
     />

@@ -124,6 +124,11 @@ export function CardView({
           )}
         </>
       )}
+      {disabled && disabledReason && (
+        <span className="card-disabled-reason" data-testid="card-disabled-reason">
+          {disabledReason}
+        </span>
+      )}
     </>
   );
 

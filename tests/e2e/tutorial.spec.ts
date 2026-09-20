@@ -171,6 +171,8 @@ test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続�
   await page.getByTestId('tutorial-next').click();
 
   await expect(page.getByTestId('tutorial-guide')).not.toBeVisible();
+  await expect(page.getByTestId('speed-pause')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('speed-controls')).toHaveAttribute('data-paused', 'true');
   await expect
     .poll(async () => page.evaluate(() => (window as GameWindow).game!.getMeta().seenTutorial))
     .toBe(true);
@@ -207,6 +209,7 @@ test('表示済みでも ?tutorial=force ならガイドを再表示できる', 
   await expect(page.getByTestId('tutorial-guide')).toBeVisible();
   await page.getByTestId('tutorial-skip').click();
   await expect(page.getByTestId('tutorial-guide')).not.toBeVisible();
+  await expect(page.getByTestId('speed-pause')).toHaveAttribute('aria-pressed', 'true');
 
   // 同一ページで新しいランを始めても force なら再表示（sprintId 再利用に依存しない）
   await page.evaluate(() => {

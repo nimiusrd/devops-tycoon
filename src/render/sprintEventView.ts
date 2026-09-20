@@ -183,3 +183,10 @@ export function formatRecentSprintEvents(
   const slice = events.slice(-limit);
   return slice.map(formatSprintEvent).reverse();
 }
+
+/** 折りたたみ時の1行サマリー。最新件と残り件数だけを出す（#471）。 */
+export function formatTickerSummary(rows: readonly SprintEventView[]): string {
+  if (rows.length === 0) return '';
+  if (rows.length === 1) return rows[0].text;
+  return `${rows[0].text} ほか${rows.length - 1}件`;
+}

@@ -120,7 +120,13 @@ describe('DeckBar の閲覧と手札発動', () => {
     expect(card.props.disabled).toBe(disabled);
     expect(content(card)).toContain('集中力');
     expect(screen.find('deck').props['data-paused']).toBe(String(paused));
-    expect(String(card.props.title).includes('一時停止中はカードを発動できない')).toBe(paused);
+    expect(String(card.props.title).includes('一時停止中')).toBe(paused);
+    if (disabled) {
+      expect(content(card)).toContain(paused ? '一時停止中' : '集中力不足');
+    } else {
+      expect(content(card)).not.toContain('一時停止中');
+      expect(content(card)).not.toContain('集中力不足');
+    }
     screen.click('hand-card-docs');
     expect(onPlay).toHaveBeenCalledTimes(disabled ? 0 : 1);
   });

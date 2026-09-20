@@ -1444,7 +1444,16 @@ async function injectSpreadTickerEvents(page: Page): Promise<void> {
   });
 }
 
-/** 定常フレームでは各出来事本文が自行列と次行の上端を超えない（#457）。 */
+/** 1行サマリーから履歴リストを開く（#471）。 */
+async function expandEventTicker(page: Page): Promise<void> {
+  const heading = page.getByTestId('event-ticker-heading');
+  const ticker = page.getByTestId('event-ticker');
+  if (await heading.isDisabled()) return;
+  if ((await ticker.getAttribute('data-expanded')) === 'true') return;
+  await heading.click();
+  await expect(ticker).toHaveAttribute('data-expanded', 'true');
+}
+
 async function assertTickerRowTextsDoNotOverlap(page: Page, label: string): Promise<void> {
   const overlap = await page.locator('.event-ticker-list').evaluate((list) => {
     const rows = [...list.querySelectorAll<HTMLElement>('.event-ticker-row')];
@@ -1474,6 +1483,7 @@ async function assertTickerRowTextsDoNotOverlap(page: Page, label: string): Prom
 
 /** 狭い盤面でも5件の延焼行が、スクロール後（またはそのまま）リスト可視領域に入る。 */
 async function assertSpreadTickerRowsReachable(page: Page, label: string): Promise<void> {
+  await expandEventTicker(page);
   const list = page.getByTestId('event-ticker-list');
   const rows = list.locator('.event-ticker-row');
   await expect(rows, `${label}: 延焼行が5件ない`).toHaveCount(5);
@@ -1677,11 +1687,23 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
     'tabindex',
     '-1',
   );
+  const ticker = page.getByTestId('event-ticker');
   await heading.click();
+  await expect(ticker, `${label}: 展開中の見出し click で閉じない`).toHaveAttribute(
+    'data-expanded',
+    'false',
+  );
+  await heading.click();
+  await expect(ticker, `${label}: 見出し click で展開できない`).toHaveAttribute(
+    'data-expanded',
+    'true',
+  );
   await expect(list, `${label}: 見出し click でリストにフォーカスできない`).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(heading, `${label}: Shift+Tab で見出しへ戻れない`).toBeFocused();
   await assertTickerFocusRingInside(page, heading, `${label}: 見出し`);
+  await heading.press('Enter');
+  await expect(ticker, `${label}: Enter で閉じない`).toHaveAttribute('data-expanded', 'false');
   await heading.press('Enter');
   await expect(list, `${label}: Enter でリストにフォーカスできない`).toBeFocused();
   await assertTickerFocusRingInside(page, list, `${label}: リスト`);
@@ -2022,6 +2044,7 @@ test.describe('延焼文言の DOM レイアウト', () => {
     await expect(page.getByTestId('event-ticker-heading')).toBeDisabled();
     await injectSpreadTickerEvents(page);
     await expect(page.getByTestId('event-ticker-heading')).toBeEnabled();
+    await expandEventTicker(page);
 
     await expect(page.getByTestId('event-ticker')).toBeVisible();
     await expect(page.getByText(SPREAD_TICKER_CHAIN).first()).toBeVisible();
@@ -2162,6 +2185,7 @@ test.describe('タッチ端末のティッカーパン', () => {
   test('溢れたリストは実タッチスワイプでパンし外側を動かさない', async ({ page }) => {
     await beginPublicSprint(page, { seed: 'spread-copy-ticker-touch-0' });
     await injectSpreadTickerEvents(page);
+    await expandEventTicker(page);
     await expect(page.getByTestId('event-ticker')).toBeVisible();
     await waitForLayoutFrame(page);
 

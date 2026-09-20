@@ -4,12 +4,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const hooks = vi.hoisted(() => ({
   effects: [] as (() => void | (() => void))[],
   reducedMotion: false,
+  expanded: false,
 }));
 
 // Node 環境では ref の接続と effect の開始・解除だけを代行する。
 // JSX と入力判定・スクロール処理は実装をそのまま実行する。
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
+  useState: (_initial: unknown) => [
+    hooks.expanded,
+    (update: boolean | ((current: boolean) => boolean)) => {
+      hooks.expanded = typeof update === 'function' ? update(hooks.expanded) : update;
+    },
+  ],
   useRef: (initial: unknown) => ({ current: initial }),
   useEffect: (effect: () => void | (() => void)) => hooks.effects.push(effect),
 }));
@@ -145,6 +152,7 @@ afterEach(() => {
   cleanups.splice(0).forEach((cleanup) => cleanup());
   hooks.effects = [];
   hooks.reducedMotion = false;
+  hooks.expanded = false;
   registerBoardDragHitTest(null);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -156,6 +164,7 @@ describe('EventTicker の表示とフォーカス', () => {
 
     expect(ticker.find('event-ticker-heading').props.disabled).toBe(true);
     expect(ticker.find('event-ticker-list').props.tabIndex).toBeUndefined();
+    expect(ticker.find('event-ticker').props['data-expanded']).toBe('false');
     expect(ticker.nodes.some((node) => node.props['data-testid'] === 'event-ticker-now')).toBe(
       false,
     );
@@ -164,7 +173,7 @@ describe('EventTicker の表示とフォーカス', () => {
   });
 
   it.each([false, true])(
-    'frozen=%s でも直近5件を新しい順に表示し、現在のコンボを併記する',
+    'frozen=%s でも直近5件を新しい順に表示し、展開するとコンボを併記する',
     (frozen) => {
       const events: SprintEvent[] = Array.from({ length: 6 }, (_, index) => ({
         tick: index + 1,
@@ -173,6 +182,27 @@ describe('EventTicker の表示とフォーカス', () => {
         combo: index + 1,
       }));
       events.push({ tick: 7, kind: 'combo-break', reason: 'rework' });
+      const collapsed = mountTicker({ events, liveCombo: 8, frozen });
+      const collapsedRows = collapsed.nodes.filter((node) =>
+        String(node.props['data-testid']).startsWith('event-ticker-row-'),
+      );
+
+      expect(collapsed.find('event-ticker').props['data-expanded']).toBe('false');
+      expect(content(collapsed.find('event-ticker-summary'))).toBe(
+        'コンボ途切れ: 手戻り発生 ほか4件',
+      );
+      expect(content(collapsed.find('event-ticker-count'))).toBe('5件');
+      expect(collapsed.nodes.some((node) => node.props['data-testid'] === 'event-ticker-now')).toBe(
+        false,
+      );
+      expect(collapsed.find('event-ticker-list').props.tabIndex).toBeUndefined();
+      expect(collapsed.find('event-ticker-heading').props['aria-expanded']).toBe(false);
+      (collapsed.find('event-ticker-heading').props.onClick as () => void)();
+      expect(hooks.expanded).toBe(true);
+      expect(collapsed.list.focus).toHaveBeenCalledWith({ preventScroll: true });
+      collapsed.unmount();
+
+      hooks.expanded = true;
       const ticker = mountTicker({ events, liveCombo: 8, frozen });
       const rows = ticker.nodes.filter((node) =>
         String(node.props['data-testid']).startsWith('event-ticker-row-'),
@@ -185,6 +215,7 @@ describe('EventTicker の表示とフォーカス', () => {
         '鎮火成功 → コンボ x4 継続',
         '鎮火成功 → コンボ x3 継続',
       ]);
+      expect(collapsedRows.map(content)).toEqual(rows.map(content));
       expect(rows[0].props.className).toBe('event-ticker-row tone-bad');
       expect(rows[0].props.initial).toEqual(frozen ? undefined : { opacity: 0, x: 16 });
       expect(rows[0].props.exit).toEqual(
@@ -200,12 +231,14 @@ describe('EventTicker の表示とフォーカス', () => {
       );
       expect(content(ticker.find('event-ticker-now'))).toBe('現在 COMBO ×8');
       expect(ticker.find('event-ticker-heading').props.disabled).toBe(false);
+      expect(ticker.find('event-ticker-heading').props['aria-expanded']).toBe(true);
       expect(ticker.find('event-ticker-list').props.tabIndex).toBe(0);
       expect(ticker.find('event-ticker-list').props['aria-labelledby']).toBe(
         ticker.find('event-ticker-heading').props.id,
       );
-      (ticker.find('event-ticker-heading').props.onClick as () => void)();
-      expect(ticker.list.focus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(
+        ticker.nodes.some((node) => node.props['data-testid'] === 'event-ticker-summary'),
+      ).toBe(false);
     },
   );
 

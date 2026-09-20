@@ -1,8 +1,18 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react')>()),
+  useRef: () => ({ current: null }),
+}));
+vi.mock('../../../src/ui/useDialogOverlayLock', () => ({
+  useDialogOverlayLock: vi.fn(),
+}));
+
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { FormationScreen, type FormationScreenProps } from '../../../src/ui/FormationScreen';
+import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 import { directRoster } from '../helpers/whatIfFixtures';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
@@ -81,6 +91,16 @@ describe('編成画面の配置と AI 配布', () => {
       'aria-pressed': true,
       'aria-label': 'Direct Coderをコーディングへ配置',
     });
+    expect(screen.find('formation').props).toMatchObject({
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': 'Formation',
+      tabIndex: -1,
+    });
+    expect(useDialogOverlayLock).toHaveBeenCalledWith(
+      { current: null },
+      { restoreFocus: true, onDismiss: screen.props.onClose },
+    );
     expect(screen.find('ai-m1').props).toMatchObject({
       'aria-pressed': true,
       'aria-label': 'Direct CoderのAI配布中',

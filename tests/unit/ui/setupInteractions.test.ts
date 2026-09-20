@@ -148,7 +148,8 @@ describe('SetupScreen の次スプリント案内と編成', () => {
 
   it('未知のボス ID でもフォールバック名で編成を表示する', () => {
     const screen = mountSetup({ state: makeState({ bossId: 'missing-boss' }) });
-    expect(screen.text()).toContain('★ ボス');
+    expect(screen.text()).toContain('ボス: ボス');
+    expect(screen.text()).toContain('★ ');
     expect(screen.find('begin-sprint').props.disabled).toBe(false);
   });
 

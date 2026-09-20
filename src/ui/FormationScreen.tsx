@@ -5,10 +5,12 @@
  * ステータス・トレイト・スタミナ・表情（疲れ顔 / ガッツポーズ等）を表示し、
  * 配置と AI 配布を切り替える。状態は読むだけ（第22.2）で、操作は window.game 経由。
  */
+import { useRef } from 'react';
 import { getTrait } from '../data/traits';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { WhatIfPreview } from './WhatIfPreview';
 
 export interface FormationScreenProps {
@@ -196,8 +198,18 @@ export function FormationScreen({
   onClose,
   readOnly = false,
 }: FormationScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
   return (
-    <div className="result-overlay" data-testid="formation" role="dialog" aria-label="Formation">
+    <div
+      ref={overlayRef}
+      className="result-overlay"
+      data-testid="formation"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Formation"
+      tabIndex={-1}
+    >
       <div className="formation-panel">
         <div className="formation-head">
           <div>

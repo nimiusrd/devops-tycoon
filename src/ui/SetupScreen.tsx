@@ -67,6 +67,7 @@ export function SetupScreen({
         ) : null}
         <b className="boss-name">
           <span aria-hidden="true">★ </span>
+          <span className="visually-hidden">ボス: </span>
           {boss?.name ?? 'ボス'}
         </b>
         <span className="boss-desc">{boss?.description}</span>

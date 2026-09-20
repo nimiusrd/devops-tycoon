@@ -75,55 +75,57 @@ export function CardView({
     .join(' ');
   const inner = (
     <>
-      <div className="card-head">
-        <span className={`card-rarity rarity-${def.rarity}`}>{RARITY_LABEL[def.rarity]}</span>
-        <span className="card-costs">
-          <span className="card-cost">
-            {onPlay && playCostValue !== undefined ? (
-              <VisualIconText name="focus" size="card">
-                <span className="visually-hidden">集中力 </span>
-                {playCostValue}
-              </VisualIconText>
-            ) : (
-              def.cost
+      <div className="card-face">
+        <div className="card-head">
+          <span className={`card-rarity rarity-${def.rarity}`}>{RARITY_LABEL[def.rarity]}</span>
+          <span className="card-costs">
+            <span className="card-cost">
+              {onPlay && playCostValue !== undefined ? (
+                <VisualIconText name="focus" size="card">
+                  <span className="visually-hidden">集中力 </span>
+                  {playCostValue}
+                </VisualIconText>
+              ) : (
+                def.cost
+              )}
+            </span>
+            {!onPlay && playCostValue !== undefined && (
+              <span className="card-focus-cost">
+                発動
+                <VisualIconText name="focus" size="hud">
+                  <span className="visually-hidden"> 集中力 </span>
+                  {playCostValue}
+                </VisualIconText>
+              </span>
             )}
           </span>
-          {!onPlay && playCostValue !== undefined && (
-            <span className="card-focus-cost">
-              発動
-              <VisualIconText name="focus" size="hud">
-                <span className="visually-hidden"> 集中力 </span>
-                {playCostValue}
-              </VisualIconText>
-            </span>
-          )}
-        </span>
-      </div>
-      <div className="card-name">
-        {def.name}
-        {stars && <span className="card-stars">{stars}</span>}
-      </div>
-      {!compact && (
-        <>
-          <EffectTagList
-            tags={formatCardTagsAtLevel(def, level)}
-            testId={`card-effect-tags-${def.id}`}
-          />
-          <ul className="card-effects">
-            {def.description.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-          {(whatIfPreview || whatIfComputing) && (
-            <WhatIfPreview
-              preview={whatIfPreview}
-              computing={whatIfComputing && !whatIfPreview}
-              compact
-              testId={`what-if-card-${def.id}`}
+        </div>
+        <div className="card-name">
+          {def.name}
+          {stars && <span className="card-stars">{stars}</span>}
+        </div>
+        {!compact && (
+          <>
+            <EffectTagList
+              tags={formatCardTagsAtLevel(def, level)}
+              testId={`card-effect-tags-${def.id}`}
             />
-          )}
-        </>
-      )}
+            <ul className="card-effects">
+              {def.description.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+            {(whatIfPreview || whatIfComputing) && (
+              <WhatIfPreview
+                preview={whatIfPreview}
+                computing={whatIfComputing && !whatIfPreview}
+                compact
+                testId={`what-if-card-${def.id}`}
+              />
+            )}
+          </>
+        )}
+      </div>
       {disabled && disabledReason && (
         <span className="card-disabled-reason" data-testid="card-disabled-reason">
           {disabledReason}

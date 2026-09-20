@@ -1898,7 +1898,7 @@ body:has(.overlay-contained) {
   padding: 6px 8px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--visual-color-ink) 55%, transparent);
-  border: 1px solid color-mix(in srgb, #ffffff 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--visual-color-text) 12%, transparent);
   font-size: 11px;
   line-height: 1.35;
   overflow: hidden;
@@ -2143,8 +2143,10 @@ body:has(.overlay-contained) {
   cursor: pointer;
 }
 .card.card-disabled {
-  opacity: 0.45;
   cursor: not-allowed;
+}
+.card.card-disabled .card-face {
+  opacity: 0.45;
 }
 .deckbar-meta {
   margin-left: auto;
@@ -2440,6 +2442,12 @@ body:has(.overlay-contained) {
 }
 
 /* カード（第7.2） */
+.card-face {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-width: 0;
+}
 .card {
   display: flex;
   flex-direction: column;
@@ -4119,6 +4127,19 @@ html:has(.title-screen.title-command) #root {
 .pill.tone-danger {
   border-color: #ff6b8a88;
 }
+.pill.tone-hell {
+  color: var(--visual-color-banner-hell-tag-text);
+  background: var(--visual-color-banner-hell-tag-bg);
+  border-color: var(--visual-color-banner-hell-border);
+}
+.pill.pill-compact {
+  gap: 4px;
+  min-height: 24px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
 .diagnosis-status {
   display: flex;
   align-items: center;
@@ -4211,21 +4232,6 @@ html:has(.title-screen.title-command) #root {
   font-size: 12px;
   white-space: nowrap;
 }
-.meter-alert {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 24px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: var(--visual-color-banner-hell-tag-text);
-  background: var(--visual-color-banner-hell-tag-bg);
-  border: 1px solid var(--visual-color-banner-hell-border);
-}
-
 /* 進化ツリー
  * 5列×3行の購入判断（効果・説明・コスト・ペナルティ）が、オーバーレイ余白で
  * 3行目だけ欠けるのを防ぐ。枠はビューポートに合わせ、ヘッダーと CTA を残して

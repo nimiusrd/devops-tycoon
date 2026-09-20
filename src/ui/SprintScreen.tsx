@@ -421,7 +421,7 @@ export function SprintScreen({
               {queue}
             </span>
             {queue >= 12 && (
-              <span className="meter-alert" data-testid="jam-alert">
+              <span className="pill pill-compact tone-hell" data-testid="jam-alert">
                 <VisualIcon name="reviewHell" size="hud" />
                 {healthTag('reviewHell')}
               </span>

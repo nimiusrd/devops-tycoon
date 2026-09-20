@@ -124,7 +124,7 @@ describe('TutorialGuide の操作と停止所有権', () => {
     vi.unstubAllGlobals();
   });
 
-  it('全ステップで案内とハイライトを切り替え、最後の「始める」で閉じる', () => {
+  it('全ステップで案内とハイライトを切り替え、最後の「ガイドを閉じる」で閉じる', () => {
     const game = gameHandle();
     const guide = mount(game.handle);
 
@@ -141,7 +141,7 @@ describe('TutorialGuide の操作と停止所有権', () => {
       );
       expect(document.body.dataset.tutorialStep).toBe(step.id);
       expect(guide.find('tutorial-next').props.children).toBe(
-        index === TUTORIAL_STEPS.length - 1 ? '始める' : '次へ',
+        index === TUTORIAL_STEPS.length - 1 ? 'ガイドを閉じる' : '次へ',
       );
       expect(guide.onDismiss).not.toHaveBeenCalled();
       guide.click('tutorial-next');

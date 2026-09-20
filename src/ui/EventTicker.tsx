@@ -291,7 +291,12 @@ export function EventTicker({
         )}
       </button>
       {!expanded && summary && (
-        <p className="event-ticker-summary" data-testid="event-ticker-summary">
+        <p
+          className="event-ticker-summary"
+          data-testid="event-ticker-summary"
+          role="status"
+          aria-live="polite"
+        >
           {summary}
         </p>
       )}

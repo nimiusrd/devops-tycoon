@@ -292,6 +292,7 @@ describe('SprintScreen の表示と親子の連携', () => {
     expect(jam.find((node) => node.type === 'i')?.props.style).toEqual({ width: '100%' });
     expect(content(screen.find('jam-count'))).toBe('20');
     expect(content(screen.find('jam-alert'))).toContain('Review Hell');
+    expect(screen.find('jam-alert').props.className).toBe('pill pill-compact tone-hell');
     expect(content(screen.find('fire-count'))).toBe('炎上 3');
     expect(screen.find('fire-count').props['data-count']).toBe(3);
     expect(screen.find('fire-meter').props.className).toContain('burning');

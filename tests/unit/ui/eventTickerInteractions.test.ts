@@ -208,6 +208,10 @@ describe('EventTicker の表示とフォーカス', () => {
       expect(content(collapsed.find('event-ticker-summary'))).toBe(
         'コンボ途切れ: 手戻り発生 ほか4件',
       );
+      expect(collapsed.find('event-ticker-summary').props).toMatchObject({
+        role: 'status',
+        'aria-live': 'polite',
+      });
       expect(content(collapsed.find('event-ticker-count'))).toBe('5件');
       expect(collapsed.nodes.some((node) => node.props['data-testid'] === 'event-ticker-now')).toBe(
         false,

@@ -102,10 +102,8 @@ test('❚❚ はトグルでき、1x / 2x でも再開でき、停止中は手�
   await expect(controls).toHaveAttribute('data-paused', 'true');
   await expect(page.getByTestId('deck')).toHaveAttribute('data-paused', 'true');
   await expect(playableCard).toBeDisabled();
-  await expect(playableCard).toHaveAttribute(
-    'title',
-    `${titleAt1x} / 一時停止中はカードを発動できない`,
-  );
+  await expect(playableCard).toHaveAttribute('title', `${titleAt1x} / 一時停止中`);
+  await expect(playableCard).toContainText('一時停止中');
 
   const handBefore = await page.evaluate(() => {
     const game = (window as PublicGameWindow).game;

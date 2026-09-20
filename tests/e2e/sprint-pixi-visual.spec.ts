@@ -373,7 +373,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
     await expect(mount).toHaveAttribute('data-board-effects', '0');
     await expect(mount).toHaveAttribute('data-board-auras', '1');
-    await expect(page.locator('[data-testid^="event-ticker-row-"]').first()).toBeVisible();
+    await expect(page.getByTestId('event-ticker-summary')).toBeVisible();
     await freezePixiForScreenshot(page);
   });
 

@@ -78,9 +78,7 @@ test('割り込みレビュー成功時に盤面スイープ演出が出る（RI
   );
   await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
   await expect(page.getByTestId('event-ticker')).toBeVisible();
-  await expect(page.locator('[data-testid^="event-ticker-row-"]').first()).toBeVisible({
-    timeout: 3000,
-  });
+  await expect(page.getByTestId('event-ticker-summary')).toBeVisible({ timeout: 3000 });
 });
 
 test('スプリント盤面に集中力と介入アクションバーが並ぶ', async ({ page }) => {
@@ -225,6 +223,8 @@ test('途切れ履歴のあとコンボが伸び直したら現在値を履歴�
   await expect(combo).toHaveAttribute('data-combo', '12');
   await expect(combo).toContainText('COMBO ×12');
   await expect(page.getByTestId('event-ticker')).toContainText('コンボ途切れ: 自動鎮火');
+  await page.getByTestId('event-ticker-heading').click();
+  await expect(page.getByTestId('event-ticker')).toHaveAttribute('data-expanded', 'true');
   await expect(page.getByTestId('event-ticker-now')).toHaveText('現在 COMBO ×12');
 });
 

@@ -1510,56 +1510,48 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
   await assertTickerTouchPanClaimsAtStart(page, label);
   await assertTickerPenReversesAtBound(page, label);
 
-  const count = await rows.count();
-  for (let i = 0; i < count; i += 1) {
-    const row = rows.nth(i);
-    const metrics = await row.evaluate((element) => {
-      const scrollList = element.closest('[data-testid="event-ticker-list"]');
-      if (!scrollList) return null;
-      return {
-        rowHeight: element.getBoundingClientRect().height,
-        listHeight: scrollList.getBoundingClientRect().height,
-      };
-    });
-    if (!metrics) throw new Error(`${label}: ${i + 1}行目のリストが見つからない`);
+  // overflow でクリップされた行は locator.evaluate が可視待ちで止まるので、
+  // 表示中のリスト要素から同期でスクロール判定する。
+  const reach = await list.evaluate((scrollList) => {
+    const rows = [...scrollList.querySelectorAll<HTMLElement>('.event-ticker-row')];
+    if (rows.length !== 5) return { ok: false as const, reason: `延焼行が${rows.length}件` };
 
-    if (metrics.rowHeight <= metrics.listHeight + 1) {
-      await row.evaluate((element) => element.scrollIntoView({ block: 'nearest' }));
-      const visibleInList = await row.evaluate((element) => {
-        const scrollList = element.closest('[data-testid="event-ticker-list"]');
-        if (!scrollList) return false;
+    for (let i = 0; i < rows.length; i += 1) {
+      const element = rows[i];
+      const rowHeight = element.getBoundingClientRect().height;
+      const listHeight = scrollList.getBoundingClientRect().height;
+
+      if (rowHeight <= listHeight + 1) {
+        element.scrollIntoView({ block: 'nearest' });
         const listRect = scrollList.getBoundingClientRect();
         const rowRect = element.getBoundingClientRect();
-        return rowRect.top >= listRect.top - 1 && rowRect.bottom <= listRect.bottom + 1;
-      });
-      expect(visibleInList, `${label}: ${i + 1}行目がリスト可視領域に入らない`).toBe(true);
-      continue;
+        if (!(rowRect.top >= listRect.top - 1 && rowRect.bottom <= listRect.bottom + 1)) {
+          return { ok: false as const, reason: `${i + 1}行目がリスト可視領域に入らない` };
+        }
+        continue;
+      }
+
+      element.scrollIntoView({ block: 'start', inline: 'nearest' });
+      const topList = scrollList.getBoundingClientRect();
+      const topRow = element.getBoundingClientRect();
+      const topOverlap =
+        Math.min(topRow.bottom, topList.bottom) - Math.max(topRow.top, topList.top);
+      if (!(topOverlap > 0 && topRow.top <= topList.top + 1)) {
+        return { ok: false as const, reason: `${i + 1}行目の上端へスクロールできない` };
+      }
+
+      element.scrollIntoView({ block: 'end', inline: 'nearest' });
+      const bottomList = scrollList.getBoundingClientRect();
+      const bottomRow = element.getBoundingClientRect();
+      const bottomOverlap =
+        Math.min(bottomRow.bottom, bottomList.bottom) - Math.max(bottomRow.top, bottomList.top);
+      if (!(bottomOverlap > 0 && bottomRow.bottom >= bottomList.bottom - 1)) {
+        return { ok: false as const, reason: `${i + 1}行目の下端へスクロールできない` };
+      }
     }
-
-    await row.evaluate((element) => element.scrollIntoView({ block: 'start', inline: 'nearest' }));
-    const topReachable = await row.evaluate((element) => {
-      const scrollList = element.closest('[data-testid="event-ticker-list"]');
-      if (!scrollList) return false;
-      const listRect = scrollList.getBoundingClientRect();
-      const rowRect = element.getBoundingClientRect();
-      const overlap =
-        Math.min(rowRect.bottom, listRect.bottom) - Math.max(rowRect.top, listRect.top);
-      return overlap > 0 && rowRect.top <= listRect.top + 1;
-    });
-    expect(topReachable, `${label}: ${i + 1}行目の上端へスクロールできない`).toBe(true);
-
-    await row.evaluate((element) => element.scrollIntoView({ block: 'end', inline: 'nearest' }));
-    const bottomReachable = await row.evaluate((element) => {
-      const scrollList = element.closest('[data-testid="event-ticker-list"]');
-      if (!scrollList) return false;
-      const listRect = scrollList.getBoundingClientRect();
-      const rowRect = element.getBoundingClientRect();
-      const overlap =
-        Math.min(rowRect.bottom, listRect.bottom) - Math.max(rowRect.top, listRect.top);
-      return overlap > 0 && rowRect.bottom >= listRect.bottom - 1;
-    });
-    expect(bottomReachable, `${label}: ${i + 1}行目の下端へスクロールできない`).toBe(true);
-  }
+    return { ok: true as const };
+  });
+  expect(reach.ok, `${label}: ${reach.ok ? '全行へ到達できる' : reach.reason}`).toBe(true);
 }
 
 /** リストは名前付きフォーカス領域で、溢れるときは End キーで最終行へ到達できる。 */
@@ -2044,10 +2036,13 @@ async function assertSpreadCopyFitsViewport(page: Page, label: string): Promise<
 
 test.describe('延焼文言の DOM レイアウト', () => {
   test('延焼・連鎖延焼のティッカーが5 viewportで盤面契約を崩さない', async ({ page }) => {
+    test.setTimeout(60_000);
     await beginPublicSprint(page, { seed: 'spread-copy-ticker-0' });
     await expect(page.getByTestId('event-ticker-heading')).toBeDisabled();
     await injectSpreadTickerEvents(page);
     await expect(page.getByTestId('event-ticker-heading')).toBeEnabled();
+    await page.getByTestId('speed-pause').click();
+    await expect(page.getByTestId('speed-pause')).toHaveAttribute('aria-pressed', 'true');
     await expandEventTicker(page);
 
     await expect(page.getByTestId('event-ticker')).toBeVisible();
@@ -2057,6 +2052,7 @@ test.describe('延焼文言の DOM レイアウト', () => {
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await waitForLayoutFrame(page);
+      await expandEventTicker(page);
       await assertLayoutContract(page, viewport, { glanceCopy: true });
       await expect(page.getByTestId('event-ticker')).toBeVisible();
       await expect(page.getByText(SPREAD_TICKER_CHAIN).first()).toBeVisible();

@@ -10,7 +10,7 @@ import type { BoardDotPlan, BoardScenePlan } from './boardScene';
 import { REVIEW_HOT_QUEUE } from './boardScene';
 import { hitTestBoardDot, DOT_HIT_MARGIN } from './boardPixiView';
 import { TASK_DIAMETER } from './taskView';
-import { RD_BOARD_PROTOTYPE_SEED } from './rdBoardLayout';
+import { RD_BOARD_PROTOTYPE_SEED, resolveRdSceneFromLocation } from './rdBoardLayout';
 
 export { RD_BOARD_PROTOTYPE_SEED };
 
@@ -107,6 +107,11 @@ export function createRdStressOverlay(): RdStressOverlay {
     },
     events,
   };
+}
+
+/** `?rdScene=stress` のときだけ固定場面を返す。sim は触らない。 */
+export function resolveRdStressView(): RdStressOverlay | null {
+  return resolveRdSceneFromLocation() === 'stress' ? createRdStressOverlay() : null;
 }
 
 export type RdSignalId = 'fire' | 'congestion' | 'spread';

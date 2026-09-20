@@ -11,8 +11,8 @@ import {
   planRdSignalMarkers,
   planRdSpreadLink,
   rdHitAreasOverlap,
+  resolveRdStressView,
 } from '../../../src/render/rdBoardPrototype';
-import { createRunEngine } from '../../../src/sim/run/engine';
 
 describe('rdBoardPrototype（固定場面とヒット）', () => {
   it('同一タスク列に炎上・渋滞・延焼が同時にある', () => {
@@ -83,15 +83,16 @@ describe('rdBoardPrototype（固定場面とヒット）', () => {
     expect(hitTestDropLane(150, 166, ['coding'], 'iso')).toBeNull();
   });
 
-  it('overlay はスプリントの盤面だけを差し替え、開始後も complete にしない', () => {
-    const engine = createRunEngine({ seed: 'rd-board-ab-stress' });
-    engine.startRun('hard', [], 'rd-board-ab-stress');
-    engine.beginSetupSprint();
-    engine.applyPrototypeSprintOverlay(createRdStressOverlay());
-    const snap = engine.snapshot();
-    expect(snap.phase).toBe('sprint');
-    expect(snap.sprint?.tasks.some((task) => task.id === RD_FIRE_TASK_ID)).toBe(true);
-    expect(snap.sprint?.metrics.spread).toBe(1);
-    expect(snap.sprint?.complete).toBe(false);
+  it('固定場面は sim を書き換えず、同じタスク列を iso/lane に載せられる', () => {
+    const overlay = createRdStressOverlay();
+    const iso = planBoardScene(overlay.tasks, undefined, 'iso');
+    const lane = planBoardScene(overlay.tasks, undefined, 'lane');
+    expect(iso.dots.some((dot) => dot.id === RD_FIRE_TASK_ID && dot.fire)).toBe(true);
+    expect(lane.dots.some((dot) => dot.id === RD_SPREAD_TARGET_TASK_ID && dot.fire)).toBe(true);
+    expect(overlay.metrics.spread).toBe(1);
+  });
+
+  it('既定の location では固定場面を載せない', () => {
+    expect(resolveRdStressView()).toBeNull();
   });
 });

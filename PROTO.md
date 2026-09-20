@@ -26,7 +26,7 @@
 
 ## 固定場面
 
-`rdScene=stress` は次を一度だけ live sprint に載せ、`game.pause()` します。
+`rdScene=stress` は通常スプリントを開始して pause し、**盤面・渋滞メーター・炎上メーター・ティッカーだけ** に固定場面を載せます。シミュレーション本体（`RunEngine` / バランス表）は書き換えません。
 
 - **渋滞**: Review 件数が `REVIEW_HOT_QUEUE`（12）ちょうど
 - **炎上**: Rework の燃焼中タスク `#9001`
@@ -50,7 +50,8 @@ seed は `rd-board-ab-stress`。HUD・介入バーは現行のままです。盤
 ## 触っていないもの
 
 - バランス定数・AI・カード効果・確率モデル
-- HUD / ActionBar / スプリントルール
+- `RunEngine` のホットパス（固定場面は盤面表示の overlay。エンジンメソッドは足していない）
+- HUD の見た目 / ActionBar / スプリントルール（`rdScene=stress` 時だけ渋滞・炎上メーターとティッカーが overlay を読む）
 - 既定 iso のステーション座標と Pixi 視覚回帰ベースライン
 - 組織／部署／業界マップ（`iso.ts` の投影）
 - 本番セーブ（プロトタイプ起動は途中セーブを書かない）

@@ -16,6 +16,7 @@ import {
   type AttentionPausePlan,
 } from '../render/attentionPause';
 import { Board } from '../render/Board';
+import { resolveRdStressView } from '../render/rdBoardPrototype';
 import type { DraggableActionId } from '../render/boardDragPlan';
 import { planBossSlowMotion } from '../render/juicyEffects';
 import { liveComboCount } from '../render/sprintComboView';
@@ -331,10 +332,13 @@ export function SprintScreen({
   const boss = getBoss(state.bossId);
   const overlayFrozen = state.phase === 'evolution';
 
+  const rdView = resolveRdStressView();
+  const viewTasks = rdView?.tasks ?? sprint.tasks;
+  const viewEvents = rdView ? rdView.events : sprint.events;
   const liveCombo = liveComboCount(sprint);
-  const queue = reviewQueueLength(sprint.tasks);
+  const queue = reviewQueueLength(viewTasks);
   const jamPct = Math.min(100, (queue / 18) * 100);
-  const burning = sprint.tasks.filter((t) => t.lane === 'rework' && t.incident);
+  const burning = viewTasks.filter((t) => t.lane === 'rework' && t.incident);
   const incidents = burning.length;
   const urgentTicks =
     incidents > 0 ? Math.min(...burning.map((t) => t.burnTicksLeft ?? BURN_TICKS)) : 0;
@@ -422,8 +426,8 @@ export function SprintScreen({
           >
             <PointPops deliveryScore={state.org.deliveryScore} teamId={state.activeTeamId} />
             <Board
-              tasks={sprint.tasks}
-              metrics={sprint.metrics}
+              tasks={viewTasks}
+              metrics={rdView ? { ...sprint.metrics, ...rdView.metrics } : sprint.metrics}
               reviewAccumulator={sprint.reviewAccumulator}
               modifiers={sprint.complete ? undefined : sprint.modifiers}
               sprintTick={state.sprintTick}
@@ -442,7 +446,7 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker events={sprint.events} liveCombo={liveCombo} frozen={overlayFrozen} />
+            <EventTicker events={viewEvents} liveCombo={liveCombo} frozen={overlayFrozen} />
           </AspectStage>
         </main>
       }

@@ -46,7 +46,7 @@ import {
   type RdBoardLayout,
 } from './boardScene';
 import { isRdBoardPrototypeActiveFromLocation, resolveRdLayoutFromLocation } from './rdBoardLayout';
-import { hitTestRdBoardDot } from './rdBoardPrototype';
+import { hitTestRdBoardDot, resolveRdStressView } from './rdBoardPrototype';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
@@ -189,9 +189,12 @@ export function Board({
     [roster],
   );
   const prototypeActive = isRdBoardPrototypeActiveFromLocation();
+  const rdView = resolveRdStressView();
+  const viewTasks = rdView?.tasks ?? tasks;
+  const viewMetrics = rdView && metrics ? { ...metrics, ...rdView.metrics } : metrics;
   const [layout, setLayout] = useState<RdBoardLayout>(() => resolveRdLayoutFromLocation());
   const [rdHitTaskId, setRdHitTaskId] = useState<number | null>(null);
-  const scene = planBoardScene(tasks, moodOverrides, layout);
+  const scene = planBoardScene(viewTasks, moodOverrides, layout);
   // 盤面の常駐物と連続演出を WebGL で描くか（RI-11 / RI-142。ラベルは DOM 共通）。
   const { usePixi, onWebglError } = usePixiRenderer();
   const [pixiReady, setPixiReady] = useState(false);
@@ -205,8 +208,8 @@ export function Board({
   const boardRef = useRef<HTMLDivElement>(null);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
   const boardEffects = useBoardEffects({
-    tasks,
-    metrics,
+    tasks: viewTasks,
+    metrics: viewMetrics,
     reviewAccumulator,
     interventionTrigger,
     suppressExtinguishTaskIds,

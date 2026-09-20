@@ -10,7 +10,7 @@ import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import type { ReplayFramePhase } from './sim/run/persist';
 import { resolveSeedFromLocation } from './sim/seed';
-import { createRdStressOverlay, RD_BOARD_PROTOTYPE_SEED } from './render/rdBoardPrototype';
+import { RD_BOARD_PROTOTYPE_SEED } from './render/rdBoardLayout';
 import type {
   ActionId,
   ActionTarget,
@@ -1151,7 +1151,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       pendingSeed = RD_BOARD_PROTOTYPE_SEED;
       engine.startRun('hard', [], RD_BOARD_PROTOTYPE_SEED, { kind: 'normal' });
       engine.beginSetupSprint();
-      engine.applyPrototypeSprintOverlay(createRdStressOverlay());
       paused = true;
       pauseEpoch += 1;
       bump();

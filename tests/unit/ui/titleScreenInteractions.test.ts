@@ -304,6 +304,29 @@ afterEach(() => {
 });
 
 describe('TitleScreen のラン開始条件', () => {
+  it('seed / 難易度 / 試練の meta はボタンではなくキャプションにする', () => {
+    const screen = mountTitle();
+    const metaItems = screen.nodes.filter((node) =>
+      String(node.props.className ?? '')
+        .split(/\s+/)
+        .includes('title-meta-item'),
+    );
+    expect(metaItems).toHaveLength(3);
+    expect(metaItems.map((node) => content(node))).toEqual([
+      'seed title-seed',
+      '難易度 Easy',
+      '試練 0',
+    ]);
+    for (const node of metaItems) {
+      expect(node.type).toBe('span');
+      expect(String(node.props.className)).not.toContain('pill');
+      expect(node.props.tabIndex).toBeUndefined();
+      expect(node.props.onClick).toBeUndefined();
+      expect(node.props.role).toBeUndefined();
+    }
+    expect(screen.find('seed').props.className).toBe('title-meta-item');
+  });
+
   it('最初の解放済み難易度を選び、試練の追加・解除とシナリオを開始時に渡す', () => {
     const screen = mountTitle({
       meta: { ...defaultMeta(), unlockedDifficulties: ['normal', 'hard'] },

@@ -3004,19 +3004,25 @@ html:has(.title-screen.title-command) #root {
   font-weight: 800;
   letter-spacing: 0.03em;
 }
-.title-command .title-meta .pill {
-  padding: 5px 9px;
-  border: 1px solid var(--tc-line);
-  border-radius: 2px;
-  background: #0d1427aa;
+.title-command .title-meta .title-meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
-  color: #7184a8;
+  color: var(--text-dim);
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.02em;
+  cursor: default;
+  user-select: text;
 }
 .title-command .title-meta b {
-  color: #cbd8ee;
+  color: var(--text);
+  font-weight: 800;
 }
 .title-deck {
   border: 1px solid var(--tc-line);

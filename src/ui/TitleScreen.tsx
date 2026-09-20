@@ -465,13 +465,13 @@ export function TitleScreen({
               <span>AI ブースト演出</span>
             </div>
             <div className="title-meta">
-              <span className="pill" data-testid="seed">
+              <span className="title-meta-item" data-testid="seed">
                 seed <b>{seed}</b>
               </span>
-              <span className="pill">
+              <span className="title-meta-item">
                 難易度 <b>{DIFFICULTY_TAG[difficulty]}</b>
               </span>
-              <span className="pill">
+              <span className="title-meta-item">
                 試練 <b>{trials.length}</b>
               </span>
             </div>

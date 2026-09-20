@@ -55,7 +55,7 @@ describe('responsive mode hooks', () => {
       resize = listener;
     });
     const removeEventListener = vi.fn();
-    const viewport = { innerWidth: 900, innerHeight: 800, addEventListener, removeEventListener };
+    const viewport = { innerWidth: 1200, innerHeight: 800, addEventListener, removeEventListener };
     vi.stubGlobal('window', viewport);
 
     expect(useViewportResponsiveMode()).toEqual({ width: 'wide', height: 'normal' });

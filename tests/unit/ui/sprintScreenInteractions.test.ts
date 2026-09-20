@@ -290,7 +290,10 @@ describe('SprintScreen の表示と親子の連携', () => {
     const jam = elements(screen.find('jam-meter'));
     expect(jam.some((node) => node.props.className === 'meter jam')).toBe(true);
     expect(jam.find((node) => node.type === 'i')?.props.style).toEqual({ width: '100%' });
-    expect(content(screen.find('fire-count'))).toBe('3');
+    expect(content(screen.find('jam-count'))).toBe('20');
+    expect(content(screen.find('jam-alert'))).toContain('Review Hell');
+    expect(screen.find('jam-alert').props.className).toBe('pill pill-compact tone-hell');
+    expect(content(screen.find('fire-count'))).toBe('炎上 3');
     expect(screen.find('fire-count').props['data-count']).toBe(3);
     expect(screen.find('fire-meter').props.className).toContain('burning');
     expect(
@@ -339,7 +342,16 @@ describe('SprintScreen の表示と親子の連携', () => {
       events: screen.sprint.events,
       liveCombo: 3,
       frozen: false,
+      expanded: false,
     });
+    expect(typeof screen.child(EventTicker).onExpandedChange).toBe('function');
+    screen.child(EventTicker).onExpandedChange?.(true);
+    screen.flush();
+    expect(screen.child(EventTicker).expanded).toBe(true);
+    screen.update({ eventTickerExpanded: false, onEventTickerExpandedChange: vi.fn() });
+    expect(screen.child(EventTicker).expanded).toBe(false);
+    screen.child(EventTicker).onExpandedChange?.(true);
+    expect(screen.props.onEventTickerExpandedChange).toHaveBeenCalledWith(true);
     expect(screen.child(PointPops)).toMatchObject({
       deliveryScore: state.org.deliveryScore,
       teamId: state.activeTeamId,
@@ -368,9 +380,11 @@ describe('SprintScreen の表示と親子の連携', () => {
     screen.update({ game, onTutorialDismiss: undefined });
     expect(screen.has(TutorialGuide)).toBe(false);
     screen.update({ onTutorialDismiss });
-    expect(screen.child(TutorialGuide)).toMatchObject({ game, onDismiss: onTutorialDismiss });
+    expect(screen.child(TutorialGuide)).toMatchObject({ game, onDismiss: expect.any(Function) });
+    expect(screen.props.setPlaybackSpeed).toHaveBeenCalledWith(0);
     screen.child(TutorialGuide).onDismiss();
     expect(onTutorialDismiss).toHaveBeenCalledOnce();
+    expect(screen.props.setPlaybackSpeed).toHaveBeenLastCalledWith(0);
   });
 });
 

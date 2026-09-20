@@ -1846,6 +1846,12 @@ body:has(.overlay-contained) {
   flex-direction: column;
   gap: 6px;
 }
+.event-ticker[data-expanded='false'] {
+  max-height: none;
+}
+.event-ticker[data-expanded='false'] .event-ticker-list {
+  display: none;
+}
 .event-ticker-label {
   margin: 0;
   flex: 0 0 auto;
@@ -1871,6 +1877,34 @@ body:has(.overlay-contained) {
   outline: 2px solid var(--visual-color-interaction-drag);
   /* 親 .event-ticker の overflow: hidden が外側枠を切るので内側へ描く（DS-08）。 */
   outline-offset: -2px;
+}
+.event-ticker-count,
+.event-ticker-summary {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text);
+}
+.event-ticker-count {
+  display: inline;
+  margin-left: 6px;
+  letter-spacing: 0.04em;
+  color: var(--muted, #9aa3b5);
+}
+.event-ticker-summary {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--visual-color-ink) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--visual-color-text) 12%, transparent);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
 .event-ticker-now {
   margin: 0;
@@ -2109,8 +2143,10 @@ body:has(.overlay-contained) {
   cursor: pointer;
 }
 .card.card-disabled {
-  opacity: 0.45;
   cursor: not-allowed;
+}
+.card.card-disabled .card-face {
+  opacity: 0.45;
 }
 .deckbar-meta {
   margin-left: auto;
@@ -2406,6 +2442,12 @@ body:has(.overlay-contained) {
 }
 
 /* カード（第7.2） */
+.card-face {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-width: 0;
+}
 .card {
   display: flex;
   flex-direction: column;
@@ -2511,6 +2553,17 @@ body:has(.overlay-contained) {
 }
 .card-compact .card-name {
   font-size: 12px;
+}
+.card-disabled-reason {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--visual-color-banner-hell-text);
 }
 button.card {
   cursor: pointer;
@@ -4074,6 +4127,19 @@ html:has(.title-screen.title-command) #root {
 .pill.tone-danger {
   border-color: #ff6b8a88;
 }
+.pill.tone-hell {
+  color: var(--visual-color-banner-hell-tag-text);
+  background: var(--visual-color-banner-hell-tag-bg);
+  border-color: var(--visual-color-banner-hell-border);
+}
+.pill.pill-compact {
+  gap: 4px;
+  min-height: 24px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
 .diagnosis-status {
   display: flex;
   align-items: center;
@@ -4166,7 +4232,6 @@ html:has(.title-screen.title-command) #root {
   font-size: 12px;
   white-space: nowrap;
 }
-
 /* 進化ツリー
  * 5列×3行の購入判断（効果・説明・コスト・ペナルティ）が、オーバーレイ余白で
  * 3行目だけ欠けるのを防ぐ。枠はビューポートに合わせ、ヘッダーと CTA を残して

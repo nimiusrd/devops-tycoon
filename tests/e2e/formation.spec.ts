@@ -211,3 +211,27 @@ test('編成は見出しと開始CTAの名前が付き、キーボードで開�
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('board')).toBeVisible();
 });
+
+test('RunBar の編成は dialog へフォーカスし、Escape で起点へ戻る', async ({ page }) => {
+  await page.goto('/?seed=formation-overlay-a11y');
+  await page.getByTestId('difficulty-normal').click();
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('setup')).toBeVisible();
+
+  const openButton = page.getByTestId('open-formation');
+  await openButton.focus();
+  await expect(openButton).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  const dialog = page.getByTestId('formation');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute('role', 'dialog');
+  await expect(dialog).toHaveAttribute('aria-modal', 'true');
+  await expect(page.locator('.app-background')).toHaveAttribute('inert', '');
+  await expect(dialog).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('.app-background')).not.toHaveAttribute('inert');
+  await expect(openButton).toBeFocused();
+});

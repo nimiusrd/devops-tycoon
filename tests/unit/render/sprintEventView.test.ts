@@ -5,6 +5,7 @@ import {
   formatSpreadImpact,
   formatSpreadMagnitude,
   formatSprintEvent,
+  formatTickerSummary,
 } from '../../../src/render/sprintEventView';
 import { applyAction } from '../../../src/sim/actions';
 import { INCIDENT_CONTAIN_HP } from '../../../src/sim/model';
@@ -199,6 +200,9 @@ describe('sprintEventView（RI-52）', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0].text).toContain('鎮火成功');
     expect(rows[1].text).toContain('コンボ途切れ');
+    expect(formatTickerSummary([])).toBe('');
+    expect(formatTickerSummary(rows.slice(0, 1))).toBe(rows[0].text);
+    expect(formatTickerSummary(rows)).toBe(`${rows[0].text} ほか1件`);
   });
 });
 

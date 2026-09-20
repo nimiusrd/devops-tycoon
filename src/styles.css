@@ -1849,6 +1849,12 @@ body:has(.overlay-contained) {
   flex-direction: column;
   gap: 6px;
 }
+.event-ticker[data-expanded='false'] {
+  max-height: none;
+}
+.event-ticker[data-expanded='false'] .event-ticker-list {
+  display: none;
+}
 .event-ticker-label {
   margin: 0;
   flex: 0 0 auto;
@@ -1874,6 +1880,34 @@ body:has(.overlay-contained) {
   outline: 2px solid var(--visual-color-interaction-drag);
   /* 親 .event-ticker の overflow: hidden が外側枠を切るので内側へ描く（DS-08）。 */
   outline-offset: -2px;
+}
+.event-ticker-count,
+.event-ticker-summary {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text);
+}
+.event-ticker-count {
+  display: inline;
+  margin-left: 6px;
+  letter-spacing: 0.04em;
+  color: var(--muted, #9aa3b5);
+}
+.event-ticker-summary {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--visual-color-ink) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--visual-color-text) 12%, transparent);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
 .event-ticker-now {
   margin: 0;
@@ -2112,8 +2146,10 @@ body:has(.overlay-contained) {
   cursor: pointer;
 }
 .card.card-disabled {
-  opacity: 0.45;
   cursor: not-allowed;
+}
+.card.card-disabled .card-face {
+  opacity: 0.45;
 }
 .deckbar-meta {
   margin-left: auto;
@@ -2409,6 +2445,12 @@ body:has(.overlay-contained) {
 }
 
 /* カード（第7.2） */
+.card-face {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-width: 0;
+}
 .card {
   display: flex;
   flex-direction: column;
@@ -2514,6 +2556,17 @@ body:has(.overlay-contained) {
 }
 .card-compact .card-name {
   font-size: 12px;
+}
+.card-disabled-reason {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--visual-color-banner-hell-text);
 }
 button.card {
   cursor: pointer;
@@ -3713,89 +3766,86 @@ html:has(.title-screen.title-command) #root {
     transform: scale(1.06);
   }
 }
-@media (max-width: 900px) {
-  .title-topbar,
-  .title-scroll,
-  .title-launch-dock {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-  .title-topbar {
-    height: 70px;
-    grid-template-columns: 1fr auto;
-  }
-  .title-season {
-    display: none;
-  }
-  .title-command .title-head {
-    padding: 16px 0 10px;
-  }
-  .title-command .title-logo {
-    font-size: 46px;
-  }
-  :root[data-responsive-width='wide'] .title-command .difficulty-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .title-trial-section,
-  .title-scenario-section,
-  .title-recipe-section {
-    grid-template-columns: 1fr;
-    gap: 13px;
-  }
-  .title-resume {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 16px 19px;
-  }
-  .title-launch-dock .title-launch-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(168px, 42%);
-    grid-template-rows: auto auto;
-    min-height: 0;
-  }
-  .title-launch-dock .title-daily {
-    grid-column: 1;
-    grid-row: 1;
-    padding: 10px 12px 4px;
-  }
-  .title-launch-dock .title-mission {
-    grid-column: 1;
-    grid-row: 2;
-    padding: 0 12px 10px;
-    border-top: 0;
-    border-left: 0;
-  }
-  .title-launch-dock .title-launch {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    min-height: 72px;
-    min-width: 0;
-  }
-  .title-world {
-    background-position: 68% center;
-  }
-  .title-world-platform {
-    right: -260px;
-    width: 760px;
-    opacity: 0.45;
-  }
-  .title-world-core {
-    right: 8vw;
-    top: 130px;
-    opacity: 0.5;
-  }
+/* 幅のシェル縮退は RESPONSIVE_BREAKPOINTS.narrowMaxWidth の data-responsive-width を正本にする。 */
+:root[data-responsive-width='narrow'] .title-topbar,
+:root[data-responsive-width='narrow'] .title-scroll,
+:root[data-responsive-width='narrow'] .title-launch-dock {
+  padding-left: 18px;
+  padding-right: 18px;
 }
+:root[data-responsive-width='narrow'] .title-topbar {
+  height: 70px;
+  grid-template-columns: 1fr auto;
+}
+:root[data-responsive-width='narrow'] .title-season {
+  display: none;
+}
+:root[data-responsive-width='narrow'] .title-command .title-head {
+  padding: 16px 0 10px;
+}
+:root[data-responsive-width='narrow'] .title-command .title-logo {
+  font-size: 46px;
+}
+:root[data-responsive-width='narrow'] .title-trial-section,
+:root[data-responsive-width='narrow'] .title-scenario-section,
+:root[data-responsive-width='narrow'] .title-recipe-section {
+  grid-template-columns: 1fr;
+  gap: 13px;
+}
+:root[data-responsive-width='narrow'] .title-resume {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 16px 19px;
+}
+:root[data-responsive-width='narrow'] .title-launch-dock .title-launch-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(168px, 42%);
+  grid-template-rows: auto auto;
+  min-height: 0;
+}
+:root[data-responsive-width='narrow'] .title-launch-dock .title-daily {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 10px 12px 4px;
+}
+:root[data-responsive-width='narrow'] .title-launch-dock .title-mission {
+  grid-column: 1;
+  grid-row: 2;
+  padding: 0 12px 10px;
+  border-top: 0;
+  border-left: 0;
+}
+:root[data-responsive-width='narrow'] .title-launch-dock .title-launch {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-height: 72px;
+  min-width: 0;
+}
+:root[data-responsive-width='narrow'] .title-world {
+  background-position: 68% center;
+}
+:root[data-responsive-width='narrow'] .title-world-platform {
+  right: -260px;
+  width: 760px;
+  opacity: 0.45;
+}
+:root[data-responsive-width='narrow'] .title-world-core {
+  right: 8vw;
+  top: 130px;
+  opacity: 0.5;
+}
+/* ドック縦積みは RESPONSIVE_BREAKPOINTS.stackMaxWidth。幅モードではなく中身の収まり。 */
 @media (max-width: 560px) {
   .title-career {
     display: none;
   }
-  .title-command .title-logo {
+  :root[data-responsive-width='narrow'] .title-command .title-logo {
     font-size: 37px;
   }
   .title-command .title-sub br {
     display: none;
   }
-  .title-command .difficulty-grid {
+  :root[data-responsive-width='narrow'] .title-command .difficulty-grid {
     grid-template-columns: 1fr;
   }
   .title-command .difficulty-card {
@@ -3819,19 +3869,21 @@ html:has(.title-screen.title-command) #root {
   .title-footer nav {
     flex-direction: column;
   }
-  .title-launch-dock .title-launch-row {
+  :root[data-responsive-width='narrow'] .title-launch-dock .title-launch-row {
     display: flex;
     flex-direction: column;
     gap: 0;
   }
-  .title-launch-dock .title-daily,
-  .title-launch-dock .title-mission {
+  :root[data-responsive-width='narrow'] .title-launch-dock .title-daily,
+  :root[data-responsive-width='narrow'] .title-launch-dock .title-mission {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     gap: 6px 10px;
+    grid-column: auto;
+    grid-row: auto;
   }
-  .title-launch-dock .title-daily {
+  :root[data-responsive-width='narrow'] .title-launch-dock .title-daily {
     padding: 8px 2px 0;
   }
   .title-launch-dock .title-daily > span,
@@ -3851,13 +3903,15 @@ html:has(.title-screen.title-command) #root {
     min-height: 44px;
     padding: 8px 0;
   }
-  .title-launch-dock .title-mission {
+  :root[data-responsive-width='narrow'] .title-launch-dock .title-mission {
     padding: 2px 2px 8px;
   }
-  .title-launch-dock .title-launch {
+  :root[data-responsive-width='narrow'] .title-launch-dock .title-launch {
     width: 100%;
     min-height: 56px;
     padding: 10px 16px;
+    grid-column: auto;
+    grid-row: auto;
   }
   .title-launch-dock .title-launch span {
     font-size: 15px;
@@ -4077,6 +4131,19 @@ html:has(.title-screen.title-command) #root {
 .pill.tone-danger {
   border-color: #ff6b8a88;
 }
+.pill.tone-hell {
+  color: var(--visual-color-banner-hell-tag-text);
+  background: var(--visual-color-banner-hell-tag-bg);
+  border-color: var(--visual-color-banner-hell-border);
+}
+.pill.pill-compact {
+  gap: 4px;
+  min-height: 24px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
 .diagnosis-status {
   display: flex;
   align-items: center;
@@ -4169,7 +4236,6 @@ html:has(.title-screen.title-command) #root {
   font-size: 12px;
   white-space: nowrap;
 }
-
 /* 進化ツリー
  * 5列×3行の購入判断（効果・説明・コスト・ペナルティ）が、オーバーレイ余白で
  * 3行目だけ欠けるのを防ぐ。枠はビューポートに合わせ、ヘッダーと CTA を残して

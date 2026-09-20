@@ -48,6 +48,7 @@ import {
 } from './sprintTempo';
 import { TutorialGuide } from './TutorialGuide';
 import { VisualIcon } from './VisualIcon';
+import { healthTag } from '../render/teamHealthTheme';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
 const BOSS_SLOWMO_MS = 1_200;
@@ -83,6 +84,9 @@ export interface SprintScreenProps {
   onTutorialDismiss?: () => void;
   /** ガイド表示中の pause 所有に使う（チャンク読込後にマウントされる）。 */
   game?: GameHandle;
+  /** 出来事ティッカーの展開。未指定時は画面内部で管理する。 */
+  eventTickerExpanded?: boolean;
+  onEventTickerExpandedChange?: (expanded: boolean) => void;
 }
 
 export function SprintScreen({
@@ -97,6 +101,8 @@ export function SprintScreen({
   showTutorial = false,
   onTutorialDismiss,
   game,
+  eventTickerExpanded: eventTickerExpandedProp,
+  onEventTickerExpandedChange,
 }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
@@ -128,6 +134,8 @@ export function SprintScreen({
   const [slowMoPlan, setSlowMoPlan] = useState({ clearedIncidentCount: 0 });
   const [attentionKey, setAttentionKey] = useState(0);
   const [attentionPlan, setAttentionPlan] = useState<AttentionPausePlan>(IDLE_ATTENTION);
+  const [uncontrolledEventTickerExpanded, setUncontrolledEventTickerExpanded] = useState(false);
+  const eventTickerExpanded = eventTickerExpandedProp ?? uncontrolledEventTickerExpanded;
   // 完了中・別スプリントの武装は無効（effect で setState しない）。
   const armedId =
     sprint && !sprint.complete && armed.sprintId === state.currentSprintId ? armed.id : null;
@@ -323,6 +331,24 @@ export function SprintScreen({
     [onPlayCard, playbackSpeed],
   );
 
+  // 初回ガイド中・直後は再生するまで走らせない（#471）。
+  useEffect(() => {
+    if (showTutorial) setPlaybackSpeed(0);
+  }, [showTutorial, setPlaybackSpeed]);
+
+  const handleTutorialDismiss = useCallback(() => {
+    setPlaybackSpeed(0);
+    onTutorialDismiss?.();
+  }, [onTutorialDismiss, setPlaybackSpeed]);
+
+  const handleEventTickerExpandedChange = useCallback(
+    (expanded: boolean) => {
+      if (eventTickerExpandedProp === undefined) setUncontrolledEventTickerExpanded(expanded);
+      onEventTickerExpandedChange?.(expanded);
+    },
+    [eventTickerExpandedProp, onEventTickerExpandedChange],
+  );
+
   if (!sprint) return null;
 
   const kind = state.currentSprintKind;
@@ -391,6 +417,15 @@ export function SprintScreen({
             <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
               <i style={{ width: `${jamPct}%` }} />
             </div>
+            <span className="meter-count" data-testid="jam-count">
+              {queue}
+            </span>
+            {queue >= 12 && (
+              <span className="pill pill-compact tone-hell" data-testid="jam-alert">
+                <VisualIcon name="reviewHell" size="hud" />
+                {healthTag('reviewHell')}
+              </span>
+            )}
           </div>
           <div
             className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
@@ -404,7 +439,7 @@ export function SprintScreen({
             </div>
             <span className="meter-count" data-testid="fire-count" data-count={incidents}>
               <VisualIcon name="fire" size="hud" />
-              {incidents}
+              {incidents > 0 ? `炎上 ${incidents}` : incidents}
             </span>
           </div>
           <ComboBadge
@@ -442,7 +477,13 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker events={sprint.events} liveCombo={liveCombo} frozen={overlayFrozen} />
+            <EventTicker
+              events={sprint.events}
+              liveCombo={liveCombo}
+              frozen={overlayFrozen}
+              expanded={eventTickerExpanded}
+              onExpandedChange={handleEventTickerExpandedChange}
+            />
           </AspectStage>
         </main>
       }
@@ -472,7 +513,7 @@ export function SprintScreen({
       }
       overlays={
         showTutorial && onTutorialDismiss && game ? (
-          <TutorialGuide game={game} onDismiss={onTutorialDismiss} />
+          <TutorialGuide game={game} onDismiss={handleTutorialDismiss} />
         ) : null
       }
     />

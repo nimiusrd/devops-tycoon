@@ -79,12 +79,12 @@ test.describe('title launch CTA first view', () => {
       ).toBeLessThanOrEqual(viewport.height + 1);
 
       const dailyBox = await readBox(page.getByTestId('start-daily-run'), 'デイリー開始');
-      if (viewport.width <= 560) {
+      if (viewport.width <= RESPONSIVE_BREAKPOINTS.stackMaxWidth) {
         expect(
           startBox.y,
           `${viewport.name} で開始 CTA がデイリーの下に積み上がっていない`,
         ).toBeGreaterThan(dailyBox.y);
-      } else if (viewport.width <= 900) {
+      } else if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
         expect(
           startBox.x,
           `${viewport.name} で2カラムドックの開始 CTA が右列にない`,
@@ -386,5 +386,40 @@ test.describe('title difficulty cards stay above launch dock', () => {
       await startRun.click();
       await expect(page.getByTestId('setup')).toBeVisible();
     });
+  }
+});
+
+test('タイトルの列数は860/861/900/901pxで幅モードと同じ正本を使う', async ({ page }) => {
+  await page.goto('/?seed=title-width-unify');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  for (const [width, expectedWidth, columns, dock] of [
+    [560, 'narrow', 1, 'stack'],
+    [860, 'narrow', 1, 'split'],
+    [861, 'narrow', 1, 'split'],
+    [900, 'narrow', 1, 'split'],
+    [901, 'wide', 4, 'wide'],
+  ] as const) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(page.locator('html')).toHaveAttribute('data-responsive-width', expectedWidth);
+    const layout = await page.evaluate(() => {
+      const grid = document.querySelector('.difficulty-grid');
+      const daily = document.querySelector('[data-testid="start-daily-run"]');
+      const start = document.querySelector('[data-testid="start-run"]');
+      if (!grid || !daily || !start) throw new Error('タイトル列の要素が無い');
+      const dailyBox = daily.getBoundingClientRect();
+      const startBox = start.getBoundingClientRect();
+      return {
+        columns: getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length,
+        startBelowDaily: startBox.y > dailyBox.y + 8,
+        startRightOfDaily: startBox.x > dailyBox.x + dailyBox.width - 8,
+      };
+    });
+    expect(layout.columns, `${width}px の難易度列数が違う`).toBe(columns);
+    if (dock === 'stack') {
+      expect(layout.startBelowDaily, `${width}px でドックが縦積みでない`).toBe(true);
+    } else {
+      expect(layout.startRightOfDaily, `${width}px で開始 CTA がデイリーの右にない`).toBe(true);
+    }
   }
 });

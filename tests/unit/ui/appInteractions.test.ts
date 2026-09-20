@@ -739,9 +739,12 @@ describe('App のフェーズとオーバーレイ', () => {
     const screen = mountApp();
     screen.phase('sprint', { sprint: makeSprint(screen.run.state.org, []) });
     expect(screen.child('SprintScreen').showTutorial).toBe(true);
+    expect(screen.child('SprintScreen')).toMatchObject({ eventTickerExpanded: false });
     expect(screen.child('Hud')).toMatchObject({ expanded: false });
     screen.invoke('Hud', 'onExpandedChange', true);
     expect(screen.child('Hud').expanded).toBe(true);
+    screen.invoke('SprintScreen', 'onEventTickerExpandedChange', true);
+    expect(screen.child('SprintScreen').eventTickerExpanded).toBe(true);
     screen.invoke('RunBar', 'onOpenFormation');
     expect(screen.child('FormationScreen').state).toBe(screen.run.state);
     expect(

@@ -84,7 +84,8 @@ const NO_TARGET_MESSAGES: Partial<Record<ActionId, string>> = {
   assignTask: '差配対象なし',
 };
 
-const BLOCK_MESSAGES: Record<ActionBlockReason, string> = {
+/** 介入・手札で共用する無効理由（#469 / #471）。別語を増やさない。 */
+export const ACTION_BLOCK_MESSAGES: Record<ActionBlockReason, string> = {
   cooldown: 'クールダウン中',
   'no-focus': '集中力不足',
   'no-target': '対象なし',
@@ -108,7 +109,7 @@ export function deriveActionAvailability(
       actionId: id,
       canActivate: false,
       blockReason: disabledReason,
-      blockMessage: BLOCK_MESSAGES[disabledReason],
+      blockMessage: ACTION_BLOCK_MESSAGES[disabledReason],
       targetCount,
       targetBadge: badge.text,
       targetBadgeIcon: badge.icon,
@@ -136,8 +137,8 @@ export function deriveActionAvailability(
       blockReason: gate.reason,
       blockMessage:
         gate.reason === 'no-target'
-          ? (NO_TARGET_MESSAGES[id] ?? BLOCK_MESSAGES['no-target'])
-          : BLOCK_MESSAGES[gate.reason],
+          ? (NO_TARGET_MESSAGES[id] ?? ACTION_BLOCK_MESSAGES['no-target'])
+          : ACTION_BLOCK_MESSAGES[gate.reason],
       targetCount,
       targetBadge: badge.text,
       targetBadgeIcon: badge.icon,
@@ -168,9 +169,9 @@ export function planActionBarView(
 /** 失敗理由の表示用短文（トースト等）。 */
 export function formatInterventionFailure(reason: ActionBlockReason, actionId?: ActionId): string {
   if (reason === 'no-target' && actionId) {
-    return NO_TARGET_MESSAGES[actionId] ?? BLOCK_MESSAGES['no-target'];
+    return NO_TARGET_MESSAGES[actionId] ?? ACTION_BLOCK_MESSAGES['no-target'];
   }
-  return BLOCK_MESSAGES[reason];
+  return ACTION_BLOCK_MESSAGES[reason];
 }
 
 /** 時限モディファイアの残り tick（ActionBar のリング／共通ステータス表示用）。 */

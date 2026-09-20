@@ -217,6 +217,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [replayListOpen, setReplayListOpen] = useState(false);
   const [hudExpanded, setHudExpanded] = useState(false);
+  const [eventTickerExpanded, setEventTickerExpanded] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
@@ -671,6 +672,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                 showTutorial={tutorialActive}
                 onTutorialDismiss={dismissTutorial}
                 game={game}
+                eventTickerExpanded={eventTickerExpanded}
+                onEventTickerExpandedChange={setEventTickerExpanded}
               />
             </SceneScrollReset>
           )}

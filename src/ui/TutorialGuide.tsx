@@ -89,7 +89,7 @@ export function TutorialGuide({ game, onDismiss }: TutorialGuideProps) {
             data-testid="tutorial-next"
             onClick={goNext}
           >
-            {isLast ? '始める' : '次へ'}
+            {isLast ? 'ガイドを閉じる' : '次へ'}
           </button>
         </div>
       </div>

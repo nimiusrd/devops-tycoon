@@ -2,7 +2,13 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 /** レスポンシブ表示モードの境界値。CSS/各UIが直接数値を持たないための正本。 */
 export const RESPONSIVE_BREAKPOINTS = {
-  narrowMaxWidth: 860,
+  /** 幅モード `narrow`。列数やシェル縮退は `data-responsive-width` だけを見る。 */
+  narrowMaxWidth: 900,
+  /**
+   * タイトル開始ドックを縦積みする局所境界。幅モードではなく中身の収まり。
+   * `@media (max-width: 560px)` と値を揃える。
+   */
+  stackMaxWidth: 560,
   shortMaxHeight: 720,
 } as const;
 

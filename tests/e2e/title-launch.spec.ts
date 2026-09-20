@@ -165,12 +165,23 @@ async function assertTitleShellKeepsDockInFlow(
   const title = page.getByTestId('title');
   const shell = await title.evaluate((element) => {
     const style = getComputedStyle(element);
+    const html = document.documentElement;
+    const body = document.body;
+    const dock = document.querySelector('[data-testid="title-launch-dock"]');
+    const dockStyle = dock ? getComputedStyle(dock) : null;
     return {
       overflowY: style.overflowY,
       display: style.display,
       reserve: style.getPropertyValue('--title-dock-reserve').trim(),
       scrollHeight: element.scrollHeight,
       clientHeight: element.clientHeight,
+      htmlOverflowY: getComputedStyle(html).overflowY,
+      bodyOverflowY: getComputedStyle(body).overflowY,
+      htmlScroll: html.scrollHeight,
+      htmlClient: html.clientHeight,
+      bodyScroll: body.scrollHeight,
+      bodyClient: body.clientHeight,
+      dockPosition: dockStyle?.position ?? '',
     };
   });
   expect(shell.display, `${viewport.name} のタイトル面が grid ではない`).toBe('grid');
@@ -180,9 +191,29 @@ async function assertTitleShellKeepsDockInFlow(
   ).toBe(true);
   expect(shell.reserve, `${viewport.name} が --title-dock-reserve に依存している`).toBe('');
   expect(
+    shell.dockPosition === 'static' || shell.dockPosition === 'relative',
+    `${viewport.name} のドックが ${shell.dockPosition} でスクロール面に重なる`,
+  ).toBe(true);
+  expect(
     shell.scrollHeight,
     `${viewport.name} のタイトル面が親スクロールを持っている`,
   ).toBeLessThanOrEqual(shell.clientHeight + 1);
+  expect(
+    shell.htmlOverflowY === 'hidden' || shell.htmlOverflowY === 'clip',
+    `${viewport.name} の html が縦スクロールする`,
+  ).toBe(true);
+  expect(
+    shell.bodyOverflowY === 'hidden' || shell.bodyOverflowY === 'clip',
+    `${viewport.name} の body が縦スクロールする`,
+  ).toBe(true);
+  expect(
+    shell.htmlScroll,
+    `${viewport.name} の html がウィンドウスクロールする`,
+  ).toBeLessThanOrEqual(shell.htmlClient + 1);
+  expect(
+    shell.bodyScroll,
+    `${viewport.name} の body がウィンドウスクロールする`,
+  ).toBeLessThanOrEqual(shell.bodyClient + 1);
 
   let settled: { scrollBox: Box; dockBox: Box } | null = null;
   await expect
@@ -257,6 +288,18 @@ async function assertCardScrolledClearOfDock(
   return settled;
 }
 
+async function assertActionClearOfDock(
+  page: Page,
+  card: Locator,
+  dockBox: Box,
+  viewportName: string,
+  label: string,
+): Promise<void> {
+  const action = card.getByTestId(/difficulty-.*-action/);
+  await expect(action).toBeVisible();
+  assertCardClearOfDock(await readBox(action, label), dockBox, viewportName, label);
+}
+
 test.describe('title difficulty cards stay above launch dock', () => {
   for (const viewport of CARD_DOCK_VIEWPORTS) {
     test(`${viewport.name} ${viewport.width}x${viewport.height} でカード下端がドックに隠れない`, async ({
@@ -268,26 +311,63 @@ test.describe('title difficulty cards stay above launch dock', () => {
 
       const { dockBox } = await assertTitleShellKeepsDockInFlow(page, viewport);
 
-      const easyCard = page.getByTestId('difficulty-easy');
-      await expect(easyCard).toBeVisible();
-      if (viewport.height >= 800) {
-        assertCardClearOfDock(
-          await readBox(easyCard, 'Easyカード'),
-          dockBox,
-          viewport.name,
-          '初見の Easy カード全文',
-        );
+      const cards = page.locator('.difficulty-card');
+      const cardCount = await cards.count();
+      expect(cardCount, `${viewport.name} で難易度カードが無い`).toBeGreaterThan(1);
+
+      const firstViewFitsAll = viewport.width >= 1280 && viewport.height >= 800;
+      if (firstViewFitsAll) {
+        for (let index = 0; index < cardCount; index += 1) {
+          const card = cards.nth(index);
+          await expect(card).toBeVisible();
+          assertCardClearOfDock(
+            await readBox(card, `難易度カード${index + 1}`),
+            dockBox,
+            viewport.name,
+            `初見の難易度カード${index + 1}全文`,
+          );
+          await assertActionClearOfDock(
+            page,
+            card,
+            dockBox,
+            viewport.name,
+            `初見の「この組織で始める」${index + 1}`,
+          );
+        }
       } else {
-        await assertCardScrolledClearOfDock(page, easyCard, viewport.name, 'Easyカード全文');
+        await assertCardScrolledClearOfDock(page, cards.first(), viewport.name, 'Easyカード全文');
+        await assertActionClearOfDock(
+          page,
+          cards.first(),
+          await readBox(page.getByTestId('title-launch-dock'), '開始ドック'),
+          viewport.name,
+          'Easy の「この組織で始める」',
+        );
+      }
+
+      for (let index = 0; index < cardCount; index += 1) {
+        const card = cards.nth(index);
+        await assertCardScrolledClearOfDock(
+          page,
+          card,
+          viewport.name,
+          `難易度カード${index + 1}下端`,
+        );
+        await assertCardScrolledClearOfDock(
+          page,
+          card.getByTestId(/difficulty-.*-action/),
+          viewport.name,
+          `「この組織で始める」${index + 1}`,
+        );
       }
 
       await page.locator('.difficulty-card:not([disabled])').last().click();
-      const lastCard = page.locator('.difficulty-card').last();
+      const lastCard = page.locator('.difficulty-card:not([disabled])').last();
       const cardBox = await assertCardScrolledClearOfDock(
         page,
         lastCard,
         viewport.name,
-        '難易度カード下端',
+        '選択中の難易度カード下端',
       );
 
       const startRun = page.getByTestId('start-run');

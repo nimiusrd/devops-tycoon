@@ -519,11 +519,17 @@ test('タイトルを大きくスクロールしたあとキーフレームを�
 
   await page.reload();
   await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
-  await page.addStyleTag({
-    content: '.title-screen { min-height: 3600px !important; }',
+  // #466: タイトルの縦スクロールは .title-scroll。window は動かさない。
+  const titleScroll = page.getByTestId('title-scroll');
+  await titleScroll.evaluate((element) => {
+    const scroll = element as HTMLElement;
+    scroll.scrollTop = scroll.scrollHeight - scroll.clientHeight;
   });
+  await expect
+    .poll(() => titleScroll.evaluate((el) => (el as HTMLElement).scrollTop))
+    .toBeGreaterThan(40);
   await page.evaluate(() => window.scrollTo(0, 3000));
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(2000);
+  expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(1);
 
   await page.getByTestId('open-replays').click();
   await expect(page.getByTestId('replay-list')).toBeVisible();
@@ -534,12 +540,17 @@ test('タイトルを大きくスクロールしたあとキーフレームを�
   await page.getByTestId('exit-replay').click();
   await expect(page.getByTestId('title')).toBeVisible();
   await page.addStyleTag({
-    content: [
-      '.title-screen { min-height: 3600px !important; }',
-      '.result-card { min-height: 2800px !important; }',
-    ].join('\n'),
+    content: '.result-card { min-height: 2800px !important; }',
   });
+  await titleScroll.evaluate((element) => {
+    const scroll = element as HTMLElement;
+    scroll.scrollTop = scroll.scrollHeight - scroll.clientHeight;
+  });
+  await expect
+    .poll(() => titleScroll.evaluate((el) => (el as HTMLElement).scrollTop))
+    .toBeGreaterThan(40);
   await page.evaluate(() => window.scrollTo(0, 3000));
+  expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(1);
   await page.getByTestId('open-replays').click();
   await expect(page.getByTestId('replay-list')).toBeVisible();
   await page.getByTestId('replay-keyframe-1').click();

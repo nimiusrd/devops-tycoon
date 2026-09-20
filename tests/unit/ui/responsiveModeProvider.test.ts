@@ -135,7 +135,7 @@ describe('ResponsiveModeProvider の viewport 同期', () => {
       responsiveWidth: 'narrow',
       responsiveHeight: 'short',
     });
-    view.resize(861, 721);
+    view.resize(901, 721);
     expect(view.tree.props.value).toEqual({ width: 'wide', height: 'normal' });
     expect(document.documentElement.dataset).toEqual({
       responsiveWidth: 'wide',

@@ -389,7 +389,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     });
   });
 
-  test('859/860/861pxのリサイズでPixiコンテキストを再生成しない @pixi', async ({ page }) => {
+  test('860/861/900/901pxのリサイズでPixiコンテキストを再生成しない @pixi', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await beginPublicSprint(page, { seed: 'ri98-responsive-pixi-0', renderer: 'pixi' });
     const mount = page.getByTestId('board-pixi-mount');
@@ -405,9 +405,10 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     });
 
     for (const [width, expected] of [
-      [859, 'narrow'],
       [860, 'narrow'],
-      [861, 'wide'],
+      [861, 'narrow'],
+      [900, 'narrow'],
+      [901, 'wide'],
     ] as const) {
       await page.setViewportSize({ width, height: 844 });
       await expect

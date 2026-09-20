@@ -1020,7 +1020,7 @@ test('士気チップに炎上リスクを載せない（#356）', async ({ page
   expect(fireRiskPaint.animationName, '炎上リスク値に旧チップの点滅が付いている').toBe('none');
 });
 
-test('レスポンシブ表示モードを859/860/861px境界で共有する', async ({ page }) => {
+test('レスポンシブ表示モードを860/861/900/901px境界で共有する', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 844 });
   await beginPublicSprint(page, { seed: 'ri98-responsive-width-0' });
 
@@ -1031,9 +1031,10 @@ test('レスポンシブ表示モードを859/860/861px境界で共有する', a
   });
 
   for (const [width, expected] of [
-    [859, 'narrow'],
     [860, 'narrow'],
-    [861, 'wide'],
+    [861, 'narrow'],
+    [900, 'narrow'],
+    [901, 'wide'],
   ] as const) {
     await page.setViewportSize({ width, height: 844 });
     await waitForLayoutFrame(page);

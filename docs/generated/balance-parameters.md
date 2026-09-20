@@ -5,8 +5,8 @@
 
 ## ルールセット
 
-- 版: `6`
-- 指紋: `d8428335e9e37c0af3c3d1f3a8a5c53f2c785ff1abc3149320e300bb359cc584`
+- 版: `7`
+- 指紋: `987930c4c0d919d88572ceeb84d46dae38cfedafc31174af3850ae4cc4a22ead`
 - 指紋方式: `1`
 
 版は手動更新する単調増加整数である。結果へ影響する変更では直前の版から 1 増やす。
@@ -546,12 +546,14 @@
 | `sprint.grade.penalty.incident` | 評価の Incident ペナルティ | `6` | `points` | `0〜50（整数）` | — | スプリント評価の健全比から差し引く、Incident 1 件あたりのペナルティ。 | sprint, grade, incident | いいえ |
 | `sprint.grade.penalty.rework` | 評価の Rework ペナルティ | `5` | `points` | `0〜50（整数）` | — | スプリント評価の健全比から差し引く、Rework 1 件あたりのペナルティ。 | sprint, grade, rework | いいえ |
 | `sprint.grade.penalty.spread` | 評価の延焼ペナルティ | `10` | `points` | `0〜50（整数）` | — | スプリント評価の健全比から差し引く、延焼 1 回あたりのペナルティ。 | sprint, grade, incident | いいえ |
+| `sprint.grade.sMaxIncidents` | 評価 S の炎上上限 | `0` | `count` | `0〜20（整数）` | — | 評価 S に必要な炎上件数の上限。超えると健全比が S 境界以上でも A になる。 | sprint, grade, incident | いいえ |
+| `sprint.grade.sMaxSpread` | 評価 S の延焼上限 | `0` | `count` | `0〜20（整数）` | — | 評価 S に必要な延焼回数の上限。超えると健全比が S 境界以上でも A になる。 | sprint, grade, incident | いいえ |
 | `sprint.grade.stabilizingBonusCap` | 安定介入ボーナスの上限 | `0.015` | `ratio` | `0〜1` | `sprint.grade.stabilizingBonusPerGrant` ≤ `sprint.grade.stabilizingBonusCap` | 介入連打だけで評価 S へ届かないよう、安定ボーナスをこの値で上限する。 | sprint, grade, action | いいえ |
 | `sprint.grade.stabilizingBonusPerGrant` | 安定介入1回あたりの評価ボーナス | `0.0045` | `ratio` | `0〜1` | `sprint.grade.stabilizingBonusPerGrant` ≤ `sprint.grade.stabilizingBonusCap` | 実際に運用安定を付与した介入1回あたり、健全比へ加えるボーナス。 | sprint, grade, action | いいえ |
 | `sprint.grade.threshold.A` | 評価 A の健全比境界 | `0.8` | `ratio` | `0〜1` | `sprint.grade.threshold.B` < `sprint.grade.threshold.A`<br>`sprint.grade.threshold.A` < `sprint.grade.threshold.S` | 健全比がこの値以上、S 未満なら評価 A。 | sprint, grade | いいえ |
 | `sprint.grade.threshold.B` | 評価 B の健全比境界 | `0.62` | `ratio` | `0〜1` | `sprint.grade.threshold.C` < `sprint.grade.threshold.B`<br>`sprint.grade.threshold.B` < `sprint.grade.threshold.A` | 健全比がこの値以上、A 未満なら評価 B。 | sprint, grade | いいえ |
 | `sprint.grade.threshold.C` | 評価 C の健全比境界 | `0.4` | `ratio` | `0〜1` | `sprint.grade.threshold.C` < `sprint.grade.threshold.B` | 健全比がこの値以上、B 未満なら評価 C。未満は D。 | sprint, grade | いいえ |
-| `sprint.grade.threshold.S` | 評価 S の健全比境界 | `0.955` | `ratio` | `0〜1` | `sprint.grade.threshold.A` < `sprint.grade.threshold.S` | 健全比がこの値以上なら評価 S。 | sprint, grade | いいえ |
+| `sprint.grade.threshold.S` | 評価 S の健全比境界 | `0.955` | `ratio` | `0〜1` | `sprint.grade.threshold.A` < `sprint.grade.threshold.S` | 健全比がこの値以上、かつ炎上・延焼が上限以下なら評価 S。障害があれば A。 | sprint, grade | いいえ |
 | `sprint.task.highValueRate` | 高価値タスクの出現率 | `0.12` | `probability` | `0〜1` | — | 新規タスクが高価値になる確率。出荷倍率そのものは工程モデル側の値を使う。 | sprint, task, delivery | いいえ |
 | `sprint.task.kindWeight.complex` | 複雑タスクの出現比 | `0.25` | `probability` | `0〜1` | — | スプリント開始時に複雑タスクを抽選する重み。 | sprint, task, distribution | いいえ |
 | `sprint.task.kindWeight.normal` | 通常タスクの出現比 | `0.45` | `probability` | `0〜1` | — | スプリント開始時に通常タスクを抽選する重み。 | sprint, task, distribution | いいえ |

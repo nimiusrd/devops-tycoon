@@ -52,8 +52,8 @@ function sampleEntry(
 }
 
 describe('バランスルールセットの版と指紋', () => {
-  it('現行ルールセットの版は 6、指紋は 64 桁 hex で再計算と一致する', () => {
-    expect(BALANCE_RULESET_VERSION).toBe(6);
+  it('現行ルールセットの版は 7、指紋は 64 桁 hex で再計算と一致する', () => {
+    expect(BALANCE_RULESET_VERSION).toBe(7);
     expect(BALANCE_RULESET_FINGERPRINT_SCHEME).toBe(1);
     expect(BALANCE_RULESET_FINGERPRINT).toMatch(/^[0-9a-f]{64}$/);
     expect(fingerprintBalanceRuleset(BALANCE_RULESET_PAYLOAD)).toBe(BALANCE_RULESET_FINGERPRINT);

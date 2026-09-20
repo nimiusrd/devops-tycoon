@@ -34,10 +34,19 @@ import {
 import { hitTestBoardDot } from './boardPixiView';
 import type { InterventionTrigger } from './interventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
+import { RdBoardPrototypeOverlay, RdLaneRoom } from '../ui/RdBoardPrototypeOverlay';
 import { usePixiRenderer } from '../ui/usePixiRenderer';
 import { useBoardEffects } from '../ui/useBoardEffects';
 import { deriveMemberMoodOverrides } from './memberMood';
-import { BOARD_VIEW, planBoardScene, type BoardStationPlan, type BoardDotPlan } from './boardScene';
+import {
+  BOARD_VIEW,
+  planBoardScene,
+  type BoardStationPlan,
+  type BoardDotPlan,
+  type RdBoardLayout,
+} from './boardScene';
+import { isRdBoardPrototypeActiveFromLocation, resolveRdLayoutFromLocation } from './rdBoardLayout';
+import { hitTestRdBoardDot } from './rdBoardPrototype';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
@@ -179,7 +188,10 @@ export function Board({
     () => (roster ? deriveMemberMoodOverrides(roster) : undefined),
     [roster],
   );
-  const scene = planBoardScene(tasks, moodOverrides);
+  const prototypeActive = isRdBoardPrototypeActiveFromLocation();
+  const [layout, setLayout] = useState<RdBoardLayout>(() => resolveRdLayoutFromLocation());
+  const [rdHitTaskId, setRdHitTaskId] = useState<number | null>(null);
+  const scene = planBoardScene(tasks, moodOverrides, layout);
   // 盤面の常駐物と連続演出を WebGL で描くか（RI-11 / RI-142。ラベルは DOM 共通）。
   const { usePixi, onWebglError } = usePixiRenderer();
   const [pixiReady, setPixiReady] = useState(false);
@@ -201,7 +213,7 @@ export function Board({
   });
 
   const dragPlan =
-    armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee) : null;
+    armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee, layout) : null;
   const dragIds = useMemo(() => new Set(dragPlan?.draggableTaskIds ?? []), [dragPlan]);
   const dropLanes = new Set(dragPlan?.dropLanes ?? []);
 
@@ -233,7 +245,7 @@ export function Board({
         const rect = boardRef.current?.getBoundingClientRect();
         if (!rect) return;
         const pt = clientToBoardPoint(ev.clientX, ev.clientY, rect);
-        setHoverLane(hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes));
+        setHoverLane(hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes, layout));
       };
       const onUp = (ev: PointerEvent) => {
         window.removeEventListener('pointermove', onMove);
@@ -247,7 +259,7 @@ export function Board({
           return;
         }
         const pt = clientToBoardPoint(ev.clientX, ev.clientY, rect);
-        const lane = hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes);
+        const lane = hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes, layout);
         if (!lane) return;
         onDragComplete({
           taskId,
@@ -258,7 +270,7 @@ export function Board({
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
     },
-    [armedAction, dragPlan, onDragComplete],
+    [armedAction, dragPlan, layout, onDragComplete],
   );
 
   // Pixi 時は粒が canvas 内にあり DOM の pointerdown ターゲットが無いため、
@@ -270,24 +282,30 @@ export function Board({
       // レイヤ（オーラ・演出）は素通しにする（弾くとドラッグ全体が効かなくなる）。
       if (
         e.target instanceof Element &&
-        e.target.closest('.st-label, .bubble, .board-legend, .pile-overflow')
+        e.target.closest('.st-label, .bubble, .board-legend, .pile-overflow, .rd-board-picker')
       ) {
         return;
       }
       const rect = boardRef.current?.getBoundingClientRect();
-      if (!rect || dragIds.size === 0) return;
+      if (!rect) return;
       const pt = clientToBoardPoint(e.clientX, e.clientY, rect);
+      if (prototypeActive) {
+        setRdHitTaskId(hitTestRdBoardDot(pt, scene.dots));
+      }
+      if (dragIds.size === 0) return;
       const taskId = hitTestBoardDot(pt, scene.dots, dragIds);
       if (taskId !== null) handlePointerDown(e, taskId);
     },
-    [dragIds, scene.dots, handlePointerDown],
+    [dragIds, prototypeActive, scene.dots, handlePointerDown],
   );
 
   return (
     <div
       ref={boardRef}
-      className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
+      className={`board iso-office${layout === 'lane' ? ' lane-office' : ''}${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
+      data-rd-layout={layout}
+      data-rd-prototype={prototypeActive ? 'true' : undefined}
       data-armed={armedAction ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
@@ -300,10 +318,10 @@ export function Board({
       data-effect-sfx-count={boardEffects.audio.count}
       data-effect-last-sfx={boardEffects.audio.last ?? undefined}
       data-animations-paused={animationsPaused ? 'true' : undefined}
-      onPointerDown={usePixi ? handleBoardPointerDown : undefined}
+      onPointerDown={usePixi || prototypeActive ? handleBoardPointerDown : undefined}
       style={{ '--review-heat': heat } as CSSProperties}
     >
-      <OfficeRoom />
+      {layout === 'lane' ? <RdLaneRoom /> : <OfficeRoom />}
       {usePixi && (
         <BoardPixiLayer
           scene={scene}
@@ -342,6 +360,16 @@ export function Board({
             +{s.overflow}
           </div>
         ))}
+
+      {prototypeActive && (
+        <RdBoardPrototypeOverlay
+          scene={scene}
+          layout={layout}
+          onLayoutChange={setLayout}
+          hitTaskId={rdHitTaskId}
+          showHits
+        />
+      )}
 
       <details className="board-legend">
         <summary>粒の見方</summary>

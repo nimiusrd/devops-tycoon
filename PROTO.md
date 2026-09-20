@@ -1,0 +1,72 @@
+# R&D 盤面 A/B プロトタイプ（本番マージ禁止）
+
+このブランチは **捨て実験** です。現行の四半俯瞰／アイソメ盤面（A）と、最小のレーン盤面（B）を、同じ固定 live 場面で切り替えて可読性だけを見ます。アート仕上げ・本番盤面の書き換え・バランス再調整はしません。
+
+## 仮説
+
+- **H1**: 色に頼らず、炎上・渋滞・延焼を 3 秒以内に指せるか。B が A より良い想定。
+- **H2**: 狭い幅での隠れ・タップ不能が、B の方が少ない想定。
+
+成功判定（この PR）は「同じシード場面で A/B とヒット領域を切り替えられること」だけです。プレイテストは Researcher が行います。
+
+## 起動（1 分以内）
+
+開発サーバ: `npm run dev`（ポート 5174）。
+
+同じ固定場面:
+
+| 条件 | URL |
+| --- | --- |
+| A 現行 iso | `/?rd=iso&rdScene=stress&tutorial=off` |
+| B レーン | `/?rd=lane&rdScene=stress&tutorial=off` |
+
+盤面上の **R&D A/B** ピッカーでも `A iso` / `B lane` を切り替えられます（`history.replaceState`。場面は再生成しない）。
+
+既定（`?rd` なし）は現行 iso / 通常タイトル起動のままです。`?rd=lane` だけ付けると、通常プレイの盤面レイアウトだけがレーンになります。
+
+## 固定場面
+
+`rdScene=stress` は次を一度だけ live sprint に載せ、`game.pause()` します。
+
+- **渋滞**: Review 件数が `REVIEW_HOT_QUEUE`（12）ちょうど
+- **炎上**: Rework の燃焼中タスク `#9001`
+- **延焼**: `#9001` → Review の incident `#9002`（ラベルと破線。延焼演出そのものは一瞬なので常駐スタンドイン）
+
+seed は `rd-board-ab-stress`。HUD・介入バーは現行のままです。盤面上の「炎上 / 渋滞 / 延焼」ラベルは色に依存しない指差し用です。破線の円は実ヒット半径（直径/2 + `dotHitMargin`）。盤面クリックで `hit: #id` が更新されます。
+
+## ノブ
+
+| ノブ | 場所 | 意味 |
+| --- | --- | --- |
+| `?rd=iso\|lane` | `src/render/rdBoardLayout.ts` | 盤面レイアウト。未指定は iso |
+| `?rdScene=stress` | 同上 | 固定場面を自動ロード |
+| `REVIEW_HOT_QUEUE` | `src/render/boardScene.ts` | 渋滞判定。**値は変えていない** |
+| `LANE_DOT_DX` / `LANE_DOT_DY` | `src/render/boardScene.ts` | レーン粒の間隔（ヒット円が重ならない幅） |
+| `boardDropZones('lane')` | 同上 | レーンのドロップ円。半径 48（列が重ならない） |
+| `RD_FIRE_TASK_ID` / `RD_SPREAD_TARGET_TASK_ID` | `src/render/rdBoardPrototype.ts` | 炎上元 / 延焼先の固定 ID |
+
+`window.game.loadRdBoardPrototypeScene()` でも同じ場面を載せられます。
+
+## 触っていないもの
+
+- バランス定数・AI・カード効果・確率モデル
+- HUD / ActionBar / スプリントルール
+- 既定 iso のステーション座標と Pixi 視覚回帰ベースライン
+- 組織／部署／業界マップ（`iso.ts` の投影）
+- 本番セーブ（プロトタイプ起動は途中セーブを書かない）
+
+## 実装の境界
+
+- シーン計画は同じ `BoardScenePlan`。`planBoardScene(tasks, moods, layout)` の第 3 引数だけが増えた
+- ヒット判定は既存 `hitTestBoardDot` / `hitTestDropLane`。lane 時は座標とドロップ円だけ差し替える
+- レーン背景は単純な横帯。既存キャラ／粒スプライトを再利用（新規アートなし）
+
+## デザインシステム例外
+
+DS-03 / DS-04: プロトタイプオーバーレイとレーン背景は本番コンポーネントを増やさず、既存トークン色だけを使う局所 UI。本番マージしない前提。
+
+## 検証コマンド
+
+```bash
+npm test -- tests/unit/render/rdBoardLayout.test.ts tests/unit/render/rdBoardPrototype.test.ts tests/unit/render/boardScene.test.ts tests/unit/render/boardDragPlan.test.ts --maxWorkers=1
+```

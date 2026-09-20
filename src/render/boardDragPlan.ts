@@ -6,7 +6,8 @@
  */
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, Lane, SprintState } from '../sim/types';
-import { BOARD_STATION_CENTERS, BOARD_VIEW, planBoardScene } from './boardScene';
+import { BOARD_VIEW, boardDropZones, planBoardScene, type RdBoardLayout } from './boardScene';
+import { resolveRdLayoutFromLocation } from './rdBoardLayout';
 
 /** ドラッグ武装可能なアクション。 */
 export type DraggableActionId = 'assignTask' | 'splitPr';
@@ -14,13 +15,6 @@ export type DraggableActionId = 'assignTask' | 'splitPr';
 export function isDraggableAction(id: ActionId): id is DraggableActionId {
   return id === 'assignTask' || id === 'splitPr';
 }
-
-/** ステーションのドロップゾーン（設計座標の中心＋半径）。 */
-const DROP_ZONES: Record<'backlog' | 'coding' | 'review', { x: number; y: number; r: number }> = {
-  backlog: { ...BOARD_STATION_CENTERS.backlog, r: 70 },
-  coding: { ...BOARD_STATION_CENTERS.coding, r: 70 },
-  review: { ...BOARD_STATION_CENTERS.review, r: 80 },
-};
 
 export interface BoardDragPlan {
   armed: DraggableActionId;
@@ -33,8 +27,11 @@ export interface BoardDragPlan {
 }
 
 /** 盤面に描画されているタスク ID（overflow +N に隠れた粒は除く）。 */
-function visibleTaskIds(sprint: SprintState): Set<number> {
-  return new Set(planBoardScene(sprint.tasks).dots.map((d) => d.id));
+function visibleTaskIds(
+  sprint: SprintState,
+  layout: RdBoardLayout = resolveRdLayoutFromLocation(),
+): Set<number> {
+  return new Set(planBoardScene(sprint.tasks, undefined, layout).dots.map((d) => d.id));
 }
 
 /**
@@ -46,8 +43,9 @@ export function planBoardDrag(
   sprint: SprintState,
   armed: DraggableActionId,
   assignee?: 'ai' | 'senior',
+  layout: RdBoardLayout = resolveRdLayoutFromLocation(),
 ): BoardDragPlan | null {
-  const visible = visibleTaskIds(sprint);
+  const visible = visibleTaskIds(sprint, layout);
   if (armed === 'assignTask') {
     const tasks = assignableTasks(sprint).filter((t) => visible.has(t.id));
     if (tasks.length === 0) return null;
@@ -77,11 +75,13 @@ export function hitTestDropLane(
   x: number,
   y: number,
   allowed: ReadonlyArray<'backlog' | 'coding' | 'review'>,
+  layout: RdBoardLayout = resolveRdLayoutFromLocation(),
 ): Extract<Lane, 'backlog' | 'coding' | 'review'> | null {
+  const zones = boardDropZones(layout);
   let best: Extract<Lane, 'backlog' | 'coding' | 'review'> | null = null;
   let bestDist = Infinity;
   for (const lane of allowed) {
-    const z = DROP_ZONES[lane];
+    const z = zones[lane];
     const dx = x - z.x;
     const dy = y - z.y;
     const d = Math.hypot(dx, dy);

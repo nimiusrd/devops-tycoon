@@ -10,9 +10,12 @@
 import { BURN_TICKS } from '../sim/model';
 import type { Lane, Task } from '../sim/types';
 import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
+import { resolveRdLayoutFromLocation, type RdBoardLayout } from './rdBoardLayout';
 import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 import type { TaskSize, TaskVariant } from './taskView';
 import { taskSize, taskVariant } from './taskView';
+
+export type { RdBoardLayout };
 
 /** 設計座標空間（旧モック main-screen の viewBox 由来）。 */
 export const BOARD_VIEW = DESIGN_SPACES.sprint;
@@ -70,6 +73,18 @@ export const BOARD_STATION_CENTERS = {
   review: { x: 840, y: 300 },
   rework: { x: 1006, y: 229 },
   done: { x: 1075, y: 370 },
+} as const satisfies Record<Lane, Point>;
+
+/**
+ * R&D レーン盤面の人物中心。工程を横列に分け、粒が重ならないよう左に寄せる。
+ * 本番アイソメ座標（BOARD_STATION_CENTERS）とは独立。
+ */
+export const LANE_STATION_CENTERS = {
+  backlog: { x: 150, y: 56 },
+  coding: { x: 150, y: 166 },
+  review: { x: 150, y: 286 },
+  rework: { x: 150, y: 406 },
+  done: { x: 150, y: 516 },
 } as const satisfies Record<Lane, Point>;
 
 /**
@@ -134,6 +149,65 @@ const STATIONS: readonly StationLayout[] = [
   },
 ];
 
+/** R&D レーン盤面: 工程を横列にし、粒は右へ 1〜2 行で並べる（山積みにしない）。 */
+const LANE_STATIONS: readonly StationLayout[] = [
+  {
+    lane: 'backlog',
+    label: 'Backlog',
+    icon: '📥',
+    anchor: LANE_STATION_CENTERS.backlog,
+    label_at: { x: 150, y: 28 },
+    bubble_at: { x: 230, y: 18 },
+    pile: { x: 320, y: 56 },
+    perRow: 12,
+    cap: 16,
+  },
+  {
+    lane: 'coding',
+    label: 'Coding',
+    icon: '💻',
+    anchor: LANE_STATION_CENTERS.coding,
+    label_at: { x: 150, y: 138 },
+    bubble_at: { x: 230, y: 128 },
+    pile: { x: 320, y: 166 },
+    perRow: 12,
+    cap: 16,
+  },
+  {
+    lane: 'review',
+    label: 'Review',
+    icon: '🔍',
+    anchor: LANE_STATION_CENTERS.review,
+    label_at: { x: 150, y: 258 },
+    bubble_at: { x: 230, y: 248 },
+    pile: { x: 320, y: 286 },
+    perRow: 12,
+    cap: 20,
+  },
+  {
+    lane: 'rework',
+    label: 'Rework',
+    icon: '↩️',
+    anchor: LANE_STATION_CENTERS.rework,
+    label_at: { x: 150, y: 378 },
+    bubble_at: { x: 230, y: 368 },
+    pile: { x: 320, y: 406 },
+    perRow: 12,
+    cap: 16,
+  },
+  {
+    lane: 'done',
+    label: 'Done',
+    icon: '📦',
+    anchor: LANE_STATION_CENTERS.done,
+    label_at: { x: 150, y: 488 },
+    bubble_at: { x: 230, y: 478 },
+    pile: { x: 320, y: 516 },
+    perRow: 12,
+    cap: 16,
+  },
+];
+
 /** ステーション間のタスクフロー（破線矢印。設計px）。 */
 export interface BoardFlow {
   from: Lane;
@@ -154,6 +228,40 @@ const FLOWS: readonly BoardFlow[] = [
   { from: 'rework', to: 'review', x1: 950, y1: 245, x2: 905, y2: 290, rework: true },
 ];
 
+const LANE_FLOWS: readonly BoardFlow[] = [
+  { from: 'backlog', to: 'coding', x1: 150, y1: 90, x2: 150, y2: 132, rework: false },
+  { from: 'coding', to: 'review', x1: 150, y1: 200, x2: 150, y2: 252, rework: false },
+  { from: 'review', to: 'rework', x1: 150, y1: 320, x2: 150, y2: 372, rework: true },
+  { from: 'review', to: 'done', x1: 210, y1: 320, x2: 210, y2: 482, rework: false },
+  { from: 'rework', to: 'review', x1: 190, y1: 372, x2: 190, y2: 320, rework: true },
+];
+
+function stationsFor(layout: RdBoardLayout): readonly StationLayout[] {
+  return layout === 'lane' ? LANE_STATIONS : STATIONS;
+}
+
+export function boardFlowsFor(layout: RdBoardLayout): readonly BoardFlow[] {
+  return layout === 'lane' ? LANE_FLOWS : FLOWS;
+}
+
+/** ドロップ判定用の円。iso は現行値、lane は列が重ならない半径。 */
+export function boardDropZones(
+  layout: RdBoardLayout = resolveRdLayoutFromLocation(),
+): Record<'backlog' | 'coding' | 'review', { x: number; y: number; r: number }> {
+  if (layout === 'lane') {
+    return {
+      backlog: { ...LANE_STATION_CENTERS.backlog, r: 48 },
+      coding: { ...LANE_STATION_CENTERS.coding, r: 48 },
+      review: { ...LANE_STATION_CENTERS.review, r: 48 },
+    };
+  }
+  return {
+    backlog: { ...BOARD_STATION_CENTERS.backlog, r: 70 },
+    coding: { ...BOARD_STATION_CENTERS.coding, r: 70 },
+    review: { ...BOARD_STATION_CENTERS.review, r: 80 },
+  };
+}
+
 /** 進捗中タスクをフロー上へ載せる対象レーン（RI-05）。 */
 const FLOWING_LANES: Partial<Record<Lane, Lane>> = {
   coding: 'review',
@@ -161,8 +269,12 @@ const FLOWING_LANES: Partial<Record<Lane, Lane>> = {
 };
 
 /** from→to のフロー定義を返す。 */
-export function findBoardFlow(from: Lane, to: Lane): BoardFlow | undefined {
-  return FLOWS.find((f) => f.from === from && f.to === to);
+export function findBoardFlow(
+  from: Lane,
+  to: Lane,
+  layout: RdBoardLayout = resolveRdLayoutFromLocation(),
+): BoardFlow | undefined {
+  return boardFlowsFor(layout).find((f) => f.from === from && f.to === to);
 }
 
 /** フロー線上の t (0..1) に対応する設計座標と方向を返す（純関数・Vitest 検証用）。 */
@@ -214,10 +326,15 @@ function flowSpreadOffsets(count: number, angleDeg: number): Point[] {
   return out;
 }
 
-function planFlowingDot(task: Task, lane: Lane, spread: Point): BoardDotPlan | null {
+function planFlowingDot(
+  task: Task,
+  lane: Lane,
+  spread: Point,
+  layout: RdBoardLayout,
+): BoardDotPlan | null {
   const to = FLOWING_LANES[lane];
   if (!to) return null;
-  const flow = findBoardFlow(lane, to);
+  const flow = findBoardFlow(lane, to, layout);
   if (!flow) return null;
   const { x, y, angleDeg } = flowPointAt(flow, task.progress);
   return {
@@ -315,6 +432,8 @@ export interface BoardScenePlan {
   dots: BoardDotPlan[];
   flows: readonly BoardFlow[];
   reviewEffects: BoardReviewEffectsPlan;
+  /** R&D レイアウト。未指定呼び出しは iso。 */
+  layout: RdBoardLayout;
 }
 
 export type BoardReviewTrailTone = 'normal' | 'ai' | 'rework';
@@ -422,22 +541,28 @@ export function planBoardReviewEffects(
 /** 粒クラスタの横間隔と段差（設計px）。 */
 const DOT_DX = VISUAL_TOKENS.dimensions.sprint.pile.dx;
 const DOT_DY = VISUAL_TOKENS.dimensions.sprint.pile.dy;
+/** レーン盤面の粒間隔。ヒット円（直径/2+margin）が重ならないよう iso の山より広く取る。 */
+const LANE_DOT_DX = 44;
+const LANE_DOT_DY = 42;
 
 /**
  * n 個の粒を、アンカー上に「下から積み上がる山」状のオフセットで配置する。
  * 行ごとに上へ（-y）ずらし、各行は中央寄せ。決定論（index のみに依存）なので
  * 同一状態＝同一フレームになり、スクショ比較が安定する（第22.5）。
+ * レーン盤面は左起点で横に広げ、ヒット円の重なりを避ける。
  */
-function pileOffsets(n: number, perRow: number): Point[] {
+function pileOffsets(n: number, perRow: number, layout: RdBoardLayout = 'iso'): Point[] {
   const out: Point[] = [];
   const rows = Math.ceil(n / perRow);
+  const dxStep = layout === 'lane' ? LANE_DOT_DX : DOT_DX;
+  const dyStep = layout === 'lane' ? LANE_DOT_DY : DOT_DY;
   for (let i = 0; i < n; i += 1) {
     const row = Math.floor(i / perRow);
     const col = i % perRow;
     // この行に実際に並ぶ数（最終行は端数）。
     const inRow = row === rows - 1 ? n - row * perRow : perRow;
-    const dx = (col - (inRow - 1) / 2) * DOT_DX;
-    const dy = -row * DOT_DY;
+    const dx = layout === 'lane' ? col * dxStep : (col - (inRow - 1) / 2) * dxStep;
+    const dy = -row * dyStep;
     out.push({ x: dx, y: dy });
   }
   return out;
@@ -509,15 +634,17 @@ function deriveMood(
 export function planBoardScene(
   tasks: readonly Task[],
   moodOverrides?: StationMoodOverrides,
+  boardLayout: RdBoardLayout = resolveRdLayoutFromLocation(),
 ): BoardScenePlan {
+  const stationLayouts = stationsFor(boardLayout);
   const byLane = new Map<Lane, Task[]>();
-  for (const s of STATIONS) byLane.set(s.lane, []);
+  for (const s of stationLayouts) byLane.set(s.lane, []);
   for (const t of tasks) byLane.get(t.lane)?.push(t);
 
   const stations: BoardStationPlan[] = [];
   const dots: BoardDotPlan[] = [];
 
-  for (const layout of STATIONS) {
+  for (const layout of stationLayouts) {
     const laneTasks = byLane.get(layout.lane) ?? [];
     const { stationary, flowing } = splitLaneTasks(layout.lane, laneTasks);
     const count = laneTasks.length;
@@ -542,7 +669,7 @@ export function planBoardScene(
 
     // `+N` バッジは山の頂点（最上段の少し上）に置く。ラベルと衝突させない。
     const rows = Math.ceil(shown.length / layout.perRow);
-    const apexDy = rows > 0 ? -(rows - 1) * DOT_DY : 0;
+    const apexDy = rows > 0 ? -(rows - 1) * (boardLayout === 'lane' ? LANE_DOT_DY : DOT_DY) : 0;
 
     stations.push({
       lane: layout.lane,
@@ -564,7 +691,7 @@ export function planBoardScene(
       overflowY: layout.pile.y + apexDy - 26,
     });
 
-    const offsets = pileOffsets(shown.length, layout.perRow);
+    const offsets = pileOffsets(shown.length, layout.perRow, boardLayout);
     shown.forEach((t, i) => {
       const off = offsets[i];
       dots.push({
@@ -582,13 +709,18 @@ export function planBoardScene(
 
     const sortedFlowing = [...flowing].sort((a, b) => a.id - b.id);
     const flowTo = FLOWING_LANES[layout.lane];
-    const flowDef = flowTo ? findBoardFlow(layout.lane, flowTo) : undefined;
+    const flowDef = flowTo ? findBoardFlow(layout.lane, flowTo, boardLayout) : undefined;
     const spreadOffsets =
       flowDef && sortedFlowing.length > 0
         ? flowSpreadOffsets(sortedFlowing.length, flowPointAt(flowDef, 0).angleDeg)
         : [];
     sortedFlowing.forEach((task, i) => {
-      const dot = planFlowingDot(task, layout.lane, spreadOffsets[i] ?? { x: 0, y: 0 });
+      const dot = planFlowingDot(
+        task,
+        layout.lane,
+        spreadOffsets[i] ?? { x: 0, y: 0 },
+        boardLayout,
+      );
       if (dot) dots.push(dot);
     });
   }
@@ -597,7 +729,8 @@ export function planBoardScene(
     view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h },
     stations,
     dots,
-    flows: FLOWS,
+    flows: boardFlowsFor(boardLayout),
     reviewEffects: planBoardReviewEffects(stations, dots),
+    layout: boardLayout,
   };
 }

@@ -410,3 +410,20 @@ describe('planBoardScene 流動粒（RI-05）', () => {
     expect(dots[0].y).not.toBe(dots[1].y);
   });
 });
+
+describe('planBoardScene（R&D レーンは opt-in、iso 座標は不変）', () => {
+  it('既定呼び出しは iso で現行ステーション座標を返す', () => {
+    const scene = planBoardScene([]);
+    expect(scene.layout).toBe('iso');
+    const review = scene.stations.find((station) => station.lane === 'review')!;
+    expect(review).toMatchObject({ x: 840, y: 300 });
+  });
+
+  it('lane 指定時は工程が縦に分かれ、Review が左列になる', () => {
+    const scene = planBoardScene([], undefined, 'lane');
+    expect(scene.layout).toBe('lane');
+    const ys = scene.stations.map((station) => station.y);
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+    expect(scene.stations.find((station) => station.lane === 'review')!.x).toBe(150);
+  });
+});

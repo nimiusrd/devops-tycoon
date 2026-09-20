@@ -10,6 +10,7 @@ import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import type { ReplayFramePhase } from './sim/run/persist';
 import { resolveSeedFromLocation } from './sim/seed';
+import { createRdStressOverlay, RD_BOARD_PROTOTYPE_SEED } from './render/rdBoardPrototype';
 import type {
   ActionId,
   ActionTarget,
@@ -266,6 +267,11 @@ export interface GameHandle {
    * UI に反映される。
    */
   revision(): number;
+  /**
+   * R&D 盤面 A/B 用。固定 stress 場面を live sprint に載せ、自動進行を止める。
+   * バランス定数は変更しない。途中セーブも書かない。
+   */
+  loadRdBoardPrototypeScene(): RunState;
   /** 内部エンジン（高度なデバッグ用）。 */
   readonly engine: RunEngine;
 }
@@ -1127,6 +1133,29 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     revision() {
       return revision;
+    },
+    loadRdBoardPrototypeScene() {
+      if (replayMode) return engine.snapshot();
+      latestImportedSave = null;
+      recorded = false;
+      lastRunReward = null;
+      activeDailyDate = null;
+      activeDailyRuleset = null;
+      activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
+      keyframes = [];
+      clearWhatIfCache();
+      applyUnlockedToEngine();
+      runEpoch += 1;
+      pendingSeed = RD_BOARD_PROTOTYPE_SEED;
+      engine.startRun('hard', [], RD_BOARD_PROTOTYPE_SEED, { kind: 'normal' });
+      engine.beginSetupSprint();
+      engine.applyPrototypeSprintOverlay(createRdStressOverlay());
+      paused = true;
+      pauseEpoch += 1;
+      bump();
+      return engine.snapshot();
     },
     engine,
   };

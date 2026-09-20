@@ -82,8 +82,11 @@ import type {
   OrgState,
   ScenarioId,
   SprintConfig,
+  SprintEvent,
+  SprintMetrics,
   SprintResult,
   SprintState,
+  Task,
 } from '../types';
 import {
   IDENTITY_CARD_EFFECTS,
@@ -638,6 +641,36 @@ export class RunEngine {
   beginSetupSprint(): void {
     if (this.phase !== 'setup') return;
     this.launchSprint();
+  }
+
+  /**
+   * R&D 盤面 A/B 用。進行中スプリントの盤面タスクだけを差し替える。
+   * バランス表・AI・カード効果は触らない。本番セーブ経路からは呼ばない。
+   */
+  applyPrototypeSprintOverlay(input: {
+    tasks: Task[];
+    metrics: Partial<SprintMetrics>;
+    events: SprintEvent[];
+  }): void {
+    if (!this.sprint) return;
+    this.sprint.tasks = input.tasks.map((task) => ({ ...task }));
+    const maxId = input.tasks.reduce((max, task) => Math.max(max, task.id), 0);
+    this.sprint.nextTaskId = Math.max(this.sprint.nextTaskId, maxId + 1);
+    this.sprint.metrics = { ...this.sprint.metrics, ...input.metrics };
+    this.sprint.events = [...input.events];
+    this.sprint.fireEvents = input.events.filter(
+      (
+        event,
+      ): event is Extract<
+        SprintEvent,
+        { kind: 'ignite' | 'contain' | 'auto-contain' | 'spread' }
+      > =>
+        event.kind === 'ignite' ||
+        event.kind === 'contain' ||
+        event.kind === 'auto-contain' ||
+        event.kind === 'spread',
+    );
+    this.sprint.complete = false;
   }
 
   /**

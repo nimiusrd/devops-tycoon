@@ -98,8 +98,19 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
   const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
   const [expanded, setExpanded] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
+  const pendingFocusRef = useRef(false);
   const reduceMotion = useReducedMotion() ?? false;
   const still = frozen || reduceMotion;
+
+  const focusList = () => {
+    listRef.current?.focus({ preventScroll: true });
+  };
+
+  useEffect(() => {
+    if (!expanded || !pendingFocusRef.current) return;
+    pendingFocusRef.current = false;
+    focusList();
+  }, [expanded]);
 
   useEffect(() => {
     const list = listRef.current;
@@ -229,15 +240,14 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
     };
   }, [rows.length]);
 
-  const focusList = () => {
-    listRef.current?.focus({ preventScroll: true });
-  };
-
   const toggleExpanded = () => {
     if (rows.length === 0) return;
     setExpanded((open) => {
       const next = !open;
-      if (next) focusList();
+      if (next) {
+        pendingFocusRef.current = true;
+        focusList();
+      }
       return next;
     });
   };

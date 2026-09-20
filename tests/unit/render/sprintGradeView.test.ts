@@ -247,4 +247,25 @@ describe('sprintGradeView', () => {
       { label: '健全比', value: '80% → A' },
     ]);
   });
+
+  it('健全比が S 境界以上でも炎上があると S ではないと説明する', () => {
+    const view = planSprintGradeView(
+      withRecordedGrade({
+        delivered: 895,
+        rework: 2,
+        incidents: 1,
+        spread: 0,
+        seniorHpDelta: -37,
+        seniorHpLoss: 36.52,
+        grade: 'A',
+      }),
+    );
+
+    expect(view.ratioPct).toBeGreaterThanOrEqual(96);
+    expect(view.caption).toBe(
+      `出荷は十分でも炎上があるため S ではありません（健全比 ${view.ratioPct}%）`,
+    );
+    expect(view.tip).toContain('炎上と延焼がゼロ');
+    expect(view.rows.at(-1)).toEqual({ label: '健全比', value: `${view.ratioPct}% → A` });
+  });
 });

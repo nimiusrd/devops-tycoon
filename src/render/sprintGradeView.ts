@@ -105,6 +105,16 @@ function formatRatioLabel(ratioPct: number | undefined, grade: string): string {
   return `評価 ${grade}`;
 }
 
+function isSBlockedByCrisis(result: SprintResult, ratio: number | undefined): boolean {
+  return (
+    result.grade === 'A' &&
+    typeof ratio === 'number' &&
+    ratio >= SPRINT_BALANCE.gradeThresholdS.value &&
+    (result.incidents > SPRINT_BALANCE.gradeSMaxIncidents.value ||
+      result.spread > SPRINT_BALANCE.gradeSMaxSpread.value)
+  );
+}
+
 function captionFor(
   result: SprintResult,
   ratio: number | undefined,
@@ -116,6 +126,9 @@ function captionFor(
     return typeof ratioPct === 'number'
       ? `未出荷のスプリントです（健全比 ${ratioPct}%）`
       : '未出荷のスプリントです';
+  }
+  if (isSBlockedByCrisis(result, ratio)) {
+    return `出荷は十分でも炎上があるため S ではありません（${ratioLabel}）`;
   }
   if (majorCrisis && isHighGrade(result.grade)) {
     return `大きな危機を出しつつ出荷した（${ratioLabel}）`;
@@ -133,6 +146,7 @@ function tipFor(
   hasBonus: boolean,
   hasRecordedPenalties: boolean,
   hasRecordedRatio: boolean,
+  sBlockedByCrisis: boolean,
 ): string {
   if (result.delivered === 0) {
     return '出荷点が 0 のため健全比の母数が立っていません。未出荷は危機の重さではなく、等級の母数がない状態です。';
@@ -142,6 +156,9 @@ function tipFor(
       return 'このリザルトには評価内訳の記録がありません。等級は保存当時の評価です。';
     }
     return '減点内訳は記録されていないため、保存済みの健全比と等級を表示しています。';
+  }
+  if (sBlockedByCrisis) {
+    return '評価 S は炎上と延焼がゼロのときだけです。出荷点が多くても障害があれば A になります。';
   }
   if (majorCrisis) {
     return '等級は出荷点を母数にした健全比です。出荷が多いと、シニア消耗や障害のペナルティが比率としては小さく見えます。';
@@ -205,6 +222,8 @@ export function planSprintGradeView(result: SprintResult): SprintGradeView {
     rows.push({ label: '評価', value: result.grade });
   }
 
+  const sBlockedByCrisis = isSBlockedByCrisis(result, ratio);
+
   return {
     ratioPct,
     caption: captionFor(result, ratio, ratioPct, majorCrisis),
@@ -216,6 +235,7 @@ export function planSprintGradeView(result: SprintResult): SprintGradeView {
       hasBonus,
       penalties !== undefined,
       ratio !== undefined,
+      sBlockedByCrisis,
     ),
   };
 }

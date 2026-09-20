@@ -2,6 +2,7 @@
  * スプリント評価の健全比（出荷点を母数にした outcome + 安定介入ボーナス）。
  *
  * `computeGrade` とリザルト内訳が同じ入力・同じ式を使うための正本。
+ * 評価 S は健全比に加え、炎上・延焼が上限以下であること（出荷量で障害が薄まらない）。
  */
 import { SPRINT_BALANCE } from '../data/balance';
 import type { SprintGradePenalties } from './types';
@@ -38,8 +39,13 @@ const GRADE_THRESHOLDS = {
 const STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusPerGrant.value;
 const MAX_STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusCap.value;
 
-function gradeFromRatio(ratio: number): string {
-  if (ratio >= GRADE_THRESHOLDS.S) return 'S';
+function gradeFromRatio(ratio: number, input: SprintGradeInput): string {
+  if (ratio >= GRADE_THRESHOLDS.S) {
+    const withinIncidentLimit = input.incidentCount <= SPRINT_BALANCE.gradeSMaxIncidents.value;
+    const withinSpreadLimit = input.spread <= SPRINT_BALANCE.gradeSMaxSpread.value;
+    if (withinIncidentLimit && withinSpreadLimit) return 'S';
+    return 'A';
+  }
   if (ratio >= GRADE_THRESHOLDS.A) return 'A';
   if (ratio >= GRADE_THRESHOLDS.B) return 'B';
   if (ratio >= GRADE_THRESHOLDS.C) return 'C';
@@ -65,7 +71,7 @@ export function evaluateSprintGrade(input: SprintGradeInput): SprintGradeScore {
   );
   const ratio = outcomeRatio + stabilizingBonus;
   return {
-    grade: gradeFromRatio(ratio),
+    grade: gradeFromRatio(ratio, input),
     ratio,
     outcomeRatio,
     stabilizingBonus,

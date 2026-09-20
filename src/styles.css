@@ -2695,6 +2695,19 @@ button.card.card-readonly:disabled {
     radial-gradient(850px 540px at 48% -12%, #8f3a2552 0%, transparent 66%);
 }
 
+/*
+ * #466 v3: タイトル表示中は html / body / #root も 100dvh で止め、
+ * ウィンドウ側の二重スクロールでドックがカードに重ならないようにする。
+ */
+html:has(.title-screen.title-command),
+html:has(.title-screen.title-command) body,
+html:has(.title-screen.title-command) #root {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* タイトル画面（戦略司令室 UI） */
 .title-screen.title-command {
   --tc-panel: rgba(10, 15, 32, 0.86);
@@ -2716,7 +2729,7 @@ button.card.card-readonly:disabled {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
-  row-gap: 1px;
+  row-gap: 0;
   grid-template-areas:
     'topbar'
     'scroll'
@@ -2728,6 +2741,7 @@ button.card.card-readonly:disabled {
   position: absolute;
   inset: 0;
   z-index: -2;
+  pointer-events: none;
   background:
     radial-gradient(circle at 80% 18%, rgba(120, 221, 255, 0.28), transparent 24%),
     linear-gradient(90deg, rgba(5, 7, 19, 0.97), rgba(5, 7, 19, 0.72) 44%, rgba(5, 7, 19, 0.18)),
@@ -2896,10 +2910,12 @@ button.card.card-readonly:disabled {
 .title-scroll {
   grid-area: scroll;
   position: relative;
+  z-index: 0;
   align-self: stretch;
-  height: 100%;
+  /* 1fr 行の stretch に任せ、height:100% でコンテナ全体へ広がってドックに重ならない。 */
+  height: auto;
   min-height: 0;
-  max-height: 100%;
+  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -3080,7 +3096,7 @@ button.card.card-readonly:disabled {
   padding: 0;
 }
 .title-command .title-difficulty-section {
-  padding-bottom: 16px;
+  padding-bottom: 24px;
 }
 .title-command .title-section-label {
   position: absolute;
@@ -3098,6 +3114,9 @@ button.card.card-readonly:disabled {
 }
 .title-command .difficulty-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   min-height: 166px;
   padding: 18px;
   border: 1px solid rgba(132, 177, 230, 0.22);
@@ -3162,10 +3181,9 @@ button.card.card-readonly:disabled {
   line-height: 1.5;
 }
 .difficulty-action {
-  position: absolute;
-  right: 18px;
-  bottom: 14px;
-  left: 18px;
+  display: block;
+  margin-top: auto;
+  padding-top: 14px;
   color: #7384a5;
   font-size: 11px;
   font-weight: 650;
@@ -3411,9 +3429,11 @@ button.card.card-readonly:disabled {
 }
 .title-launch-dock {
   grid-area: dock;
-  align-self: end;
+  position: static;
+  align-self: stretch;
   min-width: 0;
-  z-index: 8;
+  z-index: 1;
+  overflow: hidden;
   padding: 8px 4vw calc(14px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--tc-line);
   background:
@@ -3427,7 +3447,9 @@ button.card.card-readonly:disabled {
       color-mix(in srgb, var(--visual-color-interaction-drag) 16%, transparent),
       transparent 42%
     );
-  box-shadow: 0 -18px 40px color-mix(in srgb, var(--visual-color-ink) 55%, transparent);
+  /* 上方向の外向き shadow はスクロール面のカード下端を覆うので、ドック内の inset だけにする。 */
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--visual-color-interaction-drag) 22%, transparent);
 }
 .title-launch-dock-inner {
   max-width: 1320px;

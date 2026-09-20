@@ -341,7 +341,12 @@ describe('SprintScreen の表示と親子の連携', () => {
       events: screen.sprint.events,
       liveCombo: 3,
       frozen: false,
+      expanded: false,
     });
+    expect(typeof screen.child(EventTicker).onExpandedChange).toBe('function');
+    screen.child(EventTicker).onExpandedChange?.(true);
+    screen.flush();
+    expect(screen.child(EventTicker).expanded).toBe(true);
     expect(screen.child(PointPops)).toMatchObject({
       deliveryScore: state.org.deliveryScore,
       teamId: state.activeTeamId,

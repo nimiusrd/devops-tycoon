@@ -1448,10 +1448,14 @@ async function injectSpreadTickerEvents(page: Page): Promise<void> {
 async function expandEventTicker(page: Page): Promise<void> {
   const heading = page.getByTestId('event-ticker-heading');
   const ticker = page.getByTestId('event-ticker');
+  const list = page.getByTestId('event-ticker-list');
   if (await heading.isDisabled()) return;
-  if ((await ticker.getAttribute('data-expanded')) === 'true') return;
-  await heading.click();
+  if ((await ticker.getAttribute('data-expanded')) !== 'true') {
+    // Playwright の touch+mouse 合成 click はトグルを二重発火しうるので DOM click にする。
+    await heading.evaluate((element: HTMLElement) => element.click());
+  }
   await expect(ticker).toHaveAttribute('data-expanded', 'true');
+  await expect(list).toBeVisible();
 }
 
 async function assertTickerRowTextsDoNotOverlap(page: Page, label: string): Promise<void> {

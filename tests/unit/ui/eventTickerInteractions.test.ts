@@ -242,6 +242,32 @@ describe('EventTicker の表示とフォーカス', () => {
     },
   );
 
+  it('親が expanded を渡したら内部状態を使わず通知する', () => {
+    const onExpandedChange = vi.fn();
+    const collapsed = mountTicker({
+      events: sampleEvents,
+      expanded: false,
+      onExpandedChange,
+    });
+
+    expect(collapsed.find('event-ticker').props['data-expanded']).toBe('false');
+    (collapsed.find('event-ticker-heading').props.onClick as () => void)();
+    expect(onExpandedChange).toHaveBeenCalledWith(true);
+    expect(hooks.expanded).toBe(false);
+    collapsed.unmount();
+
+    hooks.expanded = true;
+    const expanded = mountTicker({
+      events: sampleEvents,
+      expanded: true,
+      onExpandedChange,
+    });
+    expect(expanded.find('event-ticker').props['data-expanded']).toBe('true');
+    (expanded.find('event-ticker-heading').props.onClick as () => void)();
+    expect(onExpandedChange).toHaveBeenLastCalledWith(false);
+    expect(hooks.expanded).toBe(true);
+  });
+
   it('prefers-reduced-motion では入場・退場アニメを付けない', () => {
     hooks.reducedMotion = true;
     const ticker = mountTicker({ events: sampleEvents, frozen: false });

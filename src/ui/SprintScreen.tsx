@@ -129,6 +129,7 @@ export function SprintScreen({
   const [slowMoPlan, setSlowMoPlan] = useState({ clearedIncidentCount: 0 });
   const [attentionKey, setAttentionKey] = useState(0);
   const [attentionPlan, setAttentionPlan] = useState<AttentionPausePlan>(IDLE_ATTENTION);
+  const [eventTickerExpanded, setEventTickerExpanded] = useState(false);
   // 完了中・別スプリントの武装は無効（effect で setState しない）。
   const armedId =
     sprint && !sprint.complete && armed.sprintId === state.currentSprintId ? armed.id : null;
@@ -462,7 +463,13 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker events={sprint.events} liveCombo={liveCombo} frozen={overlayFrozen} />
+            <EventTicker
+              events={sprint.events}
+              liveCombo={liveCombo}
+              frozen={overlayFrozen}
+              expanded={eventTickerExpanded}
+              onExpandedChange={setEventTickerExpanded}
+            />
           </AspectStage>
         </main>
       }

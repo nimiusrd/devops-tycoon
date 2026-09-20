@@ -90,13 +90,23 @@ export interface EventTickerProps {
   liveCombo?: number;
   /** true なら入場アニメを止め、既存行だけを静的表示する（進化オーバーレイ中）。 */
   frozen?: boolean;
+  /** 履歴リストの展開。省略時は内部状態。 */
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTickerProps) {
+export function EventTicker({
+  events,
+  liveCombo = 0,
+  frozen = false,
+  expanded: expandedProp,
+  onExpandedChange,
+}: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
   const summary = formatTickerSummary(rows);
   const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
-  const [expanded, setExpanded] = useState(false);
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
+  const expanded = expandedProp ?? uncontrolledExpanded;
   const listRef = useRef<HTMLUListElement>(null);
   const pendingFocusRef = useRef(false);
   const reduceMotion = useReducedMotion() ?? false;
@@ -242,14 +252,13 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
 
   const toggleExpanded = () => {
     if (rows.length === 0) return;
-    setExpanded((open) => {
-      const next = !open;
-      if (next) {
-        pendingFocusRef.current = true;
-        focusList();
-      }
-      return next;
-    });
+    const next = !expanded;
+    if (next) {
+      pendingFocusRef.current = true;
+      focusList();
+    }
+    if (expandedProp === undefined) setUncontrolledExpanded(next);
+    onExpandedChange?.(next);
   };
 
   return (
@@ -271,7 +280,7 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
       >
         出来事
         {rows.length > 0 && (
-          <span className="event-ticker-count" data-testid="event-ticker-count">
+          <span className="event-ticker-count" data-testid="event-ticker-count" aria-hidden="true">
             {rows.length}件
           </span>
         )}

@@ -85,6 +85,11 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.text()).toContain(`第${screen.props.state.quarterNumber}四半期`);
     expect(screen.text()).toContain(boss.name);
     expect(screen.text()).toContain(boss.description);
+    expect(screen.find('setup').props).toMatchObject({
+      role: 'main',
+      'aria-labelledby': 'setup-heading',
+    });
+    expect(screen.find('begin-sprint').props['aria-label']).toBe('スプリントを開始');
     expect(screen.text()).toContain('編成 — スプリント開始前に配置とAIを決める');
     expect(screen.text()).toContain('誰に配るかこのタイミングで見直そう');
     expect(content(screen.find('setup-okr'))).toContain('今四半期の OKR');
@@ -109,6 +114,10 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     });
     expect(content(screen.find('setup-next-sprint'))).toBe('次: スプリント 2 / 3');
     expect(content(screen.find('setup-elite-pending'))).toBe('高負荷案件');
+    expect(screen.find('setup-elite-pending').props).toMatchObject({
+      role: 'status',
+      'aria-live': 'polite',
+    });
     expect(screen.has('setup-boss-pending')).toBe(false);
     expect(screen.text()).toContain('編成 — 高負荷スプリントの前に配置とAIを決める');
     expect(screen.text()).toContain('出荷は大きいが渋滞・炎上リスクも高い');
@@ -121,6 +130,10 @@ describe('SetupScreen の次スプリント案内と編成', () => {
   ])('ボス指定または最終枠では高負荷表示よりボス案内を優先する: %j', (state) => {
     const screen = mountSetup({ state: makeState(state) });
     expect(content(screen.find('setup-boss-pending'))).toBe('ボススプリント');
+    expect(screen.find('setup-boss-pending').props).toMatchObject({
+      role: 'status',
+      'aria-live': 'polite',
+    });
     expect(screen.has('setup-elite-pending')).toBe(false);
     expect(screen.text()).toContain('編成 — ボススプリントの前に配置とAIを決める');
     expect(screen.text()).toContain('次はボス。四半期の締めくくり');

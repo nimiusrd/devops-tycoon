@@ -75,7 +75,15 @@ describe('編成画面の配置と AI 配布', () => {
   it('選んだ配置と AI 配布の反転を通知し、入力のロスターを変更しない', () => {
     const screen = mountFormation();
     const originalRoster = structuredClone(screen.props.state.roster);
-    expect(screen.find('assign-m1-coding').props.className).toContain('active');
+    expect(screen.find('assign-m1-coding').props).toMatchObject({
+      className: expect.stringContaining('active'),
+      'aria-pressed': true,
+      'aria-label': 'Direct Coderをコーディングへ配置',
+    });
+    expect(screen.find('ai-m1').props).toMatchObject({
+      'aria-pressed': true,
+      'aria-label': 'Direct CoderのAI配布',
+    });
     for (const lane of ['coding', 'review', 'bench']) screen.click(`assign-m1-${lane}`);
     expect(screen.props.onAssign).toHaveBeenCalledTimes(3);
     expect(screen.props.onAssign).toHaveBeenNthCalledWith(1, 'm1', 'coding');

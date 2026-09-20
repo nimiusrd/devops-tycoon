@@ -71,15 +71,20 @@ export function DeptScreen({
     : false;
 
   return (
-    <div className="dept-screen" data-testid="dept-screen">
+    <div
+      className="dept-screen"
+      data-testid="dept-screen"
+      role="main"
+      aria-labelledby="dept-heading"
+    >
       <header className="dept-head">
-        <span className="dot" style={{ background: dept.def.color }} />
-        <h2>
+        <span className="dot" style={{ background: dept.def.color }} aria-hidden="true" />
+        <h2 id="dept-heading">
           <VisualIcon name="department" size="header" />
           {dept.def.name}
         </h2>
-        <span className="dept-health" data-health={dept.health}>
-          {HEALTH_LABEL[dept.health]}
+        <span className="dept-health" data-health={dept.health} data-testid="dept-health">
+          健全度 {HEALTH_LABEL[dept.health]}
         </span>
       </header>
 
@@ -106,13 +111,20 @@ export function DeptScreen({
           <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
         )}
       </AspectStage>
-      <TeamNavigator teams={dept.teams} onFocusTeam={onFocusTeam} />
+      <TeamNavigator teams={dept.teams} selectedTeamId={panelTeamId} onFocusTeam={onFocusTeam} />
 
       {selected && (
-        <div className="dept-team-panel" data-testid="dept-team-panel">
+        <div
+          className="dept-team-panel"
+          data-testid="dept-team-panel"
+          role="region"
+          aria-label={selected.name}
+        >
           <div className="dept-team-panel-head">
             <strong>{selected.name}</strong>
-            <span data-health={selected.health}>{HEALTH_LABEL[selected.health]}</span>
+            <span data-health={selected.health} data-testid="dept-team-health">
+              健全度 {HEALTH_LABEL[selected.health]}
+            </span>
             {selected.id === activeTeamId && (
               <span className="dept-team-active" data-testid="team-active-badge">
                 選択中
@@ -133,6 +145,11 @@ export function DeptScreen({
               className="org-lever"
               data-testid="enter-team"
               disabled={!canEnter}
+              aria-label={
+                selected.id === activeTeamId
+                  ? `${selected.name}の現場へ戻る`
+                  : `${selected.name}に入り込む`
+              }
               onClick={() => onEnterTeam(selected.id)}
               title={
                 selected.id === activeTeamId
@@ -153,7 +170,12 @@ export function DeptScreen({
               {selected.id === activeTeamId ? '現場へ戻る' : '入り込む'}
             </button>
           </div>
-          <div className="dept-levers" data-testid="team-levers">
+          <div
+            className="dept-levers"
+            data-testid="team-levers"
+            role="region"
+            aria-label="チームレバー"
+          >
             <span className="org-levers-title">チームレバー</span>
             {TEAM_LEVERS.map((l) => (
               <button
@@ -162,6 +184,7 @@ export function DeptScreen({
                 className="org-lever"
                 data-testid={`lever-${l.id}`}
                 disabled={budget < l.cost}
+                aria-label={`${selected.name}へ「${l.name}」を適用`}
                 onClick={() => onApplyLever(l.id, undefined, selected.id)}
                 title={formatLeverTooltip(l)}
               >
@@ -176,7 +199,7 @@ export function DeptScreen({
         </div>
       )}
 
-      <div className="dept-levers" data-testid="dept-levers">
+      <div className="dept-levers" data-testid="dept-levers" role="region" aria-label="部門レバー">
         <span className="org-levers-title">部門レバー</span>
         {DEPARTMENT_LEVERS.map((l) => (
           <button
@@ -185,6 +208,7 @@ export function DeptScreen({
             className="org-lever"
             data-testid={`lever-${l.id}`}
             disabled={budget < l.cost}
+            aria-label={`${dept.def.name}へ「${l.name}」を適用`}
             onClick={() => onApplyLever(l.id, dept.def.id)}
             title={formatLeverTooltip(l)}
           >

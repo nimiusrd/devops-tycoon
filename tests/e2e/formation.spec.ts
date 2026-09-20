@@ -198,3 +198,16 @@ test('ランバーにメンバーの表情が表示される（表情演出 / �
   // 3メンバー分の表情絵文字が並ぶ。
   await expect(page.getByTestId('roster-faces').locator('span')).toHaveCount(3);
 });
+
+test('編成は見出しと開始CTAの名前が付き、キーボードで開始できる', async ({ page }) => {
+  await page.goto('/?seed=setup-a11y');
+  await page.getByTestId('difficulty-normal').click();
+  await page.getByTestId('start-run').click();
+  await expect(page.getByRole('main', { name: /編成/ })).toBeVisible();
+  await expect(page.getByTestId('assign-m0-coding')).toHaveAttribute('aria-pressed', /true|false/);
+  const start = page.getByRole('button', { name: 'スプリントを開始' });
+  await start.focus();
+  await expect(start).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('board')).toBeVisible();
+});

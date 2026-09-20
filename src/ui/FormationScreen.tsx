@@ -47,7 +47,7 @@ export function FormationGrid({
           testId="what-if-formation"
         />
       )}
-      <div className="formation-grid">
+      <div className="formation-grid" role="region" aria-label="メンバー配置">
         {state.roster.members.map((m) => (
           <MemberCard
             key={m.id}
@@ -104,7 +104,8 @@ function MemberCard({
     >
       <div className="fm-head">
         <span className="fm-face" title={EXPRESSION_LABEL[expr]} data-testid={`face-${m.id}`}>
-          {EXPRESSION_EMOJI[expr]}
+          <span aria-hidden="true">{EXPRESSION_EMOJI[expr]}</span>
+          <span className="visually-hidden">{EXPRESSION_LABEL[expr]}</span>
         </span>
         <div className="fm-id">
           <span className="fm-name">{m.name}</span>
@@ -147,13 +148,15 @@ function MemberCard({
         <p className="fm-leave-note">休職中。スタミナが戻れば復帰します。</p>
       ) : (
         <>
-          <div className="fm-lanes" role="group" aria-label="配置">
+          <div className="fm-lanes" role="group" aria-label={`${m.name}の配置`}>
             {LANES.map((lane) => (
               <button
                 key={lane.id}
                 type="button"
                 className={`fm-lane${m.assignment === lane.id ? ' active' : ''}`}
                 data-testid={`assign-${m.id}-${lane.id}`}
+                aria-pressed={m.assignment === lane.id}
+                aria-label={`${m.name}を${lane.label}へ配置`}
                 disabled={locked}
                 onClick={() => onAssign(m.id, lane.id)}
               >
@@ -165,6 +168,8 @@ function MemberCard({
             type="button"
             className={`fm-ai${m.aiAssigned ? ' on' : ''}`}
             data-testid={`ai-${m.id}`}
+            aria-pressed={m.aiAssigned}
+            aria-label={`${m.name}のAI配布`}
             disabled={locked || m.assignment !== 'coding'}
             title={m.assignment !== 'coding' ? 'AIはコーディング担当にのみ配れます' : undefined}
             onClick={() => onToggleAi(m.id, !m.aiAssigned)}

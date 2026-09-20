@@ -4,6 +4,7 @@
  * スプリント中は手札を操作可能カードとして並べ、クリックで発動する。
  * セットアップ等ではデッキコレクションを閲覧表示する。
  */
+import { ACTION_BLOCK_MESSAGES } from '../render/actionBarView';
 import { playCost } from '../sim/cards';
 import type { CardInstance, CardPlayOutcome } from '../sim/types';
 import { CardView } from './CardView';
@@ -51,6 +52,11 @@ export function DeckBar({
               const def = resolveCard(inst.defId);
               const cost = playCost(def.focusCost, inst.level);
               const canPlay = !paused && focus >= cost;
+              const disabledReason = paused
+                ? ACTION_BLOCK_MESSAGES.paused
+                : focus < cost
+                  ? ACTION_BLOCK_MESSAGES['no-focus']
+                  : undefined;
               return (
                 <CardView
                   key={`hand-${deckIndex}`}
@@ -59,7 +65,7 @@ export function DeckBar({
                   compact
                   playCost={cost}
                   disabled={!canPlay}
-                  disabledReason={paused ? '一時停止中はカードを発動できない' : undefined}
+                  disabledReason={disabledReason}
                   onPlay={() => onPlay(deckIndex)}
                 />
               );

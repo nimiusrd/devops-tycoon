@@ -5,18 +5,23 @@
  * 演出は読むだけ（第22.2）。履歴と現在値が食い違うときは「今」の段数を併記する（#357）。
  *
  * DS-01: リストは常に pointer-events: none。フォーカス中も盤面ドラッグを通す。
- * DS-06 / DS-08: 見出しの click と修飾なしホイール、キーボードで全行へ到達する。
+ * DS-06 / DS-08: 見出しの click で展開し、修飾なしホイールとキーボードで全行へ到達する。
+ * #471: 既定は1行サマリー。展開中だけ履歴リストを出す。
  * DS-09: prefers-reduced-motion では入場・退場アニメを止め、静的行だけを出す。
  * 溢れたリストは touch/pen の pointerdown 時点でパンを確保し、境界キーでも外側を動かさない。
  */
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { COMBO_HUD_EVENT_WINDOW, shouldShowLiveComboHint } from '../render/sprintComboView';
 import {
   clientPointHitsRegisteredBoardDrag,
   hasRegisteredBoardDragHitTest,
 } from '../render/boardDragHit';
-import { formatRecentSprintEvents, type SprintEventView } from '../render/sprintEventView';
+import {
+  formatRecentSprintEvents,
+  formatTickerSummary,
+  type SprintEventView,
+} from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 import {
   applyTickerListScroll,
@@ -85,14 +90,41 @@ export interface EventTickerProps {
   liveCombo?: number;
   /** true なら入場アニメを止め、既存行だけを静的表示する（進化オーバーレイ中）。 */
   frozen?: boolean;
+  /** 履歴リストの展開。省略時は内部状態。 */
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTickerProps) {
+export function EventTicker({
+  events,
+  liveCombo = 0,
+  frozen = false,
+  expanded: expandedProp,
+  onExpandedChange,
+}: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
+  const summary = formatTickerSummary(rows);
   const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
+  const [optimisticExpanded, setOptimisticExpanded] = useState<boolean | null>(null);
+  const expanded =
+    optimisticExpanded !== null && expandedProp !== optimisticExpanded
+      ? optimisticExpanded
+      : (expandedProp ?? uncontrolledExpanded);
   const listRef = useRef<HTMLUListElement>(null);
+  const pendingFocusRef = useRef(false);
   const reduceMotion = useReducedMotion() ?? false;
   const still = frozen || reduceMotion;
+
+  const focusList = () => {
+    listRef.current?.focus({ preventScroll: true });
+  };
+
+  useEffect(() => {
+    if (!expanded || !pendingFocusRef.current) return;
+    pendingFocusRef.current = false;
+    focusList();
+  }, [expanded]);
 
   useEffect(() => {
     const list = listRef.current;
@@ -222,32 +254,63 @@ export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTick
     };
   }, [rows.length]);
 
-  const focusList = () => {
-    listRef.current?.focus({ preventScroll: true });
+  const toggleExpanded = () => {
+    if (rows.length === 0) return;
+    const next = !expanded;
+    if (next) {
+      pendingFocusRef.current = true;
+      focusList();
+    }
+    if (expandedProp === undefined) setUncontrolledExpanded(next);
+    else setOptimisticExpanded(next);
+    onExpandedChange?.(next);
   };
 
   return (
-    <aside className="event-ticker" data-testid="event-ticker" aria-label="スプリント出来事">
+    <aside
+      className="event-ticker"
+      data-testid="event-ticker"
+      data-expanded={expanded ? 'true' : 'false'}
+      aria-label="スプリント出来事"
+    >
       <button
         type="button"
         className="event-ticker-label"
         id="event-ticker-heading"
         data-testid="event-ticker-heading"
         disabled={rows.length === 0}
-        onClick={focusList}
+        aria-expanded={expanded}
+        aria-controls="event-ticker-list"
+        onClick={toggleExpanded}
       >
         出来事
+        {rows.length > 0 && (
+          <span className="event-ticker-count" data-testid="event-ticker-count" aria-hidden="true">
+            {rows.length}件
+          </span>
+        )}
       </button>
-      {showLiveCombo && (
+      {!expanded && summary && (
+        <p
+          className="event-ticker-summary"
+          data-testid="event-ticker-summary"
+          role="status"
+          aria-live="polite"
+        >
+          {summary}
+        </p>
+      )}
+      {showLiveCombo && expanded && (
         <p className="event-ticker-now" data-testid="event-ticker-now">
           現在 COMBO ×{liveCombo}
         </p>
       )}
       <ul
         ref={listRef}
+        id="event-ticker-list"
         className="event-ticker-list"
         data-testid="event-ticker-list"
-        tabIndex={rows.length > 0 ? 0 : undefined}
+        tabIndex={expanded && rows.length > 0 ? 0 : undefined}
         aria-labelledby="event-ticker-heading"
         onKeyDown={handleTickerListKeyDown}
       >

@@ -5,18 +5,31 @@ const hooks = vi.hoisted(() => ({
   effects: [] as (() => void | (() => void))[],
   reducedMotion: false,
   expanded: false,
+  cursor: 0,
+  slots: [] as unknown[],
 }));
 
 // Node 環境では ref の接続と effect の開始・解除だけを代行する。
 // JSX と入力判定・スクロール処理は実装をそのまま実行する。
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
-  useState: (_initial: unknown) => [
-    hooks.expanded,
-    (update: boolean | ((current: boolean) => boolean)) => {
-      hooks.expanded = typeof update === 'function' ? update(hooks.expanded) : update;
-    },
-  ],
+  useState: (initial: unknown) => {
+    const index = hooks.cursor++;
+    if (hooks.slots[index] === undefined) {
+      hooks.slots[index] = typeof initial === 'function' ? (initial as () => unknown)() : initial;
+    }
+    return [
+      hooks.slots[index],
+      (update: unknown) => {
+        const next =
+          typeof update === 'function'
+            ? (update as (value: unknown) => unknown)(hooks.slots[index])
+            : update;
+        hooks.slots[index] = next;
+        if (index === 0) hooks.expanded = Boolean(next);
+      },
+    ];
+  },
   useRef: (initial: unknown) => ({ current: initial }),
   useEffect: (effect: () => void | (() => void)) => hooks.effects.push(effect),
 }));
@@ -61,6 +74,8 @@ class BrowserEvents extends EventTarget {
 }
 
 function mountTicker(props: EventTickerProps = { events: sampleEvents }) {
+  hooks.cursor = 0;
+  hooks.slots = [hooks.expanded, null];
   const parent = {
     clientHeight: 150,
     scrollHeight: 150,
@@ -153,6 +168,8 @@ afterEach(() => {
   hooks.effects = [];
   hooks.reducedMotion = false;
   hooks.expanded = false;
+  hooks.cursor = 0;
+  hooks.slots = [];
   registerBoardDragHitTest(null);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

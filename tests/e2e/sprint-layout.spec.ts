@@ -1450,14 +1450,12 @@ async function expandEventTicker(page: Page): Promise<void> {
   const ticker = page.getByTestId('event-ticker');
   const list = page.getByTestId('event-ticker-list');
   if (await heading.isDisabled()) return;
-  await expect(async () => {
-    if ((await ticker.getAttribute('data-expanded')) !== 'true') {
-      // Playwright の touch+mouse 合成 click はトグルを二重発火しうるので DOM click にする。
-      await heading.evaluate((element: HTMLElement) => element.click());
-    }
-    expect(await ticker.getAttribute('data-expanded')).toBe('true');
-    await expect(list).toBeVisible();
-  }).toPass();
+  if ((await ticker.getAttribute('data-expanded')) !== 'true') {
+    // Playwright の touch+mouse 合成 click はトグルを二重発火しうるので DOM click にする。
+    await heading.evaluate((element: HTMLElement) => element.click());
+  }
+  await expect(ticker).toHaveAttribute('data-expanded', 'true');
+  await expect(list).toBeVisible();
 }
 
 async function assertTickerRowTextsDoNotOverlap(page: Page, label: string): Promise<void> {
@@ -2196,8 +2194,12 @@ test.describe('タッチ端末のティッカーパン', () => {
     await waitForLayoutFrame(page);
 
     const list = page.getByTestId('event-ticker-list');
+    const ticker = page.getByTestId('event-ticker');
     await expect
-      .poll(async () => list.evaluate((element) => element.scrollHeight > element.clientHeight + 1))
+      .poll(async () => {
+        if ((await ticker.getAttribute('data-expanded')) !== 'true') return false;
+        return list.evaluate((element) => element.scrollHeight > element.clientHeight + 1);
+      })
       .toBe(true);
 
     const point = await findTickerTouchPanPoint(page);

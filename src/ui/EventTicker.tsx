@@ -106,7 +106,11 @@ export function EventTicker({
   const summary = formatTickerSummary(rows);
   const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
-  const expanded = expandedProp ?? uncontrolledExpanded;
+  const [optimisticExpanded, setOptimisticExpanded] = useState<boolean | null>(null);
+  const expanded =
+    optimisticExpanded !== null && expandedProp !== optimisticExpanded
+      ? optimisticExpanded
+      : (expandedProp ?? uncontrolledExpanded);
   const listRef = useRef<HTMLUListElement>(null);
   const pendingFocusRef = useRef(false);
   const reduceMotion = useReducedMotion() ?? false;
@@ -258,6 +262,7 @@ export function EventTicker({
       focusList();
     }
     if (expandedProp === undefined) setUncontrolledExpanded(next);
+    else setOptimisticExpanded(next);
     onExpandedChange?.(next);
   };
 

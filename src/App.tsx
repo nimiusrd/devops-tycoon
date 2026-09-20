@@ -635,7 +635,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       data-responsive-width={responsiveMode.width}
       data-responsive-height={responsiveMode.height}
     >
-      <div className="app-background" inert={formationOpen || undefined}>
+      <div className="app-background">
         {replayBanner}
         {!sprintLayout && sprintHeader}
 

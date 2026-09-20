@@ -4,6 +4,7 @@
  * `computeGrade` とリザルト内訳が同じ入力・同じ式を使うための正本。
  */
 import { SPRINT_BALANCE } from '../data/balance';
+import { resolveGradeThresholdS } from '../rd/issue476Experiment';
 import type { SprintGradePenalties } from './types';
 
 export type { SprintGradePenalties } from './types';
@@ -28,21 +29,24 @@ export interface SprintGradeScore {
   penalties: SprintGradePenalties;
 }
 
-const GRADE_THRESHOLDS = {
-  S: SPRINT_BALANCE.gradeThresholdS.value,
-  A: SPRINT_BALANCE.gradeThresholdA.value,
-  B: SPRINT_BALANCE.gradeThresholdB.value,
-  C: SPRINT_BALANCE.gradeThresholdC.value,
-} as const;
+function gradeThresholds() {
+  return {
+    S: resolveGradeThresholdS(SPRINT_BALANCE.gradeThresholdS.value),
+    A: SPRINT_BALANCE.gradeThresholdA.value,
+    B: SPRINT_BALANCE.gradeThresholdB.value,
+    C: SPRINT_BALANCE.gradeThresholdC.value,
+  };
+}
 
 const STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusPerGrant.value;
 const MAX_STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusCap.value;
 
 function gradeFromRatio(ratio: number): string {
-  if (ratio >= GRADE_THRESHOLDS.S) return 'S';
-  if (ratio >= GRADE_THRESHOLDS.A) return 'A';
-  if (ratio >= GRADE_THRESHOLDS.B) return 'B';
-  if (ratio >= GRADE_THRESHOLDS.C) return 'C';
+  const thresholds = gradeThresholds();
+  if (ratio >= thresholds.S) return 'S';
+  if (ratio >= thresholds.A) return 'A';
+  if (ratio >= thresholds.B) return 'B';
+  if (ratio >= thresholds.C) return 'C';
   return 'D';
 }
 

@@ -45,7 +45,11 @@ import {
   type BoardDotPlan,
   type RdBoardLayout,
 } from './boardScene';
-import { isRdBoardPrototypeActiveFromLocation, resolveRdLayoutFromLocation } from './rdBoardLayout';
+import {
+  isRdBoardPrototypeActiveFromLocation,
+  isRdMeasureFromLocation,
+  resolveRdLayoutFromLocation,
+} from './rdBoardLayout';
 import { hitTestRdBoardDot, resolveRdStressView } from './rdBoardPrototype';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS } from './taskView';
@@ -189,6 +193,7 @@ export function Board({
     [roster],
   );
   const prototypeActive = isRdBoardPrototypeActiveFromLocation();
+  const measure = isRdMeasureFromLocation();
   const rdView = resolveRdStressView();
   const viewTasks = rdView?.tasks ?? tasks;
   const viewMetrics = rdView && metrics ? { ...metrics, ...rdView.metrics } : metrics;
@@ -309,6 +314,7 @@ export function Board({
       data-testid="board"
       data-rd-layout={layout}
       data-rd-prototype={prototypeActive ? 'true' : undefined}
+      data-rd-measure={measure ? 'true' : undefined}
       data-armed={armedAction ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
@@ -371,6 +377,7 @@ export function Board({
           onLayoutChange={setLayout}
           hitTaskId={rdHitTaskId}
           showHits
+          measure={measure}
         />
       )}
 

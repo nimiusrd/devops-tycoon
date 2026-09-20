@@ -3,6 +3,7 @@ import {
   isRdBoardPrototypeActive,
   replaceRdLayoutInSearch,
   resolveRdLayout,
+  resolveRdMeasure,
   resolveRdScene,
 } from '../../../src/render/rdBoardLayout';
 
@@ -30,6 +31,13 @@ describe('rdBoardLayout（R&D A/B クエリ）', () => {
     expect(isRdBoardPrototypeActive('?rdScene=stress')).toBe(true);
   });
 
+  it('rdMeasure=1 のときだけ測定モードにする', () => {
+    expect(resolveRdMeasure('')).toBe(false);
+    expect(resolveRdMeasure('?rd=lane&rdScene=stress')).toBe(false);
+    expect(resolveRdMeasure('?rdMeasure=true')).toBe(false);
+    expect(resolveRdMeasure('?rd=iso&rdScene=stress&rdMeasure=1')).toBe(true);
+  });
+
   it('rd 以外のクエリを残してレイアウトだけ差し替える', () => {
     expect(replaceRdLayoutInSearch('?rdScene=stress&tutorial=off', 'lane')).toBe(
       '?rdScene=stress&tutorial=off&rd=lane',
@@ -37,9 +45,10 @@ describe('rdBoardLayout（R&D A/B クエリ）', () => {
   });
 
   it('location が無いテスト環境では iso / live に落とす', async () => {
-    const { resolveRdLayoutFromLocation, resolveRdSceneFromLocation } =
+    const { resolveRdLayoutFromLocation, resolveRdSceneFromLocation, isRdMeasureFromLocation } =
       await import('../../../src/render/rdBoardLayout');
     expect(resolveRdLayoutFromLocation()).toBe('iso');
     expect(resolveRdSceneFromLocation()).toBe('live');
+    expect(isRdMeasureFromLocation()).toBe(false);
   });
 });

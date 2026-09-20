@@ -19,14 +19,28 @@
 | --- | --- |
 | A 現行 iso | `/?rd=iso&rdScene=stress&tutorial=off` |
 | B レーン | `/?rd=lane&rdScene=stress&tutorial=off` |
+| H2 測定 A（狭い幅・覆いなし） | `/?rd=iso&rdScene=stress&tutorial=off&rdMeasure=1` |
+| H2 測定 B（狭い幅・覆いなし） | `/?rd=lane&rdScene=stress&tutorial=off&rdMeasure=1` |
 
-盤面上の **R&D A/B** ピッカーでも `A iso` / `B lane` を切り替えられます（`history.replaceState`。場面は再生成しない）。
+盤面上の **R&D A/B** ピッカーでも `A iso` / `B lane` を切り替えられます（`history.replaceState`。場面は再生成しない）。`rdMeasure=1` のときはピッカーを出さないので、URL の `rd=iso|lane` だけで切り替えます。
 
-既定（`?rd` なし）は現行 iso / 通常タイトル起動のままです。`?rd=lane` だけ付けると、通常プレイの盤面レイアウトだけがレーンになります。
+### H2 測定（狭い幅）
+
+前回の H2 は出来事ティッカーと盤上ピッカーがヒット円を覆って交絡していました。測定モードは **同じ固定場面** のまま、盤面を覆う UI だけを消します。レーン／iso の幾何は変えません。
+
+1. 開発サーバを起動する（`npm run dev`、ポート 5174）
+2. ブラウザ幅を約 **375px** にする（または DevTools の iPhone SE 相当）
+3. 上表の H2 測定 URL を開く
+4. 炎上 `#9001`・延焼 `#9002`・Review 粒の破線円が、ティッカー／ピッカーに覆われていないことを確認する
+5. A と B は URL の `rd=` だけ差し替えて再読込する（再ビルド不要）
+
+`rdMeasure=1` で隠すもの: 出来事ティッカー（盤面右上の jam/fire 行を含む）、盤上 R&D A/B ピッカー。信号ラベルとヒット円は残します（`pointer-events: none`）。HUD の渋滞／炎上メーターは盤面の外なので残します。
+
+既定（`?rd` なし、`rdMeasure` なし）は現行 iso / 通常タイトル起動のままです。`?rd=lane` だけ付けると、通常プレイの盤面レイアウトだけがレーンになります。
 
 ## 固定場面
 
-`rdScene=stress` は通常スプリントを開始して pause し、**盤面・渋滞メーター・炎上メーター・ティッカーだけ** に固定場面を載せます。シミュレーション本体（`RunEngine` / バランス表）は書き換えません。
+`rdScene=stress` は通常スプリントを開始して pause し、**盤面・渋滞メーター・炎上メーター**（測定モードでなければティッカーも）に固定場面を載せます。シミュレーション本体（`RunEngine` / バランス表）は書き換えません。
 
 - **渋滞**: Review 件数が `REVIEW_HOT_QUEUE`（12）ちょうど
 - **炎上**: Rework の燃焼中タスク `#9001`
@@ -40,6 +54,7 @@ seed は `rd-board-ab-stress`。HUD・介入バーは現行のままです。盤
 | --- | --- | --- |
 | `?rd=iso\|lane` | `src/render/rdBoardLayout.ts` | 盤面レイアウト。未指定は iso |
 | `?rdScene=stress` | 同上 | 固定場面を自動ロード |
+| `?rdMeasure=1` | 同上 | H2 測定。ティッカーと盤上ピッカーを隠す。未指定は出したまま |
 | `REVIEW_HOT_QUEUE` | `src/render/boardScene.ts` | 渋滞判定。**値は変えていない** |
 | `LANE_DOT_DX` / `LANE_DOT_DY` | `src/render/boardScene.ts` | レーン粒の間隔（ヒット円が重ならない幅） |
 | `boardDropZones('lane')` | 同上 | レーンのドロップ円。半径 48（列が重ならない） |
@@ -53,6 +68,7 @@ seed は `rd-board-ab-stress`。HUD・介入バーは現行のままです。盤
 - `RunEngine` のホットパス（固定場面は盤面表示の overlay。エンジンメソッドは足していない）
 - HUD の見た目 / ActionBar / スプリントルール（`rdScene=stress` 時だけ渋滞・炎上メーターとティッカーが overlay を読む）
 - 既定 iso のステーション座標と Pixi 視覚回帰ベースライン
+- レーン盤面の幾何（`LANE_*`。測定モードは覆いを消すだけ）
 - 組織／部署／業界マップ（`iso.ts` の投影）
 - 本番セーブ（プロトタイプ起動は途中セーブを書かない）
 
@@ -70,4 +86,5 @@ DS-03 / DS-04: プロトタイプオーバーレイとレーン背景は本番�
 
 ```bash
 npm test -- tests/unit/render/rdBoardLayout.test.ts tests/unit/render/rdBoardPrototype.test.ts tests/unit/render/boardScene.test.ts tests/unit/render/boardDragPlan.test.ts --maxWorkers=1
+npm run test:e2e -- tests/e2e/rd-board-ab.spec.ts --workers=1
 ```

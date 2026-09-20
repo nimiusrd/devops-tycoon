@@ -66,12 +66,15 @@ export function RdBoardPrototypeOverlay({
   onLayoutChange,
   hitTaskId,
   showHits,
+  measure = false,
 }: {
   scene: BoardScenePlan;
   layout: RdBoardLayout;
   onLayoutChange: (layout: RdBoardLayout) => void;
   hitTaskId: number | null;
   showHits: boolean;
+  /** true なら A/B ピッカーを出さない（URL だけで切り替える）。 */
+  measure?: boolean;
 }) {
   const markers = planRdSignalMarkers(scene);
   const spread = planRdSpreadLink(scene);
@@ -84,30 +87,32 @@ export function RdBoardPrototypeOverlay({
 
   return (
     <div className="rd-board-overlay" data-testid="rd-board-overlay">
-      <div className="rd-board-picker" data-testid="rd-layout-picker">
-        <span className="rd-board-picker-title">R&amp;D A/B</span>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          data-testid="rd-layout-iso"
-          aria-pressed={layout === 'iso'}
-          onClick={() => switchLayout('iso')}
-        >
-          A iso
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          data-testid="rd-layout-lane"
-          aria-pressed={layout === 'lane'}
-          onClick={() => switchLayout('lane')}
-        >
-          B lane
-        </button>
-        <span className="rd-board-hit-log" data-testid="rd-last-hit">
-          {hitTaskId === null ? 'hit: —' : `hit: #${hitTaskId}`}
-        </span>
-      </div>
+      {!measure && (
+        <div className="rd-board-picker" data-testid="rd-layout-picker">
+          <span className="rd-board-picker-title">R&amp;D A/B</span>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="rd-layout-iso"
+            aria-pressed={layout === 'iso'}
+            onClick={() => switchLayout('iso')}
+          >
+            A iso
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="rd-layout-lane"
+            aria-pressed={layout === 'lane'}
+            onClick={() => switchLayout('lane')}
+          >
+            B lane
+          </button>
+          <span className="rd-board-hit-log" data-testid="rd-last-hit">
+            {hitTaskId === null ? 'hit: —' : `hit: #${hitTaskId}`}
+          </span>
+        </div>
+      )}
 
       {spread && (
         <svg

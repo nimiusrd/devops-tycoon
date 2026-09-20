@@ -16,6 +16,7 @@ import {
   type AttentionPausePlan,
 } from '../render/attentionPause';
 import { Board } from '../render/Board';
+import { isRdMeasureFromLocation } from '../render/rdBoardLayout';
 import { resolveRdStressView } from '../render/rdBoardPrototype';
 import type { DraggableActionId } from '../render/boardDragPlan';
 import { planBossSlowMotion } from '../render/juicyEffects';
@@ -333,6 +334,7 @@ export function SprintScreen({
   const overlayFrozen = state.phase === 'evolution';
 
   const rdView = resolveRdStressView();
+  const measure = isRdMeasureFromLocation();
   const viewTasks = rdView?.tasks ?? sprint.tasks;
   const viewEvents = rdView ? rdView.events : sprint.events;
   const liveCombo = liveComboCount(sprint);
@@ -446,7 +448,9 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker events={viewEvents} liveCombo={liveCombo} frozen={overlayFrozen} />
+            {!measure && (
+              <EventTicker events={viewEvents} liveCombo={liveCombo} frozen={overlayFrozen} />
+            )}
           </AspectStage>
         </main>
       }

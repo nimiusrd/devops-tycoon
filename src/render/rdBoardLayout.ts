@@ -3,6 +3,7 @@
  *
  * `?rd=iso|lane` で盤面レイアウトだけ差し替える。未指定・未知値は現行の iso。
  * `?rdScene=stress` で炎上・渋滞・延焼が同時にある固定場面を載せる。
+ * `?rdMeasure=1` は H2 測定用。盤面を覆うティッカーと A/B ピッカーだけを隠す。
  */
 
 export type RdBoardLayout = 'iso' | 'lane';
@@ -50,6 +51,16 @@ export function isRdBoardPrototypeActive(search: string): boolean {
 export function isRdBoardPrototypeActiveFromLocation(): boolean {
   const search = locationSearch();
   return search !== null && isRdBoardPrototypeActive(search);
+}
+
+/** H2 測定モード。`rdMeasure=1` のときだけ盤面オーバーレイを隠す。 */
+export function resolveRdMeasure(search: string): boolean {
+  return new URLSearchParams(search).get('rdMeasure') === '1';
+}
+
+export function isRdMeasureFromLocation(): boolean {
+  const search = locationSearch();
+  return search !== null && resolveRdMeasure(search);
 }
 
 /** `rd` だけを差し替えた search を返す（他パラメータは維持）。 */

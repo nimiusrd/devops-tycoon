@@ -26,11 +26,14 @@ export function FormationGrid({
   onAssign,
   onToggleAi,
   readOnly = false,
+  landmark = true,
 }: {
   state: RunState;
   onAssign: (id: string, assignment: LaneAssignment) => void;
   onToggleAi: (id: string, on: boolean) => void;
   readOnly?: boolean;
+  /** Setup の主画面だけ region にする。編成 dialog と重ねると同名 landmark が二重になる。 */
+  landmark?: boolean;
 }) {
   const locked = readOnly || state.phase === 'sprint';
   return (
@@ -47,7 +50,11 @@ export function FormationGrid({
           testId="what-if-formation"
         />
       )}
-      <div className="formation-grid" role="region" aria-label="メンバー配置">
+      <div
+        className="formation-grid"
+        role={landmark ? 'region' : undefined}
+        aria-label={landmark ? 'メンバー配置' : undefined}
+      >
         {state.roster.members.map((m) => (
           <MemberCard
             key={m.id}
@@ -211,6 +218,7 @@ export function FormationScreen({
           onAssign={onAssign}
           onToggleAi={onToggleAi}
           readOnly={readOnly}
+          landmark={false}
         />
       </div>
     </div>

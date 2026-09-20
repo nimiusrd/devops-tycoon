@@ -90,6 +90,13 @@ describe('SetupScreen の次スプリント案内と編成', () => {
       'aria-labelledby': 'setup-heading',
     });
     expect(screen.find('begin-sprint').props['aria-label']).toBe('スプリント開始');
+    expect(
+      elements(screen.find('setup')).find((node) => node.props.className === 'formation-grid')
+        ?.props,
+    ).toMatchObject({
+      role: 'region',
+      'aria-label': 'メンバー配置',
+    });
     expect(screen.text()).toContain('編成 — スプリント開始前に配置とAIを決める');
     expect(screen.text()).toContain('誰に配るかこのタイミングで見直そう');
     expect(content(screen.find('setup-okr'))).toContain('今四半期の OKR');

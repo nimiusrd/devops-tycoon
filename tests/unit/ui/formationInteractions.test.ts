@@ -58,6 +58,7 @@ function mountFormation(overrides: Partial<FormationScreenProps> = {}) {
       return props;
     },
     find,
+    all: () => elements(tree),
     has: (id: string) => elements(tree).some((item) => item.props['data-testid'] === id),
     text: () => content(tree),
     update(next: Partial<FormationScreenProps>) {
@@ -84,6 +85,9 @@ describe('編成画面の配置と AI 配布', () => {
       'aria-pressed': true,
       'aria-label': 'Direct CoderのAI配布中',
     });
+    const grid = screen.all().find((node) => node.props.className === 'formation-grid');
+    expect(grid?.props.role).toBeUndefined();
+    expect(grid?.props['aria-label']).toBeUndefined();
     for (const lane of ['coding', 'review', 'bench']) screen.click(`assign-m1-${lane}`);
     expect(screen.props.onAssign).toHaveBeenCalledTimes(3);
     expect(screen.props.onAssign).toHaveBeenNthCalledWith(1, 'm1', 'coding');

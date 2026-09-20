@@ -24,7 +24,7 @@ export function TeamNavigator({
             data-team-id={team.id}
             data-health={team.health}
             onClick={() => onFocusTeam(team.id)}
-            aria-pressed={selectedTeamId === team.id}
+            aria-pressed={selectedTeamId === undefined ? undefined : selectedTeamId === team.id}
             aria-current={team.isActive ? true : undefined}
             aria-label={`${team.name}を選ぶ。健全度 ${HEALTH_LABEL[team.health]}・出荷 ${team.shipping}・AI ${team.aiDependency}・${team.engineers}人`}
           >

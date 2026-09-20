@@ -744,6 +744,9 @@ describe('App のフェーズとオーバーレイ', () => {
     expect(screen.child('Hud').expanded).toBe(true);
     screen.invoke('RunBar', 'onOpenFormation');
     expect(screen.child('FormationScreen').state).toBe(screen.run.state);
+    expect(
+      elements(screen.tree).find((node) => node.props.className === 'app-background')?.props.inert,
+    ).toBe(true);
     screen.invoke('FormationScreen', 'onClose');
     expect(screen.has('FormationScreen')).toBe(false);
     screen.invoke('SprintScreen', 'onTutorialDismiss');

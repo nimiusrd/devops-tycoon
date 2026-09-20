@@ -136,6 +136,7 @@ describe('OrgScreen の移動と全社レバー', () => {
     expect(screen.props.onFocusTeam).toHaveBeenCalledExactlyOnceWith(team.id);
     screen.click(`team-${dept.teams[1].id}`);
     expect(screen.props.onFocusTeam).toHaveBeenLastCalledWith(dept.teams[1].id);
+    expect(screen.find(`team-${dept.teams[1].id}`).props['aria-pressed']).toBeUndefined();
   });
 
   it.each(COMPANY_LEVERS)(

@@ -205,7 +205,7 @@ test('編成は見出しと開始CTAの名前が付き、キーボードで開�
   await page.getByTestId('start-run').click();
   await expect(page.getByRole('main', { name: /編成/ })).toBeVisible();
   await expect(page.getByTestId('assign-m0-coding')).toHaveAttribute('aria-pressed', /true|false/);
-  const start = page.getByRole('button', { name: 'スプリントを開始' });
+  const start = page.getByRole('button', { name: 'スプリント開始' });
   await start.focus();
   await expect(start).toBeFocused();
   await page.keyboard.press('Enter');

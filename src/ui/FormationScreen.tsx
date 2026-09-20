@@ -169,7 +169,7 @@ function MemberCard({
             className={`fm-ai${m.aiAssigned ? ' on' : ''}`}
             data-testid={`ai-${m.id}`}
             aria-pressed={m.aiAssigned}
-            aria-label={`${m.name}のAI配布`}
+            aria-label={`${m.name}の${m.aiAssigned ? 'AI配布中' : 'AIを配る'}`}
             disabled={locked || m.assignment !== 'coding'}
             title={m.assignment !== 'coding' ? 'AIはコーディング担当にのみ配れます' : undefined}
             onClick={() => onToggleAi(m.id, !m.aiAssigned)}

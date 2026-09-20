@@ -82,7 +82,7 @@ describe('編成画面の配置と AI 配布', () => {
     });
     expect(screen.find('ai-m1').props).toMatchObject({
       'aria-pressed': true,
-      'aria-label': 'Direct CoderのAI配布',
+      'aria-label': 'Direct CoderのAI配布中',
     });
     for (const lane of ['coding', 'review', 'bench']) screen.click(`assign-m1-${lane}`);
     expect(screen.props.onAssign).toHaveBeenCalledTimes(3);
@@ -98,6 +98,7 @@ describe('編成画面の配置と AI 配布', () => {
     roster.members[0].aiAssigned = false;
     screen.update({ state: { ...screen.props.state, roster } });
     expect(content(screen.find('ai-m1'))).toBe('AIを配る');
+    expect(screen.find('ai-m1').props['aria-label']).toBe('Direct CoderのAIを配る');
     screen.click('ai-m1');
     expect(screen.props.onToggleAi).toHaveBeenLastCalledWith('m1', true);
   });

@@ -89,7 +89,7 @@ describe('SetupScreen の次スプリント案内と編成', () => {
       role: 'main',
       'aria-labelledby': 'setup-heading',
     });
-    expect(screen.find('begin-sprint').props['aria-label']).toBe('スプリントを開始');
+    expect(screen.find('begin-sprint').props['aria-label']).toBe('スプリント開始');
     expect(screen.text()).toContain('編成 — スプリント開始前に配置とAIを決める');
     expect(screen.text()).toContain('誰に配るかこのタイミングで見直そう');
     expect(content(screen.find('setup-okr'))).toContain('今四半期の OKR');

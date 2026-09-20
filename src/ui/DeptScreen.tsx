@@ -74,9 +74,10 @@ export function DeptScreen({
     <div
       className="dept-screen"
       data-testid="dept-screen"
-      role="main"
+      role="region"
       aria-labelledby="dept-heading"
     >
+      {/* 部署は zoom-overlay として Setup/Sprint の main と並ぶので、2つ目の main にはしない。 */}
       <header className="dept-head">
         <span className="dot" style={{ background: dept.def.color }} aria-hidden="true" />
         <h2 id="dept-heading">
@@ -184,7 +185,7 @@ export function DeptScreen({
                 className="org-lever"
                 data-testid={`lever-${l.id}`}
                 disabled={budget < l.cost}
-                aria-label={`${selected.name}へ「${l.name}」を適用`}
+                aria-label={`${selected.name}へ「${l.name}」を適用。コスト ${l.cost}`}
                 onClick={() => onApplyLever(l.id, undefined, selected.id)}
                 title={formatLeverTooltip(l)}
               >
@@ -208,7 +209,7 @@ export function DeptScreen({
             className="org-lever"
             data-testid={`lever-${l.id}`}
             disabled={budget < l.cost}
-            aria-label={`${dept.def.name}へ「${l.name}」を適用`}
+            aria-label={`${dept.def.name}へ「${l.name}」を適用。コスト ${l.cost}`}
             onClick={() => onApplyLever(l.id, dept.def.id)}
             title={formatLeverTooltip(l)}
           >

@@ -96,7 +96,7 @@ export function SetupScreen({
             type="button"
             className="primary-button"
             data-testid="begin-sprint"
-            aria-label="スプリントを開始"
+            aria-label="スプリント開始"
             disabled={readOnly}
             onClick={onBegin}
           >

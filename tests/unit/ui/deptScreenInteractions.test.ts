@@ -119,7 +119,7 @@ describe('DeptScreen のチーム選択と入り込み', () => {
     const screen = mountDept();
     const [active, other] = screen.props.dept.teams;
     expect(screen.find('dept-screen').props).toMatchObject({
-      role: 'main',
+      role: 'region',
       'aria-labelledby': 'dept-heading',
     });
     expect(content(screen.find('dept-health'))).toBe(
@@ -127,14 +127,14 @@ describe('DeptScreen のチーム選択と入り込み', () => {
     );
     expect(screen.find(`team-${active.id}`).props).toMatchObject({
       'aria-pressed': true,
-      'aria-label': `${active.name}を選ぶ。健全度 ${HEALTH_LABEL[active.health]}`,
+      'aria-label': `${active.name}を選ぶ。健全度 ${HEALTH_LABEL[active.health]}・出荷 ${active.shipping}・AI ${active.aiDependency}・${active.engineers}人`,
     });
     expect(screen.find('enter-team').props['aria-label']).toBe(`${active.name}の現場へ戻る`);
     expect(screen.find('lever-teamReviewHelp').props['aria-label']).toBe(
-      `${active.name}へ「レビュー応援(チーム)」を適用`,
+      `${active.name}へ「レビュー応援(チーム)」を適用。コスト ${TEAM_LEVERS[0].cost}`,
     );
     expect(screen.find('lever-reviewReinforce').props['aria-label']).toBe(
-      `${screen.props.dept.def.name}へ「レビュー応援を送る」を適用`,
+      `${screen.props.dept.def.name}へ「レビュー応援を送る」を適用。コスト ${DEPARTMENT_LEVERS[0].cost}`,
     );
     expect(content(screen.find('dept-team-panel'))).toContain(active.name);
     expect(content(screen.find('team-active-badge'))).toBe('選択中');

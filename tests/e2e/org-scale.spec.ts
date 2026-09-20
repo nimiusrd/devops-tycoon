@@ -658,7 +658,7 @@ test('部署画面は landmark と健全度の名前があり、キーボード�
   await expect(heading).toBeVisible();
   const deptName = ((await heading.textContent()) ?? '').replace(/\s+/g, ' ').trim();
   expect(deptName.length, '部署名が見出しに無い').toBeGreaterThan(0);
-  await expect(page.getByRole('main', { name: deptName })).toBeVisible();
+  await expect(page.getByRole('region', { name: deptName })).toBeVisible();
   await expect(page.getByTestId('dept-health')).toContainText('健全度');
   await expect(page.getByTestId('dept-pixi-mount')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId('dept-pixi-mount')).toHaveAttribute(

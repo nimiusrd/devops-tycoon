@@ -39,6 +39,8 @@ import {
   shouldShowTutorialGuide,
   type TutorialQuery,
 } from './ui/tutorial';
+import { bootRdBoardPrototypeIfNeeded } from './ui/rdBoardPrototypeBoot';
+import { resolveRdSceneFromLocation } from './render/rdBoardLayout';
 import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
@@ -217,7 +219,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [replayListOpen, setReplayListOpen] = useState(false);
   const [hudExpanded, setHudExpanded] = useState(false);
-  const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
+  const [tutorialMode] = useState<TutorialQuery>(() =>
+    resolveRdSceneFromLocation() === 'stress' ? 'off' : resolveTutorialFromLocation(),
+  );
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
@@ -252,6 +256,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   useLayoutEffect(() => {
     resetWindowScroll();
   }, [phase]);
+
+  useEffect(() => {
+    bootRdBoardPrototypeIfNeeded(game);
+  }, [game]);
 
   // setup / shop / rest など次スプリント手前でチャンクを先読みする。
   useEffect(() => {

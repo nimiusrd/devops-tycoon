@@ -514,7 +514,7 @@ export function TitleScreen({
                       <span className="difficulty-desc">
                         {unlocked ? def.description : '🔒 未解放（下位難易度をクリアで解放）'}
                       </span>
-                      <span className="difficulty-action">
+                      <span className="difficulty-action" data-testid={`difficulty-${id}-action`}>
                         {unlocked ? 'この組織で始める →' : '条件未達'}
                       </span>
                     </button>

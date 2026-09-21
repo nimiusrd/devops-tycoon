@@ -1,10 +1,11 @@
 /**
  * スプリント内イベントティッカー（RI-52）。
  *
- * sim の `SprintState.events` を読み、直近の介入・出来事を言語化して盤面脇に出す。
+ * sim の `SprintState.events` を読み、直近の介入・出来事を言語化して出す。
  * 演出は読むだけ（第22.2）。履歴と現在値が食い違うときは「今」の段数を併記する（#357）。
  *
  * DS-01: リストは常に pointer-events: none。フォーカス中も盤面ドラッグを通す。
+ * DS-06 / #529: 狭幅では status スロットへ載せ、盤面の危険帯・介入ターゲットを隠さない。
  * DS-06 / DS-08: 見出しの click で展開し、修飾なしホイールとキーボードで全行へ到達する。
  * #471: 既定は1行サマリー。展開中だけ履歴リストを出す。
  * DS-09: prefers-reduced-motion では入場・退場アニメを止め、静的行だけを出す。
@@ -93,6 +94,8 @@ export interface EventTickerProps {
   /** 履歴リストの展開。省略時は内部状態。 */
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  /** 載せるスロット。狭幅は `status`、広域は盤面内 `stage`（#529）。 */
+  dock?: 'stage' | 'status';
 }
 
 export function EventTicker({
@@ -101,6 +104,7 @@ export function EventTicker({
   frozen = false,
   expanded: expandedProp,
   onExpandedChange,
+  dock = 'stage',
 }: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
   const summary = formatTickerSummary(rows);
@@ -271,6 +275,7 @@ export function EventTicker({
       className="event-ticker"
       data-testid="event-ticker"
       data-expanded={expanded ? 'true' : 'false'}
+      data-dock={dock}
       aria-label="スプリント出来事"
     >
       <button

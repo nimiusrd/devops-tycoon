@@ -117,6 +117,8 @@ function Bubble({ s }: { s: BoardStationPlan }) {
   return (
     <div
       className={`bubble ${tone}`}
+      data-testid={`board-bubble-${s.lane}`}
+      data-lane={s.lane}
       style={{ left: pct(s.bubbleX, VIEW_W), top: pct(s.bubbleY, VIEW_H) }}
     >
       {s.bubble}

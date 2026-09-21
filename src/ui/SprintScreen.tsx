@@ -46,6 +46,7 @@ import {
   type PlaybackSpeed,
   type PlayingSpeed,
 } from './sprintTempo';
+import { useResponsiveMode } from './responsiveMode';
 import { TutorialGuide } from './TutorialGuide';
 import { VisualIcon } from './VisualIcon';
 import { healthTag } from '../render/teamHealthTheme';
@@ -104,6 +105,7 @@ export function SprintScreen({
   eventTickerExpanded: eventTickerExpandedProp,
   onEventTickerExpandedChange,
 }: SprintScreenProps) {
+  const responsiveMode = useResponsiveMode();
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
   const [suppressExtinguishTaskIds, setSuppressExtinguishTaskIds] = useState<ReadonlySet<number>>(
@@ -365,88 +367,102 @@ export function SprintScreen({
   const urgentTicks =
     incidents > 0 ? Math.min(...burning.map((t) => t.burnTicksLeft ?? BURN_TICKS)) : 0;
   const burnPct = incidents > 0 ? Math.max(0, (urgentTicks / BURN_TICKS) * 100) : 0;
+  const dockTickerOffBoard = responsiveMode.width === 'narrow';
+  const eventTicker = (
+    <EventTicker
+      events={sprint.events}
+      liveCombo={liveCombo}
+      frozen={overlayFrozen}
+      expanded={eventTickerExpanded}
+      onExpandedChange={handleEventTickerExpandedChange}
+      dock={dockTickerOffBoard ? 'status' : 'stage'}
+    />
+  );
 
   return (
     <SprintLayout
       header={header}
       status={
-        <div className="subbar" data-testid="sprint-subbar">
-          <span className={`pill node-tag node-${kind}`}>
-            {isBoss ? (
-              `★ ボス: ${boss?.name ?? ''}`
-            ) : isElite ? (
-              <>
-                <VisualIcon name="fire" size="hud" />
-                高負荷スプリント
-              </>
-            ) : (
-              <>
-                <VisualIcon name="sprintNormal" size="hud" />
-                通常スプリント
-              </>
-            )}
-          </span>
-          {isBoss && boss && <span className="pill boss-goal">{boss.description}</span>}
-          <div
-            className="speed-controls"
-            role="group"
-            aria-label="再生速度"
-            data-testid="speed-controls"
-            data-paused={paused ? 'true' : 'false'}
-          >
-            {SPEED_OPTIONS.map(({ speed, label, testId }) => (
-              <button
-                key={speed}
-                type="button"
-                className={`speed-btn${playbackSpeed === speed ? ' active' : ''}`}
-                aria-pressed={playbackSpeed === speed}
-                aria-label={speed === 0 ? '一時停止' : undefined}
-                data-testid={testId}
-                disabled={sprint.complete}
-                onClick={() => handleSelectPlaybackSpeed(speed)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div
-            className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'jam' ? ' attention' : ''}`}
-            data-testid="jam-meter"
-          >
-            <span className="meter-label">渋滞メーター</span>
-            <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
-              <i style={{ width: `${jamPct}%` }} />
-            </div>
-            <span className="meter-count" data-testid="jam-count">
-              {queue}
+        <>
+          <div className="subbar" data-testid="sprint-subbar">
+            <span className={`pill node-tag node-${kind}`}>
+              {isBoss ? (
+                `★ ボス: ${boss?.name ?? ''}`
+              ) : isElite ? (
+                <>
+                  <VisualIcon name="fire" size="hud" />
+                  高負荷スプリント
+                </>
+              ) : (
+                <>
+                  <VisualIcon name="sprintNormal" size="hud" />
+                  通常スプリント
+                </>
+              )}
             </span>
-            {queue >= 12 && (
-              <span className="pill pill-compact tone-hell" data-testid="jam-alert">
-                <VisualIcon name="reviewHell" size="hud" />
-                {healthTag('reviewHell')}
-              </span>
-            )}
-          </div>
-          <div
-            className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
-          >
-            <span className="meter-label">炎上タイマー</span>
+            {isBoss && boss && <span className="pill boss-goal">{boss.description}</span>}
             <div
-              className={`meter fire${incidents > 0 ? ' burning' : ''}`}
-              data-testid="fire-meter"
+              className="speed-controls"
+              role="group"
+              aria-label="再生速度"
+              data-testid="speed-controls"
+              data-paused={paused ? 'true' : 'false'}
             >
-              <i style={{ width: `${burnPct}%` }} />
+              {SPEED_OPTIONS.map(({ speed, label, testId }) => (
+                <button
+                  key={speed}
+                  type="button"
+                  className={`speed-btn${playbackSpeed === speed ? ' active' : ''}`}
+                  aria-pressed={playbackSpeed === speed}
+                  aria-label={speed === 0 ? '一時停止' : undefined}
+                  data-testid={testId}
+                  disabled={sprint.complete}
+                  onClick={() => handleSelectPlaybackSpeed(speed)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <span className="meter-count" data-testid="fire-count" data-count={incidents}>
-              <VisualIcon name="fire" size="hud" />
-              {incidents > 0 ? `炎上 ${incidents}` : incidents}
-            </span>
+            <div
+              className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'jam' ? ' attention' : ''}`}
+              data-testid="jam-meter"
+            >
+              <span className="meter-label">渋滞メーター</span>
+              <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
+                <i style={{ width: `${jamPct}%` }} />
+              </div>
+              <span className="meter-count" data-testid="jam-count">
+                {queue}
+              </span>
+              {queue >= 12 && (
+                <span className="pill pill-compact tone-hell" data-testid="jam-alert">
+                  <VisualIcon name="reviewHell" size="hud" />
+                  {healthTag('reviewHell')}
+                </span>
+              )}
+            </div>
+            <div
+              className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
+            >
+              <span className="meter-label">炎上タイマー</span>
+              <div
+                className={`meter fire${incidents > 0 ? ' burning' : ''}`}
+                data-testid="fire-meter"
+              >
+                <i style={{ width: `${burnPct}%` }} />
+              </div>
+              <span className="meter-count" data-testid="fire-count" data-count={incidents}>
+                <VisualIcon name="fire" size="hud" />
+                {incidents > 0 ? `炎上 ${incidents}` : incidents}
+              </span>
+            </div>
+            <ComboBadge
+              combo={liveCombo}
+              stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
+            />
           </div>
-          <ComboBadge
-            combo={liveCombo}
-            stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
-          />
-        </div>
+          {dockTickerOffBoard ? eventTicker : null}
+        </>
       }
       stage={
         <main className="board-wrap">
@@ -477,13 +493,7 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker
-              events={sprint.events}
-              liveCombo={liveCombo}
-              frozen={overlayFrozen}
-              expanded={eventTickerExpanded}
-              onExpandedChange={handleEventTickerExpandedChange}
-            />
+            {dockTickerOffBoard ? null : eventTicker}
           </AspectStage>
         </main>
       }

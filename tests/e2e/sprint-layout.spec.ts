@@ -19,6 +19,7 @@ import type { Locator, Page } from '@playwright/test';
 import { ACTION_DEFS } from '../../src/data/actions';
 import { TRIAL_DEFS } from '../../src/data/difficulties';
 import { RELIC_DEFS } from '../../src/data/relics';
+import { BOARD_STATION_CENTERS, BOARD_VIEW } from '../../src/render/boardScene';
 import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveMode';
 import { seedMeta } from './seedMeta';
 
@@ -808,6 +809,7 @@ test('375pxでHUD・盤面・手札・介入バーが重ならず到達できる
     ['HUD', await hud.boundingBox()],
     ['ラン詳細', await runbar.boundingBox()],
     ['スプリント状態', await subbar.boundingBox()],
+    ['出来事', await ticker.boundingBox()],
     ['盤面', await board.boundingBox()],
     ['手札', await deck.boundingBox()],
     ['介入バー', await actionBar.boundingBox()],
@@ -822,13 +824,11 @@ test('375pxでHUD・盤面・手札・介入バーが重ならず到達できる
     ).toBeLessThanOrEqual(next.y + 1);
   }
 
+  await expect(ticker).toHaveAttribute('data-dock', 'status');
   const boardBox = await board.boundingBox();
   const tickerBox = await ticker.boundingBox();
   if (!boardBox || !tickerBox) throw new Error('盤面 / 出来事の box が無い');
-  expect(tickerBox.x).toBeGreaterThanOrEqual(boardBox.x - 1);
-  expect(tickerBox.y).toBeGreaterThanOrEqual(boardBox.y - 1);
-  expect(tickerBox.x + tickerBox.width).toBeLessThanOrEqual(boardBox.x + boardBox.width + 1);
-  expect(tickerBox.y + tickerBox.height).toBeLessThanOrEqual(boardBox.y + boardBox.height + 1);
+  expect(overlaps(tickerBox, boardBox), '出来事ティッカーが盤面を覆っている').toBe(false);
 
   await expect(actionBar).toHaveCSS('position', 'relative');
   await deck.scrollIntoViewIfNeeded();
@@ -2061,24 +2061,40 @@ test.describe('延焼文言の DOM レイアウト', () => {
 
       const ticker = page.getByTestId('event-ticker');
       const stage = page.getByTestId('board-stage');
+      const board = page.getByTestId('board');
       const tickerBox = await ticker.boundingBox();
       const stageBox = await stage.boundingBox();
-      if (!tickerBox || !stageBox) throw new Error('ticker / board-stage の box が無い');
-      expect(
-        tickerBox.x,
-        `ticker が stage 左へはみ出す（${viewport.name}）`,
-      ).toBeGreaterThanOrEqual(stageBox.x - 1);
-      expect(
-        tickerBox.x + tickerBox.width,
-        `ticker が stage 右へはみ出す（${viewport.name}）`,
-      ).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
-      expect(
-        tickerBox.y,
-        `ticker が stage 上へはみ出す（${viewport.name}）`,
-      ).toBeGreaterThanOrEqual(stageBox.y - 1);
-      expect(tickerBox.height, `ticker が盤面全体を覆っている（${viewport.name}）`).toBeLessThan(
-        stageBox.height,
-      );
+      const boardBox = await board.boundingBox();
+      if (!tickerBox || !stageBox || !boardBox)
+        throw new Error('ticker / board-stage の box が無い');
+      const isNarrow = viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth;
+      if (isNarrow) {
+        await expect(ticker).toHaveAttribute('data-dock', 'status');
+        expect(overlaps(tickerBox, boardBox), `ticker が盤面を覆っている（${viewport.name}）`).toBe(
+          false,
+        );
+        expect(
+          tickerBox.y + tickerBox.height,
+          `ticker が盤面より下にある（${viewport.name}）`,
+        ).toBeLessThanOrEqual(boardBox.y + 1);
+      } else {
+        await expect(ticker).toHaveAttribute('data-dock', 'stage');
+        expect(
+          tickerBox.x,
+          `ticker が stage 左へはみ出す（${viewport.name}）`,
+        ).toBeGreaterThanOrEqual(stageBox.x - 1);
+        expect(
+          tickerBox.x + tickerBox.width,
+          `ticker が stage 右へはみ出す（${viewport.name}）`,
+        ).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
+        expect(
+          tickerBox.y,
+          `ticker が stage 上へはみ出す（${viewport.name}）`,
+        ).toBeGreaterThanOrEqual(stageBox.y - 1);
+        expect(tickerBox.height, `ticker が盤面全体を覆っている（${viewport.name}）`).toBeLessThan(
+          stageBox.height,
+        );
+      }
 
       const textFits = await page
         .locator('.event-ticker-text')
@@ -2326,5 +2342,162 @@ test.describe('タッチ端末のティッカーパン', () => {
     expect(outsideMove.movePrevented, 'リスト外開始の侵入 touchmove をティッカーが奪う').toBe(
       false,
     );
+  });
+});
+
+const OVERLAY_BLOCKER_SELECTORS = [
+  '.event-ticker-label',
+  '[data-testid="event-ticker-summary"]',
+  '.term-tip-panel',
+  '.tutorial-guide-card',
+] as const;
+
+type OverlayGameWindow = Window & {
+  game?: {
+    pause(): void;
+    step(ms: number): unknown;
+    startRun(difficulty?: string, trials?: string[], seed?: string): unknown;
+    beginSetupSprint(): unknown;
+    engine: {
+      sprint?: {
+        tasks: Array<{ lane: string; incident?: boolean; burnTicksLeft?: number }>;
+      } | null;
+    };
+  };
+};
+
+async function injectReworkIncident(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const game = (window as OverlayGameWindow).game;
+    const sprint = game?.engine.sprint;
+    if (!game || !sprint) throw new Error('sprint が無い');
+    const task = sprint.tasks.find((item) => item.lane === 'review') ?? sprint.tasks[0];
+    if (!task) throw new Error('task が無い');
+    task.lane = 'rework';
+    task.incident = true;
+    task.burnTicksLeft = 20;
+    game.step(0);
+  });
+}
+
+async function hitOverlayAtDesignPoint(
+  page: Page,
+  designX: number,
+  designY: number,
+): Promise<{ blockedBy: string | null; inBoard: boolean }> {
+  return page.evaluate(
+    ({ x, y, viewW, viewH, blockers }) => {
+      const board = document.querySelector<HTMLElement>('[data-testid="board"]');
+      if (!board) throw new Error('board が無い');
+      const rect = board.getBoundingClientRect();
+      const cx = rect.left + (x / viewW) * rect.width;
+      const cy = rect.top + (y / viewH) * rect.height;
+      const hit = document.elementFromPoint(cx, cy);
+      const blockedBy = hit ? (blockers.find((selector) => hit.closest(selector)) ?? null) : null;
+      return {
+        blockedBy,
+        inBoard: Boolean(hit?.closest('[data-testid="board"]')),
+      };
+    },
+    {
+      x: designX,
+      y: designY,
+      viewW: BOARD_VIEW.w,
+      viewH: BOARD_VIEW.h,
+      blockers: [...OVERLAY_BLOCKER_SELECTORS],
+    },
+  );
+}
+
+async function assertCenterNotCoveredByOverlay(page: Page, testId: string): Promise<void> {
+  const coveredBy = await page.evaluate((id) => {
+    const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+    if (!el) throw new Error(`${id} が無い`);
+    const box = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    if (!hit) return 'none';
+    if (hit.closest(`[data-testid="${id}"]`)) return null;
+    const overlay = hit.closest(
+      '.tutorial-guide-card, .term-tip-panel, .event-ticker-label, [data-testid="event-ticker-summary"]',
+    );
+    if (!overlay) return null;
+    return overlay.getAttribute('data-testid') ?? overlay.className;
+  }, testId);
+  expect(coveredBy, `${testId} がオーバーレイに覆われている`).toBeNull();
+}
+
+test.describe('狭幅オーバーレイと盤面ヒット（#529）', () => {
+  test('390pxで危険箇所と介入CTAが吹き出し／HUDに隠れない', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await beginPublicSprint(page, { seed: 'issue-529-overlay-hit-0' });
+    await advanceCurrentSprintToReviewQueue(page, 12);
+    await injectReworkIncident(page);
+    await injectSpreadTickerEvents(page);
+    await waitForLayoutFrame(page);
+
+    const ticker = page.getByTestId('event-ticker');
+    const board = page.getByTestId('board');
+    await expect(ticker).toHaveAttribute('data-dock', 'status');
+    await expect(page.getByTestId('jam-alert')).toBeVisible();
+    await expect(page.getByTestId('fire-count')).toContainText('炎上');
+
+    const tickerBox = await ticker.boundingBox();
+    const boardBox = await board.boundingBox();
+    if (!tickerBox || !boardBox) throw new Error('ticker / board の box が無い');
+    expect(overlaps(tickerBox, boardBox), '出来事ティッカーが盤面を覆っている').toBe(false);
+
+    for (const [lane, point] of [
+      ['review', BOARD_STATION_CENTERS.review],
+      ['rework', BOARD_STATION_CENTERS.rework],
+    ] as const) {
+      const hit = await hitOverlayAtDesignPoint(page, point.x, point.y);
+      expect(hit.blockedBy, `${lane} 中心がオーバーレイに覆われている`).toBeNull();
+      expect(hit.inBoard, `${lane} 中心が盤面に届かない`).toBe(true);
+    }
+
+    const actionBar = page.getByTestId('action-bar');
+    await actionBar.scrollIntoViewIfNeeded();
+    await expect(actionBar).toBeInViewport();
+    for (const testId of ['action-firefight', 'action-interruptReview'] as const) {
+      await expect(page.getByTestId(testId)).toBeVisible();
+      await assertCenterNotCoveredByOverlay(page, testId);
+    }
+
+    const termTip = page.getByTestId('term-tip-focus');
+    await termTip.locator('summary').click();
+    await expect(termTip).toHaveAttribute('open', '');
+    await expect(page.getByTestId('term-tip-focus-panel')).toBeVisible();
+    await assertCenterNotCoveredByOverlay(page, 'action-firefight');
+    const termPanel = await page.getByTestId('term-tip-focus-panel').boundingBox();
+    const firefight = await page.getByTestId('action-firefight').boundingBox();
+    if (!termPanel || !firefight) throw new Error('TermTip / 緊急対応の box が無い');
+    expect(overlaps(termPanel, firefight), '集中力チップが緊急対応を覆っている').toBe(false);
+  });
+
+  test('390pxの介入バーガイドはカードを上へ逃がしCTAを隠さない', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?seed=issue-529-tutorial&tutorial=force');
+    await expect(page.getByTestId('title')).toBeVisible();
+    await page.evaluate(() => {
+      const game = (window as OverlayGameWindow).game;
+      if (!game) throw new Error('window.game が公開されていない');
+      game.pause();
+      game.startRun('easy', [], 'issue-529-tutorial');
+      game.beginSetupSprint();
+    });
+
+    const guide = page.getByTestId('tutorial-guide');
+    await expect(guide).toBeVisible();
+    await expect(guide).toHaveAttribute('data-step', 'action-bar');
+    const actionBar = page.getByTestId('action-bar');
+    await actionBar.scrollIntoViewIfNeeded();
+    await expect(actionBar).toBeInViewport();
+    await assertCenterNotCoveredByOverlay(page, 'action-bar');
+    await assertCenterNotCoveredByOverlay(page, 'action-firefight');
+
+    const guideBox = await page.locator('.tutorial-guide-card').boundingBox();
+    const actionBox = await actionBar.boundingBox();
+    if (!guideBox || !actionBox) throw new Error('ガイド / 介入バーの box が無い');
+    expect(overlaps(guideBox, actionBox), '初回ガイドが介入バーを覆っている').toBe(false);
   });
 });

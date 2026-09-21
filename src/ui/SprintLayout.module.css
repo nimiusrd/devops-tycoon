@@ -49,6 +49,12 @@
   flex: 0 0 auto;
 }
 
+.statusSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .stageSlot {
   display: flex;
   flex: 1 1 0;

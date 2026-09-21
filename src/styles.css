@@ -1857,8 +1857,11 @@ body:has(.overlay-contained) {
   top: auto;
   right: auto;
   width: auto;
-  max-height: min(36vh, 240px);
+  max-height: none;
   z-index: auto;
+}
+[data-sprint-slot='status'] .event-ticker[data-expanded='true'] {
+  max-height: min(22vh, 148px);
 }
 [data-sprint-slot='status'] .event-ticker[data-expanded='false'] {
   flex-direction: row;

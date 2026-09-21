@@ -2371,7 +2371,7 @@ async function injectReworkIncident(page: Page): Promise<void> {
     const game = (window as OverlayGameWindow).game;
     const sprint = game?.engine.sprint;
     if (!game || !sprint) throw new Error('sprint が無い');
-    const task = sprint.tasks.find((item) => item.lane === 'review') ?? sprint.tasks[0];
+    const task = sprint.tasks.find((item) => item.lane !== 'review') ?? sprint.tasks[0];
     if (!task) throw new Error('task が無い');
     task.lane = 'rework';
     task.incident = true;

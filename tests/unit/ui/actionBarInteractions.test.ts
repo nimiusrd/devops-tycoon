@@ -223,6 +223,7 @@ describe('ActionBar の状態表示', () => {
     expect(bar.find('action-assignTask').props.title).toContain('クリックで武装');
     expect(bar.byClass('action').every((node) => node.props.disabled === false)).toBe(true);
     expect(bar.query('assign-assignee')).toBeUndefined();
+    expect(bar.find('term-tip-focus').props['data-placement']).toBe('inline');
   });
 
   it.each([

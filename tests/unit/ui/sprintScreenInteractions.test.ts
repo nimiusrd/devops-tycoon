@@ -78,6 +78,12 @@ vi.mock('../../../src/ui/JuicyEffects', () => ({
   SlowMotionOverlay: () => null,
 }));
 vi.mock('../../../src/ui/TutorialGuide', () => ({ TutorialGuide: () => null }));
+const responsive = vi.hoisted(() => ({
+  mode: { width: 'wide' as 'wide' | 'narrow', height: 'normal' as 'normal' | 'short' },
+}));
+vi.mock('../../../src/ui/responsiveMode', () => ({
+  useResponsiveMode: () => responsive.mode,
+}));
 
 import { getBoss } from '../../../src/data/bosses';
 import type { GameHandle } from '../../../src/game';
@@ -229,6 +235,7 @@ function mountSprint(overrides: Partial<SprintScreenProps> = {}) {
 }
 
 beforeEach(() => {
+  responsive.mode = { width: 'wide', height: 'normal' };
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   vi.spyOn(performance, 'now').mockReturnValue(3_000);
   vi.stubGlobal('window', Object.assign(new EventTarget(), { setTimeout, clearTimeout }));
@@ -343,6 +350,7 @@ describe('SprintScreen の表示と親子の連携', () => {
       liveCombo: 3,
       frozen: false,
       expanded: false,
+      dock: 'stage',
     });
     expect(typeof screen.child(EventTicker).onExpandedChange).toBe('function');
     screen.child(EventTicker).onExpandedChange?.(true);
@@ -368,6 +376,29 @@ describe('SprintScreen の表示と親子の連携', () => {
     for (const id of ['speed-pause', 'speed-1x', 'speed-2x']) {
       expect(screen.find(id).props.disabled).toBe(true);
     }
+  });
+
+  it('狭幅では出来事ティッカーを status へ載せ、広域では stage へ載せる（#529）', () => {
+    const screen = mountSprint();
+    const wideLayout = screen.child(SprintLayout);
+    expect(screen.child(EventTicker).dock).toBe('stage');
+    expect(elements(wideLayout.stage as ReactNode).some((node) => node.type === EventTicker)).toBe(
+      true,
+    );
+    expect(elements(wideLayout.status as ReactNode).some((node) => node.type === EventTicker)).toBe(
+      false,
+    );
+
+    responsive.mode = { width: 'narrow', height: 'normal' };
+    screen.flush();
+    const narrowLayout = screen.child(SprintLayout);
+    expect(screen.child(EventTicker).dock).toBe('status');
+    expect(
+      elements(narrowLayout.status as ReactNode).some((node) => node.type === EventTicker),
+    ).toBe(true);
+    expect(
+      elements(narrowLayout.stage as ReactNode).some((node) => node.type === EventTicker),
+    ).toBe(false);
   });
 
   it('チュートリアルは表示指定・ゲーム・閉じるcallbackが揃ったときだけ表示する', () => {

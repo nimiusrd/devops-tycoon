@@ -182,11 +182,17 @@ describe('EventTicker の表示とフォーカス', () => {
     expect(ticker.find('event-ticker-heading').props.disabled).toBe(true);
     expect(ticker.find('event-ticker-list').props.tabIndex).toBeUndefined();
     expect(ticker.find('event-ticker').props['data-expanded']).toBe('false');
+    expect(ticker.find('event-ticker').props['data-dock']).toBe('stage');
     expect(ticker.nodes.some((node) => node.props['data-testid'] === 'event-ticker-now')).toBe(
       false,
     );
     expect(ticker.addListener).not.toHaveBeenCalled();
     expect(ticker.dispatch('wheel').defaultPrevented).toBe(false);
+  });
+
+  it('dock=status を data-dock へ反映する（#529）', () => {
+    const ticker = mountTicker({ events: sampleEvents, dock: 'status' });
+    expect(ticker.find('event-ticker').props['data-dock']).toBe('status');
   });
 
   it.each([false, true])(

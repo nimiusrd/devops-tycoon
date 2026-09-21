@@ -937,7 +937,7 @@ body {
   line-height: 1.2;
 }
 
-/* 吹き出し。 */
+/* 吹き出し。危険粒のドラッグを奪わない（#529）。 */
 .bubble {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -950,6 +950,7 @@ body {
   border-radius: 12px;
   white-space: nowrap;
   box-shadow: 0 3px 0 #0003;
+  pointer-events: none;
 }
 .bubble::after {
   content: '';
@@ -1103,11 +1104,6 @@ body {
     min-height: 24px;
     padding: 2px 7px;
     font-size: 9px;
-  }
-  .event-ticker {
-    top: 36px;
-    right: 6px;
-    width: min(220px, 62%);
   }
 }
 
@@ -1854,6 +1850,32 @@ body:has(.overlay-contained) {
 }
 .event-ticker[data-expanded='false'] .event-ticker-list {
   display: none;
+}
+/* #529: 狭幅は status スロットへ載せ、盤面右上の危険帯を覆わない。 */
+[data-sprint-slot='status'] .event-ticker {
+  position: static;
+  top: auto;
+  right: auto;
+  width: auto;
+  max-height: none;
+  z-index: auto;
+}
+[data-sprint-slot='status'] .event-ticker[data-expanded='true'] {
+  max-height: min(22vh, 148px);
+}
+[data-sprint-slot='status'] .event-ticker[data-expanded='false'] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+[data-sprint-slot='status'] .event-ticker-summary {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+:root[data-responsive-width='narrow'] .bubble {
+  font-size: 9px;
+  padding: 3px 7px;
 }
 .event-ticker-label {
   margin: 0;
@@ -5156,6 +5178,22 @@ html:has(.title-screen.title-command) #root {
   pointer-events: none;
   animation: fadein 0.22s ease;
 }
+/* #529: 下端ハイライト（介入バー／連携ゲージ）は上ドックし、CTA を隠さない。 */
+.tutorial-guide[data-step='action-bar'],
+.tutorial-guide[data-step='combo-gauge'] {
+  top: 0;
+  bottom: auto;
+  padding: 18px 16px 0;
+}
+:root[data-responsive-width='narrow'] .tutorial-guide {
+  padding-inline: 10px;
+}
+:root[data-responsive-width='narrow'] .tutorial-guide-card {
+  width: min(520px, 100%);
+  max-height: min(40vh, 280px);
+  overflow-y: auto;
+  padding: 12px 14px;
+}
 .tutorial-guide-card {
   pointer-events: auto;
   width: min(520px, 96vw);
@@ -5251,6 +5289,13 @@ html:has(.title-screen.title-command) #root {
   margin: 0;
   min-width: 12em;
   max-width: min(16em, 70vw);
+}
+/* #529: 狭幅の上向きパネルはフロー内へ戻し、盤面下端と介入 CTA を覆わない。 */
+:root[data-responsive-width='narrow'] .term-tip[data-placement='up'] .term-tip-panel {
+  position: static;
+  min-width: 0;
+  max-width: min(36rem, 100%);
+  margin: 6px 0 0;
 }
 details.term-tip:not([open]) .term-tip-panel {
   display: none;

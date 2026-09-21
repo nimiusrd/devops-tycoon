@@ -647,3 +647,35 @@ test('スプリント中に全社マップを開くと tick が止まり、現�
   expect(after.sprintTick).toBe(frozen.sprintTick);
   expect(after.sprintIndex).toBe(before.sprintIndex);
 });
+
+test('部署画面は landmark と健全度の名前があり、キーボードで入り込みに到達できる', async ({
+  page,
+}) => {
+  await startRun(page, 'dept-a11y');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('department'));
+  await expect(page.getByTestId('dept-screen')).toBeVisible();
+  const heading = page.locator('#dept-heading');
+  await expect(heading).toBeVisible();
+  const deptName = ((await heading.textContent()) ?? '').replace(/\s+/g, ' ').trim();
+  expect(deptName.length, '部署名が見出しに無い').toBeGreaterThan(0);
+  await expect(page.getByRole('region', { name: deptName })).toBeVisible();
+  await expect(page.getByTestId('dept-health')).toContainText('健全度');
+  await expect(page.getByTestId('dept-pixi-mount')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('dept-pixi-mount')).toHaveAttribute(
+    'aria-label',
+    '部署ビュー（WebGL）',
+  );
+
+  const nav = page.getByTestId('team-navigator');
+  await nav.locator('summary').focus();
+  await expect(nav.locator('summary')).toBeFocused();
+  await page.keyboard.press('Enter');
+  const teamButton = nav.getByRole('button').nth(1);
+  await expect(teamButton).toBeVisible();
+  await teamButton.focus();
+  await expect(teamButton).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('enter-team')).toHaveAttribute('aria-label', /入り込む|現場へ戻る/);
+  await page.getByTestId('enter-team').focus();
+  await expect(page.getByTestId('enter-team')).toBeFocused();
+});

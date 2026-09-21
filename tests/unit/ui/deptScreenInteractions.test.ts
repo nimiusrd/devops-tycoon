@@ -23,6 +23,7 @@ import { DEPARTMENT_LEVERS, TEAM_LEVERS } from '../../../src/data/levers';
 import { createOrgState } from '../../../src/sim/org';
 import { generateOrgScale } from '../../../src/sim/orgscale';
 import type { RunPhase } from '../../../src/sim/run/types';
+import { HEALTH_LABEL } from '../../../src/render/orgView';
 import { AspectStage } from '../../../src/ui/AspectStage';
 import { DeptScreen, type DeptScreenProps } from '../../../src/ui/DeptScreen';
 import { emptyRunTotals } from '../helpers/whatIfFixtures';
@@ -117,6 +118,24 @@ describe('DeptScreen のチーム選択と入り込み', () => {
   it('未選択・部署外の選択はアクティブチームへ戻し、島クリックは状態確認だけを依頼する', () => {
     const screen = mountDept();
     const [active, other] = screen.props.dept.teams;
+    expect(screen.find('dept-screen').props).toMatchObject({
+      role: 'region',
+      'aria-labelledby': 'dept-heading',
+    });
+    expect(content(screen.find('dept-health'))).toBe(
+      `健全度 ${HEALTH_LABEL[screen.props.dept.health]}`,
+    );
+    expect(screen.find(`team-${active.id}`).props).toMatchObject({
+      'aria-pressed': true,
+      'aria-label': `${active.name}を選ぶ。健全度 ${HEALTH_LABEL[active.health]}・出荷 ${active.shipping}・AI ${active.aiDependency}・${active.engineers}人`,
+    });
+    expect(screen.find('enter-team').props['aria-label']).toBe(`${active.name}の現場へ戻る`);
+    expect(screen.find('lever-teamReviewHelp').props['aria-label']).toBe(
+      `${active.name}へ「レビュー応援(チーム)」を適用。コスト ${TEAM_LEVERS[0].cost}`,
+    );
+    expect(screen.find('lever-reviewReinforce').props['aria-label']).toBe(
+      `${screen.props.dept.def.name}へ「レビュー応援を送る」を適用。コスト ${DEPARTMENT_LEVERS[0].cost}`,
+    );
     expect(content(screen.find('dept-team-panel'))).toContain(active.name);
     expect(content(screen.find('team-active-badge'))).toBe('選択中');
     screen.click(`team-${other.id}`);
@@ -126,6 +145,9 @@ describe('DeptScreen のチーム選択と入り込み', () => {
     screen.update({ selectedTeamId: other.id });
     expect(content(screen.find('dept-team-panel'))).toContain(other.name);
     expect(screen.query('team-active-badge')).toBeUndefined();
+    expect(content(screen.find('dept-team-health'))).toBe(`健全度 ${HEALTH_LABEL[other.health]}`);
+    expect(screen.find('enter-team').props['aria-label']).toBe(`${other.name}に入り込む`);
+    expect(screen.find(`team-${other.id}`).props['aria-pressed']).toBe(true);
     expect(content(screen.find('dept-team-panel'))).toContain(other.name);
     screen.click('enter-team');
     expect(screen.props.onEnterTeam).toHaveBeenCalledExactlyOnceWith(other.id);
@@ -227,7 +249,9 @@ describe('DeptScreen のレバーとチーム描画', () => {
       })),
     };
     screen.update({ dept });
-    expect(screen.find(`team-${dept.teams[0].id}`).props['data-health']).toBe('reviewHell');
+    expect(content(screen.find('dept-health'))).toBe('健全度 炎上');
+    expect(content(screen.find('dept-team-health'))).toBe('健全度 炎上');
+    expect(screen.find(`team-${dept.teams[0].id}`).props['aria-label']).toContain('健全度 炎上');
     expect(content(screen.find('dept-onfire'))).toBe('1');
     expect(content(screen.find(`team-${dept.teams[0].id}`))).toContain('炎上');
     expect(content(screen.find('dept-team-panel'))).toContain('炎上');

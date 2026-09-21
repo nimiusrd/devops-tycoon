@@ -1,8 +1,18 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react')>()),
+  useRef: () => ({ current: null }),
+}));
+vi.mock('../../../src/ui/useDialogOverlayLock', () => ({
+  useDialogOverlayLock: vi.fn(),
+}));
+
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { FormationScreen, type FormationScreenProps } from '../../../src/ui/FormationScreen';
+import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 import { directRoster } from '../helpers/whatIfFixtures';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
@@ -58,6 +68,7 @@ function mountFormation(overrides: Partial<FormationScreenProps> = {}) {
       return props;
     },
     find,
+    all: () => elements(tree),
     has: (id: string) => elements(tree).some((item) => item.props['data-testid'] === id),
     text: () => content(tree),
     update(next: Partial<FormationScreenProps>) {
@@ -75,7 +86,28 @@ describe('編成画面の配置と AI 配布', () => {
   it('選んだ配置と AI 配布の反転を通知し、入力のロスターを変更しない', () => {
     const screen = mountFormation();
     const originalRoster = structuredClone(screen.props.state.roster);
-    expect(screen.find('assign-m1-coding').props.className).toContain('active');
+    expect(screen.find('assign-m1-coding').props).toMatchObject({
+      className: expect.stringContaining('active'),
+      'aria-pressed': true,
+      'aria-label': 'Direct Coderをコーディングへ配置',
+    });
+    expect(screen.find('formation').props).toMatchObject({
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': 'Formation',
+      tabIndex: -1,
+    });
+    expect(useDialogOverlayLock).toHaveBeenCalledWith(
+      { current: null },
+      { restoreFocus: true, onDismiss: screen.props.onClose },
+    );
+    expect(screen.find('ai-m1').props).toMatchObject({
+      'aria-pressed': true,
+      'aria-label': 'Direct CoderのAI配布中',
+    });
+    const grid = screen.all().find((node) => node.props.className === 'formation-grid');
+    expect(grid?.props.role).toBeUndefined();
+    expect(grid?.props['aria-label']).toBeUndefined();
     for (const lane of ['coding', 'review', 'bench']) screen.click(`assign-m1-${lane}`);
     expect(screen.props.onAssign).toHaveBeenCalledTimes(3);
     expect(screen.props.onAssign).toHaveBeenNthCalledWith(1, 'm1', 'coding');
@@ -90,6 +122,7 @@ describe('編成画面の配置と AI 配布', () => {
     roster.members[0].aiAssigned = false;
     screen.update({ state: { ...screen.props.state, roster } });
     expect(content(screen.find('ai-m1'))).toBe('AIを配る');
+    expect(screen.find('ai-m1').props['aria-label']).toBe('Direct CoderのAIを配る');
     screen.click('ai-m1');
     expect(screen.props.onToggleAi).toHaveBeenLastCalledWith('m1', true);
   });

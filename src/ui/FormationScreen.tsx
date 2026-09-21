@@ -5,10 +5,12 @@
  * ステータス・トレイト・スタミナ・表情（疲れ顔 / ガッツポーズ等）を表示し、
  * 配置と AI 配布を切り替える。状態は読むだけ（第22.2）で、操作は window.game 経由。
  */
+import { useRef } from 'react';
 import { getTrait } from '../data/traits';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { WhatIfPreview } from './WhatIfPreview';
 
 export interface FormationScreenProps {
@@ -26,11 +28,14 @@ export function FormationGrid({
   onAssign,
   onToggleAi,
   readOnly = false,
+  landmark = true,
 }: {
   state: RunState;
   onAssign: (id: string, assignment: LaneAssignment) => void;
   onToggleAi: (id: string, on: boolean) => void;
   readOnly?: boolean;
+  /** Setup の主画面だけ region にする。編成 dialog と重ねると同名 landmark が二重になる。 */
+  landmark?: boolean;
 }) {
   const locked = readOnly || state.phase === 'sprint';
   return (
@@ -47,7 +52,11 @@ export function FormationGrid({
           testId="what-if-formation"
         />
       )}
-      <div className="formation-grid">
+      <div
+        className="formation-grid"
+        role={landmark ? 'region' : undefined}
+        aria-label={landmark ? 'メンバー配置' : undefined}
+      >
         {state.roster.members.map((m) => (
           <MemberCard
             key={m.id}
@@ -104,7 +113,8 @@ function MemberCard({
     >
       <div className="fm-head">
         <span className="fm-face" title={EXPRESSION_LABEL[expr]} data-testid={`face-${m.id}`}>
-          {EXPRESSION_EMOJI[expr]}
+          <span aria-hidden="true">{EXPRESSION_EMOJI[expr]}</span>
+          <span className="visually-hidden">{EXPRESSION_LABEL[expr]}</span>
         </span>
         <div className="fm-id">
           <span className="fm-name">{m.name}</span>
@@ -147,13 +157,15 @@ function MemberCard({
         <p className="fm-leave-note">休職中。スタミナが戻れば復帰します。</p>
       ) : (
         <>
-          <div className="fm-lanes" role="group" aria-label="配置">
+          <div className="fm-lanes" role="group" aria-label={`${m.name}の配置`}>
             {LANES.map((lane) => (
               <button
                 key={lane.id}
                 type="button"
                 className={`fm-lane${m.assignment === lane.id ? ' active' : ''}`}
                 data-testid={`assign-${m.id}-${lane.id}`}
+                aria-pressed={m.assignment === lane.id}
+                aria-label={`${m.name}を${lane.label}へ配置`}
                 disabled={locked}
                 onClick={() => onAssign(m.id, lane.id)}
               >
@@ -165,6 +177,8 @@ function MemberCard({
             type="button"
             className={`fm-ai${m.aiAssigned ? ' on' : ''}`}
             data-testid={`ai-${m.id}`}
+            aria-pressed={m.aiAssigned}
+            aria-label={`${m.name}の${m.aiAssigned ? 'AI配布中' : 'AIを配る'}`}
             disabled={locked || m.assignment !== 'coding'}
             title={m.assignment !== 'coding' ? 'AIはコーディング担当にのみ配れます' : undefined}
             onClick={() => onToggleAi(m.id, !m.aiAssigned)}
@@ -184,8 +198,18 @@ export function FormationScreen({
   onClose,
   readOnly = false,
 }: FormationScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
   return (
-    <div className="result-overlay" data-testid="formation" role="dialog" aria-label="Formation">
+    <div
+      ref={overlayRef}
+      className="result-overlay"
+      data-testid="formation"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Formation"
+      tabIndex={-1}
+    >
       <div className="formation-panel">
         <div className="formation-head">
           <div>
@@ -206,6 +230,7 @@ export function FormationScreen({
           onAssign={onAssign}
           onToggleAi={onToggleAi}
           readOnly={readOnly}
+          landmark={false}
         />
       </div>
     </div>

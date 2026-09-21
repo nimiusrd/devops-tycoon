@@ -125,6 +125,9 @@ body {
   min-height: 100vh;
   padding: 14px 18px 18px;
 }
+.app-background {
+  display: contents;
+}
 /* HUD */
 .hud {
   display: flex;

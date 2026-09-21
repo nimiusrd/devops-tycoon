@@ -37,24 +37,39 @@ export function SetupScreen({
   // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
   const bossPending = state.pendingSprintKind === 'boss' || nextIndex >= total;
   const elitePending = !bossPending && state.pendingSprintKind === 'elite';
+  const heading = bossPending
+    ? '編成 — ボススプリントの前に配置とAIを決める'
+    : elitePending
+      ? '編成 — 高負荷スプリントの前に配置とAIを決める'
+      : '編成 — スプリント開始前に配置とAIを決める';
   return (
-    <div className="run-setup" data-testid="setup" data-readonly={readOnly ? 'true' : undefined}>
+    <div
+      className="run-setup"
+      data-testid="setup"
+      data-readonly={readOnly ? 'true' : undefined}
+      role="main"
+      aria-labelledby="setup-heading"
+    >
       <div className="map-banner">
         <span className="pill">第{state.quarterNumber}四半期</span>
         <span className="pill" data-testid="setup-next-sprint">
           次: スプリント {nextIndex} / {total}
         </span>
         {elitePending ? (
-          <span className="pill" data-testid="setup-elite-pending">
+          <span className="pill" data-testid="setup-elite-pending" role="status" aria-live="polite">
             高負荷案件
           </span>
         ) : null}
         {bossPending ? (
-          <span className="pill" data-testid="setup-boss-pending">
+          <span className="pill" data-testid="setup-boss-pending" role="status" aria-live="polite">
             ボススプリント
           </span>
         ) : null}
-        <b className="boss-name">★ {boss?.name ?? 'ボス'}</b>
+        <b className="boss-name">
+          <span aria-hidden="true">★ </span>
+          <span className="visually-hidden">ボス: </span>
+          {boss?.name ?? 'ボス'}
+        </b>
         <span className="boss-desc">{boss?.description}</span>
       </div>
       <QuarterOkr variant="setup" bossId={state.bossId} goal={state.quarterGoal} />
@@ -62,12 +77,8 @@ export function SetupScreen({
         <div className="formation-head">
           <div>
             <p className="result-eyebrow">SETUP</p>
-            <h2 className="draft-title">
-              {bossPending
-                ? '編成 — ボススプリントの前に配置とAIを決める'
-                : elitePending
-                  ? '編成 — 高負荷スプリントの前に配置とAIを決める'
-                  : '編成 — スプリント開始前に配置とAIを決める'}
+            <h2 className="draft-title" id="setup-heading">
+              {heading}
             </h2>
             <p className="formation-setup-hint">
               {bossPending
@@ -86,6 +97,7 @@ export function SetupScreen({
             type="button"
             className="primary-button"
             data-testid="begin-sprint"
+            aria-label="スプリント開始"
             disabled={readOnly}
             onClick={onBegin}
           >

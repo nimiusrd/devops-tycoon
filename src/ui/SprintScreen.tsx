@@ -149,14 +149,6 @@ export function SprintScreen({
     [state.currentSprintId],
   );
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && state.zoom.level === 'team') setArmedId(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [setArmedId, state.zoom.level]);
-
   useEffect(
     () => () => {
       if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
@@ -510,6 +502,7 @@ export function SprintScreen({
       controls={
         <ActionBar
           sprint={sprint}
+          org={state.org}
           sprintTick={state.sprintTick}
           disabled={sprint.complete}
           paused={paused}

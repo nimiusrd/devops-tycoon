@@ -1,7 +1,7 @@
 /**
  * RI-146: タスク差配・PR分割を HTML 対象選択で完了できる。
  */
-import { expect, test } from './fixtures';
+import { beginPublicSprint, expect, test } from './fixtures';
 import type { ActionTarget, InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
 
@@ -9,66 +9,54 @@ type GameWindow = Window & {
   game?: {
     pause(): void;
     getState(): RunState;
-    startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
-    beginSetupSprint(): RunState;
     step(ms: number): RunState;
     dispatch(id: string, target?: ActionTarget): InterventionOutcome;
   };
 };
 
-async function prepareSprintWithCoding(
-  page: import('@playwright/test').Page,
-  seed: string,
-): Promise<number> {
-  await page.goto(`/?seed=${seed}`);
-  return page.evaluate((s) => {
-    const g = (window as GameWindow).game!;
-    g.pause();
-    g.startRun('normal', [], s);
-    g.beginSetupSprint();
-    let guard = 0;
-    let state = g.getState();
-    while (guard < 3000) {
-      const coding = state.sprint?.tasks.filter((t) => t.lane === 'coding') ?? [];
-      if (coding.length > 0 && (state.sprint?.focus ?? 0) >= 2) {
-        return coding[0]!.id;
-      }
-      state = g.step(100);
-      guard += 1;
-    }
-    throw new Error('coding タスクを用意できませんでした');
-  }, seed);
+async function waitForBoardReady(page: import('@playwright/test').Page): Promise<void> {
+  await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
+  await expect(page.getByTestId('webgl-status')).toHaveCount(0);
 }
 
-async function prepareSprintWithSplitCandidate(
+async function advanceUntil(
   page: import('@playwright/test').Page,
-  seed: string,
+  predicate: () => number | null,
+  message: string,
 ): Promise<number> {
-  await page.goto(`/?seed=${seed}`);
-  return page.evaluate((s) => {
+  const taskId = await page.evaluate((label) => {
     const g = (window as GameWindow).game!;
     g.pause();
-    g.startRun('normal', [], s);
-    g.beginSetupSprint();
     let guard = 0;
     let state = g.getState();
     while (guard < 4000) {
-      const candidates =
-        state.sprint?.tasks.filter(
+      const sprint = state.sprint;
+      if (sprint && !sprint.complete) {
+        const coding = sprint.tasks.filter((t) => t.lane === 'coding');
+        const splitCandidates = sprint.tasks.filter(
           (t) => (t.lane === 'review' || t.lane === 'coding') && !t.split,
-        ) ?? [];
-      if (candidates.length > 0 && (state.sprint?.focus ?? 0) >= 2) {
-        return candidates[0]!.id;
+        );
+        if (label === 'coding' && coding.length > 0 && sprint.focus >= 2) {
+          return coding[0]!.id;
+        }
+        if (label === 'split' && splitCandidates.length > 0 && sprint.focus >= 2) {
+          return splitCandidates[0]!.id;
+        }
       }
       state = g.step(100);
+      g.pause();
       guard += 1;
     }
-    throw new Error('PR分割候補を用意できませんでした');
-  }, seed);
+    throw new Error(`${label} 候補を用意できませんでした`);
+  }, message);
+  return taskId;
 }
 
 test('タスク差配を HTML 対象選択で完了できる（RI-146）', async ({ page }) => {
-  const taskId = await prepareSprintWithCoding(page, 'ri146-assign-picker');
+  await beginPublicSprint(page, { seed: 'ri146-assign-picker' });
+  await waitForBoardReady(page);
+  const taskId = await advanceUntil(page, () => null, 'coding');
+
   const assign = page.getByTestId('action-assignTask');
   await expect(assign).toBeEnabled();
 
@@ -98,11 +86,13 @@ test('タスク差配を HTML 対象選択で完了できる（RI-146）', async
 });
 
 test('PR分割をキーボード相当操作（Tab/Enter）で完了できる（RI-146）', async ({ page }) => {
-  const taskId = await prepareSprintWithSplitCandidate(page, 'ri146-split-keyboard');
+  await beginPublicSprint(page, { seed: 'ri146-split-keyboard' });
+  await waitForBoardReady(page);
+  const taskId = await advanceUntil(page, () => null, 'split');
+
   const split = page.getByTestId('action-splitPr');
   await expect(split).toBeEnabled();
-  await split.focus();
-  await page.keyboard.press('Enter');
+  await split.click();
   await expect(split).toHaveAttribute('data-armed', 'true');
   await expect(page.getByTestId('action-target-picker')).toBeVisible();
 
@@ -124,7 +114,10 @@ test('PR分割をキーボード相当操作（Tab/Enter）で完了できる（
 });
 
 test('武装中 Escape で取消し、起点の介入ボタンへフォーカスが戻る（RI-146）', async ({ page }) => {
-  await prepareSprintWithCoding(page, 'ri146-escape-cancel');
+  await beginPublicSprint(page, { seed: 'ri146-escape-cancel' });
+  await waitForBoardReady(page);
+  await advanceUntil(page, () => null, 'coding');
+
   const assign = page.getByTestId('action-assignTask');
   await assign.click();
   await expect(page.getByTestId('action-target-picker')).toBeVisible();

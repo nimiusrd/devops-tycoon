@@ -1997,7 +1997,6 @@ body:has(.overlay-contained) {
 .actionbar {
   display: flex;
   align-items: stretch;
-  flex-wrap: wrap;
   gap: 12px;
   padding: 11px 14px;
   border-radius: 18px;
@@ -2035,6 +2034,10 @@ body:has(.overlay-contained) {
   border-color: #ffd45c;
   background: #ffd45c22;
   color: #ffd45c;
+}
+/* 対象一覧は武装中だけ全幅へ折り返す。平常時の nowrap 契約は維持する。 */
+.actionbar:has(.action-target-picker) {
+  flex-wrap: wrap;
 }
 .action-target-picker {
   flex: 1 1 100%;

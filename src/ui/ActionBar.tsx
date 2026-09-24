@@ -249,8 +249,13 @@ export function ActionBar({
       focusedOptionIdRef.current = null;
       return;
     }
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    const focusFellOff =
+      active == null ||
+      (typeof document !== 'undefined' && active === document.body) ||
+      (active instanceof HTMLElement && !active.isConnected);
     if (!targetPicker) {
-      if (focusedArmRef.current === armedId) {
+      if (focusedArmRef.current === armedId && focusFellOff) {
         actionButtonRefs.current[armedId]?.focus();
       }
       focusedArmRef.current = null;
@@ -263,14 +268,8 @@ export function ActionBar({
       focusedOptionId != null &&
       !targetPicker.options.some((option) => option.taskId === focusedOptionId);
     if (focusedArmRef.current === armedId && !optionGone) return;
-
-    const active = typeof document !== 'undefined' ? document.activeElement : null;
-    const focusStillInPicker =
-      optionGone &&
-      pickerRef.current != null &&
-      active instanceof Node &&
-      pickerRef.current.contains(active);
-    if (focusStillInPicker) {
+    // 候補削除でフォーカスが body に落ちたときだけ回収する。別ボタンへ移った後は奪わない。
+    if (optionGone && !focusFellOff) {
       focusedOptionIdRef.current = null;
       return;
     }

@@ -33,6 +33,12 @@ import { VisualIcon, VisualIconText } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1000;
 
+/** 編成ダイアログや全社マップなど、前面 UI が Escape を使う状態か。 */
+function escapeOwnedByFrontOverlay(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.querySelector('[role="dialog"], [data-testid="zoom-overlay"]') !== null;
+}
+
 /**
  * プレイ中に読む文言は、主効果1行・代償1行までに制限する。
  * その他の詳細な数値と条件は title / aria-label に残す。
@@ -162,6 +168,7 @@ export function ActionBar({
   const actionButtonRefs = useRef<Partial<Record<ActionId, HTMLButtonElement | null>>>({});
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const focusedArmRef = useRef<DraggableActionId | null>(null);
+  const focusedOptionIdRef = useRef<number | null>(null);
 
   const pushFocusPop = useCallback(
     (sign: FocusPop['sign'], amount: number, tone: FocusPop['tone']) => {
@@ -234,25 +241,56 @@ export function ActionBar({
     [armedId, applyOutcomeFeedback, onAction, paused],
   );
 
-  // 武装開始時だけ先頭候補へフォーカスする。tick 更新で targetPicker が
-  // 作り直されても、移動中のフォーカスは奪わない。
+  // 武装開始時、またはフォーカス中の候補が消えたときだけフォーカスを移す。
+  // tick 更新で一覧が作り直されても、残っている操作のフォーカスは奪わない。
   useEffect(() => {
-    if (!armedId || !targetPicker) {
+    if (!armedId) {
       focusedArmRef.current = null;
+      focusedOptionIdRef.current = null;
       return;
     }
-    if (focusedArmRef.current === armedId) return;
+    if (!targetPicker) {
+      if (focusedArmRef.current === armedId) {
+        actionButtonRefs.current[armedId]?.focus();
+      }
+      focusedArmRef.current = null;
+      focusedOptionIdRef.current = null;
+      return;
+    }
+    const focusedOptionId = focusedOptionIdRef.current;
+    const optionGone =
+      focusedArmRef.current === armedId &&
+      focusedOptionId != null &&
+      !targetPicker.options.some((option) => option.taskId === focusedOptionId);
+    if (focusedArmRef.current === armedId && !optionGone) return;
+
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    const focusStillInPicker =
+      optionGone &&
+      pickerRef.current != null &&
+      active instanceof Node &&
+      pickerRef.current.contains(active);
+    if (focusStillInPicker) {
+      focusedOptionIdRef.current = null;
+      return;
+    }
+
     focusedArmRef.current = armedId;
     const frame = window.requestAnimationFrame(() => {
-      const first = pickerRef.current?.querySelector<HTMLButtonElement>(
+      const next = pickerRef.current?.querySelector<HTMLButtonElement>(
         'button[data-action-target-option]:not([disabled])',
       );
-      first?.focus();
+      if (next) {
+        next.focus();
+        return;
+      }
+      actionButtonRefs.current[armedId]?.focus();
+      focusedOptionIdRef.current = null;
     });
     return () => window.cancelAnimationFrame(frame);
   }, [armedId, targetPicker]);
 
-  // Escape で武装解除＋起点復帰。開いている用語チップの Escape は先に渡す。
+  // Escape で武装解除＋起点復帰。用語チップと前面オーバーレイの Escape は渡す。
   useEffect(() => {
     if (!armedId) return;
     const onKey = (event: KeyboardEvent) => {
@@ -268,6 +306,7 @@ export function ActionBar({
           return;
         }
       }
+      if (escapeOwnedByFrontOverlay()) return;
       event.preventDefault();
       event.stopPropagation();
       disarm();
@@ -437,11 +476,15 @@ export function ActionBar({
                   <button
                     type="button"
                     data-action-target-option=""
+                    data-task-id={option.taskId}
                     data-testid={`action-target-option-${option.taskId}`}
                     className={`action-target-option${!option.canSelect || paused ? ' disabled' : ''}`}
                     disabled={!option.canSelect || paused}
                     title={option.blockMessage ?? option.detail}
                     aria-label={`${option.label}。${option.detail}。${status}選ぶと実行。`}
+                    onFocus={() => {
+                      focusedOptionIdRef.current = option.taskId;
+                    }}
                     onClick={() => confirmTarget(option.target)}
                   >
                     <span className="action-target-option-label">{option.label}</span>

@@ -412,6 +412,18 @@ describe('ActionBar の武装と担当選択', () => {
     expect(bar.find('action-target-picker').props.role).toBeUndefined();
   });
 
+  it('前面ダイアログがある Escape では武装を解除しない', () => {
+    const onArm = vi.fn();
+    mountActionBar({ armedId: 'splitPr', onArm });
+    vi.stubGlobal('document', { querySelector: () => ({}) });
+    const event = new Event('keydown');
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
+    Object.defineProperty(event, 'stopPropagation', { value: vi.fn() });
+    window.dispatchEvent(event);
+    expect(onArm).not.toHaveBeenCalled();
+  });
+
   it('開いている用語チップの Escape では武装を解除しない', () => {
     const onArm = vi.fn();
     mountActionBar({ armedId: 'splitPr', onArm });

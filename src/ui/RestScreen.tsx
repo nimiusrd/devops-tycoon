@@ -9,8 +9,10 @@ import { playCost } from '../sim/cards';
 import { foldPassives } from '../sim/run/effects';
 import type { RunState } from '../sim/run/types';
 import { formatRestOptionTags } from '../render/eventOutcomeView';
+import { spendRiskView, spendStatusText } from '../render/spendRiskView';
 import { CardView } from './CardView';
 import { EffectTagList } from './EffectTagList';
+import { SpendConfirm } from './SpendConfirm';
 import { useReplayContent } from './replayContent';
 
 export interface RestScreenProps {
@@ -20,11 +22,25 @@ export interface RestScreenProps {
 
 export function RestScreen({ state, onChoose }: RestScreenProps) {
   const [choosingUpgrade, setChoosingUpgrade] = useState(false);
+  const [confirmingRecruit, setConfirmingRecruit] = useState(false);
   const { resolveCard, resolveRelic } = useReplayContent();
   const canUpgrade = state.deck.length > 0;
   const rosterHasRoom = canRecruit(state.roster);
-  const canAfford = state.budget >= RECRUIT_COST;
-  const canHire = rosterHasRoom && canAfford;
+  const recruitRisk = spendRiskView({
+    budget: state.budget,
+    cost: RECRUIT_COST,
+    rosterFull: !rosterHasRoom,
+  });
+  const canHire = recruitRisk.blocked === null;
+  const recruitReady = '未来の主力候補を1人迎える（ベンチに加わる）';
+  const requestRecruit = () => {
+    if (!canHire) return;
+    if (recruitRisk.requiresConfirm) {
+      setConfirmingRecruit(true);
+      return;
+    }
+    onChoose('recruit');
+  };
   const restHealBonus = foldPassives(state.relics, resolveRelic).restHealBonus;
   const healTags = formatRestOptionTags('heal', { restHealBonus });
   if (choosingUpgrade) {
@@ -74,6 +90,14 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
       <div className="rest-panel">
         <p className="result-eyebrow">REST</p>
         <h2 className="draft-title">小休止。組織を整える。</h2>
+        {confirmingRecruit ? (
+          <SpendConfirm
+            subject="メンバーの採用"
+            balanceAfter={recruitRisk.balanceAfter}
+            onConfirm={() => onChoose('recruit')}
+            onCancel={() => setConfirmingRecruit(false)}
+          />
+        ) : null}
         <div className="rest-options">
           <button
             type="button"
@@ -125,21 +149,21 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
           </button>
           <button
             type="button"
-            className="rest-option"
+            className={`rest-option${recruitRisk.endsRun ? ' is-spend-risk' : ''}`}
             data-testid="rest-recruit"
             disabled={!canHire}
-            onClick={() => onChoose('recruit')}
+            onClick={requestRecruit}
           >
             <span className="rest-icon">🙋</span>
             <div className="rest-body">
               <span className="rest-name">メンバーを採用（💰{RECRUIT_COST}）</span>
               <EffectTagList tags={formatRestOptionTags('recruit')} testId="rest-tags-recruit" />
               <span className="rest-desc">
-                {!rosterHasRoom
-                  ? 'ロスターが満員です'
-                  : !canAfford
-                    ? `予算が足りません（💰${RECRUIT_COST} 必要）`
-                    : '未来の主力候補を1人迎える（ベンチに加わる）'}
+                {spendStatusText(
+                  recruitRisk,
+                  recruitReady,
+                  recruitRisk.blocked === 'rosterFull' ? 'ロスターが満員です' : undefined,
+                )}
               </span>
             </div>
           </button>

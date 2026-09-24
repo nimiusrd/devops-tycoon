@@ -4676,6 +4676,7 @@ html:has(.title-screen.title-command) #root {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
+.event-choice.is-spend-risk,
 .rest-option.is-spend-risk,
 .shop-card.is-spend-risk {
   border-color: var(--coral);

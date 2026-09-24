@@ -5,20 +5,34 @@
  * 初期フォーカスは取消に置き、Escape でも同じ取消に戻す。
  */
 import type { KeyboardEvent } from 'react';
+import { focusByTestId } from './focusByTestId';
 
 export interface SpendConfirmProps {
   subject: string;
   balanceAfter: number;
+  /** 取消後にフォーカスを戻す操作の data-testid。 */
+  returnTestId: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export function SpendConfirm({ subject, balanceAfter, onConfirm, onCancel }: SpendConfirmProps) {
+export function SpendConfirm({
+  subject,
+  balanceAfter,
+  returnTestId,
+  onConfirm,
+  onCancel,
+}: SpendConfirmProps) {
+  const cancel = () => {
+    onCancel();
+    // 確認ボタンのアンマウント後に、再び有効になった元の操作へ戻す。
+    setTimeout(() => focusByTestId(returnTestId), 0);
+  };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Escape') return;
     event.preventDefault();
     event.stopPropagation();
-    onCancel();
+    cancel();
   };
 
   return (
@@ -39,7 +53,7 @@ export function SpendConfirm({ subject, balanceAfter, onConfirm, onCancel }: Spe
           className="btn btn-secondary"
           data-testid="spend-confirm-cancel"
           autoFocus
-          onClick={onCancel}
+          onClick={cancel}
         >
           取り消す
         </button>

@@ -94,6 +94,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
           <SpendConfirm
             subject="メンバーの採用"
             balanceAfter={recruitRisk.balanceAfter}
+            returnTestId="rest-recruit"
             onConfirm={() => onChoose('recruit')}
             onCancel={() => setConfirmingRecruit(false)}
           />

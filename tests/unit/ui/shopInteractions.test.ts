@@ -152,6 +152,29 @@ describe('ショップの購入条件', () => {
     expect(screen.state).toEqual(original);
   });
 
+  it('枯渇確認を開いている間は他の商品を購入できない', () => {
+    const screen = mountShop({
+      budget: 25,
+      shop: makeShop({
+        cards: [
+          { defId: 'docs', cost: 25, bought: false },
+          { defId: 'pair-programming', cost: 12, bought: false },
+        ],
+        relic: undefined,
+        recruit: undefined,
+      }),
+    });
+    screen.click('shop-card-docs');
+    expect(screen.find('shop-card-pair-programming').props.disabled).toBe(true);
+    screen.click('shop-card-pair-programming');
+    expect(screen.onBuyCard).not.toHaveBeenCalled();
+    expect(content(screen.find('spend-confirm'))).toContain('支払後の残高は 💰0');
+    screen.click('spend-confirm-cancel');
+    expect(screen.find('shop-card-pair-programming').props.disabled).toBe(false);
+    screen.click('shop-card-pair-programming');
+    expect(screen.onBuyCard).toHaveBeenCalledExactlyOnceWith('pair-programming');
+  });
+
   it('予算が価格より多い購入は確認なしで通知し、支払後残高だけを示す', () => {
     const screen = mountShop({ budget: 16 });
     expect(content(screen.find('shop-card-docs'))).toContain('支払後の残高 💰1');

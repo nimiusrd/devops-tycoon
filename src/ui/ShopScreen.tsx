@@ -19,7 +19,12 @@ import { EffectTagList } from './EffectTagList';
 import { SpendConfirm } from './SpendConfirm';
 import { useReplayContent } from './replayContent';
 
-type PendingSpend = { id: string; subject: string; risk: SpendRiskView };
+type PendingSpend = {
+  id: string;
+  subject: string;
+  risk: SpendRiskView;
+  returnTestId: string;
+};
 
 export interface ShopScreenProps {
   state: RunState;
@@ -79,6 +84,7 @@ export function ShopScreen({
           <SpendConfirm
             subject={pending.subject}
             balanceAfter={pending.risk.balanceAfter}
+            returnTestId={pending.returnTestId}
             onConfirm={() => {
               const current = pending;
               setPending(null);
@@ -103,10 +109,16 @@ export function ShopScreen({
                 key={offer.defId}
                 className={`shop-card rarity-${def.rarity}${offer.bought ? ' bought' : ''}${risk.endsRun ? ' is-spend-risk' : ''}`}
                 data-testid={`shop-card-${offer.defId}`}
-                disabled={risk.blocked !== null}
+                disabled={pending !== null || risk.blocked !== null}
                 onClick={() =>
-                  requestSpend({ id: `card:${offer.defId}`, subject: def.name, risk }, () =>
-                    onBuyCard(offer.defId),
+                  requestSpend(
+                    {
+                      id: `card:${offer.defId}`,
+                      subject: def.name,
+                      risk,
+                      returnTestId: `shop-card-${offer.defId}`,
+                    },
+                    () => onBuyCard(offer.defId),
                   )
                 }
               >
@@ -149,9 +161,17 @@ export function ShopScreen({
                 relicRisk.endsRun ? ' is-spend-risk' : ''
               }`}
               data-testid={`shop-relic-${shop.relic.id}`}
-              disabled={relicRisk.blocked !== null}
+              disabled={pending !== null || relicRisk.blocked !== null}
               onClick={() =>
-                requestSpend({ id: 'relic', subject: relic.name, risk: relicRisk }, onBuyRelic)
+                requestSpend(
+                  {
+                    id: 'relic',
+                    subject: relic.name,
+                    risk: relicRisk,
+                    returnTestId: `shop-relic-${shop.relic!.id}`,
+                  },
+                  onBuyRelic,
+                )
               }
             >
               <span className="shop-card-rarity">レリック</span>
@@ -179,10 +199,15 @@ export function ShopScreen({
                 recruitRisk.endsRun ? ' is-spend-risk' : ''
               }`}
               data-testid="shop-recruit"
-              disabled={!canHire}
+              disabled={pending !== null || !canHire}
               onClick={() =>
                 requestSpend(
-                  { id: 'recruit', subject: 'メンバーの採用', risk: recruitRisk },
+                  {
+                    id: 'recruit',
+                    subject: 'メンバーの採用',
+                    risk: recruitRisk,
+                    returnTestId: 'shop-recruit',
+                  },
                   onBuyRecruit,
                 )
               }

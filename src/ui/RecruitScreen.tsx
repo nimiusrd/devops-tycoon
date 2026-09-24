@@ -45,6 +45,7 @@ export function RecruitScreen({ state, onChoose }: RecruitScreenProps) {
           <SpendConfirm
             subject="メンバーの採用"
             balanceAfter={hireRisk.balanceAfter}
+            returnTestId="recruit-hire"
             onConfirm={() => onChoose('hire')}
             onCancel={() => setConfirmingHire(false)}
           />

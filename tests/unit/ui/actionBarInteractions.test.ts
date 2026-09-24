@@ -390,7 +390,7 @@ describe('ActionBar の武装と担当選択', () => {
     expect(onArm).not.toHaveBeenCalled();
   });
 
-  it('分割できるタスクが overflow にだけある場合は自動対象で即発動する', () => {
+  it('分割できるタスクが overflow にだけある場合は武装してピッカーを開く', () => {
     const tasks = Array.from({ length: 13 }, (_, index) =>
       makeTask(index, { lane: 'coding', split: index < 12 }),
     );
@@ -400,13 +400,28 @@ describe('ActionBar の武装と担当選択', () => {
         effect: { actionId: 'splitPr', focusCost: 2, gaugeGain: 0 },
       }),
     );
-    const bar = mountActionBar({ sprint: actionSprint({ tasks }), onAction });
+    const onArm = vi.fn();
+    const bar = mountActionBar({ sprint: actionSprint({ tasks }), onAction, onArm });
 
     expect(content(bar.find('action-badge-splitPr'))).toBe('1');
     bar.click('action-splitPr');
-    expect(onAction).toHaveBeenCalledExactlyOnceWith('splitPr');
-    expect(bar.props.onArm).not.toHaveBeenCalled();
-    expect(bar.byClass('focus-feedback-cost').map(content)).toEqual(['-2']);
+    expect(onArm).toHaveBeenCalledExactlyOnceWith('splitPr');
+    expect(onAction).not.toHaveBeenCalled();
+    bar.update({ armedId: 'splitPr' });
+    expect(bar.find('action-target-option-12').props.role).toBeUndefined();
+    expect(bar.find('action-target-picker').props.role).toBeUndefined();
+  });
+
+  it('開いている用語チップの Escape では武装を解除しない', () => {
+    const onArm = vi.fn();
+    mountActionBar({ armedId: 'splitPr', onArm });
+    const event = new Event('keydown');
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    Object.defineProperty(event, 'defaultPrevented', { value: true });
+    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
+    Object.defineProperty(event, 'stopPropagation', { value: vi.fn() });
+    window.dispatchEvent(event);
+    expect(onArm).not.toHaveBeenCalled();
   });
 
   it('通常アクションは武装を解除してから対象を省略して発動する', () => {

@@ -161,6 +161,7 @@ export function ActionBar({
   const lastFeedbackNonce = useRef<number | null>(null);
   const actionButtonRefs = useRef<Partial<Record<ActionId, HTMLButtonElement | null>>>({});
   const pickerRef = useRef<HTMLDivElement | null>(null);
+  const focusedArmRef = useRef<DraggableActionId | null>(null);
 
   const pushFocusPop = useCallback(
     (sign: FocusPop['sign'], amount: number, tone: FocusPop['tone']) => {
@@ -233,9 +234,15 @@ export function ActionBar({
     [armedId, applyOutcomeFeedback, onAction, paused],
   );
 
-  // 武装開始時は最初の選択可能候補へフォーカスし、Tab/Enter で完了できるようにする。
+  // 武装開始時だけ先頭候補へフォーカスする。tick 更新で targetPicker が
+  // 作り直されても、移動中のフォーカスは奪わない。
   useEffect(() => {
-    if (!armedId || !targetPicker) return;
+    if (!armedId || !targetPicker) {
+      focusedArmRef.current = null;
+      return;
+    }
+    if (focusedArmRef.current === armedId) return;
+    focusedArmRef.current = armedId;
     const frame = window.requestAnimationFrame(() => {
       const first = pickerRef.current?.querySelector<HTMLButtonElement>(
         'button[data-action-target-option]:not([disabled])',
@@ -245,11 +252,22 @@ export function ActionBar({
     return () => window.cancelAnimationFrame(frame);
   }, [armedId, targetPicker]);
 
-  // Escape で武装解除＋起点復帰。盤面ドラッグは阻害しない（inert にしない）。
+  // Escape で武装解除＋起点復帰。開いている用語チップの Escape は先に渡す。
   useEffect(() => {
     if (!armedId) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      const target = event.target;
+      if (typeof Element !== 'undefined' && target instanceof Element) {
+        const tip = target.closest('details.term-tip');
+        if (
+          typeof HTMLDetailsElement !== 'undefined' &&
+          tip instanceof HTMLDetailsElement &&
+          tip.open
+        ) {
+          return;
+        }
+      }
       event.preventDefault();
       event.stopPropagation();
       disarm();
@@ -267,9 +285,18 @@ export function ActionBar({
           disarm();
           return;
         }
-        // 候補はあるが描画粒が overflow で無いときは従来どおり自動対象で発動する。
         const plan = planBoardDrag(sprint, id, assignAssignee);
         if (!plan) {
+          // 描画粒が無くても HTML 候補があれば武装して選ばせる。候補ゼロだけ自動対象。
+          const picker = planActionTargetPickerView(sprint, org ?? ({} as OrgState), id, {
+            assignee: assignAssignee,
+            tick: sprintTick,
+            paused,
+          });
+          if (picker) {
+            onArm(id);
+            return;
+          }
           const outcome = onAction(id);
           applyOutcomeFeedback(id, outcome);
           return;
@@ -289,7 +316,10 @@ export function ActionBar({
       disarm,
       onAction,
       onArm,
+      org,
+      paused,
       sprint,
+      sprintTick,
     ],
   );
 
@@ -399,37 +429,31 @@ export function ActionBar({
               取消
             </button>
           </div>
-          <div
-            className="action-target-picker-list"
-            role="listbox"
-            aria-labelledby="action-target-picker-title"
-          >
+          <ul className="action-target-picker-list" aria-labelledby="action-target-picker-title">
             {targetPicker.options.map((option) => {
               const status = option.blockMessage ? `利用不可: ${option.blockMessage}。` : '';
               return (
-                <button
-                  type="button"
-                  key={option.taskId}
-                  role="option"
-                  aria-selected={false}
-                  aria-disabled={!option.canSelect || paused}
-                  data-action-target-option=""
-                  data-testid={`action-target-option-${option.taskId}`}
-                  className={`action-target-option${!option.canSelect || paused ? ' disabled' : ''}`}
-                  disabled={!option.canSelect || paused}
-                  title={option.blockMessage ?? option.detail}
-                  aria-label={`${option.label}。${option.detail}。${status}選ぶと実行。`}
-                  onClick={() => confirmTarget(option.target)}
-                >
-                  <span className="action-target-option-label">{option.label}</span>
-                  <span className="action-target-option-detail">{option.detail}</span>
-                  {option.blockMessage && (
-                    <span className="action-target-option-reason">{option.blockMessage}</span>
-                  )}
-                </button>
+                <li key={option.taskId}>
+                  <button
+                    type="button"
+                    data-action-target-option=""
+                    data-testid={`action-target-option-${option.taskId}`}
+                    className={`action-target-option${!option.canSelect || paused ? ' disabled' : ''}`}
+                    disabled={!option.canSelect || paused}
+                    title={option.blockMessage ?? option.detail}
+                    aria-label={`${option.label}。${option.detail}。${status}選ぶと実行。`}
+                    onClick={() => confirmTarget(option.target)}
+                  >
+                    <span className="action-target-option-label">{option.label}</span>
+                    <span className="action-target-option-detail">{option.detail}</span>
+                    {option.blockMessage && (
+                      <span className="action-target-option-reason">{option.blockMessage}</span>
+                    )}
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
       )}
       <div className="actions">

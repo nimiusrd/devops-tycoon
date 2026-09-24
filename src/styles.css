@@ -2048,7 +2048,7 @@ body:has(.overlay-contained) {
   padding: 8px 10px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--visual-color-interaction-drag) 45%, transparent);
-  background: color-mix(in srgb, var(--visual-color-interaction-drag) 8%, #1d1640);
+  background: color-mix(in srgb, var(--visual-color-interaction-drag) 8%, var(--visual-color-ink));
 }
 .action-target-picker-header {
   display: flex;
@@ -2070,7 +2070,7 @@ body:has(.overlay-contained) {
   padding: 4px 10px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: #1d1640;
+  background: var(--visual-color-ink);
   color: var(--text);
   font-size: 11px;
   font-weight: 800;
@@ -2087,28 +2087,36 @@ body:has(.overlay-contained) {
   flex-wrap: wrap;
   gap: 6px;
   max-height: 96px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
   overflow-x: hidden;
   overflow-y: auto;
+}
+.action-target-picker-list > li {
+  display: flex;
+  min-width: min(100%, 132px);
 }
 .action-target-option {
   appearance: none;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  min-width: min(100%, 132px);
+  min-width: 0;
   min-height: 44px;
   padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--visual-color-interaction-drag) 40%, transparent);
-  background: #251d49;
+  background: var(--panel);
   color: var(--text);
   text-align: left;
   cursor: pointer;
 }
 .action-target-option:hover:not(:disabled) {
   border-color: var(--visual-color-interaction-drag);
-  background: color-mix(in srgb, var(--visual-color-interaction-drag) 12%, #251d49);
+  background: color-mix(in srgb, var(--visual-color-interaction-drag) 12%, var(--panel));
 }
 .action-target-option:disabled,
 .action-target-option.disabled {

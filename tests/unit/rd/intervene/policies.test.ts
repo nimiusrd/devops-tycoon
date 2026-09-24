@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { KNOBS, SEED_DEFS } from '../../../../src/rd/intervene/knobs';
-import {
-  actionsForArm,
-  bottleneckTeam,
-  situationActions,
-} from '../../../../src/rd/intervene/policies';
+import { actionsForArm, situationActions } from '../../../../src/rd/intervene/policies';
 import {
   applyArm,
   createInitialState,
@@ -27,55 +23,31 @@ describe('rd/intervene policies', () => {
     expect(actions[KNOBS.alwaysInterveneTeam]).toBe('support');
   });
 
-  it('安定の育成して委任は前半3チーム育成・後半委任のまま', () => {
-    expect(
-      actionsForArm('train-then-delegate', {
-        period: 2,
-        teams: SEED_DEFS.stable.teams,
-        seedId: 'stable',
-      }),
-    ).toEqual({
-      alpha: 'train',
-      bravo: 'train',
-      charlie: 'train',
-    });
-    expect(
-      actionsForArm('train-then-delegate', {
-        period: 3,
-        teams: SEED_DEFS.stable.teams,
-        seedId: 'stable',
-      }),
-    ).toEqual({
-      alpha: 'delegate',
-      bravo: 'delegate',
-      charlie: 'delegate',
-    });
-  });
-
-  it('逼迫の育成して委任はボトルネックだけ育成する', () => {
-    expect(bottleneckTeam(SEED_DEFS.crisis.teams).id).toBe('bravo');
-    expect(
-      actionsForArm('train-then-delegate', {
-        period: 1,
-        teams: SEED_DEFS.crisis.teams,
-        seedId: 'crisis',
-      }),
-    ).toEqual({
-      alpha: 'delegate',
-      bravo: 'train',
-      charlie: 'delegate',
-    });
-    expect(
-      actionsForArm('train-then-delegate', {
-        period: 3,
-        teams: SEED_DEFS.crisis.teams,
-        seedId: 'crisis',
-      }),
-    ).toEqual({
-      alpha: 'delegate',
-      bravo: 'delegate',
-      charlie: 'delegate',
-    });
+  it('育成して委任は逼迫も安定も前半3チーム育成・後半委任', () => {
+    for (const seedId of ['crisis', 'stable'] as const) {
+      expect(
+        actionsForArm('train-then-delegate', {
+          period: 2,
+          teams: SEED_DEFS[seedId].teams,
+          seedId,
+        }),
+      ).toEqual({
+        alpha: 'train',
+        bravo: 'train',
+        charlie: 'train',
+      });
+      expect(
+        actionsForArm('train-then-delegate', {
+          period: 3,
+          teams: SEED_DEFS[seedId].teams,
+          seedId,
+        }),
+      ).toEqual({
+        alpha: 'delegate',
+        bravo: 'delegate',
+        charlie: 'delegate',
+      });
+    }
   });
 
   it('全委任は3チームとも委任', () => {
@@ -111,7 +83,7 @@ describe('rd/intervene policies', () => {
 
   it('一括実行はアームの方針列を期間ログに残す', () => {
     const train = runRemaining(createInitialState('crisis', 'train-then-delegate'));
-    expect(train.logs.map((log) => log.actions.bravo)).toEqual([
+    expect(train.logs.map((log) => log.actions.alpha)).toEqual([
       'train',
       'train',
       'delegate',
@@ -121,10 +93,10 @@ describe('rd/intervene policies', () => {
       'delegate',
       'delegate',
     ]);
-    expect(train.logs.every((log) => log.actions.alpha === 'delegate')).toBe(true);
-    expect(train.logs.every((log) => log.actions.charlie === 'delegate')).toBe(true);
+    expect(train.logs.every((log) => log.actions.bravo === log.actions.alpha)).toBe(true);
+    expect(train.logs.every((log) => log.actions.charlie === log.actions.alpha)).toBe(true);
     const trainSix = runRemaining(createInitialState('crisis', 'train-then-delegate', 6));
-    expect(trainSix.logs.map((log) => log.actions.bravo)).toEqual([
+    expect(trainSix.logs.map((log) => log.actions.alpha)).toEqual([
       'train',
       'train',
       'delegate',
@@ -135,6 +107,21 @@ describe('rd/intervene policies', () => {
     const always = runRemaining(applyArm(createInitialState('crisis'), 'always-intervene'));
     expect(always.logs.every((log) => log.actions.alpha === 'support')).toBe(true);
     expect(always.logs.every((log) => log.actions.bravo === 'delegate')).toBe(true);
+  });
+
+  it('逼迫の育成して委任8期合計は3チーム育成方針に戻る', () => {
+    expect(
+      totalsFromState(runRemaining(createInitialState('crisis', 'train-then-delegate'))),
+    ).toEqual(
+      expect.objectContaining({
+        companyScoreSum: -888.8,
+        outputSum: 158.6,
+        lastCrisisSum: 300,
+        lastFatigueSum: 171.1,
+        lastCapabilitySum: 188,
+        judgmentCount: 2,
+      }),
+    );
   });
 
   it('安定シードの8期合計は方針変更前と同じ', () => {

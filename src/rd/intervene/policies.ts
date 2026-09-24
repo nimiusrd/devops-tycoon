@@ -1,4 +1,4 @@
-import { KNOBS, SEED_DEFS } from './knobs';
+import { KNOBS } from './knobs';
 import type { ActionId, ArmId, PeriodActions, SeedId, TeamId, TeamState } from './types';
 import { TEAM_IDS } from './types';
 
@@ -24,27 +24,10 @@ function teamById(teams: readonly TeamState[], id: TeamId): TeamState {
   return team;
 }
 
-/** 能力が最も低いチーム。同値なら危機が大きい方。閲覧順は使わない。 */
-export function bottleneckTeam(teams: readonly TeamState[]): TeamState {
-  const ordered = TEAM_IDS.map((id) => teamById(teams, id));
-  return ordered.reduce((current, team) => {
-    if (team.capability < current.capability) return team;
-    if (team.capability === current.capability && team.crisis > current.crisis) return team;
-    return current;
-  });
-}
-
 function trainThenDelegateActions(input: ArmPolicyInput): PeriodActions {
-  if (input.period > KNOBS.trainThenDelegateTrainPeriods) {
-    return allActions('delegate');
-  }
-  if (input.seedId === 'crisis' && KNOBS.crisis.trainThenDelegateOnlyBottleneck) {
-    return {
-      ...allActions('delegate'),
-      [bottleneckTeam(SEED_DEFS[input.seedId].teams).id]: 'train',
-    };
-  }
-  return allActions('train');
+  return input.period <= KNOBS.trainThenDelegateTrainPeriods
+    ? allActions('train')
+    : allActions('delegate');
 }
 
 /**

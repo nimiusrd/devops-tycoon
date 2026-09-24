@@ -2,7 +2,7 @@
  * 介入アクションバー（SPEC 第4.3 / 第6.1 準拠）。
  *
  * マネジメント集中力（⚡）と、各介入アクション（コスト・CD・Ready）を並べる。
- * assignTask / splitPr は武装トグル（盤面ドラッグで確定。RI-30）。
+ * assignTask / splitPr は武装トグル（盤面ドラッグまたは HTML 対象選択で確定。RI-30 / RI-146）。
  * 他アクションはクリックで即 `dispatch`。RI-51: 対象数バッジ・発動不能理由。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -15,16 +15,29 @@ import {
   planActionBarView,
   type ActionBlockReason,
 } from '../render/actionBarView';
+import { planActionTargetPickerView } from '../render/actionTargetPickerView';
 import { isDraggableAction, planBoardDrag, type DraggableActionId } from '../render/boardDragPlan';
 import { formatActionTooltip } from '../render/eventOutcomeView';
 import { INTERRUPT_REVIEW_COUNT } from '../sim/actions';
-import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
+import type {
+  ActionId,
+  ActionTarget,
+  InterventionOutcome,
+  OrgState,
+  SprintState,
+} from '../sim/types';
 import { ManagerPortrait } from './ManagerPortrait';
 import { useResponsiveMode } from './responsiveMode';
 import { TermTip } from './TermTip';
 import { VisualIcon, VisualIconText } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1000;
+
+/** 編成ダイアログや全社マップなど、前面 UI が Escape を使う状態か。 */
+function escapeOwnedByFrontOverlay(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.querySelector('[role="dialog"], [data-testid="zoom-overlay"]') !== null;
+}
 
 /**
  * プレイ中に読む文言は、主効果1行・代償1行までに制限する。
@@ -91,6 +104,8 @@ function FocusFeedbackPops({ pops }: { pops: FocusPop[] }) {
 
 export interface ActionBarProps {
   sprint: SprintState;
+  /** 対象可否判定（AI無効など）に使う。省略時は空オブジェクト相当。 */
+  org?: OrgState;
   sprintTick: number;
   disabled: boolean;
   /** プレイヤー Pause 中。介入の状態は見せたまま発動だけ止める。 */
@@ -107,6 +122,7 @@ export interface ActionBarProps {
 
 export function ActionBar({
   sprint,
+  org,
   sprintTick,
   disabled,
   paused,
@@ -128,11 +144,20 @@ export function ActionBar({
   const availabilityById = useMemo(() => {
     const map = new Map<ActionId, ReturnType<typeof deriveActionAvailability>>();
     const disabledReason = disabled ? 'complete' : paused ? 'paused' : undefined;
-    for (const item of planActionBarView(sprint, disabledReason)) {
+    for (const item of planActionBarView(sprint, disabledReason, org, sprintTick)) {
       map.set(item.actionId, item);
     }
     return map;
-  }, [sprint, disabled, paused]);
+  }, [sprint, disabled, paused, org, sprintTick]);
+
+  const targetPicker = useMemo(() => {
+    if (!armedId) return null;
+    return planActionTargetPickerView(sprint, org ?? ({} as OrgState), armedId, {
+      assignee: assignAssignee,
+      tick: sprintTick,
+      paused,
+    });
+  }, [armedId, assignAssignee, org, paused, sprint, sprintTick]);
 
   const [shakingId, setShakingId] = useState<ActionId | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -140,6 +165,10 @@ export function ActionBar({
   const [focusPops, setFocusPops] = useState<FocusPop[]>([]);
   const nextPopId = useRef(0);
   const lastFeedbackNonce = useRef<number | null>(null);
+  const actionButtonRefs = useRef<Partial<Record<ActionId, HTMLButtonElement | null>>>({});
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const focusedArmRef = useRef<DraggableActionId | null>(null);
+  const focusedOptionIdRef = useRef<number | null>(null);
 
   const pushFocusPop = useCallback(
     (sign: FocusPop['sign'], amount: number, tone: FocusPop['tone']) => {
@@ -192,18 +221,120 @@ export function ActionBar({
     applyOutcomeFeedback(outcomeFeedback.id, outcomeFeedback.outcome);
   }, [outcomeFeedback, applyOutcomeFeedback]);
 
+  const disarm = useCallback(() => {
+    const previous = armedId;
+    onArm(null);
+    if (previous) {
+      // 取消後は武装したアクションへフォーカスを戻す（DS-08）。
+      queueMicrotask(() => actionButtonRefs.current[previous]?.focus());
+    }
+  }, [armedId, onArm]);
+
+  const confirmTarget = useCallback(
+    (target: ActionTarget) => {
+      if (!armedId || paused) return;
+      const outcome = onAction(armedId, target);
+      applyOutcomeFeedback(armedId, outcome);
+      if (!outcome.ok) return;
+      queueMicrotask(() => actionButtonRefs.current[armedId]?.focus());
+    },
+    [armedId, applyOutcomeFeedback, onAction, paused],
+  );
+
+  // 武装開始時、またはフォーカス中の候補が消えたときだけフォーカスを移す。
+  // tick 更新で一覧が作り直されても、残っている操作のフォーカスは奪わない。
+  useEffect(() => {
+    if (!armedId) {
+      focusedArmRef.current = null;
+      focusedOptionIdRef.current = null;
+      return;
+    }
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    const focusFellOff =
+      active == null ||
+      (typeof document !== 'undefined' && active === document.body) ||
+      (active instanceof HTMLElement && !active.isConnected);
+    if (!targetPicker) {
+      if (focusedArmRef.current === armedId && focusFellOff) {
+        actionButtonRefs.current[armedId]?.focus();
+      }
+      focusedArmRef.current = null;
+      focusedOptionIdRef.current = null;
+      return;
+    }
+    const focusedOptionId = focusedOptionIdRef.current;
+    const optionGone =
+      focusedArmRef.current === armedId &&
+      focusedOptionId != null &&
+      !targetPicker.options.some((option) => option.taskId === focusedOptionId);
+    if (focusedArmRef.current === armedId && !optionGone) return;
+    // 候補削除でフォーカスが body に落ちたときだけ回収する。別ボタンへ移った後は奪わない。
+    if (optionGone && !focusFellOff) {
+      focusedOptionIdRef.current = null;
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const next = pickerRef.current?.querySelector<HTMLButtonElement>(
+        'button[data-action-target-option]:not([disabled])',
+      );
+      if (next) {
+        next.focus();
+      } else {
+        actionButtonRefs.current[armedId]?.focus();
+        focusedOptionIdRef.current = null;
+      }
+      focusedArmRef.current = armedId;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [armedId, targetPicker]);
+
+  // Escape で武装解除＋起点復帰。用語チップと前面オーバーレイの Escape は渡す。
+  useEffect(() => {
+    if (!armedId) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      const target = event.target;
+      if (typeof Element !== 'undefined' && target instanceof Element) {
+        const tip = target.closest('details.term-tip');
+        if (
+          typeof HTMLDetailsElement !== 'undefined' &&
+          tip instanceof HTMLDetailsElement &&
+          tip.open
+        ) {
+          return;
+        }
+      }
+      if (escapeOwnedByFrontOverlay()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      disarm();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [armedId, disarm]);
+
   const handleAction = useCallback(
     (id: ActionId) => {
       if (isDraggableAction(id)) {
         const availability = availabilityById.get(id);
         if (!availability?.canActivate && armedId !== id) return;
         if (armedId === id) {
-          onArm(null);
+          disarm();
           return;
         }
-        // 候補はあるが描画粒が overflow で無いときは従来どおり自動対象で発動する。
         const plan = planBoardDrag(sprint, id, assignAssignee);
         if (!plan) {
+          // 描画粒が無くても HTML 候補があれば武装して選ばせる。候補ゼロだけ自動対象。
+          const picker = planActionTargetPickerView(sprint, org ?? ({} as OrgState), id, {
+            assignee: assignAssignee,
+            tick: sprintTick,
+            paused,
+          });
+          if (picker) {
+            onArm(id);
+            return;
+          }
           const outcome = onAction(id);
           applyOutcomeFeedback(id, outcome);
           return;
@@ -215,7 +346,19 @@ export function ActionBar({
       const outcome = onAction(id);
       applyOutcomeFeedback(id, outcome);
     },
-    [armedId, assignAssignee, availabilityById, applyOutcomeFeedback, onAction, onArm, sprint],
+    [
+      armedId,
+      assignAssignee,
+      availabilityById,
+      applyOutcomeFeedback,
+      disarm,
+      onAction,
+      onArm,
+      org,
+      paused,
+      sprint,
+      sprintTick,
+    ],
   );
 
   return (
@@ -304,6 +447,57 @@ export function ActionBar({
           </button>
         </div>
       )}
+      {targetPicker && (
+        <div
+          className="action-target-picker"
+          data-testid="action-target-picker"
+          data-armed={targetPicker.armed}
+          ref={pickerRef}
+        >
+          <div className="action-target-picker-header">
+            <span className="action-target-picker-title" id="action-target-picker-title">
+              {targetPicker.title}
+            </span>
+            <button
+              type="button"
+              className="action-target-cancel"
+              data-testid="action-target-cancel"
+              onClick={disarm}
+            >
+              取消
+            </button>
+          </div>
+          <ul className="action-target-picker-list" aria-labelledby="action-target-picker-title">
+            {targetPicker.options.map((option) => {
+              const status = option.blockMessage ? `利用不可: ${option.blockMessage}。` : '';
+              return (
+                <li key={option.taskId}>
+                  <button
+                    type="button"
+                    data-action-target-option=""
+                    data-task-id={option.taskId}
+                    data-testid={`action-target-option-${option.taskId}`}
+                    className={`action-target-option${!option.canSelect || paused ? ' disabled' : ''}`}
+                    disabled={!option.canSelect || paused}
+                    title={option.blockMessage ?? option.detail}
+                    aria-label={`${option.label}。${option.detail}。${status}選ぶと実行。`}
+                    onFocus={() => {
+                      focusedOptionIdRef.current = option.taskId;
+                    }}
+                    onClick={() => confirmTarget(option.target)}
+                  >
+                    <span className="action-target-option-label">{option.label}</span>
+                    <span className="action-target-option-detail">{option.detail}</span>
+                    {option.blockMessage && (
+                      <span className="action-target-option-reason">{option.blockMessage}</span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       <div className="actions">
         {ACTION_DEFS.map((a) => {
           const glanceCopy = ACTION_GLANCE_COPY[a.id];
@@ -328,7 +522,7 @@ export function ActionBar({
                   : '';
           const dragHint = isDraggableAction(a.id)
             ? armed
-              ? '（盤面で対象へドラッグ）'
+              ? '（一覧か盤面ドラッグで対象を確定）'
               : '（クリックで武装）'
             : '';
           const tooltip = `${formatActionTooltip(a)}${dragHint}`;
@@ -346,6 +540,9 @@ export function ActionBar({
             <button
               type="button"
               key={a.id}
+              ref={(node) => {
+                actionButtonRefs.current[a.id] = node;
+              }}
               className={`action${tone}${ready ? ' ready' : ''}${armed ? ' armed' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
               data-testid={`action-${a.id}`}
               data-block-reason={availability.blockReason ?? ''}

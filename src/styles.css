@@ -2021,7 +2021,7 @@ body:has(.overlay-contained) {
 }
 .assign-assignee-btn {
   appearance: none;
-  border: 1px solid #7bdcff44;
+  border: 1px solid color-mix(in srgb, var(--visual-color-interaction-drag) 27%, transparent);
   background: #1d1640;
   color: var(--text);
   font-size: 10px;
@@ -2034,6 +2034,107 @@ body:has(.overlay-contained) {
   border-color: #ffd45c;
   background: #ffd45c22;
   color: #ffd45c;
+}
+/* 対象一覧は武装中だけ全幅へ折り返す。平常時の nowrap 契約は維持する。 */
+.actionbar:has(.action-target-picker) {
+  flex-wrap: wrap;
+}
+.action-target-picker {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--visual-color-interaction-drag) 45%, transparent);
+  background: color-mix(in srgb, var(--visual-color-interaction-drag) 8%, var(--visual-color-ink));
+}
+.action-target-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.action-target-picker-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.action-target-cancel {
+  appearance: none;
+  flex: 0 0 auto;
+  min-height: 28px;
+  min-width: 44px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--visual-color-ink);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.action-target-cancel:focus-visible,
+.action-target-option:focus-visible,
+.assign-assignee-btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.action-target-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 96px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.action-target-picker-list > li {
+  display: flex;
+  min-width: min(100%, 132px);
+}
+.action-target-option {
+  appearance: none;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--visual-color-interaction-drag) 40%, transparent);
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.action-target-option:hover:not(:disabled) {
+  border-color: var(--visual-color-interaction-drag);
+  background: color-mix(in srgb, var(--visual-color-interaction-drag) 12%, var(--panel));
+}
+.action-target-option:disabled,
+.action-target-option.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.action-target-option-label {
+  font-size: 12px;
+  font-weight: 800;
+}
+.action-target-option-detail,
+.action-target-option-reason {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.action-target-option-reason {
+  color: var(--coral);
 }
 .focus {
   display: flex;

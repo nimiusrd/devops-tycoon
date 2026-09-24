@@ -443,22 +443,15 @@ describe('SprintScreen の速度・介入操作', () => {
     expect(screen.props.setPlaybackSpeed).toHaveBeenLastCalledWith(1);
   });
 
-  it('Escapeは現場の武装だけを解除し、別スプリントや完了済みの武装を盤面に渡さない', () => {
+  it('別スプリントや完了済みの武装を盤面に渡さず、担当選択は差配以外で消える', () => {
     const screen = mountSprint();
     screen.child(ActionBar).onArm('assignTask');
     screen.child(ActionBar).onAssignAssigneeChange?.('senior');
     screen.flush();
-    screen.key('Enter');
     expect(screen.child(Board).armedAction).toBe('assignTask');
-    screen.update({
-      state: { ...screen.props.state, zoom: { ...screen.props.state.zoom, level: 'company' } },
-    });
-    screen.key('Escape');
-    expect(screen.child(Board).armedAction).toBe('assignTask');
-    screen.update({
-      state: { ...screen.props.state, zoom: { ...screen.props.state.zoom, level: 'team' } },
-    });
-    screen.key('Escape');
+    // Escape による解除は ActionBar（RI-146）側。ここでは onArm(null) 相当を検証する。
+    screen.child(ActionBar).onArm(null);
+    screen.flush();
     expect(screen.child(Board).armedAction).toBeNull();
     expect(screen.child(ActionBar).assignAssignee).toBeUndefined();
     screen.child(ActionBar).onArm('assignTask');
@@ -629,7 +622,6 @@ describe('SprintScreen の自動ポーズと演出の寿命', () => {
   it('遅延中の注目ポーズを新イベントで置き換え、アンマウント時に所有ポーズを解除する', () => {
     const clearPause = vi.fn();
     const screen = mountSprint({ pauseBriefly: vi.fn(() => clearPause) });
-    const removeListener = vi.spyOn(window, 'removeEventListener');
     screen.updateSprint({ tasks: [burningTask(1)] });
     vi.mocked(performance.now).mockReturnValue(6_000);
     screen.updateSprint({ tasks: [burningTask(2)] });
@@ -639,7 +631,6 @@ describe('SprintScreen の自動ポーズと演出の寿命', () => {
     screen.unmount();
     expect(clearPause).toHaveBeenCalledTimes(2);
     expect(vi.getTimerCount()).toBe(0);
-    expect(removeListener).toHaveBeenCalledWith('keydown', expect.any(Function));
   });
 
   it('ボスの最終鎮火は注目ポーズをスローモへ置換し、鎮火の重複演出を700msだけ抑止する', () => {

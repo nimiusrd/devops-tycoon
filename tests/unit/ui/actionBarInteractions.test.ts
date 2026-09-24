@@ -176,7 +176,40 @@ function mountActionBar(overrides: Partial<ActionBarProps> = {}) {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  vi.stubGlobal('window', { setTimeout });
+  const listeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
+  const win = {
+    setTimeout,
+    requestAnimationFrame: (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    },
+    cancelAnimationFrame: () => undefined,
+    addEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      _options?: boolean | AddEventListenerOptions,
+    ) {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type)!.add(listener);
+    },
+    removeEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      _options?: boolean | EventListenerOptions,
+    ) {
+      listeners.get(type)?.delete(listener);
+    },
+    dispatchEvent(event: Event) {
+      const set = listeners.get(event.type);
+      if (!set) return true;
+      for (const listener of [...set]) {
+        if (typeof listener === 'function') listener.call(win, event);
+        else listener.handleEvent(event);
+      }
+      return true;
+    },
+  };
+  vi.stubGlobal('window', win);
 });
 
 afterEach(() => {
@@ -300,8 +333,9 @@ describe('ActionBar の武装と担当選択', () => {
       expect(bar.find(`action-${id}`).props.disabled).toBe(false);
       expect(bar.find(`action-${id}`).props['data-armed']).toBe('true');
       expect(bar.find(`action-${id}`).props['aria-label']).toContain('武装中。');
-      expect(bar.find(`action-${id}`).props.title).toContain('盤面で対象へドラッグ');
+      expect(bar.find(`action-${id}`).props.title).toContain('一覧か盤面ドラッグで対象を確定');
       expect(content(bar.find(`action-armed-${id}`))).toBe('武装中');
+      expect(bar.find('action-target-picker').props['data-armed']).toBe(id);
       bar.click(`action-${id}`);
       expect(bar.props.onArm).toHaveBeenLastCalledWith(null);
       expect(bar.props.onArm).toHaveBeenCalledTimes(2);
@@ -309,7 +343,54 @@ describe('ActionBar の武装と担当選択', () => {
     },
   );
 
-  it('分割できるタスクが overflow にだけある場合は自動対象で即発動する', () => {
+  it('HTML対象選択で差配を確定でき、取消で武装だけ解除する', () => {
+    const onAction = vi.fn(
+      (): InterventionOutcome => ({
+        ok: true,
+        effect: { actionId: 'assignTask', focusCost: 2, gaugeGain: 0.1 },
+      }),
+    );
+    const onArm = vi.fn();
+    const bar = mountActionBar({
+      armedId: 'assignTask',
+      assignAssignee: 'senior',
+      onAction,
+      onArm,
+      org: createOrgState('default', true),
+    });
+
+    expect(content(bar.find('action-target-picker'))).toContain('差配するタスクを選ぶ');
+    expect(bar.find('action-target-option-1')).toBeTruthy();
+    bar.click('action-target-option-1');
+    expect(onAction).toHaveBeenCalledExactlyOnceWith('assignTask', {
+      taskId: 1,
+      lane: 'coding',
+      assignee: 'senior',
+    });
+    expect(bar.byClass('focus-feedback-cost').map(content)).toEqual(['-2']);
+
+    bar.update({ armedId: 'assignTask' });
+    bar.click('action-target-cancel');
+    expect(onArm).toHaveBeenLastCalledWith(null);
+  });
+
+  it('Escape で武装を解除する', () => {
+    const onArm = vi.fn();
+    const bar = mountActionBar({ armedId: 'splitPr', onArm });
+    const event = new Event('keydown');
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
+    Object.defineProperty(event, 'stopPropagation', { value: vi.fn() });
+    window.dispatchEvent(event);
+    expect(onArm).toHaveBeenCalledWith(null);
+    // 再マウント後も listener が残らないことだけ確認（解除後は armedId を外す）
+    bar.update({ armedId: null });
+    onArm.mockClear();
+    window.dispatchEvent(event);
+    expect(onArm).not.toHaveBeenCalled();
+  });
+
+  it('分割できるタスクが overflow にだけある場合は武装してピッカーを開く', () => {
     const tasks = Array.from({ length: 13 }, (_, index) =>
       makeTask(index, { lane: 'coding', split: index < 12 }),
     );
@@ -319,13 +400,40 @@ describe('ActionBar の武装と担当選択', () => {
         effect: { actionId: 'splitPr', focusCost: 2, gaugeGain: 0 },
       }),
     );
-    const bar = mountActionBar({ sprint: actionSprint({ tasks }), onAction });
+    const onArm = vi.fn();
+    const bar = mountActionBar({ sprint: actionSprint({ tasks }), onAction, onArm });
 
     expect(content(bar.find('action-badge-splitPr'))).toBe('1');
     bar.click('action-splitPr');
-    expect(onAction).toHaveBeenCalledExactlyOnceWith('splitPr');
-    expect(bar.props.onArm).not.toHaveBeenCalled();
-    expect(bar.byClass('focus-feedback-cost').map(content)).toEqual(['-2']);
+    expect(onArm).toHaveBeenCalledExactlyOnceWith('splitPr');
+    expect(onAction).not.toHaveBeenCalled();
+    bar.update({ armedId: 'splitPr' });
+    expect(bar.find('action-target-option-12').props.role).toBeUndefined();
+    expect(bar.find('action-target-picker').props.role).toBeUndefined();
+  });
+
+  it('前面ダイアログがある Escape では武装を解除しない', () => {
+    const onArm = vi.fn();
+    mountActionBar({ armedId: 'splitPr', onArm });
+    vi.stubGlobal('document', { querySelector: () => ({}) });
+    const event = new Event('keydown');
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
+    Object.defineProperty(event, 'stopPropagation', { value: vi.fn() });
+    window.dispatchEvent(event);
+    expect(onArm).not.toHaveBeenCalled();
+  });
+
+  it('開いている用語チップの Escape では武装を解除しない', () => {
+    const onArm = vi.fn();
+    mountActionBar({ armedId: 'splitPr', onArm });
+    const event = new Event('keydown');
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    Object.defineProperty(event, 'defaultPrevented', { value: true });
+    Object.defineProperty(event, 'preventDefault', { value: vi.fn() });
+    Object.defineProperty(event, 'stopPropagation', { value: vi.fn() });
+    window.dispatchEvent(event);
+    expect(onArm).not.toHaveBeenCalled();
   });
 
   it('通常アクションは武装を解除してから対象を省略して発動する', () => {

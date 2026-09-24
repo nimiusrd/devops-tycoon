@@ -300,6 +300,15 @@
   padding: 2px 4px 6px 0;
 }
 
+.root[data-responsive-width='narrow'] :global(.action-target-picker) {
+  flex: 1 1 100%;
+  max-height: none;
+}
+
+.root[data-responsive-width='narrow'] :global(.action-target-picker-list) {
+  max-height: 120px;
+}
+
 .root[data-responsive-width='narrow'] :global(.actions) {
   flex: 1 1 100%;
 }

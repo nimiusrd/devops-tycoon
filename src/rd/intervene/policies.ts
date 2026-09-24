@@ -1,10 +1,11 @@
-import { KNOBS } from './knobs';
-import type { ActionId, ArmId, PeriodActions, TeamId, TeamState } from './types';
+import { KNOBS, SEED_DEFS } from './knobs';
+import type { ActionId, ArmId, PeriodActions, SeedId, TeamId, TeamState } from './types';
 import { TEAM_IDS } from './types';
 
 export interface ArmPolicyInput {
   readonly period: number;
   readonly teams: readonly TeamState[];
+  readonly seedId: SeedId;
 }
 
 function allActions(action: ActionId): PeriodActions {
@@ -23,12 +24,36 @@ function teamById(teams: readonly TeamState[], id: TeamId): TeamState {
   return team;
 }
 
+/** 能力が最も低いチーム。同値なら危機が大きい方。閲覧順は使わない。 */
+export function bottleneckTeam(teams: readonly TeamState[]): TeamState {
+  const ordered = TEAM_IDS.map((id) => teamById(teams, id));
+  return ordered.reduce((current, team) => {
+    if (team.capability < current.capability) return team;
+    if (team.capability === current.capability && team.crisis > current.crisis) return team;
+    return current;
+  });
+}
+
+function trainThenDelegateActions(input: ArmPolicyInput): PeriodActions {
+  if (input.period > KNOBS.trainThenDelegateTrainPeriods) {
+    return allActions('delegate');
+  }
+  if (input.seedId === 'crisis' && KNOBS.crisis.trainThenDelegateOnlyBottleneck) {
+    return {
+      ...allActions('delegate'),
+      [bottleneckTeam(SEED_DEFS[input.seedId].teams).id]: 'train',
+    };
+  }
+  return allActions('train');
+}
+
 /**
  * 状況選択のヒューリスティック。仮説を通すための最適化ではない。
- * 危機が閾値以上なら最も危機の大きい1チームを直接支援し、
- * 残りは能力不足かつ危機が閾値未満なら育成、それ以外は委任。
+ * 危機が閾値以上なら最も危機の大きい1チームを直接支援する。
+ * 安定: 残りは能力不足かつ危機が閾値未満なら育成。
+ * 逼迫: 残りは能力不足なら危機が高くても育成（支援枠は1のまま）。
  */
-export function situationActions(teams: readonly TeamState[]): PeriodActions {
+export function situationActions(teams: readonly TeamState[], seedId: SeedId): PeriodActions {
   const ordered = TEAM_IDS.map((id) => teamById(teams, id));
   const worst = ordered.reduce((current, team) => (team.crisis > current.crisis ? team : current));
   const actions: Record<TeamId, ActionId> = {
@@ -39,12 +64,12 @@ export function situationActions(teams: readonly TeamState[]): PeriodActions {
   if (worst.crisis >= KNOBS.situation.crisisSupportThreshold) {
     actions[worst.id] = 'support';
   }
+  const trainDespiteCrisis = seedId === 'crisis' && KNOBS.crisis.situationTrainDespiteHighCrisis;
   for (const team of ordered) {
     if (actions[team.id] === 'support') continue;
-    if (
-      team.capability < KNOBS.situation.capabilityTrainThreshold &&
-      team.crisis < KNOBS.situation.crisisSupportThreshold
-    ) {
+    const lowCapability = team.capability < KNOBS.situation.capabilityTrainThreshold;
+    const hasSlack = team.crisis < KNOBS.situation.crisisSupportThreshold;
+    if (lowCapability && (trainDespiteCrisis || hasSlack)) {
       actions[team.id] = 'train';
     }
   }
@@ -60,13 +85,11 @@ export function actionsForArm(arm: ArmId, input: ArmPolicyInput): PeriodActions 
         [KNOBS.alwaysInterveneTeam]: 'support',
       };
     case 'train-then-delegate':
-      return input.period <= KNOBS.trainThenDelegateTrainPeriods
-        ? allActions('train')
-        : allActions('delegate');
+      return trainThenDelegateActions(input);
     case 'full-delegate':
       return allActions('delegate');
     case 'situation':
-      return situationActions(input.teams);
+      return situationActions(input.teams, input.seedId);
     default: {
       const _never: never = arm;
       return _never;

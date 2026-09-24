@@ -57,6 +57,11 @@ export const KNOBS = {
     crisisSupportThreshold: 38,
     capabilityTrainThreshold: 50,
   },
+  /** 逼迫シードだけの方針差分。安定アームと会社成果公式は変えない。 */
+  crisis: {
+    trainThenDelegateOnlyBottleneck: true,
+    situationTrainDespiteHighCrisis: true,
+  },
 } as const;
 
 export const DEFAULT_ACTIONS: PeriodActions = {

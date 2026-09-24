@@ -120,7 +120,9 @@ export function RdInterveneApp() {
         </fieldset>
         <fieldset className={styles.fieldset}>
           <legend className={styles.legend}>方針アーム</legend>
-          <p className={styles.hint}>同じシードで比較する。適用するだけで期間は進まない。</p>
+          <p className={styles.hint}>
+            同じシードで比較する。適用するだけで期間は進まない。逼迫の育成して委任はボトルネック1チームだけ、状況は高危機を支援し能力不足なら育成する。
+          </p>
           {ARM_IDS.map((arm) => (
             <button
               key={arm}

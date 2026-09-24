@@ -146,7 +146,9 @@ export function createInitialState(
 ): ExperimentState {
   const def = SEED_DEFS[seedId];
   const plannedActions =
-    arm === 'manual' ? DEFAULT_ACTIONS : actionsForArm(arm, { period: 1, teams: def.teams });
+    arm === 'manual'
+      ? DEFAULT_ACTIONS
+      : actionsForArm(arm, { period: 1, teams: def.teams, seedId });
   return {
     seedId,
     rngSeed: def.rngSeed,
@@ -197,7 +199,11 @@ export function applyArm(state: ExperimentState, arm: ArmId): ExperimentState {
   return {
     ...state,
     arm,
-    plannedActions: actionsForArm(arm, { period: state.period, teams: state.teams }),
+    plannedActions: actionsForArm(arm, {
+      period: state.period,
+      teams: state.teams,
+      seedId: state.seedId,
+    }),
   };
 }
 
@@ -207,7 +213,7 @@ function nextPlannedActions(
   teams: readonly TeamState[],
 ): PeriodActions {
   if (state.arm === 'manual') return state.plannedActions;
-  return actionsForArm(state.arm, { period: nextPeriod, teams });
+  return actionsForArm(state.arm, { period: nextPeriod, teams, seedId: state.seedId });
 }
 
 export function advancePeriod(state: ExperimentState): ExperimentState {

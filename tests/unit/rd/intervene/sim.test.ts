@@ -151,10 +151,11 @@ describe('rd/intervene sim', () => {
     expect(companyScore(teams)).toBe(20 * 3 - 0.4 * 10 * 3 - 0.2 * 5 * 3);
   });
 
-  it('4期間で終わり、ログに必須指標が揃う', () => {
+  it('既定は8期間で終わり、ログに必須指標が揃う', () => {
     const done = runRemaining(createInitialState('crisis', 'situation'));
     expect(done.finished).toBe(true);
-    expect(done.logs).toHaveLength(4);
+    expect(done.periods).toBe(8);
+    expect(done.logs).toHaveLength(8);
     for (const log of done.logs) {
       expect(log.teams).toHaveLength(3);
       expect(log).toEqual(
@@ -170,6 +171,15 @@ describe('rd/intervene sim', () => {
     }
     const totals = totalsFromState(done);
     expect(totals.judgmentCount).toBe(done.judgmentCount);
+  });
+
+  it('6期ランのログは8期ランの先頭6期と一致する', () => {
+    const six = runRemaining(createInitialState('crisis', 'always-intervene', 6));
+    const eight = runRemaining(createInitialState('crisis', 'always-intervene', 8));
+    expect(six.finished).toBe(true);
+    expect(six.logs).toHaveLength(6);
+    expect(eight.logs).toHaveLength(8);
+    expect(six.logs).toEqual(eight.logs.slice(0, 6));
   });
 
   it('RNG キーは期間とチームだけで決まり閲覧を含まない', () => {

@@ -18,6 +18,7 @@ export function exportJson(state: ExperimentState): string {
       arm: state.arm,
       armLabel: state.arm === 'manual' ? '手動' : ARM_LABELS[state.arm],
       finished: state.finished,
+      periodsTotal: state.periods,
       periods: state.logs,
       currentTeams: state.teams,
       plannedActions: state.plannedActions,

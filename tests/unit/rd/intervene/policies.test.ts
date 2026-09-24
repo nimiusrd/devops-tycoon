@@ -64,6 +64,19 @@ describe('rd/intervene policies', () => {
       'train',
       'delegate',
       'delegate',
+      'delegate',
+      'delegate',
+      'delegate',
+      'delegate',
+    ]);
+    const trainSix = runRemaining(createInitialState('crisis', 'train-then-delegate', 6));
+    expect(trainSix.logs.map((log) => log.actions.alpha)).toEqual([
+      'train',
+      'train',
+      'delegate',
+      'delegate',
+      'delegate',
+      'delegate',
     ]);
     const always = runRemaining(applyArm(createInitialState('crisis'), 'always-intervene'));
     expect(always.logs.every((log) => log.actions.alpha === 'support')).toBe(true);

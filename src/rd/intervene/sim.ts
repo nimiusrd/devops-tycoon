@@ -7,6 +7,7 @@ import type {
   ExperimentState,
   ExperimentTotals,
   PeriodActions,
+  PeriodCount,
   PeriodLog,
   PeriodTeamLog,
   PlannedArmId,
@@ -14,7 +15,7 @@ import type {
   TeamId,
   TeamState,
 } from './types';
-import { PERIODS, TEAM_IDS } from './types';
+import { DEFAULT_PERIODS, TEAM_IDS } from './types';
 
 export interface ActionSpec {
   readonly processMul: number;
@@ -138,13 +139,18 @@ export function resolvePeriod(input: {
   return { teams, companyScore: companyScore(teams) };
 }
 
-export function createInitialState(seedId: SeedId, arm: PlannedArmId = 'manual'): ExperimentState {
+export function createInitialState(
+  seedId: SeedId,
+  arm: PlannedArmId = 'manual',
+  periods: PeriodCount = DEFAULT_PERIODS,
+): ExperimentState {
   const def = SEED_DEFS[seedId];
   const plannedActions =
     arm === 'manual' ? DEFAULT_ACTIONS : actionsForArm(arm, { period: 1, teams: def.teams });
   return {
     seedId,
     rngSeed: def.rngSeed,
+    periods,
     period: 1,
     finished: false,
     teams: def.teams.map((team) => ({ ...team })),
@@ -238,7 +244,7 @@ export function advancePeriod(state: ExperimentState): ExperimentState {
     judgmentDelta,
     judgmentCount,
   };
-  const finished = state.period >= PERIODS;
+  const finished = state.period >= state.periods;
   const nextPeriod = finished ? state.period : state.period + 1;
   return {
     ...state,
@@ -265,8 +271,12 @@ export function runRemaining(state: ExperimentState): ExperimentState {
   return current;
 }
 
-export function resetExperiment(seedId: SeedId, arm: PlannedArmId = 'manual'): ExperimentState {
-  return createInitialState(seedId, arm);
+export function resetExperiment(
+  seedId: SeedId,
+  arm: PlannedArmId = 'manual',
+  periods: PeriodCount = DEFAULT_PERIODS,
+): ExperimentState {
+  return createInitialState(seedId, arm, periods);
 }
 
 export function totalsFromState(state: ExperimentState): ExperimentTotals {

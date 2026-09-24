@@ -8,6 +8,7 @@ describe('rd/intervene export', () => {
     const parsed = JSON.parse(exportJson(state)) as {
       experiment: string;
       notForProduction: boolean;
+      periodsTotal: number;
       periods: Array<{
         outputSum: number;
         fatigueSum: number;
@@ -21,7 +22,8 @@ describe('rd/intervene export', () => {
     };
     expect(parsed.experiment).toBe('rd-intervene');
     expect(parsed.notForProduction).toBe(true);
-    expect(parsed.periods).toHaveLength(4);
+    expect(parsed.periodsTotal).toBe(8);
+    expect(parsed.periods).toHaveLength(8);
     expect(parsed.periods[0]).toEqual(
       expect.objectContaining({
         outputSum: expect.any(Number),
@@ -45,7 +47,7 @@ describe('rd/intervene export', () => {
     expect(lines[0]).toContain('nextCapability');
     expect(lines[0]).toContain('companyScore');
     expect(lines[0]).toContain('judgmentCount');
-    expect(lines).toHaveLength(1 + 4 * 3 + 1);
+    expect(lines).toHaveLength(1 + 8 * 3 + 1);
     expect(lines.at(-1)).toContain('company');
   });
 });

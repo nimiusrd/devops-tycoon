@@ -4,7 +4,7 @@ import { downloadTextFile } from '../../ui/downloadTextFile';
 import { Stat } from '../../ui/Stat';
 import { exportJson, exportTsv } from './exportLog';
 import { ACTION_LABELS, ARM_LABELS, KNOBS, SEED_DEFS } from './knobs';
-import { resolveRdScenario } from './query';
+import { resolveRdPeriods, resolveRdScenario } from './query';
 import styles from './RdInterveneApp.module.css';
 import {
   advancePeriod,
@@ -17,8 +17,8 @@ import {
   setTeamAction,
   totalsFromState,
 } from './sim';
-import type { ExperimentState, SeedId, TeamId } from './types';
-import { ACTION_IDS, ARM_IDS, PERIODS, TEAM_IDS } from './types';
+import type { ExperimentState, PeriodCount, SeedId, TeamId } from './types';
+import { ACTION_IDS, ARM_IDS, PERIOD_CHOICES, TEAM_IDS } from './types';
 
 function crisisTone(crisis: number): 'good' | 'warn' | 'bad' {
   if (crisis >= KNOBS.situation.crisisSupportThreshold) return 'bad';
@@ -26,11 +26,12 @@ function crisisTone(crisis: number): 'good' | 'warn' | 'bad' {
   return 'good';
 }
 
-function replaceScenarioParam(seedId: SeedId): void {
+function replaceQuery(seedId: SeedId, periods: PeriodCount): void {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
   url.searchParams.set('rd', 'intervene');
   url.searchParams.set('scenario', seedId);
+  url.searchParams.set('periods', String(periods));
   window.history.replaceState(null, '', url);
 }
 
@@ -38,8 +39,14 @@ function initialSeed(): SeedId {
   return typeof window === 'undefined' ? 'crisis' : resolveRdScenario(window.location.search);
 }
 
+function initialPeriods(): PeriodCount {
+  return typeof window === 'undefined' ? 8 : resolveRdPeriods(window.location.search);
+}
+
 export function RdInterveneApp() {
-  const [state, setState] = useState<ExperimentState>(() => createInitialState(initialSeed()));
+  const [state, setState] = useState<ExperimentState>(() =>
+    createInitialState(initialSeed(), 'manual', initialPeriods()),
+  );
   const [viewedTeamId, setViewedTeamId] = useState<TeamId>('alpha');
   const [copyStatus, setCopyStatus] = useState('');
   const viewed = peekTeam(state, viewedTeamId);
@@ -48,9 +55,15 @@ export function RdInterveneApp() {
   const seed = SEED_DEFS[state.seedId];
 
   const switchSeed = (seedId: SeedId) => {
-    replaceScenarioParam(seedId);
-    setState(resetExperiment(seedId));
+    replaceQuery(seedId, state.periods);
+    setState(resetExperiment(seedId, 'manual', state.periods));
     setViewedTeamId('alpha');
+    setCopyStatus('');
+  };
+
+  const switchPeriods = (periods: PeriodCount) => {
+    replaceQuery(state.seedId, periods);
+    setState(resetExperiment(state.seedId, 'manual', periods));
     setCopyStatus('');
   };
 
@@ -90,6 +103,22 @@ export function RdInterveneApp() {
           ))}
         </fieldset>
         <fieldset className={styles.fieldset}>
+          <legend className={styles.legend}>期間</legend>
+          <p className={styles.hint}>既定は 8。育成タイミング（1–2 期）は変えない。</p>
+          {PERIOD_CHOICES.map((count) => (
+            <button
+              key={count}
+              type="button"
+              className={state.periods === count ? 'btn btn-primary' : 'btn'}
+              data-testid={`rd-periods-${count}`}
+              aria-pressed={state.periods === count}
+              onClick={() => switchPeriods(count)}
+            >
+              {count} 期
+            </button>
+          ))}
+        </fieldset>
+        <fieldset className={styles.fieldset}>
           <legend className={styles.legend}>方針アーム</legend>
           <p className={styles.hint}>同じシードで比較する。適用するだけで期間は進まない。</p>
           {ARM_IDS.map((arm) => (
@@ -119,8 +148,8 @@ export function RdInterveneApp() {
 
       <p className={styles.live} aria-live="polite">
         {state.finished
-          ? `4期間終了。会社成果合計 ${totals.companyScoreSum} / 判断 ${totals.judgmentCount} 回`
-          : `期間 ${state.period} / ${PERIODS} ・直接支援枠は ${supportUsed ? '使用中（最大1）' : '空き'} ・方針は維持できます`}
+          ? `${state.periods}期間終了。会社成果合計 ${totals.companyScoreSum} / 判断 ${totals.judgmentCount} 回`
+          : `期間 ${state.period} / ${state.periods} ・直接支援枠は ${supportUsed ? '使用中（最大1）' : '空き'} ・方針は維持できます`}
       </p>
 
       <dl className={styles.metrics}>

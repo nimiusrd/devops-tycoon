@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRdFlag, resolveRdScenario } from '../../../../src/rd/intervene/query';
+import {
+  resolveRdFlag,
+  resolveRdPeriods,
+  resolveRdScenario,
+} from '../../../../src/rd/intervene/query';
 
 describe('resolveRdFlag', () => {
   it('?rd=intervene だけを試作入口にする', () => {
@@ -21,5 +25,15 @@ describe('resolveRdScenario', () => {
     expect(resolveRdScenario('?rd=intervene')).toBe('crisis');
     expect(resolveRdScenario('?scenario=crisis')).toBe('crisis');
     expect(resolveRdScenario('')).toBe('crisis');
+  });
+});
+
+describe('resolveRdPeriods', () => {
+  it('6 だけを 6 期と読み、他は既定 8', () => {
+    expect(resolveRdPeriods('?rd=intervene&periods=6')).toBe(6);
+    expect(resolveRdPeriods('?rd=intervene&periods=8')).toBe(8);
+    expect(resolveRdPeriods('?rd=intervene')).toBe(8);
+    expect(resolveRdPeriods('?periods=4')).toBe(8);
+    expect(resolveRdPeriods('')).toBe(8);
   });
 });

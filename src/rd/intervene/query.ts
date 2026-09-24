@@ -20,3 +20,9 @@ export function resolveRdScenario(search: string): 'crisis' | 'stable' {
   const value = new URLSearchParams(search).get('scenario');
   return value === 'stable' ? 'stable' : 'crisis';
 }
+
+/** 期間数。6 または 8。未指定・不正値は既定 8。 */
+export function resolveRdPeriods(search: string): 6 | 8 {
+  const value = new URLSearchParams(search).get('periods');
+  return value === '6' ? 6 : 8;
+}

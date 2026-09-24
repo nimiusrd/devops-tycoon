@@ -19,7 +19,11 @@ export type ArmId = (typeof ARM_IDS)[number];
 
 export type PlannedArmId = ArmId | 'manual';
 
-export const PERIODS = 4;
+export const PERIOD_CHOICES = [6, 8] as const;
+export type PeriodCount = (typeof PERIOD_CHOICES)[number];
+export const DEFAULT_PERIODS: PeriodCount = 8;
+/** 既定の期間数。ラン本体は `ExperimentState.periods` を使う。 */
+export const PERIODS = DEFAULT_PERIODS;
 
 /** チームが持つ能力は 1 軸だけ（処理能力）。 */
 export const SKILL_ID = 'throughput' as const;
@@ -66,6 +70,7 @@ export interface PeriodLog {
 export interface ExperimentState {
   readonly seedId: SeedId;
   readonly rngSeed: string;
+  readonly periods: PeriodCount;
   readonly period: number;
   readonly finished: boolean;
   readonly teams: readonly TeamState[];

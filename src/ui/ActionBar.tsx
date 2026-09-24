@@ -274,17 +274,17 @@ export function ActionBar({
       return;
     }
 
-    focusedArmRef.current = armedId;
     const frame = window.requestAnimationFrame(() => {
       const next = pickerRef.current?.querySelector<HTMLButtonElement>(
         'button[data-action-target-option]:not([disabled])',
       );
       if (next) {
         next.focus();
-        return;
+      } else {
+        actionButtonRefs.current[armedId]?.focus();
+        focusedOptionIdRef.current = null;
       }
-      actionButtonRefs.current[armedId]?.focus();
-      focusedOptionIdRef.current = null;
+      focusedArmRef.current = armedId;
     });
     return () => window.cancelAnimationFrame(frame);
   }, [armedId, targetPicker]);

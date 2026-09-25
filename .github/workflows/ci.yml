@@ -47,12 +47,7 @@ jobs:
           run_checks=false
           while IFS= read -r -d '' path; do
             case "$path" in
-              mockups/*) continue ;;
-              docs/generated/balance-parameters.md|docs/generated/content-catalog.md|docs/probability-model.md)
-                run_checks=true
-                break
-                ;;
-              *.md) continue ;;
+              mockups/*|*.md) continue ;;
               *)
                 run_checks=true
                 break

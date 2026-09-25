@@ -104,6 +104,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             type="button"
             className="rest-option"
             data-testid="rest-heal"
+            disabled={confirmingRecruit}
             onClick={() => onChoose('heal')}
           >
             <span className="rest-icon">🛌</span>
@@ -119,6 +120,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             type="button"
             className="rest-option"
             data-testid="rest-repay"
+            disabled={confirmingRecruit}
             onClick={() => onChoose('repay')}
           >
             <span className="rest-icon">🧹</span>
@@ -134,7 +136,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             type="button"
             className="rest-option"
             data-testid="rest-upgrade"
-            disabled={!canUpgrade}
+            disabled={!canUpgrade || confirmingRecruit}
             onClick={() => setChoosingUpgrade(true)}
           >
             <span className="rest-icon">🔧</span>
@@ -152,7 +154,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             type="button"
             className={`rest-option${recruitRisk.endsRun ? ' is-spend-risk' : ''}`}
             data-testid="rest-recruit"
-            disabled={!canHire}
+            disabled={!canHire || confirmingRecruit}
             onClick={requestRecruit}
           >
             <span className="rest-icon">🙋</span>

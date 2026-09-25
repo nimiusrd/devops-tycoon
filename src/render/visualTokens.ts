@@ -86,6 +86,11 @@ export const VISUAL_TOKENS = {
       drag: '#7bdcff',
       focusHell: '#ff5f57',
     },
+    /** 支払後に予算枯渇する操作の境界と警告文字（RI-147）。 */
+    spendRisk: {
+      border: '#ff7e8b',
+      warning: '#ffd45c',
+    },
     aiBot: {
       body: '#eef0ff',
       bodyStroke: '#b9c4ff',
@@ -632,6 +637,8 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-color-banner-hell-tag-bg': colors.bannerTone.hell.tagBg,
     '--visual-color-banner-hell-tag-text': colors.bannerTone.hell.tagText,
     '--visual-color-interaction-drag': colors.interaction.drag,
+    '--visual-color-spend-risk-border': colors.spendRisk.border,
+    '--visual-color-spend-risk-warning': colors.spendRisk.warning,
     '--visual-color-interaction-focus-hell': colors.interaction.focusHell,
     '--visual-color-ai-bot-body': colors.aiBot.body,
     '--visual-color-ai-bot-body-stroke': colors.aiBot.bodyStroke,

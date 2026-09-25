@@ -118,6 +118,9 @@ describe('RecruitScreen の採用条件と見送り', () => {
     expect(content(screen.find('recruit-hire'))).toContain('予算枯渇でランが終了する');
     screen.click('recruit-hire');
     expect(screen.onChoose).not.toHaveBeenCalled();
+    expect(screen.find('recruit-skip').props.disabled).toBe(true);
+    screen.click('recruit-skip');
+    expect(screen.onChoose).not.toHaveBeenCalled();
     screen.click('spend-confirm-cancel');
     expect(screen.has('spend-confirm')).toBe(false);
     expect(state.budget).toBe(RECRUIT_COST);

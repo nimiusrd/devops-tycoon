@@ -75,6 +75,7 @@ export function RecruitScreen({ state, onChoose }: RecruitScreenProps) {
             type="button"
             className="rest-option"
             data-testid="recruit-skip"
+            disabled={confirmingHire}
             onClick={() => onChoose('skip')}
           >
             <span className="rest-icon">🚪</span>

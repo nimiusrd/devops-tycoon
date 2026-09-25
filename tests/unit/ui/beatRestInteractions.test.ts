@@ -176,6 +176,7 @@ describe('即採用イベントの予算枯渇', () => {
     screen.click('beat-choice-0');
     expect(onResolve).not.toHaveBeenCalled();
     expect(screen.find('beat-choice-1').props.disabled).toBe(true);
+    expect(screen.find('beat-dismiss').props.disabled).toBe(true);
     screen.click('beat-choice-1');
     expect(onResolve).not.toHaveBeenCalled();
     screen.click('spend-confirm-cancel');
@@ -229,6 +230,10 @@ describe('RestScreen の休息・採用・施策強化', () => {
     expect(content(screen.find('rest-recruit'))).toContain('予算枯渇でランが終了する');
     screen.click('rest-recruit');
     expect(onChoose).not.toHaveBeenCalled();
+    expect(screen.find('rest-heal').props.disabled).toBe(true);
+    expect(screen.find('rest-upgrade').props.disabled).toBe(true);
+    screen.click('rest-upgrade');
+    expect(screen.has('rest-upgrade-cards')).toBe(false);
     expect(content(screen.find('spend-confirm'))).toContain('予算枯渇でランが終了する');
     screen.click('spend-confirm-cancel');
     expect(screen.has('spend-confirm')).toBe(false);

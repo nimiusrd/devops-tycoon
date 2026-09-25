@@ -5,6 +5,7 @@
  * 初期フォーカスは取消に置き、Escape でも同じ取消に戻す。
  */
 import type { KeyboardEvent } from 'react';
+import { listFocusable, wrapTabIfNeeded } from './dialogOverlayLock';
 import { focusByTestId } from './focusByTestId';
 
 export interface SpendConfirmProps {
@@ -29,10 +30,19 @@ export function SpendConfirm({
     setTimeout(() => focusByTestId(returnTestId), 0);
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'Escape') return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      cancel();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const root = event.currentTarget;
+    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const next = wrapTabIfNeeded(listFocusable(root), active, event.shiftKey, root);
+    if (!next) return;
     event.preventDefault();
-    event.stopPropagation();
-    cancel();
+    if (next !== root) next.focus();
   };
 
   return (

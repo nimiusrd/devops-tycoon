@@ -241,6 +241,7 @@ export function ShopScreen({
           type="button"
           className="btn btn-primary"
           data-testid="shop-leave"
+          disabled={pending !== null}
           onClick={onLeave}
         >
           ショップを出る →

@@ -166,6 +166,9 @@ describe('ショップの購入条件', () => {
     });
     screen.click('shop-card-docs');
     expect(screen.find('shop-card-pair-programming').props.disabled).toBe(true);
+    expect(screen.find('shop-leave').props.disabled).toBe(true);
+    screen.click('shop-leave');
+    expect(screen.onLeave).not.toHaveBeenCalled();
     screen.click('shop-card-pair-programming');
     expect(screen.onBuyCard).not.toHaveBeenCalled();
     expect(content(screen.find('spend-confirm'))).toContain('支払後の残高は 💰0');

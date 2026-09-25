@@ -124,6 +124,7 @@ function DecisionDialog({ event, state, onResolve, onDismiss }: DecisionDialogPr
           type="button"
           className="btn btn-secondary beat-dismiss"
           data-testid="beat-dismiss"
+          disabled={confirmIndex !== null}
           onClick={onDismiss}
         >
           状況を確認する

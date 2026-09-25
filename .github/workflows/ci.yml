@@ -6,6 +6,7 @@ on:
     paths:
       - '**'
       - '!**/*.md'
+      - 'CLAUDE.md'
       - 'docs/generated/balance-parameters.md'
       - 'docs/generated/content-catalog.md'
       - 'docs/generated/balance-curves.svg'
@@ -15,6 +16,7 @@ on:
     paths:
       - '**'
       - '!**/*.md'
+      - 'CLAUDE.md'
       - 'docs/generated/balance-parameters.md'
       - 'docs/generated/content-catalog.md'
       - 'docs/generated/balance-curves.svg'

@@ -77,6 +77,9 @@ test('編成とスプリントから遊び方へ戻り、速度と別の停止�
   await page.getByTestId('begin-sprint').click();
   await expect(page.getByTestId('board')).toBeVisible();
   await expect(page.getByTestId('webgl-status')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => typeof (window as Window & { game?: unknown }).game))
+    .toBe('object');
   await page.evaluate(() => {
     const game = (window as Window & { game?: MenuGame }).game;
     if (!game) throw new Error('window.game が公開されていない');
@@ -230,7 +233,6 @@ test('5 viewport でメニューと閉じる操作へ到達でき、介入バー
     await expect(page.getByTestId('run-sound-mute')).toBeInViewport();
     const panelBox = await panel.boundingBox();
     const action = page.getByTestId('action-bar');
-    await action.scrollIntoViewIfNeeded();
     const actionBox = await action.boundingBox();
     expect(panelBox).not.toBeNull();
     expect(actionBox).not.toBeNull();
@@ -240,6 +242,8 @@ test('5 viewport でメニューと閉じる操作へ到達でき、介入バー
     ).toBe(true);
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);
-    await expect(page.getByTestId('action-bar')).toBeVisible();
+    const actionBar = page.getByTestId('action-bar');
+    await actionBar.scrollIntoViewIfNeeded();
+    await expect(actionBar).toBeVisible();
   }
 });

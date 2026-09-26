@@ -3,27 +3,30 @@ name: CI
 on:
   push:
     branches: [main]
-    paths:
-      - '**'
-      - '!**/*.md'
-      - 'docs/generated/balance-parameters.md'
-      - 'docs/generated/content-catalog.md'
-      - 'docs/generated/balance-curves.svg'
-      - 'docs/probability-model.md'
-      - '!mockups/**'
   pull_request:
-    paths:
-      - '**'
-      - '!**/*.md'
-      - 'docs/generated/balance-parameters.md'
-      - 'docs/generated/content-catalog.md'
-      - 'docs/generated/balance-curves.svg'
-      - 'docs/probability-model.md'
-      - '!mockups/**'
 
 jobs:
+  ci_scope:
+    name: Determine whether CI is needed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      run_checks: ${{ steps.scope.outputs.run_checks }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: nimiusrd/should-run-checks@3a88e3c3376253ffd2c480b5050d14151155ccb6 # v0.3.0
+        id: scope
+        with:
+          config-path: .github/ci-skip-rules.toml
+
   test:
     name: Lint & Unit (Vitest)
+    needs: ci_scope
+    if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,6 +50,8 @@ jobs:
 
   e2e:
     name: E2E (Playwright)
+    needs: ci_scope
+    if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:

@@ -1,0 +1,6 @@
+# この拡張子・ディレクトリだけの変更ならLint・UnitとE2Eをスキップする。
+skipExtensions = [".md"]
+skipDirectories = ["mockups"]
+
+# 上のスキップ条件より優先してCIを実行するファイル（リポジトリ相対パス）。
+alwaysRunFiles = []

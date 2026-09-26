@@ -18,10 +18,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - uses: nimiusrd/should-run-checks@33052b9a5bd942f15d8aa62dbbdef2463e44412b # v0.1.1
+      - uses: nimiusrd/should-run-checks@bf009451c5fd6e2ed94f74a195f492afab9938f1 # v0.2.0
         id: scope
         with:
-          config-path: .github/ci-skip-rules.json
+          config-path: .github/ci-skip-rules.yml
 
   test:
     name: Lint & Unit (Vitest)

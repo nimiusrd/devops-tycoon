@@ -1,5 +1,0 @@
-{
-  "skipExtensions": [".md"],
-  "skipDirectories": ["mockups"],
-  "alwaysRunFiles": []
-}

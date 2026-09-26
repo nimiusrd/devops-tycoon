@@ -96,7 +96,7 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 
 ## CIをスキップする変更
 
-[`.github/ci-skip-rules.json`](.github/ci-skip-rules.json)で、PRと`main`へのpushのCI実行条件を設定します。
+[`.github/ci-skip-rules.yml`](.github/ci-skip-rules.yml)で、PRと`main`へのpushのCI実行条件を設定します。YAMLのコメントで各条件の意図も記録できます。
 共通の差分取得・判定処理は公開Actionの[nimiusrd/should-run-checks](https://github.com/nimiusrd/should-run-checks)で管理し、このリポジトリにはスキップ条件だけを置きます。利用するActionはリリースのコミットSHAに固定します。
 変更ファイルがすべてスキップ対象の場合だけ、`Lint & Unit (Vitest)`と`E2E (Playwright)`をまとめてスキップします。
 この場合、format・lint・build・balance:check・ユニットテスト／カバレッジ・E2Eは実行しません。

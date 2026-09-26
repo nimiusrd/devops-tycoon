@@ -27,6 +27,7 @@ import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { formatSigned } from './formatSigned';
 import { useReplayContent } from './replayContent';
+import { RunSessionMenu } from './RunSessionMenu';
 import { VisualIcon } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1600;
@@ -49,6 +50,12 @@ export interface RunBarProps {
   onSnapshotCaptured?: (snapshot: RunMetricSnapshot) => void;
   /** 進行判断に直結しない文脈情報を詳細へ退避する。 */
   compact?: boolean;
+  /** 既存メタのミュート。メニューを出すときだけ使う。 */
+  soundMuted?: boolean;
+  /** 既存の遊び方画面を開く。指定時のみラン中メニューを出す。 */
+  onOpenHelp?: () => void;
+  /** 既存のミュート設定を切り替える。 */
+  onToggleSoundMuted?: () => void;
 }
 
 /** 表情演出の絵文字（第12.2）。 */
@@ -92,6 +99,9 @@ export function RunBar({
   getInitialPreviousSnapshot,
   onSnapshotCaptured,
   compact = false,
+  soundMuted = false,
+  onOpenHelp,
+  onToggleSoundMuted,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
   const { resolveRelic, resolveTrial } = useReplayContent();
@@ -104,6 +114,9 @@ export function RunBar({
   const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveRunFeedback[]>([]);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const showSessionMenu = onOpenHelp !== undefined && onToggleSoundMuted !== undefined;
 
   useEffect(() => {
     const previous = previousSnapshot.current ?? getInitialPreviousSnapshot?.() ?? null;
@@ -326,6 +339,16 @@ export function RunBar({
         >
           🗺 全社
         </button>
+      )}
+      {showSessionMenu && onOpenHelp && onToggleSoundMuted && (
+        <RunSessionMenu
+          soundMuted={soundMuted}
+          onOpenHelp={onOpenHelp}
+          onToggleSoundMuted={onToggleSoundMuted}
+          menuButtonRef={menuButtonRef}
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+        />
       )}
       {compact ? (
         <>

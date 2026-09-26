@@ -950,6 +950,67 @@ describe('App のリプレイ表示', () => {
   });
 });
 
+describe('App のラン中メニュー', () => {
+  it('編成中に遊び方を開き、再生速度を変えずに進行停止を所有する', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    expect(screen.child('RunBar').onOpenHelp).toEqual(expect.any(Function));
+    expect(screen.child('RunBar').soundMuted).toBe(true);
+    screen.invoke('RunBar', 'onOpenHelp');
+    expect(screen.has('HowToPlayScreen')).toBe(true);
+    expect(screen.has('RunHelpSimPause')).toBe(true);
+    expect(screen.has('SetupScreen')).toBe(true);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+    const local = screen.mountLocal('RunHelpSimPause');
+    expect(screen.game.pause).toHaveBeenCalledOnce();
+    screen.invoke('HowToPlayScreen', 'onClose');
+    expect(screen.has('HowToPlayScreen')).toBe(false);
+    expect(screen.has('RunHelpSimPause')).toBe(false);
+    expect(screen.has('SetupScreen')).toBe(true);
+    local.unmount();
+    expect(screen.game.resume).toHaveBeenCalledOnce();
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('遊び方で止めたあとに別の pause が入っても、閉じたときに解除しない', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    screen.invoke('RunBar', 'onOpenHelp');
+    const local = screen.mountLocal('RunHelpSimPause');
+    expect(screen.game.pause).toHaveBeenCalledOnce();
+    screen.game.pause();
+    local.unmount();
+    expect(screen.game.resume).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(true);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('既に止まっている進行は遊び方を閉じても再開しない', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    screen.game.pause();
+    screen.invoke('RunBar', 'onOpenHelp');
+    const local = screen.mountLocal('RunHelpSimPause');
+    expect(screen.game.pause).toHaveBeenCalledOnce();
+    local.unmount();
+    expect(screen.game.resume).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(true);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('ラン中の音切替はメタ保存とオーディオ解錠へ渡す', () => {
+    const screen = mountApp();
+    screen.phase('sprint');
+    screen.invoke('RunBar', 'onToggleSoundMuted');
+    expect(audio.unlock).toHaveBeenCalledOnce();
+    expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(false);
+    screen.update({ meta: { ...screen.run.meta, soundMuted: false } });
+    screen.invoke('RunBar', 'onToggleSoundMuted');
+    expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(true);
+    expect(audio.unlock).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe.each(['EvolutionSimPause', 'SprintSuspendFallback'])(
   'App の %s の pause 所有権',
   (name) => {

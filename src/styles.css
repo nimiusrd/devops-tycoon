@@ -610,6 +610,32 @@ body {
   padding-top: 5px;
   border-top: 1px solid var(--line);
 }
+/* ラン中メニューは開いたときだけ次の行へ出す。閉じている間は盤面を縮めない。 */
+.run-session-menu {
+  display: contents;
+}
+.run-session-menu-panel {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.run-session-menu-btn {
+  min-width: 24px;
+  min-height: 24px;
+  cursor: pointer;
+  color: var(--cream);
+}
+.run-session-menu-btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.app[data-responsive-width='narrow'] .run-session-menu-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
 .pill.run-feedback {
   position: relative;
   overflow: visible;

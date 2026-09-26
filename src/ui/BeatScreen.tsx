@@ -7,10 +7,14 @@
  * 「予算で補強」「一息つく」は選択後にショップ/休息へ遷移する。
  */
 import { useEffect, useRef, useState } from 'react';
-import { getEvent, type EventDef } from '../data/events';
+import { getEvent, type EventChoice, type EventDef } from '../data/events';
 import { formatEventChoiceTags, formatEventOutcomeTags } from '../render/eventOutcomeView';
+import { spendRiskView, spendStatusText, type SpendRiskView } from '../render/spendRiskView';
+import { canRecruit, RECRUIT_COST } from '../sim/member';
 import type { RunState } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
+import { focusByTestId } from './focusByTestId';
+import { SpendConfirm } from './SpendConfirm';
 import { useReplayContent } from './replayContent';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
@@ -21,15 +25,38 @@ export interface BeatScreenProps {
 
 interface DecisionDialogProps {
   event: EventDef;
+  state: RunState;
   onResolve: (choiceIndex: number) => void;
   onDismiss: () => void;
 }
 
-function DecisionDialog({ event, onResolve, onDismiss }: DecisionDialogProps) {
+function recruitSpendRisk(choice: EventChoice, state: RunState): SpendRiskView | null {
+  if (!choice.outcome.grantRecruit) return null;
+  return spendRiskView({
+    budget: state.budget,
+    cost: RECRUIT_COST,
+    rosterFull: !canRecruit(state.roster),
+  });
+}
+
+function DecisionDialog({ event, state, onResolve, onDismiss }: DecisionDialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
   const { resolveCard, resolveRelic } = useReplayContent();
   const contentResolver = { getCard: resolveCard, getRelic: resolveRelic };
-  useDialogOverlayLock(overlayRef, { onDismiss });
+  useDialogOverlayLock(overlayRef, {
+    onDismiss: () => {
+      if (confirmIndex !== null) {
+        const returnTestId = `beat-choice-${confirmIndex}`;
+        setConfirmIndex(null);
+        setTimeout(() => focusByTestId(returnTestId), 0);
+        return;
+      }
+      onDismiss();
+    },
+  });
+  const confirming = confirmIndex === null ? null : event.choices[confirmIndex];
+  const confirmRisk = confirming ? recruitSpendRisk(confirming, state) : null;
 
   return (
     <div
@@ -51,27 +78,53 @@ function DecisionDialog({ event, onResolve, onDismiss }: DecisionDialogProps) {
         <p className="event-prompt" id="decision-prompt">
           {event.prompt}
         </p>
+        {confirming && confirmRisk?.requiresConfirm ? (
+          <SpendConfirm
+            subject={confirming.label}
+            balanceAfter={confirmRisk.balanceAfter}
+            returnTestId={`beat-choice-${confirmIndex}`}
+            onConfirm={() => onResolve(confirmIndex ?? 0)}
+            onCancel={() => setConfirmIndex(null)}
+          />
+        ) : null}
         <div className="event-choices">
-          {event.choices.map((choice, i) => (
-            <button
-              type="button"
-              key={i}
-              className="event-choice"
-              data-testid={`beat-choice-${i}`}
-              onClick={() => onResolve(i)}
-            >
-              <span className="event-choice-label">{choice.label}</span>
-              <EffectTagList tags={formatEventChoiceTags(choice, contentResolver)} />
-              {choice.description && (
-                <span className="event-choice-desc">{choice.description}</span>
-              )}
-            </button>
-          ))}
+          {event.choices.map((choice, i) => {
+            const risk = recruitSpendRisk(choice, state);
+            return (
+              <button
+                type="button"
+                key={i}
+                className={`event-choice${risk?.endsRun ? ' is-spend-risk' : ''}`}
+                data-testid={`beat-choice-${i}`}
+                disabled={confirmIndex !== null}
+                onClick={() => {
+                  if (risk?.requiresConfirm) {
+                    setConfirmIndex(i);
+                    return;
+                  }
+                  onResolve(i);
+                }}
+              >
+                <span className="event-choice-label">{choice.label}</span>
+                <EffectTagList tags={formatEventChoiceTags(choice, contentResolver)} />
+                {risk?.endsRun ? (
+                  <span className="event-choice-desc">
+                    {spendStatusText(risk, choice.description ?? '')}
+                  </span>
+                ) : (
+                  choice.description && (
+                    <span className="event-choice-desc">{choice.description}</span>
+                  )
+                )}
+              </button>
+            );
+          })}
         </div>
         <button
           type="button"
           className="btn btn-secondary beat-dismiss"
           data-testid="beat-dismiss"
+          disabled={confirmIndex !== null}
           onClick={onDismiss}
         >
           状況を確認する
@@ -150,6 +203,11 @@ export function BeatScreen({ state, onResolve }: BeatScreenProps) {
   }
 
   return (
-    <DecisionDialog event={ev} onResolve={onResolve} onDismiss={() => setDecisionOpen(false)} />
+    <DecisionDialog
+      event={ev}
+      state={state}
+      onResolve={onResolve}
+      onDismiss={() => setDecisionOpen(false)}
+    />
   );
 }

@@ -1,6 +1,25 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+const hookState = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0 }));
+
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react')>()),
+  useState(initial: unknown) {
+    const index = hookState.cursor++;
+    if (hookState.values.length <= index) hookState.values[index] = initial;
+    return [
+      hookState.values[index],
+      (value: unknown) => {
+        hookState.values[index] =
+          typeof value === 'function'
+            ? (value as (prev: unknown) => unknown)(hookState.values[index])
+            : value;
+      },
+    ];
+  },
+}));
+
 // Node では provider 接続だけを代行し、カード・レリック解決と効果の導出は実装を通す。
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
@@ -45,6 +64,8 @@ function makeShop(overrides: Partial<ShopOffer> = {}): ShopOffer {
 }
 
 function mountShop(overrides: Partial<RunState> = {}) {
+  hookState.values = [];
+  hookState.cursor = 0;
   const engine = new RunEngine({ seed: 'shop-interactions' });
   engine.startRun();
   const state: RunState = {
@@ -59,44 +80,65 @@ function mountShop(overrides: Partial<RunState> = {}) {
   const onBuyRelic = vi.fn();
   const onBuyRecruit = vi.fn();
   const onLeave = vi.fn();
-  const tree = expand(ShopScreen({ state, onBuyCard, onBuyRelic, onBuyRecruit, onLeave }));
-  const nodes = elements(tree);
+  let tree = expand(ShopScreen({ state, onBuyCard, onBuyRelic, onBuyRecruit, onLeave }));
+  const render = () => {
+    hookState.cursor = 0;
+    tree = expand(ShopScreen({ state, onBuyCard, onBuyRelic, onBuyRecruit, onLeave }));
+  };
+  const nodes = () => elements(tree);
   const find = (id: string) => {
-    const node = nodes.find((item) => item.props['data-testid'] === id);
+    const node = nodes().find((item) => item.props['data-testid'] === id);
     if (!node) throw new Error(`要素がありません: ${id}`);
     return node;
   };
   return {
     state,
-    tree,
+    get tree() {
+      return tree;
+    },
     onBuyCard,
     onBuyRelic,
     onBuyRecruit,
     onLeave,
     find,
-    has: (id: string) => nodes.some((item) => item.props['data-testid'] === id),
+    has: (id: string) => nodes().some((item) => item.props['data-testid'] === id),
     click(id: string) {
       const node = find(id);
       if (!node.props.disabled) (node.props.onClick as () => void)();
+      render();
     },
   };
 }
 
 describe('ショップの購入条件', () => {
-  it('価格と同額の予算でカード・レリック・採用を選べ、各操作を通知する', () => {
+  it('価格と同額の予算では枯渇を示し、確定するまで購入を通知しない', () => {
     const screen = mountShop();
     const original = structuredClone(screen.state);
     expect(content(screen.find('shop-budget'))).toBe('💰15');
     expect(content(screen.find('shop-card-docs'))).toContain('ドキュメント整備');
-    expect(content(screen.find('shop-card-docs'))).toContain(
-      '💰15 / 発動 ⚡2 / 次スプ手札・導入支援',
-    );
+    expect(content(screen.find('shop-card-docs'))).toContain('💰15');
+    expect(content(screen.find('shop-card-docs'))).toContain('/ 発動 ⚡2 / 次スプ手札・導入支援');
+    expect(content(screen.find('shop-card-docs'))).toContain('支払後の残高 💰0');
+    expect(content(screen.find('shop-card-docs'))).toContain('予算枯渇でランが終了する');
     expect(content(screen.find('shop-relic-psych-safety'))).toContain('心理的安全性');
-    expect(content(screen.find('shop-recruit'))).toContain('未来の主力候補を1人迎える');
+    expect(content(screen.find('shop-recruit'))).toContain('支払後の残高 💰0');
     for (const id of ['shop-card-docs', 'shop-relic-psych-safety', 'shop-recruit']) {
       expect(screen.find(id).props.disabled).toBe(false);
       screen.click(id);
+      expect(screen.has('spend-confirm')).toBe(true);
+      screen.click('spend-confirm-cancel');
+      expect(screen.has('spend-confirm')).toBe(false);
     }
+    expect(screen.onBuyCard).not.toHaveBeenCalled();
+    expect(screen.onBuyRelic).not.toHaveBeenCalled();
+    expect(screen.onBuyRecruit).not.toHaveBeenCalled();
+    expect(screen.state).toEqual(original);
+    screen.click('shop-card-docs');
+    screen.click('spend-confirm-accept');
+    screen.click('shop-relic-psych-safety');
+    screen.click('spend-confirm-accept');
+    screen.click('shop-recruit');
+    screen.click('spend-confirm-accept');
     for (const id of [
       'shop-card-effect-tags-docs',
       'shop-relic-effect-tags-psych-safety',
@@ -108,6 +150,43 @@ describe('ショップの購入条件', () => {
     expect(screen.onBuyRelic).toHaveBeenCalledExactlyOnceWith();
     expect(screen.onBuyRecruit).toHaveBeenCalledExactlyOnceWith();
     expect(screen.state).toEqual(original);
+  });
+
+  it('枯渇確認を開いている間は他の商品を購入できない', () => {
+    const screen = mountShop({
+      budget: 25,
+      shop: makeShop({
+        cards: [
+          { defId: 'docs', cost: 25, bought: false },
+          { defId: 'pair-programming', cost: 12, bought: false },
+        ],
+        relic: undefined,
+        recruit: undefined,
+      }),
+    });
+    screen.click('shop-card-docs');
+    expect(screen.find('shop-card-pair-programming').props.disabled).toBe(true);
+    expect(screen.find('shop-leave').props.disabled).toBe(true);
+    screen.click('shop-leave');
+    expect(screen.onLeave).not.toHaveBeenCalled();
+    screen.click('shop-card-pair-programming');
+    expect(screen.onBuyCard).not.toHaveBeenCalled();
+    expect(content(screen.find('spend-confirm'))).toContain('支払後の残高は 💰0');
+    screen.click('spend-confirm-cancel');
+    expect(screen.find('shop-card-pair-programming').props.disabled).toBe(false);
+    screen.click('shop-card-pair-programming');
+    expect(screen.onBuyCard).toHaveBeenCalledExactlyOnceWith('pair-programming');
+  });
+
+  it('予算が価格より多い購入は確認なしで通知し、支払後残高だけを示す', () => {
+    const screen = mountShop({ budget: 16 });
+    expect(content(screen.find('shop-card-docs'))).toContain('支払後の残高 💰1');
+    expect(content(screen.find('shop-card-docs'))).not.toContain('予算枯渇でランが終了する');
+    screen.click('shop-card-docs');
+    expect(screen.has('spend-confirm')).toBe(false);
+    expect(screen.onBuyCard).toHaveBeenCalledExactlyOnceWith('docs');
+    expect(screen.state.budget).toBe(16);
+    expect(screen.state.phase).toBe('shop');
   });
 
   it('予算が価格より 1 少ないとすべて購入できず、採用の必要額を示す', () => {
@@ -164,6 +243,8 @@ describe('ショップの購入条件', () => {
       expect(content(screen.find('shop-recruit'))).toContain('ロスターが満員です');
       expect(screen.onBuyRecruit).not.toHaveBeenCalled();
     } else {
+      expect(screen.has('spend-confirm')).toBe(true);
+      screen.click('spend-confirm-accept');
       expect(screen.onBuyRecruit).toHaveBeenCalledExactlyOnceWith();
     }
   });

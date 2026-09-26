@@ -139,6 +139,10 @@ describe('visual tokens', () => {
     expect(values['--visual-color-banner-warn-bg-alpha']).toBe('93%');
     expect(values['--visual-color-banner-hell-bg-alpha']).toBe('93%');
     expect(values['--visual-color-interaction-drag']).toBe(VISUAL_TOKENS.colors.interaction.drag);
+    expect(values['--visual-color-spend-risk-border']).toBe(VISUAL_TOKENS.colors.spendRisk.border);
+    expect(values['--visual-color-spend-risk-warning']).toBe(
+      VISUAL_TOKENS.colors.spendRisk.warning,
+    );
     expect(values['--visual-color-effect-fire-mid']).toBe(
       VISUAL_TOKENS.colors.boardEffects.fireMid,
     );

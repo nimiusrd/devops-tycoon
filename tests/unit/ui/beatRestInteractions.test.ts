@@ -1,15 +1,24 @@
-import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const choiceState = vi.hoisted(() => ({ value: undefined as boolean | undefined }));
+const hookState = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0 }));
 
 // Node では表示切り替えの state とブラウザのフォーカス管理だけを代行する。
 // イベント、採用判定、カード定義と効果タグは実装を通す。
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
-  useState(initial: boolean) {
-    choiceState.value ??= initial;
-    return [choiceState.value, (value: boolean) => (choiceState.value = value)];
+  useState(initial: unknown) {
+    const index = hookState.cursor++;
+    if (hookState.values.length <= index) hookState.values[index] = initial;
+    return [
+      hookState.values[index],
+      (value: unknown) => {
+        hookState.values[index] =
+          typeof value === 'function'
+            ? (value as (prev: unknown) => unknown)(hookState.values[index])
+            : value;
+      },
+    ];
   },
   useRef: (initial: unknown) => ({ current: initial }),
   useEffect: vi.fn(),
@@ -27,6 +36,14 @@ import { BeatScreen } from '../../../src/ui/BeatScreen';
 import { RestScreen } from '../../../src/ui/RestScreen';
 
 type ElementProps = Record<string, unknown> & { children?: ReactNode };
+
+function expand(node: ReactNode): ReactNode {
+  if (!isValidElement<ElementProps>(node)) return node;
+  if (typeof node.type === 'function') {
+    return expand((node.type as (props: ElementProps) => ReactNode)(node.props));
+  }
+  return cloneElement(node, {}, ...Children.toArray(node.props.children).map(expand));
+}
 
 function elements(node: ReactNode): ReactElement<ElementProps>[] {
   if (!isValidElement<ElementProps>(node)) return [];
@@ -52,8 +69,13 @@ function makeState(overrides: Partial<RunState> = {}): RunState {
 }
 
 function mountScreen(render: () => ReactNode) {
-  choiceState.value = undefined;
-  let tree = render();
+  hookState.values = [];
+  hookState.cursor = 0;
+  const renderTree = () => {
+    hookState.cursor = 0;
+    return expand(render());
+  };
+  let tree = renderTree();
   const find = (id: string) => {
     const node = elements(tree).find((item) => item.props['data-testid'] === id);
     if (!node) throw new Error(`要素がありません: ${id}`);
@@ -65,13 +87,31 @@ function mountScreen(render: () => ReactNode) {
     click(id: string) {
       const node = find(id);
       if (!node.props.disabled) (node.props.onClick as () => void)();
-      tree = render();
+      tree = renderTree();
+    },
+    key(id: string, keyName: string) {
+      const node = find(id);
+      (
+        node.props.onKeyDown as
+          | ((event: {
+              key: string;
+              preventDefault: () => void;
+              stopPropagation: () => void;
+            }) => void)
+          | undefined
+      )?.({
+        key: keyName,
+        preventDefault() {},
+        stopPropagation() {},
+      });
+      tree = renderTree();
     },
   };
 }
 
 afterEach(() => {
-  choiceState.value = undefined;
+  hookState.values = [];
+  hookState.cursor = 0;
 });
 
 describe('BeatScreen のイベント選択', () => {
@@ -123,14 +163,92 @@ describe('BeatScreen のイベント選択', () => {
   });
 });
 
+describe('即採用イベントの予算枯渇', () => {
+  it('予算ちょうどでは確定まで resolve せず、見送りは確認なしで通知する', () => {
+    const onResolve = vi.fn();
+    const state = makeState({
+      budget: RECRUIT_COST,
+      beat: { eventId: 'urgent-hire', kind: 'decision' },
+    });
+    const screen = mountScreen(() => BeatScreen({ state, onResolve }));
+    expect(content(screen.find('beat-choice-0'))).toContain('支払後の残高 💰0');
+    expect(content(screen.find('beat-choice-0'))).toContain('予算枯渇でランが終了する');
+    screen.click('beat-choice-0');
+    expect(onResolve).not.toHaveBeenCalled();
+    expect(screen.find('beat-choice-1').props.disabled).toBe(true);
+    expect(screen.find('beat-dismiss').props.disabled).toBe(true);
+    screen.click('beat-choice-1');
+    expect(onResolve).not.toHaveBeenCalled();
+    screen.click('spend-confirm-cancel');
+    expect(screen.has('spend-confirm')).toBe(false);
+    expect(screen.find('beat-choice-1').props.disabled).toBe(false);
+    screen.click('beat-choice-1');
+    expect(onResolve).toHaveBeenCalledExactlyOnceWith(1);
+  });
+
+  it('予算が残る即採用は確認なしで選択番号を渡す', () => {
+    const onResolve = vi.fn();
+    const state = makeState({
+      budget: RECRUIT_COST + 5,
+      beat: { eventId: 'urgent-hire', kind: 'decision' },
+    });
+    const screen = mountScreen(() => BeatScreen({ state, onResolve }));
+    expect(content(screen.find('beat-choice-0'))).not.toContain('予算枯渇でランが終了する');
+    screen.click('beat-choice-0');
+    expect(screen.has('spend-confirm')).toBe(false);
+    expect(onResolve).toHaveBeenCalledExactlyOnceWith(0);
+  });
+});
+
 describe('RestScreen の休息・採用・施策強化', () => {
-  it.each(['heal', 'repay', 'recruit'] as const)('%s の選択をそのまま通知する', (option) => {
+  it.each(['heal', 'repay'] as const)('%s の選択をそのまま通知する', (option) => {
     const onChoose = vi.fn();
     const state = makeState({ budget: RECRUIT_COST });
     const screen = mountScreen(() => RestScreen({ state, onChoose }));
     expect(screen.find('rest-recruit').props.disabled).toBe(false);
     screen.click(`rest-${option}`);
     expect(onChoose).toHaveBeenCalledExactlyOnceWith(option);
+  });
+
+  it('予算が残る採用は1回で通知し、支払後残高を示す', () => {
+    const onChoose = vi.fn();
+    const state = makeState({ budget: RECRUIT_COST + 8 });
+    const screen = mountScreen(() => RestScreen({ state, onChoose }));
+    expect(content(screen.find('rest-recruit'))).toContain('支払後の残高 💰8');
+    expect(content(screen.find('rest-recruit'))).not.toContain('予算枯渇でランが終了する');
+    screen.click('rest-recruit');
+    expect(screen.has('spend-confirm')).toBe(false);
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith('recruit');
+  });
+
+  it('予算ちょうどでの採用は確定まで実行せず、取消と Escape で状態を保つ', () => {
+    const onChoose = vi.fn();
+    const state = makeState({ budget: RECRUIT_COST });
+    const original = structuredClone(state);
+    const screen = mountScreen(() => RestScreen({ state, onChoose }));
+    expect(content(screen.find('rest-recruit'))).toContain('支払後の残高 💰0');
+    expect(content(screen.find('rest-recruit'))).toContain('予算枯渇でランが終了する');
+    screen.click('rest-recruit');
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(screen.find('rest-heal').props.disabled).toBe(true);
+    expect(screen.find('rest-upgrade').props.disabled).toBe(true);
+    screen.click('rest-upgrade');
+    expect(screen.has('rest-upgrade-cards')).toBe(false);
+    expect(content(screen.find('spend-confirm'))).toContain('予算枯渇でランが終了する');
+    screen.click('spend-confirm-cancel');
+    expect(screen.has('spend-confirm')).toBe(false);
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(state).toEqual(original);
+    screen.click('rest-recruit');
+    screen.key('spend-confirm', 'Escape');
+    expect(screen.has('spend-confirm')).toBe(false);
+    expect(onChoose).not.toHaveBeenCalled();
+    screen.click('rest-recruit');
+    screen.click('spend-confirm-accept');
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith('recruit');
+    expect(state.budget).toBe(RECRUIT_COST);
+    expect(state.roster).toEqual(original.roster);
+    expect(state.phase).toBe(original.phase);
   });
 
   it('回復レリックの加算を休息の効果タグに含める', () => {

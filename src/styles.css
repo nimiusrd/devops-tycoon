@@ -4514,10 +4514,11 @@ html:has(.title-screen.title-command) #root {
   text-align: left;
   transition: border-color 0.12s ease;
 }
-.event-choice:hover,
+.event-choice:hover:not(:disabled),
 .rest-option:hover:not(:disabled) {
   border-color: var(--sun);
 }
+.event-choice:disabled,
 .rest-option:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -4669,6 +4670,65 @@ html:has(.title-screen.title-command) #root {
 }
 .shop-card:hover:not(:disabled) {
   border-color: var(--sun);
+}
+.rest-option:focus-visible,
+.shop-card:focus-visible,
+.spend-confirm-actions .btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.event-choice.is-spend-risk,
+.rest-option.is-spend-risk,
+.shop-card.is-spend-risk {
+  border-color: var(--visual-color-spend-risk-border);
+}
+.spend-risk-note,
+.spend-risk-warning {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+}
+.spend-risk-note {
+  color: var(--cream);
+}
+.spend-risk-warning {
+  color: var(--visual-color-spend-risk-warning);
+}
+.spend-confirm {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border: 2px solid var(--visual-color-spend-risk-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--visual-color-spend-risk-border) 16%, var(--panel));
+  text-align: left;
+}
+.spend-confirm-warning {
+  margin: 0 0 8px;
+  color: var(--visual-color-spend-risk-warning);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+.spend-confirm-detail {
+  margin: 0 0 12px;
+  color: var(--cream);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.spend-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.spend-confirm-actions .btn {
+  flex: 1 1 8rem;
+  min-height: 44px;
+  margin-left: 0;
 }
 .shop-card:disabled {
   opacity: 0.5;

@@ -94,27 +94,6 @@ Dockerを使うCodexタスクでは、リポジトリをCodexで開く前に
 Dockerプロファイルを統合し、プロジェクトを信頼してからCodexを再起動すると、
 このプロジェクトだけでDocker権限が有効になります。
 
-## CIをスキップする変更
-
-[`.github/ci-skip-rules.yml`](.github/ci-skip-rules.yml)で、PRと`main`へのpushのCI実行条件を設定します。YAMLのコメントで各条件の意図も記録できます。
-共通の差分取得・判定処理は公開Actionの[nimiusrd/should-run-checks](https://github.com/nimiusrd/should-run-checks)で管理し、このリポジトリにはスキップ条件だけを置きます。利用するActionはリリースのコミットSHAに固定します。
-変更ファイルがすべてスキップ対象の場合だけ、`Lint & Unit (Vitest)`と`E2E (Playwright)`をまとめてスキップします。
-この場合、format・lint・build・balance:check・ユニットテスト／カバレッジ・E2Eは実行しません。
-必須チェックの結果を返せるよう、CIワークフローと変更判定ジョブは常に起動します。
-
-| 設定 | 現在の値 | 意味 |
-| --- | --- | --- |
-| `skipExtensions` | `[".md"]` | パスがこの拡張子で終わるファイルをスキップ。ルート・子ディレクトリ・隠しディレクトリを含む |
-| `skipDirectories` | `["mockups"]` | 指定ディレクトリ配下を再帰的にスキップ |
-| `alwaysRunFiles` | `[]` | スキップ条件より優先してCIを実行するファイル。現在は例外なし |
-
-ディレクトリとファイルはリポジトリルートからの相対パスを指定します。先頭の`./`、ディレクトリ末尾の`/`、globは使いません。拡張子は`.`から始め、大文字小文字を区別します。
-例えば`docs/probability-model.md`を変更したときにもCIを実行するなら、`alwaysRunFiles`にそのパスを追加します。
-`README.md`だけ、またはMarkdownと`mockups/`だけの変更はスキップします。`src/`のコード、画像、設定ファイルなど対象外のファイルが1つでも混ざれば両ジョブを実行します。
-削除も判定対象に含め、リネームでは変更前後の両パスを判定します。初回pushや変更判定の失敗時には、チェックを省略しません。
-
-この設定は[CI](.github/workflows/ci.yml)の2つのテストジョブに適用します。[GitHub Pages](.github/workflows/pages.yml)のデプロイ条件、[PR Merge Readiness](.github/workflows/pr-merge-readiness.yml)、定期・手動ワークフローの起動条件は各YAMLで管理します。
-
 ## 開発コマンド
 
 | コマンド | 内容 |

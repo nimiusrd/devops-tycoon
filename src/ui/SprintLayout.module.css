@@ -12,6 +12,7 @@
   gap: 0;
   overflow: hidden;
   padding: 0;
+  padding-top: var(--persistence-banner-height, 0px);
 }
 
 .root {

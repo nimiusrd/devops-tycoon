@@ -649,7 +649,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .then(() => {
         const stillPending = onSuccess?.() === true;
         if (stillPending) {
-          if (tracker.fail(channel, generation, new Error('unsaved replay'))) bump();
+          if (tracker.fail(channel, generation, new Error('unsaved replay'), true)) bump();
           return;
         }
         if (tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null)) {
@@ -687,7 +687,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .then(() => {
         const stillPending = onSuccess?.() === true;
         if (stillPending) {
-          tracker.fail(channel, generation, new Error('unsaved replay'));
+          tracker.fail(channel, generation, new Error('unsaved replay'), true);
           return;
         }
         tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null);
@@ -770,7 +770,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (tracker.isSession('run') && durableRun) {
       try {
         const loaded = await durableRun.load();
-        const importMoved = runImportDepth > 0 || runRevision !== runRevisionAtStart;
+        const importedAhead = latestImportedSave !== null;
+        const importMoved =
+          runImportDepth > 0 || runRevision !== runRevisionAtStart || importedAhead;
         if (loaded && !runMigrationOpen) {
           // 進行中ランの保存先は切り替えない。読込中の取り込みも、既存セーブでは置き換えない。
           if (!importMoved && canAdoptDurableRun()) {

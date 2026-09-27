@@ -124,6 +124,7 @@ body {
   gap: 12px;
   min-height: 100vh;
   padding: 14px 18px 18px;
+  padding-top: calc(14px + var(--persistence-banner-height, 0px));
 }
 .app-background {
   display: contents;
@@ -1137,7 +1138,7 @@ body {
 .result-overlay {
   position: fixed;
   inset: 0;
-  top: var(--replay-banner-height, 0px);
+  top: calc(var(--replay-banner-height, 0px) + var(--persistence-banner-height, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1186,8 +1187,10 @@ body {
 .result-overlay.overlay-contained {
   align-items: center;
   justify-content: flex-start;
-  height: calc(100dvh - var(--replay-banner-height, 0px));
-  max-height: calc(100dvh - var(--replay-banner-height, 0px));
+  height: calc(100dvh - var(--replay-banner-height, 0px) - var(--persistence-banner-height, 0px));
+  max-height: calc(
+    100dvh - var(--replay-banner-height, 0px) - var(--persistence-banner-height, 0px)
+  );
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -6373,6 +6376,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .zoom-overlay {
   position: fixed;
   inset: 0;
+  top: var(--persistence-banner-height, 0px);
   z-index: 30;
   display: flex;
   flex-direction: column;

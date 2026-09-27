@@ -453,6 +453,61 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.exportPendingReplayText()).toContain('replay-a');
   });
 
+  it('未保存の容量不足は、後続リプレイの保存成功後も案内に残す', async () => {
+    const storage = new MemoryReplayStorage();
+    const originalSave = storage.save.bind(storage);
+    vi.spyOn(storage, 'save').mockImplementation((blob) => {
+      if (blob.seed === 'replay-quota') {
+        return Promise.reject(new DOMException('full', 'QuotaExceededError'));
+      }
+      return originalSave(blob);
+    });
+    const game = createGame({ seed: 'replay-quota-kept' });
+    await game.attachReplay(storage);
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = (seed: string) => {
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+    };
+    finish('replay-quota');
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    finish('replay-ok');
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+
+    const status = game.getPersistenceStatus();
+    expect(status.state).toBe('failed');
+    expect(status.detail).toContain('容量が不足');
+    expect(status.liveMessage).toContain('容量');
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['replay-ok', 'replay-quota']);
+  });
+
+  it('再試行の前に取り込んだセーブは、既存セーブで置き換えない', async () => {
+    const durable = new MemoryRunStorage();
+    await durable.save(makeRunSave('stored-run'));
+    const game = createGame({ seed: 'import-before-retry' });
+    game.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    expect(
+      await game.importRunSaveText(serializeRunSave(makeRunSave('imported-before'))),
+    ).toMatchObject({ ok: true });
+    expect(game.getRunSaveSummary()?.seed).toBe('imported-before');
+
+    await game.retryPersistence();
+
+    expect(game.getRunSaveSummary()?.seed).toBe('imported-before');
+    expect((await durable.load())?.summary.seed).toBe('stored-run');
+    expect(game.getPersistenceStatus().state).toBe('session');
+  });
+
   it('遅延したリプレイ保存の完了は次ランのキーフレームを消さない', async () => {
     const storage = new MemoryReplayStorage();
     const originalSave = storage.save.bind(storage);

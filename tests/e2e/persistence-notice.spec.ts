@@ -97,6 +97,14 @@ test('起動時に保存先を読めないときはセッション限りを表�
     expect(topbarBox!.y).toBeGreaterThanOrEqual(noticeBox!.y + noticeBox!.height - 1);
   }
 
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('hud')).toBeVisible();
+  const hudBox = await page.getByTestId('hud').boundingBox();
+  const noticeAfterStart = await notice.boundingBox();
+  expect(hudBox, '開始後の HUD').not.toBeNull();
+  expect(noticeAfterStart, '開始後の保存案内').not.toBeNull();
+  expect(hudBox!.y).toBeGreaterThanOrEqual(noticeAfterStart!.y + noticeAfterStart!.height - 1);
+
   await page.evaluate(() => {
     (window as unknown as { __setIdbFail: (next: boolean) => void }).__setIdbFail(false);
   });

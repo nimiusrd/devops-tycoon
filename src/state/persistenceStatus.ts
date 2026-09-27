@@ -138,13 +138,13 @@ export class PersistenceTracker {
 
   succeed(channel: PersistenceChannel, generation: number, at: number | null): boolean {
     const current = this.channels[channel];
+    // 世代が遅れても、端末へ書けた時刻自体は残す。削除の成功は時刻にしない。
+    if (at !== null) this.noteDurableAt(at);
     if (current.generation !== generation) return false;
     const recovered = current.write === 'failed';
     current.write = 'saved';
     current.failure = null;
     current.savingWhileFailed = false;
-    // 削除の成功は、状態を書けた時刻にしない。
-    if (at !== null) this.lastDurableAt = at;
     if ((recovered || this.announcedFailure) && !this.hasFailure() && !this.isSession()) {
       this.liveMessage = '保存できました。';
       this.announcedFailure = false;
@@ -155,11 +155,17 @@ export class PersistenceTracker {
     return true;
   }
 
-  fail(channel: PersistenceChannel, generation: number, error: unknown): boolean {
+  fail(
+    channel: PersistenceChannel,
+    generation: number,
+    error: unknown,
+    preserveFailure = false,
+  ): boolean {
     const current = this.channels[channel];
     if (current.generation !== generation) return false;
     current.write = 'failed';
-    current.failure = persistenceFailureKind(error);
+    const next = persistenceFailureKind(error);
+    current.failure = preserveFailure && current.failure ? current.failure : next;
     current.savingWhileFailed = false;
     this.announcedFailure = true;
     this.syncLiveFromState();

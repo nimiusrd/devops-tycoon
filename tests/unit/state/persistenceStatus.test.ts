@@ -63,8 +63,23 @@ describe('PersistenceTracker', () => {
     const older = tracker.begin('meta');
     const newer = tracker.begin('meta');
     tracker.fail('meta', newer, new Error('transient'));
-    expect(tracker.succeed('meta', older, 10)).toBe(false);
-    expect(tracker.notice(false).state).toBe('failed');
+    expect(tracker.succeed('meta', older, 1_700_000_000_000)).toBe(false);
+    const failed = tracker.notice(false);
+    expect(failed.state).toBe('failed');
+    expect(failed.detail).toContain(formatPersistenceClock(1_700_000_000_000));
+    expect(failed.detail).not.toContain('まだ端末へ保存できていません');
+  });
+
+  it('未保存が残る失敗では、容量不足の原因を一過性に落とさない', () => {
+    const tracker = new PersistenceTracker();
+    const quota = tracker.begin('replay');
+    tracker.fail('replay', quota, new DOMException('full', 'QuotaExceededError'));
+    const next = tracker.begin('replay');
+    tracker.fail('replay', next, new Error('unsaved replay'), true);
+    const failed = tracker.notice(true);
+    expect(failed.state).toBe('failed');
+    expect(failed.detail).toContain('容量が不足');
+    expect(failed.liveMessage).toContain('容量');
   });
 
   it('セッション限りは再読込案内を常駐し、復旧文は一度だけ変える', () => {

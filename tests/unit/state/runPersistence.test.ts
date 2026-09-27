@@ -75,6 +75,22 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(snap.roster).toEqual(exported!.roster);
   });
 
+  it('insertIfAbsent は空のときだけ書き、既存セーブは上書きしない', async () => {
+    const engine = createRunEngine({ seed: 'insert-absent' });
+    engine.startRun('easy', [], 'insert-absent');
+    const exported = engine.exportPersistState();
+    expect(exported).not.toBeNull();
+    const storage = indexedDbStorage();
+    const first = toRunSave(exported!, 1000);
+    expect(await storage.insertIfAbsent(first)).toBeNull();
+    expect(await storage.load()).toEqual(first);
+
+    const other = toRunSave(exported!, 2000);
+    expect((await storage.insertIfAbsent(other))?.savedAt).toBe(1000);
+    expect((await storage.load())?.savedAt).toBe(1000);
+    expect(await storage.insertIfAbsent(null)).toEqual(first);
+  });
+
   it('RI-117: 新規セーブは現行ルールセットを記録し、一致時だけ互換になる', () => {
     const valid = makeRunSave('ri117-ruleset-match');
     expect(valid.ruleset).toEqual(CURRENT_RUN_RULESET);

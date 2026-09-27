@@ -108,6 +108,11 @@ export interface RunStorage {
   load(): Promise<RunSave | null>;
   save(save: RunSave): Promise<void>;
   clear(): Promise<void>;
+  /**
+   * 空のときだけ書く。既にあればそのセーブを返し、上書きも削除もしない。
+   * `save` が null のときは空確認だけする。空判定と書き込みは同一トランザクション。
+   */
+  insertIfAbsent?(save: RunSave | null): Promise<RunSave | null>;
 }
 
 export interface RunPersistenceBootstrap {
@@ -496,6 +501,35 @@ export class IndexedDbRunStorage implements RunStorage {
     return write;
   }
 
+  insertIfAbsent(save: RunSave | null): Promise<RunSave | null> {
+    const snapshot = save ? structuredClone(save) : null;
+    const write = this.writes.then(async () => {
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
+        const stored = await tx.store.get(RUN_RECORD_KEY);
+        if (stored !== undefined) {
+          const parsed = parseRunSave(stored);
+          if (parsed) {
+            await tx.done;
+            return parsed;
+          }
+          await tx.store.delete(RUN_RECORD_KEY);
+        }
+        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
   clear(): Promise<void> {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
@@ -524,6 +558,12 @@ export class MemoryRunStorage implements RunStorage {
 
   async clear(): Promise<void> {
     this.saveState = null;
+  }
+
+  async insertIfAbsent(save: RunSave | null): Promise<RunSave | null> {
+    if (this.saveState) return structuredClone(this.saveState);
+    if (save) await this.save(save);
+    return null;
   }
 }
 

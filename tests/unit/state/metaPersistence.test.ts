@@ -55,6 +55,17 @@ describe('IndexedDB メタ永続化（RI-57）', () => {
 
     expect(await storage.load()).toEqual(latest);
   });
+
+  it('insertIfAbsent は空のときだけ書き、既存レコードは上書きしない', async () => {
+    const storage = indexedDbStorage();
+    const first = { ...defaultMeta(), points: 10 };
+    expect(await storage.insertIfAbsent(first)).toBeNull();
+    expect(await storage.load()).toEqual(first);
+
+    const other = { ...defaultMeta(), points: 99 };
+    expect((await storage.insertIfAbsent(other))?.points).toBe(10);
+    expect((await storage.load())?.points).toBe(10);
+  });
 });
 
 describe('initializeMetaPersistence', () => {

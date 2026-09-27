@@ -323,6 +323,17 @@ export interface CreateGameOptions {
   initialRunSave?: RunSave | null;
 }
 
+/** 空確認の直後に現れた永続記録。上書きせず、呼び出し側で採用可否を決める。 */
+class ForeignDurableRecord extends Error {
+  readonly record: unknown;
+
+  constructor(record: unknown) {
+    super('durable record appeared');
+    this.name = 'ForeignDurableRecord';
+    this.record = record;
+  }
+}
+
 export function createGame(options: CreateGameOptions = {}): GameHandle {
   const seed = options.seed ?? resolveSeedFromLocation();
   const engine = createRunEngine({ seed, difficulty: options.difficulty, trials: options.trials });
@@ -678,7 +689,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
       })
       .catch((error: unknown) => {
-        if (tracker.fail(channel, generation, error)) bump();
+        const preserveQuota =
+          channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
+        if (tracker.fail(channel, generation, error, preserveQuota)) bump();
       });
   };
 
@@ -706,7 +719,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null);
       })
       .catch((error: unknown) => {
-        tracker.fail(channel, generation, error);
+        const preserveQuota =
+          channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
+        tracker.fail(channel, generation, error, preserveQuota);
         throw error;
       })
       .finally(() => {
@@ -774,7 +789,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               () => metaRevision,
               () => meta,
               async (snapshot) => {
-                await target.save(snapshot);
+                if (metaMigrationWritten === null && target.insertIfAbsent) {
+                  const existing = await target.insertIfAbsent(snapshot);
+                  if (existing) throw new ForeignDurableRecord(existing);
+                } else {
+                  await target.save(snapshot);
+                }
                 metaMigrationWritten = persistedRecordKey(snapshot);
               },
               (seen, snapshot) => seen === metaRevision && meta === snapshot,
@@ -785,8 +805,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 tracker.clearSession('meta');
               },
             );
-          } catch {
+          } catch (error) {
             /* 空の永続先へ移せなければ、セッション限りのまま現在のメタを残す */
+            if (
+              error instanceof ForeignDurableRecord &&
+              error.record &&
+              typeof error.record === 'object'
+            ) {
+              metaMigrationOpen = false;
+              metaMigrationWritten = null;
+              if (metaRevision === metaRevisionAtSession) {
+                meta = error.record as MetaState;
+                metaStorage = target;
+                tracker.clearSession('meta');
+              }
+            }
           }
         }
       } catch {
@@ -828,8 +861,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               () => runRevision,
               () => resumableSave,
               async (snapshot) => {
-                if (snapshot) await target.save(snapshot);
-                else await target.clear();
+                if (runMigrationWritten === null && target.insertIfAbsent) {
+                  const existing = await target.insertIfAbsent(snapshot);
+                  if (existing) throw new ForeignDurableRecord(existing);
+                } else if (snapshot) {
+                  await target.save(snapshot);
+                } else {
+                  await target.clear();
+                }
                 runMigrationWritten = persistedRecordKey(snapshot);
               },
               (seen, snapshot) =>
@@ -843,8 +882,29 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 tracker.clearSession('run');
               },
             );
-          } catch {
+          } catch (error) {
             /* 空の永続先へ移せなければ、セッション限りのまま現在ランを残す */
+            if (
+              error instanceof ForeignDurableRecord &&
+              error.record &&
+              typeof error.record === 'object'
+            ) {
+              runMigrationOpen = false;
+              runMigrationWritten = null;
+              const importMovedNow =
+                runImportDepth > 0 ||
+                runRevision !== runRevisionAtStart ||
+                latestImportedSave !== null;
+              if (!importMovedNow && canAdoptDurableRun()) {
+                const loaded = error.record as RunSave;
+                const issue = getRunSaveCompatibilityIssue(loaded);
+                runStorage = target;
+                runSaveIssue = issue ? structuredClone(issue) : null;
+                resumableSave = issue ? null : loaded;
+                if (resumableSave) tracker.noteDurableAt('run', resumableSave.savedAt);
+                tracker.clearSession('run');
+              }
+            }
           }
         }
       } catch {
@@ -866,13 +926,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       };
       const shouldCopyReplay = (id: string): boolean =>
         !replayIdsAtSession.has(id) || pinnedReplayIds.has(id);
-      const saveOntoDurable = (blob: ReplayBlob): Promise<void> => {
-        const protectIds = [...pinnedReplayIds];
-        return target.save(
-          structuredClone(blob),
-          protectIds.length > 0 ? { pin: pinnedReplayIds.has(blob.id), protectIds } : undefined,
-        );
-      };
+      const saveOntoDurable = (blob: ReplayBlob): Promise<void> =>
+        target.save(structuredClone(blob), { pin: true, protectIds: [...pinnedReplayIds] });
       let durableList: ReplayBlob[];
       try {
         durableList = await target.list();
@@ -881,7 +936,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       // 既存リプレイは消さない。セッション開始後の完走は、再試行前のものも含めて足してから切り替える。
       if (durableList.length > 0 && !replayMigrationOpen) {
-        const droppedNewcomerIds = new Set<string>();
         try {
           for (;;) {
             if (replaySavePromises.size > 0) {
@@ -900,29 +954,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
             const byId = new Map<string, ReplayBlob>();
             for (const item of memoryNow) {
-              if (
-                shouldCopyReplay(item.id) &&
-                !durableIds.has(item.id) &&
-                !droppedNewcomerIds.has(item.id)
-              ) {
-                byId.set(item.id, item);
-              }
+              if (shouldCopyReplay(item.id) && !durableIds.has(item.id)) byId.set(item.id, item);
             }
             for (const blob of pendingReplays) {
-              if (!durableIds.has(blob.id) && !droppedNewcomerIds.has(blob.id))
-                byId.set(blob.id, blob);
+              if (!durableIds.has(blob.id)) byId.set(blob.id, blob);
             }
             const newcomers = [...byId.values()];
             if (newcomers.length > 0) {
-              for (const blob of newcomers) {
-                await saveOntoDurable(blob);
-                if (pendingReplays.includes(blob)) completePendingReplay(blob);
-              }
+              for (const blob of newcomers) await saveOntoDurable(blob);
               durableList = await target.list();
               for (const blob of newcomers) {
-                if (durableList.some((row) => row.id === blob.id)) continue;
-                if (pinnedReplayIds.has(blob.id)) throw new Error('pinned replay was not kept');
-                droppedNewcomerIds.add(blob.id);
+                if (!durableList.some((row) => row.id === blob.id)) {
+                  throw new Error('session replay was not kept');
+                }
+                if (pendingReplays.includes(blob)) completePendingReplay(blob);
               }
               continue;
             }
@@ -939,10 +984,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             const confirm = await readMemoryReplays();
             if (
               confirm.some(
-                (item) =>
-                  shouldCopyReplay(item.id) &&
-                  !droppedNewcomerIds.has(item.id) &&
-                  !listed.some((row) => row.id === item.id),
+                (item) => shouldCopyReplay(item.id) && !listed.some((row) => row.id === item.id),
               )
             ) {
               continue;
@@ -975,8 +1017,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const extras = pendingReplays.filter((blob) => !memoryIds.has(blob.id));
           const toSave = [...memoryReplays, ...extras];
           const writtenIds = new Set(toSave.map((blob) => blob.id));
+          for (const blob of toSave) await saveOntoDurable(blob);
+          const kept = await target.list();
           for (const blob of toSave) {
-            await saveOntoDurable(blob);
+            if (!kept.some((row) => row.id === blob.id)) {
+              throw new Error('session replay was not kept');
+            }
             if (pendingReplays.includes(blob)) completePendingReplay(blob);
           }
           if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
@@ -1586,8 +1632,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           resumableSave = structuredClone(intended);
           runSaveIssue = null;
           runRevision += 1;
-          if (runStorage && !tracker.isSession('run'))
-            tracker.noteDurableAt('run', intended.savedAt);
+          if (runStorage && !tracker.isSession('run')) tracker.noteDurableAt('run', Date.now());
           bump();
         } finally {
           runImportDepth -= 1;

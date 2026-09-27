@@ -12,6 +12,11 @@ import {
 export interface MetaStorage {
   load(): Promise<MetaState | null>;
   save(meta: MetaState): Promise<void>;
+  /**
+   * 空のときだけ書く。既にあればその記録を返し、上書きしない。
+   * 空判定と書き込みは同一トランザクション。
+   */
+  insertIfAbsent?(meta: MetaState): Promise<MetaState | null>;
 }
 
 export interface MetaPersistenceBootstrap {
@@ -58,6 +63,31 @@ export class IndexedDbMetaStorage implements MetaStorage {
     this.writes = write.catch(() => undefined);
     return write;
   }
+
+  insertIfAbsent(meta: MetaState): Promise<MetaState | null> {
+    const snapshot = structuredClone(meta);
+    const write = this.writes.then(async () => {
+      const db = await this.open();
+      try {
+        const tx = db.transaction(META_STORE_NAME, 'readwrite');
+        const existing = await tx.store.get(META_RECORD_KEY);
+        if (existing !== undefined) {
+          await tx.done;
+          return normalizeMeta(existing);
+        }
+        await tx.store.put(snapshot, META_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
 }
 
 /** メモリ上だけで動く MetaStorage（テスト / IDB 不可時）。 */
@@ -70,6 +100,12 @@ export class MemoryMetaStorage implements MetaStorage {
 
   async save(meta: MetaState): Promise<void> {
     this.state = structuredClone(meta);
+  }
+
+  async insertIfAbsent(meta: MetaState): Promise<MetaState | null> {
+    if (this.state) return structuredClone(this.state);
+    await this.save(meta);
+    return null;
   }
 }
 

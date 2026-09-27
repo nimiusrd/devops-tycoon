@@ -296,6 +296,21 @@ describe('リプレイ正規化（RI-61）', () => {
     expect(selected.some((item) => item.id === 'id-1')).toBe(true);
     expect(selected.some((item) => item.id === 'id-2')).toBe(false);
   });
+
+  it('priorityId は、ほかの pin が上限を超えても先に残す', () => {
+    const items = Array.from({ length: REPLAY_MAX_COUNT + 1 }, (_, i) =>
+      makeBlob({
+        id: `id-${i}`,
+        seed: `seed-${i}`,
+        finishedAt: 1000 + i,
+      }),
+    );
+    const pins = items.slice(1).map((item) => item.id);
+    const selected = selectReplaysWithinMax(items, pins, REPLAY_MAX_COUNT, 'id-0');
+    expect(selected).toHaveLength(REPLAY_MAX_COUNT);
+    expect(selected.some((item) => item.id === 'id-0')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-1')).toBe(false);
+  });
 });
 
 describe('IndexedDB リプレイ永続化（RI-61）', () => {
@@ -484,6 +499,30 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     expect(listed).toHaveLength(REPLAY_MAX_COUNT);
     expect(listed.some((item) => item.id === 'pinned-old')).toBe(true);
     expect(listed.some((item) => item.id === 'filled-0')).toBe(false);
+  });
+
+  it('今回 pin した件は、保護中の pin が上限を超えても残す', async () => {
+    const storage = new MemoryReplayStorage();
+    const protectIds: string[] = [];
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const id = `protect-${i}`;
+      protectIds.push(id);
+      await storage.save(
+        makeBlob({
+          id,
+          seed: id,
+          finishedAt: 5_000 + i,
+        }),
+      );
+    }
+    await storage.save(makeBlob({ id: 'current', seed: 'current', finishedAt: 1 }), {
+      pin: true,
+      protectIds,
+    });
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'current')).toBe(true);
+    expect(listed.some((item) => item.id === 'protect-0')).toBe(false);
   });
 
   it('protectIds は別の保存でも古い明示取り込みを残す', async () => {

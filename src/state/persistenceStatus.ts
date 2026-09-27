@@ -51,9 +51,16 @@ export function persistenceFailureKind(error: unknown): PersistenceFailure {
 
 export function formatPersistenceClock(at: number): string {
   const date = new Date(at);
+  if (!Number.isFinite(date.getTime())) return '00:00';
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+/** 表示できる時刻で、現在より未来ではない。 */
+function isDurableClock(at: number): boolean {
+  if (!Number.isFinite(at) || !Number.isFinite(new Date(at).getTime())) return false;
+  return at <= Date.now();
 }
 
 function durableMoment(at: number | null): string {
@@ -109,10 +116,15 @@ export class PersistenceTracker {
    * 復旧チップや読み上げは出さない。別チャネルの失敗案内には使わない。
    */
   noteDurableAt(channel: PersistenceChannel, at: number): void {
-    if (!Number.isFinite(at)) return;
+    if (!isDurableClock(at)) return;
     const current = this.lastDurableAt[channel];
     if (current !== null && at <= current) return;
     this.lastDurableAt[channel] = at;
+  }
+
+  /** 未保存が残る間、後続の失敗で容量不足を一過性へ落とさない。 */
+  keepsQuota(channel: PersistenceChannel): boolean {
+    return this.channels[channel].failure === 'quota';
   }
 
   /** 復旧チップを閉じる。読み上げ文は残す。閉じたら true。 */

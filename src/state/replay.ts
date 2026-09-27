@@ -27,17 +27,24 @@ export const REPLAY_MAX_COUNT = 10;
 
 /**
  * 上限内に収める。`pinnedId` があるときはその件を残し、他の古いものから外す。
+ * `priorityId` は、ほかの pin が上限を超えても今回保存する件として先に残す。
  * 明示取り込みで finishedAt が古いリプレイが即削除されないようにする（RI-133）。
  */
 export function selectReplaysWithinMax(
   items: readonly ReplayBlob[],
   pinnedId?: string | readonly string[],
   max: number = REPLAY_MAX_COUNT,
+  priorityId?: string,
 ): ReplayBlob[] {
   const ordered = [...items].sort((a, b) => b.finishedAt - a.finishedAt);
   if (ordered.length <= max) return ordered;
   const pinnedIds = new Set(typeof pinnedId === 'string' ? [pinnedId] : (pinnedId ?? []));
-  const pinned = ordered.filter((item) => pinnedIds.has(item.id)).slice(0, max);
+  if (priorityId) pinnedIds.add(priorityId);
+  const pinnedOrdered = ordered.filter((item) => pinnedIds.has(item.id));
+  const priority = priorityId ? pinnedOrdered.find((item) => item.id === priorityId) : undefined;
+  const pinned = priority
+    ? [priority, ...pinnedOrdered.filter((item) => item.id !== priorityId)].slice(0, max)
+    : pinnedOrdered.slice(0, max);
   if (pinned.length === 0) return ordered.slice(0, max);
   const kept = new Set(pinned.map((item) => item.id));
   const others = ordered.filter((item) => !kept.has(item.id)).slice(0, max - pinned.length);

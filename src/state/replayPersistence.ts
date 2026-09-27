@@ -2,7 +2,12 @@
  * リプレイの IndexedDB 永続化（RI-61）。
  */
 import { GAME_DB_NAME, openGameDb, REPLAYS_STORE_NAME } from './gameDb';
-import { normalizeReplay, selectReplaysWithinMax, type ReplayBlob } from './replay';
+import {
+  normalizeReplay,
+  REPLAY_MAX_COUNT,
+  selectReplaysWithinMax,
+  type ReplayBlob,
+} from './replay';
 
 /** リプレイ保存時の上限処理オプション。 */
 export interface ReplaySaveOptions {
@@ -17,6 +22,19 @@ function replayPinIds(savedId: string, options?: ReplaySaveOptions): string[] | 
   if (options?.pin) ids.add(savedId);
   if (ids.size === 0) return undefined;
   return [...ids];
+}
+
+function keepSavedReplays(
+  items: readonly ReplayBlob[],
+  savedId: string,
+  options?: ReplaySaveOptions,
+): ReplayBlob[] {
+  return selectReplaysWithinMax(
+    items,
+    replayPinIds(savedId, options),
+    REPLAY_MAX_COUNT,
+    options?.pin ? savedId : undefined,
+  );
 }
 
 /** リプレイ一覧の非同期永続化インターフェース。 */
@@ -60,7 +78,6 @@ export class IndexedDbReplayStorage implements ReplayStorage {
 
   save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     const snapshot = structuredClone(blob);
-    const pinnedIds = replayPinIds(snapshot.id, options);
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
@@ -69,7 +86,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         const normalized = all
           .map((raw) => normalizeReplay(raw))
           .filter((item): item is ReplayBlob => item !== null);
-        const keep = selectReplaysWithinMax(normalized, pinnedIds);
+        const keep = keepSavedReplays(normalized, snapshot.id, options);
         const keepIds = new Set(keep.map((item) => item.id));
         for (const item of normalized) {
           if (!keepIds.has(item.id)) {
@@ -115,7 +132,7 @@ export class MemoryReplayStorage implements ReplayStorage {
 
   async save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     this.items.set(blob.id, structuredClone(blob));
-    const keep = selectReplaysWithinMax([...this.items.values()], replayPinIds(blob.id, options));
+    const keep = keepSavedReplays([...this.items.values()], blob.id, options);
     const keepIds = new Set(keep.map((item) => item.id));
     for (const id of [...this.items.keys()]) {
       if (!keepIds.has(id)) this.items.delete(id);

@@ -182,6 +182,18 @@ describe('PersistenceTracker', () => {
     expect(tracker.notice(false).liveMessage).toBe('保存できました。');
   });
 
+  it('未来時刻と表示できない時刻は、最終保存時刻にしない', () => {
+    const tracker = new PersistenceTracker();
+    tracker.noteDurableAt('run', Number.MAX_VALUE);
+    tracker.noteDurableAt('run', Date.now() + 86_400_000);
+    const failed = tracker.begin('run');
+    tracker.fail('run', failed, new Error('transient'));
+    const notice = tracker.notice(true);
+    expect(notice.detail).toContain('まだ端末へ保存できていません');
+    expect(notice.detail).not.toContain('NaN');
+    expect(formatPersistenceClock(Number.MAX_VALUE)).toBe('00:00');
+  });
+
   it('失敗したチャネルの保存時刻は、別チャネルの成功では進まない', () => {
     const tracker = new PersistenceTracker();
     const runSaved = 1_700_000_000_000;

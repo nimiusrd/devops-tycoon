@@ -1004,7 +1004,7 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 
-  it('セッション中の完走リプレイは空の永続先へ移し、既存リプレイは上書きしない', async () => {
+  it('セッション中の完走リプレイは空の永続先へ移し、既存リプレイの隣へ残す', async () => {
     const durable = new MemoryReplayStorage();
     const memory = new MemoryReplayStorage();
     const game = createGame({ seed: 'session-replay' });
@@ -1035,12 +1035,19 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     otherInternals.status = 'won';
     other.step(0);
     for (let i = 0; i < 8; i += 1) await Promise.resolve();
-    const overwrite = vi.spyOn(occupied, 'save');
     await other.retryPersistence();
 
-    expect(overwrite).not.toHaveBeenCalled();
-    expect((await occupied.list()).map((replay) => replay.seed)).toEqual(['stored-replay']);
-    expect(other.listReplays().map((replay) => replay.seed)).toEqual(['stored-replay']);
+    expect((await occupied.list()).map((replay) => replay.seed).sort()).toEqual([
+      'memory-replay',
+      'stored-replay',
+    ]);
+    expect(
+      other
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['memory-replay', 'stored-replay']);
+    expect(other.getPersistenceStatus().state).not.toBe('session');
   });
 
   it('リプレイ移行中に失敗した新しい完走は、セッションを外さず永続先へ残す', async () => {

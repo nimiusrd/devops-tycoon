@@ -367,6 +367,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let replayImportWrites: Promise<void> = Promise.resolve();
   /** 明示取り込み。移行先の上限削除でもこの id を残す。 */
   const pinnedReplayIds = new Set<string>();
+  /** リプレイがセッション限りになった時点の一覧。それより後の完走は永続先へ移す。 */
+  let replayIdsAtSession = new Set<string>();
   /** セッション復旧の再試行。二重クリックでも並行させない。 */
   let persistenceRetry: Promise<void> | null = null;
   /** 空だった永続先へ途中まで書いた記録。次回は既存データとして採用しない。 */
@@ -733,7 +735,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    */
   const recoverDurableLoads = async (): Promise<void> => {
     const runRevisionAtStart = runRevision;
-    const replayBaselineIds = new Set(cachedReplays.map((item) => item.id));
     if (tracker.isSession('meta') && durableMeta) {
       try {
         const seenMetaRevision = metaRevision;
@@ -833,9 +834,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
         return cachedReplays.map((item) => structuredClone(item));
       };
-      const memoryBeforeIds = replayBaselineIds;
       const shouldCopyReplay = (id: string): boolean =>
-        !memoryBeforeIds.has(id) || pinnedReplayIds.has(id);
+        !replayIdsAtSession.has(id) || pinnedReplayIds.has(id);
       const saveOntoDurable = (blob: ReplayBlob): Promise<void> => {
         const protectIds = [...pinnedReplayIds];
         return target.save(
@@ -849,7 +849,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       } catch {
         return;
       }
-      // 既存リプレイは上書きしない。一覧待ちの間に完走した分だけ足してから切り替える。
+      // 既存リプレイは消さない。セッション開始後の完走は、再試行前のものも含めて足してから切り替える。
       if (durableList.length > 0 && !replayMigrationOpen) {
         const droppedNewcomerIds = new Set<string>();
         try {
@@ -1576,11 +1576,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     async attachReplay(storage, options) {
       replayStorage = storage;
-      if (options?.sessionOnly) {
+      const sessionOnly = options?.sessionOnly === true;
+      if (sessionOnly) {
         durableReplay = options.durableStorage ?? null;
         tracker.markSession('replay');
       }
       await refreshReplayCache();
+      if (sessionOnly) {
+        replayIdsAtSession = new Set(cachedReplays.map((item) => item.id));
+      }
     },
     listReplays() {
       return cachedReplays.map((r) => structuredClone(r));

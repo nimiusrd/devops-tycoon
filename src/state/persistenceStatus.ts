@@ -125,13 +125,14 @@ export class PersistenceTracker {
     return current.generation;
   }
 
-  succeed(channel: PersistenceChannel, generation: number, at: number): boolean {
+  succeed(channel: PersistenceChannel, generation: number, at: number | null): boolean {
     const current = this.channels[channel];
     if (current.generation !== generation) return false;
     const recovered = current.write === 'failed';
     current.write = 'saved';
     current.failure = null;
-    this.lastDurableAt = at;
+    // 削除の成功は、状態を書けた時刻にしない。
+    if (at !== null) this.lastDurableAt = at;
     if ((recovered || this.announcedFailure) && !this.hasFailure() && !this.isSession()) {
       this.liveMessage = '保存できました。';
       this.announcedFailure = false;

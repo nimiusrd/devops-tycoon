@@ -1047,6 +1047,55 @@ describe('App のラン中メニュー', () => {
     expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(true);
     expect(audio.unlock).toHaveBeenCalledTimes(2);
   });
+
+  it('保存失敗を離れると書き出しエラーを消す', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'failed',
+        tone: 'danger',
+        headline: '保存失敗',
+        detail: '保存できませんでした。',
+        liveMessage: '保存に失敗しました。再試行できます。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+    });
+    const notice = () => {
+      const node = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!node) throw new Error('保存案内がありません');
+      return node;
+    };
+    (notice().props.onExport as () => void)();
+    screen.flush();
+    const failed = (notice().type as Component)(notice().props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe('途中セーブをファイルに保存できませんでした。');
+    screen.update({
+      persistenceStatus: {
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: '保存できました。',
+        liveMessage: '保存できました。',
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      },
+    });
+    const recovered = (notice().type as Component)(notice().props);
+    expect(
+      elements(recovered).some((node) => node.props['data-testid'] === 'persistence-export-error'),
+    ).toBe(false);
+    expect(
+      elements(recovered).find((node) => node.props['data-testid'] === 'persistence-live')?.props
+        .children,
+    ).toBe('保存できました。');
+  });
 });
 
 describe.each(['EvolutionSimPause', 'SprintSuspendFallback'])(

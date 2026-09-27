@@ -240,6 +240,14 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const persistenceState = run.persistenceStatus.state;
+  const previousPersistenceState = useRef(persistenceState);
+  useEffect(() => {
+    if (previousPersistenceState.current === 'failed' && persistenceState !== 'failed') {
+      setExportMessage(null);
+    }
+    previousPersistenceState.current = persistenceState;
+  }, [persistenceState]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({

@@ -421,7 +421,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     runSaveIssue = null;
     runRevision += 1;
     if (!runStorage) return;
-    trackWrite('run', runStorage.clear());
+    trackWrite('run', runStorage.clear(), undefined, false);
   };
 
   const appendKeyframeIfNeeded = (): void => {
@@ -613,6 +613,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     channel: 'meta' | 'run' | 'replay',
     work: Promise<void>,
     onSuccess?: () => boolean | void,
+    recordDurableAt = true,
   ): void => {
     if (tracker.isSession(channel)) {
       void work.then(() => onSuccess?.()).catch(() => undefined);
@@ -626,7 +627,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (tracker.fail(channel, generation, new Error('unsaved replay'))) bump();
           return;
         }
-        if (tracker.succeed(channel, generation, Date.now())) {
+        if (tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null)) {
           bump();
           return;
         }
@@ -653,6 +654,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     channel: 'meta' | 'run' | 'replay',
     work: Promise<void>,
     onSuccess?: () => boolean | void,
+    recordDurableAt = true,
   ): Promise<void> => {
     const generation = tracker.begin(channel);
     bump();
@@ -663,7 +665,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           tracker.fail(channel, generation, new Error('unsaved replay'));
           return;
         }
-        tracker.succeed(channel, generation, Date.now());
+        tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null);
       })
       .catch((error: unknown) => {
         tracker.fail(channel, generation, error);
@@ -748,7 +750,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
             tracker.clearSession('run');
           }
-        } else if (!resumableSave && !runMigrationOpen) {
+        } else if (!resumableSave && !runMigrationOpen && !importMoved) {
           runStorage = durableRun;
           runSaveIssue = null;
           tracker.clearSession('run');
@@ -756,6 +758,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const target = durableRun;
           runMigrationOpen = true;
           try {
+            if (runImportDepth > 0) await runSaveImportWrites;
             await migrateEmptyDurable(
               () => runRevision,
               () => resumableSave,
@@ -794,19 +797,76 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
         return cachedReplays.map((item) => structuredClone(item));
       };
+      const memoryBeforeIds = new Set((await readMemoryReplays()).map((item) => item.id));
       let durableList: ReplayBlob[];
       try {
         durableList = await target.list();
       } catch {
         return;
       }
-      // 既存リプレイがある永続先は上書きしない。保存先は一覧が取れてから切り替える。
+      // 既存リプレイは上書きしない。一覧待ちの間に完走した分だけ足してから切り替える。
       if (durableList.length > 0 && !replayMigrationOpen) {
-        replayStorage = target;
-        cachedReplays = durableList;
-        bump();
-        tracker.clearSession('replay');
-        return;
+        try {
+          for (;;) {
+            if (replaySavePromises.size > 0) {
+              await Promise.allSettled([...replaySavePromises.values()]);
+              continue;
+            }
+            if (replayImportDepth > 0) {
+              await replayImportWrites;
+              continue;
+            }
+            const memoryNow = await readMemoryReplays();
+            if (replaySavePromises.size > 0 || replayImportDepth > 0) continue;
+            const durableIds = new Set(durableList.map((item) => item.id));
+            for (const blob of [...pendingReplays]) {
+              if (durableIds.has(blob.id)) completePendingReplay(blob);
+            }
+            const byId = new Map<string, ReplayBlob>();
+            for (const item of memoryNow) {
+              if (!memoryBeforeIds.has(item.id) && !durableIds.has(item.id))
+                byId.set(item.id, item);
+            }
+            for (const blob of pendingReplays) {
+              if (!durableIds.has(blob.id)) byId.set(blob.id, blob);
+            }
+            const newcomers = [...byId.values()];
+            if (newcomers.length > 0) {
+              for (const blob of newcomers) {
+                await target.save(structuredClone(blob));
+                if (pendingReplays.includes(blob)) completePendingReplay(blob);
+              }
+              durableList = await target.list();
+              continue;
+            }
+            if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
+            const listed = await target.list();
+            if (
+              pendingReplays.length > 0 ||
+              replaySavesInFlight.size > 0 ||
+              replaySavePromises.size > 0 ||
+              replayImportDepth > 0
+            ) {
+              continue;
+            }
+            const confirm = await readMemoryReplays();
+            if (
+              confirm.some(
+                (item) =>
+                  !memoryBeforeIds.has(item.id) && !listed.some((row) => row.id === item.id),
+              )
+            ) {
+              continue;
+            }
+            replayStorage = target;
+            cachedReplays = listed;
+            bump();
+            tracker.clearSession('replay');
+            return;
+          }
+        } catch {
+          return;
+        }
       }
       // 空の永続先へ移す間はメモリのままにする。その間の完走失敗も pending に残し、書き終えてから外す。
       replayMigrationOpen = true;
@@ -1316,7 +1376,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
         if (!tracker.isSession('run') && tracker.isFailed('run') && runStorage) {
           tasks.push(
-            retryWrite('run', resumableSave ? runStorage.save(resumableSave) : runStorage.clear()),
+            retryWrite(
+              'run',
+              resumableSave ? runStorage.save(resumableSave) : runStorage.clear(),
+              undefined,
+              resumableSave !== null,
+            ),
           );
         }
         if (!tracker.isSession('replay') && tracker.isFailed('replay') && replayStorage) {

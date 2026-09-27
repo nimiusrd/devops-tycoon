@@ -17,6 +17,7 @@ import {
   type RunSave,
 } from '../../../src/state/runPersistence';
 import { RUN_SAVE_SHARE_REASON_MESSAGE, serializeRunSave } from '../../../src/state/runSaveShare';
+import { formatPersistenceClock } from '../../../src/state/persistenceStatus';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -583,6 +584,48 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).toBe('session');
   });
 
+  it('空の永続先を読む間に始まった取り込みは、保存完了前にセッションを外さない', async () => {
+    const memory = new MemoryRunStorage();
+    const durable = new MemoryRunStorage();
+    const game = createGame({ seed: 'import-before-empty-adopt' });
+    game.attachRunPersistence(memory, null, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    const originalLoad = durable.load.bind(durable);
+    let releaseLoad: (() => void) | undefined;
+    vi.spyOn(durable, 'load').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseLoad = () => resolve(originalLoad());
+        }),
+    );
+    const originalSave = memory.save.bind(memory);
+    let releaseSave: (() => void) | undefined;
+    vi.spyOn(memory, 'save').mockImplementationOnce(
+      (incoming) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(originalSave(incoming));
+        }),
+    );
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !releaseLoad; i += 1) await Promise.resolve();
+    expect(releaseLoad).toBeTypeOf('function');
+    const importing = game.importRunSaveText(serializeRunSave(makeRunSave('imported-run')));
+    for (let i = 0; i < 12 && !releaseSave; i += 1) await Promise.resolve();
+    expect(releaseSave).toBeTypeOf('function');
+    releaseLoad?.();
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    expect(game.getPersistenceStatus().state).toBe('session');
+    releaseSave?.();
+    await pending;
+    expect(await importing).toMatchObject({ ok: true });
+
+    expect(game.getRunSaveSummary()?.seed).toBe('imported-run');
+    expect((await durable.load())?.summary.seed).toBe('imported-run');
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
   it('空の永続先へ移している間のセーブ取り込みも、復旧前に永続先へ書く', async () => {
     const held = makeRunSave('held-run');
     const durable = new MemoryRunStorage();
@@ -610,6 +653,56 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
 
     expect(game.getRunSaveSummary()?.seed).toBe('imported-run');
     expect((await durable.load())?.summary.seed).toBe('imported-run');
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
+  it('既存リプレイの再読込中に完走した記録は、保存先を切り替えたあとも残す', async () => {
+    const durable = new MemoryReplayStorage();
+    await durable.save(makeReplay('stored-replay'));
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'replay-during-adopt' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    const originalList = durable.list.bind(durable);
+    let releaseList: (() => void) | undefined;
+    vi.spyOn(durable, 'list').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseList = () => resolve(originalList());
+        }),
+    );
+    const originalSave = memory.save.bind(memory);
+    let releaseSave: (() => void) | undefined;
+    vi.spyOn(memory, 'save').mockImplementationOnce(
+      (blob) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(originalSave(blob));
+        }),
+    );
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !releaseList; i += 1) await Promise.resolve();
+    expect(releaseList).toBeTypeOf('function');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    game.startRun('easy', [], 'during-list');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12 && !releaseSave; i += 1) await Promise.resolve();
+    expect(releaseSave).toBeTypeOf('function');
+    releaseList?.();
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    releaseSave?.();
+    await pending;
+
+    expect((await durable.list()).map((replay) => replay.seed).sort()).toEqual([
+      'during-list',
+      'stored-replay',
+    ]);
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['during-list', 'stored-replay']);
     expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 
@@ -941,6 +1034,31 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(save).toHaveBeenCalledOnce();
     expect(game.listReplays().some((replay) => replay.seed === 'replay-inflight')).toBe(true);
     expect(game.getPersistenceStatus().state).not.toBe('failed');
+  });
+
+  it('セーブ削除の成功は、最後に端末へ保存できた時刻にしない', async () => {
+    let now = Date.parse('2026-01-01T00:00:00Z');
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const storage = new MemoryRunStorage();
+    const game = createGame({ seed: 'clear-clock', runStorage: storage });
+    game.startRun('easy', [], 'clear-clock');
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    const savedClock = formatPersistenceClock(now);
+
+    now += 120_000;
+    const clearedAt = now;
+    game.clearRunSave();
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+
+    now += 120_000;
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    game.startRun('easy', [], 'next-run');
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    const failed = game.getPersistenceStatus();
+    expect(failed.state).toBe('failed');
+    expect(failed.detail).toContain(savedClock);
+    expect(failed.detail).not.toContain(formatPersistenceClock(clearedAt));
+    expect(failed.detail).not.toContain('まだ端末へ保存できていません');
   });
 
   it('読み込んだセーブの時刻を、最初の保存失敗でも最後の成功時刻として出す', async () => {

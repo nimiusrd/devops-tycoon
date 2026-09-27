@@ -20,6 +20,7 @@ import { publicUrl } from '../utils/publicUrl';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 function formatRuleset(ruleset: { version: number; fingerprint: string }): string {
   const fingerprint =
@@ -38,34 +39,11 @@ function ResumeRiskDialog({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  useDialogOverlayLock(dialogRef, { onDismiss: onCancel });
 
   useEffect(() => {
     cancelRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCancel();
-        return;
-      }
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('button')];
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onCancel]);
 
   return (
     <div
@@ -76,6 +54,7 @@ function ResumeRiskDialog({
       aria-modal="true"
       aria-labelledby="resume-risk-title"
       aria-describedby="resume-risk-body"
+      tabIndex={-1}
     >
       <div className="result-card resume-risk-card">
         <p className="result-eyebrow">RESUME WARNING</p>

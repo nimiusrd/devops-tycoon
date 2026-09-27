@@ -64,6 +64,17 @@ vi.mock('react', async (importOriginal) => ({
       slot.cleanup = effect() ?? undefined;
     });
   },
+  useLayoutEffect(effect: () => void | (() => void), dependencies: readonly unknown[]) {
+    const index = hooks.cursor++;
+    const previous = hooks.slots[index];
+    if (hooks.sameDependencies(previous?.dependencies, dependencies)) return;
+    const slot = { dependencies, cleanup: undefined as (() => void) | undefined };
+    hooks.slots[index] = slot;
+    hooks.effects.push(() => {
+      previous?.cleanup?.();
+      slot.cleanup = effect() ?? undefined;
+    });
+  },
 }));
 vi.mock('react-dom', () => ({ createPortal: (node: ReactNode) => node }));
 vi.mock('../../../src/ui/downloadTextFile', () => ({ downloadTextFile: vi.fn(() => true) }));
@@ -96,6 +107,24 @@ function keyDown(key: string, shiftKey = false) {
   Object.assign(event, { key, shiftKey });
   documentStub.dispatchEvent(event);
   return event;
+}
+
+class DomNode {}
+
+function focusableStub() {
+  const target = new DomNode() as DomNode & {
+    focus: ReturnType<typeof vi.fn>;
+    closest: () => null;
+    getAttribute: () => null;
+    getClientRects: () => object[];
+  };
+  target.focus = vi.fn(() => {
+    documentStub.activeElement = target;
+  });
+  target.closest = () => null;
+  target.getAttribute = () => null;
+  target.getClientRects = () => [{}];
+  return target;
 }
 
 function mountTitle(overrides: Partial<TitleScreenProps> = {}) {
@@ -204,19 +233,24 @@ function mountResumeRiskDialog(dialog: ReactElement<ElementProps>) {
   hooks.cursor = 0;
   hooks.dirty = false;
 
-  const targets = new Map<string, { focus: ReturnType<typeof vi.fn> }>();
+  const targets = new Map<string, ReturnType<typeof focusableStub>>();
   for (const id of ['resume-risk-cancel', 'resume-risk-confirm']) {
-    const target = { focus: vi.fn() };
-    target.focus.mockImplementation(() => {
-      documentStub.activeElement = target;
-    });
-    targets.set(id, target);
+    targets.set(id, focusableStub());
   }
+  const cancel = targets.get('resume-risk-cancel');
+  const confirm = targets.get('resume-risk-confirm');
   const dialogTarget = {
-    querySelectorAll: vi.fn(() => [
-      targets.get('resume-risk-cancel'),
-      targets.get('resume-risk-confirm'),
-    ]),
+    parentElement: null,
+    focus: vi.fn(() => {
+      documentStub.activeElement = dialogTarget;
+    }),
+    contains(target: unknown) {
+      return target === dialogTarget || target === cancel || target === confirm;
+    },
+    getAttribute: () => null,
+    setAttribute: vi.fn(),
+    removeAttribute: vi.fn(),
+    querySelectorAll: vi.fn(() => [cancel, confirm]),
   };
   if (typeof dialog.type !== 'function') throw new Error('危険再開の確認を描画できません');
   const tree = (dialog.type as (props: ElementProps) => ReactNode)(dialog.props);
@@ -286,8 +320,22 @@ const detailedDangerousRisk: ResumeRisk = {
 
 beforeEach(() => {
   vi.mocked(downloadTextFile).mockReset().mockReturnValue(true);
-  documentStub = Object.assign(new EventTarget(), { body: {}, activeElement: null as unknown });
+  documentStub = Object.assign(new EventTarget(), {
+    body: {},
+    activeElement: null as unknown,
+    querySelectorAll: () => [],
+  });
+  const rawRemove = documentStub.removeEventListener.bind(documentStub);
+  documentStub.removeEventListener = ((
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions,
+  ) => {
+    rawRemove(type, callback, typeof options === 'boolean' ? { capture: options } : options);
+  }) as typeof documentStub.removeEventListener;
   vi.stubGlobal('document', documentStub);
+  vi.stubGlobal('HTMLElement', DomNode);
+  vi.stubGlobal('Node', DomNode);
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-09-04T12:00:00Z'));
 });

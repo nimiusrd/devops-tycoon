@@ -717,13 +717,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * 既存の保存データは上書きしない。永続先が空で、メモリ上にランセーブがあるときだけそれを移す。
    */
   const recoverDurableLoads = async (): Promise<void> => {
+    const runRevisionAtStart = runRevision;
+    const replayBaselineIds = new Set(cachedReplays.map((item) => item.id));
     if (tracker.isSession('meta') && durableMeta) {
       try {
+        const seenMetaRevision = metaRevision;
         const loaded = await durableMeta.load();
+        const metaMoved = metaRevision !== seenMetaRevision;
         if (loaded && !metaMigrationOpen) {
-          meta = loaded;
-          metaStorage = durableMeta;
-          tracker.clearSession('meta');
+          // 読込中の報酬や設定は、古い永続データで置き換えない。
+          if (!metaMoved) {
+            meta = loaded;
+            metaStorage = durableMeta;
+            tracker.clearSession('meta');
+          }
         } else {
           const target = durableMeta;
           metaMigrationOpen = true;
@@ -749,9 +756,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     if (tracker.isSession('run') && durableRun) {
       try {
-        const seenRevision = runRevision;
         const loaded = await durableRun.load();
-        const importMoved = runImportDepth > 0 || runRevision !== seenRevision;
+        const importMoved = runImportDepth > 0 || runRevision !== runRevisionAtStart;
         if (loaded && !runMigrationOpen) {
           // 進行中ランの保存先は切り替えない。読込中の取り込みも、既存セーブでは置き換えない。
           if (!importMoved && canAdoptDurableRun()) {
@@ -809,7 +815,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
         return cachedReplays.map((item) => structuredClone(item));
       };
-      const memoryBeforeIds = new Set((await readMemoryReplays()).map((item) => item.id));
+      const memoryBeforeIds = replayBaselineIds;
       const saveOntoDurable = (blob: ReplayBlob): Promise<void> => {
         const protectIds = [...pinnedReplayIds];
         return target.save(
@@ -1520,6 +1526,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           resumableSave = structuredClone(intended);
           runSaveIssue = null;
           runRevision += 1;
+          if (runStorage && !tracker.isSession('run')) tracker.noteDurableAt(intended.savedAt);
           bump();
         } finally {
           runImportDepth -= 1;

@@ -151,6 +151,22 @@ describe('PersistenceTracker', () => {
     expect(remaining.liveMessage).toContain('保存に失敗しました');
   });
 
+  it('失敗中の次の書き込みでも、失敗案内と再試行を残す', () => {
+    const tracker = new PersistenceTracker();
+    const failed = tracker.begin('replay');
+    tracker.fail('replay', failed, new Error('storage unavailable'));
+    const next = tracker.begin('replay');
+    const during = tracker.notice(true);
+    expect(during.state).toBe('failed');
+    expect(during.showRetry).toBe(true);
+    expect(during.showExport).toBe(true);
+    expect(tracker.settleCurrent('replay', 10)).toBe(false);
+
+    tracker.succeed('replay', next, 20);
+    expect(tracker.notice(false).state).toBe('saved');
+    expect(tracker.notice(false).liveMessage).toBe('保存できました。');
+  });
+
   it('一部のチャネルだけがセッション限りだと、対象を案内する', () => {
     const tracker = new PersistenceTracker();
     tracker.markSession('replay');

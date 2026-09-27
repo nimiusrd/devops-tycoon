@@ -265,6 +265,130 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().liveMessage).toContain('読み直せました');
   });
 
+  it('メタの再読込中に変わった設定は、古い永続データで置き換えない', async () => {
+    const durable = new MemoryMetaStorage();
+    const existing = { ...defaultMeta(), points: 80, soundMuted: true };
+    await durable.save(existing);
+    const game = createGame({ seed: 'meta-moved', metaReady: false });
+    game.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    const original = durable.load.bind(durable);
+    let release: (() => void) | undefined;
+    vi.spyOn(durable, 'load').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve(original());
+        }),
+    );
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    game.setSoundMuted(false);
+    release?.();
+    await pending;
+
+    expect(game.getMeta().soundMuted).toBe(false);
+    expect(game.getMeta().points).not.toBe(80);
+    expect((await durable.load()).soundMuted).toBe(true);
+    expect(game.getPersistenceStatus().state).toBe('session');
+  });
+
+  it('メタ復旧の待ち時間に取り込んだランは、既存セーブで置き換えない', async () => {
+    const metaDurable = new MemoryMetaStorage();
+    await metaDurable.save(defaultMeta());
+    const runDurable = new MemoryRunStorage();
+    await runDurable.save(makeRunSave('stored-run'));
+    const game = createGame({ seed: 'import-during-meta', metaReady: false });
+    game.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: metaDurable,
+    });
+    game.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: runDurable,
+    });
+    const original = metaDurable.load.bind(metaDurable);
+    let release: (() => void) | undefined;
+    vi.spyOn(metaDurable, 'load').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve(original());
+        }),
+    );
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    const importing = game.importRunSaveText(serializeRunSave(makeRunSave('imported-run')));
+    expect(await importing).toMatchObject({ ok: true });
+    release?.();
+    await pending;
+
+    expect(game.getRunSaveSummary()?.seed).toBe('imported-run');
+    expect((await runDurable.load())?.summary.seed).toBe('stored-run');
+    expect(game.getPersistenceStatus().state).toBe('session');
+  });
+
+  it('再試行開始後、リプレイ復旧の前に完走した記録は永続先へ残す', async () => {
+    const metaDurable = new MemoryMetaStorage();
+    await metaDurable.save({ ...defaultMeta(), points: 4 });
+    const replayDurable = new MemoryReplayStorage();
+    await replayDurable.save(makeReplay('stored-replay'));
+    const game = createGame({ seed: 'finish-before-replay', metaReady: false });
+    game.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: metaDurable,
+    });
+    await game.attachReplay(new MemoryReplayStorage(), {
+      sessionOnly: true,
+      durableStorage: replayDurable,
+    });
+    const original = metaDurable.load.bind(metaDurable);
+    let release: (() => void) | undefined;
+    vi.spyOn(metaDurable, 'load').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve(original());
+        }),
+    );
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    game.startRun('easy', [], 'during-meta');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    release?.();
+    await pending;
+
+    expect((await replayDurable.list()).map((replay) => replay.seed).sort()).toEqual([
+      'during-meta',
+      'stored-replay',
+    ]);
+    expect(game.listReplays().map((replay) => replay.seed)).toContain('during-meta');
+    expect(game.getPersistenceStatus().detail).toContain('メタ進行はこのセッション限り');
+    expect(game.getPersistenceStatus().detail).not.toContain('リプレイ');
+  });
+
+  it('永続先へのセーブ取り込みは、最後に端末へ保存できた時刻になる', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ seed: 'import-clock', runStorage: storage });
+    const save = makeRunSave('imported-run');
+    expect(await game.importRunSaveText(serializeRunSave(save))).toMatchObject({ ok: true });
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    game.startRun('easy', [], 'after-import');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const status = game.getPersistenceStatus();
+    expect(status.state).toBe('failed');
+    expect(status.detail).toContain(formatPersistenceClock(save.savedAt));
+    expect(status.detail).not.toContain('まだ端末へ保存できていません');
+  });
+
   it('完走リプレイの保存失敗は記録を残し、再試行で保存できる', async () => {
     const storage = new MemoryReplayStorage();
     const game = createGame({ seed: 'replay-retry' });

@@ -27,6 +27,8 @@ interface ChannelState {
   generation: number;
   write: PersistenceWrite;
   failure: PersistenceFailure | null;
+  /** 未保存が残ったまま次の書き込み中。案内は失敗のままにする。 */
+  savingWhileFailed: boolean;
 }
 
 const CHANNELS: readonly PersistenceChannel[] = ['meta', 'run', 'replay'];
@@ -38,7 +40,7 @@ const SESSION_LABEL: Record<PersistenceChannel, string> = {
 };
 
 function freshChannel(): ChannelState {
-  return { generation: 0, write: 'idle', failure: null };
+  return { generation: 0, write: 'idle', failure: null, savingWhileFailed: false };
 }
 
 export function persistenceFailureKind(error: unknown): PersistenceFailure {
@@ -119,14 +121,18 @@ export class PersistenceTracker {
    */
   settleCurrent(channel: PersistenceChannel, at: number): boolean {
     const current = this.channels[channel];
-    if (current.write !== 'failed') return false;
+    if (current.write !== 'failed' || current.savingWhileFailed) return false;
     return this.succeed(channel, current.generation, at);
   }
 
   begin(channel: PersistenceChannel): number {
     const current = this.channels[channel];
     current.generation += 1;
-    current.write = 'saving';
+    if (current.write === 'failed') current.savingWhileFailed = true;
+    else {
+      current.write = 'saving';
+      current.savingWhileFailed = false;
+    }
     return current.generation;
   }
 
@@ -136,6 +142,7 @@ export class PersistenceTracker {
     const recovered = current.write === 'failed';
     current.write = 'saved';
     current.failure = null;
+    current.savingWhileFailed = false;
     // 削除の成功は、状態を書けた時刻にしない。
     if (at !== null) this.lastDurableAt = at;
     if ((recovered || this.announcedFailure) && !this.hasFailure() && !this.isSession()) {
@@ -153,6 +160,7 @@ export class PersistenceTracker {
     if (current.generation !== generation) return false;
     current.write = 'failed';
     current.failure = persistenceFailureKind(error);
+    current.savingWhileFailed = false;
     this.announcedFailure = true;
     this.syncLiveFromState();
     return true;

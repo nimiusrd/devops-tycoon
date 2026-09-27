@@ -123,6 +123,23 @@ function EvolutionSimPause({ game }: { game: GameHandle }) {
 }
 
 /**
+ * ラン中の遊び方を開いている間、自動進行だけを止める（RI-148）。
+ * 再生速度（手動停止 / 1x / 2x）は変えず、WebGL 未準備も触らない。
+ * pause epoch とは独立した保持なので、pauseBriefly や読込中フォールバックが
+ * resume しても、遊び方を閉じるまで進行は止まっている。
+ * 既にある pause() は解放では解除しない。
+ */
+function RunHelpSimPause({ game }: { game: GameHandle }) {
+  useEffect(() => {
+    game.acquirePauseHold();
+    return () => {
+      game.releasePauseHold();
+    };
+  }, [game]);
+  return null;
+}
+
+/**
  * SprintScreen チャンク読込中は自動進行を止める。
  * 既に E2E 等で pause 済みなら触らず、自分が止めた epoch のままなら resume する。
  * （読込中に外部が再 pause したら epoch が進むので誤 resume しない。）
@@ -624,6 +641,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         getInitialPreviousSnapshot={getLastRunMetricSnapshot}
         onSnapshotCaptured={rememberRunMetricSnapshot}
         compact={sprintLayout}
+        soundMuted={meta.soundMuted}
+        onOpenHelp={() => setHelpOpen(true)}
+        onToggleSoundMuted={() => {
+          audio.unlock();
+          run.setSoundMuted(!meta.soundMuted);
+        }}
       />
     </>
   );
@@ -830,6 +853,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           />
         )}
       </Suspense>
+      {helpOpen && <RunHelpSimPause game={game} />}
+      {helpOpen && (
+        <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
+          <HowToPlayScreen onClose={closeHelp} />
+        </Suspense>
+      )}
     </div>
   );
 }

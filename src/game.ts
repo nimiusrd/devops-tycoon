@@ -93,9 +93,16 @@ export interface ActiveReplayInfo {
 export interface GameHandle {
   /** 自動進行を止める。 */
   pause(): void;
-  /** 自動進行を再開する。 */
+  /** 自動進行を再開する。pause hold は解除しない。 */
   resume(): void;
-  /** 一時停止中か。 */
+  /**
+   * pause epoch とは独立した停止。resume() では解けない。
+   * 遊び方表示など、既存の一時停止が先に解けても止め続けたいときに使う。
+   */
+  acquirePauseHold(): void;
+  /** acquirePauseHold の対。残りの保持がある間は isPaused() が true。 */
+  releasePauseHold(): void;
+  /** 一時停止中か。pause() 済み、または未解放の pause hold がある。 */
   isPaused(): boolean;
   /**
    * pause() の呼び出し回数（所有権判定用）。
@@ -297,6 +304,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let paused = false;
   /** pause() の呼び出し回数。resume では進めない。 */
   let pauseEpoch = 0;
+  /** resume() では解けない停止の数。遊び方表示などが使う。 */
+  let pauseHolds = 0;
   let meta = options.initialMeta ?? defaultMeta();
   let metaStorage = options.metaStorage ?? null;
   let metaReady = options.metaReady ?? true;
@@ -614,8 +623,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     resume() {
       paused = false;
     },
+    acquirePauseHold() {
+      pauseHolds += 1;
+    },
+    releasePauseHold() {
+      pauseHolds = Math.max(0, pauseHolds - 1);
+    },
     isPaused() {
-      return paused;
+      return paused || pauseHolds > 0;
     },
     getPauseEpoch() {
       return pauseEpoch;

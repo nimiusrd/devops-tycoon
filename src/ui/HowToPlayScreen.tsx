@@ -3,7 +3,8 @@
  *
  * 世界観の制約（第2.1）に沿った現実的なトーンで、初見が最初のスプリントまで
  * 到達できる最低限の操作を説明する。描画は読むだけ（第22.2）。
- * Escape は親（App）が最前面判定つきで処理する。
+ * タイトルとラン中で同じ画面を使う（RI-148）。
+ * Escape はオーバーレイロックが capture で閉じ、背面のズーム操作へ伝えない。
  * フォーカス閉じ込めと閉じたあとの起点復帰は `useDialogOverlayLock` に任せる。
  */
 import { ResultOverlay } from './ResultOverlay';
@@ -17,7 +18,7 @@ export interface HowToPlayScreenProps {
 
 export function HowToPlayScreen({ onClose }: HowToPlayScreenProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(dialogRef, { restoreFocus: true });
+  useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: onClose });
 
   return (
     <ResultOverlay

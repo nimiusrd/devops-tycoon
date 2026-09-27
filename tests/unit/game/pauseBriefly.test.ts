@@ -77,6 +77,40 @@ describe('pauseBriefly（RI-10）', () => {
     expect(game.getPauseEpoch()).toBe(externalEpoch);
   });
 
+  it('遊び方の pause hold 中に pauseBriefly が resume しても、解放まで止まっている', () => {
+    const game = createGame({ seed: 'ri148-pause-hold' });
+    pauseBriefly(game, 500);
+    game.acquirePauseHold();
+
+    vi.advanceTimersByTime(500);
+    expect(game.isPaused()).toBe(true);
+
+    game.releasePauseHold();
+    expect(game.isPaused()).toBe(false);
+  });
+
+  it('外部 pause は pause hold の解放では解除しない', () => {
+    const game = createGame({ seed: 'ri148-pause-hold-external' });
+    game.pause();
+    game.acquirePauseHold();
+    game.releasePauseHold();
+    expect(game.isPaused()).toBe(true);
+  });
+
+  it('pause hold 中の pauseBriefly は所有せず、解放後に進める', () => {
+    const game = createGame({ seed: 'ri148-pause-hold-first' });
+    game.acquirePauseHold();
+    const epoch = game.getPauseEpoch();
+
+    pauseBriefly(game, 500);
+    expect(game.getPauseEpoch()).toBe(epoch);
+
+    vi.advanceTimersByTime(500);
+    expect(game.isPaused()).toBe(true);
+    game.releasePauseHold();
+    expect(game.isPaused()).toBe(false);
+  });
+
   it('RI-62: プレイヤー再生速度は game.pause を使わず、pauseBriefly と独立', () => {
     // プレイヤー Pause は useRun の playbackSpeed=0（UI 状態）。ここでは
     // game.pause を触らないまま pauseBriefly の epoch 契約が保たれることを確認する。

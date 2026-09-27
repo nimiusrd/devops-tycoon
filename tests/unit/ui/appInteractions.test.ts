@@ -388,8 +388,9 @@ function makeRun(overrides: Partial<UseRun> = {}): UseRun {
 function makeGame() {
   let paused = false;
   let epoch = 0;
+  let holds = 0;
   return {
-    isPaused: vi.fn(() => paused),
+    isPaused: vi.fn(() => paused || holds > 0),
     getPauseEpoch: vi.fn(() => epoch),
     pause: vi.fn(() => {
       paused = true;
@@ -397,6 +398,12 @@ function makeGame() {
     }),
     resume: vi.fn(() => {
       paused = false;
+    }),
+    acquirePauseHold: vi.fn(() => {
+      holds += 1;
+    }),
+    releasePauseHold: vi.fn(() => {
+      holds = Math.max(0, holds - 1);
     }),
   };
 }
@@ -947,6 +954,87 @@ describe('App のリプレイ表示', () => {
     const lastCleanup = vi.mocked(observeReplayBannerHeight).mock.results.at(-1)!.value;
     screen.unmount();
     expect(lastCleanup).toHaveBeenCalledOnce();
+  });
+});
+
+describe('App のラン中メニュー', () => {
+  it('編成中に遊び方を開き、再生速度を変えずに進行停止を所有する', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    expect(screen.child('RunBar').onOpenHelp).toEqual(expect.any(Function));
+    expect(screen.child('RunBar').soundMuted).toBe(true);
+    screen.invoke('RunBar', 'onOpenHelp');
+    expect(screen.has('HowToPlayScreen')).toBe(true);
+    expect(screen.has('RunHelpSimPause')).toBe(true);
+    expect(screen.has('SetupScreen')).toBe(true);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+    const local = screen.mountLocal('RunHelpSimPause');
+    expect(screen.game.acquirePauseHold).toHaveBeenCalledOnce();
+    expect(screen.game.pause).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(true);
+    screen.invoke('HowToPlayScreen', 'onClose');
+    expect(screen.has('HowToPlayScreen')).toBe(false);
+    expect(screen.has('RunHelpSimPause')).toBe(false);
+    expect(screen.has('SetupScreen')).toBe(true);
+    local.unmount();
+    expect(screen.game.releasePauseHold).toHaveBeenCalledOnce();
+    expect(screen.game.resume).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(false);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('遊び方で止めたあとに別の pause が入っても、閉じたときに解除しない', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    screen.invoke('RunBar', 'onOpenHelp');
+    const local = screen.mountLocal('RunHelpSimPause');
+    expect(screen.game.acquirePauseHold).toHaveBeenCalledOnce();
+    screen.game.pause();
+    local.unmount();
+    expect(screen.game.releasePauseHold).toHaveBeenCalledOnce();
+    expect(screen.game.resume).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(true);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('既に止まっている進行は遊び方を閉じても再開しない', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    screen.game.pause();
+    screen.invoke('RunBar', 'onOpenHelp');
+    const local = screen.mountLocal('RunHelpSimPause');
+    expect(screen.game.acquirePauseHold).toHaveBeenCalledOnce();
+    expect(screen.game.pause).toHaveBeenCalledOnce();
+    local.unmount();
+    expect(screen.game.releasePauseHold).toHaveBeenCalledOnce();
+    expect(screen.game.resume).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(true);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('一時停止が先に解けても、遊び方を開いている間は進行を止めたままにする', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    screen.game.pause();
+    screen.invoke('RunBar', 'onOpenHelp');
+    const local = screen.mountLocal('RunHelpSimPause');
+    screen.game.resume();
+    expect(screen.game.isPaused()).toBe(true);
+    local.unmount();
+    expect(screen.game.isPaused()).toBe(false);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('ラン中の音切替はメタ保存とオーディオ解錠へ渡す', () => {
+    const screen = mountApp();
+    screen.phase('sprint');
+    screen.invoke('RunBar', 'onToggleSoundMuted');
+    expect(audio.unlock).toHaveBeenCalledOnce();
+    expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(false);
+    screen.update({ meta: { ...screen.run.meta, soundMuted: false } });
+    screen.invoke('RunBar', 'onToggleSoundMuted');
+    expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(true);
+    expect(audio.unlock).toHaveBeenCalledTimes(2);
   });
 });
 

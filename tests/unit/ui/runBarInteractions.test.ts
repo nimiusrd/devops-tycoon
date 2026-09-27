@@ -159,6 +159,7 @@ function mountRunBar(overrides: Partial<RunBarProps> = {}) {
       (node.props.onClick as (event?: unknown) => void)(event);
       flush();
     },
+    flush,
     advance(ms: number) {
       vi.advanceTimersByTime(ms);
       flush();
@@ -272,6 +273,59 @@ describe('RunBar の表示と操作', () => {
     });
     screen.update({ onOpenFormation: undefined });
     expect(content(screen.find('roster-count'))).toBe('👥3 😴1');
+  });
+
+  it('ラン中メニューから遊び方と音の切替を開き、閉じたメニューは盤面操作を増やさない', () => {
+    const onOpenHelp = vi.fn();
+    const onToggleSoundMuted = vi.fn();
+    const screen = mountRunBar({
+      onOpenHelp,
+      onToggleSoundMuted,
+      soundMuted: true,
+      readOnly: true,
+    });
+    expect(screen.has('run-menu')).toBe(true);
+    expect(screen.has('run-session-menu-panel')).toBe(false);
+    expect(screen.find('run-menu').props).toMatchObject({
+      'aria-expanded': false,
+      'aria-controls': 'run-session-menu',
+    });
+    expect(screen.find('run-menu').props.disabled).not.toBe(true);
+    screen.click('run-menu');
+    expect(screen.find('run-menu').props['aria-expanded']).toBe(true);
+    expect(screen.find('run-session-menu-panel').props).toMatchObject({
+      id: 'run-session-menu',
+      role: 'group',
+      'aria-label': 'ランのメニュー',
+    });
+    expect(content(screen.find('run-open-help'))).toBe('遊び方');
+    expect(content(screen.find('run-sound-mute'))).toBe('ミュート中');
+    expect(screen.find('run-sound-mute').props['aria-pressed']).toBe(true);
+    screen.click('run-sound-mute');
+    expect(onToggleSoundMuted).toHaveBeenCalledOnce();
+    expect(screen.has('run-session-menu-panel')).toBe(true);
+    screen.update({ soundMuted: false });
+    expect(content(screen.find('run-sound-mute'))).toBe('音あり');
+    expect(screen.find('run-sound-mute').props['aria-pressed']).toBe(false);
+    screen.click('run-open-help');
+    expect(onOpenHelp).toHaveBeenCalledOnce();
+    expect(screen.has('run-session-menu-panel')).toBe(false);
+    screen.click('run-menu');
+    const escape = {
+      key: 'Escape',
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+      currentTarget: { querySelector: () => null },
+    };
+    const root = elements(screen.find('runbar')).find(
+      (node) => node.props.className === 'run-session-menu',
+    );
+    expect(root).toBeTruthy();
+    (root!.props.onKeyDown as (event: typeof escape) => void)(escape);
+    screen.flush();
+    expect(escape.preventDefault).toHaveBeenCalledOnce();
+    expect(escape.stopPropagation).toHaveBeenCalledOnce();
+    expect(screen.has('run-session-menu-panel')).toBe(false);
   });
 
   it('予算と信頼の危険予兆、適用試練と当四半期だけの修正持ち越しを表示する', () => {

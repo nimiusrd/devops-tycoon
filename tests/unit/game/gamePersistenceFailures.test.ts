@@ -339,6 +339,14 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getRunSaveSummary()?.seed).toBe('kept-run');
     expect(game.getPersistenceStatus().state).not.toBe('session');
 
+    vi.spyOn(durable, 'save').mockRejectedValueOnce(new Error('transient'));
+    game.startRun('easy', [], 'after-migrate');
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    const migrated = game.getPersistenceStatus();
+    expect(migrated.state).toBe('failed');
+    expect(migrated.detail).toContain('最後に端末へ保存できた時刻');
+    expect(migrated.detail).not.toContain('まだ端末へ保存できていません');
+
     const durableExisting = new MemoryRunStorage();
     await durableExisting.save(makeRunSave('stored-run'));
     const other = createGame({ seed: 'stored-run' });
@@ -612,6 +620,58 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(overwrite).not.toHaveBeenCalled();
     expect((await occupied.list()).map((replay) => replay.seed)).toEqual(['stored-replay']);
     expect(other.listReplays().map((replay) => replay.seed)).toEqual(['stored-replay']);
+  });
+
+  it('リプレイ移行中に失敗した新しい完走は、セッションを外さず永続先へ残す', async () => {
+    const durable = new MemoryReplayStorage();
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'migrate-pending' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = (seed: string) => {
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+    };
+    finish('migrate-a');
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    expect(await memory.list()).toHaveLength(1);
+
+    const originalDurable = durable.save.bind(durable);
+    let releaseDurable: (() => void) | undefined;
+    vi.spyOn(durable, 'save').mockImplementationOnce(
+      (blob) =>
+        new Promise((resolve) => {
+          releaseDurable = () => resolve(originalDurable(blob));
+        }),
+    );
+    vi.spyOn(memory, 'save').mockRejectedValueOnce(new Error('memory failed'));
+
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !releaseDurable; i += 1) await Promise.resolve();
+    expect(releaseDurable).toBeTypeOf('function');
+    finish('migrate-b');
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    releaseDurable?.();
+    await pending;
+
+    const seeds = (await durable.list()).map((replay) => replay.seed).sort();
+    const status = game.getPersistenceStatus();
+    if (seeds.includes('migrate-b')) {
+      expect(seeds).toEqual(['migrate-a', 'migrate-b']);
+      expect(status.state).not.toBe('session');
+      expect(status.state).not.toBe('failed');
+      return;
+    }
+    expect(status.state === 'session' || status.state === 'failed').toBe(true);
+    await game.retryPersistence();
+    expect((await durable.list()).map((replay) => replay.seed).sort()).toEqual([
+      'migrate-a',
+      'migrate-b',
+    ]);
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+    expect(game.getPersistenceStatus().state).not.toBe('failed');
   });
 
   it('途中まで移したリプレイは既存データとして捨てず、再試行で残りも書く', async () => {

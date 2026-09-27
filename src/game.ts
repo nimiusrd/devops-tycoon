@@ -363,6 +363,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let replayMigrationOpen = false;
   /** 保存処理中の完走リプレイ。再試行では重ねて送らない。 */
   const replaySavesInFlight = new Set<ReplayBlob>();
+  /** 進行中の保存。移行側は完了を待ってからセッションを外す。 */
+  const replaySavePromises = new Map<ReplayBlob, Promise<void>>();
   if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -500,11 +502,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     pendingReplays.push(blob);
     // 完走時点で共有配列から切り離す。非同期完了で次ランのフレームを消さない。
     keyframes = [];
+    trackWrite('replay', beginReplaySave(blob), () => completePendingReplay(blob));
+  };
+
+  /** 完走リプレイの保存を追跡する。移行中も、この Promise が残る間は確定しない。 */
+  const beginReplaySave = (blob: ReplayBlob): Promise<void> => {
     replaySavesInFlight.add(blob);
     const work = saveReplayBlob(blob).finally(() => {
       replaySavesInFlight.delete(blob);
+      replaySavePromises.delete(blob);
     });
-    trackWrite('replay', work, () => completePendingReplay(blob));
+    replaySavePromises.set(blob, work);
+    return work;
   };
 
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
@@ -754,6 +763,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 runMigrationOpen = false;
                 runStorage = target;
                 runSaveIssue = null;
+                if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
                 tracker.clearSession('run');
               },
             );
@@ -767,54 +777,65 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     if (tracker.isSession('replay') && durableReplay) {
       const previous = replayStorage;
-      const memoryCache = cachedReplays.map((item) => structuredClone(item));
-      let memoryReplays = memoryCache;
-      if (previous && previous !== durableReplay) {
-        try {
-          memoryReplays = await previous.list();
-        } catch {
-          memoryReplays = memoryCache;
-        }
-      }
-      const restoreReplay = (): void => {
-        replayStorage = previous;
-        cachedReplays = memoryCache;
-        bump();
-      };
       const target = durableReplay;
-      replayStorage = target;
-      const listed = await refreshReplayCache();
-      if (!listed) {
-        restoreReplay();
+      const readMemoryReplays = async (): Promise<ReplayBlob[]> => {
+        if (previous && previous !== target) {
+          try {
+            return await previous.list();
+          } catch {
+            return cachedReplays.map((item) => structuredClone(item));
+          }
+        }
+        return cachedReplays.map((item) => structuredClone(item));
+      };
+      let durableList: ReplayBlob[];
+      try {
+        durableList = await target.list();
+      } catch {
         return;
       }
-      if (cachedReplays.length > 0 && !replayMigrationOpen) {
+      // 既存リプレイがある永続先は上書きしない。保存先は一覧が取れてから切り替える。
+      if (durableList.length > 0 && !replayMigrationOpen) {
+        replayStorage = target;
+        cachedReplays = durableList;
+        bump();
         tracker.clearSession('replay');
         return;
       }
-      const extras = pendingReplays.filter(
-        (blob) => !memoryReplays.some((item) => item.id === blob.id),
-      );
-      const toSave = [...memoryReplays, ...extras];
-      if (toSave.length === 0) {
-        replayMigrationOpen = false;
-        tracker.clearSession('replay');
-        return;
-      }
+      // 空の永続先へ移す間はメモリのままにする。その間の完走失敗も pending に残し、書き終えてから外す。
       replayMigrationOpen = true;
       try {
-        for (const blob of toSave) {
-          await target.save(structuredClone(blob));
-        }
-        const refreshed = await refreshReplayCache();
-        if (!refreshed) {
-          restoreReplay();
+        for (;;) {
+          if (replaySavePromises.size > 0) {
+            await Promise.allSettled([...replaySavePromises.values()]);
+            continue;
+          }
+          const memoryReplays = await readMemoryReplays();
+          if (replaySavePromises.size > 0) continue;
+          const memoryIds = new Set(memoryReplays.map((item) => item.id));
+          const extras = pendingReplays.filter((blob) => !memoryIds.has(blob.id));
+          const toSave = [...memoryReplays, ...extras];
+          const writtenIds = new Set(toSave.map((blob) => blob.id));
+          for (const blob of toSave) {
+            await target.save(structuredClone(blob));
+            if (pendingReplays.includes(blob)) completePendingReplay(blob);
+          }
+          if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
+          const confirm = await readMemoryReplays();
+          if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
+          if (confirm.some((item) => !writtenIds.has(item.id))) continue;
+          const listed = await target.list();
+          if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
+          if (replaySavePromises.size > 0) continue;
+          replayStorage = target;
+          cachedReplays = listed;
+          replayMigrationOpen = false;
+          tracker.clearSession('replay');
+          bump();
           return;
         }
-        replayMigrationOpen = false;
-        tracker.clearSession('replay');
       } catch {
-        restoreReplay();
+        // 途中まで書いていても、未保存の完走が残る間はセッション限りのままにする。
       }
     }
   };
@@ -1275,11 +1296,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             tasks.push(
               (async () => {
                 for (const blob of blobs) {
-                  replaySavesInFlight.add(blob);
-                  const work = saveReplayBlob(blob).finally(() => {
-                    replaySavesInFlight.delete(blob);
-                  });
-                  await retryWrite('replay', work, () => completePendingReplay(blob));
+                  await retryWrite('replay', beginReplaySave(blob), () =>
+                    completePendingReplay(blob),
+                  );
                 }
               })(),
             );

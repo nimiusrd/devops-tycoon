@@ -4882,6 +4882,17 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .replay-share-status.error {
   color: #f3b27a;
 }
+/* 平常時の読み上げは body 直下でも、タイトルの 100dvh を伸ばさない。 */
+.persistence-live {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
 .persistence-notice {
   display: flex;
   flex-wrap: wrap;

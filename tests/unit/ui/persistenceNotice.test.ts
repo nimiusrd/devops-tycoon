@@ -53,6 +53,7 @@ describe('PersistenceNotice', () => {
     );
     expect(find(idle, 'persistence-live').props).toMatchObject({
       'aria-live': 'polite',
+      className: 'visually-hidden persistence-live',
       children: '',
     });
     expect(

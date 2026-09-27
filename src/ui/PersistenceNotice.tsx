@@ -25,7 +25,7 @@ export function PersistenceNotice({
   // ライブリージョンは先に空で置き、文言の変化だけを読み上げる。
   const live = (
     <span
-      className="visually-hidden"
+      className="visually-hidden persistence-live"
       aria-live="polite"
       data-testid="persistence-live"
       data-overlay-lock-exempt="true"

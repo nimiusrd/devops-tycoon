@@ -48,7 +48,7 @@ import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
-import { downloadTextFile } from './ui/downloadTextFile';
+import { downloadTextFile, persistenceExportMessage } from './ui/downloadTextFile';
 import { PersistenceNotice } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
@@ -239,6 +239,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const [eventTickerExpanded, setEventTickerExpanded] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
@@ -466,13 +467,15 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const persistenceNotice = (
     <PersistenceNotice
       notice={run.persistenceStatus}
+      exportMessage={exportMessage}
       onRetry={() => {
+        setExportMessage(null);
         void run.retryPersistence();
       }}
       onExport={() => {
         const text = run.exportRunSaveText();
-        if (!text) return;
-        downloadTextFile('devops-tycoon-run-save.json', text);
+        const downloaded = text ? downloadTextFile('devops-tycoon-run-save.json', text) : false;
+        setExportMessage(persistenceExportMessage(text, downloaded));
       }}
     />
   );

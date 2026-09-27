@@ -553,6 +553,36 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 
+  it('既存セーブの再読込中に取り込んだランは、既存データで置き換えず上書きもしない', async () => {
+    const durable = new MemoryRunStorage();
+    await durable.save(makeRunSave('stored-run'));
+    const game = createGame({ seed: 'import-during-adopt' });
+    game.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    expect(game.engine.snapshot().phase).toBe('title');
+    const original = durable.load.bind(durable);
+    let release: (() => void) | undefined;
+    vi.spyOn(durable, 'load').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve(original());
+        }),
+    );
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    const importing = game.importRunSaveText(serializeRunSave(makeRunSave('imported-run')));
+    release?.();
+    await pending;
+    expect(await importing).toMatchObject({ ok: true });
+
+    expect(game.getRunSaveSummary()?.seed).toBe('imported-run');
+    expect((await durable.load())?.summary.seed).toBe('stored-run');
+    expect(game.getPersistenceStatus().state).toBe('session');
+  });
+
   it('空の永続先へ移している間のセーブ取り込みも、復旧前に永続先へ書く', async () => {
     const held = makeRunSave('held-run');
     const durable = new MemoryRunStorage();
@@ -672,6 +702,52 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     ]);
     expect(game.getPersistenceStatus().state).not.toBe('session');
     expect(game.getPersistenceStatus().state).not.toBe('failed');
+  });
+
+  it('リプレイ移行の最終一覧中に取り込んだ完走は、メモリへ残したまま消さない', async () => {
+    const durable = new MemoryReplayStorage();
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'replay-import-migrate' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    const internals = game.engine as unknown as { phase: string; status: string };
+    game.startRun('easy', [], 'migrate-a');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+
+    const originalList = durable.list.bind(durable);
+    let lists = 0;
+    let release: (() => void) | undefined;
+    vi.spyOn(durable, 'list').mockImplementation(() => {
+      lists += 1;
+      if (lists === 2) {
+        return new Promise((resolve) => {
+          release = () => resolve(originalList());
+        });
+      }
+      return originalList();
+    });
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 16 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    const importing = game.importReplayText(serializeReplay(makeReplay('imported-replay')));
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    release?.();
+    await pending;
+    expect(await importing).toMatchObject({ ok: true });
+
+    expect((await durable.list()).map((replay) => replay.seed).sort()).toEqual([
+      'imported-replay',
+      'migrate-a',
+    ]);
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['imported-replay', 'migrate-a']);
+    expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 
   it('途中まで移したリプレイは既存データとして捨てず、再試行で残りも書く', async () => {

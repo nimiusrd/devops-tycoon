@@ -355,6 +355,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let runRevision = 0;
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
+  /** リプレイ取り込みの世代。最終一覧のあとでも、途中の取り込みを既存データにしない。 */
+  let replayRevision = 0;
+  let replayImportDepth = 0;
+  let replayImportWrites: Promise<void> = Promise.resolve();
   /** セッション復旧の再試行。二重クリックでも並行させない。 */
   let persistenceRetry: Promise<void> | null = null;
   /** 空だった永続先へ途中まで書いた記録。次回は既存データとして採用しない。 */
@@ -731,10 +735,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     if (tracker.isSession('run') && durableRun) {
       try {
+        const seenRevision = runRevision;
         const loaded = await durableRun.load();
+        const importMoved = runImportDepth > 0 || runRevision !== seenRevision;
         if (loaded && !runMigrationOpen) {
-          // 進行中ランの保存先は切り替えない。次のチェックポイントが既存セーブを上書きしない。
-          if (canAdoptDurableRun()) {
+          // 進行中ランの保存先は切り替えない。読込中の取り込みも、既存セーブでは置き換えない。
+          if (!importMoved && canAdoptDurableRun()) {
             const issue = getRunSaveCompatibilityIssue(loaded);
             runStorage = durableRun;
             runSaveIssue = issue ? structuredClone(issue) : null;
@@ -810,6 +816,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             await Promise.allSettled([...replaySavePromises.values()]);
             continue;
           }
+          if (replayImportDepth > 0) {
+            await replayImportWrites;
+            continue;
+          }
           const memoryReplays = await readMemoryReplays();
           if (replaySavePromises.size > 0) continue;
           const memoryIds = new Set(memoryReplays.map((item) => item.id));
@@ -824,9 +834,28 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const confirm = await readMemoryReplays();
           if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
           if (confirm.some((item) => !writtenIds.has(item.id))) continue;
+          const seenReplayRevision = replayRevision;
           const listed = await target.list();
-          if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
-          if (replaySavePromises.size > 0) continue;
+          if (
+            pendingReplays.length > 0 ||
+            replaySavesInFlight.size > 0 ||
+            replaySavePromises.size > 0 ||
+            replayImportDepth > 0 ||
+            replayRevision !== seenReplayRevision
+          ) {
+            continue;
+          }
+          const confirmAfterList = await readMemoryReplays();
+          if (
+            pendingReplays.length > 0 ||
+            replaySavesInFlight.size > 0 ||
+            replaySavePromises.size > 0 ||
+            replayImportDepth > 0 ||
+            replayRevision !== seenReplayRevision ||
+            confirmAfterList.some((item) => !writtenIds.has(item.id))
+          ) {
+            continue;
+          }
           replayStorage = target;
           cachedReplays = listed;
           replayMigrationOpen = false;
@@ -1431,35 +1460,49 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
         };
       }
-      try {
-        await replayStorage.save(loaded.replay, { pin: true });
-        const listed = await refreshReplayCache();
-        if (!listed) {
-          cachedReplays = selectReplaysWithinMax(
-            [
-              ...cachedReplays.filter((item) => item.id !== loaded.replay.id),
-              structuredClone(loaded.replay),
-            ],
-            loaded.replay.id,
-          );
-          bump();
+      const storage = replayStorage;
+      replayImportDepth += 1;
+      replayRevision += 1;
+      const write = replayImportWrites.then(async () => {
+        try {
+          await storage.save(loaded.replay, { pin: true });
+          const listed = await refreshReplayCache();
+          if (!listed) {
+            cachedReplays = selectReplaysWithinMax(
+              [
+                ...cachedReplays.filter((item) => item.id !== loaded.replay.id),
+                structuredClone(loaded.replay),
+              ],
+              loaded.replay.id,
+            );
+            bump();
+            replayRevision += 1;
+            return loaded;
+          }
+          if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
+            return {
+              ok: false as const,
+              reason: 'corrupt' as const,
+              message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+            };
+          }
+          replayRevision += 1;
           return loaded;
-        }
-        if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
+        } catch {
           return {
-            ok: false,
-            reason: 'corrupt',
+            ok: false as const,
+            reason: 'corrupt' as const,
             message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
           };
+        } finally {
+          replayImportDepth -= 1;
         }
-        return loaded;
-      } catch {
-        return {
-          ok: false,
-          reason: 'corrupt',
-          message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
-        };
-      }
+      });
+      replayImportWrites = write.then(
+        () => undefined,
+        () => undefined,
+      );
+      return write;
     },
     openReplay(id, keyframeIndex = -1) {
       return openReplayById(id, keyframeIndex);

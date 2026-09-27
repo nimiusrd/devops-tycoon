@@ -2,7 +2,7 @@
  * 自動保存の状態（RI-145）。
  *
  * 保存失敗とセッション限りは常駐する。保存中・保存済みは盤面を押し下げない。
- * 読み上げは liveMessage だけにし、連続した保存成功では文を変えない。
+ * 読み上げは liveMessage を基本にし、書き出し失敗の一文だけ足す。連続した保存成功では文を変えない。
  */
 import { createPortal } from 'react-dom';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../state/persistenceStatus';
@@ -11,9 +11,16 @@ export interface PersistenceNoticeProps {
   notice: PersistenceNoticeModel;
   onRetry: () => void;
   onExport: () => void;
+  /** ファイル書き出しに失敗したとき、バナーへ出す一文。 */
+  exportMessage?: string | null;
 }
 
-export function PersistenceNotice({ notice, onRetry, onExport }: PersistenceNoticeProps) {
+export function PersistenceNotice({
+  notice,
+  onRetry,
+  onExport,
+  exportMessage = null,
+}: PersistenceNoticeProps) {
   // 平常時の保存済みは出さない。時刻入りの常駐チップは盤面を覆い、視覚回帰も毎分崩れる。
   // ライブリージョンは先に空で置き、文言の変化だけを読み上げる。
   const live = (
@@ -23,7 +30,7 @@ export function PersistenceNotice({ notice, onRetry, onExport }: PersistenceNoti
       data-testid="persistence-live"
       data-overlay-lock-exempt="true"
     >
-      {notice.liveMessage}
+      {exportMessage ? `${notice.liveMessage} ${exportMessage}`.trim() : notice.liveMessage}
     </span>
   );
   const showBanner =
@@ -51,6 +58,11 @@ export function PersistenceNotice({ notice, onRetry, onExport }: PersistenceNoti
         <button type="button" className="btn" data-testid="persistence-export" onClick={onExport}>
           ファイルに書き出す
         </button>
+      ) : null}
+      {exportMessage ? (
+        <p className="persistence-notice-detail" data-testid="persistence-export-error">
+          {exportMessage}
+        </p>
       ) : null}
     </div>
   ) : (

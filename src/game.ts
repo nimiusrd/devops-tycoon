@@ -353,6 +353,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** 復旧の await 中に進んだメタ／ランを、古いスナップショットで成功扱いにしない。 */
   let metaRevision = 0;
   let runRevision = 0;
+  /** 空だった永続先へ途中まで書いた記録。次回は既存データとして採用しない。 */
+  let metaMigrationOpen = false;
+  let runMigrationOpen = false;
+  /** 保存処理中の完走リプレイ。再試行では重ねて送らない。 */
+  const replaySavesInFlight = new Set<ReplayBlob>();
   if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -490,7 +495,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     pendingReplays.push(blob);
     // 完走時点で共有配列から切り離す。非同期完了で次ランのフレームを消さない。
     keyframes = [];
-    trackWrite('replay', saveReplayBlob(blob), () => completePendingReplay(blob));
+    replaySavesInFlight.add(blob);
+    const work = saveReplayBlob(blob).finally(() => {
+      replaySavesInFlight.delete(blob);
+    });
+    trackWrite('replay', work, () => completePendingReplay(blob));
   };
 
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
@@ -643,11 +652,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       });
   };
 
-  const MIGRATION_ATTEMPTS = 8;
-
   /**
    * 永続先が空のとき、await の前後でスナップショットが変わっていなければ保存先を切り替える。
-   * 変わっていれば最新を書き直す。保存先は成功が確定してから切り替える。
+   * 変わっていれば最新を書き直す。途中の版では打ち切らず、成功が確定してから切り替える。
    */
   const migrateEmptyDurable = async <T>(
     revision: () => number,
@@ -656,7 +663,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     unchanged: (seen: number, snapshot: T) => boolean,
     adopt: () => void,
   ): Promise<void> => {
-    for (let attempt = 0; attempt < MIGRATION_ATTEMPTS; attempt += 1) {
+    for (;;) {
       const seen = revision();
       const snapshot = read();
       await write(snapshot);
@@ -667,6 +674,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
   };
 
+  const canAdoptDurableRun = (): boolean => !replayMode && engine.currentPhase() === 'title';
+
   /**
    * 読込失敗後の再試行。
    * 既存の保存データは上書きしない。永続先が空で、メモリ上にランセーブがあるときだけそれを移す。
@@ -675,12 +684,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (tracker.isSession('meta') && durableMeta) {
       try {
         const loaded = await durableMeta.load();
-        if (loaded) {
+        if (loaded && !metaMigrationOpen) {
           meta = loaded;
           metaStorage = durableMeta;
           tracker.clearSession('meta');
         } else {
           const target = durableMeta;
+          metaMigrationOpen = true;
           try {
             await migrateEmptyDurable(
               () => metaRevision,
@@ -688,6 +698,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               (snapshot) => target.save(snapshot),
               (seen, snapshot) => seen === metaRevision && meta === snapshot,
               () => {
+                metaMigrationOpen = false;
                 metaStorage = target;
                 tracker.clearSession('meta');
               },
@@ -703,18 +714,23 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (tracker.isSession('run') && durableRun) {
       try {
         const loaded = await durableRun.load();
-        if (loaded) {
-          const issue = getRunSaveCompatibilityIssue(loaded);
-          runStorage = durableRun;
-          runSaveIssue = issue ? structuredClone(issue) : null;
-          resumableSave = issue ? null : loaded;
-          tracker.clearSession('run');
-        } else if (!resumableSave) {
+        if (loaded && !runMigrationOpen) {
+          // 進行中ランの保存先は切り替えない。次のチェックポイントが既存セーブを上書きしない。
+          if (canAdoptDurableRun()) {
+            const issue = getRunSaveCompatibilityIssue(loaded);
+            runStorage = durableRun;
+            runSaveIssue = issue ? structuredClone(issue) : null;
+            resumableSave = issue ? null : loaded;
+            if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
+            tracker.clearSession('run');
+          }
+        } else if (!resumableSave && !runMigrationOpen) {
           runStorage = durableRun;
           runSaveIssue = null;
           tracker.clearSession('run');
         } else {
           const target = durableRun;
+          runMigrationOpen = true;
           try {
             await migrateEmptyDurable(
               () => runRevision,
@@ -725,6 +741,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               },
               (seen, snapshot) => seen === runRevision && resumableSave === snapshot,
               () => {
+                runMigrationOpen = false;
                 runStorage = target;
                 runSaveIssue = null;
                 tracker.clearSession('run');
@@ -1232,17 +1249,23 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           retryWrite('run', resumableSave ? runStorage.save(resumableSave) : runStorage.clear()),
         );
       }
-      if (!tracker.isSession('replay') && replayStorage && pendingReplays.length > 0) {
-        const blobs = [...pendingReplays];
-        tasks.push(
-          (async () => {
-            for (const blob of blobs) {
-              await retryWrite('replay', saveReplayBlob(blob), () => {
-                completePendingReplay(blob);
-              });
-            }
-          })(),
-        );
+      if (!tracker.isSession('replay') && tracker.isFailed('replay') && replayStorage) {
+        const blobs = pendingReplays.filter((blob) => !replaySavesInFlight.has(blob));
+        if (blobs.length > 0) {
+          tasks.push(
+            (async () => {
+              for (const blob of blobs) {
+                replaySavesInFlight.add(blob);
+                const work = saveReplayBlob(blob).finally(() => {
+                  replaySavesInFlight.delete(blob);
+                });
+                await retryWrite('replay', work, () => {
+                  completePendingReplay(blob);
+                });
+              }
+            })(),
+          );
+        }
       }
       try {
         await Promise.all(tasks);

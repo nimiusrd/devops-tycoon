@@ -272,9 +272,7 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     internals.status = 'won';
 
     game.step(0);
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
 
     expect(save).toHaveBeenCalledOnce();
     expect(game.listReplays()).toEqual([]);
@@ -353,7 +351,23 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     await other.retryPersistence();
 
     expect(overwrite).not.toHaveBeenCalled();
+    expect(other.getRunSaveSummary()?.seed).toBe('memory-run');
+    expect(other.engine.snapshot().seed).toBe('memory-run');
+    expect(other.getPersistenceStatus().state).toBe('session');
+    expect((await durableExisting.load())?.summary.seed).toBe('stored-run');
+
+    other.newRun();
+    await other.retryPersistence();
     expect(other.getRunSaveSummary()?.seed).toBe('stored-run');
+    expect(other.engine.snapshot().phase).toBe('title');
+    overwrite.mockRejectedValueOnce(new Error('transient'));
+    other.startRun('easy', [], 'after-adopt');
+    await Promise.resolve();
+    await Promise.resolve();
+    const adopted = other.getPersistenceStatus();
+    expect(adopted.state).toBe('failed');
+    expect(adopted.detail).toContain('最後に端末へ保存できた時刻');
+    expect(adopted.detail).not.toContain('まだ端末へ保存できていません');
     expect((await durableExisting.load())?.summary.seed).toBe('stored-run');
   });
 
@@ -438,11 +452,11 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(gates).toHaveLength(2);
 
     gates[1]?.();
-    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    for (let i = 0; i < 16; i += 1) await Promise.resolve();
     expect(game.getPersistenceStatus().state).toBe('failed');
 
     gates[0]?.();
-    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    for (let i = 0; i < 16; i += 1) await Promise.resolve();
     expect(
       game
         .listReplays()
@@ -476,6 +490,30 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
 
     expect((await durable.load())?.soundMuted).toBe(false);
     expect(game.getMeta().soundMuted).toBe(false);
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
+  it('移行中に何度更新しても、最新のメタを書いてから復旧する', async () => {
+    const durable = new MemoryMetaStorage();
+    const original = durable.save.bind(durable);
+    let flips = 0;
+    vi.spyOn(durable, 'save').mockImplementation(async (incoming) => {
+      if (flips < 9) {
+        flips += 1;
+        game.setSoundMuted(!game.getMeta().soundMuted);
+      }
+      await original(incoming);
+    });
+    const game = createGame({ seed: 'meta-many', metaReady: false });
+    game.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    await game.retryPersistence();
+
+    expect(flips).toBe(9);
+    expect(game.getMeta().soundMuted).toBe(false);
+    expect((await durable.load())?.soundMuted).toBe(false);
     expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 
@@ -556,7 +594,7 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     internals.phase = 'won';
     internals.status = 'won';
     game.step(0);
-    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    for (let i = 0; i < 16; i += 1) await Promise.resolve();
 
     expect(game.getPersistenceStatus().state).toBe('failed');
     expect(game.getPersistenceStatus().showRetry).toBe(true);
@@ -566,6 +604,46 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     await game.retryPersistence();
 
     expect(game.listReplays().some((replay) => replay.seed === 'replay-list')).toBe(true);
+    expect(game.getPersistenceStatus().state).not.toBe('failed');
+  });
+
+  it('進行中のリプレイ保存は再試行で重ねず、重複失敗でバナーを残さない', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const metaStorage = new MemoryMetaStorage();
+    const original = replayStorage.save.bind(replayStorage);
+    let release: (() => void) | undefined;
+    const save = vi.spyOn(replayStorage, 'save').mockImplementationOnce(
+      (blob) =>
+        new Promise((resolve) => {
+          release = () => resolve(original(blob));
+        }),
+    );
+    const game = createGame({ seed: 'replay-inflight', metaStorage });
+    await game.attachReplay(replayStorage);
+    vi.spyOn(metaStorage, 'save').mockRejectedValueOnce(new Error('meta failed'));
+    game.setSoundMuted(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(game.getPersistenceStatus().state).toBe('failed');
+
+    game.startRun('easy', [], 'replay-inflight');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 8 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    expect(save).toHaveBeenCalledOnce();
+
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 4; i += 1) await Promise.resolve();
+    expect(save).toHaveBeenCalledOnce();
+    release?.();
+    await pending;
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+
+    expect(save).toHaveBeenCalledOnce();
+    expect(game.listReplays().some((replay) => replay.seed === 'replay-inflight')).toBe(true);
     expect(game.getPersistenceStatus().state).not.toBe('failed');
   });
 

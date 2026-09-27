@@ -1,4 +1,4 @@
-import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { Children, createElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../../../src/state/persistenceStatus';
 import { PersistenceNotice } from '../../../src/ui/PersistenceNotice';
@@ -36,21 +36,19 @@ const base: PersistenceNoticeModel = {
   persistent: true,
 };
 
+function render(notice: PersistenceNoticeModel, onRetry = vi.fn(), onExport = vi.fn()) {
+  return createElement(PersistenceNotice, { notice, onRetry, onExport });
+}
+
 describe('PersistenceNotice', () => {
   it('平常時は出さず、失敗時は再試行と書き出しと読み上げ文を分ける', () => {
     expect(
-      expand(
-        <PersistenceNotice
-          notice={{ ...base, state: 'idle', headline: '', detail: '', liveMessage: '' }}
-          onRetry={vi.fn()}
-          onExport={vi.fn()}
-        />,
-      ),
+      expand(render({ ...base, state: 'idle', headline: '', detail: '', liveMessage: '' })),
     ).toBeNull();
 
     const onRetry = vi.fn();
     const onExport = vi.fn();
-    const tree = <PersistenceNotice notice={base} onRetry={onRetry} onExport={onExport} />;
+    const tree = render(base, onRetry, onExport);
     expect(find(tree, 'persistence-notice').props).toMatchObject({
       'data-state': 'failed',
       'data-persistent': 'true',
@@ -69,41 +67,31 @@ describe('PersistenceNotice', () => {
   it('平常時の保存済みは出さず、復旧後は常駐バナーにしない', () => {
     expect(
       expand(
-        <PersistenceNotice
-          notice={{
-            ...base,
-            state: 'saved',
-            tone: 'quiet',
-            headline: '保存済み',
-            detail: '最後に端末へ保存できた時刻は 12:00 です。',
-            liveMessage: '',
-            showRetry: false,
-            showExport: false,
-            persistent: false,
-          }}
-          onRetry={vi.fn()}
-          onExport={vi.fn()}
-        />,
-      ),
-    ).toBeNull();
-
-    const tree = (
-      <PersistenceNotice
-        notice={{
+        render({
           ...base,
           state: 'saved',
           tone: 'quiet',
           headline: '保存済み',
           detail: '最後に端末へ保存できた時刻は 12:00 です。',
-          liveMessage: '保存できました。',
+          liveMessage: '',
           showRetry: false,
           showExport: false,
           persistent: false,
-        }}
-        onRetry={vi.fn()}
-        onExport={vi.fn()}
-      />
-    );
+        }),
+      ),
+    ).toBeNull();
+
+    const tree = render({
+      ...base,
+      state: 'saved',
+      tone: 'quiet',
+      headline: '保存済み',
+      detail: '最後に端末へ保存できた時刻は 12:00 です。',
+      liveMessage: '保存できました。',
+      showRetry: false,
+      showExport: false,
+      persistent: false,
+    });
     expect(find(tree, 'persistence-notice').props['data-persistent']).toBe('false');
     expect(find(tree, 'persistence-live').props.children).toBe('保存できました。');
     expect(

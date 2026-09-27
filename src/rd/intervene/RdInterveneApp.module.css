@@ -1,0 +1,229 @@
+.root {
+  min-height: 100dvh;
+  padding: 16px 18px 28px;
+  color: var(--text);
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.bannerTitle {
+  margin: 0;
+  font-size: 20px;
+}
+
+.bannerNote {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.toolbar,
+.teamGrid,
+.logWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolbar {
+  margin-bottom: 12px;
+}
+
+.toolbar :global(.btn) {
+  margin-left: 0;
+  min-height: 36px;
+}
+
+.fieldset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 10px 12px 12px;
+  min-width: min(100%, 280px);
+  flex: 1 1 280px;
+}
+
+.legend {
+  color: var(--cream);
+  font-weight: 800;
+  padding: 0 6px;
+}
+
+.hint {
+  margin: 4px 0 8px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 9px;
+  margin: 0 0 14px;
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.teamCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 12px;
+}
+
+.teamHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.teamCard[data-viewed='true'] {
+  border-color: var(--sky);
+}
+
+.teamCard[data-crisis='warn'] {
+  border-color: var(--sun);
+}
+
+.teamCard[data-crisis='bad'] {
+  border-color: var(--coral);
+}
+
+.teamHeader:focus-visible,
+.toolbar :global(.btn):focus-visible,
+.actionBtn:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+
+.teamName {
+  margin: 0;
+  font-size: 16px;
+}
+
+.teamMeta {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.actionBtn {
+  min-height: 36px;
+  min-width: 72px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--visual-color-ink);
+  color: var(--cream);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actionBtn[data-selected='true'] {
+  border-color: var(--mint);
+  background: var(--visual-color-banner-ok-tag-bg);
+  color: var(--visual-color-banner-ok-tag-text);
+}
+
+.actionBtn[data-kind='support'][data-selected='true'] {
+  border-color: var(--coral);
+  background: var(--visual-color-banner-hell-tag-bg);
+  color: var(--visual-color-banner-hell-tag-text);
+}
+
+.actionBtn[data-kind='train'][data-selected='true'] {
+  border-color: var(--sun);
+  background: var(--visual-color-banner-warn-tag-bg);
+  color: var(--visual-color-banner-warn-tag-text);
+}
+
+.advanceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 16px;
+}
+
+.advanceRow :global(.btn) {
+  margin-left: 0;
+  min-height: 44px;
+}
+
+.live {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.logWrap {
+  flex-direction: column;
+  overflow-x: auto;
+}
+
+.logTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.logTable th,
+.logTable td {
+  border-bottom: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: right;
+}
+
+.logTable th:nth-child(-n + 3),
+.logTable td:nth-child(-n + 3) {
+  text-align: left;
+}
+
+.exportRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.exportRow :global(.btn) {
+  margin-left: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teamCard,
+  .teamHeader,
+  .actionBtn,
+  .toolbar :global(.btn) {
+    transition: none;
+  }
+}

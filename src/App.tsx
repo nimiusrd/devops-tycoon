@@ -48,7 +48,7 @@ import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
-import { downloadTextFile, persistenceExportMessage } from './ui/downloadTextFile';
+import { downloadTextFile, persistenceExportMessages } from './ui/downloadTextFile';
 import { PersistenceNotice } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
@@ -482,12 +482,27 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         void run.retryPersistence();
       }}
       onExport={() => {
+        const files: { filename: string; text: string; kind: 'run' | 'replay' }[] = [];
         const runText = run.exportRunSaveText();
-        const text = runText ?? run.exportPendingReplayText();
-        const kind = runText ? 'run' : 'replay';
-        const filename = runText ? 'devops-tycoon-run-save.json' : 'devops-tycoon-replay.json';
-        const downloaded = text ? downloadTextFile(filename, text) : false;
-        setExportMessage(persistenceExportMessage(text, downloaded, kind));
+        if (runText) {
+          files.push({
+            filename: 'devops-tycoon-run-save.json',
+            text: runText,
+            kind: 'run',
+          });
+        }
+        for (const file of run.exportPendingReplayFiles()) {
+          files.push({ ...file, kind: 'replay' });
+        }
+        setExportMessage(
+          persistenceExportMessages(
+            files.map((file) => ({
+              text: file.text,
+              downloaded: downloadTextFile(file.filename, file.text),
+              kind: file.kind,
+            })),
+          ),
+        );
       }}
     />
   );

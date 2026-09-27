@@ -419,6 +419,40 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).toBe('saved');
   });
 
+  it('後続リプレイの保存成功後も、未保存の完走は一覧に残す', async () => {
+    const storage = new MemoryReplayStorage();
+    const originalSave = storage.save.bind(storage);
+    vi.spyOn(storage, 'save').mockImplementation((blob) => {
+      if (blob.seed === 'replay-a') return Promise.reject(new Error('unavailable'));
+      return originalSave(blob);
+    });
+    const game = createGame({ seed: 'replay-keep-pending' });
+    await game.attachReplay(storage);
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = (seed: string) => {
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+    };
+    finish('replay-a');
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    finish('replay-b');
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['replay-a', 'replay-b']);
+    expect(game.getPersistenceStatus().state).toBe('failed');
+    expect(game.exportPendingReplayFiles()).toEqual([
+      expect.objectContaining({ filename: 'devops-tycoon-replay.json' }),
+    ]);
+    expect(game.exportPendingReplayText()).toContain('replay-a');
+  });
+
   it('遅延したリプレイ保存の完了は次ランのキーフレームを消さない', async () => {
     const storage = new MemoryReplayStorage();
     const originalSave = storage.save.bind(storage);
@@ -871,6 +905,28 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(durableIds).toContain('imported-old');
     expect(durableIds).not.toContain('stored-0');
     expect(game.listReplays().map((replay) => replay.id)).toContain('imported-old');
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
+  it('再試行の前に取り込んだリプレイは、既存の永続先へ残す', async () => {
+    const durable = new MemoryReplayStorage();
+    await durable.save(makeReplay('stored-replay'));
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'pin-before-retry' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    expect(
+      await game.importReplayText(serializeReplay(makeReplay('imported-before'))),
+    ).toMatchObject({ ok: true });
+    expect(game.listReplays().map((replay) => replay.id)).toContain('imported-before');
+
+    await game.retryPersistence();
+
+    expect((await durable.list()).map((replay) => replay.id).sort()).toEqual([
+      'imported-before',
+      'stored-replay',
+    ]);
+    expect(game.listReplays().map((replay) => replay.id)).toContain('imported-before');
+    expect(game.listReplays().map((replay) => replay.id)).toContain('stored-replay');
     expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 

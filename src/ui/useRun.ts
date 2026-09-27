@@ -116,6 +116,7 @@ export interface UseRun {
   clearRunSave: () => void;
   exportRunSaveText: () => string | null;
   exportPendingReplayText: () => string | null;
+  exportPendingReplayFiles: () => { filename: string; text: string }[];
   importRunSaveText: (raw: string) => Promise<RunSaveShareResult>;
   exportReplayText: (id: string) => string | null;
   importReplayText: (raw: string) => Promise<ReplayShareResult>;
@@ -448,6 +449,7 @@ export function useRun(game: GameHandle): UseRun {
     clearRunSave,
     exportRunSaveText,
     exportPendingReplayText: () => game.exportPendingReplayText(),
+    exportPendingReplayFiles: () => game.exportPendingReplayFiles(),
     importRunSaveText,
     exportReplayText,
     importReplayText,

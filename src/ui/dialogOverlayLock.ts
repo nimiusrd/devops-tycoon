@@ -72,16 +72,33 @@ export function listOverlayExemptFocusables(front?: HTMLElement): HTMLElement[] 
 const authoredAriaModal = new WeakMap<HTMLElement, string | null>();
 
 /**
- * 前面に操作できる保存案内がある間は、aria-modal でダイアログ外を利用不能にしない。
- * 案内が無い、または背面なら、開いたときの aria-modal へ戻す。
+ * ダイアログより前面に、保存案内が出ている。
+ * 再試行ボタンが無い復旧チップも、閉じるまでは案内として扱う。
+ * 読み上げだけの領域は、常時マウントしても案内にはしない。
+ */
+export function hasOverlayExemptNotice(front: HTMLElement): boolean {
+  if (typeof document === 'undefined') return false;
+  const frontZ = paintedZIndex(front);
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-overlay-lock-exempt]')).some(
+    (root) => {
+      if (front.contains(root)) return false;
+      if (paintedZIndex(root) < frontZ) return false;
+      if (listFocusable(root).length > 0) return true;
+      return root.getAttribute('data-testid') === 'persistence-notice';
+    },
+  );
+}
+
+/**
+ * 前面に保存案内がある間は、aria-modal でダイアログ外を利用不能にしない。
+ * 操作のない復旧通知が残っている間も戻さない。案内が無い、または背面なら、開いたときの値へ戻す。
  */
 export function syncAriaModalWithExemptControls(dialog: HTMLElement): void {
   if (!authoredAriaModal.has(dialog)) {
     authoredAriaModal.set(dialog, dialog.getAttribute('aria-modal'));
   }
   if (authoredAriaModal.get(dialog) !== 'true') return;
-  const exposed = listOverlayExemptFocusables(dialog).some((element) => !dialog.contains(element));
-  dialog.setAttribute('aria-modal', exposed ? 'false' : 'true');
+  dialog.setAttribute('aria-modal', hasOverlayExemptNotice(dialog) ? 'false' : 'true');
 }
 
 /** ダイアログを閉じるとき、aria-modal を開く前の値へ戻す。 */

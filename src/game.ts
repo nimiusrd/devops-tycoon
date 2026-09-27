@@ -245,6 +245,8 @@ export interface GameHandle {
   exportRunSaveText(): string | null;
   /** 保存に失敗した完走リプレイを JSON 文字列にする（無い場合は null）。 */
   exportPendingReplayText(): string | null;
+  /** 保存に失敗した完走リプレイを、ファイル名つきで全部返す。 */
+  exportPendingReplayFiles(): { filename: string; text: string }[];
   /**
    * JSON から途中セーブを読み込む。成功時だけラン保存を置き換える。
    * 失敗時は既存セーブ・メタ進行・リプレイを触らない。
@@ -454,13 +456,24 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return true;
     }
     try {
-      cachedReplays = await replayStorage.list();
+      cachedReplays = replayListWithPending(await replayStorage.list());
       bump();
       return true;
     } catch {
       bump();
       return false;
     }
+  };
+
+  /** ストレージ一覧で置き換えても、まだ pending の完走は一覧に残す。 */
+  const replayListWithPending = (listed: readonly ReplayBlob[]): ReplayBlob[] => {
+    const listedIds = new Set(listed.map((item) => item.id));
+    const unsaved = pendingReplays.filter((item) => !listedIds.has(item.id));
+    if (unsaved.length === 0) return [...listed];
+    return selectReplaysWithinMax(
+      [...listed, ...unsaved.map((item) => structuredClone(item))],
+      unsaved.map((item) => item.id),
+    );
   };
 
   const publishUnsavedReplay = (blob: ReplayBlob): void => {
@@ -816,6 +829,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         return cachedReplays.map((item) => structuredClone(item));
       };
       const memoryBeforeIds = replayBaselineIds;
+      const shouldCopyReplay = (id: string): boolean =>
+        !memoryBeforeIds.has(id) || pinnedReplayIds.has(id);
       const saveOntoDurable = (blob: ReplayBlob): Promise<void> => {
         const protectIds = [...pinnedReplayIds];
         return target.save(
@@ -851,7 +866,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             const byId = new Map<string, ReplayBlob>();
             for (const item of memoryNow) {
               if (
-                !memoryBeforeIds.has(item.id) &&
+                shouldCopyReplay(item.id) &&
                 !durableIds.has(item.id) &&
                 !droppedNewcomerIds.has(item.id)
               ) {
@@ -890,7 +905,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             if (
               confirm.some(
                 (item) =>
-                  !memoryBeforeIds.has(item.id) &&
+                  shouldCopyReplay(item.id) &&
                   !droppedNewcomerIds.has(item.id) &&
                   !listed.some((row) => row.id === item.id),
               )
@@ -1503,6 +1518,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     exportPendingReplayText() {
       const blob = pendingReplays[pendingReplays.length - 1];
       return blob ? serializeReplay(blob) : null;
+    },
+    exportPendingReplayFiles() {
+      return pendingReplays.map((blob, index) => ({
+        filename:
+          pendingReplays.length === 1
+            ? 'devops-tycoon-replay.json'
+            : `devops-tycoon-replay-${index + 1}.json`,
+        text: serializeReplay(blob),
+      }));
     },
     async importRunSaveText(raw) {
       const loaded = parseRunSaveShare(raw);

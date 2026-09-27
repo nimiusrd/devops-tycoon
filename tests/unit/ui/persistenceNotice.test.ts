@@ -1,7 +1,10 @@
 import { Children, createElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../../../src/state/persistenceStatus';
-import { persistenceExportMessage } from '../../../src/ui/downloadTextFile';
+import {
+  persistenceExportMessage,
+  persistenceExportMessages,
+} from '../../../src/ui/downloadTextFile';
 import { PersistenceNotice } from '../../../src/ui/PersistenceNotice';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
@@ -73,6 +76,11 @@ describe('PersistenceNotice', () => {
       'aria-live': 'polite',
       children: base.liveMessage,
     });
+    expect(
+      elements(find(tree, 'persistence-notice')).some(
+        (element) => element.props['data-testid'] === 'persistence-live',
+      ),
+    ).toBe(false);
     (find(tree, 'persistence-retry').props.onClick as () => void)();
     (find(tree, 'persistence-export').props.onClick as () => void)();
     expect(onRetry).toHaveBeenCalledOnce();
@@ -124,6 +132,15 @@ describe('PersistenceNotice', () => {
       '途中セーブをファイルに保存できませんでした。',
     );
     expect(persistenceExportMessage('{}', true)).toBeNull();
+    expect(
+      persistenceExportMessages([
+        { text: '{}', downloaded: false, kind: 'run' },
+        { text: '{}', downloaded: false, kind: 'replay' },
+      ]),
+    ).toBe(
+      '途中セーブをファイルに保存できませんでした。リプレイをファイルに保存できませんでした。',
+    );
+    expect(persistenceExportMessages([{ text: '{}', downloaded: true, kind: 'run' }])).toBeNull();
 
     const message = '途中セーブをファイルに保存できませんでした。';
     const tree = render(base, vi.fn(), vi.fn(), message);

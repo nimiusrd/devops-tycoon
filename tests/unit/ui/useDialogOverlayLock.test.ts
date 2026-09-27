@@ -385,6 +385,45 @@ describe('useDialogOverlayLock', () => {
     expect(dialog.getAttribute('aria-modal')).toBe('true');
   });
 
+  it('操作のない復旧通知が前面にある間は aria-modal を戻さない', () => {
+    const dialog = new ElementStub().append(button());
+    dialog.zIndex = '20';
+    dialog.setAttribute('aria-modal', 'true');
+    documentStub.body.append(dialog);
+    mountLock(dialog);
+
+    const live = new ElementStub();
+    live.zIndex = '50';
+    live.setAttribute('data-overlay-lock-exempt', 'true');
+    live.setAttribute('data-testid', 'persistence-live');
+    documentStub.body.append(live);
+    keyDown('Tab');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+
+    const chip = new ElementStub();
+    chip.zIndex = '50';
+    chip.setAttribute('data-overlay-lock-exempt', 'true');
+    chip.setAttribute('data-testid', 'persistence-notice');
+    documentStub.body.append(chip);
+    keyDown('Tab');
+    expect(dialog.getAttribute('aria-modal')).toBe('false');
+
+    const preparing = new ElementStub();
+    preparing.zIndex = '210';
+    preparing.setAttribute('aria-modal', 'true');
+    unmount();
+    documentStub.body.append(preparing);
+    mountLock(preparing);
+    keyDown('Tab');
+    expect(preparing.getAttribute('aria-modal')).toBe('true');
+
+    unmount();
+    mountLock(dialog);
+    documentStub.body.children = documentStub.body.children.filter((child) => child !== chip);
+    keyDown('Tab');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('ダイアログがまだ無い場合はフォーカスもキー操作も変更しない', () => {
     const trigger = button();
     documentStub.body.append(trigger);

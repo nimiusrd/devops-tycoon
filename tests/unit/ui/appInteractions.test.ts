@@ -378,6 +378,7 @@ function makeRun(overrides: Partial<UseRun> = {}): UseRun {
     clearRunSave: vi.fn(),
     exportRunSaveText: vi.fn(() => 'save-json'),
     exportPendingReplayText: vi.fn(() => null),
+    exportPendingReplayFiles: vi.fn(() => []),
     importRunSaveText: vi.fn(),
     exportReplayText: vi.fn(() => 'replay-json'),
     importReplayText: vi.fn(),
@@ -1141,6 +1142,44 @@ describe('App のラン中メニュー', () => {
     expect(
       elements(recovered).some((node) => node.props['data-testid'] === 'persistence-export-error'),
     ).toBe(false);
+  });
+
+  it('途中セーブと未保存リプレイを同じ書き出しで残す', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'failed',
+        tone: 'danger',
+        headline: '保存失敗',
+        detail: '保存できませんでした。',
+        liveMessage: '保存に失敗しました。再試行できます。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+      exportRunSaveText: vi.fn(() => 'save-json'),
+      exportPendingReplayFiles: vi.fn(() => [
+        { filename: 'devops-tycoon-replay.json', text: 'replay-json' },
+      ]),
+    });
+    const findNotice = () => {
+      const notice = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!notice) throw new Error('保存案内がありません');
+      return notice;
+    };
+    (findNotice().props.onExport as () => void)();
+    screen.flush();
+    const notice = findNotice();
+    const failed = (notice.type as Component)(notice.props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe(
+      '途中セーブをファイルに保存できませんでした。リプレイをファイルに保存できませんでした。',
+    );
+    expect(screen.run.exportRunSaveText).toHaveBeenCalledOnce();
+    expect(screen.run.exportPendingReplayFiles).toHaveBeenCalledOnce();
   });
 });
 

@@ -19,6 +19,17 @@ export function persistenceExportMessage(
   return null;
 }
 
+/** 途中セーブと未保存リプレイを同時に書き出したときの失敗文。全部成功なら null。 */
+export function persistenceExportMessages(
+  parts: readonly { text: string | null; downloaded: boolean; kind?: 'run' | 'replay' }[],
+): string | null {
+  if (parts.length === 0) return persistenceExportMessage(null, false);
+  const messages = parts
+    .map((part) => persistenceExportMessage(part.text, part.downloaded, part.kind))
+    .filter((message): message is string => message !== null);
+  return messages.length > 0 ? messages.join('') : null;
+}
+
 export function downloadTextFile(
   filename: string,
   text: string,

@@ -90,6 +90,11 @@ test('起動時に保存先を読めないときはセッション限りを表�
     expect(dockBox, `${viewport.width}x${viewport.height} の開始ドック`).not.toBeNull();
     expect(dockBox!.y).toBeGreaterThanOrEqual(0);
     expect(dockBox!.y + dockBox!.height).toBeLessThanOrEqual(viewport.height + 1);
+    const noticeBox = await notice.boundingBox();
+    const topbarBox = await page.locator('.title-topbar').boundingBox();
+    expect(noticeBox, `${viewport.width}x${viewport.height} の保存案内`).not.toBeNull();
+    expect(topbarBox, `${viewport.width}x${viewport.height} のタイトルバー`).not.toBeNull();
+    expect(topbarBox!.y).toBeGreaterThanOrEqual(noticeBox!.y + noticeBox!.height - 1);
   }
 
   await page.evaluate(() => {

@@ -4868,6 +4868,64 @@ html:has(.title-screen.title-command) #root {
 .replay-share-status.error {
   color: #f3b27a;
 }
+.persistence-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 2px solid var(--visual-color-banner-warn-border);
+  border-radius: 12px;
+  background: var(--visual-color-banner-warn-bg);
+  color: var(--visual-color-banner-warn-text);
+}
+.persistence-notice[data-tone='danger'] {
+  border-color: var(--visual-color-banner-hell-border);
+  background: var(--visual-color-banner-hell-bg);
+  color: var(--visual-color-banner-hell-text);
+}
+.persistence-notice-quiet {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 15;
+  width: max-content;
+  max-width: min(16rem, calc(100vw - 16px));
+  padding: 4px 10px;
+  pointer-events: none;
+  border-color: var(--visual-color-banner-ok-border);
+  background: var(--visual-color-banner-ok-bg);
+  color: var(--visual-color-banner-ok-text);
+}
+.persistence-notice-headline,
+.persistence-notice-detail {
+  margin: 0;
+  min-width: 0;
+}
+.persistence-notice-headline {
+  font-size: 13px;
+  font-weight: 800;
+}
+.persistence-notice-detail {
+  flex: 1 1 12rem;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.persistence-notice .btn {
+  margin-left: 0;
+  min-width: 44px;
+  min-height: 44px;
+}
+.persistence-notice .btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .persistence-notice {
+    animation: none;
+  }
+}
 .replay-mode-banner {
   display: flex;
   align-items: center;

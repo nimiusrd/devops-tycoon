@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame, type GameHandle } from '../../../src/game';
 import { createRunEngine } from '../../../src/sim/run/engine';
 import { defaultMeta } from '../../../src/state/meta';
+import { initializeMetaPersistence, MemoryMetaStorage } from '../../../src/state/metaPersistence';
 import {
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
@@ -172,6 +173,120 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(save).toHaveBeenCalledTimes(2);
     expect((await storage.load())?.state.roster).toEqual(setup.roster);
     expect((await storage.load())?.summary.phase).toBe('setup');
+  });
+
+  it('容量不足と一過性の保存失敗を知らせ、再試行で端末へ書き戻す', async () => {
+    const runStorage = new MemoryRunStorage();
+    const metaStorage = new MemoryMetaStorage();
+    const runSave = vi.spyOn(runStorage, 'save');
+    const metaSave = vi.spyOn(metaStorage, 'save');
+    const game = createGame({
+      seed: 'save-status',
+      runStorage,
+      metaStorage,
+      initialMeta: defaultMeta(),
+    });
+
+    game.startRun('easy', [], 'save-status');
+    await Promise.resolve();
+    const saved = game.getPersistenceStatus();
+    expect(saved.state).toBe('saved');
+    expect(saved.liveMessage).toBe('');
+    expect(saved.persistent).toBe(false);
+    expect(saved.detail).toContain('最後に端末へ保存できた時刻');
+
+    runSave.mockRejectedValueOnce(new DOMException('full', 'QuotaExceededError'));
+    expect(game.beginSetupSprint().phase).toBe('sprint');
+    await Promise.resolve();
+    await Promise.resolve();
+    const quota = game.getPersistenceStatus();
+    expect(quota.state).toBe('failed');
+    expect(quota.persistent).toBe(true);
+    expect(quota.showRetry).toBe(true);
+    expect(quota.detail).toContain('容量が不足');
+    expect(quota.detail).toContain('最後に端末へ保存できた時刻');
+    expect(quota.liveMessage).toContain('容量');
+    expect(game.hasResumableRun()).toBe(true);
+
+    metaSave.mockRejectedValueOnce(new Error('transient'));
+    game.setSoundMuted(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(game.getPersistenceStatus().liveMessage).toContain('失敗');
+    expect(game.getPersistenceStatus().detail).toContain('容量が不足');
+
+    await game.retryPersistence();
+    expect(game.getPersistenceStatus().state).toBe('saved');
+    expect(game.getPersistenceStatus().liveMessage).toBe('保存できました。');
+    expect((await runStorage.load())?.summary.seed).toBe('save-status');
+    expect((await metaStorage.load())?.soundMuted).toBe(false);
+
+    const quiet = game.getPersistenceStatus().liveMessage;
+    game.setSoundMuted(true);
+    await Promise.resolve();
+    expect(game.getPersistenceStatus().liveMessage).toBe(quiet);
+  });
+
+  it('初期読込失敗の再試行は既存メタを初期値で上書きしない', async () => {
+    const durable = new MemoryMetaStorage();
+    const existing = { ...defaultMeta(), points: 80, unlockedCards: ['devin'] };
+    await durable.save(existing);
+    vi.spyOn(durable, 'load').mockRejectedValueOnce(new Error('unavailable'));
+    const boot = await initializeMetaPersistence(durable);
+    const save = vi.spyOn(durable, 'save');
+    const game = createGame({ seed: 'session-meta', metaReady: false });
+
+    expect(boot.sessionOnly).toBe(true);
+    expect(boot.storage).toBeInstanceOf(MemoryMetaStorage);
+    expect(boot.durableStorage).toBe(durable);
+    game.attachMetaPersistence(boot.meta, boot.storage, {
+      sessionOnly: true,
+      durableStorage: boot.durableStorage,
+    });
+    game.setSoundMuted(false);
+    await Promise.resolve();
+
+    expect(game.getPersistenceStatus().state).toBe('session');
+    expect(game.getPersistenceStatus().detail).toContain('書き戻しません');
+    expect(save).not.toHaveBeenCalled();
+    expect(game.getMeta().soundMuted).toBe(false);
+
+    await game.retryPersistence();
+
+    expect(save).not.toHaveBeenCalled();
+    expect(game.getMeta().points).toBe(80);
+    expect(game.getMeta().unlockedCards).toEqual(['devin']);
+    expect(game.getMeta().soundMuted).toBe(true);
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+    expect(game.getPersistenceStatus().liveMessage).toContain('読み直せました');
+  });
+
+  it('完走リプレイの保存失敗は記録を残し、再試行で保存できる', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'replay-retry' });
+    await game.attachReplay(storage);
+    game.startRun('easy', [], 'replay-retry');
+    const save = vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('storage unavailable'));
+    const internals = game.engine as unknown as { phase: string; status: string };
+    internals.phase = 'won';
+    internals.status = 'won';
+
+    game.step(0);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(save).toHaveBeenCalledOnce();
+    expect(game.listReplays()).toEqual([]);
+    expect(game.getPersistenceStatus().state).toBe('failed');
+    expect(game.getPersistenceStatus().showRetry).toBe(true);
+
+    await game.retryPersistence();
+
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(game.listReplays()).toHaveLength(1);
+    expect(game.listReplays()[0]?.seed).toBe('replay-retry');
+    expect(game.getPersistenceStatus().state).toBe('saved');
   });
 
   it('破棄の保存先エラー後も古いセーブを再開させず、新規ランの保存で回復する', async () => {

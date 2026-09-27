@@ -113,7 +113,12 @@ export interface RunStorage {
 export interface RunPersistenceBootstrap {
   save: RunSave | null;
   issue: RunSaveCompatibilityIssue | null;
+  /** このセッションの保存先。読込失敗時はメモリ。 */
   storage: RunStorage;
+  /** 読込に失敗し、既存セーブを初期値で上書きしない。 */
+  sessionOnly: boolean;
+  /** 再試行で読み直す先。sessionOnly のときも失敗した保存先を残す。 */
+  durableStorage: RunStorage;
 }
 
 const INVALID_RULESET = Symbol('invalid-ruleset');
@@ -532,8 +537,20 @@ export async function initializeRunPersistence(
   try {
     const save = await storage.load();
     const issue = save ? getRunSaveCompatibilityIssue(save) : null;
-    return { save: issue ? null : save, issue, storage };
+    return {
+      save: issue ? null : save,
+      issue,
+      storage,
+      sessionOnly: false,
+      durableStorage: storage,
+    };
   } catch {
-    return { save: null, issue: null, storage: new MemoryRunStorage() };
+    return {
+      save: null,
+      issue: null,
+      storage: new MemoryRunStorage(),
+      sessionOnly: true,
+      durableStorage: storage,
+    };
   }
 }

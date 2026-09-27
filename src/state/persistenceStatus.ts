@@ -1,0 +1,225 @@
+/**
+ * 自動保存の状態表示（RI-145）。
+ *
+ * 保存中・保存済み・保存失敗・このセッション限りを区別する。
+ * 読み上げ用の文は失敗・セッション切替・復旧のときだけ変え、連続保存では更新しない。
+ * 最後に端末へ書けた時刻は、メモリ上の現在状態とは別に持つ。
+ */
+
+export type PersistenceChannel = 'meta' | 'run' | 'replay';
+export type PersistenceWrite = 'idle' | 'saving' | 'saved' | 'failed';
+export type PersistenceFailure = 'quota' | 'transient';
+
+export interface PersistenceNotice {
+  state: 'idle' | 'saving' | 'saved' | 'failed' | 'session';
+  tone: 'quiet' | 'warn' | 'danger';
+  headline: string;
+  detail: string;
+  /** 失敗・セッション・復旧だけ。保存中と保存済みの繰り返しでは空のまま。 */
+  liveMessage: string;
+  showRetry: boolean;
+  showExport: boolean;
+  /** 常駐バナーにする。保存中・保存済みは盤面を押し下げない。 */
+  persistent: boolean;
+}
+
+interface ChannelState {
+  generation: number;
+  write: PersistenceWrite;
+  failure: PersistenceFailure | null;
+}
+
+const CHANNELS: readonly PersistenceChannel[] = ['meta', 'run', 'replay'];
+
+function freshChannel(): ChannelState {
+  return { generation: 0, write: 'idle', failure: null };
+}
+
+export function persistenceFailureKind(error: unknown): PersistenceFailure {
+  const name = error instanceof Error ? error.name : '';
+  if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED') return 'quota';
+  return 'transient';
+}
+
+export function formatPersistenceClock(at: number): string {
+  const date = new Date(at);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+function durableMoment(at: number | null): string {
+  if (at === null) return 'まだ端末へ保存できていません。';
+  return `最後に端末へ保存できた時刻は ${formatPersistenceClock(at)} です。`;
+}
+
+export class PersistenceTracker {
+  private readonly channels: Record<PersistenceChannel, ChannelState> = {
+    meta: freshChannel(),
+    run: freshChannel(),
+    replay: freshChannel(),
+  };
+  private readonly session = new Set<PersistenceChannel>();
+  private lastDurableAt: number | null = null;
+  private liveMessage = '';
+  private announcedFailure = false;
+
+  markSession(channel: PersistenceChannel): void {
+    const already = this.session.size > 0;
+    this.session.add(channel);
+    if (!already) {
+      this.liveMessage = 'このセッション限りです。進行は端末へ保存されません。';
+    }
+  }
+
+  isSession(channel?: PersistenceChannel): boolean {
+    if (channel) return this.session.has(channel);
+    return this.session.size > 0;
+  }
+
+  isFailed(channel: PersistenceChannel): boolean {
+    return this.channels[channel].write === 'failed';
+  }
+
+  clearSession(channel: PersistenceChannel): void {
+    this.session.delete(channel);
+    if (this.session.size === 0 && !this.hasFailure()) {
+      this.liveMessage = '保存済みデータを読み直せました。';
+    }
+  }
+
+  begin(channel: PersistenceChannel): number {
+    const current = this.channels[channel];
+    current.generation += 1;
+    current.write = 'saving';
+    return current.generation;
+  }
+
+  succeed(channel: PersistenceChannel, generation: number, at: number): boolean {
+    const current = this.channels[channel];
+    if (current.generation !== generation) return false;
+    const recovered = current.write === 'failed';
+    current.write = 'saved';
+    current.failure = null;
+    this.lastDurableAt = at;
+    if ((recovered || this.announcedFailure) && !this.hasFailure() && !this.isSession()) {
+      this.liveMessage = '保存できました。';
+      this.announcedFailure = false;
+    }
+    return true;
+  }
+
+  fail(channel: PersistenceChannel, generation: number, error: unknown): boolean {
+    const current = this.channels[channel];
+    if (current.generation !== generation) return false;
+    current.write = 'failed';
+    current.failure = persistenceFailureKind(error);
+    this.announcedFailure = true;
+    this.liveMessage =
+      current.failure === 'quota'
+        ? '容量が不足して保存できません。再試行できます。'
+        : '保存に失敗しました。再試行できます。';
+    return true;
+  }
+
+  notice(canExportRun: boolean): PersistenceNotice {
+    const session = this.isSession();
+    const failure = this.currentFailure();
+    const saving = CHANNELS.some((channel) => this.channels[channel].write === 'saving');
+    const saved = this.lastDurableAt !== null;
+    const moment = durableMoment(this.lastDurableAt);
+
+    if (session) {
+      return {
+        state: 'session',
+        tone: 'warn',
+        headline: 'このセッション限り',
+        detail: failure
+          ? `起動時に保存データを読めなかったため、この画面の変更は端末へ書き戻しません。再試行は保存済みデータの再読込です。${this.failureDetail(failure, moment)}`
+          : '起動時に保存データを読めなかったため、この画面の変更は端末へ書き戻しません。再試行は保存済みデータの再読込です。',
+        liveMessage: this.liveMessage,
+        showRetry: true,
+        showExport: canExportRun,
+        persistent: true,
+      };
+    }
+    if (failure) {
+      return {
+        state: 'failed',
+        tone: 'danger',
+        headline: '保存失敗',
+        detail: `${this.failureDetail(failure, moment)}進行はメモリに残しています。`,
+        liveMessage: this.liveMessage,
+        showRetry: true,
+        showExport: canExportRun,
+        persistent: true,
+      };
+    }
+    if (saving) {
+      return {
+        state: 'saving',
+        tone: 'quiet',
+        headline: '保存中',
+        detail: '端末への書き込みを待っています。',
+        liveMessage: this.liveMessage,
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      };
+    }
+    if (saved) {
+      return {
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: moment,
+        liveMessage: this.liveMessage,
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      };
+    }
+    if (this.liveMessage === '保存済みデータを読み直せました。') {
+      return {
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: '保存済みデータを読み直せました。',
+        liveMessage: this.liveMessage,
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      };
+    }
+    return {
+      state: 'idle',
+      tone: 'quiet',
+      headline: '',
+      detail: '',
+      liveMessage: '',
+      showRetry: false,
+      showExport: false,
+      persistent: false,
+    };
+  }
+
+  private hasFailure(): boolean {
+    return this.currentFailure() !== null;
+  }
+
+  private currentFailure(): PersistenceFailure | null {
+    let failure: PersistenceFailure | null = null;
+    for (const channel of CHANNELS) {
+      const current = this.channels[channel];
+      if (current.write !== 'failed' || !current.failure) continue;
+      if (current.failure === 'quota') return 'quota';
+      failure = 'transient';
+    }
+    return failure;
+  }
+
+  private failureDetail(failure: PersistenceFailure, moment: string): string {
+    if (failure === 'quota') return `容量が不足しています。${moment}`;
+    return `保存できませんでした。${moment}`;
+  }
+}

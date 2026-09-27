@@ -16,7 +16,12 @@ export interface MetaStorage {
 
 export interface MetaPersistenceBootstrap {
   meta: MetaState;
+  /** このセッションの保存先。読込失敗時はメモリ。 */
   storage: MetaStorage;
+  /** 読込に失敗し、既存レコードへ初期値を書き戻さない。 */
+  sessionOnly: boolean;
+  /** 再試行で読み直す先。sessionOnly のときも失敗した保存先を残す。 */
+  durableStorage: MetaStorage;
 }
 
 /** IndexedDB に単一の最新メタ状態を保存する。 */
@@ -83,8 +88,18 @@ export async function initializeMetaPersistence(
 ): Promise<MetaPersistenceBootstrap> {
   try {
     const persisted = await storage.load();
-    return { meta: persisted ?? defaultMeta(), storage };
+    return {
+      meta: persisted ?? defaultMeta(),
+      storage,
+      sessionOnly: false,
+      durableStorage: storage,
+    };
   } catch {
-    return { meta: defaultMeta(), storage: new MemoryMetaStorage() };
+    return {
+      meta: defaultMeta(),
+      storage: new MemoryMetaStorage(),
+      sessionOnly: true,
+      durableStorage: storage,
+    };
   }
 }

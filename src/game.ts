@@ -46,6 +46,7 @@ import {
   withSoundMuted,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
+import { PersistenceTracker, type PersistenceNotice } from './state/persistenceStatus';
 import { labelForReplayKeyframe } from './render/reviewHellReplayView';
 import {
   buildReplayId,
@@ -88,6 +89,13 @@ import { createRunDiagnosticInfo, type RunDiagnosticInfo } from './state/diagnos
 export interface ActiveReplayInfo {
   ruleset: ReplayRulesetIdentity | null;
   contentSnapshot: ReplayContentSnapshot | null;
+}
+
+export interface PersistenceAttachOptions<T> {
+  /** 読込失敗でメモリへ切り替えた。既存の永続データへは書き戻さない。 */
+  sessionOnly?: boolean;
+  /** 再試行で読み直す、失敗した保存先。 */
+  durableStorage?: T;
 }
 
 export interface GameHandle {
@@ -199,12 +207,17 @@ export interface GameHandle {
   /** 直近ランで付与したメタ進行ポイント内訳（未決着時は null）。 */
   getLastRunReward(): RunRewardBreakdown | null;
   /** 起動時の非同期永続化を接続し、メタ更新を解禁する。 */
-  attachMetaPersistence(meta: MetaState, storage: MetaStorage): void;
+  attachMetaPersistence(
+    meta: MetaState,
+    storage: MetaStorage,
+    options?: PersistenceAttachOptions<MetaStorage>,
+  ): void;
   /** 起動時のランセーブ永続化を接続する（まだ hydrate しない）。 */
   attachRunPersistence(
     storage: RunStorage,
     save: RunSave | null,
     issue?: RunSaveCompatibilityIssue | null,
+    options?: PersistenceAttachOptions<RunStorage>,
   ): void;
   /** タイトルから途中セーブを再開する（RI-58）。通常セーブは pending seed を保存済み seed へ更新する。 */
   resumeRun(): RunState | null;
@@ -216,6 +229,13 @@ export interface GameHandle {
   getResumeRisk(): ResumeRisk | null;
   /** ルールセット不一致・情報欠落で再開できないセーブの理由。 */
   getRunSaveIssue(): RunSaveCompatibilityIssue | null;
+  /** 自動保存の表示状態（RI-145）。保存中・保存済み・失敗・セッション限り。 */
+  getPersistenceStatus(): PersistenceNotice;
+  /**
+   * 失敗した自動保存を再試行する。
+   * 起動時の読込失敗では既存データへ書き戻さず、保存先の再読込だけを行う。
+   */
+  retryPersistence(): Promise<void>;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
   /** 現行の途中セーブを JSON 文字列にする（無い場合は null。RI-133）。 */
@@ -226,7 +246,10 @@ export interface GameHandle {
    */
   importRunSaveText(raw: string): Promise<RunSaveShareResult>;
   /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
-  attachReplay(storage: ReplayStorage): Promise<void>;
+  attachReplay(
+    storage: ReplayStorage,
+    options?: PersistenceAttachOptions<ReplayStorage>,
+  ): Promise<void>;
   /** 保存済みリプレイ一覧（新しい順）。 */
   listReplays(): ReplayBlob[];
   /** 指定リプレイを JSON 文字列にする（無い場合は null。RI-133）。 */
@@ -318,6 +341,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let latestImportedSave: RunSave | null = null;
   let runSaveImportWrites: Promise<void> = Promise.resolve();
   let replayStorage: ReplayStorage | null = null;
+  let durableMeta: MetaStorage | null = null;
+  let durableRun: RunStorage | null = null;
+  let durableReplay: ReplayStorage | null = null;
+  let pendingReplay: ReplayBlob | null = null;
+  const tracker = new PersistenceTracker();
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
@@ -368,7 +396,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     resumableSave = null;
     runSaveIssue = null;
     if (!runStorage) return;
-    void runStorage.clear().catch(() => undefined);
+    trackWrite('run', runStorage.clear());
   };
 
   const appendKeyframeIfNeeded = (): void => {
@@ -407,7 +435,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   const commitReplayIfFinished = (): void => {
-    if (!replayStorage || keyframes.length === 0 || replayMode) return;
+    if (!replayStorage || keyframes.length === 0 || replayMode || pendingReplay) return;
     const s = engine.snapshot();
     if (s.status !== 'won' && s.status !== 'lost') return;
     const finishedAt = Date.now();
@@ -429,11 +457,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       ruleset: structuredClone(CURRENT_RUN_RULESET),
       contentSnapshot: snapshotReplayContent(keyframes),
     };
-    keyframes = [];
-    void replayStorage
-      .save(blob)
-      .then(() => refreshReplayCache())
-      .catch(() => undefined);
+    pendingReplay = blob;
+    trackWrite(
+      'replay',
+      replayStorage.save(blob).then(() => refreshReplayCache()),
+      () => {
+        if (pendingReplay !== blob) return;
+        pendingReplay = null;
+        keyframes = [];
+      },
+    );
   };
 
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
@@ -445,7 +478,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const save = toRunSave(exported, Date.now(), keyframes);
     resumableSave = save;
     runSaveIssue = null;
-    void runStorage.save(save).catch(() => undefined);
+    trackWrite('run', runStorage.save(save));
   };
 
   /**
@@ -518,10 +551,91 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     engine.setPreferredCards(options?.ignorePreferred ? [] : meta.preferredCardIds);
   };
 
-  /** 保存失敗でゲーム進行を止めず、直列化はストレージ実装へ委ねる。 */
+  /**
+   * 保存失敗でゲーム進行を止めない。
+   * セッション限りの保存先は端末へ成功したことにしない。
+   * 直列化はストレージ実装へ委ねる。
+   */
+  const trackWrite = (
+    channel: 'meta' | 'run' | 'replay',
+    work: Promise<void>,
+    onSuccess?: () => void,
+  ): void => {
+    if (tracker.isSession(channel)) {
+      void work.then(() => onSuccess?.()).catch(() => undefined);
+      return;
+    }
+    const generation = tracker.begin(channel);
+    void work
+      .then(() => {
+        onSuccess?.();
+        if (tracker.succeed(channel, generation, Date.now())) bump();
+      })
+      .catch((error: unknown) => {
+        if (tracker.fail(channel, generation, error)) bump();
+      });
+  };
+
   const persistMeta = (): void => {
     if (!metaStorage) return;
-    void metaStorage.save(meta).catch(() => undefined);
+    trackWrite('meta', metaStorage.save(meta));
+  };
+
+  const retryWrite = (
+    channel: 'meta' | 'run' | 'replay',
+    work: Promise<void>,
+    onSuccess?: () => void,
+  ): Promise<void> => {
+    const generation = tracker.begin(channel);
+    bump();
+    return work
+      .then(() => {
+        onSuccess?.();
+        tracker.succeed(channel, generation, Date.now());
+      })
+      .catch((error: unknown) => {
+        tracker.fail(channel, generation, error);
+        throw error;
+      })
+      .finally(() => {
+        bump();
+      });
+  };
+
+  /** 読込失敗後の再試行。保存済みデータへは書き込まない。 */
+  const recoverDurableLoads = async (): Promise<void> => {
+    if (tracker.isSession('meta') && durableMeta) {
+      try {
+        const loaded = await durableMeta.load();
+        if (loaded) meta = loaded;
+        metaStorage = durableMeta;
+        tracker.clearSession('meta');
+      } catch {
+        /* 読めなければ初期値を書き戻さない */
+      }
+    }
+    if (tracker.isSession('run') && durableRun) {
+      try {
+        const loaded = await durableRun.load();
+        const issue = loaded ? getRunSaveCompatibilityIssue(loaded) : null;
+        runStorage = durableRun;
+        runSaveIssue = issue ? structuredClone(issue) : null;
+        resumableSave = issue ? null : loaded;
+        tracker.clearSession('run');
+      } catch {
+        /* 読めなければ空のセーブを書き戻さない */
+      }
+    }
+    if (tracker.isSession('replay') && durableReplay) {
+      const previous = replayStorage;
+      replayStorage = durableReplay;
+      const listed = await refreshReplayCache();
+      if (!listed) {
+        replayStorage = previous;
+        return;
+      }
+      tracker.clearSession('replay');
+    }
   };
 
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
@@ -925,20 +1039,66 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getLastRunReward() {
       return lastRunReward;
     },
-    attachMetaPersistence(hydratedMeta, storage) {
+    attachMetaPersistence(hydratedMeta, storage, options) {
       metaStorage = storage;
       meta = hydratedMeta;
       metaReady = true;
+      if (options?.sessionOnly) {
+        durableMeta = options.durableStorage ?? null;
+        tracker.markSession('meta');
+      }
       recordIfFinished();
       bump();
     },
-    attachRunPersistence(storage, save, issue = null) {
+    attachRunPersistence(storage, save, issue = null, options) {
       runStorage = storage;
       const derivedIssue = save ? getRunSaveCompatibilityIssue(save) : null;
       const nextIssue = save ? derivedIssue : issue;
       runSaveIssue = nextIssue ? structuredClone(nextIssue) : null;
       resumableSave = runSaveIssue ? null : save;
+      if (options?.sessionOnly) {
+        durableRun = options.durableStorage ?? null;
+        tracker.markSession('run');
+      }
       bump();
+    },
+    getPersistenceStatus() {
+      return tracker.notice(resumableSave !== null);
+    },
+    async retryPersistence() {
+      if (tracker.isSession()) {
+        await recoverDurableLoads();
+        bump();
+        return;
+      }
+      const tasks: Promise<void>[] = [];
+      if (tracker.isFailed('meta') && metaStorage) {
+        tasks.push(retryWrite('meta', metaStorage.save(meta)));
+      }
+      if (tracker.isFailed('run') && runStorage) {
+        tasks.push(
+          retryWrite('run', resumableSave ? runStorage.save(resumableSave) : runStorage.clear()),
+        );
+      }
+      if (tracker.isFailed('replay') && replayStorage && pendingReplay) {
+        const blob = pendingReplay;
+        tasks.push(
+          retryWrite(
+            'replay',
+            replayStorage.save(blob).then(() => refreshReplayCache()),
+            () => {
+              if (pendingReplay !== blob) return;
+              pendingReplay = null;
+              keyframes = [];
+            },
+          ),
+        );
+      }
+      try {
+        await Promise.all(tasks);
+      } catch {
+        // 失敗は tracker に残り、画面の再試行案内を維持する。
+      }
     },
     resumeRun() {
       if (replayMode || runSaveIssue || !resumableSave) return null;
@@ -1024,8 +1184,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       return loaded;
     },
-    async attachReplay(storage) {
+    async attachReplay(storage, options) {
       replayStorage = storage;
+      if (options?.sessionOnly) {
+        durableReplay = options.durableStorage ?? null;
+        tracker.markSession('replay');
+      }
       await refreshReplayCache();
     },
     listReplays() {

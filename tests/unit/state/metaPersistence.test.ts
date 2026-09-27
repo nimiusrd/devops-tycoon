@@ -65,6 +65,8 @@ describe('initializeMetaPersistence', () => {
     await expect(initializeMetaPersistence(storage)).resolves.toEqual({
       meta: persisted,
       storage,
+      sessionOnly: false,
+      durableStorage: storage,
     });
     expect(storage.saveCalls).toBe(0);
   });

@@ -48,6 +48,8 @@ import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
+import { downloadTextFile } from './ui/downloadTextFile';
+import { PersistenceNotice } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -461,9 +463,24 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     }
   }, [state.zoom.level]);
 
+  const persistenceNotice = (
+    <PersistenceNotice
+      notice={run.persistenceStatus}
+      onRetry={() => {
+        void run.retryPersistence();
+      }}
+      onExport={() => {
+        const text = run.exportRunSaveText();
+        if (!text) return;
+        downloadTextFile('devops-tycoon-run-save.json', text);
+      }}
+    />
+  );
+
   if (phase === 'title') {
     return (
       <>
+        {persistenceNotice}
         <SceneScrollReset>
           <TitleScreen
             seed={state.seed}
@@ -567,6 +584,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   if (phase === 'won' || phase === 'lost') {
     return (
       <>
+        {persistenceNotice}
         {replayBanner}
         <Suspense fallback={null}>
           <SceneScrollReset>
@@ -585,6 +603,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   if (phase === 'quarterReview') {
     return (
       <>
+        {persistenceNotice}
         {replayBanner}
         <Suspense fallback={null}>
           <SceneScrollReset>
@@ -659,6 +678,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       data-responsive-width={responsiveMode.width}
       data-responsive-height={responsiveMode.height}
     >
+      {persistenceNotice}
       <div className="app-background">
         {replayBanner}
         {!sprintLayout && sprintHeader}

@@ -895,7 +895,13 @@ describe('RI-91-B4 runPersistence survived mutants', () => {
       const boot = await initializeRunPersistence(storage);
       expect(boot.storage).toBe(storage);
       expect(boot.save).toEqual(save);
-      expect(boot).toEqual({ save, issue: null, storage });
+      expect(boot).toEqual({
+        save,
+        issue: null,
+        storage,
+        sessionOnly: false,
+        durableStorage: storage,
+      });
     });
   });
 });

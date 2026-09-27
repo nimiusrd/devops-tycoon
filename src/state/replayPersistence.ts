@@ -122,7 +122,12 @@ export class MemoryReplayStorage implements ReplayStorage {
 }
 
 export interface ReplayPersistenceBootstrap {
+  /** このセッションの保存先。読込失敗時はメモリ。 */
   storage: ReplayStorage;
+  /** 読込に失敗し、既存リプレイを別データで上書きしない。 */
+  sessionOnly: boolean;
+  /** 再試行で読み直す先。sessionOnly のときも失敗した保存先を残す。 */
+  durableStorage: ReplayStorage;
 }
 
 /**
@@ -133,8 +138,12 @@ export async function initializeReplayPersistence(
 ): Promise<ReplayPersistenceBootstrap> {
   try {
     await storage.list();
-    return { storage };
+    return { storage, sessionOnly: false, durableStorage: storage };
   } catch {
-    return { storage: new MemoryReplayStorage() };
+    return {
+      storage: new MemoryReplayStorage(),
+      sessionOnly: true,
+      durableStorage: storage,
+    };
   }
 }

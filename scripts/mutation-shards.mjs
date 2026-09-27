@@ -336,6 +336,11 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'resumeRisk（瀕死セーブ再開警告）',
   },
   {
+    id: 'state-persistence-status',
+    mutate: 'src/state/persistenceStatus.ts',
+    note: '自動保存の状態表示（RI-145）',
+  },
+  {
     id: 'state-rest',
     mutate: [
       'src/state/**/*.ts',
@@ -344,6 +349,7 @@ export const MUTATION_SHARDS = Object.freeze([
       '!src/state/replay.ts',
       '!src/state/meta.ts',
       '!src/state/resumeRisk.ts',
+      '!src/state/persistenceStatus.ts',
       '!src/state/**/index.ts',
       '!src/state/**/types.ts',
     ].join(','),

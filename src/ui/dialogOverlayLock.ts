@@ -51,12 +51,30 @@ function isOverlayLockExempt(element: HTMLElement): boolean {
   return element.getAttribute('data-overlay-lock-exempt') !== null;
 }
 
-/** ダイアログの外でも操作を残す保存案内などのフォーカス対象。 */
-export function listOverlayExemptFocusables(): HTMLElement[] {
+function paintedZIndex(element: HTMLElement): number {
+  if (typeof getComputedStyle !== 'function') return 0;
+  const value = Number(getComputedStyle(element).zIndex);
+  return Number.isFinite(value) ? value : 0;
+}
+
+/** ダイアログの外でも操作を残す保存案内などのフォーカス対象。背面の案内は含めない。 */
+export function listOverlayExemptFocusables(front?: HTMLElement): HTMLElement[] {
   if (typeof document === 'undefined') return [];
+  const frontZ = front ? paintedZIndex(front) : 0;
   return Array.from(document.querySelectorAll<HTMLElement>('[data-overlay-lock-exempt]')).flatMap(
-    (root) => listFocusable(root),
+    (root) => {
+      if (front && paintedZIndex(root) < frontZ) return [];
+      return listFocusable(root);
+    },
   );
+}
+
+/** ダイアログより前面のロック免除に含まれるときだけ true。 */
+export function isOverlayExemptInFront(target: Node, front: HTMLElement): boolean {
+  if (typeof Element === 'undefined' || !(target instanceof Element)) return false;
+  const root = target.closest('[data-overlay-lock-exempt]');
+  if (!(root instanceof HTMLElement)) return false;
+  return paintedZIndex(root) >= paintedZIndex(front);
 }
 
 /**

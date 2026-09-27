@@ -545,6 +545,36 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 
+  it('空の永続先へ移している間のセーブ取り込みも、復旧前に永続先へ書く', async () => {
+    const held = makeRunSave('held-run');
+    const durable = new MemoryRunStorage();
+    const original = durable.save.bind(durable);
+    let release: (() => void) | undefined;
+    vi.spyOn(durable, 'save').mockImplementationOnce(
+      (incoming) =>
+        new Promise((resolve) => {
+          release = () => resolve(original(incoming));
+        }),
+    );
+    const game = createGame({ seed: 'import-during-migrate' });
+    game.attachRunPersistence(new MemoryRunStorage(), held, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    expect(game.engine.snapshot().phase).toBe('title');
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 8 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    const importing = game.importRunSaveText(serializeRunSave(makeRunSave('imported-run')));
+    release?.();
+    await pending;
+    expect(await importing).toMatchObject({ ok: true });
+
+    expect(game.getRunSaveSummary()?.seed).toBe('imported-run');
+    expect((await durable.load())?.summary.seed).toBe('imported-run');
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
   it('セッション中の完走リプレイは空の永続先へ移し、既存リプレイは上書きしない', async () => {
     const durable = new MemoryReplayStorage();
     const memory = new MemoryReplayStorage();
@@ -627,6 +657,91 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
       'partial-a',
       'partial-b',
     ]);
+  });
+
+  it('セッション復旧の再試行を重ねても、先行の失敗後に復旧済みにしない', async () => {
+    const durable = new MemoryReplayStorage();
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'retry-serial' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    const internals = game.engine as unknown as { phase: string; status: string };
+    for (const seed of ['serial-a', 'serial-b']) {
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+      for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    }
+
+    let rejectSave: ((error: Error) => void) | undefined;
+    vi.spyOn(durable, 'save').mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectSave = reject;
+        }),
+    );
+    const first = game.retryPersistence();
+    for (let i = 0; i < 8 && !rejectSave; i += 1) await Promise.resolve();
+    expect(rejectSave).toBeTypeOf('function');
+    const second = game.retryPersistence();
+    rejectSave?.(new Error('transient'));
+    await first;
+    await second;
+
+    expect(game.getPersistenceStatus().state).toBe('session');
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['serial-a', 'serial-b']);
+    expect(await memory.list()).toHaveLength(2);
+    await game.retryPersistence();
+    expect((await durable.list()).map((replay) => replay.seed).sort()).toEqual([
+      'serial-a',
+      'serial-b',
+    ]);
+  });
+
+  it('再試行の途中で失敗した新しいリプレイは、古い再試行の成功では消さない', async () => {
+    const storage = new MemoryReplayStorage();
+    const original = storage.save.bind(storage);
+    let calls = 0;
+    let release: (() => void) | undefined;
+    vi.spyOn(storage, 'save').mockImplementation((blob) => {
+      calls += 1;
+      if (calls <= 2 || calls === 4) return Promise.reject(new Error('fail'));
+      if (calls === 3) {
+        return new Promise((resolve) => {
+          release = () => resolve(original(blob));
+        });
+      }
+      return original(blob);
+    });
+    const game = createGame({ seed: 'retry-pending' });
+    await game.attachReplay(storage);
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = async (seed: string) => {
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+      for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    };
+    await finish('retry-a');
+    await finish('retry-b');
+    expect(game.getPersistenceStatus().state).toBe('failed');
+
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 8 && !release; i += 1) await Promise.resolve();
+    expect(release).toBeTypeOf('function');
+    await finish('retry-c');
+    release?.();
+    await pending;
+
+    expect(game.getPersistenceStatus().state).toBe('failed');
+    expect(game.getPersistenceStatus().showRetry).toBe(true);
+    expect(await storage.list()).toHaveLength(2);
   });
 
   it('リプレイ保存後の一覧失敗はキャッシュに残し、再試行できる', async () => {

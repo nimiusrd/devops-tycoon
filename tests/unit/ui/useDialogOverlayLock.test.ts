@@ -41,6 +41,7 @@ import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 class ElementStub {
   id = '';
   inert = false;
+  zIndex = 'auto';
   parentElement: ElementStub | null = null;
   children: ElementStub[] = [];
   focusable = false;
@@ -183,6 +184,7 @@ beforeEach(() => {
   vi.stubGlobal('HTMLElement', ElementStub);
   vi.stubGlobal('Node', ElementStub);
   vi.stubGlobal('Element', ElementStub);
+  vi.stubGlobal('getComputedStyle', (element: ElementStub) => ({ zIndex: element.zIndex }));
 });
 
 afterEach(() => {
@@ -328,6 +330,34 @@ describe('useDialogOverlayLock', () => {
     expect(documentStub.activeElement).toBe(dialogButton);
     expect(keyDown('Tab').defaultPrevented).toBe(true);
     expect(documentStub.activeElement).toBe(retry);
+  });
+
+  it('前面のダイアログからは、背後の保存案内へフォーカスを移さない', () => {
+    const retry = button();
+    const notice = new ElementStub().append(retry);
+    notice.zIndex = '50';
+    notice.setAttribute('data-overlay-lock-exempt', 'true');
+    const preparing = new ElementStub();
+    preparing.zIndex = '210';
+    documentStub.body.append(notice, preparing);
+    mountLock(preparing);
+
+    expect(keyDown('Tab').defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(preparing);
+    retry.focus();
+    expect(documentStub.activeElement).toBe(preparing);
+    unmount();
+
+    const dialogButton = button();
+    const failed = new ElementStub().append(dialogButton);
+    failed.zIndex = '210';
+    documentStub.body.append(failed);
+    mountLock(failed);
+    dialogButton.focus();
+    expect(keyDown('Tab').defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(dialogButton);
+    retry.focus();
+    expect(documentStub.activeElement).toBe(dialogButton);
   });
 
   it('ダイアログがまだ無い場合はフォーカスもキー操作も変更しない', () => {

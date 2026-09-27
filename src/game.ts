@@ -353,6 +353,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** 復旧の await 中に進んだメタ／ランを、古いスナップショットで成功扱いにしない。 */
   let metaRevision = 0;
   let runRevision = 0;
+  /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
+  let runImportDepth = 0;
+  /** セッション復旧の再試行。二重クリックでも並行させない。 */
+  let persistenceRetry: Promise<void> | null = null;
   /** 空だった永続先へ途中まで書いた記録。次回は既存データとして採用しない。 */
   let metaMigrationOpen = false;
   let runMigrationOpen = false;
@@ -635,13 +639,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const retryWrite = (
     channel: 'meta' | 'run' | 'replay',
     work: Promise<void>,
-    onSuccess?: () => void,
+    onSuccess?: () => boolean | void,
   ): Promise<void> => {
     const generation = tracker.begin(channel);
     bump();
     return work
       .then(() => {
-        onSuccess?.();
+        const stillPending = onSuccess?.() === true;
+        if (stillPending) {
+          tracker.fail(channel, generation, new Error('unsaved replay'));
+          return;
+        }
         tracker.succeed(channel, generation, Date.now());
       })
       .catch((error: unknown) => {
@@ -740,7 +748,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 if (snapshot) await target.save(snapshot);
                 else await target.clear();
               },
-              (seen, snapshot) => seen === runRevision && resumableSave === snapshot,
+              (seen, snapshot) =>
+                runImportDepth === 0 && seen === runRevision && resumableSave === snapshot,
               () => {
                 runMigrationOpen = false;
                 runStorage = target;
@@ -1243,40 +1252,49 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (tracker.dismissTransientBanner()) bump();
     },
     async retryPersistence() {
-      if (tracker.isSession()) await recoverDurableLoads();
-      const tasks: Promise<void>[] = [];
-      if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
-        tasks.push(retryWrite('meta', metaStorage.save(meta)));
-      }
-      if (!tracker.isSession('run') && tracker.isFailed('run') && runStorage) {
-        tasks.push(
-          retryWrite('run', resumableSave ? runStorage.save(resumableSave) : runStorage.clear()),
-        );
-      }
-      if (!tracker.isSession('replay') && tracker.isFailed('replay') && replayStorage) {
-        const blobs = pendingReplays.filter((blob) => !replaySavesInFlight.has(blob));
-        if (blobs.length > 0) {
+      if (persistenceRetry) return persistenceRetry;
+      let release!: () => void;
+      const current = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      persistenceRetry = current;
+      try {
+        if (tracker.isSession()) await recoverDurableLoads();
+        const tasks: Promise<void>[] = [];
+        if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
+          tasks.push(retryWrite('meta', metaStorage.save(meta)));
+        }
+        if (!tracker.isSession('run') && tracker.isFailed('run') && runStorage) {
           tasks.push(
-            (async () => {
-              for (const blob of blobs) {
-                replaySavesInFlight.add(blob);
-                const work = saveReplayBlob(blob).finally(() => {
-                  replaySavesInFlight.delete(blob);
-                });
-                await retryWrite('replay', work, () => {
-                  completePendingReplay(blob);
-                });
-              }
-            })(),
+            retryWrite('run', resumableSave ? runStorage.save(resumableSave) : runStorage.clear()),
           );
         }
+        if (!tracker.isSession('replay') && tracker.isFailed('replay') && replayStorage) {
+          const blobs = pendingReplays.filter((blob) => !replaySavesInFlight.has(blob));
+          if (blobs.length > 0) {
+            tasks.push(
+              (async () => {
+                for (const blob of blobs) {
+                  replaySavesInFlight.add(blob);
+                  const work = saveReplayBlob(blob).finally(() => {
+                    replaySavesInFlight.delete(blob);
+                  });
+                  await retryWrite('replay', work, () => completePendingReplay(blob));
+                }
+              })(),
+            );
+          }
+        }
+        try {
+          await Promise.all(tasks);
+        } catch {
+          // 失敗は tracker に残り、画面の再試行案内を維持する。
+        }
+        bump();
+      } finally {
+        if (persistenceRetry === current) persistenceRetry = null;
+        release();
       }
-      try {
-        await Promise.all(tasks);
-      } catch {
-        // 失敗は tracker に残り、画面の再試行案内を維持する。
-      }
-      bump();
     },
     resumeRun() {
       if (replayMode || runSaveIssue || !resumableSave) return null;
@@ -1335,21 +1353,27 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (!loaded.ok) return loaded;
       const intended = loaded.save;
       latestImportedSave = intended;
+      runImportDepth += 1;
+      runRevision += 1;
       const write = runSaveImportWrites.then(async () => {
-        if (latestImportedSave !== intended) return;
-        if (runStorage) await runStorage.save(intended);
-        if (latestImportedSave !== intended) {
-          if (runStorage && resumableSave && resumableSave !== intended) {
-            await runStorage.save(resumableSave);
-          } else if (runStorage && !resumableSave) {
-            await runStorage.clear();
+        try {
+          if (latestImportedSave !== intended) return;
+          if (runStorage) await runStorage.save(intended);
+          if (latestImportedSave !== intended) {
+            if (runStorage && resumableSave && resumableSave !== intended) {
+              await runStorage.save(resumableSave);
+            } else if (runStorage && !resumableSave) {
+              await runStorage.clear();
+            }
+            return;
           }
-          return;
+          resumableSave = structuredClone(intended);
+          runSaveIssue = null;
+          runRevision += 1;
+          bump();
+        } finally {
+          runImportDepth -= 1;
         }
-        resumableSave = structuredClone(intended);
-        runSaveIssue = null;
-        runRevision += 1;
-        bump();
       });
       runSaveImportWrites = write.catch(() => undefined);
       try {

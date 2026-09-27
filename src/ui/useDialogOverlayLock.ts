@@ -9,16 +9,12 @@
  */
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import {
+  isOverlayExemptInFront,
   listFocusable,
   listOverlayExemptFocusables,
   lockBackgroundSiblings,
   trapTabTarget,
 } from './dialogOverlayLock';
-
-function isInsideOverlayLockExempt(target: Node): boolean {
-  if (typeof Element === 'undefined' || !(target instanceof Element)) return false;
-  return target.closest('[data-overlay-lock-exempt]') !== null;
-}
 
 export function useDialogOverlayLock(
   dialogRef: RefObject<HTMLElement | null>,
@@ -55,7 +51,9 @@ export function useDialogOverlayLock(
       }
       if (event.key !== 'Tab') return;
       const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const exempt = listOverlayExemptFocusables().filter((element) => !dialog.contains(element));
+      const exempt = listOverlayExemptFocusables(dialog).filter(
+        (element) => !dialog.contains(element),
+      );
       const target = trapTabTarget(listFocusable(dialog), exempt, active, event.shiftKey, dialog);
       if (!target) return;
       event.preventDefault();
@@ -65,7 +63,7 @@ export function useDialogOverlayLock(
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
       if (!(target instanceof Node) || dialog.contains(target)) return;
-      if (isInsideOverlayLockExempt(target)) return;
+      if (isOverlayExemptInFront(target, dialog)) return;
       const focusables = listFocusable(dialog);
       const next = focusables[0] ?? dialog;
       next.focus({ preventScroll: next === dialog });

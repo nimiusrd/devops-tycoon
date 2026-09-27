@@ -359,6 +359,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let replayRevision = 0;
   let replayImportDepth = 0;
   let replayImportWrites: Promise<void> = Promise.resolve();
+  /** 明示取り込み。移行先の上限削除でもこの id を残す。 */
+  const pinnedReplayIds = new Set<string>();
   /** セッション復旧の再試行。二重クリックでも並行させない。 */
   let persistenceRetry: Promise<void> | null = null;
   /** 空だった永続先へ途中まで書いた記録。次回は既存データとして採用しない。 */
@@ -798,6 +800,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         return cachedReplays.map((item) => structuredClone(item));
       };
       const memoryBeforeIds = new Set((await readMemoryReplays()).map((item) => item.id));
+      const saveOntoDurable = (blob: ReplayBlob): Promise<void> => {
+        const protectIds = [...pinnedReplayIds];
+        return target.save(
+          structuredClone(blob),
+          protectIds.length > 0 ? { pin: pinnedReplayIds.has(blob.id), protectIds } : undefined,
+        );
+      };
       let durableList: ReplayBlob[];
       try {
         durableList = await target.list();
@@ -806,6 +815,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       // 既存リプレイは上書きしない。一覧待ちの間に完走した分だけ足してから切り替える。
       if (durableList.length > 0 && !replayMigrationOpen) {
+        const droppedNewcomerIds = new Set<string>();
         try {
           for (;;) {
             if (replaySavePromises.size > 0) {
@@ -824,19 +834,30 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
             const byId = new Map<string, ReplayBlob>();
             for (const item of memoryNow) {
-              if (!memoryBeforeIds.has(item.id) && !durableIds.has(item.id))
+              if (
+                !memoryBeforeIds.has(item.id) &&
+                !durableIds.has(item.id) &&
+                !droppedNewcomerIds.has(item.id)
+              ) {
                 byId.set(item.id, item);
+              }
             }
             for (const blob of pendingReplays) {
-              if (!durableIds.has(blob.id)) byId.set(blob.id, blob);
+              if (!durableIds.has(blob.id) && !droppedNewcomerIds.has(blob.id))
+                byId.set(blob.id, blob);
             }
             const newcomers = [...byId.values()];
             if (newcomers.length > 0) {
               for (const blob of newcomers) {
-                await target.save(structuredClone(blob));
+                await saveOntoDurable(blob);
                 if (pendingReplays.includes(blob)) completePendingReplay(blob);
               }
               durableList = await target.list();
+              for (const blob of newcomers) {
+                if (durableList.some((row) => row.id === blob.id)) continue;
+                if (pinnedReplayIds.has(blob.id)) throw new Error('pinned replay was not kept');
+                droppedNewcomerIds.add(blob.id);
+              }
               continue;
             }
             if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
@@ -853,7 +874,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             if (
               confirm.some(
                 (item) =>
-                  !memoryBeforeIds.has(item.id) && !listed.some((row) => row.id === item.id),
+                  !memoryBeforeIds.has(item.id) &&
+                  !droppedNewcomerIds.has(item.id) &&
+                  !listed.some((row) => row.id === item.id),
               )
             ) {
               continue;
@@ -887,7 +910,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const toSave = [...memoryReplays, ...extras];
           const writtenIds = new Set(toSave.map((blob) => blob.id));
           for (const blob of toSave) {
-            await target.save(structuredClone(blob));
+            await saveOntoDurable(blob);
             if (pendingReplays.includes(blob)) completePendingReplay(blob);
           }
           if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
@@ -1526,6 +1549,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         };
       }
       const storage = replayStorage;
+      pinnedReplayIds.add(loaded.replay.id);
       replayImportDepth += 1;
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {

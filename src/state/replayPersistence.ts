@@ -8,6 +8,15 @@ import { normalizeReplay, selectReplaysWithinMax, type ReplayBlob } from './repl
 export interface ReplaySaveOptions {
   /** ファイル取り込みで明示した件を、古い finishedAt でも上限削除から残す。 */
   pin?: boolean;
+  /** この保存でも上限削除から残す、ほかの明示取り込み。 */
+  protectIds?: readonly string[];
+}
+
+function replayPinIds(savedId: string, options?: ReplaySaveOptions): string[] | undefined {
+  const ids = new Set(options?.protectIds ?? []);
+  if (options?.pin) ids.add(savedId);
+  if (ids.size === 0) return undefined;
+  return [...ids];
 }
 
 /** リプレイ一覧の非同期永続化インターフェース。 */
@@ -51,7 +60,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
 
   save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     const snapshot = structuredClone(blob);
-    const pinnedId = options?.pin ? snapshot.id : undefined;
+    const pinnedIds = replayPinIds(snapshot.id, options);
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
@@ -60,7 +69,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         const normalized = all
           .map((raw) => normalizeReplay(raw))
           .filter((item): item is ReplayBlob => item !== null);
-        const keep = selectReplaysWithinMax(normalized, pinnedId);
+        const keep = selectReplaysWithinMax(normalized, pinnedIds);
         const keepIds = new Set(keep.map((item) => item.id));
         for (const item of normalized) {
           if (!keepIds.has(item.id)) {
@@ -106,10 +115,7 @@ export class MemoryReplayStorage implements ReplayStorage {
 
   async save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     this.items.set(blob.id, structuredClone(blob));
-    const keep = selectReplaysWithinMax(
-      [...this.items.values()],
-      options?.pin ? blob.id : undefined,
-    );
+    const keep = selectReplaysWithinMax([...this.items.values()], replayPinIds(blob.id, options));
     const keepIds = new Set(keep.map((item) => item.id));
     for (const id of [...this.items.keys()]) {
       if (!keepIds.has(id)) this.items.delete(id);

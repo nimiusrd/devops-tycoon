@@ -281,6 +281,21 @@ describe('リプレイ正規化（RI-61）', () => {
     expect(selected.some((item) => item.id === 'id-1')).toBe(false);
     expect(selected[0]?.id).toBe(`id-${REPLAY_MAX_COUNT}`);
   });
+
+  it('複数の pin は上限まで残し、それ以外の古いものから外す', () => {
+    const items = Array.from({ length: REPLAY_MAX_COUNT + 2 }, (_, i) =>
+      makeBlob({
+        id: `id-${i}`,
+        seed: `seed-${i}`,
+        finishedAt: 1000 + i,
+      }),
+    );
+    const selected = selectReplaysWithinMax(items, ['id-0', 'id-1']);
+    expect(selected).toHaveLength(REPLAY_MAX_COUNT);
+    expect(selected.some((item) => item.id === 'id-0')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-1')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-2')).toBe(false);
+  });
 });
 
 describe('IndexedDB リプレイ永続化（RI-61）', () => {
@@ -469,6 +484,39 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     expect(listed).toHaveLength(REPLAY_MAX_COUNT);
     expect(listed.some((item) => item.id === 'pinned-old')).toBe(true);
     expect(listed.some((item) => item.id === 'filled-0')).toBe(false);
+  });
+
+  it('protectIds は別の保存でも古い明示取り込みを残す', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `filled-${i}`,
+          seed: `filled-${i}`,
+          finishedAt: 2000 + i,
+        }),
+      );
+    }
+    await storage.save(
+      makeBlob({
+        id: 'pinned-old',
+        seed: 'pinned-old',
+        finishedAt: 1,
+      }),
+      { pin: true },
+    );
+    await storage.save(
+      makeBlob({
+        id: 'newer',
+        seed: 'newer',
+        finishedAt: 3000,
+      }),
+      { protectIds: ['pinned-old'] },
+    );
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'pinned-old')).toBe(true);
+    expect(listed.some((item) => item.id === 'newer')).toBe(true);
   });
 
   it('initializeReplayPersistence は一覧取得成功時に渡した storage を使う', async () => {

@@ -4,6 +4,7 @@ import { createRunEngine } from '../../../src/sim/run/engine';
 import { defaultMeta } from '../../../src/state/meta';
 import { initializeMetaPersistence, MemoryMetaStorage } from '../../../src/state/metaPersistence';
 import {
+  REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
   type ReplayBlob,
@@ -703,6 +704,43 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
         .map((replay) => replay.seed)
         .sort(),
     ).toEqual(['during-list', 'stored-replay']);
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
+  it('既存リプレイが上限のとき、再読込中に取り込んだ古い記録は pin のまま残す', async () => {
+    const durable = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 10_000 + i;
+      await durable.save(stored);
+    }
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'pin-during-adopt' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    const originalList = durable.list.bind(durable);
+    let releaseList: (() => void) | undefined;
+    vi.spyOn(durable, 'list').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseList = () => resolve(originalList());
+        }),
+    );
+    const pending = game.retryPersistence();
+    for (let i = 0; i < 12 && !releaseList; i += 1) await Promise.resolve();
+    expect(releaseList).toBeTypeOf('function');
+    const imported = makeReplay('imported-old');
+    imported.finishedAt = 1;
+    const importing = game.importReplayText(serializeReplay(imported));
+    expect(await importing).toMatchObject({ ok: true });
+    expect((await memory.list()).map((replay) => replay.id)).toContain('imported-old');
+    releaseList?.();
+    await pending;
+
+    const durableIds = (await durable.list()).map((replay) => replay.id);
+    expect(durableIds).toHaveLength(REPLAY_MAX_COUNT);
+    expect(durableIds).toContain('imported-old');
+    expect(durableIds).not.toContain('stored-0');
+    expect(game.listReplays().map((replay) => replay.id)).toContain('imported-old');
     expect(game.getPersistenceStatus().state).not.toBe('session');
   });
 

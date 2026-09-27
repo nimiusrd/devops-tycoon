@@ -584,6 +584,51 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(other.listReplays().map((replay) => replay.seed)).toEqual(['stored-replay']);
   });
 
+  it('途中まで移したリプレイは既存データとして捨てず、再試行で残りも書く', async () => {
+    const durable = new MemoryReplayStorage();
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'partial-replay' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    const internals = game.engine as unknown as { phase: string; status: string };
+    for (const seed of ['partial-a', 'partial-b']) {
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+      for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    }
+    expect((await memory.list()).map((replay) => replay.seed).sort()).toEqual([
+      'partial-a',
+      'partial-b',
+    ]);
+
+    const original = durable.save.bind(durable);
+    let saves = 0;
+    vi.spyOn(durable, 'save').mockImplementation(async (blob) => {
+      saves += 1;
+      if (saves === 2) throw new Error('transient');
+      await original(blob);
+    });
+    await game.retryPersistence();
+
+    expect(game.getPersistenceStatus().state).toBe('session');
+    expect(await durable.list()).toHaveLength(1);
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['partial-a', 'partial-b']);
+
+    await game.retryPersistence();
+
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+    expect((await durable.list()).map((replay) => replay.seed).sort()).toEqual([
+      'partial-a',
+      'partial-b',
+    ]);
+  });
+
   it('リプレイ保存後の一覧失敗はキャッシュに残し、再試行できる', async () => {
     const storage = new MemoryReplayStorage();
     const game = createGame({ seed: 'replay-list' });

@@ -356,6 +356,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** 空だった永続先へ途中まで書いた記録。次回は既存データとして採用しない。 */
   let metaMigrationOpen = false;
   let runMigrationOpen = false;
+  let replayMigrationOpen = false;
   /** 保存処理中の完走リプレイ。再試行では重ねて送らない。 */
   const replaySavesInFlight = new Set<ReplayBlob>();
   if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
@@ -778,7 +779,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         restoreReplay();
         return;
       }
-      if (cachedReplays.length > 0) {
+      if (cachedReplays.length > 0 && !replayMigrationOpen) {
         tracker.clearSession('replay');
         return;
       }
@@ -787,9 +788,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       );
       const toSave = [...memoryReplays, ...extras];
       if (toSave.length === 0) {
+        replayMigrationOpen = false;
         tracker.clearSession('replay');
         return;
       }
+      replayMigrationOpen = true;
       try {
         for (const blob of toSave) {
           await target.save(structuredClone(blob));
@@ -799,6 +802,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           restoreReplay();
           return;
         }
+        replayMigrationOpen = false;
         tracker.clearSession('replay');
       } catch {
         restoreReplay();

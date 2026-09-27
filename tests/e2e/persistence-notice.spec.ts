@@ -65,7 +65,8 @@ test('起動時に保存先を読めないときはセッション限りを表�
     return { zIndex: style.zIndex, position: style.position };
   });
   expect(Number(layered.zIndex)).toBeGreaterThan(30);
-  expect(layered.position).toBe('sticky');
+  expect(layered.position).toBe('fixed');
+  expect(await notice.evaluate((element) => element.parentElement === document.body)).toBe(true);
   await expect(notice).toContainText('このセッション限り');
   await expect(notice).toContainText('書き戻しません');
 

@@ -94,6 +94,24 @@ describe('PersistenceTracker', () => {
     expect(tracker.dismissTransientBanner()).toBe(false);
   });
 
+  it('読込済みの保存時刻は失敗詳細に残り、復旧チップは出さない', () => {
+    const tracker = new PersistenceTracker();
+    const savedAt = 1_700_000_000_000;
+    tracker.noteDurableAt(savedAt);
+    const noted = tracker.notice(true);
+    expect(noted.liveMessage).toBe('');
+    expect(noted.persistent).toBe(false);
+    expect(noted.detail).toContain(formatPersistenceClock(savedAt));
+
+    const generation = tracker.begin('run');
+    tracker.fail('run', generation, new Error('transient'));
+    const failed = tracker.notice(true);
+    expect(failed.detail).toContain('最後に端末へ保存できた時刻');
+    expect(failed.detail).toContain(formatPersistenceClock(savedAt));
+    expect(failed.detail).not.toContain('まだ端末へ保存できていません');
+    expect(failed.liveMessage).toContain('失敗');
+  });
+
   it('遅れた世代でも未保存が尽きた失敗は成功にする', () => {
     const tracker = new PersistenceTracker();
     const older = tracker.begin('replay');

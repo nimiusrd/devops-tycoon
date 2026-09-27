@@ -68,7 +68,9 @@ class ElementStub {
   closest(selector: string): ElementStub | null {
     const matches =
       (selector === '[inert]' && this.inert) ||
-      (selector === '[aria-hidden="true"]' && this.getAttribute('aria-hidden') === 'true');
+      (selector === '[aria-hidden="true"]' && this.getAttribute('aria-hidden') === 'true') ||
+      (selector === '[data-overlay-lock-exempt]' &&
+        this.getAttribute('data-overlay-lock-exempt') !== null);
     return matches ? this : (this.parentElement?.closest(selector) ?? null);
   }
 
@@ -98,6 +100,21 @@ class ElementStub {
 class DocumentStub extends EventTarget {
   body = new ElementStub();
   activeElement: unknown = null;
+
+  querySelectorAll(selector: string): ElementStub[] {
+    const found: ElementStub[] = [];
+    const visit = (node: ElementStub) => {
+      if (
+        selector === '[data-overlay-lock-exempt]' &&
+        node.getAttribute('data-overlay-lock-exempt') !== null
+      ) {
+        found.push(node);
+      }
+      for (const child of node.children) visit(child);
+    };
+    visit(this.body);
+    return found;
+  }
 
   // Node の EventTarget は removeEventListener の boolean capture を照合しないため、
   // ブラウザと同じ登録・解除の意味を保つよう options オブジェクトへ正規化する。
@@ -165,6 +182,7 @@ beforeEach(() => {
   vi.stubGlobal('document', documentStub);
   vi.stubGlobal('HTMLElement', ElementStub);
   vi.stubGlobal('Node', ElementStub);
+  vi.stubGlobal('Element', ElementStub);
 });
 
 afterEach(() => {
@@ -288,6 +306,28 @@ describe('useDialogOverlayLock', () => {
     unmount();
     expect(keyDown('Escape').defaultPrevented).toBe(false);
     expect(latest).toHaveBeenCalledOnce();
+  });
+
+  it('ロック免除の保存案内は背面ロック中もフォーカスと Tab を残す', () => {
+    const retry = button();
+    const notice = new ElementStub().append(retry);
+    notice.setAttribute('data-overlay-lock-exempt', 'true');
+    const dialogButton = button();
+    const dialog = new ElementStub().append(dialogButton);
+    const root = Object.assign(new ElementStub(), { id: 'root' });
+    documentStub.body.append(notice, root, dialog);
+    mountLock(dialog);
+
+    expect(notice.inert).toBe(false);
+    expect(retry.inert).toBe(false);
+    expect(root.inert).toBe(true);
+
+    retry.focus();
+    expect(documentStub.activeElement).toBe(retry);
+    expect(keyDown('Tab').defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(dialogButton);
+    expect(keyDown('Tab').defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(retry);
   });
 
   it('ダイアログがまだ無い場合はフォーカスもキー操作も変更しない', () => {

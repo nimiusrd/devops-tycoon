@@ -4,6 +4,7 @@
  * 保存失敗とセッション限りは常駐する。保存中・保存済みは盤面を押し下げない。
  * 読み上げは liveMessage だけにし、連続した保存成功では文を変えない。
  */
+import { createPortal } from 'react-dom';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../state/persistenceStatus';
 
 export interface PersistenceNoticeProps {
@@ -24,13 +25,14 @@ export function PersistenceNotice({ notice, onRetry, onExport }: PersistenceNoti
     notice.state !== 'idle' && !(notice.state === 'saved' && notice.liveMessage === '');
   if (!showBanner) return live;
 
-  return (
+  const banner = (
     <div
       className={`persistence-notice${notice.persistent ? '' : ' persistence-notice-quiet'}`}
       data-testid="persistence-notice"
       data-state={notice.state}
       data-tone={notice.tone}
       data-persistent={notice.persistent ? 'true' : 'false'}
+      {...(notice.persistent ? { 'data-overlay-lock-exempt': 'true' } : {})}
     >
       <p className="persistence-notice-headline" data-testid="persistence-notice-headline">
         {notice.headline}
@@ -49,4 +51,9 @@ export function PersistenceNotice({ notice, onRetry, onExport }: PersistenceNoti
       ) : null}
     </div>
   );
+  // 常駐案内は body へ出し、結果オーバーレイが #root を inert にしても再試行できる。
+  if (notice.persistent && typeof document !== 'undefined' && document.body) {
+    return createPortal(banner, document.body);
+  }
+  return banner;
 }

@@ -59,6 +59,7 @@ describe('PersistenceNotice', () => {
     expect(find(tree, 'persistence-notice').props).toMatchObject({
       'data-state': 'failed',
       'data-persistent': 'true',
+      'data-overlay-lock-exempt': 'true',
     });
     expect(find(tree, 'persistence-notice').props.role).toBeUndefined();
     expect(find(tree, 'persistence-live').props).toMatchObject({
@@ -102,6 +103,7 @@ describe('PersistenceNotice', () => {
       persistent: false,
     });
     expect(find(tree, 'persistence-notice').props['data-persistent']).toBe('false');
+    expect(find(tree, 'persistence-notice').props['data-overlay-lock-exempt']).toBeUndefined();
     expect(find(tree, 'persistence-live').props.children).toBe('保存できました。');
     expect(
       elements(tree).some((element) => element.props['data-testid'] === 'persistence-retry'),

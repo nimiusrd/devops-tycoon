@@ -4899,10 +4899,13 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   background: var(--visual-color-banner-hell-bg);
   color: var(--visual-color-banner-hell-text);
 }
-/* 結果(20)・全社(30)・リプレイ帯(40)より前。WebGL 失敗(210)より後ろ。 */
+/* 結果(20)・全社(30)・リプレイ帯(40)より前。WebGL 失敗(210)より後ろ。
+   body へ出した案内は、スクロール容器の外でも再試行が押せるよう固定する。 */
 .persistence-notice[data-persistent='true'] {
-  position: sticky;
+  position: fixed;
   top: 0;
+  right: 0;
+  left: 0;
   z-index: 50;
 }
 .persistence-notice-quiet {

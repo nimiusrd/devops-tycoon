@@ -350,6 +350,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** 端末へ書き終わるまで保持する完走リプレイ。次ランの keyframes とは別物。 */
   const pendingReplays: ReplayBlob[] = [];
   const tracker = new PersistenceTracker();
+  /** 復旧の await 中に進んだメタ／ランを、古いスナップショットで成功扱いにしない。 */
+  let metaRevision = 0;
+  let runRevision = 0;
+  if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
@@ -399,6 +403,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     latestImportedSave = null;
     resumableSave = null;
     runSaveIssue = null;
+    runRevision += 1;
     if (!runStorage) return;
     trackWrite('run', runStorage.clear());
   };
@@ -441,7 +446,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const saveReplayBlob = (blob: ReplayBlob): Promise<void> => {
     if (!replayStorage) return Promise.resolve();
     return replayStorage.save(blob).then(async () => {
-      await refreshReplayCache();
+      const listed = await refreshReplayCache();
+      if (listed) return;
+      cachedReplays = selectReplaysWithinMax(
+        [...cachedReplays.filter((item) => item.id !== blob.id), structuredClone(blob)],
+        blob.id,
+      );
+      bump();
+      throw new Error('replay list failed');
     });
   };
 
@@ -490,6 +502,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const save = toRunSave(exported, Date.now(), keyframes);
     resumableSave = save;
     runSaveIssue = null;
+    runRevision += 1;
     trackWrite('run', runStorage.save(save));
   };
 
@@ -605,6 +618,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   const persistMeta = (): void => {
     if (!metaStorage) return;
+    metaRevision += 1;
     trackWrite('meta', metaStorage.save(meta));
   };
 
@@ -629,6 +643,30 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       });
   };
 
+  const MIGRATION_ATTEMPTS = 8;
+
+  /**
+   * 永続先が空のとき、await の前後でスナップショットが変わっていなければ保存先を切り替える。
+   * 変わっていれば最新を書き直す。保存先は成功が確定してから切り替える。
+   */
+  const migrateEmptyDurable = async <T>(
+    revision: () => number,
+    read: () => T,
+    write: (snapshot: T) => Promise<void>,
+    unchanged: (seen: number, snapshot: T) => boolean,
+    adopt: () => void,
+  ): Promise<void> => {
+    for (let attempt = 0; attempt < MIGRATION_ATTEMPTS; attempt += 1) {
+      const seen = revision();
+      const snapshot = read();
+      await write(snapshot);
+      if (unchanged(seen, snapshot)) {
+        adopt();
+        return;
+      }
+    }
+  };
+
   /**
    * 読込失敗後の再試行。
    * 既存の保存データは上書きしない。永続先が空で、メモリ上にランセーブがあるときだけそれを移す。
@@ -642,10 +680,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           metaStorage = durableMeta;
           tracker.clearSession('meta');
         } else {
-          metaStorage = durableMeta;
+          const target = durableMeta;
           try {
-            await durableMeta.save(meta);
-            tracker.clearSession('meta');
+            await migrateEmptyDurable(
+              () => metaRevision,
+              () => meta,
+              (snapshot) => target.save(snapshot),
+              (seen, snapshot) => seen === metaRevision && meta === snapshot,
+              () => {
+                metaStorage = target;
+                tracker.clearSession('meta');
+              },
+            );
           } catch {
             /* 空の永続先へ移せなければ、セッション限りのまま現在のメタを残す */
           }
@@ -663,18 +709,29 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           runSaveIssue = issue ? structuredClone(issue) : null;
           resumableSave = issue ? null : loaded;
           tracker.clearSession('run');
-        } else {
+        } else if (!resumableSave) {
           runStorage = durableRun;
           runSaveIssue = null;
-          if (!resumableSave) {
-            tracker.clearSession('run');
-          } else {
-            try {
-              await durableRun.save(resumableSave);
-              tracker.clearSession('run');
-            } catch {
-              /* 空の永続先へ移せなければ、セッション限りのまま現在ランを残す */
-            }
+          tracker.clearSession('run');
+        } else {
+          const target = durableRun;
+          try {
+            await migrateEmptyDurable(
+              () => runRevision,
+              () => resumableSave,
+              async (snapshot) => {
+                if (snapshot) await target.save(snapshot);
+                else await target.clear();
+              },
+              (seen, snapshot) => seen === runRevision && resumableSave === snapshot,
+              () => {
+                runStorage = target;
+                runSaveIssue = null;
+                tracker.clearSession('run');
+              },
+            );
+          } catch {
+            /* 空の永続先へ移せなければ、セッション限りのまま現在ランを残す */
           }
         }
       } catch {
@@ -683,13 +740,52 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     if (tracker.isSession('replay') && durableReplay) {
       const previous = replayStorage;
-      replayStorage = durableReplay;
+      const memoryCache = cachedReplays.map((item) => structuredClone(item));
+      let memoryReplays = memoryCache;
+      if (previous && previous !== durableReplay) {
+        try {
+          memoryReplays = await previous.list();
+        } catch {
+          memoryReplays = memoryCache;
+        }
+      }
+      const restoreReplay = (): void => {
+        replayStorage = previous;
+        cachedReplays = memoryCache;
+        bump();
+      };
+      const target = durableReplay;
+      replayStorage = target;
       const listed = await refreshReplayCache();
       if (!listed) {
-        replayStorage = previous;
+        restoreReplay();
         return;
       }
-      tracker.clearSession('replay');
+      if (cachedReplays.length > 0) {
+        tracker.clearSession('replay');
+        return;
+      }
+      const extras = pendingReplays.filter(
+        (blob) => !memoryReplays.some((item) => item.id === blob.id),
+      );
+      const toSave = [...memoryReplays, ...extras];
+      if (toSave.length === 0) {
+        tracker.clearSession('replay');
+        return;
+      }
+      try {
+        for (const blob of toSave) {
+          await target.save(structuredClone(blob));
+        }
+        const refreshed = await refreshReplayCache();
+        if (!refreshed) {
+          restoreReplay();
+          return;
+        }
+        tracker.clearSession('replay');
+      } catch {
+        restoreReplay();
+      }
     }
   };
 
@@ -1114,6 +1210,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (options?.sessionOnly) {
         durableRun = options.durableStorage ?? null;
         tracker.markSession('run');
+      } else if (resumableSave) {
+        tracker.noteDurableAt(resumableSave.savedAt);
       }
       bump();
     },
@@ -1223,6 +1321,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
         resumableSave = structuredClone(intended);
         runSaveIssue = null;
+        runRevision += 1;
         bump();
       });
       runSaveImportWrites = write.catch(() => undefined);

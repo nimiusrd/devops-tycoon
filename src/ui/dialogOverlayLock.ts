@@ -47,6 +47,53 @@ export function wrapTabIfNeeded<T extends object>(
   return null;
 }
 
+function isOverlayLockExempt(element: HTMLElement): boolean {
+  return element.getAttribute('data-overlay-lock-exempt') !== null;
+}
+
+/** ダイアログの外でも操作を残す保存案内などのフォーカス対象。 */
+export function listOverlayExemptFocusables(): HTMLElement[] {
+  if (typeof document === 'undefined') return [];
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-overlay-lock-exempt]')).flatMap(
+    (root) => listFocusable(root),
+  );
+}
+
+/**
+ * Tab の端を、ダイアログとロック免除の操作で一つの輪にする。
+ * 免除が無いときはダイアログ内だけの循環に戻す。
+ */
+export function trapTabTarget<T extends object>(
+  dialogItems: readonly T[],
+  exemptItems: readonly T[],
+  active: T | null,
+  shift: boolean,
+  dialog: T,
+): T | null {
+  const firstExempt = exemptItems[0];
+  const lastExempt = exemptItems[exemptItems.length - 1];
+  if (!firstExempt || !lastExempt) return wrapTabIfNeeded(dialogItems, active, shift, dialog);
+
+  const firstDialog = dialogItems[0];
+  const lastDialog = dialogItems[dialogItems.length - 1];
+  const inDialogList = active !== null && dialogItems.includes(active);
+  const inExempt = active !== null && exemptItems.includes(active);
+  const onDialog = active === dialog || inDialogList;
+
+  if (shift) {
+    if (inExempt && active === firstExempt) return lastDialog ?? dialog;
+    if (onDialog && (!inDialogList || active === firstDialog || active === dialog))
+      return lastExempt;
+    if (!onDialog && !inExempt) return lastExempt;
+    return null;
+  }
+  if (inExempt && active === lastExempt) return firstDialog ?? dialog;
+  if (onDialog && lastDialog && active === lastDialog) return firstExempt;
+  if (onDialog && !inDialogList) return firstExempt;
+  if (!onDialog && !inExempt) return firstDialog ?? firstExempt;
+  return null;
+}
+
 /** ダイアログの兄弟を inert / aria-hidden にし、解除関数を返す。 */
 export function lockBackgroundSiblings(dialog: HTMLElement): () => void {
   const parent = dialog.parentElement;
@@ -55,11 +102,18 @@ export function lockBackgroundSiblings(dialog: HTMLElement): () => void {
   const restores: Array<() => void> = [];
   for (const sibling of Array.from(parent.children)) {
     if (sibling === dialog || !(sibling instanceof HTMLElement)) continue;
+    if (isOverlayLockExempt(sibling)) continue;
     const targets = [sibling];
     // ResultOverlay は body へ portal されるため、React root の直下にある
     // 実画面にも inert を付けて、従来の同階層 overlay と同じ契約を保つ。
+    // ロック免除の案内はクリックと Tab を残す。
     if (parent === document.body && sibling.id === 'root') {
-      targets.push(...Array.from(sibling.children).filter((child) => child instanceof HTMLElement));
+      targets.push(
+        ...Array.from(sibling.children).filter(
+          (child): child is HTMLElement =>
+            child instanceof HTMLElement && !isOverlayLockExempt(child),
+        ),
+      );
     }
     for (const target of targets) {
       const previousInert = target.inert;

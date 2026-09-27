@@ -91,6 +91,16 @@ export class PersistenceTracker {
     }
   }
 
+  /**
+   * 読込済みセーブの時刻を、最後に端末へ書けた時刻として残す。
+   * 復旧チップや読み上げは出さない。
+   */
+  noteDurableAt(at: number): void {
+    if (!Number.isFinite(at)) return;
+    if (this.lastDurableAt !== null && at <= this.lastDurableAt) return;
+    this.lastDurableAt = at;
+  }
+
   /** 復旧チップを閉じる。読み上げ文は残す。閉じたら true。 */
   dismissTransientBanner(): boolean {
     if (!this.showTransientBanner) return false;

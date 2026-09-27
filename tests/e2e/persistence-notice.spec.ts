@@ -60,6 +60,12 @@ test('起動時に保存先を読めないときはセッション限りを表�
   const notice = page.getByTestId('persistence-notice');
   await expect(notice).toHaveAttribute('data-state', 'session');
   await expect(notice).toHaveAttribute('data-persistent', 'true');
+  const layered = await notice.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { zIndex: style.zIndex, position: style.position };
+  });
+  expect(Number(layered.zIndex)).toBeGreaterThan(30);
+  expect(layered.position).toBe('sticky');
   await expect(notice).toContainText('このセッション限り');
   await expect(notice).toContainText('書き戻しません');
 

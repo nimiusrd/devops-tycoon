@@ -357,6 +357,101 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect((await durableExisting.load())?.summary.seed).toBe('stored-run');
   });
 
+  it('空の永続先への再試行は現在のメタを保存し、失敗時はセッション限りを維持する', async () => {
+    const durable = new MemoryMetaStorage();
+    const game = createGame({ seed: 'empty-meta', metaReady: false });
+    game.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    game.setSoundMuted(false);
+    await game.retryPersistence();
+
+    expect((await durable.load())?.soundMuted).toBe(false);
+    expect(game.getMeta().soundMuted).toBe(false);
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+
+    const blocked = new MemoryMetaStorage();
+    const stuck = createGame({ seed: 'meta-stuck', metaReady: false });
+    stuck.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: blocked,
+    });
+    stuck.setSoundMuted(false);
+    vi.spyOn(blocked, 'save').mockRejectedValueOnce(new Error('full'));
+    await stuck.retryPersistence();
+
+    expect(stuck.getPersistenceStatus().state).toBe('session');
+    expect(stuck.getMeta().soundMuted).toBe(false);
+    expect(await blocked.load()).toBeNull();
+  });
+
+  it('セッション復旧と同じ再試行で、別チャネルの保存失敗も書き直す', async () => {
+    const durable = new MemoryMetaStorage();
+    const existing = { ...defaultMeta(), points: 80, unlockedCards: ['devin'] };
+    await durable.save(existing);
+    const runStorage = new MemoryRunStorage();
+    const game = createGame({ seed: 'mixed-retry', runStorage, metaReady: false });
+    game.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    game.startRun('easy', [], 'mixed-run');
+    const runSave = vi.spyOn(runStorage, 'save');
+    runSave.mockRejectedValueOnce(new Error('transient'));
+    expect(game.beginSetupSprint().phase).toBe('sprint');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(game.getPersistenceStatus().state).toBe('session');
+
+    await game.retryPersistence();
+
+    expect(game.getMeta().points).toBe(80);
+    expect(game.getMeta().unlockedCards).toEqual(['devin']);
+    expect((await runStorage.load())?.summary.seed).toBe('mixed-run');
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+    expect(game.getPersistenceStatus().state).not.toBe('failed');
+  });
+
+  it('後から終わったリプレイ保存が先に成功しても、全部保存できたら失敗表示を残さない', async () => {
+    const storage = new MemoryReplayStorage();
+    const originalSave = storage.save.bind(storage);
+    const gates: Array<() => void> = [];
+    vi.spyOn(storage, 'save').mockImplementation(
+      (blob) =>
+        new Promise((resolve) => {
+          gates.push(() => resolve(originalSave(blob)));
+        }),
+    );
+    const game = createGame({ seed: 'replay-order' });
+    await game.attachReplay(storage);
+    const internals = game.engine as unknown as { phase: string; status: string };
+
+    game.startRun('easy', [], 'replay-older');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    game.startRun('easy', [], 'replay-newer');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    expect(gates).toHaveLength(2);
+
+    gates[1]?.();
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    expect(game.getPersistenceStatus().state).toBe('failed');
+
+    gates[0]?.();
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['replay-newer', 'replay-older']);
+    expect(game.getPersistenceStatus().state).not.toBe('failed');
+  });
+
   it('破棄の保存先エラー後も古いセーブを再開させず、新規ランの保存で回復する', async () => {
     const existing = makeRunSave('discarded-save');
     const storage = new MemoryRunStorage();

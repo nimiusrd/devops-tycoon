@@ -93,4 +93,16 @@ describe('PersistenceTracker', () => {
     expect(tracker.notice(false).liveMessage).toContain('読み直せました');
     expect(tracker.dismissTransientBanner()).toBe(false);
   });
+
+  it('遅れた世代でも未保存が尽きた失敗は成功にする', () => {
+    const tracker = new PersistenceTracker();
+    const older = tracker.begin('replay');
+    const newer = tracker.begin('replay');
+    tracker.fail('replay', newer, new Error('still pending'));
+    expect(tracker.succeed('replay', older, 20)).toBe(false);
+    expect(tracker.notice(false).state).toBe('failed');
+    expect(tracker.settleCurrent('replay', 30)).toBe(true);
+    expect(tracker.notice(false).state).toBe('saved');
+    expect(tracker.notice(false).liveMessage).toBe('保存できました。');
+  });
 });

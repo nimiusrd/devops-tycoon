@@ -98,6 +98,16 @@ export class PersistenceTracker {
     return true;
   }
 
+  /**
+   * 世代が遅れても、未保存が尽きた現在の失敗を成功にする。
+   * すでに成功・待機中なら false。
+   */
+  settleCurrent(channel: PersistenceChannel, at: number): boolean {
+    const current = this.channels[channel];
+    if (current.write !== 'failed') return false;
+    return this.succeed(channel, current.generation, at);
+  }
+
   begin(channel: PersistenceChannel): number {
     const current = this.channels[channel];
     current.generation += 1;

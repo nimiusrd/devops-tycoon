@@ -586,7 +586,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (tracker.fail(channel, generation, new Error('unsaved replay'))) bump();
           return;
         }
-        if (tracker.succeed(channel, generation, Date.now())) bump();
+        if (tracker.succeed(channel, generation, Date.now())) {
+          bump();
+          return;
+        }
+        if (
+          channel === 'replay' &&
+          pendingReplays.length === 0 &&
+          tracker.settleCurrent(channel, Date.now())
+        ) {
+          bump();
+        }
       })
       .catch((error: unknown) => {
         if (tracker.fail(channel, generation, error)) bump();
@@ -627,9 +637,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (tracker.isSession('meta') && durableMeta) {
       try {
         const loaded = await durableMeta.load();
-        if (loaded) meta = loaded;
-        metaStorage = durableMeta;
-        tracker.clearSession('meta');
+        if (loaded) {
+          meta = loaded;
+          metaStorage = durableMeta;
+          tracker.clearSession('meta');
+        } else {
+          metaStorage = durableMeta;
+          try {
+            await durableMeta.save(meta);
+            tracker.clearSession('meta');
+          } catch {
+            /* 空の永続先へ移せなければ、セッション限りのまま現在のメタを残す */
+          }
+        }
       } catch {
         /* 読めなければ初期値を書き戻さない */
       }
@@ -1104,21 +1124,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (tracker.dismissTransientBanner()) bump();
     },
     async retryPersistence() {
-      if (tracker.isSession()) {
-        await recoverDurableLoads();
-        bump();
-        return;
-      }
+      if (tracker.isSession()) await recoverDurableLoads();
       const tasks: Promise<void>[] = [];
-      if (tracker.isFailed('meta') && metaStorage) {
+      if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
         tasks.push(retryWrite('meta', metaStorage.save(meta)));
       }
-      if (tracker.isFailed('run') && runStorage) {
+      if (!tracker.isSession('run') && tracker.isFailed('run') && runStorage) {
         tasks.push(
           retryWrite('run', resumableSave ? runStorage.save(resumableSave) : runStorage.clear()),
         );
       }
-      if (replayStorage && pendingReplays.length > 0) {
+      if (!tracker.isSession('replay') && replayStorage && pendingReplays.length > 0) {
         const blobs = [...pendingReplays];
         tasks.push(
           (async () => {
@@ -1135,6 +1151,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       } catch {
         // 失敗は tracker に残り、画面の再試行案内を維持する。
       }
+      bump();
     },
     resumeRun() {
       if (replayMode || runSaveIssue || !resumableSave) return null;

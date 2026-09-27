@@ -356,6 +356,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const tracker = new PersistenceTracker();
   /** 復旧の await 中に進んだメタ／ランを、古いスナップショットで成功扱いにしない。 */
   let metaRevision = 0;
+  /** セッション限りになった時点のメタ世代。再試行前の更新を既存データで戻さない。 */
+  let metaRevisionAtSession = 0;
   let runRevision = 0;
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
@@ -736,9 +738,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       try {
         const seenMetaRevision = metaRevision;
         const loaded = await durableMeta.load();
-        const metaMoved = metaRevision !== seenMetaRevision;
+        const metaMoved =
+          metaRevision !== seenMetaRevision || metaRevision !== metaRevisionAtSession;
         if (loaded && !metaMigrationOpen) {
-          // 読込中の報酬や設定は、古い永続データで置き換えない。
+          // 読込中だけでなく、再試行前の報酬や設定も古い永続データで置き換えない。
           if (!metaMoved) {
             meta = loaded;
             metaStorage = durableMeta;
@@ -1392,6 +1395,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       metaReady = true;
       if (options?.sessionOnly) {
         durableMeta = options.durableStorage ?? null;
+        metaRevisionAtSession = metaRevision;
         tracker.markSession('meta');
       }
       recordIfFinished();

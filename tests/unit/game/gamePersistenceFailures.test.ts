@@ -246,14 +246,11 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
       sessionOnly: true,
       durableStorage: boot.durableStorage,
     });
-    game.setSoundMuted(false);
-    await Promise.resolve();
 
     expect(game.getPersistenceStatus().state).toBe('session');
     expect(game.getPersistenceStatus().detail).toContain('メタ進行はこのセッション限り');
     expect(game.getPersistenceStatus().detail).toContain('ほかの保存は端末へ続きます');
     expect(save).not.toHaveBeenCalled();
-    expect(game.getMeta().soundMuted).toBe(false);
 
     await game.retryPersistence();
 
@@ -263,6 +260,28 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getMeta().soundMuted).toBe(true);
     expect(game.getPersistenceStatus().state).not.toBe('session');
     expect(game.getPersistenceStatus().liveMessage).toContain('読み直せました');
+  });
+
+  it('再試行の前に変えたメタは、既存の永続データで置き換えない', async () => {
+    const durable = new MemoryMetaStorage();
+    const existing = { ...defaultMeta(), points: 80, soundMuted: true };
+    await durable.save(existing);
+    const game = createGame({ seed: 'meta-before-retry', metaReady: false });
+    game.attachMetaPersistence(defaultMeta(), new MemoryMetaStorage(), {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    game.setSoundMuted(false);
+    await Promise.resolve();
+
+    await game.retryPersistence();
+
+    expect(game.getMeta().soundMuted).toBe(false);
+    expect(game.getMeta().points).not.toBe(80);
+    expect((await durable.load()).soundMuted).toBe(true);
+    expect((await durable.load()).points).toBe(80);
+    expect(game.getPersistenceStatus().state).toBe('session');
+    expect(game.getPersistenceStatus().detail).toContain('メタ進行はこのセッション限り');
   });
 
   it('メタの再読込中に変わった設定は、古い永続データで置き換えない', async () => {

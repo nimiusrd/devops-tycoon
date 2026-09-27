@@ -88,5 +88,9 @@ describe('PersistenceTracker', () => {
       liveMessage: '保存済みデータを読み直せました。',
       persistent: false,
     });
+    expect(tracker.dismissTransientBanner()).toBe(true);
+    expect(tracker.notice(false).state).toBe('idle');
+    expect(tracker.notice(false).liveMessage).toContain('読み直せました');
+    expect(tracker.dismissTransientBanner()).toBe(false);
   });
 });

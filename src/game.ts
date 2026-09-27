@@ -234,8 +234,11 @@ export interface GameHandle {
   /**
    * 失敗した自動保存を再試行する。
    * 起動時の読込失敗では既存データへ書き戻さず、保存先の再読込だけを行う。
+   * 永続先が空のときだけ、メモリ上のランセーブを移す。
    */
   retryPersistence(): Promise<void>;
+  /** 復旧チップを閉じる。読み上げ文は残す。 */
+  dismissPersistenceNotice(): void;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
   /** 現行の途中セーブを JSON 文字列にする（無い場合は null。RI-133）。 */
@@ -344,7 +347,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let durableMeta: MetaStorage | null = null;
   let durableRun: RunStorage | null = null;
   let durableReplay: ReplayStorage | null = null;
-  let pendingReplay: ReplayBlob | null = null;
+  /** 端末へ書き終わるまで保持する完走リプレイ。次ランの keyframes とは別物。 */
+  const pendingReplays: ReplayBlob[] = [];
   const tracker = new PersistenceTracker();
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -434,8 +438,22 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
   };
 
+  const saveReplayBlob = (blob: ReplayBlob): Promise<void> => {
+    if (!replayStorage) return Promise.resolve();
+    return replayStorage.save(blob).then(async () => {
+      await refreshReplayCache();
+    });
+  };
+
+  /** 保存完了した blob を外す。未保存が残っていれば true。 */
+  const completePendingReplay = (blob: ReplayBlob): boolean => {
+    const index = pendingReplays.indexOf(blob);
+    if (index >= 0) pendingReplays.splice(index, 1);
+    return pendingReplays.length > 0;
+  };
+
   const commitReplayIfFinished = (): void => {
-    if (!replayStorage || keyframes.length === 0 || replayMode || pendingReplay) return;
+    if (!replayStorage || keyframes.length === 0 || replayMode) return;
     const s = engine.snapshot();
     if (s.status !== 'won' && s.status !== 'lost') return;
     const finishedAt = Date.now();
@@ -457,16 +475,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       ruleset: structuredClone(CURRENT_RUN_RULESET),
       contentSnapshot: snapshotReplayContent(keyframes),
     };
-    pendingReplay = blob;
-    trackWrite(
-      'replay',
-      replayStorage.save(blob).then(() => refreshReplayCache()),
-      () => {
-        if (pendingReplay !== blob) return;
-        pendingReplay = null;
-        keyframes = [];
-      },
-    );
+    pendingReplays.push(blob);
+    // 完走時点で共有配列から切り離す。非同期完了で次ランのフレームを消さない。
+    keyframes = [];
+    trackWrite('replay', saveReplayBlob(blob), () => completePendingReplay(blob));
   };
 
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
@@ -555,11 +567,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * 保存失敗でゲーム進行を止めない。
    * セッション限りの保存先は端末へ成功したことにしない。
    * 直列化はストレージ実装へ委ねる。
+   * onSuccess が true を返したときは、同じチャネルに未保存が残っている。
    */
   const trackWrite = (
     channel: 'meta' | 'run' | 'replay',
     work: Promise<void>,
-    onSuccess?: () => void,
+    onSuccess?: () => boolean | void,
   ): void => {
     if (tracker.isSession(channel)) {
       void work.then(() => onSuccess?.()).catch(() => undefined);
@@ -568,7 +581,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const generation = tracker.begin(channel);
     void work
       .then(() => {
-        onSuccess?.();
+        const stillPending = onSuccess?.() === true;
+        if (stillPending) {
+          if (tracker.fail(channel, generation, new Error('unsaved replay'))) bump();
+          return;
+        }
         if (tracker.succeed(channel, generation, Date.now())) bump();
       })
       .catch((error: unknown) => {
@@ -602,7 +619,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       });
   };
 
-  /** 読込失敗後の再試行。保存済みデータへは書き込まない。 */
+  /**
+   * 読込失敗後の再試行。
+   * 既存の保存データは上書きしない。永続先が空で、メモリ上にランセーブがあるときだけそれを移す。
+   */
   const recoverDurableLoads = async (): Promise<void> => {
     if (tracker.isSession('meta') && durableMeta) {
       try {
@@ -617,11 +637,26 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (tracker.isSession('run') && durableRun) {
       try {
         const loaded = await durableRun.load();
-        const issue = loaded ? getRunSaveCompatibilityIssue(loaded) : null;
-        runStorage = durableRun;
-        runSaveIssue = issue ? structuredClone(issue) : null;
-        resumableSave = issue ? null : loaded;
-        tracker.clearSession('run');
+        if (loaded) {
+          const issue = getRunSaveCompatibilityIssue(loaded);
+          runStorage = durableRun;
+          runSaveIssue = issue ? structuredClone(issue) : null;
+          resumableSave = issue ? null : loaded;
+          tracker.clearSession('run');
+        } else {
+          runStorage = durableRun;
+          runSaveIssue = null;
+          if (!resumableSave) {
+            tracker.clearSession('run');
+          } else {
+            try {
+              await durableRun.save(resumableSave);
+              tracker.clearSession('run');
+            } catch {
+              /* 空の永続先へ移せなければ、セッション限りのまま現在ランを残す */
+            }
+          }
+        }
       } catch {
         /* 読めなければ空のセーブを書き戻さない */
       }
@@ -1065,6 +1100,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getPersistenceStatus() {
       return tracker.notice(resumableSave !== null);
     },
+    dismissPersistenceNotice() {
+      if (tracker.dismissTransientBanner()) bump();
+    },
     async retryPersistence() {
       if (tracker.isSession()) {
         await recoverDurableLoads();
@@ -1080,18 +1118,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           retryWrite('run', resumableSave ? runStorage.save(resumableSave) : runStorage.clear()),
         );
       }
-      if (tracker.isFailed('replay') && replayStorage && pendingReplay) {
-        const blob = pendingReplay;
+      if (replayStorage && pendingReplays.length > 0) {
+        const blobs = [...pendingReplays];
         tasks.push(
-          retryWrite(
-            'replay',
-            replayStorage.save(blob).then(() => refreshReplayCache()),
-            () => {
-              if (pendingReplay !== blob) return;
-              pendingReplay = null;
-              keyframes = [];
-            },
-          ),
+          (async () => {
+            for (const blob of blobs) {
+              await retryWrite('replay', saveReplayBlob(blob), () => {
+                completePendingReplay(blob);
+              });
+            }
+          })(),
         );
       }
       try {

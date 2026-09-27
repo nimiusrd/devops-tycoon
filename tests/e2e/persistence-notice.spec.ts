@@ -77,6 +77,12 @@ test('起動時に保存先を読めないときはセッション限りを表�
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
     );
     expect(fits, `${viewport.width}x${viewport.height} で横スクロール`).toBe(true);
+    const dock = page.getByTestId('title-launch-dock');
+    await expect(dock).toBeVisible();
+    const dockBox = await dock.boundingBox();
+    expect(dockBox, `${viewport.width}x${viewport.height} の開始ドック`).not.toBeNull();
+    expect(dockBox!.y).toBeGreaterThanOrEqual(0);
+    expect(dockBox!.y + dockBox!.height).toBeLessThanOrEqual(viewport.height + 1);
   }
 
   await page.evaluate(() => {

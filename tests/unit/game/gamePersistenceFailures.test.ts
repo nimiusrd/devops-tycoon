@@ -289,6 +289,74 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).toBe('saved');
   });
 
+  it('遅延したリプレイ保存の完了は次ランのキーフレームを消さない', async () => {
+    const storage = new MemoryReplayStorage();
+    const originalSave = storage.save.bind(storage);
+    let release: (() => void) | undefined;
+    const save = vi.spyOn(storage, 'save').mockImplementationOnce(
+      (blob) =>
+        new Promise((resolve) => {
+          release = () => resolve(originalSave(blob));
+        }),
+    );
+    const game = createGame({ seed: 'replay-next' });
+    await game.attachReplay(storage);
+    game.startRun('easy', [], 'replay-first');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 4; i += 1) await Promise.resolve();
+    expect(save).toHaveBeenCalledOnce();
+
+    game.startRun('easy', [], 'replay-second');
+    release?.();
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+
+    const second = game.listReplays().find((replay) => replay.seed === 'replay-second');
+    expect(second?.keyframes.length).toBeGreaterThan(1);
+    expect(game.listReplays().some((replay) => replay.seed === 'replay-first')).toBe(true);
+  });
+
+  it('空の永続先への再試行はメモリ上のランセーブを移し、既存データは上書きしない', async () => {
+    const durable = new MemoryRunStorage();
+    const game = createGame({ seed: 'empty-run' });
+    game.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    game.startRun('easy', [], 'kept-run');
+    expect(game.hasResumableRun()).toBe(true);
+    expect(game.getPersistenceStatus().state).toBe('session');
+
+    await game.retryPersistence();
+
+    expect((await durable.load())?.summary.seed).toBe('kept-run');
+    expect(game.hasResumableRun()).toBe(true);
+    expect(game.getRunSaveSummary()?.seed).toBe('kept-run');
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+
+    const durableExisting = new MemoryRunStorage();
+    await durableExisting.save(makeRunSave('stored-run'));
+    const other = createGame({ seed: 'stored-run' });
+    other.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: durableExisting,
+    });
+    other.startRun('easy', [], 'memory-run');
+    const overwrite = vi.spyOn(durableExisting, 'save');
+    await other.retryPersistence();
+
+    expect(overwrite).not.toHaveBeenCalled();
+    expect(other.getRunSaveSummary()?.seed).toBe('stored-run');
+    expect((await durableExisting.load())?.summary.seed).toBe('stored-run');
+  });
+
   it('破棄の保存先エラー後も古いセーブを再開させず、新規ランの保存で回復する', async () => {
     const existing = makeRunSave('discarded-save');
     const storage = new MemoryRunStorage();

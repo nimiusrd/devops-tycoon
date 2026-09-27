@@ -14,9 +14,15 @@ export interface PersistenceNoticeProps {
 
 export function PersistenceNotice({ notice, onRetry, onExport }: PersistenceNoticeProps) {
   // 平常時の保存済みは出さない。時刻入りの常駐チップは盤面を覆い、視覚回帰も毎分崩れる。
-  // 失敗・セッション限り・復旧後の読み上げがあるときだけ見せる。
-  if (notice.state === 'idle') return null;
-  if (notice.state === 'saved' && notice.liveMessage === '') return null;
+  // ライブリージョンは先に空で置き、文言の変化だけを読み上げる。
+  const live = (
+    <span className="visually-hidden" aria-live="polite" data-testid="persistence-live">
+      {notice.liveMessage}
+    </span>
+  );
+  const showBanner =
+    notice.state !== 'idle' && !(notice.state === 'saved' && notice.liveMessage === '');
+  if (!showBanner) return live;
 
   return (
     <div
@@ -30,9 +36,7 @@ export function PersistenceNotice({ notice, onRetry, onExport }: PersistenceNoti
         {notice.headline}
       </p>
       {notice.detail ? <p className="persistence-notice-detail">{notice.detail}</p> : null}
-      <span className="visually-hidden" aria-live="polite" data-testid="persistence-live">
-        {notice.liveMessage}
-      </span>
+      {live}
       {notice.showRetry ? (
         <button type="button" className="btn" data-testid="persistence-retry" onClick={onRetry}>
           再試行

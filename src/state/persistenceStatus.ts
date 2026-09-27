@@ -63,6 +63,8 @@ export class PersistenceTracker {
   private lastDurableAt: number | null = null;
   private liveMessage = '';
   private announcedFailure = false;
+  /** 復旧文を出した直後だけ、保存済みチップを見せる。 */
+  private showTransientBanner = false;
 
   markSession(channel: PersistenceChannel): void {
     const already = this.session.size > 0;
@@ -85,7 +87,15 @@ export class PersistenceTracker {
     this.session.delete(channel);
     if (this.session.size === 0 && !this.hasFailure()) {
       this.liveMessage = '保存済みデータを読み直せました。';
+      this.showTransientBanner = true;
     }
+  }
+
+  /** 復旧チップを閉じる。読み上げ文は残す。閉じたら true。 */
+  dismissTransientBanner(): boolean {
+    if (!this.showTransientBanner) return false;
+    this.showTransientBanner = false;
+    return true;
   }
 
   begin(channel: PersistenceChannel): number {
@@ -105,6 +115,7 @@ export class PersistenceTracker {
     if ((recovered || this.announcedFailure) && !this.hasFailure() && !this.isSession()) {
       this.liveMessage = '保存できました。';
       this.announcedFailure = false;
+      this.showTransientBanner = true;
     }
     return true;
   }
@@ -167,19 +178,7 @@ export class PersistenceTracker {
         persistent: false,
       };
     }
-    if (saved) {
-      return {
-        state: 'saved',
-        tone: 'quiet',
-        headline: '保存済み',
-        detail: moment,
-        liveMessage: this.liveMessage,
-        showRetry: false,
-        showExport: false,
-        persistent: false,
-      };
-    }
-    if (this.liveMessage === '保存済みデータを読み直せました。') {
+    if (this.showTransientBanner && this.liveMessage === '保存済みデータを読み直せました。') {
       return {
         state: 'saved',
         tone: 'quiet',
@@ -191,12 +190,24 @@ export class PersistenceTracker {
         persistent: false,
       };
     }
+    if (saved && (this.liveMessage === '' || this.showTransientBanner)) {
+      return {
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: moment,
+        liveMessage: this.liveMessage,
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      };
+    }
     return {
       state: 'idle',
       tone: 'quiet',
       headline: '',
       detail: '',
-      liveMessage: '',
+      liveMessage: this.liveMessage,
       showRetry: false,
       showExport: false,
       persistent: false,

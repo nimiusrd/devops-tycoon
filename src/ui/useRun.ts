@@ -158,6 +158,8 @@ export function useRun(game: GameHandle): UseRun {
   const [persistenceStatus, setPersistenceStatus] = useState<PersistenceNotice>(() =>
     game.getPersistenceStatus(),
   );
+  // ライブリージョンは空でマウントし、次の描画で文言を入れる。
+  const [announcedLiveMessage, setAnnouncedLiveMessage] = useState('');
   const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
   const [replays, setReplays] = useState<ReplayBlob[]>(() => game.listReplays());
   const [isReplayMode, setIsReplayMode] = useState(() => game.isReplayMode());
@@ -370,6 +372,19 @@ export function useRun(game: GameHandle): UseRun {
   );
   const setSoundMuted = useCallback((muted: boolean) => void game.setSoundMuted(muted), [game]);
   const retryPersistence = useCallback(() => game.retryPersistence(), [game]);
+
+  useEffect(() => {
+    setAnnouncedLiveMessage(persistenceStatus.liveMessage);
+  }, [persistenceStatus.liveMessage]);
+
+  useEffect(() => {
+    if (persistenceStatus.state !== 'saved' || persistenceStatus.persistent) return;
+    if (persistenceStatus.liveMessage === '') return;
+    const id = window.setTimeout(() => {
+      game.dismissPersistenceNotice();
+    }, 5000);
+    return () => window.clearTimeout(id);
+  }, [game, persistenceStatus.liveMessage, persistenceStatus.persistent, persistenceStatus.state]);
   const setPreferredCardIds = useCallback(
     (cardIds: readonly string[]) => void game.setPreferredCardIds(cardIds),
     [game],
@@ -384,7 +399,7 @@ export function useRun(game: GameHandle): UseRun {
     runSaveSummary,
     resumeRisk,
     runSaveIssue,
-    persistenceStatus,
+    persistenceStatus: { ...persistenceStatus, liveMessage: announcedLiveMessage },
     retryPersistence,
     runEpoch,
     replays,

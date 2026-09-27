@@ -42,9 +42,16 @@ function render(notice: PersistenceNoticeModel, onRetry = vi.fn(), onExport = vi
 
 describe('PersistenceNotice', () => {
   it('平常時は出さず、失敗時は再試行と書き出しと読み上げ文を分ける', () => {
+    const idle = expand(
+      render({ ...base, state: 'idle', headline: '', detail: '', liveMessage: '' }),
+    );
+    expect(find(idle, 'persistence-live').props).toMatchObject({
+      'aria-live': 'polite',
+      children: '',
+    });
     expect(
-      expand(render({ ...base, state: 'idle', headline: '', detail: '', liveMessage: '' })),
-    ).toBeNull();
+      elements(idle).some((element) => element.props['data-testid'] === 'persistence-notice'),
+    ).toBe(false);
 
     const onRetry = vi.fn();
     const onExport = vi.fn();
@@ -65,21 +72,23 @@ describe('PersistenceNotice', () => {
   });
 
   it('平常時の保存済みは出さず、復旧後は常駐バナーにしない', () => {
+    const quiet = expand(
+      render({
+        ...base,
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: '最後に端末へ保存できた時刻は 12:00 です。',
+        liveMessage: '',
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      }),
+    );
     expect(
-      expand(
-        render({
-          ...base,
-          state: 'saved',
-          tone: 'quiet',
-          headline: '保存済み',
-          detail: '最後に端末へ保存できた時刻は 12:00 です。',
-          liveMessage: '',
-          showRetry: false,
-          showExport: false,
-          persistent: false,
-        }),
-      ),
-    ).toBeNull();
+      elements(quiet).some((element) => element.props['data-testid'] === 'persistence-notice'),
+    ).toBe(false);
+    expect(find(quiet, 'persistence-live').props.children).toBe('');
 
     const tree = render({
       ...base,

@@ -2912,6 +2912,20 @@ html:has(.title-screen.title-command) #root {
   min-height: 0;
   overflow: hidden;
 }
+/* 保存バナーはタイトルの 100dvh の外に積まず、ドックが viewport に残るよう高さを分ける。 */
+html:has(.title-screen.title-command) #root {
+  display: flex;
+  flex-direction: column;
+}
+html:has(.title-screen.title-command) #root > .persistence-notice {
+  flex: 0 0 auto;
+}
+html:has(.title-screen.title-command) .title-screen.title-command {
+  flex: 1 1 auto;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+}
 
 /* タイトル画面（戦略司令室 UI） */
 .title-screen.title-command {

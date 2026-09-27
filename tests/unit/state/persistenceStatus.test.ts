@@ -118,7 +118,7 @@ describe('PersistenceTracker', () => {
   it('読込済みの保存時刻は失敗詳細に残り、復旧チップは出さない', () => {
     const tracker = new PersistenceTracker();
     const savedAt = 1_700_000_000_000;
-    tracker.noteDurableAt(savedAt);
+    tracker.noteDurableAt('run', savedAt);
     const noted = tracker.notice(true);
     expect(noted.liveMessage).toBe('');
     expect(noted.persistent).toBe(false);
@@ -180,6 +180,59 @@ describe('PersistenceTracker', () => {
     tracker.succeed('replay', next, 20);
     expect(tracker.notice(false).state).toBe('saved');
     expect(tracker.notice(false).liveMessage).toBe('保存できました。');
+  });
+
+  it('失敗したチャネルの保存時刻は、別チャネルの成功では進まない', () => {
+    const tracker = new PersistenceTracker();
+    const runSaved = 1_700_000_000_000;
+    const metaSaved = 1_700_000_180_000;
+    const saved = tracker.begin('run');
+    tracker.succeed('run', saved, runSaved);
+    const failed = tracker.begin('run');
+    tracker.fail('run', failed, new Error('transient'));
+    const meta = tracker.begin('meta');
+    tracker.succeed('meta', meta, metaSaved);
+
+    const notice = tracker.notice(true);
+    expect(notice.state).toBe('failed');
+    expect(notice.detail).toContain(formatPersistenceClock(runSaved));
+    expect(notice.detail).not.toContain(formatPersistenceClock(metaSaved));
+  });
+
+  it('失敗チャネルに保存時刻がなければ、別チャネルの成功時刻を出さない', () => {
+    const tracker = new PersistenceTracker();
+    const metaSaved = 1_700_000_180_000;
+    const failed = tracker.begin('run');
+    tracker.fail('run', failed, new Error('transient'));
+    const meta = tracker.begin('meta');
+    tracker.succeed('meta', meta, metaSaved);
+
+    const notice = tracker.notice(true);
+    expect(notice.state).toBe('failed');
+    expect(notice.detail).toContain('まだ端末へ保存できていません');
+    expect(notice.detail).not.toContain(formatPersistenceClock(metaSaved));
+  });
+
+  it('セッションが残る間に失敗が復旧しても、その後の通常保存では復旧チップを出さない', () => {
+    const tracker = new PersistenceTracker();
+    tracker.markSession('meta');
+    const failed = tracker.begin('run');
+    tracker.fail('run', failed, new Error('transient'));
+    const recovered = tracker.begin('run');
+    tracker.succeed('run', recovered, 1_700_000_000_000);
+    const duringSession = tracker.notice(false);
+    expect(duringSession.state).toBe('session');
+    expect(duringSession.liveMessage).not.toContain('保存できました');
+
+    tracker.clearSession('meta');
+    expect(tracker.notice(false).liveMessage).toBe('保存済みデータを読み直せました。');
+    expect(tracker.dismissTransientBanner()).toBe(true);
+
+    const later = tracker.begin('meta');
+    tracker.succeed('meta', later, 1_700_000_180_000);
+    const after = tracker.notice(false);
+    expect(after.liveMessage).toBe('保存済みデータを読み直せました。');
+    expect(after.state).not.toBe('saved');
   });
 
   it('一部のチャネルだけがセッション限りだと、対象を案内する', () => {

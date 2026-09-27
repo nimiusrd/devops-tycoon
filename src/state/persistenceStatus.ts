@@ -3,7 +3,7 @@
  *
  * 保存中・保存済み・保存失敗・このセッション限りを区別する。
  * 読み上げ用の文は失敗・セッション切替・復旧のときだけ変え、連続保存では更新しない。
- * 最後に端末へ書けた時刻は、メモリ上の現在状態とは別に持つ。
+ * 最後に端末へ書けた時刻はチャネルごとに持ち、失敗の案内はそのチャネルの時刻だけを使う。
  */
 
 export type PersistenceChannel = 'meta' | 'run' | 'replay';
@@ -68,7 +68,11 @@ export class PersistenceTracker {
     replay: freshChannel(),
   };
   private readonly session = new Set<PersistenceChannel>();
-  private lastDurableAt: number | null = null;
+  private readonly lastDurableAt: Record<PersistenceChannel, number | null> = {
+    meta: null,
+    run: null,
+    replay: null,
+  };
   private liveMessage = '';
   private announcedFailure = false;
   /** 復旧文を出した直後だけ、保存済みチップを見せる。 */
@@ -91,6 +95,8 @@ export class PersistenceTracker {
   clearSession(channel: PersistenceChannel): void {
     if (!this.session.delete(channel)) return;
     if (this.session.size === 0 && !this.hasFailure()) {
+      // 失敗の復旧を待たずにセッションが終わっても、次の通常保存を復旧扱いしない。
+      this.announcedFailure = false;
       this.liveMessage = '保存済みデータを読み直せました。';
       this.showTransientBanner = true;
       return;
@@ -99,13 +105,14 @@ export class PersistenceTracker {
   }
 
   /**
-   * 読込済みセーブの時刻を、最後に端末へ書けた時刻として残す。
-   * 復旧チップや読み上げは出さない。
+   * そのチャネルで端末へ書けた時刻を残す。
+   * 復旧チップや読み上げは出さない。別チャネルの失敗案内には使わない。
    */
-  noteDurableAt(at: number): void {
+  noteDurableAt(channel: PersistenceChannel, at: number): void {
     if (!Number.isFinite(at)) return;
-    if (this.lastDurableAt !== null && at <= this.lastDurableAt) return;
-    this.lastDurableAt = at;
+    const current = this.lastDurableAt[channel];
+    if (current !== null && at <= current) return;
+    this.lastDurableAt[channel] = at;
   }
 
   /** 復旧チップを閉じる。読み上げ文は残す。閉じたら true。 */
@@ -138,18 +145,22 @@ export class PersistenceTracker {
 
   succeed(channel: PersistenceChannel, generation: number, at: number | null): boolean {
     const current = this.channels[channel];
-    // 世代が遅れても、端末へ書けた時刻自体は残す。削除の成功は時刻にしない。
-    if (at !== null) this.noteDurableAt(at);
+    // 世代が遅れても、そのチャネルの時刻自体は残す。削除の成功は時刻にしない。
+    if (at !== null) this.noteDurableAt(channel, at);
     if (current.generation !== generation) return false;
     const recovered = current.write === 'failed';
     current.write = 'saved';
     current.failure = null;
     current.savingWhileFailed = false;
-    if ((recovered || this.announcedFailure) && !this.hasFailure() && !this.isSession()) {
+    const failuresRemain = this.hasFailure();
+    const session = this.isSession();
+    const announceRecovery = (recovered || this.announcedFailure) && !failuresRemain && !session;
+    // 失敗が尽きたら世代を消す。セッションが残っていても、次の通常保存を復旧扱いしない。
+    if (!failuresRemain) this.announcedFailure = false;
+    if (announceRecovery) {
       this.liveMessage = '保存できました。';
-      this.announcedFailure = false;
       this.showTransientBanner = true;
-    } else if (this.hasFailure() || this.isSession()) {
+    } else if (failuresRemain || session) {
       this.syncLiveFromState();
     }
     return true;
@@ -176,8 +187,9 @@ export class PersistenceTracker {
     const session = this.isSession();
     const failure = this.currentFailure();
     const saving = CHANNELS.some((channel) => this.channels[channel].write === 'saving');
-    const saved = this.lastDurableAt !== null;
-    const moment = durableMoment(this.lastDurableAt);
+    const newest = this.newestDurableAt();
+    const saved = newest !== null;
+    const moment = failure ? this.failedChannelMoment() : durableMoment(newest);
 
     if (session) {
       return {
@@ -251,6 +263,28 @@ export class PersistenceTracker {
       showExport: false,
       persistent: false,
     };
+  }
+
+  private newestDurableAt(): number | null {
+    let newest: number | null = null;
+    for (const channel of CHANNELS) {
+      const at = this.lastDurableAt[channel];
+      if (at === null) continue;
+      if (newest === null || at > newest) newest = at;
+    }
+    return newest;
+  }
+
+  /** 失敗中のチャネルだけを見る。未保存のチャネルがあれば、ほかの成功時刻は出さない。 */
+  private failedChannelMoment(): string {
+    let earliest: number | null = null;
+    for (const channel of CHANNELS) {
+      if (this.channels[channel].write !== 'failed') continue;
+      const at = this.lastDurableAt[channel];
+      if (at === null) return durableMoment(null);
+      if (earliest === null || at < earliest) earliest = at;
+    }
+    return durableMoment(earliest);
   }
 
   private hasFailure(): boolean {

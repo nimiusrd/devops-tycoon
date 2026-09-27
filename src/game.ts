@@ -374,12 +374,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** 空だった永続先へ途中まで書いた記録。次回は既存データとして採用しない。 */
   let metaMigrationOpen = false;
   let runMigrationOpen = false;
+  /** このセッションが空の永続先へ書けた最後のスナップショット。別タブの記録とは区別する。 */
+  let metaMigrationWritten: string | null = null;
+  let runMigrationWritten: string | null = null;
   let replayMigrationOpen = false;
   /** 保存処理中の完走リプレイ。再試行では重ねて送らない。 */
   const replaySavesInFlight = new Set<ReplayBlob>();
   /** 進行中の保存。移行側は完了を待ってからセッションを外す。 */
   const replaySavePromises = new Map<ReplayBlob, Promise<void>>();
-  if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
+  if (resumableSave) tracker.noteDurableAt('run', resumableSave.savedAt);
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
@@ -487,13 +490,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   const saveReplayBlob = (blob: ReplayBlob): Promise<void> => {
-    if (!replayStorage) return Promise.resolve();
-    return replayStorage
-      .save(blob)
+    const storage = replayStorage;
+    if (!storage) return Promise.resolve();
+    // 古い finishedAt でも、この完走自体は上限削除から残す。明示取り込みも同時に守る。
+    const protectIds = [...pinnedReplayIds];
+    return storage
+      .save(blob, { pin: true, protectIds })
       .then(async () => {
+        const stored = await storage.list();
+        if (!stored.some((item) => item.id === blob.id)) {
+          throw new Error('replay evicted');
+        }
         const listed = await refreshReplayCache();
         if (listed) return;
-        publishUnsavedReplay(blob);
         throw new Error('replay list failed');
       })
       .catch((error: unknown) => {
@@ -705,6 +714,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       });
   };
 
+  /** このセッションが書いたスナップショットと、後から現れた永続記録を区別する。 */
+  const persistedRecordKey = (value: unknown): string => JSON.stringify(value);
+
   /**
    * 永続先が空のとき、await の前後でスナップショットが変わっていなければ保存先を切り替える。
    * 変わっていれば最新を書き直す。途中の版では打ち切らず、成功が確定してから切り替える。
@@ -741,8 +753,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         const loaded = await durableMeta.load();
         const metaMoved =
           metaRevision !== seenMetaRevision || metaRevision !== metaRevisionAtSession;
-        if (loaded && !metaMigrationOpen) {
+        const loadedKey = loaded ? persistedRecordKey(loaded) : null;
+        const ownPartial =
+          metaMigrationOpen && loadedKey !== null && loadedKey === metaMigrationWritten;
+        if (loaded && !ownPartial) {
           // 読込中だけでなく、再試行前の報酬や設定も古い永続データで置き換えない。
+          // 移行の失敗後に現れた別の記録も、このセッションの途中書き込みとしては扱わない。
+          metaMigrationOpen = false;
+          metaMigrationWritten = null;
           if (!metaMoved) {
             meta = loaded;
             metaStorage = durableMeta;
@@ -755,10 +773,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             await migrateEmptyDurable(
               () => metaRevision,
               () => meta,
-              (snapshot) => target.save(snapshot),
+              async (snapshot) => {
+                await target.save(snapshot);
+                metaMigrationWritten = persistedRecordKey(snapshot);
+              },
               (seen, snapshot) => seen === metaRevision && meta === snapshot,
               () => {
                 metaMigrationOpen = false;
+                metaMigrationWritten = null;
                 metaStorage = target;
                 tracker.clearSession('meta');
               },
@@ -777,14 +799,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         const importedAhead = latestImportedSave !== null;
         const importMoved =
           runImportDepth > 0 || runRevision !== runRevisionAtStart || importedAhead;
-        if (loaded && !runMigrationOpen) {
+        const loadedKey = loaded ? persistedRecordKey(loaded) : null;
+        const ownPartial =
+          runMigrationOpen && loadedKey !== null && loadedKey === runMigrationWritten;
+        if (loaded && !ownPartial) {
           // 進行中ランの保存先は切り替えない。読込中の取り込みも、既存セーブでは置き換えない。
+          // 移行の失敗後に現れた別のセーブも、このセッションの途中書き込みとしては扱わない。
+          runMigrationOpen = false;
+          runMigrationWritten = null;
           if (!importMoved && canAdoptDurableRun()) {
             const issue = getRunSaveCompatibilityIssue(loaded);
             runStorage = durableRun;
             runSaveIssue = issue ? structuredClone(issue) : null;
             resumableSave = issue ? null : loaded;
-            if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
+            if (resumableSave) tracker.noteDurableAt('run', resumableSave.savedAt);
             tracker.clearSession('run');
           }
         } else if (!resumableSave && !runMigrationOpen && !importMoved) {
@@ -802,14 +830,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               async (snapshot) => {
                 if (snapshot) await target.save(snapshot);
                 else await target.clear();
+                runMigrationWritten = persistedRecordKey(snapshot);
               },
               (seen, snapshot) =>
                 runImportDepth === 0 && seen === runRevision && resumableSave === snapshot,
               () => {
                 runMigrationOpen = false;
+                runMigrationWritten = null;
                 runStorage = target;
                 runSaveIssue = null;
-                if (resumableSave) tracker.noteDurableAt(resumableSave.savedAt);
+                if (resumableSave) tracker.noteDurableAt('run', resumableSave.savedAt);
                 tracker.clearSession('run');
               },
             );
@@ -1411,7 +1441,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         durableRun = options.durableStorage ?? null;
         tracker.markSession('run');
       } else if (resumableSave) {
-        tracker.noteDurableAt(resumableSave.savedAt);
+        tracker.noteDurableAt('run', resumableSave.savedAt);
       }
       bump();
     },
@@ -1556,7 +1586,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           resumableSave = structuredClone(intended);
           runSaveIssue = null;
           runRevision += 1;
-          if (runStorage && !tracker.isSession('run')) tracker.noteDurableAt(intended.savedAt);
+          if (runStorage && !tracker.isSession('run'))
+            tracker.noteDurableAt('run', intended.savedAt);
           bump();
         } finally {
           runImportDepth -= 1;

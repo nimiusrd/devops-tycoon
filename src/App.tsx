@@ -124,16 +124,16 @@ function EvolutionSimPause({ game }: { game: GameHandle }) {
 
 /**
  * ラン中の遊び方を開いている間、自動進行だけを止める（RI-148）。
- * 再生速度（手動停止 / 1x / 2x）は変えず、WebGL 未準備など既にある停止も解除しない。
- * 既に pause 済みなら所有せず、自分が止めた epoch のままなら閉じた時だけ resume する。
+ * 再生速度（手動停止 / 1x / 2x）は変えず、WebGL 未準備も触らない。
+ * pause epoch とは独立した保持なので、pauseBriefly や読込中フォールバックが
+ * resume しても、遊び方を閉じるまで進行は止まっている。
+ * 既にある pause() は解放では解除しない。
  */
 function RunHelpSimPause({ game }: { game: GameHandle }) {
   useEffect(() => {
-    if (game.isPaused()) return;
-    game.pause();
-    const epoch = game.getPauseEpoch();
+    game.acquirePauseHold();
     return () => {
-      if (game.getPauseEpoch() === epoch) game.resume();
+      game.releasePauseHold();
     };
   }, [game]);
   return null;

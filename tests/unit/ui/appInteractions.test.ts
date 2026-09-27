@@ -388,8 +388,9 @@ function makeRun(overrides: Partial<UseRun> = {}): UseRun {
 function makeGame() {
   let paused = false;
   let epoch = 0;
+  let holds = 0;
   return {
-    isPaused: vi.fn(() => paused),
+    isPaused: vi.fn(() => paused || holds > 0),
     getPauseEpoch: vi.fn(() => epoch),
     pause: vi.fn(() => {
       paused = true;
@@ -397,6 +398,12 @@ function makeGame() {
     }),
     resume: vi.fn(() => {
       paused = false;
+    }),
+    acquirePauseHold: vi.fn(() => {
+      holds += 1;
+    }),
+    releasePauseHold: vi.fn(() => {
+      holds = Math.max(0, holds - 1);
     }),
   };
 }
@@ -962,13 +969,17 @@ describe('App のラン中メニュー', () => {
     expect(screen.has('SetupScreen')).toBe(true);
     expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
     const local = screen.mountLocal('RunHelpSimPause');
-    expect(screen.game.pause).toHaveBeenCalledOnce();
+    expect(screen.game.acquirePauseHold).toHaveBeenCalledOnce();
+    expect(screen.game.pause).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(true);
     screen.invoke('HowToPlayScreen', 'onClose');
     expect(screen.has('HowToPlayScreen')).toBe(false);
     expect(screen.has('RunHelpSimPause')).toBe(false);
     expect(screen.has('SetupScreen')).toBe(true);
     local.unmount();
-    expect(screen.game.resume).toHaveBeenCalledOnce();
+    expect(screen.game.releasePauseHold).toHaveBeenCalledOnce();
+    expect(screen.game.resume).not.toHaveBeenCalled();
+    expect(screen.game.isPaused()).toBe(false);
     expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
   });
 
@@ -977,9 +988,10 @@ describe('App のラン中メニュー', () => {
     screen.phase('setup');
     screen.invoke('RunBar', 'onOpenHelp');
     const local = screen.mountLocal('RunHelpSimPause');
-    expect(screen.game.pause).toHaveBeenCalledOnce();
+    expect(screen.game.acquirePauseHold).toHaveBeenCalledOnce();
     screen.game.pause();
     local.unmount();
+    expect(screen.game.releasePauseHold).toHaveBeenCalledOnce();
     expect(screen.game.resume).not.toHaveBeenCalled();
     expect(screen.game.isPaused()).toBe(true);
     expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
@@ -991,10 +1003,25 @@ describe('App のラン中メニュー', () => {
     screen.game.pause();
     screen.invoke('RunBar', 'onOpenHelp');
     const local = screen.mountLocal('RunHelpSimPause');
+    expect(screen.game.acquirePauseHold).toHaveBeenCalledOnce();
     expect(screen.game.pause).toHaveBeenCalledOnce();
     local.unmount();
+    expect(screen.game.releasePauseHold).toHaveBeenCalledOnce();
     expect(screen.game.resume).not.toHaveBeenCalled();
     expect(screen.game.isPaused()).toBe(true);
+    expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
+  });
+
+  it('一時停止が先に解けても、遊び方を開いている間は進行を止めたままにする', () => {
+    const screen = mountApp();
+    screen.phase('setup');
+    screen.game.pause();
+    screen.invoke('RunBar', 'onOpenHelp');
+    const local = screen.mountLocal('RunHelpSimPause');
+    screen.game.resume();
+    expect(screen.game.isPaused()).toBe(true);
+    local.unmount();
+    expect(screen.game.isPaused()).toBe(false);
     expect(screen.run.setPlaybackSpeed).not.toHaveBeenCalled();
   });
 

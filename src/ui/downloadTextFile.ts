@@ -8,9 +8,14 @@
 const REVOKE_DELAY_MS = 1_000;
 
 /** 書き出しボタンが何も起きなかったとき、プレイヤーへ返す一文。成功時は null。 */
-export function persistenceExportMessage(text: string | null, downloaded: boolean): string | null {
-  if (!text) return '書き出せる途中セーブがありません。';
-  if (!downloaded) return '途中セーブをファイルに保存できませんでした。';
+export function persistenceExportMessage(
+  text: string | null,
+  downloaded: boolean,
+  kind: 'run' | 'replay' = 'run',
+): string | null {
+  const subject = kind === 'replay' ? 'リプレイ' : '途中セーブ';
+  if (!text) return `書き出せる${subject}がありません。`;
+  if (!downloaded) return `${subject}をファイルに保存できませんでした。`;
   return null;
 }
 

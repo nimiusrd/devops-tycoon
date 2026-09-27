@@ -31,6 +31,12 @@ interface ChannelState {
 
 const CHANNELS: readonly PersistenceChannel[] = ['meta', 'run', 'replay'];
 
+const SESSION_LABEL: Record<PersistenceChannel, string> = {
+  meta: 'メタ進行',
+  run: '途中セーブ',
+  replay: 'リプレイ',
+};
+
 function freshChannel(): ChannelState {
   return { generation: 0, write: 'idle', failure: null };
 }
@@ -67,11 +73,8 @@ export class PersistenceTracker {
   private showTransientBanner = false;
 
   markSession(channel: PersistenceChannel): void {
-    const already = this.session.size > 0;
     this.session.add(channel);
-    if (!already) {
-      this.liveMessage = 'このセッション限りです。進行は端末へ保存されません。';
-    }
+    this.syncLiveFromState();
   }
 
   isSession(channel?: PersistenceChannel): boolean {
@@ -84,11 +87,13 @@ export class PersistenceTracker {
   }
 
   clearSession(channel: PersistenceChannel): void {
-    this.session.delete(channel);
+    if (!this.session.delete(channel)) return;
     if (this.session.size === 0 && !this.hasFailure()) {
       this.liveMessage = '保存済みデータを読み直せました。';
       this.showTransientBanner = true;
+      return;
     }
+    this.syncLiveFromState();
   }
 
   /**
@@ -137,6 +142,8 @@ export class PersistenceTracker {
       this.liveMessage = '保存できました。';
       this.announcedFailure = false;
       this.showTransientBanner = true;
+    } else if (this.hasFailure() || this.isSession()) {
+      this.syncLiveFromState();
     }
     return true;
   }
@@ -147,10 +154,7 @@ export class PersistenceTracker {
     current.write = 'failed';
     current.failure = persistenceFailureKind(error);
     this.announcedFailure = true;
-    this.liveMessage =
-      current.failure === 'quota'
-        ? '容量が不足して保存できません。再試行できます。'
-        : '保存に失敗しました。再試行できます。';
+    this.syncLiveFromState();
     return true;
   }
 
@@ -167,8 +171,8 @@ export class PersistenceTracker {
         tone: 'warn',
         headline: 'このセッション限り',
         detail: failure
-          ? `起動時に保存データを読めなかったため、この画面の変更は端末へ書き戻しません。再試行は保存済みデータの再読込です。${this.failureDetail(failure, moment)}`
-          : '起動時に保存データを読めなかったため、この画面の変更は端末へ書き戻しません。再試行は保存済みデータの再読込です。',
+          ? `${this.sessionCopy()}${this.failureDetail(failure, moment)}`
+          : this.sessionCopy(),
         liveMessage: this.liveMessage,
         showRetry: true,
         showExport: canExportRun,
@@ -253,5 +257,32 @@ export class PersistenceTracker {
   private failureDetail(failure: PersistenceFailure, moment: string): string {
     if (failure === 'quota') return `容量が不足しています。${moment}`;
     return `保存できませんでした。${moment}`;
+  }
+
+  private failureLive(failure: PersistenceFailure): string {
+    if (failure === 'quota') return '容量が不足して保存できません。再試行できます。';
+    return '保存に失敗しました。再試行できます。';
+  }
+
+  /** セッション対象と、残っている失敗のうち重い方を読み上げる。 */
+  private syncLiveFromState(): void {
+    const failure = this.currentFailure();
+    if (this.isSession()) {
+      const scope = this.sessionCopy();
+      this.liveMessage = failure ? `${scope}${this.failureLive(failure)}` : scope;
+      return;
+    }
+    if (failure) this.liveMessage = this.failureLive(failure);
+  }
+
+  private sessionCopy(): string {
+    const labels = CHANNELS.filter((channel) => this.session.has(channel)).map(
+      (channel) => SESSION_LABEL[channel],
+    );
+    const subject = labels.join('・');
+    if (labels.length === CHANNELS.length) {
+      return `起動時に${subject}を読めなかったため、これらはこのセッション限りです。再試行は保存済みデータの再読込です。`;
+    }
+    return `起動時に${subject}を読めなかったため、${subject}はこのセッション限りです。ほかの保存は端末へ続きます。再試行は保存済みデータの再読込です。`;
   }
 }

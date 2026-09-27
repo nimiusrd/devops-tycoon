@@ -68,7 +68,7 @@ test('起動時に保存先を読めないときはセッション限りを表�
   expect(layered.position).toBe('fixed');
   expect(await notice.evaluate((element) => element.parentElement === document.body)).toBe(true);
   await expect(notice).toContainText('このセッション限り');
-  await expect(notice).toContainText('書き戻しません');
+  await expect(notice).toContainText('メタ進行・途中セーブ・リプレイ');
 
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport);

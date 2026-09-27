@@ -4919,11 +4919,12 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   left: 0;
   z-index: 50;
 }
+/* 復旧チップも結果(20)・全社(30)・リプレイ帯(40)より前。WebGL 失敗(210)より後ろ。 */
 .persistence-notice-quiet {
   position: fixed;
   top: 8px;
   right: 8px;
-  z-index: 15;
+  z-index: 50;
   width: max-content;
   max-width: min(16rem, calc(100vw - 16px));
   padding: 4px 10px;

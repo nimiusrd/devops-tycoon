@@ -214,7 +214,8 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     game.setSoundMuted(false);
     await Promise.resolve();
     await Promise.resolve();
-    expect(game.getPersistenceStatus().liveMessage).toContain('失敗');
+    expect(game.getPersistenceStatus().liveMessage).toContain('容量');
+    expect(game.getPersistenceStatus().liveMessage).not.toContain('保存に失敗しました');
     expect(game.getPersistenceStatus().detail).toContain('容量が不足');
 
     await game.retryPersistence();
@@ -249,7 +250,8 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     await Promise.resolve();
 
     expect(game.getPersistenceStatus().state).toBe('session');
-    expect(game.getPersistenceStatus().detail).toContain('書き戻しません');
+    expect(game.getPersistenceStatus().detail).toContain('メタ進行はこのセッション限り');
+    expect(game.getPersistenceStatus().detail).toContain('ほかの保存は端末へ続きます');
     expect(save).not.toHaveBeenCalled();
     expect(game.getMeta().soundMuted).toBe(false);
 
@@ -277,9 +279,13 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     for (let i = 0; i < 12; i += 1) await Promise.resolve();
 
     expect(save).toHaveBeenCalledOnce();
-    expect(game.listReplays()).toEqual([]);
-    expect(game.getPersistenceStatus().state).toBe('failed');
-    expect(game.getPersistenceStatus().showRetry).toBe(true);
+    expect(game.hasResumableRun()).toBe(false);
+    expect(game.listReplays().map((replay) => replay.seed)).toEqual(['replay-retry']);
+    expect(game.exportPendingReplayText()).toContain('replay-retry');
+    const failed = game.getPersistenceStatus();
+    expect(failed.state).toBe('failed');
+    expect(failed.showRetry).toBe(true);
+    expect(failed.showExport).toBe(true);
 
     await game.retryPersistence();
 

@@ -377,6 +377,7 @@ function makeRun(overrides: Partial<UseRun> = {}): UseRun {
     newRun: vi.fn(),
     clearRunSave: vi.fn(),
     exportRunSaveText: vi.fn(() => 'save-json'),
+    exportPendingReplayText: vi.fn(() => null),
     importRunSaveText: vi.fn(),
     exportReplayText: vi.fn(() => 'replay-json'),
     importReplayText: vi.fn(),
@@ -1095,6 +1096,51 @@ describe('App のラン中メニュー', () => {
       elements(recovered).find((node) => node.props['data-testid'] === 'persistence-live')?.props
         .children,
     ).toBe('保存できました。');
+  });
+
+  it('セッション復旧でも書き出しエラーを消す', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'session',
+        tone: 'warn',
+        headline: 'このセッション限り',
+        detail: 'リプレイはこのセッション限りです。',
+        liveMessage: 'リプレイはこのセッション限りです。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+    });
+    const notice = () => {
+      const node = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!node) throw new Error('保存案内がありません');
+      return node;
+    };
+    (notice().props.onExport as () => void)();
+    screen.flush();
+    const failed = (notice().type as Component)(notice().props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe('途中セーブをファイルに保存できませんでした。');
+    screen.update({
+      persistenceStatus: {
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: '保存済みデータを読み直せました。',
+        liveMessage: '保存済みデータを読み直せました。',
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      },
+    });
+    const recovered = (notice().type as Component)(notice().props);
+    expect(
+      elements(recovered).some((node) => node.props['data-testid'] === 'persistence-export-error'),
+    ).toBe(false);
   });
 });
 

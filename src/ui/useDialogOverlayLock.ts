@@ -13,6 +13,8 @@ import {
   listFocusable,
   listOverlayExemptFocusables,
   lockBackgroundSiblings,
+  restoreAuthoredAriaModal,
+  syncAriaModalWithExemptControls,
   trapTabTarget,
 } from './dialogOverlayLock';
 
@@ -39,8 +41,10 @@ export function useDialogOverlayLock(
       dialog.focus({ preventScroll: true });
     }
     const unlock = lockBackgroundSiblings(dialog);
+    syncAriaModalWithExemptControls(dialog);
 
     const onKeyDown = (event: KeyboardEvent) => {
+      syncAriaModalWithExemptControls(dialog);
       if (event.key === 'Escape') {
         const dismiss = onDismissRef.current;
         if (!dismiss) return;
@@ -61,6 +65,7 @@ export function useDialogOverlayLock(
     };
 
     const onFocusIn = (event: FocusEvent) => {
+      syncAriaModalWithExemptControls(dialog);
       const target = event.target;
       if (!(target instanceof Node) || dialog.contains(target)) return;
       if (isOverlayExemptInFront(target, dialog)) return;
@@ -71,9 +76,20 @@ export function useDialogOverlayLock(
 
     document.addEventListener('keydown', onKeyDown, true);
     document.addEventListener('focusin', onFocusIn);
+    let observer: MutationObserver | undefined;
+    if (typeof MutationObserver === 'function') {
+      try {
+        observer = new MutationObserver(() => syncAriaModalWithExemptControls(dialog));
+        observer.observe(document.body, { childList: true, subtree: true });
+      } catch {
+        observer = undefined;
+      }
+    }
     return () => {
+      observer?.disconnect();
       document.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('focusin', onFocusIn);
+      restoreAuthoredAriaModal(dialog);
       unlock();
       previouslyFocused?.focus({ preventScroll: true });
     };

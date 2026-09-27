@@ -69,6 +69,30 @@ export function listOverlayExemptFocusables(front?: HTMLElement): HTMLElement[] 
   );
 }
 
+const authoredAriaModal = new WeakMap<HTMLElement, string | null>();
+
+/**
+ * 前面に操作できる保存案内がある間は、aria-modal でダイアログ外を利用不能にしない。
+ * 案内が無い、または背面なら、開いたときの aria-modal へ戻す。
+ */
+export function syncAriaModalWithExemptControls(dialog: HTMLElement): void {
+  if (!authoredAriaModal.has(dialog)) {
+    authoredAriaModal.set(dialog, dialog.getAttribute('aria-modal'));
+  }
+  if (authoredAriaModal.get(dialog) !== 'true') return;
+  const exposed = listOverlayExemptFocusables(dialog).some((element) => !dialog.contains(element));
+  dialog.setAttribute('aria-modal', exposed ? 'false' : 'true');
+}
+
+/** ダイアログを閉じるとき、aria-modal を開く前の値へ戻す。 */
+export function restoreAuthoredAriaModal(dialog: HTMLElement): void {
+  if (!authoredAriaModal.has(dialog)) return;
+  const authored = authoredAriaModal.get(dialog) ?? null;
+  authoredAriaModal.delete(dialog);
+  if (authored === null) dialog.removeAttribute('aria-modal');
+  else dialog.setAttribute('aria-modal', authored);
+}
+
 /** ダイアログより前面のロック免除に含まれるときだけ true。 */
 export function isOverlayExemptInFront(target: Node, front: HTMLElement): boolean {
   if (typeof Element === 'undefined' || !(target instanceof Element)) return false;

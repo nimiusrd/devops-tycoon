@@ -243,9 +243,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const persistenceState = run.persistenceStatus.state;
   const previousPersistenceState = useRef(persistenceState);
   useEffect(() => {
-    if (previousPersistenceState.current === 'failed' && persistenceState !== 'failed') {
-      setExportMessage(null);
-    }
+    const previous = previousPersistenceState.current;
+    const blocking = persistenceState === 'failed' || persistenceState === 'session';
+    const wasBlocking = previous === 'failed' || previous === 'session';
+    if (wasBlocking && !blocking) setExportMessage(null);
     previousPersistenceState.current = persistenceState;
   }, [persistenceState]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
@@ -481,9 +482,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         void run.retryPersistence();
       }}
       onExport={() => {
-        const text = run.exportRunSaveText();
-        const downloaded = text ? downloadTextFile('devops-tycoon-run-save.json', text) : false;
-        setExportMessage(persistenceExportMessage(text, downloaded));
+        const runText = run.exportRunSaveText();
+        const text = runText ?? run.exportPendingReplayText();
+        const kind = runText ? 'run' : 'replay';
+        const filename = runText ? 'devops-tycoon-run-save.json' : 'devops-tycoon-replay.json';
+        const downloaded = text ? downloadTextFile(filename, text) : false;
+        setExportMessage(persistenceExportMessage(text, downloaded, kind));
       }}
     />
   );

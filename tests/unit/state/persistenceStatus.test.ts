@@ -75,12 +75,18 @@ describe('PersistenceTracker', () => {
     expect(session.state).toBe('session');
     expect(session.persistent).toBe(true);
     expect(session.showRetry).toBe(true);
-    expect(session.detail).toContain('書き戻しません');
-    expect(session.liveMessage).toContain('このセッション限り');
+    expect(session.detail).toContain('メタ進行・途中セーブ');
+    expect(session.detail).toContain('ほかの保存は端末へ続きます');
+    expect(session.detail).not.toContain('リプレイ');
+    expect(session.liveMessage).toContain('メタ進行・途中セーブ');
 
     tracker.clearSession('meta');
-    expect(tracker.notice(false).state).toBe('session');
-    expect(tracker.notice(false).liveMessage).toBe(session.liveMessage);
+    const remaining = tracker.notice(false);
+    expect(remaining.state).toBe('session');
+    expect(remaining.detail).toContain('途中セーブはこのセッション限り');
+    expect(remaining.detail).not.toContain('メタ進行');
+    expect(remaining.liveMessage).toContain('途中セーブ');
+    expect(remaining.liveMessage).not.toContain('読み直せました');
 
     tracker.clearSession('run');
     expect(tracker.notice(false)).toMatchObject({
@@ -122,5 +128,42 @@ describe('PersistenceTracker', () => {
     expect(tracker.settleCurrent('replay', 30)).toBe(true);
     expect(tracker.notice(false).state).toBe('saved');
     expect(tracker.notice(false).liveMessage).toBe('保存できました。');
+  });
+
+  it('複数チャネルの失敗では、読み上げも容量不足を優先する', () => {
+    const tracker = new PersistenceTracker();
+    const quota = tracker.begin('run');
+    tracker.fail('run', quota, new DOMException('full', 'QuotaExceededError'));
+    const transient = tracker.begin('meta');
+    tracker.fail('meta', transient, new Error('offline'));
+
+    const failed = tracker.notice(true);
+    expect(failed.detail).toContain('容量が不足');
+    expect(failed.liveMessage).toContain('容量');
+    expect(failed.liveMessage).not.toContain('保存に失敗しました');
+
+    const recoveredQuota = tracker.begin('run');
+    tracker.succeed('run', recoveredQuota, 1_700_000_000_000);
+    const remaining = tracker.notice(true);
+    expect(remaining.state).toBe('failed');
+    expect(remaining.detail).toContain('保存できませんでした');
+    expect(remaining.detail).not.toContain('容量が不足');
+    expect(remaining.liveMessage).toContain('保存に失敗しました');
+  });
+
+  it('一部のチャネルだけがセッション限りだと、対象を案内する', () => {
+    const tracker = new PersistenceTracker();
+    tracker.markSession('replay');
+    const session = tracker.notice(false);
+    expect(session.detail).toContain('リプレイはこのセッション限り');
+    expect(session.detail).toContain('ほかの保存は端末へ続きます');
+    expect(session.liveMessage).toContain('リプレイはこのセッション限り');
+
+    tracker.markSession('meta');
+    tracker.markSession('run');
+    const all = tracker.notice(false);
+    expect(all.detail).toContain('メタ進行・途中セーブ・リプレイ');
+    expect(all.detail).toContain('これらはこのセッション限り');
+    expect(all.detail).not.toContain('ほかの保存は端末へ続きます');
   });
 });

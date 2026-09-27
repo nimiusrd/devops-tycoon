@@ -115,6 +115,7 @@ export interface UseRun {
   newRun: () => void;
   clearRunSave: () => void;
   exportRunSaveText: () => string | null;
+  exportPendingReplayText: () => string | null;
   importRunSaveText: (raw: string) => Promise<RunSaveShareResult>;
   exportReplayText: (id: string) => string | null;
   importReplayText: (raw: string) => Promise<ReplayShareResult>;
@@ -446,6 +447,7 @@ export function useRun(game: GameHandle): UseRun {
     newRun,
     clearRunSave,
     exportRunSaveText,
+    exportPendingReplayText: () => game.exportPendingReplayText(),
     importRunSaveText,
     exportReplayText,
     importReplayText,

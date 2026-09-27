@@ -360,6 +360,31 @@ describe('useDialogOverlayLock', () => {
     expect(documentStub.activeElement).toBe(dialogButton);
   });
 
+  it('前面の保存案内がある間は aria-modal を外し、案内が消えたら戻す', () => {
+    const dialogButton = button();
+    const dialog = new ElementStub().append(dialogButton);
+    dialog.zIndex = '20';
+    dialog.setAttribute('aria-modal', 'true');
+    documentStub.body.append(dialog);
+    mountLock(dialog);
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+
+    const retry = button();
+    const notice = new ElementStub().append(retry);
+    notice.zIndex = '50';
+    notice.setAttribute('data-overlay-lock-exempt', 'true');
+    documentStub.body.append(notice);
+    keyDown('Tab');
+    expect(dialog.getAttribute('aria-modal')).toBe('false');
+
+    documentStub.body.children = documentStub.body.children.filter((child) => child !== notice);
+    keyDown('Tab');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+
+    unmount();
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('ダイアログがまだ無い場合はフォーカスもキー操作も変更しない', () => {
     const trigger = button();
     documentStub.body.append(trigger);

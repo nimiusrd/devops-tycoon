@@ -243,6 +243,8 @@ export interface GameHandle {
   clearRunSave(): void;
   /** 現行の途中セーブを JSON 文字列にする（無い場合は null。RI-133）。 */
   exportRunSaveText(): string | null;
+  /** 保存に失敗した完走リプレイを JSON 文字列にする（無い場合は null）。 */
+  exportPendingReplayText(): string | null;
   /**
    * JSON から途中セーブを読み込む。成功時だけラン保存を置き換える。
    * 失敗時は既存セーブ・メタ進行・リプレイを触らない。
@@ -461,18 +463,26 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
   };
 
+  const publishUnsavedReplay = (blob: ReplayBlob): void => {
+    if (cachedReplays.some((item) => item.id === blob.id)) return;
+    cachedReplays = selectReplaysWithinMax([...cachedReplays, structuredClone(blob)], blob.id);
+    bump();
+  };
+
   const saveReplayBlob = (blob: ReplayBlob): Promise<void> => {
     if (!replayStorage) return Promise.resolve();
-    return replayStorage.save(blob).then(async () => {
-      const listed = await refreshReplayCache();
-      if (listed) return;
-      cachedReplays = selectReplaysWithinMax(
-        [...cachedReplays.filter((item) => item.id !== blob.id), structuredClone(blob)],
-        blob.id,
-      );
-      bump();
-      throw new Error('replay list failed');
-    });
+    return replayStorage
+      .save(blob)
+      .then(async () => {
+        const listed = await refreshReplayCache();
+        if (listed) return;
+        publishUnsavedReplay(blob);
+        throw new Error('replay list failed');
+      })
+      .catch((error: unknown) => {
+        publishUnsavedReplay(blob);
+        throw error;
+      });
   };
 
   /** 保存完了した blob を外す。未保存が残っていれば true。 */
@@ -1379,7 +1389,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     getPersistenceStatus() {
-      return tracker.notice(resumableSave !== null);
+      return tracker.notice(resumableSave !== null || pendingReplays.length > 0);
     },
     dismissPersistenceNotice() {
       if (tracker.dismissTransientBanner()) bump();
@@ -1483,6 +1493,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     exportRunSaveText() {
       return resumableSave ? serializeRunSave(resumableSave) : null;
+    },
+    exportPendingReplayText() {
+      const blob = pendingReplays[pendingReplays.length - 1];
+      return blob ? serializeReplay(blob) : null;
     },
     async importRunSaveText(raw) {
       const loaded = parseRunSaveShare(raw);

@@ -193,7 +193,7 @@ test('確認ダイアログは Escape で閉じ、Tab がダイアログ内に�
     const dialog = document.querySelector('[data-testid="start-daily-confirm"]');
     if (!(dialog instanceof HTMLElement)) return false;
     return [...document.body.children]
-      .filter((node) => node !== dialog)
+      .filter((node) => node !== dialog && node.getAttribute('data-overlay-lock-exempt') === null)
       .every((node) => node instanceof HTMLElement && node.inert);
   });
   expect(backgroundLocked).toBe(true);

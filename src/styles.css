@@ -124,6 +124,7 @@ body {
   gap: 12px;
   min-height: 100vh;
   padding: 14px 18px 18px;
+  padding-top: calc(14px + var(--persistence-banner-height, 0px));
 }
 .app-background {
   display: contents;
@@ -1137,7 +1138,8 @@ body {
 .result-overlay {
   position: fixed;
   inset: 0;
-  top: var(--replay-banner-height, 0px);
+  /* リプレイ変数は現在のバナー下端。保存バナーの高さ変化でも測り直す。足すと二重になる。 */
+  top: max(var(--replay-banner-height, 0px), var(--persistence-banner-height, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1186,8 +1188,12 @@ body {
 .result-overlay.overlay-contained {
   align-items: center;
   justify-content: flex-start;
-  height: calc(100dvh - var(--replay-banner-height, 0px));
-  max-height: calc(100dvh - var(--replay-banner-height, 0px));
+  height: calc(
+    100dvh - max(var(--replay-banner-height, 0px), var(--persistence-banner-height, 0px))
+  );
+  max-height: calc(
+    100dvh - max(var(--replay-banner-height, 0px), var(--persistence-banner-height, 0px))
+  );
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -2911,6 +2917,18 @@ html:has(.title-screen.title-command) #root {
   max-height: 100dvh;
   min-height: 0;
   overflow: hidden;
+}
+/* 保存バナーは body へ portal されて fixed なので、実高さ分だけタイトルを下げる。 */
+html:has(.title-screen.title-command) #root {
+  display: flex;
+  flex-direction: column;
+}
+html:has(.title-screen.title-command) .title-screen.title-command {
+  flex: 1 1 auto;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  padding-top: var(--persistence-banner-height, 0px);
 }
 
 /* タイトル画面（戦略司令室 UI） */
@@ -4868,6 +4886,85 @@ html:has(.title-screen.title-command) #root {
 .replay-share-status.error {
   color: #f3b27a;
 }
+/* 平常時の読み上げは body 直下でも、タイトルの 100dvh を伸ばさない。 */
+.persistence-live {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.persistence-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 2px solid var(--visual-color-banner-warn-border);
+  border-radius: 12px;
+  background: var(--visual-color-banner-warn-bg);
+  color: var(--visual-color-banner-warn-text);
+}
+.persistence-notice[data-tone='danger'] {
+  border-color: var(--visual-color-banner-hell-border);
+  background: var(--visual-color-banner-hell-bg);
+  color: var(--visual-color-banner-hell-text);
+}
+/* 結果(20)・全社(30)・リプレイ帯(40)より前。WebGL 失敗(210)より後ろ。
+   body へ出した案内は、スクロール容器の外でも再試行が押せるよう固定する。 */
+.persistence-notice[data-persistent='true'] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 50;
+}
+/* 復旧チップも結果(20)・全社(30)・リプレイ帯(40)より前。WebGL 失敗(210)より後ろ。 */
+.persistence-notice-quiet {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 50;
+  width: max-content;
+  max-width: min(16rem, calc(100vw - 16px));
+  padding: 4px 10px;
+  pointer-events: none;
+  border-color: var(--visual-color-banner-ok-border);
+  background: var(--visual-color-banner-ok-bg);
+  color: var(--visual-color-banner-ok-text);
+}
+.persistence-notice-headline,
+.persistence-notice-detail {
+  margin: 0;
+  min-width: 0;
+}
+.persistence-notice-headline {
+  font-size: 13px;
+  font-weight: 800;
+}
+.persistence-notice-detail {
+  flex: 1 1 12rem;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.persistence-notice .btn {
+  margin-left: 0;
+  min-width: 44px;
+  min-height: 44px;
+}
+.persistence-notice .btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .persistence-notice {
+    animation: none;
+  }
+}
 .replay-mode-banner {
   display: flex;
   align-items: center;
@@ -4883,6 +4980,11 @@ html:has(.title-screen.title-command) #root {
   position: sticky;
   top: 0;
   z-index: 40;
+  /* .app の外（勝敗・四半期）は上余白が無いので、保存案内の下から始める。 */
+  margin-top: var(--persistence-banner-height, 0px);
+}
+.app .replay-mode-banner {
+  margin-top: 0;
 }
 .replay-mode-banner-review-hell {
   background: color-mix(in srgb, #c45c5c 32%, #111);
@@ -5368,7 +5470,7 @@ html:has(.title-screen.title-command) #root {
 /* #529: 下端ハイライト（介入バー／連携ゲージ）は上ドックし、CTA を隠さない。 */
 .tutorial-guide[data-step='action-bar'],
 .tutorial-guide[data-step='combo-gauge'] {
-  top: 0;
+  top: var(--persistence-banner-height, 0px);
   bottom: auto;
   padding: 18px 16px 0;
 }
@@ -6282,6 +6384,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .zoom-overlay {
   position: fixed;
   inset: 0;
+  top: var(--persistence-banner-height, 0px);
   z-index: 30;
   display: flex;
   flex-direction: column;

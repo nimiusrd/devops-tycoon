@@ -6,6 +6,7 @@
  */
 import { createRunEngine } from '../sim/run/engine';
 import { isPersistFrameShape } from './persistFrameShape';
+import { readPersistenceBackup } from './persistenceBackup';
 import {
   getRunSaveCompatibilityIssue,
   parseRunSave,
@@ -32,6 +33,8 @@ export const RUN_SAVE_SHARE_REASON_MESSAGE: Record<RunSaveShareReason, string> =
 export interface RunSaveShareOk {
   ok: true;
   save: RunSave;
+  /** 統合バックアップでリプレイも戻した。 */
+  restored?: 'both';
 }
 
 export interface RunSaveShareErr {
@@ -60,6 +63,11 @@ export function serializeRunSave(save: RunSave): string {
  * 既存の IndexedDB レコードはここでは触らない。
  */
 export function parseRunSaveShare(raw: string): RunSaveShareResult {
+  const backup = readPersistenceBackup(raw);
+  if (backup) {
+    if (!backup.runSave) return fail('corrupt');
+    return parseRunSaveShare(backup.runSave);
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);

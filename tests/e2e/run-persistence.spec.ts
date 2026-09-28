@@ -335,6 +335,7 @@ test('シニア体力 2% のセーブは再開前に警告し、確認なしで�
 
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('resume-risk-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('resume-run')).toBeFocused();
   await expect(page.getByTestId('title')).toBeVisible();
   await expect
     .poll(async () => page.evaluate(() => (window as RunGameWindow).game?.phase()))

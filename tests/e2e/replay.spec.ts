@@ -266,6 +266,26 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   await expect(page.getByTestId('replay-mode-banner')).toBeVisible();
   await expect(page.getByTestId('replay-mode-banner')).toHaveAttribute('data-review-hell', 'true');
   await expect(page.getByTestId('replay-mode-banner')).toContainText('レビュー地獄リプレイ');
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty('--persistence-banner-height', '72px');
+  });
+  const terminalBanner = await page.evaluate(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    const exit = document.querySelector('[data-testid="exit-replay"]');
+    if (!banner || !exit) throw new Error('terminal replay banner missing');
+    return {
+      bannerTop: banner.getBoundingClientRect().top,
+      exitTop: exit.getBoundingClientRect().top,
+    };
+  });
+  expect(terminalBanner.bannerTop).toBeGreaterThanOrEqual(71);
+  expect(terminalBanner.exitTop).toBeGreaterThanOrEqual(71);
+  await page.waitForFunction(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    const overlay = document.querySelector('.result-overlay');
+    if (!banner || !overlay) return false;
+    return overlay.getBoundingClientRect().top + 1 >= banner.getBoundingClientRect().bottom;
+  });
   await expect(page.getByTestId('result-review-hell-summary')).toBeVisible();
   await expect(page.getByTestId('result-review-hell-peak')).toContainText('21');
   await expect(
@@ -889,6 +909,9 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
   expect(imported).toBe(true);
   await page.reload();
   await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty('--persistence-banner-height', '72px');
+  });
   await expect
     .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
     .toBeGreaterThan(0);
@@ -925,6 +948,7 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
     };
   });
   expect(layout.overlayTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
+  expect(layout.overlayTop).toBeLessThanOrEqual(layout.bannerBottom + 1);
   expect(layout.titleTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
   await assertReadOnlyDraftA11y(page);
 });

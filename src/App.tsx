@@ -47,7 +47,14 @@ import { resetViewportScroll } from './ui/viewportScroll';
 import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
+import { serializePersistenceBackup } from './state/persistenceBackup';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
+import {
+  downloadTextFile,
+  persistenceExportMessage,
+  persistenceExportMessages,
+} from './ui/downloadTextFile';
+import { PersistenceNotice } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -237,6 +244,16 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const [eventTickerExpanded, setEventTickerExpanded] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const persistenceState = run.persistenceStatus.state;
+  const previousPersistenceState = useRef(persistenceState);
+  useEffect(() => {
+    const previous = previousPersistenceState.current;
+    const blocking = persistenceState === 'failed' || persistenceState === 'session';
+    const wasBlocking = previous === 'failed' || previous === 'session';
+    if (wasBlocking && !blocking) setExportMessage(null);
+    previousPersistenceState.current = persistenceState;
+  }, [persistenceState]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
@@ -461,8 +478,62 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     }
   }, [state.zoom.level]);
 
+  const persistenceNotice = (
+    <PersistenceNotice
+      notice={run.persistenceStatus}
+      exportMessage={exportMessage}
+      onRetry={() => {
+        setExportMessage(null);
+        void run.retryPersistence();
+      }}
+      onExport={() => {
+        const runText = run.exportRunSaveText();
+        const replays = run.exportPendingReplayFiles();
+        if (!runText && replays.length === 0) {
+          setExportMessage(persistenceExportMessage(null, false));
+          return;
+        }
+        if (runText && replays.length === 0) {
+          setExportMessage(
+            persistenceExportMessage(
+              runText,
+              downloadTextFile('devops-tycoon-run-save.json', runText),
+              'run',
+            ),
+          );
+          return;
+        }
+        if (!runText && replays.length === 1) {
+          const file = replays[0];
+          if (!file) return;
+          setExportMessage(
+            persistenceExportMessage(
+              file.text,
+              downloadTextFile(file.filename, file.text),
+              'replay',
+            ),
+          );
+          return;
+        }
+        const backup = serializePersistenceBackup({
+          runSave: runText,
+          replays: replays.map((file) => file.text),
+        });
+        const downloaded = downloadTextFile('devops-tycoon-persistence-backup.json', backup);
+        const included = [
+          ...(runText ? [{ text: runText, downloaded, kind: 'run' as const }] : []),
+          ...(replays.length > 0
+            ? [{ text: replays[0]?.text ?? '', downloaded, kind: 'replay' as const }]
+            : []),
+        ];
+        setExportMessage(persistenceExportMessages(included));
+      }}
+    />
+  );
+
+  let phaseBody: ReactNode;
   if (phase === 'title') {
-    return (
+    phaseBody = (
       <>
         <SceneScrollReset>
           <TitleScreen
@@ -489,7 +560,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onExportRunSave={run.exportRunSaveText}
             onImportRunSave={async (raw) => {
               const result = await run.importRunSaveText(raw);
-              return { ok: result.ok, message: result.ok ? '' : result.message };
+              return {
+                ok: result.ok,
+                message: result.ok ? '' : result.message,
+                restored: result.ok ? result.restored : undefined,
+              };
             }}
           />
         </SceneScrollReset>
@@ -531,7 +606,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               onExportReplay={run.exportReplayText}
               onImportReplay={async (raw) => {
                 const result = await run.importReplayText(raw);
-                return { ok: result.ok, message: result.ok ? '' : result.message };
+                return {
+                  ok: result.ok,
+                  message: result.ok ? '' : result.message,
+                  restored: result.ok ? result.restored : undefined,
+                };
               }}
             />
           )}
@@ -565,7 +644,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   ) : null;
 
   if (phase === 'won' || phase === 'lost') {
-    return (
+    phaseBody = (
       <>
         {replayBanner}
         <Suspense fallback={null}>
@@ -583,7 +662,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     );
   }
   if (phase === 'quarterReview') {
-    return (
+    phaseBody = (
       <>
         {replayBanner}
         <Suspense fallback={null}>
@@ -651,214 +730,225 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     </>
   );
 
-  return (
-    <div
-      className={`app ${diagnosisTone}${sprintLayout ? ` app-sprint-layout ${sprintLayoutStyles.appShell}` : ''}`}
-      data-phase={phase}
-      data-diagnosis={state.diagnosis}
-      data-responsive-width={responsiveMode.width}
-      data-responsive-height={responsiveMode.height}
-    >
-      <div className="app-background">
-        {replayBanner}
-        {!sprintLayout && sprintHeader}
+  if (phase !== 'title' && phase !== 'won' && phase !== 'lost' && phase !== 'quarterReview') {
+    phaseBody = (
+      <div
+        className={`app ${diagnosisTone}${sprintLayout ? ` app-sprint-layout ${sprintLayoutStyles.appShell}` : ''}`}
+        data-phase={phase}
+        data-diagnosis={state.diagnosis}
+        data-responsive-width={responsiveMode.width}
+        data-responsive-height={responsiveMode.height}
+      >
+        <div className="app-background">
+          {replayBanner}
+          {!sprintLayout && sprintHeader}
 
-        {/*
+          {/*
         各 lazy 画面を別 Suspense に分ける。
         1 つの境界だと編成/ズーム等の初回ロードで SprintScreen まで null に消える。
       */}
-        <Suspense fallback={null}>
-          {phase === 'setup' && (
-            <SceneScrollReset>
-              <SetupScreen
-                state={state}
-                onAssign={run.assignMember}
-                onToggleAi={run.setMemberAi}
-                onBegin={run.beginSetupSprint}
-                readOnly={run.isReplayMode}
-              />
-            </SceneScrollReset>
-          )}
-        </Suspense>
-        <Suspense fallback={<SprintSuspendFallback game={game} header={sprintHeader} />}>
-          {showSprint && (
-            <SceneScrollReset>
-              <SprintScreen
-                state={state}
-                header={sprintHeader}
-                onDispatch={run.dispatch}
-                onPlayCard={run.playCard}
-                getSprintSnapshot={run.getSprintSnapshot}
-                pauseBriefly={run.pauseBriefly}
-                playbackSpeed={run.playbackSpeed}
-                setPlaybackSpeed={run.setPlaybackSpeed}
-                showTutorial={tutorialActive}
-                onTutorialDismiss={dismissTutorial}
-                game={game}
-                eventTickerExpanded={eventTickerExpanded}
-                onEventTickerExpandedChange={setEventTickerExpanded}
-              />
-            </SceneScrollReset>
-          )}
-        </Suspense>
+          <Suspense fallback={null}>
+            {phase === 'setup' && (
+              <SceneScrollReset>
+                <SetupScreen
+                  state={state}
+                  onAssign={run.assignMember}
+                  onToggleAi={run.setMemberAi}
+                  onBegin={run.beginSetupSprint}
+                  readOnly={run.isReplayMode}
+                />
+              </SceneScrollReset>
+            )}
+          </Suspense>
+          <Suspense fallback={<SprintSuspendFallback game={game} header={sprintHeader} />}>
+            {showSprint && (
+              <SceneScrollReset>
+                <SprintScreen
+                  state={state}
+                  header={sprintHeader}
+                  onDispatch={run.dispatch}
+                  onPlayCard={run.playCard}
+                  getSprintSnapshot={run.getSprintSnapshot}
+                  pauseBriefly={run.pauseBriefly}
+                  playbackSpeed={run.playbackSpeed}
+                  setPlaybackSpeed={run.setPlaybackSpeed}
+                  showTutorial={tutorialActive}
+                  onTutorialDismiss={dismissTutorial}
+                  game={game}
+                  eventTickerExpanded={eventTickerExpanded}
+                  onEventTickerExpandedChange={setEventTickerExpanded}
+                />
+              </SceneScrollReset>
+            )}
+          </Suspense>
 
-        <Suspense fallback={null}>
-          {phase === 'beat' && (
-            <SceneScrollReset>
-              <BeatScreen state={state} onResolve={run.resolveBeat} />
-            </SceneScrollReset>
-          )}
-        </Suspense>
-        <Suspense fallback={null}>
-          {phase === 'shop' && (
-            <SceneScrollReset>
-              <ShopScreen
-                state={state}
-                onBuyCard={run.buyShopCard}
-                onBuyRelic={run.buyShopRelic}
-                onBuyRecruit={run.buyShopRecruit}
-                onLeave={run.leaveShop}
-              />
-            </SceneScrollReset>
-          )}
-        </Suspense>
-        <Suspense fallback={null}>
-          {phase === 'rest' && (
-            <SceneScrollReset>
-              <RestScreen state={state} onChoose={run.restChoose} />
-            </SceneScrollReset>
-          )}
-        </Suspense>
-        <Suspense fallback={null}>
-          {phase === 'recruit' && (
-            <SceneScrollReset>
-              <RecruitScreen state={state} onChoose={run.recruitChoose} />
-            </SceneScrollReset>
-          )}
-        </Suspense>
+          <Suspense fallback={null}>
+            {phase === 'beat' && (
+              <SceneScrollReset>
+                <BeatScreen state={state} onResolve={run.resolveBeat} />
+              </SceneScrollReset>
+            )}
+          </Suspense>
+          <Suspense fallback={null}>
+            {phase === 'shop' && (
+              <SceneScrollReset>
+                <ShopScreen
+                  state={state}
+                  onBuyCard={run.buyShopCard}
+                  onBuyRelic={run.buyShopRelic}
+                  onBuyRecruit={run.buyShopRecruit}
+                  onLeave={run.leaveShop}
+                />
+              </SceneScrollReset>
+            )}
+          </Suspense>
+          <Suspense fallback={null}>
+            {phase === 'rest' && (
+              <SceneScrollReset>
+                <RestScreen state={state} onChoose={run.restChoose} />
+              </SceneScrollReset>
+            )}
+          </Suspense>
+          <Suspense fallback={null}>
+            {phase === 'recruit' && (
+              <SceneScrollReset>
+                <RecruitScreen state={state} onChoose={run.recruitChoose} />
+              </SceneScrollReset>
+            )}
+          </Suspense>
 
-        <Suspense fallback={null}>
-          {phase === 'result' && state.lastResult && (
-            <SceneScrollReset>
-              <SprintResultScreen
-                result={state.lastResult}
-                growth={state.lastGrowth}
-                onContinue={
-                  run.isReplayMode ? () => run.jumpReplayToPhase('draft') : run.acknowledgeResult
-                }
-                onAbandon={run.isReplayMode ? exitReplay : newRun}
-                continueDisabled={replayDraftMissing}
-                continueDisabledReason={replayDraftMissing ? REPLAY_DRAFT_MISSING_HINT : undefined}
-                replayMode={run.isReplayMode}
-                diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
-              />
-            </SceneScrollReset>
-          )}
-        </Suspense>
-        <Suspense fallback={null}>
-          {phase === 'draft' && state.draft && (
-            <SceneScrollReset>
-              <DraftScreen
-                options={state.draft}
-                sprintNumber={displayedQuarterSprintIndex(state)}
-                budget={state.budget}
-                mulliganUsed={state.draftMulliganUsed}
-                previews={state.whatIf?.draftCandidates ?? {}}
-                skipPreview={state.whatIf?.current}
-                whatIfComputing={state.whatIfStatus === 'computing'}
-                onPick={run.chooseCard}
-                onSkip={run.skipDraft}
-                onMulligan={run.mulliganDraft}
-                readOnly={run.isReplayMode}
-                onClose={run.isReplayMode ? exitReplay : undefined}
-              />
-            </SceneScrollReset>
-          )}
-        </Suspense>
-        {phase === 'evolution' && <EvolutionSimPause game={game} />}
-        <Suspense fallback={null}>
-          {phase === 'evolution' && (
-            <SceneScrollReset>
-              <EvolutionScreen
-                state={state}
-                onUnlock={run.unlockEvolution}
-                onFinish={run.finishEvolution}
-              />
-            </SceneScrollReset>
-          )}
-        </Suspense>
+          <Suspense fallback={null}>
+            {phase === 'result' && state.lastResult && (
+              <SceneScrollReset>
+                <SprintResultScreen
+                  result={state.lastResult}
+                  growth={state.lastGrowth}
+                  onContinue={
+                    run.isReplayMode ? () => run.jumpReplayToPhase('draft') : run.acknowledgeResult
+                  }
+                  onAbandon={run.isReplayMode ? exitReplay : newRun}
+                  continueDisabled={replayDraftMissing}
+                  continueDisabledReason={
+                    replayDraftMissing ? REPLAY_DRAFT_MISSING_HINT : undefined
+                  }
+                  replayMode={run.isReplayMode}
+                  diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
+                />
+              </SceneScrollReset>
+            )}
+          </Suspense>
+          <Suspense fallback={null}>
+            {phase === 'draft' && state.draft && (
+              <SceneScrollReset>
+                <DraftScreen
+                  options={state.draft}
+                  sprintNumber={displayedQuarterSprintIndex(state)}
+                  budget={state.budget}
+                  mulliganUsed={state.draftMulliganUsed}
+                  previews={state.whatIf?.draftCandidates ?? {}}
+                  skipPreview={state.whatIf?.current}
+                  whatIfComputing={state.whatIfStatus === 'computing'}
+                  onPick={run.chooseCard}
+                  onSkip={run.skipDraft}
+                  onMulligan={run.mulliganDraft}
+                  readOnly={run.isReplayMode}
+                  onClose={run.isReplayMode ? exitReplay : undefined}
+                />
+              </SceneScrollReset>
+            )}
+          </Suspense>
+          {phase === 'evolution' && <EvolutionSimPause game={game} />}
+          <Suspense fallback={null}>
+            {phase === 'evolution' && (
+              <SceneScrollReset>
+                <EvolutionScreen
+                  state={state}
+                  onUnlock={run.unlockEvolution}
+                  onFinish={run.finishEvolution}
+                />
+              </SceneScrollReset>
+            )}
+          </Suspense>
 
-        {/*
+          {/*
         現場へ戻したら overlay は即 unmount する。
         AnimatePresence の opacity/scale exit は WebGL canvas をコンポジタ層に残し、
         閉じた全社マップが盤面へゴースト表示される（#376）。入場のフェードは CSS。
       */}
-        {zoom.level !== 'team' && (
-          <div
-            key={zoom.level}
-            className="zoom-overlay"
-            data-testid="zoom-overlay"
-            data-level={zoom.level}
-          >
-            <Breadcrumb
-              level={zoom.level}
-              onNavigate={run.zoomTo}
-              enterLocked={state.sprintsPlayed < state.teamLockUntilSprint}
+          {zoom.level !== 'team' && (
+            <div
+              key={zoom.level}
+              className="zoom-overlay"
+              data-testid="zoom-overlay"
+              data-level={zoom.level}
+            >
+              <Breadcrumb
+                level={zoom.level}
+                onNavigate={run.zoomTo}
+                enterLocked={state.sprintsPlayed < state.teamLockUntilSprint}
+              />
+              <Suspense fallback={null}>
+                {zoom.level === 'industry' && state.industry && (
+                  <IndustryScreen
+                    industry={state.industry}
+                    meta={meta}
+                    onSetKind={run.setRankingKind}
+                  />
+                )}
+                {zoom.level === 'company' && state.orgScale && (
+                  <OrgScreen
+                    org={state.orgScale}
+                    budget={state.budget}
+                    zoom={zoom}
+                    trendHistory={state.trendHistory}
+                    onFocusDept={run.focusDept}
+                    onFocusTeam={run.focusTeam}
+                    onApplyLever={run.applyOrgLever}
+                  />
+                )}
+                {zoom.level === 'department' && focusedDept && (
+                  <DeptScreen
+                    dept={focusedDept}
+                    budget={state.budget}
+                    selectedTeamId={zoom.teamId ?? state.activeTeamId}
+                    activeTeamId={state.activeTeamId}
+                    teamLockUntilSprint={state.teamLockUntilSprint}
+                    sprintsPlayed={state.sprintsPlayed}
+                    phase={state.phase}
+                    onFocusTeam={run.focusTeam}
+                    onEnterTeam={run.enterTeam}
+                    onApplyLever={run.applyOrgLever}
+                  />
+                )}
+              </Suspense>
+            </div>
+          )}
+        </div>
+        <Suspense fallback={null}>
+          {formationOpen && (
+            <FormationScreen
+              state={state}
+              onAssign={run.assignMember}
+              onToggleAi={run.setMemberAi}
+              onClose={() => setFormationOpen(false)}
+              readOnly={run.isReplayMode}
             />
-            <Suspense fallback={null}>
-              {zoom.level === 'industry' && state.industry && (
-                <IndustryScreen
-                  industry={state.industry}
-                  meta={meta}
-                  onSetKind={run.setRankingKind}
-                />
-              )}
-              {zoom.level === 'company' && state.orgScale && (
-                <OrgScreen
-                  org={state.orgScale}
-                  budget={state.budget}
-                  zoom={zoom}
-                  trendHistory={state.trendHistory}
-                  onFocusDept={run.focusDept}
-                  onFocusTeam={run.focusTeam}
-                  onApplyLever={run.applyOrgLever}
-                />
-              )}
-              {zoom.level === 'department' && focusedDept && (
-                <DeptScreen
-                  dept={focusedDept}
-                  budget={state.budget}
-                  selectedTeamId={zoom.teamId ?? state.activeTeamId}
-                  activeTeamId={state.activeTeamId}
-                  teamLockUntilSprint={state.teamLockUntilSprint}
-                  sprintsPlayed={state.sprintsPlayed}
-                  phase={state.phase}
-                  onFocusTeam={run.focusTeam}
-                  onEnterTeam={run.enterTeam}
-                  onApplyLever={run.applyOrgLever}
-                />
-              )}
-            </Suspense>
-          </div>
+          )}
+        </Suspense>
+        {helpOpen && <RunHelpSimPause game={game} />}
+        {helpOpen && (
+          <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
+            <HowToPlayScreen onClose={closeHelp} />
+          </Suspense>
         )}
       </div>
-      <Suspense fallback={null}>
-        {formationOpen && (
-          <FormationScreen
-            state={state}
-            onAssign={run.assignMember}
-            onToggleAi={run.setMemberAi}
-            onClose={() => setFormationOpen(false)}
-            readOnly={run.isReplayMode}
-          />
-        )}
-      </Suspense>
-      {helpOpen && <RunHelpSimPause game={game} />}
-      {helpOpen && (
-        <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
-          <HowToPlayScreen onClose={closeHelp} />
-        </Suspense>
-      )}
-    </div>
+    );
+  }
+
+  return (
+    <>
+      {persistenceNotice}
+      {phaseBody}
+    </>
   );
 }

@@ -2,12 +2,45 @@
  * リプレイの IndexedDB 永続化（RI-61）。
  */
 import { GAME_DB_NAME, openGameDb, REPLAYS_STORE_NAME } from './gameDb';
-import { normalizeReplay, selectReplaysWithinMax, type ReplayBlob } from './replay';
+import {
+  normalizeReplay,
+  REPLAY_MAX_COUNT,
+  selectReplaysWithinMax,
+  type ReplayBlob,
+} from './replay';
 
 /** リプレイ保存時の上限処理オプション。 */
 export interface ReplaySaveOptions {
   /** ファイル取り込みで明示した件を、古い finishedAt でも上限削除から残す。 */
   pin?: boolean;
+  /** この保存でも上限削除から残す、ほかの明示取り込み。 */
+  protectIds?: readonly string[];
+  /** この保存が上限で消した id。巻き戻しは、ここにある欠落だけを戻す。 */
+  evictedIds?: Set<string>;
+  /** この保存が上限で消した記録本体。開始時の一覧に無い分も、失敗時に戻す。 */
+  evictedRecords?: Map<string, ReplayBlob>;
+  /** このバッチがすでに書いた id。直前退避では、その内容を別タブの記録として扱わない。 */
+  batchWrittenIds?: ReadonlySet<string>;
+}
+
+function replayPinIds(savedId: string, options?: ReplaySaveOptions): string[] | undefined {
+  const ids = new Set(options?.protectIds ?? []);
+  if (options?.pin) ids.add(savedId);
+  if (ids.size === 0) return undefined;
+  return [...ids];
+}
+
+function keepSavedReplays(
+  items: readonly ReplayBlob[],
+  savedId: string,
+  options?: ReplaySaveOptions,
+): ReplayBlob[] {
+  return selectReplaysWithinMax(
+    items,
+    replayPinIds(savedId, options),
+    REPLAY_MAX_COUNT,
+    options?.pin ? savedId : undefined,
+  );
 }
 
 /** リプレイ一覧の非同期永続化インターフェース。 */
@@ -16,6 +49,20 @@ export interface ReplayStorage {
   get(id: string): Promise<ReplayBlob | null>;
   save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void>;
   clear(): Promise<void>;
+  /**
+   * 取り込みバッチの失敗を戻す。
+   * このバッチが書いた内容と今の記録が一致するときだけ、追加分を消し、開始時の内容へ戻す。
+   * 別内容へ変わった記録と、開始時に無かった別の記録は消さない。
+   * 欠落は、このバッチが上限で消した id だけを戻す。
+   * 開始時の一覧に無かった記録は、消す直前に退避した本体が欠落しているときだけ戻す。
+   * 比較と書き戻しは同一トランザクション。
+   */
+  revertBatch?(
+    snapshot: readonly ReplayBlob[],
+    written: readonly ReplayBlob[],
+    evictedIds?: ReadonlySet<string>,
+    evictedRecords?: ReadonlyMap<string, ReplayBlob>,
+  ): Promise<void>;
 }
 
 /** IndexedDB にリプレイを複数件保存する（上限超過は古いものから削除）。 */
@@ -51,20 +98,54 @@ export class IndexedDbReplayStorage implements ReplayStorage {
 
   save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
     const snapshot = structuredClone(blob);
-    const pinnedId = options?.pin ? snapshot.id : undefined;
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
-        await db.put(REPLAYS_STORE_NAME, snapshot, snapshot.id);
-        const all = await db.getAll(REPLAYS_STORE_NAME);
-        const normalized = all
-          .map((raw) => normalizeReplay(raw))
-          .filter((item): item is ReplayBlob => item !== null);
-        const keep = selectReplaysWithinMax(normalized, pinnedId);
-        const keepIds = new Set(keep.map((item) => item.id));
-        for (const item of normalized) {
-          if (!keepIds.has(item.id)) {
-            await db.delete(REPLAYS_STORE_NAME, item.id);
+        const tx = db.transaction(REPLAYS_STORE_NAME, 'readwrite');
+        const aborted = tx.done.then(
+          () => undefined,
+          () => undefined,
+        );
+        const removed: ReplayBlob[] = [];
+        try {
+          const previousRaw = await tx.store.get(snapshot.id);
+          const previous = previousRaw === undefined ? null : normalizeReplay(previousRaw);
+          if (
+            previous &&
+            options?.evictedRecords &&
+            !options.evictedRecords.has(previous.id) &&
+            !options.batchWrittenIds?.has(previous.id) &&
+            JSON.stringify(previous) !== JSON.stringify(snapshot)
+          ) {
+            options.evictedRecords.set(previous.id, structuredClone(previous));
+          }
+          await tx.store.put(snapshot, snapshot.id);
+          const all = await tx.store.getAll();
+          const normalized = all
+            .map((raw) => normalizeReplay(raw))
+            .filter((item): item is ReplayBlob => item !== null);
+          const keep = keepSavedReplays(normalized, snapshot.id, options);
+          const keepIds = new Set(keep.map((item) => item.id));
+          for (const item of normalized) {
+            if (!keepIds.has(item.id)) {
+              await tx.store.delete(item.id);
+              removed.push(structuredClone(item));
+            }
+          }
+          await tx.done;
+        } catch (error) {
+          try {
+            tx.abort();
+          } catch {
+            /* すでに失敗したトランザクション */
+          }
+          await aborted;
+          throw error;
+        }
+        for (const item of removed) {
+          options?.evictedIds?.add(item.id);
+          if (!options?.evictedRecords?.has(item.id)) {
+            options?.evictedRecords?.set(item.id, item);
           }
         }
       } finally {
@@ -80,6 +161,73 @@ export class IndexedDbReplayStorage implements ReplayStorage {
       const db = await openGameDb(this.dbName);
       try {
         await db.clear(REPLAYS_STORE_NAME);
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.catch(() => undefined);
+    return write;
+  }
+
+  revertBatch(
+    snapshot: readonly ReplayBlob[],
+    written: readonly ReplayBlob[],
+    evictedIds?: ReadonlySet<string>,
+    evictedRecords?: ReadonlyMap<string, ReplayBlob>,
+  ): Promise<void> {
+    const writtenById = new Map(written.map((blob) => [blob.id, structuredClone(blob)]));
+    const snapshotById = new Map(snapshot.map((blob) => [blob.id, structuredClone(blob)]));
+    const evacuated = new Map(
+      [...(evictedRecords ?? [])].map(([id, blob]) => [id, structuredClone(blob)]),
+    );
+    const write = this.writes.then(async () => {
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction(REPLAYS_STORE_NAME, 'readwrite');
+        const rawAll = await tx.store.getAll();
+        const current = new Map<string, unknown>();
+        for (const raw of rawAll) {
+          if (!raw || typeof raw !== 'object' || !('id' in raw)) continue;
+          const id = raw.id;
+          if (typeof id !== 'string') continue;
+          current.set(id, raw);
+        }
+        const matchesWritten = (id: string): boolean => {
+          const now = current.get(id);
+          const writtenBlob = writtenById.get(id);
+          return (
+            now !== undefined &&
+            writtenBlob !== undefined &&
+            JSON.stringify(now) === JSON.stringify(writtenBlob)
+          );
+        };
+        for (const id of writtenById.keys()) {
+          if (snapshotById.has(id) || !matchesWritten(id)) continue;
+          const preimage = evacuated.get(id);
+          if (preimage) await tx.store.put(preimage, id);
+          else await tx.store.delete(id);
+        }
+        for (const [id, blob] of snapshotById) {
+          const now = current.get(id);
+          if (now === undefined) {
+            if (evictedIds && !evictedIds.has(id)) continue;
+            await tx.store.put(blob, id);
+            continue;
+          }
+          if (JSON.stringify(now) === JSON.stringify(blob)) continue;
+          if (!matchesWritten(id)) continue;
+          await tx.store.put(evacuated.get(id) ?? blob, id);
+        }
+        for (const [id, blob] of evacuated) {
+          if (snapshotById.has(id) || writtenById.has(id)) continue;
+          const now = current.get(id);
+          if (now === undefined) {
+            await tx.store.put(blob, id);
+            continue;
+          }
+          if (JSON.stringify(now) === JSON.stringify(blob)) continue;
+        }
+        await tx.done;
       } finally {
         db.close();
       }
@@ -105,24 +253,95 @@ export class MemoryReplayStorage implements ReplayStorage {
   }
 
   async save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
-    this.items.set(blob.id, structuredClone(blob));
-    const keep = selectReplaysWithinMax(
-      [...this.items.values()],
-      options?.pin ? blob.id : undefined,
-    );
+    const existing = this.items.get(blob.id);
+    if (
+      existing &&
+      options?.evictedRecords &&
+      !options.evictedRecords.has(blob.id) &&
+      !options.batchWrittenIds?.has(blob.id) &&
+      JSON.stringify(existing) !== JSON.stringify(blob)
+    ) {
+      options.evictedRecords.set(blob.id, structuredClone(existing));
+    }
+    const next = new Map(this.items);
+    next.set(blob.id, structuredClone(blob));
+    const keep = keepSavedReplays([...next.values()], blob.id, options);
     const keepIds = new Set(keep.map((item) => item.id));
-    for (const id of [...this.items.keys()]) {
-      if (!keepIds.has(id)) this.items.delete(id);
+    const removed: ReplayBlob[] = [];
+    for (const id of [...next.keys()]) {
+      if (!keepIds.has(id)) {
+        const item = next.get(id);
+        if (item) removed.push(structuredClone(item));
+        next.delete(id);
+      }
+    }
+    this.items.clear();
+    for (const [id, item] of next) this.items.set(id, item);
+    for (const item of removed) {
+      options?.evictedIds?.add(item.id);
+      if (!options?.evictedRecords?.has(item.id)) {
+        options?.evictedRecords?.set(item.id, item);
+      }
     }
   }
 
   async clear(): Promise<void> {
     this.items.clear();
   }
+
+  async revertBatch(
+    snapshot: readonly ReplayBlob[],
+    written: readonly ReplayBlob[],
+    evictedIds?: ReadonlySet<string>,
+    evictedRecords?: ReadonlyMap<string, ReplayBlob>,
+  ): Promise<void> {
+    const writtenById = new Map(written.map((blob) => [blob.id, blob]));
+    const snapshotById = new Map(snapshot.map((blob) => [blob.id, blob]));
+    const matchesWritten = (id: string): boolean => {
+      const current = this.items.get(id);
+      const writtenBlob = writtenById.get(id);
+      return (
+        current !== undefined &&
+        writtenBlob !== undefined &&
+        JSON.stringify(current) === JSON.stringify(writtenBlob)
+      );
+    };
+    for (const id of writtenById.keys()) {
+      if (snapshotById.has(id) || !matchesWritten(id)) continue;
+      const preimage = evictedRecords?.get(id);
+      if (preimage) this.items.set(id, structuredClone(preimage));
+      else this.items.delete(id);
+    }
+    for (const [id, blob] of snapshotById) {
+      const current = this.items.get(id);
+      if (!current) {
+        if (evictedIds && !evictedIds.has(id)) continue;
+        this.items.set(id, structuredClone(blob));
+        continue;
+      }
+      if (JSON.stringify(current) === JSON.stringify(blob)) continue;
+      if (!matchesWritten(id)) continue;
+      this.items.set(id, structuredClone(evictedRecords?.get(id) ?? blob));
+    }
+    for (const [id, blob] of evictedRecords ?? []) {
+      if (snapshotById.has(id) || writtenById.has(id)) continue;
+      const current = this.items.get(id);
+      if (!current) {
+        this.items.set(id, structuredClone(blob));
+        continue;
+      }
+      if (JSON.stringify(current) === JSON.stringify(blob)) continue;
+    }
+  }
 }
 
 export interface ReplayPersistenceBootstrap {
+  /** このセッションの保存先。読込失敗時はメモリ。 */
   storage: ReplayStorage;
+  /** 読込に失敗し、既存リプレイを別データで上書きしない。 */
+  sessionOnly: boolean;
+  /** 再試行で読み直す先。sessionOnly のときも失敗した保存先を残す。 */
+  durableStorage: ReplayStorage;
 }
 
 /**
@@ -133,8 +352,12 @@ export async function initializeReplayPersistence(
 ): Promise<ReplayPersistenceBootstrap> {
   try {
     await storage.list();
-    return { storage };
+    return { storage, sessionOnly: false, durableStorage: storage };
   } catch {
-    return { storage: new MemoryReplayStorage() };
+    return {
+      storage: new MemoryReplayStorage(),
+      sessionOnly: true,
+      durableStorage: storage,
+    };
   }
 }

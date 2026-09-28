@@ -1,4 +1,5 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../../../src/state/persistenceBackup';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hooks = vi.hoisted(() => ({ cursor: 0, slots: [] as { value: unknown }[] }));
@@ -371,6 +372,18 @@ describe('ReplayListScreen のファイル共有', () => {
     expect(screen.find('replay-file-button').props.disabled).toBe(false);
     screen.click('replay-file-button');
     expect(screen.fileInput.click).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it('統合バックアップの取り込みは、途中セーブも戻ったと案内する', async () => {
+    const onImportReplay = vi.fn(async () => ({
+      ok: true as const,
+      message: '',
+      restored: 'both' as const,
+    }));
+    const screen = mountReplayList({ onImportReplay });
+    screen.chooseFile({ text: async () => 'backup' });
+    await screen.settle();
+    expect(content(screen.find('replay-share-status'))).toBe(PERSISTENCE_BACKUP_RESTORED_MESSAGE);
   });
 
   it('取り込み拒否の理由を表示し、再試行で成功するとエラー表示を解除する', async () => {

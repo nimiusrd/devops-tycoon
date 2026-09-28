@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   listFocusable,
   lockBackgroundSiblings,
+  trapTabTarget,
   wrapTabIfNeeded,
 } from '../../../src/ui/dialogOverlayLock';
 
@@ -33,6 +34,18 @@ describe('wrapTabIfNeeded', () => {
     expect(wrapTabIfNeeded([first, middle, last], middle, false, dialog)).toBeNull();
     expect(wrapTabIfNeeded([first, middle, last], middle, true, dialog)).toBeNull();
     expect(wrapTabIfNeeded([first, last], dialog, false, dialog)).toBeNull();
+  });
+
+  it('ロック免除の操作はダイアログと一つの輪になる', () => {
+    const retry = { id: 'retry' };
+    const exportSave = { id: 'export' };
+    expect(trapTabTarget([first, last], [retry, exportSave], last, false, dialog)).toBe(retry);
+    expect(trapTabTarget([first, last], [retry, exportSave], exportSave, false, dialog)).toBe(
+      first,
+    );
+    expect(trapTabTarget([first, last], [retry, exportSave], first, true, dialog)).toBe(exportSave);
+    expect(trapTabTarget([first, last], [retry, exportSave], retry, true, dialog)).toBe(last);
+    expect(trapTabTarget([first, middle, last], [retry], middle, false, dialog)).toBeNull();
   });
 
   it('背面などダイアログ外からの Tab はダイアログ内へ閉じる', () => {
@@ -139,5 +152,29 @@ describe('lockBackgroundSiblings', () => {
     expect(nested.inert).toBe(false);
     expect(nested.getAttribute('aria-hidden')).toBeNull();
     expect(dialog.inert).toBe(false);
+  });
+
+  it('ロック免除の兄弟は inert にしない', () => {
+    vi.stubGlobal('HTMLElement', ElementStub);
+    const body = new ElementStub();
+    const notice = new ElementStub();
+    notice.setAttribute('data-overlay-lock-exempt', 'true');
+    const retry = new ElementStub();
+    notice.children = [retry];
+    retry.parentElement = notice;
+    const root = new ElementStub();
+    root.id = 'root';
+    const dialog = new ElementStub();
+    body.children = [notice, root, dialog];
+    notice.parentElement = body;
+    root.parentElement = body;
+    dialog.parentElement = body;
+    vi.stubGlobal('document', { body });
+
+    lockBackgroundSiblings(dialog as unknown as HTMLElement);
+
+    expect(notice.inert).toBe(false);
+    expect(retry.inert).toBe(false);
+    expect(root.inert).toBe(true);
   });
 });

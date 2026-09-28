@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { createPortal } from 'react-dom';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
+import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../state/persistenceBackup';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
 import type { ResumeRisk } from '../state/resumeRisk';
@@ -20,6 +21,7 @@ import { publicUrl } from '../utils/publicUrl';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 function formatRuleset(ruleset: { version: number; fingerprint: string }): string {
   const fingerprint =
@@ -38,34 +40,11 @@ function ResumeRiskDialog({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: onCancel });
 
   useEffect(() => {
     cancelRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCancel();
-        return;
-      }
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('button')];
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onCancel]);
 
   return (
     <div
@@ -76,6 +55,7 @@ function ResumeRiskDialog({
       aria-modal="true"
       aria-labelledby="resume-risk-title"
       aria-describedby="resume-risk-body"
+      tabIndex={-1}
     >
       <div className="result-card resume-risk-card">
         <p className="result-eyebrow">RESUME WARNING</p>
@@ -149,7 +129,7 @@ export interface TitleScreenProps {
   /** 現行の途中セーブを JSON にする（無い場合は null。RI-133）。 */
   onExportRunSave?: () => string | null;
   /** JSON から途中セーブを読み込む。 */
-  onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string }>;
+  onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string; restored?: 'both' }>;
 }
 
 export function TitleScreen({
@@ -291,7 +271,11 @@ export function TitleScreen({
         if (requestId !== runSaveImportGen.current) return;
         setRunSaveShareStatus({
           kind: result.ok ? 'ok' : 'error',
-          message: result.ok ? '途中セーブを読み込みました。再開できます。' : result.message,
+          message: result.ok
+            ? result.restored === 'both'
+              ? PERSISTENCE_BACKUP_RESTORED_MESSAGE
+              : '途中セーブを読み込みました。再開できます。'
+            : result.message,
         });
       })
       .catch(() => {

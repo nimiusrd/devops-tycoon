@@ -281,6 +281,36 @@ describe('リプレイ正規化（RI-61）', () => {
     expect(selected.some((item) => item.id === 'id-1')).toBe(false);
     expect(selected[0]?.id).toBe(`id-${REPLAY_MAX_COUNT}`);
   });
+
+  it('複数の pin は上限まで残し、それ以外の古いものから外す', () => {
+    const items = Array.from({ length: REPLAY_MAX_COUNT + 2 }, (_, i) =>
+      makeBlob({
+        id: `id-${i}`,
+        seed: `seed-${i}`,
+        finishedAt: 1000 + i,
+      }),
+    );
+    const selected = selectReplaysWithinMax(items, ['id-0', 'id-1']);
+    expect(selected).toHaveLength(REPLAY_MAX_COUNT);
+    expect(selected.some((item) => item.id === 'id-0')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-1')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-2')).toBe(false);
+  });
+
+  it('priorityId は、ほかの pin が上限を超えても先に残す', () => {
+    const items = Array.from({ length: REPLAY_MAX_COUNT + 1 }, (_, i) =>
+      makeBlob({
+        id: `id-${i}`,
+        seed: `seed-${i}`,
+        finishedAt: 1000 + i,
+      }),
+    );
+    const pins = items.slice(1).map((item) => item.id);
+    const selected = selectReplaysWithinMax(items, pins, REPLAY_MAX_COUNT, 'id-0');
+    expect(selected).toHaveLength(REPLAY_MAX_COUNT);
+    expect(selected.some((item) => item.id === 'id-0')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-1')).toBe(false);
+  });
 });
 
 describe('IndexedDB リプレイ永続化（RI-61）', () => {
@@ -302,6 +332,44 @@ describe('IndexedDB リプレイ永続化（RI-61）', () => {
     expect(listed).toHaveLength(REPLAY_MAX_COUNT);
     expect(listed[0]?.id).toBe(`id-${REPLAY_MAX_COUNT + 2}`);
     expect(listed.some((r) => r.id === 'id-0')).toBe(false);
+  });
+
+  it('上限削除が失敗したら、追加も削除も残さない', async () => {
+    const name = nextReplayDbName('replay-atomic');
+    const storage = new IndexedDbReplayStorage(name);
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `kept-${i}`,
+          seed: `kept-${i}`,
+          finishedAt: 1000 + i,
+        }),
+      );
+    }
+    const evictedIds = new Set<string>();
+    const originalDelete = IDBObjectStore.prototype.delete;
+    IDBObjectStore.prototype.delete = function deleteAndFail(): ReturnType<
+      IDBObjectStore['delete']
+    > {
+      IDBObjectStore.prototype.delete = originalDelete;
+      throw new DOMException('delete failed', 'UnknownError');
+    };
+
+    try {
+      await expect(
+        storage.save(makeBlob({ id: 'incoming', seed: 'incoming', finishedAt: 9000 }), {
+          evictedIds,
+        }),
+      ).rejects.toThrow('delete failed');
+
+      const listed = await storage.list();
+      expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+      expect(listed.some((replay) => replay.id === 'incoming')).toBe(false);
+      expect(listed.some((replay) => replay.id === 'kept-0')).toBe(true);
+      expect(evictedIds.size).toBe(0);
+    } finally {
+      IDBObjectStore.prototype.delete = originalDelete;
+    }
   });
 });
 
@@ -336,6 +404,102 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
 
     expect(await storage.list()).toEqual([]);
     expect(await storage.get('clear-a')).toBeNull();
+  });
+
+  it('revertBatch はバッチが足した記録だけを消し、後から増えた記録は残す', async () => {
+    const name = nextReplayDbName('replay-revert');
+    const storage = new IndexedDbReplayStorage(name);
+    const kept = makeBlob({ id: 'kept', seed: 'kept', finishedAt: 1000 });
+    const overwritten = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    await storage.save(kept);
+    await storage.save(overwritten);
+    const snapshot = await storage.list();
+    const imported = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    imported.outcome = { ...imported.outcome, score: 99 };
+    await storage.save(imported, { pin: true });
+    const added = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    await storage.save(added, { pin: true });
+    const other = makeBlob({ id: 'other-tab', seed: 'other-tab', finishedAt: 4000 });
+    await storage.save(other);
+
+    await storage.revertBatch(snapshot, [imported, added]);
+
+    const ids = (await storage.list()).map((replay) => replay.id).sort();
+    expect(ids).toEqual(['kept', 'other-tab', 'overwritten']);
+    expect((await storage.get('overwritten'))?.outcome.score).toBe(overwritten.outcome.score);
+    expect(await storage.get('added')).toBeNull();
+    expect(await storage.get('other-tab')).not.toBeNull();
+  });
+
+  it('revertBatch は同じ ID の別内容を消さず、開始時の内容へも戻さない', async () => {
+    const name = nextReplayDbName('replay-revert-foreign');
+    const storage = new IndexedDbReplayStorage(name);
+    const kept = makeBlob({ id: 'kept', seed: 'kept', finishedAt: 1000 });
+    const overwritten = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    await storage.save(kept);
+    await storage.save(overwritten);
+    const snapshot = await storage.list();
+    const imported = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    imported.outcome = { ...imported.outcome, score: 99 };
+    await storage.save(imported, { pin: true });
+    const foreign = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    foreign.outcome = { ...foreign.outcome, score: 77 };
+    await storage.save(foreign);
+    const added = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    await storage.save(added, { pin: true });
+    const replaced = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    replaced.outcome = { ...replaced.outcome, score: 55 };
+    await storage.save(replaced);
+
+    await storage.revertBatch(snapshot, [imported, added]);
+
+    expect((await storage.get('overwritten'))?.outcome.score).toBe(77);
+    expect((await storage.get('added'))?.outcome.score).toBe(55);
+    expect((await storage.get('kept'))?.outcome.score).toBe(kept.outcome.score);
+  });
+
+  it('巻き戻しは、上書き直前の別内容を開始時の内容より優先して戻す', async () => {
+    const name = nextReplayDbName('replay-revert-preimage');
+    const storage = new IndexedDbReplayStorage(name);
+    const original = makeBlob({ id: 'same', seed: 'same', finishedAt: 2000 });
+    await storage.save(original);
+    const snapshot = await storage.list();
+    const foreign = makeBlob({ id: 'same', seed: 'same', finishedAt: 2000 });
+    foreign.outcome = { ...foreign.outcome, score: 77 };
+    await storage.save(foreign);
+    const imported = makeBlob({ id: 'same', seed: 'same', finishedAt: 2000 });
+    imported.outcome = { ...imported.outcome, score: 99 };
+    const evictedIds = new Set<string>();
+    const evictedRecords = new Map<string, ReplayBlob>();
+    await storage.save(imported, { pin: true, evictedIds, evictedRecords });
+
+    await storage.revertBatch(snapshot, [imported], evictedIds, evictedRecords);
+
+    expect((await storage.get('same'))?.outcome.score).toBe(77);
+  });
+
+  it('revertBatch は、このバッチが消していない欠落を戻さない', async () => {
+    const name = nextReplayDbName('replay-revert-foreign-delete');
+    const storage = new IndexedDbReplayStorage(name);
+    const kept = makeBlob({ id: 'kept', seed: 'kept', finishedAt: 1000 });
+    const removed = makeBlob({ id: 'removed', seed: 'removed', finishedAt: 2000 });
+    await storage.save(kept);
+    await storage.save(removed);
+    const snapshot = await storage.list();
+    const db = await openGameDb(name);
+    try {
+      await db.delete(REPLAYS_STORE_NAME, 'removed');
+    } finally {
+      db.close();
+    }
+    const added = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    await storage.save(added);
+
+    await storage.revertBatch(snapshot, [added], new Set());
+
+    expect(await storage.get('removed')).toBeNull();
+    expect(await storage.get('added')).toBeNull();
+    expect(await storage.get('kept')).not.toBeNull();
   });
 
   it('IndexedDB の旧v1リプレイを list/get で保持する', async () => {
@@ -469,6 +633,63 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     expect(listed).toHaveLength(REPLAY_MAX_COUNT);
     expect(listed.some((item) => item.id === 'pinned-old')).toBe(true);
     expect(listed.some((item) => item.id === 'filled-0')).toBe(false);
+  });
+
+  it('今回 pin した件は、保護中の pin が上限を超えても残す', async () => {
+    const storage = new MemoryReplayStorage();
+    const protectIds: string[] = [];
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const id = `protect-${i}`;
+      protectIds.push(id);
+      await storage.save(
+        makeBlob({
+          id,
+          seed: id,
+          finishedAt: 5_000 + i,
+        }),
+      );
+    }
+    await storage.save(makeBlob({ id: 'current', seed: 'current', finishedAt: 1 }), {
+      pin: true,
+      protectIds,
+    });
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'current')).toBe(true);
+    expect(listed.some((item) => item.id === 'protect-0')).toBe(false);
+  });
+
+  it('protectIds は別の保存でも古い明示取り込みを残す', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `filled-${i}`,
+          seed: `filled-${i}`,
+          finishedAt: 2000 + i,
+        }),
+      );
+    }
+    await storage.save(
+      makeBlob({
+        id: 'pinned-old',
+        seed: 'pinned-old',
+        finishedAt: 1,
+      }),
+      { pin: true },
+    );
+    await storage.save(
+      makeBlob({
+        id: 'newer',
+        seed: 'newer',
+        finishedAt: 3000,
+      }),
+      { protectIds: ['pinned-old'] },
+    );
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'pinned-old')).toBe(true);
+    expect(listed.some((item) => item.id === 'newer')).toBe(true);
   });
 
   it('initializeReplayPersistence は一覧取得成功時に渡した storage を使う', async () => {

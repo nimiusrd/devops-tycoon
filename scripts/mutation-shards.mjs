@@ -326,6 +326,11 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'replay',
   },
   {
+    id: 'state-replay-persistence',
+    mutate: 'src/state/replayPersistence.ts',
+    note: 'replayPersistence（上限と明示取り込みの pin）',
+  },
+  {
     id: 'state-meta',
     mutate: 'src/state/meta.ts',
     note: 'meta',
@@ -336,14 +341,27 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'resumeRisk（瀕死セーブ再開警告）',
   },
   {
+    id: 'state-persistence-status',
+    mutate: 'src/state/persistenceStatus.ts',
+    note: '自動保存の状態表示（RI-145）',
+  },
+  {
+    id: 'state-meta-persistence',
+    mutate: 'src/state/metaPersistence.ts',
+    note: 'メタの永続化（空のときだけ書く比較書き込みを含む）',
+  },
+  {
     id: 'state-rest',
     mutate: [
       'src/state/**/*.ts',
       '!src/state/persistFrameShape.ts',
       '!src/state/runPersistence.ts',
       '!src/state/replay.ts',
+      '!src/state/replayPersistence.ts',
       '!src/state/meta.ts',
+      '!src/state/metaPersistence.ts',
       '!src/state/resumeRisk.ts',
+      '!src/state/persistenceStatus.ts',
       '!src/state/**/index.ts',
       '!src/state/**/types.ts',
     ].join(','),

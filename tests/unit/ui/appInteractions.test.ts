@@ -255,6 +255,7 @@ import {
 } from '../../../src/state/replay';
 import { REPLAY_DRAFT_MISSING_HINT } from '../../../src/state/replayJump';
 import { toRunSave } from '../../../src/state/runPersistence';
+import * as downloadTextFileModule from '../../../src/ui/downloadTextFile';
 import { observeReplayBannerHeight } from '../../../src/ui/replayBannerOffset';
 import { resetWindowScroll } from '../../../src/ui/resetWindowScroll';
 import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
@@ -329,6 +330,17 @@ function makeRun(overrides: Partial<UseRun> = {}): UseRun {
     runSaveSummary: null,
     resumeRisk: null,
     runSaveIssue: null,
+    persistenceStatus: {
+      state: 'idle',
+      tone: 'quiet',
+      headline: '',
+      detail: '',
+      liveMessage: '',
+      showRetry: false,
+      showExport: false,
+      persistent: false,
+    },
+    retryPersistence: vi.fn(async () => undefined),
     runEpoch: 1,
     playbackSpeed: 1,
     setPlaybackSpeed: vi.fn(),
@@ -366,6 +378,8 @@ function makeRun(overrides: Partial<UseRun> = {}): UseRun {
     newRun: vi.fn(),
     clearRunSave: vi.fn(),
     exportRunSaveText: vi.fn(() => 'save-json'),
+    exportPendingReplayText: vi.fn(() => null),
+    exportPendingReplayFiles: vi.fn(() => []),
     importRunSaveText: vi.fn(),
     exportReplayText: vi.fn(() => 'replay-json'),
     importReplayText: vi.fn(),
@@ -1035,6 +1049,196 @@ describe('App のラン中メニュー', () => {
     screen.invoke('RunBar', 'onToggleSoundMuted');
     expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(true);
     expect(audio.unlock).toHaveBeenCalledTimes(2);
+  });
+
+  it('保存案内はフェーズが変わっても同じ先頭に残る', () => {
+    const screen = mountApp();
+    const noticeAtFront = () => {
+      const root = screen.tree;
+      if (!isValidElement<Props>(root)) throw new Error('ルートがありません');
+      const first = Children.toArray(root.props.children)[0];
+      if (!isValidElement<Props>(first) || componentName(first) !== 'PersistenceNotice') {
+        throw new Error('保存案内が先頭にありません');
+      }
+      return first;
+    };
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+    screen.phase('sprint');
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+    screen.phase('won');
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+    screen.phase('quarterReview');
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+  });
+
+  it('保存失敗を離れると書き出しエラーを消す', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'failed',
+        tone: 'danger',
+        headline: '保存失敗',
+        detail: '保存できませんでした。',
+        liveMessage: '保存に失敗しました。再試行できます。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+    });
+    const notice = () => {
+      const node = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!node) throw new Error('保存案内がありません');
+      return node;
+    };
+    (notice().props.onExport as () => void)();
+    screen.flush();
+    const failed = (notice().type as Component)(notice().props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe('途中セーブをファイルに保存できませんでした。');
+    screen.update({
+      persistenceStatus: {
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: '保存できました。',
+        liveMessage: '保存できました。',
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      },
+    });
+    const recovered = (notice().type as Component)(notice().props);
+    expect(
+      elements(recovered).some((node) => node.props['data-testid'] === 'persistence-export-error'),
+    ).toBe(false);
+    expect(
+      elements(recovered).find((node) => node.props['data-testid'] === 'persistence-live')?.props
+        .children,
+    ).toBe('保存できました。');
+  });
+
+  it('セッション復旧でも書き出しエラーを消す', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'session',
+        tone: 'warn',
+        headline: 'このセッション限り',
+        detail: 'リプレイはこのセッション限りです。',
+        liveMessage: 'リプレイはこのセッション限りです。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+    });
+    const notice = () => {
+      const node = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!node) throw new Error('保存案内がありません');
+      return node;
+    };
+    (notice().props.onExport as () => void)();
+    screen.flush();
+    const failed = (notice().type as Component)(notice().props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe('途中セーブをファイルに保存できませんでした。');
+    screen.update({
+      persistenceStatus: {
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: '保存済みデータを読み直せました。',
+        liveMessage: '保存済みデータを読み直せました。',
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      },
+    });
+    const recovered = (notice().type as Component)(notice().props);
+    expect(
+      elements(recovered).some((node) => node.props['data-testid'] === 'persistence-export-error'),
+    ).toBe(false);
+  });
+
+  it('途中セーブと未保存リプレイを同じ書き出しで残す', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'failed',
+        tone: 'danger',
+        headline: '保存失敗',
+        detail: '保存できませんでした。',
+        liveMessage: '保存に失敗しました。再試行できます。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+      exportRunSaveText: vi.fn(() => 'save-json'),
+      exportPendingReplayFiles: vi.fn(() => [
+        { filename: 'devops-tycoon-replay.json', text: 'replay-json' },
+      ]),
+    });
+    const findNotice = () => {
+      const notice = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!notice) throw new Error('保存案内がありません');
+      return notice;
+    };
+    const download = vi.spyOn(downloadTextFileModule, 'downloadTextFile').mockReturnValue(false);
+    (findNotice().props.onExport as () => void)();
+    screen.flush();
+    expect(download).toHaveBeenCalledOnce();
+    expect(download.mock.calls[0]?.[0]).toBe('devops-tycoon-persistence-backup.json');
+    const notice = findNotice();
+    const failed = (notice.type as Component)(notice.props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe(
+      '途中セーブをファイルに保存できませんでした。リプレイをファイルに保存できませんでした。',
+    );
+    expect(screen.run.exportRunSaveText).toHaveBeenCalledOnce();
+    expect(screen.run.exportPendingReplayFiles).toHaveBeenCalledOnce();
+  });
+
+  it('リプレイだけの退避失敗では途中セーブを報告しない', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'failed',
+        tone: 'danger',
+        headline: '保存失敗',
+        detail: '保存できませんでした。',
+        liveMessage: '保存に失敗しました。再試行できます。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+      exportRunSaveText: vi.fn(() => null),
+      exportPendingReplayFiles: vi.fn(() => [
+        { filename: 'devops-tycoon-replay-1.json', text: 'replay-a' },
+        { filename: 'devops-tycoon-replay-2.json', text: 'replay-b' },
+      ]),
+    });
+    const findNotice = () => {
+      const notice = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!notice) throw new Error('保存案内がありません');
+      return notice;
+    };
+    vi.spyOn(downloadTextFileModule, 'downloadTextFile').mockReturnValue(false);
+    (findNotice().props.onExport as () => void)();
+    screen.flush();
+    const failed = (findNotice().type as Component)(findNotice().props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe('リプレイをファイルに保存できませんでした。');
   });
 });
 

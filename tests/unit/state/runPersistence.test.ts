@@ -75,6 +75,80 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(snap.roster).toEqual(exported!.roster);
   });
 
+  it('insertIfAbsent は空のときだけ書き、既存セーブは上書きしない', async () => {
+    const engine = createRunEngine({ seed: 'insert-absent' });
+    engine.startRun('easy', [], 'insert-absent');
+    const exported = engine.exportPersistState();
+    expect(exported).not.toBeNull();
+    const storage = indexedDbStorage();
+    const first = toRunSave(exported!, 1000);
+    expect(await storage.insertIfAbsent(first)).toBeNull();
+    expect(await storage.load()).toEqual(first);
+
+    const other = toRunSave(exported!, 2000);
+    expect((await storage.insertIfAbsent(other))?.savedAt).toBe(1000);
+    expect((await storage.load())?.savedAt).toBe(1000);
+    expect(await storage.insertIfAbsent(null)).toEqual(first);
+  });
+
+  it('replaceIfMatches は一致するセーブだけを替え、読めない記録は消さない', async () => {
+    const name = `devops-tycoon-run-test-replace-${databases.length}`;
+    databases.push(name);
+    const storage = new IndexedDbRunStorage(name);
+    const engine = createRunEngine({ seed: 'replace-match' });
+    engine.startRun('easy', [], 'replace-match');
+    const exported = engine.exportPersistState();
+    expect(exported).not.toBeNull();
+    const first = toRunSave(exported!, 1000);
+    const second = toRunSave(exported!, 2000);
+    const third = toRunSave(exported!, 3000);
+
+    expect(await storage.replaceIfMatches(null, first)).toBeNull();
+    expect(await storage.replaceIfMatches(first, second)).toBeNull();
+    expect((await storage.load())?.savedAt).toBe(2000);
+    expect((await storage.replaceIfMatches(first, third))?.savedAt).toBe(2000);
+    expect((await storage.load())?.savedAt).toBe(2000);
+
+    const db = await openGameDb(name);
+    await db.put(RUN_STORE_NAME, { corrupt: true }, RUN_RECORD_KEY);
+    db.close();
+    expect(await storage.replaceIfMatches(second, third)).toMatchObject({ corrupt: true });
+    const kept = await openGameDb(name);
+    expect(await kept.get(RUN_STORE_NAME, RUN_RECORD_KEY)).toEqual({ corrupt: true });
+    kept.close();
+
+    const empty = await openGameDb(name);
+    await empty.delete(RUN_STORE_NAME, RUN_RECORD_KEY);
+    empty.close();
+    await expect(storage.replaceIfMatches(second, third)).rejects.toThrow(
+      'durable run was removed',
+    );
+    expect(await storage.load()).toBeNull();
+  });
+
+  it('メモリの replaceIfMatches は一致したときだけ save し、別のセーブは残す', async () => {
+    const storage = new MemoryRunStorage();
+    const engine = createRunEngine({ seed: 'memory-replace' });
+    engine.startRun('easy', [], 'memory-replace');
+    const exported = engine.exportPersistState();
+    expect(exported).not.toBeNull();
+    const first = toRunSave(exported!, 1000);
+    const second = toRunSave(exported!, 2000);
+    const foreign = toRunSave(exported!, 7777);
+    expect(await storage.replaceIfMatches(null, first)).toBeNull();
+    expect(await storage.replaceIfMatches(first, null)).toBeNull();
+    expect(await storage.load()).toBeNull();
+    expect(await storage.replaceIfMatches(null, first)).toBeNull();
+    await storage.save(foreign);
+    expect((await storage.replaceIfMatches(first, second))?.savedAt).toBe(7777);
+    expect((await storage.load())?.savedAt).toBe(7777);
+    await storage.clear();
+    await expect(storage.replaceIfMatches(foreign, second)).rejects.toThrow(
+      'durable run was removed',
+    );
+    expect(await storage.load()).toBeNull();
+  });
+
   it('RI-117: 新規セーブは現行ルールセットを記録し、一致時だけ互換になる', () => {
     const valid = makeRunSave('ri117-ruleset-match');
     expect(valid.ruleset).toEqual(CURRENT_RUN_RULESET);
@@ -895,7 +969,13 @@ describe('RI-91-B4 runPersistence survived mutants', () => {
       const boot = await initializeRunPersistence(storage);
       expect(boot.storage).toBe(storage);
       expect(boot.save).toEqual(save);
-      expect(boot).toEqual({ save, issue: null, storage });
+      expect(boot).toEqual({
+        save,
+        issue: null,
+        storage,
+        sessionOnly: false,
+        durableStorage: storage,
+      });
     });
   });
 });

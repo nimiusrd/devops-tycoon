@@ -1,3 +1,5 @@
+import { PERSISTENCE_BANNER_HEIGHT_VAR } from './persistenceBannerInset';
+
 /**
  * リプレイバナーの実高さを CSS 変数へ同期する。
  * `.result-overlay` が sticky バナーの下から始まるようにする（DS-06）。
@@ -32,16 +34,52 @@ export function observeReplayBannerHeight(
     clearReplayBannerHeight(root);
     return () => {};
   }
-  // overlay の top は viewport 基準なので、バナー下端（bottom）を余白にする。
+  // overlay の top は viewport 基準。下端には .app の上余白と保存バナー分が入る。
+  // 結果オーバーレイは max(この値, 保存バナー高) とし、保存バナー高を足し直さない。
   const apply = () => applyReplayBannerHeight(banner.getBoundingClientRect().bottom, root);
   apply();
-  if (typeof ResizeObserver === 'undefined') {
-    return () => clearReplayBannerHeight(root);
+  const stops: Array<() => void> = [];
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver(apply);
+    observer.observe(banner);
+    stops.push(() => observer.disconnect());
   }
-  const observer = new ResizeObserver(apply);
-  observer.observe(banner);
+  // 保存バナーの高さ変化は帯の寸法を変えない。変数が変わった次のフレームで下端を測り直す。
+  const readBannerHeight = (
+    root.style as { getPropertyValue?(name: string): string }
+  ).getPropertyValue?.bind(root.style);
+  if (
+    typeof Element !== 'undefined' &&
+    typeof MutationObserver === 'function' &&
+    typeof readBannerHeight === 'function' &&
+    root instanceof Element
+  ) {
+    let lastInset = Number.parseFloat(readBannerHeight(PERSISTENCE_BANNER_HEIGHT_VAR));
+    if (!Number.isFinite(lastInset)) lastInset = 0;
+    let frame = 0;
+    const observer = new MutationObserver(() => {
+      const next = Number.parseFloat(readBannerHeight(PERSISTENCE_BANNER_HEIGHT_VAR));
+      const inset = Number.isFinite(next) ? next : 0;
+      if (inset === lastInset) return;
+      lastInset = inset;
+      if (typeof requestAnimationFrame !== 'function') {
+        apply();
+        return;
+      }
+      if (frame !== 0) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        apply();
+      });
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ['style'] });
+    stops.push(() => {
+      observer.disconnect();
+      if (frame !== 0 && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);
+    });
+  }
   return () => {
-    observer.disconnect();
+    for (const stop of stops) stop();
     clearReplayBannerHeight(root);
   };
 }

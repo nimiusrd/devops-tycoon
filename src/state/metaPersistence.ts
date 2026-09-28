@@ -12,11 +12,30 @@ import {
 export interface MetaStorage {
   load(): Promise<MetaState | null>;
   save(meta: MetaState): Promise<void>;
+  /**
+   * 空のときだけ書く。既にあればその記録を返し、上書きしない。
+   * 空判定と書き込みは同一トランザクション。
+   */
+  insertIfAbsent?(meta: MetaState): Promise<MetaState | null>;
+  /**
+   * いまの記録が expected と一致するときだけ next を書く。
+   * 記録が無いときは、途中で消えていても next を書く。
+   * 別の記録ならそれを返し、上書きしない。比較と書き込みは同一トランザクション。
+   * 書き込んだときは null。
+   */
+  replaceIfMatches?(expected: MetaState | null, next: MetaState): Promise<MetaState | null>;
 }
 
 export interface MetaPersistenceBootstrap {
   meta: MetaState;
+  /** このセッションの保存先。読込失敗時はメモリ。 */
   storage: MetaStorage;
+  /** 読込に失敗し、既存レコードへ初期値を書き戻さない。 */
+  sessionOnly: boolean;
+  /** 再試行で読み直す先。sessionOnly のときも失敗した保存先を残す。 */
+  durableStorage: MetaStorage;
+  /** 端末に記録があり、それを読んで起動した。空の初期値ではない。 */
+  loadedFromDevice: boolean;
 }
 
 /** IndexedDB に単一の最新メタ状態を保存する。 */
@@ -53,6 +72,57 @@ export class IndexedDbMetaStorage implements MetaStorage {
     this.writes = write.catch(() => undefined);
     return write;
   }
+
+  insertIfAbsent(meta: MetaState): Promise<MetaState | null> {
+    const snapshot = structuredClone(meta);
+    const write = this.writes.then(async () => {
+      const db = await this.open();
+      try {
+        const tx = db.transaction(META_STORE_NAME, 'readwrite');
+        const existing = await tx.store.get(META_RECORD_KEY);
+        if (existing !== undefined) {
+          await tx.done;
+          return normalizeMeta(existing);
+        }
+        await tx.store.put(snapshot, META_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
+  replaceIfMatches(expected: MetaState | null, next: MetaState): Promise<MetaState | null> {
+    const snapshot = structuredClone(next);
+    const expectedKey = expected === null ? null : JSON.stringify(expected);
+    const write = this.writes.then(async () => {
+      const db = await this.open();
+      try {
+        const tx = db.transaction(META_STORE_NAME, 'readwrite');
+        const existing = await tx.store.get(META_RECORD_KEY);
+        if (existing !== undefined && JSON.stringify(existing) !== expectedKey) {
+          await tx.done;
+          return normalizeMeta(existing);
+        }
+        await tx.store.put(snapshot, META_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
 }
 
 /** メモリ上だけで動く MetaStorage（テスト / IDB 不可時）。 */
@@ -65,6 +135,20 @@ export class MemoryMetaStorage implements MetaStorage {
 
   async save(meta: MetaState): Promise<void> {
     this.state = structuredClone(meta);
+  }
+
+  async insertIfAbsent(meta: MetaState): Promise<MetaState | null> {
+    if (this.state) return structuredClone(this.state);
+    await this.save(meta);
+    return null;
+  }
+
+  async replaceIfMatches(expected: MetaState | null, next: MetaState): Promise<MetaState | null> {
+    if (this.state === null || JSON.stringify(this.state) === JSON.stringify(expected)) {
+      await this.save(next);
+      return null;
+    }
+    return structuredClone(this.state);
   }
 }
 
@@ -83,8 +167,20 @@ export async function initializeMetaPersistence(
 ): Promise<MetaPersistenceBootstrap> {
   try {
     const persisted = await storage.load();
-    return { meta: persisted ?? defaultMeta(), storage };
+    return {
+      meta: persisted ?? defaultMeta(),
+      storage,
+      sessionOnly: false,
+      durableStorage: storage,
+      loadedFromDevice: persisted !== null,
+    };
   } catch {
-    return { meta: defaultMeta(), storage: new MemoryMetaStorage() };
+    return {
+      meta: defaultMeta(),
+      storage: new MemoryMetaStorage(),
+      sessionOnly: true,
+      durableStorage: storage,
+      loadedFromDevice: false,
+    };
   }
 }

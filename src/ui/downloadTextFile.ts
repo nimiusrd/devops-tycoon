@@ -7,6 +7,29 @@
  */
 const REVOKE_DELAY_MS = 1_000;
 
+/** 書き出しボタンが何も起きなかったとき、プレイヤーへ返す一文。成功時は null。 */
+export function persistenceExportMessage(
+  text: string | null,
+  downloaded: boolean,
+  kind: 'run' | 'replay' = 'run',
+): string | null {
+  const subject = kind === 'replay' ? 'リプレイ' : '途中セーブ';
+  if (!text) return `書き出せる${subject}がありません。`;
+  if (!downloaded) return `${subject}をファイルに保存できませんでした。`;
+  return null;
+}
+
+/** 途中セーブと未保存リプレイを同時に書き出したときの失敗文。全部成功なら null。 */
+export function persistenceExportMessages(
+  parts: readonly { text: string | null; downloaded: boolean; kind?: 'run' | 'replay' }[],
+): string | null {
+  if (parts.length === 0) return persistenceExportMessage(null, false);
+  const messages = parts
+    .map((part) => persistenceExportMessage(part.text, part.downloaded, part.kind))
+    .filter((message): message is string => message !== null);
+  return messages.length > 0 ? messages.join('') : null;
+}
+
 export function downloadTextFile(
   filename: string,
   text: string,

@@ -91,4 +91,61 @@ describe('replayBannerOffset', () => {
     expect(disconnect).toHaveBeenCalledOnce();
     expect(props[REPLAY_BANNER_HEIGHT_VAR]).toBeUndefined();
   });
+
+  it('保存バナーの高さが変わった次のフレームで下端を測り直す', () => {
+    class RootElement {
+      style = {
+        props: {} as Record<string, string>,
+        setProperty(name: string, value: string) {
+          this.props[name] = value;
+        },
+        removeProperty(name: string) {
+          delete this.props[name];
+        },
+        getPropertyValue(name: string) {
+          return this.props[name] ?? '';
+        },
+      };
+    }
+    vi.stubGlobal('Element', RootElement);
+    let styleCallback: (() => void) | undefined;
+    vi.stubGlobal(
+      'MutationObserver',
+      class {
+        constructor(callback: () => void) {
+          styleCallback = callback;
+        }
+        observe = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+    let frameCallback: FrameRequestCallback | undefined;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frameCallback = callback;
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const root = new RootElement();
+    let bottom = 112;
+    const banner = {
+      getBoundingClientRect: () => ({ bottom }),
+    } as Element;
+
+    const stop = observeReplayBannerHeight(banner, root);
+    expect(root.style.props[REPLAY_BANNER_HEIGHT_VAR]).toBe('112px');
+
+    root.style.props['--replay-banner-height'] = '112px';
+    styleCallback?.();
+    expect(frameCallback).toBeUndefined();
+
+    bottom = 160;
+    root.style.props['--persistence-banner-height'] = '120px';
+    styleCallback?.();
+    expect(root.style.props[REPLAY_BANNER_HEIGHT_VAR]).toBe('112px');
+    frameCallback?.(0);
+    expect(root.style.props[REPLAY_BANNER_HEIGHT_VAR]).toBe('160px');
+
+    stop();
+    expect(root.style.props[REPLAY_BANNER_HEIGHT_VAR]).toBeUndefined();
+  });
 });

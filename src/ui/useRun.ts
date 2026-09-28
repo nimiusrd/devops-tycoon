@@ -18,6 +18,7 @@ import type { RunDiagnosticInfo } from '../state/diagnosticInfo';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type { ReplayBlob } from '../state/replay';
 import type { ReplayShareResult } from '../state/replayShare';
+import type { PersistenceNotice } from '../state/persistenceStatus';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
 import type { ResumeRisk } from '../state/resumeRisk';
 import type { RunSaveShareResult } from '../state/runSaveShare';
@@ -58,6 +59,10 @@ export interface UseRun {
   resumeRisk: ResumeRisk | null;
   /** ルールセット不一致・情報欠落で再開できないランセーブの理由。 */
   runSaveIssue: RunSaveCompatibilityIssue | null;
+  /** 自動保存の表示状態（RI-145）。 */
+  persistenceStatus: PersistenceNotice;
+  /** 失敗した自動保存、またはセッション限りの再読込を試す。 */
+  retryPersistence: () => Promise<void>;
   /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
   runEpoch: number;
   /**
@@ -110,6 +115,8 @@ export interface UseRun {
   newRun: () => void;
   clearRunSave: () => void;
   exportRunSaveText: () => string | null;
+  exportPendingReplayText: () => string | null;
+  exportPendingReplayFiles: () => { filename: string; text: string }[];
   importRunSaveText: (raw: string) => Promise<RunSaveShareResult>;
   exportReplayText: (id: string) => string | null;
   importReplayText: (raw: string) => Promise<ReplayShareResult>;
@@ -150,6 +157,11 @@ export function useRun(game: GameHandle): UseRun {
   const [runSaveIssue, setRunSaveIssue] = useState<RunSaveCompatibilityIssue | null>(() =>
     game.getRunSaveIssue(),
   );
+  const [persistenceStatus, setPersistenceStatus] = useState<PersistenceNotice>(() =>
+    game.getPersistenceStatus(),
+  );
+  // ライブリージョンは空でマウントし、次の描画で文言を入れる。
+  const [announcedLiveMessage, setAnnouncedLiveMessage] = useState('');
   const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
   const [replays, setReplays] = useState<ReplayBlob[]>(() => game.listReplays());
   const [isReplayMode, setIsReplayMode] = useState(() => game.isReplayMode());
@@ -234,6 +246,7 @@ export function useRun(game: GameHandle): UseRun {
       setRunSaveSummary(game.getRunSaveSummary());
       setResumeRisk(game.getResumeRisk());
       setRunSaveIssue(game.getRunSaveIssue());
+      setPersistenceStatus(game.getPersistenceStatus());
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
       setIsReplayMode(game.isReplayMode());
@@ -360,6 +373,20 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const setSoundMuted = useCallback((muted: boolean) => void game.setSoundMuted(muted), [game]);
+  const retryPersistence = useCallback(() => game.retryPersistence(), [game]);
+
+  useEffect(() => {
+    setAnnouncedLiveMessage(persistenceStatus.liveMessage);
+  }, [persistenceStatus.liveMessage]);
+
+  useEffect(() => {
+    if (persistenceStatus.state !== 'saved' || persistenceStatus.persistent) return;
+    if (persistenceStatus.liveMessage === '') return;
+    const id = window.setTimeout(() => {
+      game.dismissPersistenceNotice();
+    }, 5000);
+    return () => window.clearTimeout(id);
+  }, [game, persistenceStatus.liveMessage, persistenceStatus.persistent, persistenceStatus.state]);
   const setPreferredCardIds = useCallback(
     (cardIds: readonly string[]) => void game.setPreferredCardIds(cardIds),
     [game],
@@ -374,6 +401,8 @@ export function useRun(game: GameHandle): UseRun {
     runSaveSummary,
     resumeRisk,
     runSaveIssue,
+    persistenceStatus: { ...persistenceStatus, liveMessage: announcedLiveMessage },
+    retryPersistence,
     runEpoch,
     replays,
     isReplayMode,
@@ -419,6 +448,8 @@ export function useRun(game: GameHandle): UseRun {
     newRun,
     clearRunSave,
     exportRunSaveText,
+    exportPendingReplayText: () => game.exportPendingReplayText(),
+    exportPendingReplayFiles: () => game.exportPendingReplayFiles(),
     importRunSaveText,
     exportReplayText,
     importReplayText,

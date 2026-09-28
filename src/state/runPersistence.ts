@@ -108,12 +108,37 @@ export interface RunStorage {
   load(): Promise<RunSave | null>;
   save(save: RunSave): Promise<void>;
   clear(): Promise<void>;
+  /**
+   * 空のときだけ書く。既にあればそのセーブを返し、上書きも削除もしない。
+   * `save` が null のときは空確認だけする。空判定と書き込みは同一トランザクション。
+   */
+  insertIfAbsent?(save: RunSave | null): Promise<RunSave | null>;
+  /**
+   * いまの記録が expected と一致するときだけ next を書く。next が null なら削除する。
+   * expected が null で記録が無いときは next を書く。
+   * 別の記録ならそれを返し、上書きも削除もしない。比較と書き込みは同一トランザクション。
+   * 書き込んだときは null。読めない記録も、expected と違えば上書きしない。
+   * 比較対象があったのに記録が消えていたら、作り直さず失敗する。
+   */
+  replaceIfMatches?(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null>;
+  /**
+   * 読み直した形が expected と一致するときだけ next を書く。next が null なら削除する。
+   * 別の記録ならそれを返し、上書きも削除もしない。一致して書いたときは null。
+   * 比較対象があったのに記録が消えていたら、作り直さず失敗する。
+   * 比較と書き込みは同一トランザクション。
+   */
+  saveIfMatches?(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null>;
 }
 
 export interface RunPersistenceBootstrap {
   save: RunSave | null;
   issue: RunSaveCompatibilityIssue | null;
+  /** このセッションの保存先。読込失敗時はメモリ。 */
   storage: RunStorage;
+  /** 読込に失敗し、既存セーブを初期値で上書きしない。 */
+  sessionOnly: boolean;
+  /** 再試行で読み直す先。sessionOnly のときも失敗した保存先を残す。 */
+  durableStorage: RunStorage;
 }
 
 const INVALID_RULESET = Symbol('invalid-ruleset');
@@ -455,6 +480,11 @@ export function toRunSave(
 }
 
 /** IndexedDB に単一の最新ランセーブを保存する。 */
+function parsedRunKey(value: RunSave | null): string {
+  if (!value) return 'null';
+  return JSON.stringify(parseRunSave(value) ?? value);
+}
+
 export class IndexedDbRunStorage implements RunStorage {
   private writes: Promise<void> = Promise.resolve();
 
@@ -491,6 +521,100 @@ export class IndexedDbRunStorage implements RunStorage {
     return write;
   }
 
+  insertIfAbsent(save: RunSave | null): Promise<RunSave | null> {
+    const snapshot = save ? structuredClone(save) : null;
+    const write = this.writes.then(async () => {
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
+        const stored = await tx.store.get(RUN_RECORD_KEY);
+        if (stored !== undefined) {
+          const parsed = parseRunSave(stored);
+          if (parsed) {
+            await tx.done;
+            return parsed;
+          }
+          await tx.store.delete(RUN_RECORD_KEY);
+        }
+        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
+  replaceIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    const snapshot = next ? structuredClone(next) : null;
+    const expectedKey = expected === null ? null : JSON.stringify(expected);
+    const write = this.writes.then(async () => {
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
+        const stored = await tx.store.get(RUN_RECORD_KEY);
+        if (stored === undefined) {
+          if (expected !== null) {
+            await tx.done;
+            throw new Error('durable run was removed');
+          }
+        } else if (JSON.stringify(stored) !== expectedKey) {
+          const parsed = parseRunSave(stored);
+          await tx.done;
+          return parsed ?? (stored as RunSave);
+        }
+        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
+        else await tx.store.delete(RUN_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
+  saveIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    const snapshot = next ? structuredClone(next) : null;
+    const expectedKey = parsedRunKey(expected);
+    const write = this.writes.then(async () => {
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
+        const stored = await tx.store.get(RUN_RECORD_KEY);
+        const parsed = stored === undefined ? null : parseRunSave(stored);
+        if (parsedRunKey(parsed) !== expectedKey) {
+          if (expected !== null && stored === undefined) {
+            await tx.done;
+            throw new Error('durable run was removed');
+          }
+          await tx.done;
+          return parsed ?? (stored === undefined ? null : (stored as RunSave));
+        }
+        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
+        else await tx.store.delete(RUN_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
   clear(): Promise<void> {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
@@ -520,6 +644,36 @@ export class MemoryRunStorage implements RunStorage {
   async clear(): Promise<void> {
     this.saveState = null;
   }
+
+  async insertIfAbsent(save: RunSave | null): Promise<RunSave | null> {
+    if (this.saveState) return structuredClone(this.saveState);
+    if (save) await this.save(save);
+    return null;
+  }
+
+  async replaceIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    if (expected !== null && this.saveState === null) {
+      throw new Error('durable run was removed');
+    }
+    if (this.saveState === null || JSON.stringify(this.saveState) === JSON.stringify(expected)) {
+      if (next) await this.save(next);
+      else await this.clear();
+      return null;
+    }
+    return structuredClone(this.saveState);
+  }
+
+  async saveIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    if (expected !== null && this.saveState === null) {
+      throw new Error('durable run was removed');
+    }
+    if (parsedRunKey(this.saveState) !== parsedRunKey(expected)) {
+      return this.saveState ? structuredClone(this.saveState) : null;
+    }
+    if (next) await this.save(next);
+    else await this.clear();
+    return null;
+  }
 }
 
 /**
@@ -532,8 +686,20 @@ export async function initializeRunPersistence(
   try {
     const save = await storage.load();
     const issue = save ? getRunSaveCompatibilityIssue(save) : null;
-    return { save: issue ? null : save, issue, storage };
+    return {
+      save: issue ? null : save,
+      issue,
+      storage,
+      sessionOnly: false,
+      durableStorage: storage,
+    };
   } catch {
-    return { save: null, issue: null, storage: new MemoryRunStorage() };
+    return {
+      save: null,
+      issue: null,
+      storage: new MemoryRunStorage(),
+      sessionOnly: true,
+      durableStorage: storage,
+    };
   }
 }

@@ -924,6 +924,68 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().detail).not.toContain('リプレイはこのセッション限り');
   });
 
+  it('セッション限りの完走は、未保存を外したあとでも通知から書き出せる', async () => {
+    const durable = new MemoryReplayStorage();
+    const memory = new MemoryReplayStorage();
+    await memory.save(makeReplay('already-there'));
+    const game = createGame({ seed: 'session-export' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    game.startRun('easy', [], 'session-finish');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 16; i += 1) await Promise.resolve();
+
+    expect(game.hasResumableRun()).toBe(false);
+    expect(game.listReplays().map((replay) => replay.seed)).toEqual(
+      expect.arrayContaining(['already-there', 'session-finish']),
+    );
+    const status = game.getPersistenceStatus();
+    expect(status.state).toBe('session');
+    expect(status.showExport).toBe(true);
+    const files = game.exportPendingReplayFiles();
+    expect(files).toHaveLength(1);
+    expect(files[0]?.text).toContain('session-finish');
+    expect(files[0]?.text).not.toContain('already-there');
+    expect(game.exportPendingReplayText()).toContain('session-finish');
+  });
+
+  it('上限いっぱいの新しい永続リプレイへ、セッションの完走を複数残す', async () => {
+    const durable = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 50_000 + i;
+      await durable.save(stored);
+    }
+    const memory = new MemoryReplayStorage();
+    const game = createGame({ seed: 'session-two-replays' });
+    await game.attachReplay(memory, { sessionOnly: true, durableStorage: durable });
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = (seed: string, finishedAt: number) => {
+      game.startRun('easy', [], seed);
+      vi.spyOn(Date, 'now').mockReturnValue(finishedAt);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+    };
+    finish('older-a', 1);
+    for (let i = 0; i < 16; i += 1) await Promise.resolve();
+    finish('older-b', 2);
+    for (let i = 0; i < 16; i += 1) await Promise.resolve();
+    vi.restoreAllMocks();
+    await game.retryPersistence();
+
+    const seeds = (await durable.list()).map((replay) => replay.seed);
+    expect(seeds).toContain('older-a');
+    expect(seeds).toContain('older-b');
+    expect(seeds).toHaveLength(REPLAY_MAX_COUNT);
+    expect(game.listReplays().map((replay) => replay.seed)).toEqual(
+      expect.arrayContaining(['older-a', 'older-b']),
+    );
+    expect(game.getPersistenceStatus().detail).not.toContain('リプレイはこのセッション限り');
+  });
+
   it('セッション復旧と同じ再試行で、別チャネルの保存失敗も書き直す', async () => {
     const durable = new MemoryMetaStorage();
     const existing = { ...defaultMeta(), points: 80, unlockedCards: ['devin'] };

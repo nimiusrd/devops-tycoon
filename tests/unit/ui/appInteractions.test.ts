@@ -1050,6 +1050,26 @@ describe('App のラン中メニュー', () => {
     expect(audio.unlock).toHaveBeenCalledTimes(2);
   });
 
+  it('保存案内はフェーズが変わっても同じ先頭に残る', () => {
+    const screen = mountApp();
+    const noticeAtFront = () => {
+      const root = screen.tree;
+      if (!isValidElement<Props>(root)) throw new Error('ルートがありません');
+      const first = Children.toArray(root.props.children)[0];
+      if (!isValidElement<Props>(first) || componentName(first) !== 'PersistenceNotice') {
+        throw new Error('保存案内が先頭にありません');
+      }
+      return first;
+    };
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+    screen.phase('sprint');
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+    screen.phase('won');
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+    screen.phase('quarterReview');
+    expect(componentName(noticeAtFront())).toBe('PersistenceNotice');
+  });
+
   it('保存失敗を離れると書き出しエラーを消す', () => {
     const screen = mountApp({
       persistenceStatus: {

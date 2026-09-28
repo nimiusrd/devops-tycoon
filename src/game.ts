@@ -529,6 +529,24 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return pendingReplays.length > 0;
   };
 
+  /** セッション開始後にメモリへ残った完走。開始時点の一覧は端末側にある。 */
+  const sessionOnlyReplayBlobs = (): ReplayBlob[] => {
+    if (!tracker.isSession('replay')) return [];
+    return cachedReplays.filter((item) => !replayIdsAtSession.has(item.id));
+  };
+
+  /** 未保存と、セッション限りでメモリに残った完走。通知の書き出し対象。 */
+  const exportableReplayBlobs = (): ReplayBlob[] => {
+    const seen = new Set<string>();
+    const blobs: ReplayBlob[] = [];
+    for (const blob of [...pendingReplays, ...sessionOnlyReplayBlobs()]) {
+      if (seen.has(blob.id)) continue;
+      seen.add(blob.id);
+      blobs.push(blob);
+    }
+    return blobs;
+  };
+
   const commitReplayIfFinished = (): void => {
     if (!replayStorage || keyframes.length === 0 || replayMode) return;
     const s = engine.snapshot();
@@ -926,8 +944,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       };
       const shouldCopyReplay = (id: string): boolean =>
         !replayIdsAtSession.has(id) || pinnedReplayIds.has(id);
-      const saveOntoDurable = (blob: ReplayBlob): Promise<void> =>
-        target.save(structuredClone(blob), { pin: true, protectIds: [...pinnedReplayIds] });
+      const saveOntoDurable = (blob: ReplayBlob, cohort: readonly string[]): Promise<void> =>
+        target.save(structuredClone(blob), {
+          pin: true,
+          protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
+        });
       let durableList: ReplayBlob[];
       try {
         durableList = await target.list();
@@ -961,7 +982,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
             const newcomers = [...byId.values()];
             if (newcomers.length > 0) {
-              for (const blob of newcomers) await saveOntoDurable(blob);
+              const cohort = newcomers.map((item) => item.id);
+              for (const blob of newcomers) await saveOntoDurable(blob, cohort);
               durableList = await target.list();
               for (const blob of newcomers) {
                 if (!durableList.some((row) => row.id === blob.id)) {
@@ -1017,7 +1039,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const extras = pendingReplays.filter((blob) => !memoryIds.has(blob.id));
           const toSave = [...memoryReplays, ...extras];
           const writtenIds = new Set(toSave.map((blob) => blob.id));
-          for (const blob of toSave) await saveOntoDurable(blob);
+          const cohort = [...writtenIds];
+          for (const blob of toSave) await saveOntoDurable(blob, cohort);
           const kept = await target.list();
           for (const blob of toSave) {
             if (!kept.some((row) => row.id === blob.id)) {
@@ -1492,7 +1515,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     getPersistenceStatus() {
-      return tracker.notice(resumableSave !== null || pendingReplays.length > 0);
+      return tracker.notice(resumableSave !== null || exportableReplayBlobs().length > 0);
     },
     dismissPersistenceNotice() {
       if (tracker.dismissTransientBanner()) bump();
@@ -1598,13 +1621,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return resumableSave ? serializeRunSave(resumableSave) : null;
     },
     exportPendingReplayText() {
-      const blob = pendingReplays[pendingReplays.length - 1];
+      const blobs = exportableReplayBlobs();
+      const blob = blobs[blobs.length - 1];
       return blob ? serializeReplay(blob) : null;
     },
     exportPendingReplayFiles() {
-      return pendingReplays.map((blob, index) => ({
+      const blobs = exportableReplayBlobs();
+      return blobs.map((blob, index) => ({
         filename:
-          pendingReplays.length === 1
+          blobs.length === 1
             ? 'devops-tycoon-replay.json'
             : `devops-tycoon-replay-${index + 1}.json`,
         text: serializeReplay(blob),

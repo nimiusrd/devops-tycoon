@@ -889,6 +889,9 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
   expect(imported).toBe(true);
   await page.reload();
   await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty('--persistence-banner-height', '72px');
+  });
   await expect
     .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
     .toBeGreaterThan(0);
@@ -925,6 +928,7 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
     };
   });
   expect(layout.overlayTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
+  expect(layout.overlayTop).toBeLessThanOrEqual(layout.bannerBottom + 1);
   expect(layout.titleTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
   await assertReadOnlyDraftA11y(page);
 });

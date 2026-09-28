@@ -32,7 +32,8 @@ export function observeReplayBannerHeight(
     clearReplayBannerHeight(root);
     return () => {};
   }
-  // overlay の top は viewport 基準なので、バナー下端（bottom）を余白にする。
+  // overlay の top は viewport 基準。下端には .app の上余白と保存バナー分が入る。
+  // 結果オーバーレイは max(この値, 保存バナー高) とし、保存バナー高を足し直さない。
   const apply = () => applyReplayBannerHeight(banner.getBoundingClientRect().bottom, root);
   apply();
   if (typeof ResizeObserver === 'undefined') {

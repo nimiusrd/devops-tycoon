@@ -97,8 +97,14 @@ test('起動時に保存先を読めないときはセッション限りを表�
     expect(topbarBox!.y).toBeGreaterThanOrEqual(noticeBox!.y + noticeBox!.height - 1);
   }
 
+  await page.evaluate(() => {
+    document
+      .querySelector('[data-testid="persistence-live"]')
+      ?.setAttribute('data-mounted', 'keep');
+  });
   await page.getByTestId('start-run').click();
   await expect(page.getByTestId('hud')).toBeVisible();
+  await expect(page.getByTestId('persistence-live')).toHaveAttribute('data-mounted', 'keep');
   const hudBox = await page.getByTestId('hud').boundingBox();
   const noticeAfterStart = await notice.boundingBox();
   expect(hudBox, '開始後の HUD').not.toBeNull();

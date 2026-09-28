@@ -273,8 +273,17 @@ export interface GameHandle {
   /**
    * JSON からリプレイを読み込む。成功時だけ既存上限に従って保持する。
    * 失敗時は既存リプレイ・メタ進行・途中セーブを触らない。
+   * 第二引数はまとめ取り込みが同じ上限保護を渡すための内部用。
    */
-  importReplayText(raw: string): Promise<ReplayShareResult>;
+  importReplayText(
+    raw: string,
+    batch?: {
+      protectIds: readonly string[];
+      retainPin: boolean;
+      evictedIds?: Set<string>;
+      evictedRecords?: Map<string, ReplayBlob>;
+    },
+  ): Promise<ReplayShareResult>;
   /** リプレイのキーフレームを read-only で開く（失敗時 null）。 */
   openReplay(id: string, keyframeIndex?: number): RunState | null;
   /**

@@ -45,18 +45,20 @@ export function observeReplayBannerHeight(
     stops.push(() => observer.disconnect());
   }
   // 保存バナーの高さ変化は帯の寸法を変えない。変数が変わった次のフレームで下端を測り直す。
-  const style = root.style as { getPropertyValue?(name: string): string };
+  const readBannerHeight = (
+    root.style as { getPropertyValue?(name: string): string }
+  ).getPropertyValue?.bind(root.style);
   if (
     typeof Element !== 'undefined' &&
     typeof MutationObserver === 'function' &&
-    typeof style.getPropertyValue === 'function' &&
+    typeof readBannerHeight === 'function' &&
     root instanceof Element
   ) {
-    let lastInset = Number.parseFloat(style.getPropertyValue(PERSISTENCE_BANNER_HEIGHT_VAR));
+    let lastInset = Number.parseFloat(readBannerHeight(PERSISTENCE_BANNER_HEIGHT_VAR));
     if (!Number.isFinite(lastInset)) lastInset = 0;
     let frame = 0;
     const observer = new MutationObserver(() => {
-      const next = Number.parseFloat(style.getPropertyValue(PERSISTENCE_BANNER_HEIGHT_VAR));
+      const next = Number.parseFloat(readBannerHeight(PERSISTENCE_BANNER_HEIGHT_VAR));
       const inset = Number.isFinite(next) ? next : 0;
       if (inset === lastInset) return;
       lastInset = inset;

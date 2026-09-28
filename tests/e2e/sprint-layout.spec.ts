@@ -2511,12 +2511,15 @@ test.describe('狭幅オーバーレイと盤面ヒット（#529）', () => {
       game.pause();
       game.startRun('easy', [], 'issue-145-tutorial-banner');
       game.beginSetupSprint();
-      document.documentElement.style.setProperty('--persistence-banner-height', '72px');
     });
 
     const guide = page.getByTestId('tutorial-guide');
     await expect(guide).toBeVisible();
     await expect(guide).toHaveAttribute('data-step', 'action-bar');
+    // 常駐でない保存案内は変数を外す。ガイドの追従は、その後に残した高さで見る。
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--persistence-banner-height', '72px');
+    });
     const guideBox = await guide.boundingBox();
     if (!guideBox) throw new Error('初回ガイドの box が無い');
     expect(guideBox.y).toBeGreaterThanOrEqual(72);

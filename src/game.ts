@@ -899,6 +899,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (!metaMoved) {
             meta = loaded;
             metaStorage = durableMeta;
+            tracker.noteDurableAt('meta', Date.now());
             tracker.clearSession('meta');
           }
         } else {
@@ -945,6 +946,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               if (metaRevision === metaRevisionAtSession) {
                 meta = error.record as MetaState;
                 metaStorage = target;
+                tracker.noteDurableAt('meta', Date.now());
                 tracker.clearSession('meta');
               }
             }
@@ -1175,6 +1177,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 return !row || JSON.stringify(row) !== JSON.stringify(item);
               })
             ) {
+              // 古い一覧のままだと、次の周回も書込み不要と誤認して確認だけを繰り返す。
+              durableList = listed;
               continue;
             }
             replayStorage = target;
@@ -1872,6 +1876,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (!loaded.ok) return loaded;
       const intended = loaded.save;
       latestImportedSave = intended;
+      const revisionAtImport = runRevision;
       runImportDepth += 1;
       runRevision += 1;
       const backup = readPersistenceBackup(raw);
@@ -1909,6 +1914,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           }
         }
         if (!durableSettled) return;
+        // 巻き戻しが確定した取り込みは、再試行が既存セーブを永久に避けないように印を消す。
+        if (priorDurable !== undefined && latestImportedSave === intended) {
+          latestImportedSave = null;
+          const bumps = adopted ? 2 : 1;
+          if (runRevision === revisionAtImport + bumps) runRevision = revisionAtImport;
+        }
         if (resumableSave && durableRunKey(resumableSave) === durableRunKey(intended)) {
           resumableSave = priorMemory ? structuredClone(priorMemory) : null;
           runSaveIssue = priorIssue ? structuredClone(priorIssue) : null;

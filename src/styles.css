@@ -4980,6 +4980,11 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   position: sticky;
   top: 0;
   z-index: 40;
+  /* .app の外（勝敗・四半期）は上余白が無いので、保存案内の下から始める。 */
+  margin-top: var(--persistence-banner-height, 0px);
+}
+.app .replay-mode-banner {
+  margin-top: 0;
 }
 .replay-mode-banner-review-hell {
   background: color-mix(in srgb, #c45c5c 32%, #111);

@@ -1138,6 +1138,100 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(seeds).toHaveLength(REPLAY_MAX_COUNT);
   });
 
+  it('空の永続先へ移したランは、ファイルの時刻ではなく書込み完了時刻になる', async () => {
+    const durable = new MemoryRunStorage();
+    const completedAt = 1_700_000_000_000;
+    const future = completedAt + 5 * 60 * 60 * 1000;
+    vi.spyOn(Date, 'now').mockReturnValue(completedAt);
+    const game = createGame({ seed: 'migrate-clock' });
+    game.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    const save = makeRunSave('future-file');
+    save.savedAt = future;
+    expect(await game.importRunSaveText(serializeRunSave(save))).toMatchObject({ ok: true });
+    const writtenAt = completedAt + 60_000;
+    vi.spyOn(Date, 'now').mockReturnValue(writtenAt);
+    await game.retryPersistence();
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+
+    vi.spyOn(durable, 'save').mockRejectedValueOnce(new Error('transient'));
+    vi.spyOn(Date, 'now').mockReturnValue(completedAt + 120_000);
+    game.startRun('easy', [], 'after-migrate');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const status = game.getPersistenceStatus();
+    expect(status.state).toBe('failed');
+    expect(status.detail).toContain(formatPersistenceClock(writtenAt));
+    expect(status.detail).not.toContain('まだ端末へ保存できていません');
+    expect(status.detail).not.toContain(formatPersistenceClock(future));
+  });
+
+  it('保存失敗したリプレイを取り込むと、未保存と失敗表示を消す', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'replay-import-pending' });
+    await game.attachReplay(storage);
+    game.startRun('easy', [], 'pending-replay');
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    const internals = game.engine as unknown as { phase: string; status: string };
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    const exported = game.exportPendingReplayText();
+    expect(exported).toContain('pending-replay');
+    expect(game.getPersistenceStatus().state).toBe('failed');
+
+    expect(await game.importReplayText(exported!)).toMatchObject({ ok: true });
+
+    const status = game.getPersistenceStatus();
+    expect(status.state).not.toBe('failed');
+    expect(status.headline).not.toBe('保存失敗');
+    expect(status.detail).not.toContain('進行はメモリに残しています');
+    expect(game.exportPendingReplayText()).toBeNull();
+    expect((await storage.list()).map((replay) => replay.seed)).toContain('pending-replay');
+  });
+
+  it('まとめファイルの途中で保存に失敗したら、取り込み前の一覧へ戻す', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 50_000 + i;
+      await storage.save(stored);
+    }
+    const before = (await storage.list()).map((replay) => replay.seed).sort();
+    const game = createGame({ seed: 'backup-rollback' });
+    await game.attachReplay(storage);
+    const olderA = makeReplay('older-a');
+    olderA.finishedAt = 1;
+    const olderB = makeReplay('older-b');
+    olderB.finishedAt = 2;
+    const raw = serializePersistenceBackup({
+      runSave: null,
+      replays: [serializeReplay(olderA), serializeReplay(olderB)],
+    });
+    const original = storage.save.bind(storage);
+    let calls = 0;
+    vi.spyOn(storage, 'save').mockImplementation(async (blob, options) => {
+      calls += 1;
+      if (calls === 2) throw new Error('quota');
+      await original(blob, options);
+    });
+
+    const imported = await game.importReplayText(raw);
+    expect(imported.ok).toBe(false);
+    expect((await storage.list()).map((replay) => replay.seed).sort()).toEqual(before);
+    expect(
+      game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(before);
+    expect((await storage.list()).map((replay) => replay.seed)).not.toContain('older-a');
+  });
+
   it('上限を超えるまとめファイルは、新しい10件だけを残して取り込む', async () => {
     const storage = new MemoryReplayStorage();
     for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {

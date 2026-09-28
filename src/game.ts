@@ -918,7 +918,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 runMigrationWritten = null;
                 runStorage = target;
                 runSaveIssue = null;
-                if (resumableSave) tracker.noteDurableAt('run', resumableSave.savedAt);
+                if (resumableSave) tracker.noteDurableAt('run', Date.now());
                 tracker.clearSession('run');
               },
             );
@@ -1753,6 +1753,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           .sort((a, b) => b.replay.finishedAt - a.replay.finishedAt)
           .slice(0, REPLAY_MAX_COUNT);
         const cohort = ranked.map((item) => item.replay.id);
+        const snapshot = replayStorage ? await replayStorage.list() : [];
+        const restoreSnapshot = async (): Promise<void> => {
+          const storage = replayStorage;
+          if (!storage) return;
+          try {
+            await storage.clear();
+            for (const blob of snapshot) await storage.save(structuredClone(blob));
+            await refreshReplayCache();
+          } catch {
+            /* 戻せなくても、取り込み失敗はそのまま返す */
+          }
+        };
         for (const id of cohort) pinnedReplayIds.add(id);
         try {
           let last: ReplayShareResult = {
@@ -1765,10 +1777,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               protectIds: cohort,
               retainPin: true,
             });
-            if (!last.ok) return last;
+            if (!last.ok) {
+              await restoreSnapshot();
+              return last;
+            }
           }
           const listed = replayStorage ? await replayStorage.list() : [];
           if (cohort.some((id) => !listed.some((row) => row.id === id))) {
+            await restoreSnapshot();
             return {
               ok: false,
               reason: 'corrupt',
@@ -1822,7 +1838,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
             };
           }
+          const matched = pendingReplays.filter((item) => item.id === loaded.replay.id);
+          for (const blob of matched) completePendingReplay(blob);
+          if (matched.length > 0 && pendingReplays.length === 0 && !tracker.isSession('replay')) {
+            tracker.settleCurrent('replay', Date.now());
+          }
           replayRevision += 1;
+          bump();
           return loaded;
         } catch {
           return {

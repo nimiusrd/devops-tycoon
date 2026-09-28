@@ -266,6 +266,20 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   await expect(page.getByTestId('replay-mode-banner')).toBeVisible();
   await expect(page.getByTestId('replay-mode-banner')).toHaveAttribute('data-review-hell', 'true');
   await expect(page.getByTestId('replay-mode-banner')).toContainText('レビュー地獄リプレイ');
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty('--persistence-banner-height', '72px');
+  });
+  const terminalBanner = await page.evaluate(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    const exit = document.querySelector('[data-testid="exit-replay"]');
+    if (!banner || !exit) throw new Error('terminal replay banner missing');
+    return {
+      bannerTop: banner.getBoundingClientRect().top,
+      exitTop: exit.getBoundingClientRect().top,
+    };
+  });
+  expect(terminalBanner.bannerTop).toBeGreaterThanOrEqual(71);
+  expect(terminalBanner.exitTop).toBeGreaterThanOrEqual(71);
   await expect(page.getByTestId('result-review-hell-summary')).toBeVisible();
   await expect(page.getByTestId('result-review-hell-peak')).toContainText('21');
   await expect(

@@ -38,6 +38,35 @@ vi.mock('react', async (importOriginal) => ({
 
 import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 
+class MutationObserverStub {
+  static pending: MutationObserverStub[] = [];
+  private callback: () => void;
+  private root: ElementStub | null = null;
+
+  constructor(callback: () => void) {
+    this.callback = callback;
+    MutationObserverStub.pending.push(this);
+  }
+
+  observe(root: ElementStub) {
+    this.root = root;
+  }
+
+  disconnect() {
+    this.root = null;
+  }
+
+  takeRecords() {
+    return [];
+  }
+
+  static emit() {
+    for (const observer of MutationObserverStub.pending) {
+      if (observer.root) observer.callback();
+    }
+  }
+}
+
 class ElementStub {
   id = '';
   inert = false;
@@ -46,6 +75,18 @@ class ElementStub {
   children: ElementStub[] = [];
   focusable = false;
   private attributes = new Map<string, string>();
+
+  get isConnected(): boolean {
+    return this === documentStub?.body || this.parentElement?.isConnected === true;
+  }
+
+  remove() {
+    const parent = this.parentElement;
+    if (!parent) return;
+    parent.children = parent.children.filter((child) => child !== this);
+    this.parentElement = null;
+    MutationObserverStub.emit();
+  }
 
   append(...children: ElementStub[]) {
     children.forEach((child) => {
@@ -179,11 +220,13 @@ function unmount() {
 }
 
 beforeEach(() => {
+  MutationObserverStub.pending = [];
   documentStub = new DocumentStub();
   vi.stubGlobal('document', documentStub);
   vi.stubGlobal('HTMLElement', ElementStub);
   vi.stubGlobal('Node', ElementStub);
   vi.stubGlobal('Element', ElementStub);
+  vi.stubGlobal('MutationObserver', MutationObserverStub);
   vi.stubGlobal('getComputedStyle', (element: ElementStub) => ({ zIndex: element.zIndex }));
 });
 
@@ -422,6 +465,25 @@ describe('useDialogOverlayLock', () => {
     documentStub.body.children = documentStub.body.children.filter((child) => child !== chip);
     keyDown('Tab');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
+  it('フォーカス中の再試行ボタンが消えたら、ダイアログの操作へ戻す', () => {
+    const dialogButton = button();
+    const dialog = new ElementStub().append(dialogButton);
+    dialog.zIndex = '20';
+    const retry = button();
+    const notice = new ElementStub().append(retry);
+    notice.zIndex = '50';
+    notice.setAttribute('data-overlay-lock-exempt', 'true');
+    documentStub.body.append(dialog, notice);
+    mountLock(dialog);
+    retry.focus();
+    expect(documentStub.activeElement).toBe(retry);
+
+    documentStub.activeElement = documentStub.body;
+    notice.remove();
+
+    expect(documentStub.activeElement).toBe(dialogButton);
   });
 
   it('ダイアログがまだ無い場合はフォーカスもキー操作も変更しない', () => {

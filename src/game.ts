@@ -51,6 +51,7 @@ import { labelForReplayKeyframe } from './render/reviewHellReplayView';
 import {
   buildReplayId,
   normalizeReplay,
+  REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
   selectReplaysWithinMax,
@@ -813,6 +814,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 if (metaMigrationWritten === null && target.insertIfAbsent) {
                   const existing = await target.insertIfAbsent(snapshot);
                   if (existing) throw new ForeignDurableRecord(existing);
+                } else if (target.replaceIfMatches) {
+                  const expected =
+                    metaMigrationWritten === null
+                      ? null
+                      : (JSON.parse(metaMigrationWritten) as MetaState);
+                  const existing = await target.replaceIfMatches(expected, snapshot);
+                  if (existing) throw new ForeignDurableRecord(existing);
                 } else {
                   await target.save(snapshot);
                 }
@@ -888,6 +896,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               async (snapshot) => {
                 if (runMigrationWritten === null && target.insertIfAbsent) {
                   const existing = await target.insertIfAbsent(snapshot);
+                  if (existing) throw new ForeignDurableRecord(existing);
+                } else if (target.replaceIfMatches) {
+                  const expected =
+                    runMigrationWritten === null
+                      ? null
+                      : (JSON.parse(runMigrationWritten) as RunSave | null);
+                  const existing = await target.replaceIfMatches(expected, snapshot);
                   if (existing) throw new ForeignDurableRecord(existing);
                 } else if (snapshot) {
                   await target.save(snapshot);
@@ -1668,7 +1683,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           resumableSave = structuredClone(intended);
           runSaveIssue = null;
           runRevision += 1;
-          if (runStorage && !tracker.isSession('run')) tracker.noteDurableAt('run', Date.now());
+          if (
+            runStorage &&
+            !tracker.isSession('run') &&
+            !tracker.settleCurrent('run', Date.now())
+          ) {
+            tracker.noteDurableAt('run', Date.now());
+          }
           bump();
         } finally {
           runImportDepth -= 1;
@@ -1718,10 +1739,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
           };
         }
-        const parsed = backup.replays.map((source) => parseReplayShare(source));
-        const invalid = parsed.find((item) => !item.ok);
-        if (invalid && !invalid.ok) return invalid;
-        const cohort = parsed.flatMap((item) => (item.ok ? [item.replay.id] : []));
+        const parsed = backup.replays.map((source) => ({
+          source,
+          result: parseReplayShare(source),
+        }));
+        const invalid = parsed.find((item) => !item.result.ok);
+        if (invalid && !invalid.result.ok) return invalid.result;
+        // ファイル自体は全件を残す。端末へ戻すのは上限に収まる新しい順だけにする。
+        const ranked = parsed
+          .flatMap((item) =>
+            item.result.ok ? [{ source: item.source, replay: item.result.replay }] : [],
+          )
+          .sort((a, b) => b.replay.finishedAt - a.replay.finishedAt)
+          .slice(0, REPLAY_MAX_COUNT);
+        const cohort = ranked.map((item) => item.replay.id);
         for (const id of cohort) pinnedReplayIds.add(id);
         try {
           let last: ReplayShareResult = {
@@ -1729,8 +1760,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             reason: 'corrupt',
             message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
           };
-          for (const source of backup.replays) {
-            last = await this.importReplayText(source, { protectIds: cohort, retainPin: true });
+          for (const item of ranked) {
+            last = await this.importReplayText(item.source, {
+              protectIds: cohort,
+              retainPin: true,
+            });
             if (!last.ok) return last;
           }
           const listed = replayStorage ? await replayStorage.list() : [];

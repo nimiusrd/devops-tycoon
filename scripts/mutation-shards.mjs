@@ -346,6 +346,11 @@ export const MUTATION_SHARDS = Object.freeze([
     note: '自動保存の状態表示（RI-145）',
   },
   {
+    id: 'state-meta-persistence',
+    mutate: 'src/state/metaPersistence.ts',
+    note: 'メタの永続化（空のときだけ書く比較書き込みを含む）',
+  },
+  {
     id: 'state-rest',
     mutate: [
       'src/state/**/*.ts',
@@ -354,6 +359,7 @@ export const MUTATION_SHARDS = Object.freeze([
       '!src/state/replay.ts',
       '!src/state/replayPersistence.ts',
       '!src/state/meta.ts',
+      '!src/state/metaPersistence.ts',
       '!src/state/resumeRisk.ts',
       '!src/state/persistenceStatus.ts',
       '!src/state/**/index.ts',

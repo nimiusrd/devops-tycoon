@@ -17,6 +17,13 @@ export interface MetaStorage {
    * 空判定と書き込みは同一トランザクション。
    */
   insertIfAbsent?(meta: MetaState): Promise<MetaState | null>;
+  /**
+   * いまの記録が expected と一致するときだけ next を書く。
+   * 記録が無いときは、途中で消えていても next を書く。
+   * 別の記録ならそれを返し、上書きしない。比較と書き込みは同一トランザクション。
+   * 書き込んだときは null。
+   */
+  replaceIfMatches?(expected: MetaState | null, next: MetaState): Promise<MetaState | null>;
 }
 
 export interface MetaPersistenceBootstrap {
@@ -88,6 +95,32 @@ export class IndexedDbMetaStorage implements MetaStorage {
     );
     return write;
   }
+
+  replaceIfMatches(expected: MetaState | null, next: MetaState): Promise<MetaState | null> {
+    const snapshot = structuredClone(next);
+    const expectedKey = expected === null ? null : JSON.stringify(expected);
+    const write = this.writes.then(async () => {
+      const db = await this.open();
+      try {
+        const tx = db.transaction(META_STORE_NAME, 'readwrite');
+        const existing = await tx.store.get(META_RECORD_KEY);
+        if (existing !== undefined && JSON.stringify(existing) !== expectedKey) {
+          await tx.done;
+          return normalizeMeta(existing);
+        }
+        await tx.store.put(snapshot, META_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
 }
 
 /** メモリ上だけで動く MetaStorage（テスト / IDB 不可時）。 */
@@ -106,6 +139,14 @@ export class MemoryMetaStorage implements MetaStorage {
     if (this.state) return structuredClone(this.state);
     await this.save(meta);
     return null;
+  }
+
+  async replaceIfMatches(expected: MetaState | null, next: MetaState): Promise<MetaState | null> {
+    if (this.state === null || JSON.stringify(this.state) === JSON.stringify(expected)) {
+      await this.save(next);
+      return null;
+    }
+    return structuredClone(this.state);
   }
 }
 

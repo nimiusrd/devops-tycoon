@@ -64,11 +64,36 @@ export function useDialogOverlayLock(
       target.focus({ preventScroll: target === dialog });
     };
 
+    let lastExemptFocus: Node | null = null;
+
     const onFocusIn = (event: FocusEvent) => {
       syncAriaModalWithExemptControls(dialog);
       const target = event.target;
-      if (!(target instanceof Node) || dialog.contains(target)) return;
-      if (isOverlayExemptInFront(target, dialog)) return;
+      if (!(target instanceof Node) || dialog.contains(target)) {
+        if (target instanceof Node && dialog.contains(target)) lastExemptFocus = null;
+        return;
+      }
+      if (isOverlayExemptInFront(target, dialog)) {
+        lastExemptFocus = target;
+        return;
+      }
+      const focusables = listFocusable(dialog);
+      const next = focusables[0] ?? dialog;
+      next.focus({ preventScroll: next === dialog });
+    };
+
+    const restoreFocusFromDisconnectedExempt = () => {
+      const lost = lastExemptFocus;
+      if (!lost || lost.isConnected || !dialog.isConnected) return;
+      const active = document.activeElement;
+      const focusFellAway =
+        active == null ||
+        active === document.body ||
+        active === document.documentElement ||
+        active === lost ||
+        (active instanceof Node && !active.isConnected);
+      if (!focusFellAway) return;
+      lastExemptFocus = null;
       const focusables = listFocusable(dialog);
       const next = focusables[0] ?? dialog;
       next.focus({ preventScroll: next === dialog });
@@ -79,7 +104,10 @@ export function useDialogOverlayLock(
     let observer: MutationObserver | undefined;
     if (typeof MutationObserver === 'function') {
       try {
-        observer = new MutationObserver(() => syncAriaModalWithExemptControls(dialog));
+        observer = new MutationObserver(() => {
+          syncAriaModalWithExemptControls(dialog);
+          restoreFocusFromDisconnectedExempt();
+        });
         observer.observe(document.body, { childList: true, subtree: true });
       } catch {
         observer = undefined;

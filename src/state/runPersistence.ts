@@ -113,6 +113,13 @@ export interface RunStorage {
    * `save` が null のときは空確認だけする。空判定と書き込みは同一トランザクション。
    */
   insertIfAbsent?(save: RunSave | null): Promise<RunSave | null>;
+  /**
+   * いまの記録が expected と一致するときだけ next を書く。next が null なら削除する。
+   * 記録が無いときは、途中で消えていても next を書く。
+   * 別の記録ならそれを返し、上書きも削除もしない。比較と書き込みは同一トランザクション。
+   * 書き込んだときは null。読めない記録も、expected と違えば上書きしない。
+   */
+  replaceIfMatches?(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null>;
 }
 
 export interface RunPersistenceBootstrap {
@@ -530,6 +537,34 @@ export class IndexedDbRunStorage implements RunStorage {
     return write;
   }
 
+  replaceIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    const snapshot = next ? structuredClone(next) : null;
+    const expectedKey = expected === null ? null : JSON.stringify(expected);
+    const write = this.writes.then(async () => {
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
+        const stored = await tx.store.get(RUN_RECORD_KEY);
+        if (stored !== undefined && JSON.stringify(stored) !== expectedKey) {
+          const parsed = parseRunSave(stored);
+          await tx.done;
+          return parsed ?? (stored as RunSave);
+        }
+        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
+        else await tx.store.delete(RUN_RECORD_KEY);
+        await tx.done;
+        return null;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
   clear(): Promise<void> {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
@@ -564,6 +599,15 @@ export class MemoryRunStorage implements RunStorage {
     if (this.saveState) return structuredClone(this.saveState);
     if (save) await this.save(save);
     return null;
+  }
+
+  async replaceIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    if (this.saveState === null || JSON.stringify(this.saveState) === JSON.stringify(expected)) {
+      if (next) await this.save(next);
+      else await this.clear();
+      return null;
+    }
+    return structuredClone(this.saveState);
   }
 }
 

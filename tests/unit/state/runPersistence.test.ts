@@ -91,6 +91,57 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(await storage.insertIfAbsent(null)).toEqual(first);
   });
 
+  it('replaceIfMatches は一致するセーブだけを替え、読めない記録は消さない', async () => {
+    const name = `devops-tycoon-run-test-replace-${databases.length}`;
+    databases.push(name);
+    const storage = new IndexedDbRunStorage(name);
+    const engine = createRunEngine({ seed: 'replace-match' });
+    engine.startRun('easy', [], 'replace-match');
+    const exported = engine.exportPersistState();
+    expect(exported).not.toBeNull();
+    const first = toRunSave(exported!, 1000);
+    const second = toRunSave(exported!, 2000);
+    const third = toRunSave(exported!, 3000);
+
+    expect(await storage.replaceIfMatches(null, first)).toBeNull();
+    expect(await storage.replaceIfMatches(first, second)).toBeNull();
+    expect((await storage.load())?.savedAt).toBe(2000);
+    expect((await storage.replaceIfMatches(first, third))?.savedAt).toBe(2000);
+    expect((await storage.load())?.savedAt).toBe(2000);
+
+    const db = await openGameDb(name);
+    await db.put(RUN_STORE_NAME, { corrupt: true }, RUN_RECORD_KEY);
+    db.close();
+    expect(await storage.replaceIfMatches(second, third)).toMatchObject({ corrupt: true });
+    const kept = await openGameDb(name);
+    expect(await kept.get(RUN_STORE_NAME, RUN_RECORD_KEY)).toEqual({ corrupt: true });
+    kept.close();
+
+    const empty = await openGameDb(name);
+    await empty.delete(RUN_STORE_NAME, RUN_RECORD_KEY);
+    empty.close();
+    expect(await storage.replaceIfMatches(second, third)).toBeNull();
+    expect((await storage.load())?.savedAt).toBe(3000);
+  });
+
+  it('メモリの replaceIfMatches は一致したときだけ save し、別のセーブは残す', async () => {
+    const storage = new MemoryRunStorage();
+    const engine = createRunEngine({ seed: 'memory-replace' });
+    engine.startRun('easy', [], 'memory-replace');
+    const exported = engine.exportPersistState();
+    expect(exported).not.toBeNull();
+    const first = toRunSave(exported!, 1000);
+    const second = toRunSave(exported!, 2000);
+    const foreign = toRunSave(exported!, 7777);
+    expect(await storage.replaceIfMatches(null, first)).toBeNull();
+    expect(await storage.replaceIfMatches(first, null)).toBeNull();
+    expect(await storage.load()).toBeNull();
+    expect(await storage.replaceIfMatches(null, first)).toBeNull();
+    await storage.save(foreign);
+    expect((await storage.replaceIfMatches(first, second))?.savedAt).toBe(7777);
+    expect((await storage.load())?.savedAt).toBe(7777);
+  });
+
   it('RI-117: 新規セーブは現行ルールセットを記録し、一致時だけ互換になる', () => {
     const valid = makeRunSave('ri117-ruleset-match');
     expect(valid.ruleset).toEqual(CURRENT_RUN_RULESET);

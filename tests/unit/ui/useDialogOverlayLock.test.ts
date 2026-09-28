@@ -128,6 +128,19 @@ class ElementStub {
     this.attributes.delete(name);
   }
 
+  box: {
+    top: number;
+    left: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+  } | null = null;
+
+  getBoundingClientRect() {
+    return this.box ?? { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 };
+  }
+
   getClientRects() {
     return [{}];
   }
@@ -399,6 +412,32 @@ describe('useDialogOverlayLock', () => {
     dialogButton.focus();
     expect(keyDown('Tab').defaultPrevented).toBe(true);
     expect(documentStub.activeElement).toBe(dialogButton);
+    retry.focus();
+    expect(documentStub.activeElement).toBe(dialogButton);
+  });
+
+  it('ダイアログに覆われていない保存案内は、z-index が低くてもフォーカスを残す', () => {
+    const retry = button();
+    const notice = new ElementStub().append(retry);
+    notice.zIndex = '50';
+    notice.box = { top: 0, left: 0, right: 320, bottom: 72, width: 320, height: 72 };
+    notice.setAttribute('data-overlay-lock-exempt', 'true');
+    notice.setAttribute('data-testid', 'persistence-notice');
+    const dialogButton = button();
+    const preparing = new ElementStub().append(dialogButton);
+    preparing.zIndex = '210';
+    preparing.box = { top: 72, left: 0, right: 320, bottom: 568, width: 320, height: 496 };
+    preparing.setAttribute('aria-modal', 'true');
+    documentStub.body.append(notice, preparing);
+    mountLock(preparing);
+
+    expect(preparing.getAttribute('aria-modal')).toBe('false');
+    retry.focus();
+    expect(documentStub.activeElement).toBe(retry);
+    expect(keyDown('Tab').defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(dialogButton);
+
+    preparing.box = { top: 40, left: 0, right: 320, bottom: 568, width: 320, height: 528 };
     retry.focus();
     expect(documentStub.activeElement).toBe(dialogButton);
   });

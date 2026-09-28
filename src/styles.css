@@ -1138,7 +1138,7 @@ body {
 .result-overlay {
   position: fixed;
   inset: 0;
-  /* リプレイ変数はバナー下端（保存バナー込み）。足すと保存バナー分が二重になる。 */
+  /* リプレイ変数は現在のバナー下端。保存バナーの高さ変化でも測り直す。足すと二重になる。 */
   top: max(var(--replay-banner-height, 0px), var(--persistence-banner-height, 0px));
   display: flex;
   flex-direction: column;

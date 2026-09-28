@@ -1089,16 +1089,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const cohort = [...writtenIds];
           for (const blob of toSave) await saveOntoDurable(blob, cohort);
           const kept = await target.list();
+          const matchesStored = (rows: readonly ReplayBlob[], blob: ReplayBlob): boolean => {
+            const row = rows.find((item) => item.id === blob.id);
+            return row !== undefined && replayContentKey(row) === replayContentKey(blob);
+          };
           for (const blob of toSave) {
-            if (!kept.some((row) => row.id === blob.id)) {
-              throw new Error('session replay was not kept');
-            }
+            if (!matchesStored(kept, blob)) throw new Error('session replay was not kept');
             if (pendingReplays.includes(blob)) completePendingReplay(blob);
           }
           if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
           const confirm = await readMemoryReplays();
           if (pendingReplays.length > 0 || replaySavesInFlight.size > 0) continue;
-          if (confirm.some((item) => !writtenIds.has(item.id))) continue;
+          if (confirm.some((item) => !matchesStored(kept, item))) continue;
           const seenReplayRevision = replayRevision;
           const listed = await target.list();
           if (
@@ -1117,7 +1119,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             replaySavePromises.size > 0 ||
             replayImportDepth > 0 ||
             replayRevision !== seenReplayRevision ||
-            confirmAfterList.some((item) => !writtenIds.has(item.id))
+            confirmAfterList.some((item) => !matchesStored(listed, item))
           ) {
             continue;
           }
@@ -1827,7 +1829,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
             };
           }
-          if (cohort.some((id) => !listed.some((row) => row.id === id))) {
+          const intendedById = new Map<string, ReplayBlob>();
+          for (const item of ranked) intendedById.set(item.replay.id, item.replay);
+          const listedById = new Map(listed.map((row) => [row.id, row]));
+          const contentMismatch = [...intendedById].some(([id, intended]) => {
+            const row = listedById.get(id);
+            return row === undefined || replayContentKey(row) !== replayContentKey(intended);
+          });
+          if (contentMismatch) {
             await restoreSnapshot();
             return {
               ok: false,
@@ -1835,10 +1844,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
             };
           }
-          const writtenById = new Map(ranked.map((item) => [item.replay.id, item.replay]));
           const matched = pendingReplays.filter((item) => {
-            const written = writtenById.get(item.id);
-            return written !== undefined && replayContentKey(written) === replayContentKey(item);
+            const row = listedById.get(item.id);
+            return row !== undefined && replayContentKey(row) === replayContentKey(item);
           });
           for (const blob of matched) completePendingReplay(blob);
           if (matched.length > 0 && pendingReplays.length === 0 && !tracker.isSession('replay')) {

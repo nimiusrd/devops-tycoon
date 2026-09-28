@@ -280,6 +280,12 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   });
   expect(terminalBanner.bannerTop).toBeGreaterThanOrEqual(71);
   expect(terminalBanner.exitTop).toBeGreaterThanOrEqual(71);
+  await page.waitForFunction(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    const overlay = document.querySelector('.result-overlay');
+    if (!banner || !overlay) return false;
+    return overlay.getBoundingClientRect().top + 1 >= banner.getBoundingClientRect().bottom;
+  });
   await expect(page.getByTestId('result-review-hell-summary')).toBeVisible();
   await expect(page.getByTestId('result-review-hell-peak')).toContainText('21');
   await expect(

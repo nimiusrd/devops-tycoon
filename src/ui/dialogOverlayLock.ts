@@ -57,13 +57,41 @@ function paintedZIndex(element: HTMLElement): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+function rectsOverlap(a: DOMRect, b: DOMRect): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+/**
+ * 保存案内がダイアログより前面か、ダイアログの矩形に覆われていない。
+ * WebGL 案内は z-index が高いが、上端は保存バナーの下から始まる。見えている操作は残す。
+ */
+function exemptIsOperable(root: HTMLElement, front: HTMLElement): boolean {
+  if (paintedZIndex(root) >= paintedZIndex(front)) return true;
+  if (
+    typeof root.getBoundingClientRect !== 'function' ||
+    typeof front.getBoundingClientRect !== 'function'
+  ) {
+    return false;
+  }
+  const rootRect = root.getBoundingClientRect();
+  const frontRect = front.getBoundingClientRect();
+  if (
+    rootRect.width <= 0 ||
+    rootRect.height <= 0 ||
+    frontRect.width <= 0 ||
+    frontRect.height <= 0
+  ) {
+    return false;
+  }
+  return !rectsOverlap(rootRect, frontRect);
+}
+
 /** ダイアログの外でも操作を残す保存案内などのフォーカス対象。背面の案内は含めない。 */
 export function listOverlayExemptFocusables(front?: HTMLElement): HTMLElement[] {
   if (typeof document === 'undefined') return [];
-  const frontZ = front ? paintedZIndex(front) : 0;
   return Array.from(document.querySelectorAll<HTMLElement>('[data-overlay-lock-exempt]')).flatMap(
     (root) => {
-      if (front && paintedZIndex(root) < frontZ) return [];
+      if (front && !exemptIsOperable(root, front)) return [];
       return listFocusable(root);
     },
   );
@@ -78,11 +106,10 @@ const authoredAriaModal = new WeakMap<HTMLElement, string | null>();
  */
 export function hasOverlayExemptNotice(front: HTMLElement): boolean {
   if (typeof document === 'undefined') return false;
-  const frontZ = paintedZIndex(front);
   return Array.from(document.querySelectorAll<HTMLElement>('[data-overlay-lock-exempt]')).some(
     (root) => {
       if (front.contains(root)) return false;
-      if (paintedZIndex(root) < frontZ) return false;
+      if (!exemptIsOperable(root, front)) return false;
       if (listFocusable(root).length > 0) return true;
       return root.getAttribute('data-testid') === 'persistence-notice';
     },
@@ -115,7 +142,7 @@ export function isOverlayExemptInFront(target: Node, front: HTMLElement): boolea
   if (typeof Element === 'undefined' || !(target instanceof Element)) return false;
   const root = target.closest('[data-overlay-lock-exempt]');
   if (!(root instanceof HTMLElement)) return false;
-  return paintedZIndex(root) >= paintedZIndex(front);
+  return exemptIsOperable(root, front);
 }
 
 /**

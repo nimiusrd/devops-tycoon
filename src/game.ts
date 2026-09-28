@@ -419,6 +419,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let metaMigrationWritten: string | null = null;
   let runMigrationWritten: string | null = null;
   let replayMigrationOpen = false;
+  /** 空だった永続先へ、このセッションが書けたリプレイ。それ以外は別タブの記録として扱う。 */
+  const replayMigrationWrittenIds = new Set<string>();
   /** 保存処理中の完走リプレイ。再試行では重ねて送らない。 */
   const replaySavesInFlight = new Set<ReplayBlob>();
   /** 進行中の保存。移行側は完了を待ってからセッションを外す。 */
@@ -497,19 +499,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     keyframes.push(entry);
   };
 
-  const refreshReplayCache = async (): Promise<boolean> => {
+  const refreshReplayCache = async (): Promise<readonly ReplayBlob[] | null> => {
     if (!replayStorage) {
       cachedReplays = [];
       bump();
-      return true;
+      return [];
     }
     try {
-      cachedReplays = replayListWithPending(await replayStorage.list());
+      const listed = await replayStorage.list();
+      cachedReplays = replayListWithPending(listed);
       bump();
-      return true;
+      return listed;
     } catch {
       bump();
-      return false;
+      return null;
     }
   };
 
@@ -547,8 +550,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           throw new Error('replay evicted');
         }
         const listed = await refreshReplayCache();
-        if (listed) return;
-        throw new Error('replay list failed');
+        if (!listed) throw new Error('replay list failed');
+        const refreshed = listed.find((item) => item.id === blob.id);
+        if (!refreshed || replayContentKey(refreshed) !== replayContentKey(blob)) {
+          throw new Error('replay evicted');
+        }
       })
       .catch((error: unknown) => {
         pendingReplayErrors.set(blob, error);
@@ -1059,19 +1065,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       };
       const shouldCopyReplay = (id: string): boolean =>
         !replayIdsAtSession.has(id) || pinnedReplayIds.has(id);
-      const saveOntoDurable = (blob: ReplayBlob, cohort: readonly string[]): Promise<void> =>
-        target.save(structuredClone(blob), {
-          pin: true,
-          protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
-        });
       let durableList: ReplayBlob[];
       try {
         durableList = await target.list();
       } catch {
         return;
       }
+      const foreignDurableIds = (rows: readonly ReplayBlob[]): string[] =>
+        rows.filter((item) => !replayMigrationWrittenIds.has(item.id)).map((item) => item.id);
       // 既存リプレイは消さない。セッション開始後の完走は、再試行前のものも含めて足してから切り替える。
-      if (durableList.length > 0 && !replayMigrationOpen) {
+      // 空の移行が途中で失敗したあとに現れた記録も、このセッションの書き込みとは区別する。
+      if (
+        durableList.length > 0 &&
+        (!replayMigrationOpen || foreignDurableIds(durableList).length > 0)
+      ) {
         try {
           for (;;) {
             if (replaySavePromises.size > 0) {
@@ -1112,10 +1119,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               const evictedIds = new Set<string>();
               const evictedRecords = new Map<string, ReplayBlob>();
               try {
+                const foreign = replayMigrationOpen ? foreignDurableIds(snapshot) : [];
+                const protectedIds = [
+                  ...new Set([...pinnedReplayIds, ...(foreign.length > 0 ? foreign : cohort)]),
+                ];
                 for (const blob of newcomers) {
                   await target.save(structuredClone(blob), {
                     pin: true,
-                    protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
+                    protectIds: protectedIds,
                     evictedIds,
                     evictedRecords,
                   });
@@ -1196,7 +1207,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const toSave = [...memoryReplays, ...extras];
           const writtenIds = new Set(toSave.map((blob) => blob.id));
           const cohort = [...writtenIds];
-          for (const blob of toSave) await saveOntoDurable(blob, cohort);
+          const snapshot = await target.list();
+          if (foreignDurableIds(snapshot).length > 0) return;
+          for (const blob of toSave) {
+            await target.save(structuredClone(blob), {
+              pin: true,
+              protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
+              evictedIds: undefined,
+            });
+            replayMigrationWrittenIds.add(blob.id);
+          }
           const kept = await target.list();
           const matchesStored = (rows: readonly ReplayBlob[], blob: ReplayBlob): boolean => {
             const row = rows.find((item) => item.id === blob.id);
@@ -1919,10 +1939,26 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             await runStorage.save(intended);
           }
           if (latestImportedSave !== intended) {
-            if (runStorage && resumableSave && resumableSave !== intended) {
-              await runStorage.save(resumableSave);
-            } else if (runStorage && !resumableSave) {
-              await runStorage.clear();
+            try {
+              if (runStorage && resumableSave && resumableSave !== intended) {
+                if (runStorage.saveIfMatches) {
+                  await runStorage.saveIfMatches(intended, resumableSave);
+                } else {
+                  const current = await runStorage.load();
+                  if (durableRunKey(current) === durableRunKey(intended)) {
+                    await runStorage.save(resumableSave);
+                  }
+                }
+              } else if (runStorage && !resumableSave) {
+                if (runStorage.saveIfMatches) {
+                  await runStorage.saveIfMatches(intended, null);
+                } else {
+                  const current = await runStorage.load();
+                  if (durableRunKey(current) === durableRunKey(intended)) await runStorage.clear();
+                }
+              }
+            } catch {
+              /* 比較に負けたら、後から始まった取り込みに任せる */
             }
             return;
           }
@@ -1951,6 +1987,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       try {
         await write;
       } catch {
+        if (priorDurable !== undefined) await restoreImportedRun();
         return {
           ok: false,
           reason: 'corrupt',
@@ -2029,12 +2066,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }));
         const invalid = parsed.find((item) => !item.result.ok);
         if (invalid && !invalid.result.ok) return invalid.result;
-        // ファイル自体は全件を残す。端末へ戻すのは上限に収まる新しい順だけにする。
-        const ranked = parsed
+        // ファイル自体は全件を残す。同じ ID は新しい内容へ畳み、上限に収まる分だけ端末へ戻す。
+        const rankedNewestFirst = parsed
           .flatMap((item) =>
             item.result.ok ? [{ source: item.source, replay: item.result.replay }] : [],
           )
-          .sort((a, b) => b.replay.finishedAt - a.replay.finishedAt)
+          .sort((a, b) => b.replay.finishedAt - a.replay.finishedAt);
+        const seenReplayIds = new Set<string>();
+        const ranked = rankedNewestFirst
+          .filter((item) => {
+            if (seenReplayIds.has(item.replay.id)) return false;
+            seenReplayIds.add(item.replay.id);
+            return true;
+          })
           .slice(0, REPLAY_MAX_COUNT);
         const cohort = ranked.map((item) => item.replay.id);
         const snapshot = replayStorage ? await replayStorage.list() : [];

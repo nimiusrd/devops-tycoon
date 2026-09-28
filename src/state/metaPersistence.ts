@@ -34,6 +34,8 @@ export interface MetaPersistenceBootstrap {
   sessionOnly: boolean;
   /** 再試行で読み直す先。sessionOnly のときも失敗した保存先を残す。 */
   durableStorage: MetaStorage;
+  /** 端末に記録があり、それを読んで起動した。空の初期値ではない。 */
+  loadedFromDevice: boolean;
 }
 
 /** IndexedDB に単一の最新メタ状態を保存する。 */
@@ -170,6 +172,7 @@ export async function initializeMetaPersistence(
       storage,
       sessionOnly: false,
       durableStorage: storage,
+      loadedFromDevice: persisted !== null,
     };
   } catch {
     return {
@@ -177,6 +180,7 @@ export async function initializeMetaPersistence(
       storage: new MemoryMetaStorage(),
       sessionOnly: true,
       durableStorage: storage,
+      loadedFromDevice: false,
     };
   }
 }

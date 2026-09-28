@@ -68,6 +68,7 @@ import type { ReplayStorage } from './state/replayPersistence';
 import {
   CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
+  parseRunSave,
   toRunSave,
   type RunSave,
   type RunSaveCompatibilityIssue,
@@ -102,6 +103,8 @@ export interface PersistenceAttachOptions<T> {
   sessionOnly?: boolean;
   /** 再試行で読み直す、失敗した保存先。 */
   durableStorage?: T;
+  /** 起動時に端末の記録を読んだ。空の初期値では時刻を残さない。 */
+  loadedFromDevice?: boolean;
 }
 
 export interface GameHandle {
@@ -370,8 +373,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let durableReplay: ReplayStorage | null = null;
   /** 端末へ書き終わるまで保持する完走リプレイ。次ランの keyframes とは別物。 */
   const pendingReplays: ReplayBlob[] = [];
-  /** 再試行で保存済みだが、同じ回の残件がまだある完走。残件が尽きたら外す。 */
-  const replayRetryKeptIds = new Set<string>();
+  /**
+   * 再試行で保存済みだが、残件がある完走。
+   * 次の再試行で上限から消えたら、本体を未保存へ戻す。
+   */
+  const replayRetryKept = new Map<string, ReplayBlob>();
   /** 世代が遅れて記録できなかった完走の失敗。後続の成功でも種別を残す。 */
   const pendingReplayErrors = new Map<ReplayBlob, unknown>();
   const tracker = new PersistenceTracker();
@@ -518,7 +524,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     // 古い finishedAt でも、この完走自体は上限削除から残す。明示取り込みも同時に守る。
     // 再試行の一括では、まだ保存していない他の未保存も同じ上限から守る。
     const protectIds = [
-      ...new Set([...pinnedReplayIds, ...replayRetryKeptIds, ...(extraProtectIds ?? [])]),
+      ...new Set([...pinnedReplayIds, ...replayRetryKept.keys(), ...(extraProtectIds ?? [])]),
     ];
     return storage
       .save(blob, { pin: true, protectIds })
@@ -797,6 +803,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   /** このセッションが書いたスナップショットと、後から現れた永続記録を区別する。 */
   const persistedRecordKey = (value: unknown): string => JSON.stringify(value);
+  /** 読み直しで並びが変わっても、同じ途中セーブを同じキーにする。 */
+  const durableRunKey = (value: RunSave | null): string =>
+    persistedRecordKey(value ? (parseRunSave(value) ?? value) : null);
   /** 取り込み後の正規化形で、同じ ID の別内容を未保存の完走と区別する。 */
   const replayContentKey = (blob: ReplayBlob): string =>
     persistedRecordKey(normalizeReplay(blob) ?? blob);
@@ -1582,6 +1591,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         durableMeta = options.durableStorage ?? null;
         metaRevisionAtSession = metaRevision;
         tracker.markSession('meta');
+      } else if (options?.loadedFromDevice) {
+        tracker.noteDurableAt('meta', Date.now());
       }
       recordIfFinished();
       bump();
@@ -1633,8 +1644,23 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         if (!tracker.isSession('replay') && tracker.isFailed('replay') && replayStorage) {
           const blobs = pendingReplays.filter((blob) => !replaySavesInFlight.has(blob));
           if (blobs.length > 0) {
-            const cohort = [...new Set([...blobs.map((blob) => blob.id), ...replayRetryKeptIds])];
+            const cohort = [
+              ...new Set([...blobs.map((blob) => blob.id), ...replayRetryKept.keys()]),
+            ];
             const saved: ReplayBlob[] = [];
+            const replayStillStored = (blob: ReplayBlob, listedById: Map<string, ReplayBlob>) => {
+              const row = listedById.get(blob.id);
+              return row !== undefined && replayContentKey(row) === replayContentKey(blob);
+            };
+            const restoreDroppedReplay = (blob: ReplayBlob) => {
+              replayRetryKept.delete(blob.id);
+              if (!pendingReplays.some((item) => item === blob || item.id === blob.id)) {
+                pendingReplays.push(blob);
+              }
+              if (!pendingReplayErrors.has(blob)) {
+                pendingReplayErrors.set(blob, new Error('replay evicted'));
+              }
+            };
             tasks.push(
               (async () => {
                 const storage = replayStorage;
@@ -1642,7 +1668,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                   for (const blob of blobs) {
                     await retryWrite('replay', beginReplaySave(blob, cohort), () => {
                       saved.push(blob);
-                      replayRetryKeptIds.add(blob.id);
+                      replayRetryKept.set(blob.id, blob);
                       // 上限で後から消える分があるため、一覧を確かめるまで成功にしない。
                       return true;
                     });
@@ -1653,18 +1679,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                       const listed = await storage.list();
                       const listedById = new Map(listed.map((row) => [row.id, row]));
                       for (const blob of saved) {
-                        const row = listedById.get(blob.id);
-                        if (row && replayContentKey(row) === replayContentKey(blob)) {
-                          completePendingReplay(blob);
-                        } else {
-                          replayRetryKeptIds.delete(blob.id);
-                          if (!pendingReplayErrors.has(blob)) {
-                            pendingReplayErrors.set(blob, new Error('replay evicted'));
-                          }
-                        }
+                        if (replayStillStored(blob, listedById)) completePendingReplay(blob);
+                        else restoreDroppedReplay(blob);
+                      }
+                      for (const blob of [...replayRetryKept.values()]) {
+                        if (saved.includes(blob) || replayStillStored(blob, listedById)) continue;
+                        restoreDroppedReplay(blob);
                       }
                       if (pendingReplays.length === 0) {
-                        replayRetryKeptIds.clear();
+                        replayRetryKept.clear();
                         tracker.settleCurrent('replay', Date.now());
                       }
                     } catch {
@@ -1761,9 +1784,58 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       latestImportedSave = intended;
       runImportDepth += 1;
       runRevision += 1;
+      const backup = readPersistenceBackup(raw);
+      const backupHasReplays = Boolean(backup && backup.replays.length > 0);
+      let priorDurable: RunSave | null | undefined;
+      let priorMemory: RunSave | null = null;
+      let priorIssue: RunSaveCompatibilityIssue | null = null;
+      let adopted = false;
+      const noteRunDurable = () => {
+        if (!runStorage || tracker.isSession('run')) return;
+        if (!tracker.settleCurrent('run', Date.now())) tracker.noteDurableAt('run', Date.now());
+      };
+      const restoreImportedRun = async () => {
+        let durableSettled = priorDurable === undefined || !runStorage;
+        if (runStorage && priorDurable !== undefined) {
+          try {
+            const current = await runStorage.load();
+            if (durableRunKey(current) !== durableRunKey(intended)) {
+              durableSettled = true;
+            } else if (priorDurable === null) {
+              await runStorage.clear();
+              durableSettled = true;
+            } else {
+              await runStorage.save(priorDurable);
+              durableSettled = true;
+            }
+          } catch {
+            durableSettled = false;
+          }
+        }
+        if (!durableSettled) return;
+        if (resumableSave && durableRunKey(resumableSave) === durableRunKey(intended)) {
+          resumableSave = priorMemory ? structuredClone(priorMemory) : null;
+          runSaveIssue = priorIssue ? structuredClone(priorIssue) : null;
+          bump();
+        } else if (!resumableSave && !priorMemory) {
+          runSaveIssue = priorIssue ? structuredClone(priorIssue) : null;
+        }
+      };
       const write = runSaveImportWrites.then(async () => {
         try {
           if (latestImportedSave !== intended) return;
+          if (runStorage) {
+            try {
+              const before = await runStorage.load();
+              priorDurable = before ? structuredClone(before) : null;
+            } catch {
+              priorDurable = undefined;
+            }
+          } else {
+            priorDurable = null;
+          }
+          priorMemory = resumableSave ? structuredClone(resumableSave) : null;
+          priorIssue = runSaveIssue ? structuredClone(runSaveIssue) : null;
           if (runStorage) await runStorage.save(intended);
           if (latestImportedSave !== intended) {
             if (runStorage && resumableSave && resumableSave !== intended) {
@@ -1773,16 +1845,22 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
             return;
           }
+          if (runStorage) {
+            let stored: RunSave | null;
+            try {
+              stored = await runStorage.load();
+            } catch {
+              throw new Error('durable run unreadable');
+            }
+            if (durableRunKey(stored) !== durableRunKey(intended)) {
+              throw new Error('durable run diverged');
+            }
+          }
           resumableSave = structuredClone(intended);
           runSaveIssue = null;
           runRevision += 1;
-          if (
-            runStorage &&
-            !tracker.isSession('run') &&
-            !tracker.settleCurrent('run', Date.now())
-          ) {
-            tracker.noteDurableAt('run', Date.now());
-          }
+          adopted = true;
+          if (!backupHasReplays) noteRunDurable();
           bump();
         } finally {
           runImportDepth -= 1;
@@ -1798,14 +1876,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
         };
       }
-      const backup = readPersistenceBackup(raw);
-      if (backup && backup.replays.length > 0) {
+      if (!adopted) return loaded;
+      if (backupHasReplays && backup) {
         const replayResult = await this.importReplayText(
           serializePersistenceBackup({ runSave: null, replays: backup.replays }),
         );
         if (!replayResult.ok) {
+          await restoreImportedRun();
           return { ok: false, reason: 'corrupt', message: replayResult.message };
         }
+        noteRunDurable();
         return { ...loaded, restored: 'both' as const };
       }
       return loaded;
@@ -1948,7 +2028,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             return row !== undefined && replayContentKey(row) === replayContentKey(item);
           });
           for (const blob of matched) completePendingReplay(blob);
-          if (pendingReplays.length === 0) replayRetryKeptIds.clear();
+          if (pendingReplays.length === 0) replayRetryKept.clear();
           if (!tracker.isSession('replay')) {
             tracker.noteDurableAt('replay', Date.now());
             if (matched.length > 0 && pendingReplays.length === 0) {
@@ -1990,7 +2070,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {
         try {
-          const protectIds = [...new Set([...(batch?.protectIds ?? []), ...replayRetryKeptIds])];
+          const protectIds = [
+            ...new Set([...(batch?.protectIds ?? []), ...replayRetryKept.keys()]),
+          ];
           await storage.save(loaded.replay, {
             pin: true,
             protectIds: protectIds.length > 0 ? protectIds : undefined,
@@ -2023,7 +2105,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 replayContentKey(item) === replayContentKey(loaded.replay),
             );
             for (const blob of matched) completePendingReplay(blob);
-            if (pendingReplays.length === 0) replayRetryKeptIds.clear();
+            if (pendingReplays.length === 0) replayRetryKept.clear();
             if (!tracker.isSession('replay')) {
               tracker.noteDurableAt('replay', Date.now());
               if (matched.length > 0 && pendingReplays.length === 0) {

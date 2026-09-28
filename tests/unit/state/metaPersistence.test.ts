@@ -113,6 +113,7 @@ describe('initializeMetaPersistence', () => {
       storage,
       sessionOnly: false,
       durableStorage: storage,
+      loadedFromDevice: true,
     });
     expect(storage.saveCalls).toBe(0);
   });
@@ -124,6 +125,7 @@ describe('initializeMetaPersistence', () => {
 
     expect(initialized.meta).toEqual(defaultMeta());
     expect(initialized.storage).toBe(storage);
+    expect(initialized.loadedFromDevice).toBe(false);
     expect(storage.saveCalls).toBe(0);
   });
 
@@ -137,6 +139,7 @@ describe('initializeMetaPersistence', () => {
     expect(initialized.meta).toEqual(defaultMeta());
     expect(initialized.storage).not.toBe(storage);
     expect(initialized.storage).toBeInstanceOf(MemoryMetaStorage);
+    expect(initialized.loadedFromDevice).toBe(false);
 
     await initialized.storage.save({ ...defaultMeta(), points: 3 });
     expect(storage.saveCalls).toBe(0);

@@ -22,6 +22,7 @@ const [metaBoot, runBoot, replayBoot] = await Promise.all([
 game.attachMetaPersistence(metaBoot.meta, metaBoot.storage, {
   sessionOnly: metaBoot.sessionOnly,
   durableStorage: metaBoot.durableStorage,
+  loadedFromDevice: metaBoot.loadedFromDevice,
 });
 game.attachRunPersistence(runBoot.storage, runBoot.save, runBoot.issue, {
   sessionOnly: runBoot.sessionOnly,

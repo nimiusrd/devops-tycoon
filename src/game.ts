@@ -46,7 +46,11 @@ import {
   withSoundMuted,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
-import { PersistenceTracker, type PersistenceNotice } from './state/persistenceStatus';
+import {
+  PersistenceTracker,
+  persistenceFailureKind,
+  type PersistenceNotice,
+} from './state/persistenceStatus';
 import { labelForReplayKeyframe } from './render/reviewHellReplayView';
 import {
   buildReplayId,
@@ -368,6 +372,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const pendingReplays: ReplayBlob[] = [];
   /** 再試行で保存済みだが、同じ回の残件がまだある完走。残件が尽きたら外す。 */
   const replayRetryKeptIds = new Set<string>();
+  /** 世代が遅れて記録できなかった完走の失敗。後続の成功でも種別を残す。 */
+  const pendingReplayErrors = new Map<ReplayBlob, unknown>();
   const tracker = new PersistenceTracker();
   /** 復旧の await 中に進んだメタ／ランを、古いスナップショットで成功扱いにしない。 */
   let metaRevision = 0;
@@ -518,7 +524,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .save(blob, { pin: true, protectIds })
       .then(async () => {
         const stored = await storage.list();
-        if (!stored.some((item) => item.id === blob.id)) {
+        const row = stored.find((item) => item.id === blob.id);
+        if (!row || replayContentKey(row) !== replayContentKey(blob)) {
           throw new Error('replay evicted');
         }
         const listed = await refreshReplayCache();
@@ -526,13 +533,23 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         throw new Error('replay list failed');
       })
       .catch((error: unknown) => {
+        pendingReplayErrors.set(blob, error);
         publishUnsavedReplay(blob);
         throw error;
       });
   };
 
+  /** 未保存に残った失敗のうち、容量不足を優先して案内する。 */
+  const pendingReplayFailure = (): unknown => {
+    for (const error of pendingReplayErrors.values()) {
+      if (persistenceFailureKind(error) === 'quota') return error;
+    }
+    return pendingReplayErrors.values().next().value ?? new Error('unsaved replay');
+  };
+
   /** 保存完了した blob を外す。未保存が残っていれば true。 */
   const completePendingReplay = (blob: ReplayBlob): boolean => {
+    pendingReplayErrors.delete(blob);
     const index = pendingReplays.indexOf(blob);
     if (index >= 0) pendingReplays.splice(index, 1);
     return pendingReplays.length > 0;
@@ -703,7 +720,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .then(() => {
         const stillPending = onSuccess?.() === true;
         if (stillPending) {
-          if (tracker.fail(channel, generation, new Error('unsaved replay'), true)) bump();
+          if (tracker.fail(channel, generation, pendingReplayFailure(), true)) bump();
           return;
         }
         if (tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null)) {
@@ -721,7 +738,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .catch((error: unknown) => {
         const preserveQuota =
           channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
-        if (tracker.fail(channel, generation, error, preserveQuota)) bump();
+        const applied = tracker.fail(channel, generation, error, preserveQuota);
+        if (
+          !applied &&
+          channel === 'replay' &&
+          pendingReplays.length > 0 &&
+          persistenceFailureKind(error) === 'quota'
+        ) {
+          tracker.noteQuota(channel);
+          bump();
+          return;
+        }
+        if (applied) bump();
       });
   };
 
@@ -743,7 +771,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .then(() => {
         const stillPending = onSuccess?.() === true;
         if (stillPending) {
-          tracker.fail(channel, generation, new Error('unsaved replay'), true);
+          tracker.fail(channel, generation, pendingReplayFailure(), true);
           return;
         }
         tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null);
@@ -751,7 +779,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       .catch((error: unknown) => {
         const preserveQuota =
           channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
-        tracker.fail(channel, generation, error, preserveQuota);
+        const applied = tracker.fail(channel, generation, error, preserveQuota);
+        if (
+          !applied &&
+          channel === 'replay' &&
+          pendingReplays.length > 0 &&
+          persistenceFailureKind(error) === 'quota'
+        ) {
+          tracker.noteQuota(channel);
+        }
         throw error;
       })
       .finally(() => {
@@ -1757,7 +1793,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     async importReplayText(
       raw: string,
-      batch?: { protectIds: readonly string[]; retainPin: boolean },
+      batch?: { protectIds: readonly string[]; retainPin: boolean; evictedIds?: Set<string> },
     ) {
       const backup = readPersistenceBackup(raw);
       if (backup && !batch) {
@@ -1783,15 +1819,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           .slice(0, REPLAY_MAX_COUNT);
         const cohort = ranked.map((item) => item.replay.id);
         const snapshot = replayStorage ? await replayStorage.list() : [];
+        const writtenById = new Map<string, ReplayBlob>();
+        const evictedIds = new Set<string>();
         const restoreSnapshot = async (): Promise<void> => {
           const storage = replayStorage;
           if (!storage) return;
           try {
             if (storage.revertBatch) {
-              await storage.revertBatch(
-                snapshot,
-                ranked.map((item) => item.replay),
-              );
+              await storage.revertBatch(snapshot, [...writtenById.values()], evictedIds);
             } else {
               await storage.clear();
               for (const blob of snapshot) await storage.save(structuredClone(blob));
@@ -1812,11 +1847,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             last = await this.importReplayText(item.source, {
               protectIds: cohort,
               retainPin: true,
+              evictedIds,
             });
             if (!last.ok) {
               await restoreSnapshot();
               return last;
             }
+            writtenById.set(item.replay.id, item.replay);
           }
           let listed: ReplayBlob[] = [];
           try {
@@ -1849,8 +1886,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             return row !== undefined && replayContentKey(row) === replayContentKey(item);
           });
           for (const blob of matched) completePendingReplay(blob);
-          if (matched.length > 0 && pendingReplays.length === 0 && !tracker.isSession('replay')) {
-            tracker.settleCurrent('replay', Date.now());
+          if (!tracker.isSession('replay')) {
+            tracker.noteDurableAt('replay', Date.now());
+            if (matched.length > 0 && pendingReplays.length === 0) {
+              tracker.settleCurrent('replay', Date.now());
+            }
           }
           bump();
           return last;
@@ -1873,9 +1913,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {
         try {
+          const protectIds = [...new Set([...(batch?.protectIds ?? []), ...replayRetryKeptIds])];
           await storage.save(loaded.replay, {
             pin: true,
-            protectIds: batch?.protectIds ? [...batch.protectIds] : undefined,
+            protectIds: protectIds.length > 0 ? protectIds : undefined,
+            evictedIds: batch?.evictedIds,
           });
           // 保存できた取り込みは、以後の通常完走で上限枠を占有しない。
           // まとめファイルの途中では、バッチが終わるまで pin を残す。
@@ -1907,8 +1949,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 replayContentKey(item) === replayContentKey(loaded.replay),
             );
             for (const blob of matched) completePendingReplay(blob);
-            if (matched.length > 0 && pendingReplays.length === 0 && !tracker.isSession('replay')) {
-              tracker.settleCurrent('replay', Date.now());
+            if (!tracker.isSession('replay')) {
+              tracker.noteDurableAt('replay', Date.now());
+              if (matched.length > 0 && pendingReplays.length === 0) {
+                tracker.settleCurrent('replay', Date.now());
+              }
             }
           }
           replayRevision += 1;

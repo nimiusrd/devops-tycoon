@@ -15,6 +15,8 @@ export interface ReplaySaveOptions {
   pin?: boolean;
   /** この保存でも上限削除から残す、ほかの明示取り込み。 */
   protectIds?: readonly string[];
+  /** この保存が上限で消した id。巻き戻しは、ここにある欠落だけを戻す。 */
+  evictedIds?: Set<string>;
 }
 
 function replayPinIds(savedId: string, options?: ReplaySaveOptions): string[] | undefined {
@@ -47,9 +49,14 @@ export interface ReplayStorage {
    * 取り込みバッチの失敗を戻す。
    * このバッチが書いた内容と今の記録が一致するときだけ、追加分を消し、開始時の内容へ戻す。
    * 別内容へ変わった記録と、開始時に無かった別の記録は消さない。
+   * 欠落は、このバッチが上限で消した id だけを戻す。
    * 比較と書き戻しは同一トランザクション。
    */
-  revertBatch?(snapshot: readonly ReplayBlob[], written: readonly ReplayBlob[]): Promise<void>;
+  revertBatch?(
+    snapshot: readonly ReplayBlob[],
+    written: readonly ReplayBlob[],
+    evictedIds?: ReadonlySet<string>,
+  ): Promise<void>;
 }
 
 /** IndexedDB にリプレイを複数件保存する（上限超過は古いものから削除）。 */
@@ -98,6 +105,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         for (const item of normalized) {
           if (!keepIds.has(item.id)) {
             await db.delete(REPLAYS_STORE_NAME, item.id);
+            options?.evictedIds?.add(item.id);
           }
         }
       } finally {
@@ -121,7 +129,11 @@ export class IndexedDbReplayStorage implements ReplayStorage {
     return write;
   }
 
-  revertBatch(snapshot: readonly ReplayBlob[], written: readonly ReplayBlob[]): Promise<void> {
+  revertBatch(
+    snapshot: readonly ReplayBlob[],
+    written: readonly ReplayBlob[],
+    evictedIds?: ReadonlySet<string>,
+  ): Promise<void> {
     const writtenById = new Map(written.map((blob) => [blob.id, structuredClone(blob)]));
     const snapshotById = new Map(snapshot.map((blob) => [blob.id, structuredClone(blob)]));
     const write = this.writes.then(async () => {
@@ -152,6 +164,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         for (const [id, blob] of snapshotById) {
           const now = current.get(id);
           if (now === undefined) {
+            if (evictedIds && !evictedIds.has(id)) continue;
             await tx.store.put(blob, id);
             continue;
           }
@@ -189,7 +202,10 @@ export class MemoryReplayStorage implements ReplayStorage {
     const keep = keepSavedReplays([...this.items.values()], blob.id, options);
     const keepIds = new Set(keep.map((item) => item.id));
     for (const id of [...this.items.keys()]) {
-      if (!keepIds.has(id)) this.items.delete(id);
+      if (!keepIds.has(id)) {
+        this.items.delete(id);
+        options?.evictedIds?.add(id);
+      }
     }
   }
 
@@ -200,6 +216,7 @@ export class MemoryReplayStorage implements ReplayStorage {
   async revertBatch(
     snapshot: readonly ReplayBlob[],
     written: readonly ReplayBlob[],
+    evictedIds?: ReadonlySet<string>,
   ): Promise<void> {
     const writtenById = new Map(written.map((blob) => [blob.id, blob]));
     const snapshotById = new Map(snapshot.map((blob) => [blob.id, blob]));
@@ -218,6 +235,7 @@ export class MemoryReplayStorage implements ReplayStorage {
     for (const [id, blob] of snapshotById) {
       const current = this.items.get(id);
       if (!current) {
+        if (evictedIds && !evictedIds.has(id)) continue;
         this.items.set(id, structuredClone(blob));
         continue;
       }

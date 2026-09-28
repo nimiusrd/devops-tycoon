@@ -127,6 +127,18 @@ export class PersistenceTracker {
     return this.channels[channel].failure === 'quota';
   }
 
+  /**
+   * 世代が遅れて失敗を記録できなかった容量不足を、進行中の保存へ残す。
+   * 保存中でも種別だけ先に置き、後続の失敗が容量不足を一過性へ落とさない。
+   */
+  noteQuota(channel: PersistenceChannel): void {
+    const current = this.channels[channel];
+    if (current.write === 'idle' || current.write === 'saved') return;
+    current.failure = 'quota';
+    this.announcedFailure = true;
+    this.syncLiveFromState();
+  }
+
   /** 復旧チップを閉じる。読み上げ文は残す。閉じたら true。 */
   dismissTransientBanner(): boolean {
     if (!this.showTransientBanner) return false;

@@ -420,6 +420,30 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     expect((await storage.get('kept'))?.outcome.score).toBe(kept.outcome.score);
   });
 
+  it('revertBatch は、このバッチが消していない欠落を戻さない', async () => {
+    const name = nextReplayDbName('replay-revert-foreign-delete');
+    const storage = new IndexedDbReplayStorage(name);
+    const kept = makeBlob({ id: 'kept', seed: 'kept', finishedAt: 1000 });
+    const removed = makeBlob({ id: 'removed', seed: 'removed', finishedAt: 2000 });
+    await storage.save(kept);
+    await storage.save(removed);
+    const snapshot = await storage.list();
+    const db = await openGameDb(name);
+    try {
+      await db.delete(REPLAYS_STORE_NAME, 'removed');
+    } finally {
+      db.close();
+    }
+    const added = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    await storage.save(added);
+
+    await storage.revertBatch(snapshot, [added], new Set());
+
+    expect(await storage.get('removed')).toBeNull();
+    expect(await storage.get('added')).toBeNull();
+    expect(await storage.get('kept')).not.toBeNull();
+  });
+
   it('IndexedDB の旧v1リプレイを list/get で保持する', async () => {
     const name = nextReplayDbName('replay-legacy');
     const storage = new IndexedDbReplayStorage(name);

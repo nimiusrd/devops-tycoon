@@ -647,6 +647,75 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     ).toEqual(['replay-ok', 'replay-quota']);
   });
 
+  it('遅れて届いた容量不足は、後続の保存成功後も案内に残す', async () => {
+    const storage = new MemoryReplayStorage();
+    const original = storage.save.bind(storage);
+    let rejectQuota: (error: unknown) => void = () => {};
+    const quota = new Promise<void>((_resolve, reject) => {
+      rejectQuota = reject;
+    });
+    let releaseOk: () => void = () => {};
+    const ok = new Promise<void>((resolve) => {
+      releaseOk = resolve;
+    });
+    vi.spyOn(storage, 'save').mockImplementation((blob, options) => {
+      if (blob.seed === 'late-quota') return quota.then(() => original(blob, options));
+      if (blob.seed === 'late-ok') return ok.then(() => original(blob, options));
+      return original(blob, options);
+    });
+    const game = createGame({ seed: 'late-quota' });
+    await game.attachReplay(storage);
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = (seed: string) => {
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+    };
+    finish('late-quota');
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    finish('late-ok');
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    rejectQuota(new DOMException('full', 'QuotaExceededError'));
+    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    releaseOk();
+    for (let i = 0; i < 40; i += 1) await Promise.resolve();
+
+    const status = game.getPersistenceStatus();
+    expect(status.state).toBe('failed');
+    expect(status.detail).toContain('容量が不足');
+    expect(status.liveMessage).toContain('容量');
+    expect(game.exportPendingReplayText()).toContain('late-quota');
+  });
+
+  it('保存後に同じ ID が別内容へ変わったら、未保存の完走を外さない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'save-foreign-content' });
+    await game.attachReplay(storage);
+    const original = storage.save.bind(storage);
+    vi.spyOn(storage, 'save').mockImplementation(async (blob, options) => {
+      await original(blob, options);
+      if (blob.seed !== 'pending-replay') return;
+      const foreign = structuredClone(blob);
+      foreign.outcome = { ...foreign.outcome, score: blob.outcome.score + 1 };
+      await original(foreign);
+    });
+    vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const internals = game.engine as unknown as { phase: string; status: string };
+    game.startRun('easy', [], 'pending-replay');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+
+    const pending = JSON.parse(game.exportPendingReplayText()!) as ReplayBlob;
+    expect(game.getPersistenceStatus().state).toBe('failed');
+    expect((await storage.get(pending.id))?.outcome.score).toBe(pending.outcome.score + 1);
+    expect(game.listReplays().find((replay) => replay.id === pending.id)?.outcome.score).toBe(
+      pending.outcome.score,
+    );
+  });
+
   it('再試行の前に取り込んだセーブは、既存セーブで置き換えない', async () => {
     const durable = new MemoryRunStorage();
     await durable.save(makeRunSave('stored-run'));
@@ -1358,6 +1427,73 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).not.toBe('failed');
   });
 
+  it('一部だけ保存できた再試行の完走は、その後の取り込みでも上限から守る', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 50_000 + i;
+      await storage.save(stored);
+    }
+    const game = createGame({ seed: 'import-keeps-retry' });
+    await game.attachReplay(storage);
+    const original = storage.save.bind(storage);
+    const save = vi.spyOn(storage, 'save');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = (seed: string, finishedAt: number) => {
+      save.mockRejectedValueOnce(new Error('transient'));
+      vi.spyOn(Date, 'now').mockReturnValue(finishedAt);
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+    };
+    finish('pending-a', 1);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    finish('pending-b', 2);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    save.mockImplementation(async (blob, options) => {
+      if (blob.seed === 'pending-b') throw new Error('quota');
+      await original(blob, options);
+    });
+    await game.retryPersistence();
+    expect((await storage.list()).map((replay) => replay.seed)).toContain('pending-a');
+    save.mockImplementation(original);
+    const incoming = makeReplay('imported-new');
+    incoming.finishedAt = 90_000;
+
+    expect(await game.importReplayText(serializeReplay(incoming))).toMatchObject({ ok: true });
+
+    const seeds = (await storage.list()).map((replay) => replay.seed);
+    expect(seeds).toContain('pending-a');
+    expect(seeds).toContain('imported-new');
+  });
+
+  it('リプレイの取り込みに成功したら、その後の失敗は取り込み時刻を示す', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'import-replay-clock' });
+    await game.attachReplay(storage);
+    const writtenAt = 1_700_000_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(writtenAt);
+    expect(
+      await game.importReplayText(serializeReplay(makeReplay('imported-clock'))),
+    ).toMatchObject({
+      ok: true,
+    });
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    vi.spyOn(Date, 'now').mockReturnValue(writtenAt + 60_000);
+    const internals = game.engine as unknown as { phase: string; status: string };
+    game.startRun('easy', [], 'after-import');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+
+    const status = game.getPersistenceStatus();
+    expect(status.state).toBe('failed');
+    expect(status.detail).toContain(formatPersistenceClock(writtenAt));
+    expect(status.detail).not.toContain('まだ端末へ保存できていません');
+  });
+
   it('まとめファイルの途中で保存に失敗したら、取り込み前の一覧へ戻す', async () => {
     const storage = new MemoryReplayStorage();
     for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
@@ -1516,6 +1652,73 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getPersistenceStatus().state).toBe('failed');
     expect(JSON.parse(game.exportPendingReplayText()!).outcome.score).toBe(pending.outcome.score);
     expect((await storage.list()).map((replay) => replay.id)).not.toContain(pending.id);
+  });
+
+  it('同じ ID の後続保存が失敗したら、先に保存できた内容だけを戻す', async () => {
+    const storage = new MemoryReplayStorage();
+    const kept = makeReplay('kept');
+    kept.finishedAt = 10;
+    await storage.save(kept);
+    const game = createGame({ seed: 'backup-partial-same-id' });
+    await game.attachReplay(storage);
+    const first = makeReplay('same-id');
+    first.finishedAt = 5;
+    first.outcome = { ...first.outcome, score: 10 };
+    const second = makeReplay('same-id');
+    second.finishedAt = 1;
+    second.outcome = { ...second.outcome, score: 99 };
+    const raw = serializePersistenceBackup({
+      runSave: null,
+      replays: [serializeReplay(first), serializeReplay(second)],
+    });
+    const original = storage.save.bind(storage);
+    vi.spyOn(storage, 'save').mockImplementation(async (blob, options) => {
+      if (blob.outcome.score === 99) throw new Error('quota');
+      await original(blob, options);
+    });
+
+    const imported = await game.importReplayText(raw);
+    expect(imported.ok).toBe(false);
+    expect(await storage.get('same-id')).toBeNull();
+    expect((await storage.list()).map((replay) => replay.id)).toEqual(['kept']);
+  });
+
+  it('巻き戻しは、別タブが消した記録を戻さない', async () => {
+    const storage = new MemoryReplayStorage();
+    const kept = makeReplay('kept');
+    kept.finishedAt = 10;
+    const removed = makeReplay('removed');
+    removed.finishedAt = 9;
+    await storage.save(kept);
+    await storage.save(removed);
+    const game = createGame({ seed: 'backup-foreign-delete' });
+    await game.attachReplay(storage);
+    const olderA = makeReplay('older-a');
+    olderA.finishedAt = 1;
+    const olderB = makeReplay('older-b');
+    olderB.finishedAt = 2;
+    const raw = serializePersistenceBackup({
+      runSave: null,
+      replays: [serializeReplay(olderA), serializeReplay(olderB)],
+    });
+    const original = storage.save.bind(storage);
+    let calls = 0;
+    vi.spyOn(storage, 'save').mockImplementation(async (blob, options) => {
+      calls += 1;
+      if (calls === 1) {
+        await original(blob, options);
+        (storage as unknown as { items: Map<string, ReplayBlob> }).items.delete('removed');
+        return;
+      }
+      throw new Error('quota');
+    });
+
+    const imported = await game.importReplayText(raw);
+    expect(imported.ok).toBe(false);
+    expect(await storage.get('removed')).toBeNull();
+    expect(await storage.get('kept')).not.toBeNull();
+    expect(await storage.get('older-a')).toBeNull();
+    expect(await storage.get('older-b')).toBeNull();
   });
 
   it('まとめファイルの最終一覧に失敗したら、取り込み前の一覧へ戻す', async () => {

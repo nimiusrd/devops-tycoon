@@ -45,10 +45,11 @@ export interface ReplayStorage {
   clear(): Promise<void>;
   /**
    * 取り込みバッチの失敗を戻す。
-   * `writtenIds` のうち開始時に無かった記録だけを消し、開始時の記録は内容が変わったときだけ戻す。
-   * 開始時に無かった別の記録は消さない。比較と書き戻しは同一トランザクション。
+   * このバッチが書いた内容と今の記録が一致するときだけ、追加分を消し、開始時の内容へ戻す。
+   * 別内容へ変わった記録と、開始時に無かった別の記録は消さない。
+   * 比較と書き戻しは同一トランザクション。
    */
-  revertBatch?(snapshot: readonly ReplayBlob[], writtenIds: readonly string[]): Promise<void>;
+  revertBatch?(snapshot: readonly ReplayBlob[], written: readonly ReplayBlob[]): Promise<void>;
 }
 
 /** IndexedDB にリプレイを複数件保存する（上限超過は古いものから削除）。 */
@@ -120,8 +121,8 @@ export class IndexedDbReplayStorage implements ReplayStorage {
     return write;
   }
 
-  revertBatch(snapshot: readonly ReplayBlob[], writtenIds: readonly string[]): Promise<void> {
-    const written = new Set(writtenIds);
+  revertBatch(snapshot: readonly ReplayBlob[], written: readonly ReplayBlob[]): Promise<void> {
+    const writtenById = new Map(written.map((blob) => [blob.id, structuredClone(blob)]));
     const snapshotById = new Map(snapshot.map((blob) => [blob.id, structuredClone(blob)]));
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
@@ -135,8 +136,18 @@ export class IndexedDbReplayStorage implements ReplayStorage {
           if (typeof id !== 'string') continue;
           current.set(id, raw);
         }
-        for (const id of written) {
-          if (!snapshotById.has(id) && current.has(id)) await tx.store.delete(id);
+        const matchesWritten = (id: string): boolean => {
+          const now = current.get(id);
+          const writtenBlob = writtenById.get(id);
+          return (
+            now !== undefined &&
+            writtenBlob !== undefined &&
+            JSON.stringify(now) === JSON.stringify(writtenBlob)
+          );
+        };
+        for (const id of writtenById.keys()) {
+          if (snapshotById.has(id) || !matchesWritten(id)) continue;
+          await tx.store.delete(id);
         }
         for (const [id, blob] of snapshotById) {
           const now = current.get(id);
@@ -145,7 +156,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
             continue;
           }
           if (JSON.stringify(now) === JSON.stringify(blob)) continue;
-          if (!written.has(id)) continue;
+          if (!matchesWritten(id)) continue;
           await tx.store.put(blob, id);
         }
         await tx.done;
@@ -186,11 +197,23 @@ export class MemoryReplayStorage implements ReplayStorage {
     this.items.clear();
   }
 
-  async revertBatch(snapshot: readonly ReplayBlob[], writtenIds: readonly string[]): Promise<void> {
-    const written = new Set(writtenIds);
+  async revertBatch(
+    snapshot: readonly ReplayBlob[],
+    written: readonly ReplayBlob[],
+  ): Promise<void> {
+    const writtenById = new Map(written.map((blob) => [blob.id, blob]));
     const snapshotById = new Map(snapshot.map((blob) => [blob.id, blob]));
-    for (const id of written) {
-      if (!snapshotById.has(id)) this.items.delete(id);
+    const matchesWritten = (id: string): boolean => {
+      const current = this.items.get(id);
+      const writtenBlob = writtenById.get(id);
+      return (
+        current !== undefined &&
+        writtenBlob !== undefined &&
+        JSON.stringify(current) === JSON.stringify(writtenBlob)
+      );
+    };
+    for (const id of writtenById.keys()) {
+      if (!snapshotById.has(id) && matchesWritten(id)) this.items.delete(id);
     }
     for (const [id, blob] of snapshotById) {
       const current = this.items.get(id);
@@ -199,7 +222,7 @@ export class MemoryReplayStorage implements ReplayStorage {
         continue;
       }
       if (JSON.stringify(current) === JSON.stringify(blob)) continue;
-      if (!written.has(id)) continue;
+      if (!matchesWritten(id)) continue;
       this.items.set(id, structuredClone(blob));
     }
   }

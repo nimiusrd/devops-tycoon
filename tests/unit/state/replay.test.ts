@@ -384,13 +384,40 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     const other = makeBlob({ id: 'other-tab', seed: 'other-tab', finishedAt: 4000 });
     await storage.save(other);
 
-    await storage.revertBatch(snapshot, ['overwritten', 'added']);
+    await storage.revertBatch(snapshot, [imported, added]);
 
     const ids = (await storage.list()).map((replay) => replay.id).sort();
     expect(ids).toEqual(['kept', 'other-tab', 'overwritten']);
     expect((await storage.get('overwritten'))?.outcome.score).toBe(overwritten.outcome.score);
     expect(await storage.get('added')).toBeNull();
     expect(await storage.get('other-tab')).not.toBeNull();
+  });
+
+  it('revertBatch は同じ ID の別内容を消さず、開始時の内容へも戻さない', async () => {
+    const name = nextReplayDbName('replay-revert-foreign');
+    const storage = new IndexedDbReplayStorage(name);
+    const kept = makeBlob({ id: 'kept', seed: 'kept', finishedAt: 1000 });
+    const overwritten = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    await storage.save(kept);
+    await storage.save(overwritten);
+    const snapshot = await storage.list();
+    const imported = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    imported.outcome = { ...imported.outcome, score: 99 };
+    await storage.save(imported, { pin: true });
+    const foreign = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    foreign.outcome = { ...foreign.outcome, score: 77 };
+    await storage.save(foreign);
+    const added = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    await storage.save(added, { pin: true });
+    const replaced = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    replaced.outcome = { ...replaced.outcome, score: 55 };
+    await storage.save(replaced);
+
+    await storage.revertBatch(snapshot, [imported, added]);
+
+    expect((await storage.get('overwritten'))?.outcome.score).toBe(77);
+    expect((await storage.get('added'))?.outcome.score).toBe(55);
+    expect((await storage.get('kept'))?.outcome.score).toBe(kept.outcome.score);
   });
 
   it('IndexedDB の旧v1リプレイを list/get で保持する', async () => {

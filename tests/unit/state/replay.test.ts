@@ -368,6 +368,31 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     expect(await storage.get('clear-a')).toBeNull();
   });
 
+  it('revertBatch はバッチが足した記録だけを消し、後から増えた記録は残す', async () => {
+    const name = nextReplayDbName('replay-revert');
+    const storage = new IndexedDbReplayStorage(name);
+    const kept = makeBlob({ id: 'kept', seed: 'kept', finishedAt: 1000 });
+    const overwritten = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    await storage.save(kept);
+    await storage.save(overwritten);
+    const snapshot = await storage.list();
+    const imported = makeBlob({ id: 'overwritten', seed: 'overwritten', finishedAt: 2000 });
+    imported.outcome = { ...imported.outcome, score: 99 };
+    await storage.save(imported, { pin: true });
+    const added = makeBlob({ id: 'added', seed: 'added', finishedAt: 3000 });
+    await storage.save(added, { pin: true });
+    const other = makeBlob({ id: 'other-tab', seed: 'other-tab', finishedAt: 4000 });
+    await storage.save(other);
+
+    await storage.revertBatch(snapshot, ['overwritten', 'added']);
+
+    const ids = (await storage.list()).map((replay) => replay.id).sort();
+    expect(ids).toEqual(['kept', 'other-tab', 'overwritten']);
+    expect((await storage.get('overwritten'))?.outcome.score).toBe(overwritten.outcome.score);
+    expect(await storage.get('added')).toBeNull();
+    expect(await storage.get('other-tab')).not.toBeNull();
+  });
+
   it('IndexedDB の旧v1リプレイを list/get で保持する', async () => {
     const name = nextReplayDbName('replay-legacy');
     const storage = new IndexedDbReplayStorage(name);

@@ -504,11 +504,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     bump();
   };
 
-  const saveReplayBlob = (blob: ReplayBlob): Promise<void> => {
+  const saveReplayBlob = (blob: ReplayBlob, extraProtectIds?: readonly string[]): Promise<void> => {
     const storage = replayStorage;
     if (!storage) return Promise.resolve();
     // 古い finishedAt でも、この完走自体は上限削除から残す。明示取り込みも同時に守る。
-    const protectIds = [...pinnedReplayIds];
+    // 再試行の一括では、まだ保存していない他の未保存も同じ上限から守る。
+    const protectIds = [...new Set([...pinnedReplayIds, ...(extraProtectIds ?? [])])];
     return storage
       .save(blob, { pin: true, protectIds })
       .then(async () => {
@@ -581,9 +582,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   /** 完走リプレイの保存を追跡する。移行中も、この Promise が残る間は確定しない。 */
-  const beginReplaySave = (blob: ReplayBlob): Promise<void> => {
+  const beginReplaySave = (
+    blob: ReplayBlob,
+    extraProtectIds?: readonly string[],
+  ): Promise<void> => {
     replaySavesInFlight.add(blob);
-    const work = saveReplayBlob(blob).finally(() => {
+    const work = saveReplayBlob(blob, extraProtectIds).finally(() => {
       replaySavesInFlight.delete(blob);
       replaySavePromises.delete(blob);
     });
@@ -992,16 +996,25 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
             const memoryNow = await readMemoryReplays();
             if (replaySavePromises.size > 0 || replayImportDepth > 0) continue;
-            const durableIds = new Set(durableList.map((item) => item.id));
+            const durableById = new Map(durableList.map((item) => [item.id, item]));
+            const sameReplay = (left: ReplayBlob, right: ReplayBlob): boolean =>
+              JSON.stringify(left) === JSON.stringify(right);
+            const needsDurableWrite = (blob: ReplayBlob): boolean => {
+              if (!shouldCopyReplay(blob.id)) return false;
+              const durable = durableById.get(blob.id);
+              return !durable || !sameReplay(durable, blob);
+            };
             for (const blob of [...pendingReplays]) {
-              if (durableIds.has(blob.id)) completePendingReplay(blob);
+              const durable = durableById.get(blob.id);
+              if (durable && sameReplay(durable, blob)) completePendingReplay(blob);
             }
             const byId = new Map<string, ReplayBlob>();
             for (const item of memoryNow) {
-              if (shouldCopyReplay(item.id) && !durableIds.has(item.id)) byId.set(item.id, item);
+              if (needsDurableWrite(item)) byId.set(item.id, item);
             }
             for (const blob of pendingReplays) {
-              if (!durableIds.has(blob.id)) byId.set(blob.id, blob);
+              const durable = durableById.get(blob.id);
+              if (!durable || !sameReplay(durable, blob)) byId.set(blob.id, blob);
             }
             const newcomers = [...byId.values()];
             if (newcomers.length > 0) {
@@ -1009,7 +1022,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               for (const blob of newcomers) await saveOntoDurable(blob, cohort);
               durableList = await target.list();
               for (const blob of newcomers) {
-                if (!durableList.some((row) => row.id === blob.id)) {
+                const kept = durableList.find((row) => row.id === blob.id);
+                if (!kept || JSON.stringify(kept) !== JSON.stringify(blob)) {
                   throw new Error('session replay was not kept');
                 }
                 if (pendingReplays.includes(blob)) completePendingReplay(blob);
@@ -1028,9 +1042,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
             const confirm = await readMemoryReplays();
             if (
-              confirm.some(
-                (item) => shouldCopyReplay(item.id) && !listed.some((row) => row.id === item.id),
-              )
+              confirm.some((item) => {
+                if (!shouldCopyReplay(item.id)) return false;
+                const row = listed.find((stored) => stored.id === item.id);
+                return !row || JSON.stringify(row) !== JSON.stringify(item);
+              })
             ) {
               continue;
             }
@@ -1572,10 +1588,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         if (!tracker.isSession('replay') && tracker.isFailed('replay') && replayStorage) {
           const blobs = pendingReplays.filter((blob) => !replaySavesInFlight.has(blob));
           if (blobs.length > 0) {
+            const cohort = blobs.map((blob) => blob.id);
             tasks.push(
               (async () => {
                 for (const blob of blobs) {
-                  await retryWrite('replay', beginReplaySave(blob), () =>
+                  await retryWrite('replay', beginReplaySave(blob, cohort), () =>
                     completePendingReplay(blob),
                   );
                 }
@@ -1758,8 +1775,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const storage = replayStorage;
           if (!storage) return;
           try {
-            await storage.clear();
-            for (const blob of snapshot) await storage.save(structuredClone(blob));
+            if (storage.revertBatch) await storage.revertBatch(snapshot, cohort);
+            else {
+              await storage.clear();
+              for (const blob of snapshot) await storage.save(structuredClone(blob));
+            }
             await refreshReplayCache();
           } catch {
             /* 戻せなくても、取り込み失敗はそのまま返す */
@@ -1791,6 +1811,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
             };
           }
+          const matched = pendingReplays.filter((item) => cohort.includes(item.id));
+          for (const blob of matched) completePendingReplay(blob);
+          if (matched.length > 0 && pendingReplays.length === 0 && !tracker.isSession('replay')) {
+            tracker.settleCurrent('replay', Date.now());
+          }
+          bump();
           return last;
         } finally {
           for (const id of cohort) pinnedReplayIds.delete(id);
@@ -1838,10 +1864,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
             };
           }
-          const matched = pendingReplays.filter((item) => item.id === loaded.replay.id);
-          for (const blob of matched) completePendingReplay(blob);
-          if (matched.length > 0 && pendingReplays.length === 0 && !tracker.isSession('replay')) {
-            tracker.settleCurrent('replay', Date.now());
+          if (!batch?.retainPin) {
+            const matched = pendingReplays.filter((item) => item.id === loaded.replay.id);
+            for (const blob of matched) completePendingReplay(blob);
+            if (matched.length > 0 && pendingReplays.length === 0 && !tracker.isSession('replay')) {
+              tracker.settleCurrent('replay', Date.now());
+            }
           }
           replayRevision += 1;
           bump();

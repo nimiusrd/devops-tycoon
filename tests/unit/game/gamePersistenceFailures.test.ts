@@ -1194,6 +1194,66 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect((await storage.list()).map((replay) => replay.seed)).toContain('pending-replay');
   });
 
+  it('同じ ID でも内容が違う取り込みは、再試行で永続先へ残す', async () => {
+    const durable = new MemoryReplayStorage();
+    const stored = makeReplay('same-id');
+    stored.outcome = { ...stored.outcome, score: 1 };
+    await durable.save(stored);
+    const game = createGame({ seed: 'content-migrate' });
+    await game.attachReplay(new MemoryReplayStorage(), {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    const imported = makeReplay('same-id');
+    imported.outcome = { ...imported.outcome, score: 99 };
+    expect(imported.id).toBe(stored.id);
+    expect(await game.importReplayText(serializeReplay(imported))).toMatchObject({ ok: true });
+
+    await game.retryPersistence();
+
+    expect((await durable.get(stored.id))?.outcome.score).toBe(99);
+    expect(game.listReplays().find((replay) => replay.id === stored.id)?.outcome.score).toBe(99);
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
+  it('再試行する未保存リプレイは、まとめて上限から守る', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 50_000 + i;
+      await storage.save(stored);
+    }
+    const game = createGame({ seed: 'retry-cohort' });
+    await game.attachReplay(storage);
+    const save = vi.spyOn(storage, 'save');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    save.mockRejectedValueOnce(new Error('transient'));
+    vi.spyOn(Date, 'now').mockReturnValue(1);
+    game.startRun('easy', [], 'pending-a');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    save.mockRejectedValueOnce(new Error('transient'));
+    vi.spyOn(Date, 'now').mockReturnValue(2);
+    game.startRun('easy', [], 'pending-b');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    expect(game.getPersistenceStatus().state).toBe('failed');
+    save.mockRestore();
+
+    await game.retryPersistence();
+
+    const seeds = (await storage.list()).map((replay) => replay.seed);
+    expect(seeds).toContain('pending-a');
+    expect(seeds).toContain('pending-b');
+    expect(seeds).toHaveLength(REPLAY_MAX_COUNT);
+    expect(game.exportPendingReplayText()).toBeNull();
+    expect(game.getPersistenceStatus().state).not.toBe('failed');
+  });
+
   it('まとめファイルの途中で保存に失敗したら、取り込み前の一覧へ戻す', async () => {
     const storage = new MemoryReplayStorage();
     for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
@@ -1230,6 +1290,85 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
         .sort(),
     ).toEqual(before);
     expect((await storage.list()).map((replay) => replay.seed)).not.toContain('older-a');
+  });
+
+  it('まとめファイルの巻き戻しは、途中で増えた別のリプレイを消さない', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 50_000 + i;
+      await storage.save(stored);
+    }
+    const game = createGame({ seed: 'backup-other-tab' });
+    await game.attachReplay(storage);
+    const olderA = makeReplay('older-a');
+    olderA.finishedAt = 1;
+    const olderB = makeReplay('older-b');
+    olderB.finishedAt = 2;
+    const raw = serializePersistenceBackup({
+      runSave: null,
+      replays: [serializeReplay(olderA), serializeReplay(olderB)],
+    });
+    const original = storage.save.bind(storage);
+    let calls = 0;
+    vi.spyOn(storage, 'save').mockImplementation(async (blob, options) => {
+      calls += 1;
+      if (calls === 1) {
+        await original(blob, options);
+        const other = makeReplay('other-tab');
+        other.finishedAt = 90_000;
+        await original(other);
+        return;
+      }
+      if (calls === 2) throw new Error('quota');
+      await original(blob, options);
+    });
+
+    const imported = await game.importReplayText(raw);
+    expect(imported.ok).toBe(false);
+    const seeds = (await storage.list()).map((replay) => replay.seed);
+    expect(seeds).toContain('other-tab');
+    expect(seeds).not.toContain('older-a');
+    expect(seeds).not.toContain('older-b');
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) expect(seeds).toContain(`stored-${i}`);
+  });
+
+  it('まとめファイルの途中失敗では、未保存と失敗表示も取り込み前のまま残す', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'backup-pending-rollback' });
+    await game.attachReplay(storage);
+    vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('transient'));
+    const internals = game.engine as unknown as { phase: string; status: string };
+    game.startRun('easy', [], 'pending-a');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    const pending = game.exportPendingReplayText();
+    expect(pending).toContain('pending-a');
+    expect(game.getPersistenceStatus().state).toBe('failed');
+    const other = makeReplay('other-b');
+    other.finishedAt = 2;
+    const raw = serializePersistenceBackup({
+      runSave: null,
+      replays: [pending!, serializeReplay(other)],
+    });
+    const original = storage.save.bind(storage);
+    let calls = 0;
+    vi.spyOn(storage, 'save').mockImplementation(async (blob, options) => {
+      calls += 1;
+      if (calls === 2) throw new Error('quota');
+      await original(blob, options);
+    });
+
+    const imported = await game.importReplayText(raw);
+    expect(imported.ok).toBe(false);
+    expect(game.exportPendingReplayText()).toContain('pending-a');
+    expect(game.getPersistenceStatus().state).toBe('failed');
+    expect(game.getPersistenceStatus().headline).toBe('保存失敗');
+    const seeds = (await storage.list()).map((replay) => replay.seed);
+    expect(seeds).not.toContain('pending-a');
+    expect(seeds).not.toContain('other-b');
   });
 
   it('上限を超えるまとめファイルは、新しい10件だけを残して取り込む', async () => {

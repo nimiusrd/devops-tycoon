@@ -43,6 +43,12 @@ export interface ReplayStorage {
   get(id: string): Promise<ReplayBlob | null>;
   save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void>;
   clear(): Promise<void>;
+  /**
+   * 取り込みバッチの失敗を戻す。
+   * `writtenIds` のうち開始時に無かった記録だけを消し、開始時の記録は内容が変わったときだけ戻す。
+   * 開始時に無かった別の記録は消さない。比較と書き戻しは同一トランザクション。
+   */
+  revertBatch?(snapshot: readonly ReplayBlob[], writtenIds: readonly string[]): Promise<void>;
 }
 
 /** IndexedDB にリプレイを複数件保存する（上限超過は古いものから削除）。 */
@@ -113,6 +119,43 @@ export class IndexedDbReplayStorage implements ReplayStorage {
     this.writes = write.catch(() => undefined);
     return write;
   }
+
+  revertBatch(snapshot: readonly ReplayBlob[], writtenIds: readonly string[]): Promise<void> {
+    const written = new Set(writtenIds);
+    const snapshotById = new Map(snapshot.map((blob) => [blob.id, structuredClone(blob)]));
+    const write = this.writes.then(async () => {
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction(REPLAYS_STORE_NAME, 'readwrite');
+        const rawAll = await tx.store.getAll();
+        const current = new Map<string, unknown>();
+        for (const raw of rawAll) {
+          if (!raw || typeof raw !== 'object' || !('id' in raw)) continue;
+          const id = raw.id;
+          if (typeof id !== 'string') continue;
+          current.set(id, raw);
+        }
+        for (const id of written) {
+          if (!snapshotById.has(id) && current.has(id)) await tx.store.delete(id);
+        }
+        for (const [id, blob] of snapshotById) {
+          const now = current.get(id);
+          if (now === undefined) {
+            await tx.store.put(blob, id);
+            continue;
+          }
+          if (JSON.stringify(now) === JSON.stringify(blob)) continue;
+          if (!written.has(id)) continue;
+          await tx.store.put(blob, id);
+        }
+        await tx.done;
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.catch(() => undefined);
+    return write;
+  }
 }
 
 /** メモリ上だけで動く ReplayStorage（テスト / IDB 不可時）。 */
@@ -141,6 +184,24 @@ export class MemoryReplayStorage implements ReplayStorage {
 
   async clear(): Promise<void> {
     this.items.clear();
+  }
+
+  async revertBatch(snapshot: readonly ReplayBlob[], writtenIds: readonly string[]): Promise<void> {
+    const written = new Set(writtenIds);
+    const snapshotById = new Map(snapshot.map((blob) => [blob.id, blob]));
+    for (const id of written) {
+      if (!snapshotById.has(id)) this.items.delete(id);
+    }
+    for (const [id, blob] of snapshotById) {
+      const current = this.items.get(id);
+      if (!current) {
+        this.items.set(id, structuredClone(blob));
+        continue;
+      }
+      if (JSON.stringify(current) === JSON.stringify(blob)) continue;
+      if (!written.has(id)) continue;
+      this.items.set(id, structuredClone(blob));
+    }
   }
 }
 

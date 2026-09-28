@@ -303,7 +303,7 @@ export class PersistenceTracker {
   private failedChannelMoment(): string {
     let earliest: number | null = null;
     for (const channel of CHANNELS) {
-      if (this.channels[channel].write !== 'failed') continue;
+      if (!this.channelFailureVisible(this.channels[channel])) continue;
       const at = this.lastDurableAt[channel];
       if (at === null) return durableMoment(null);
       if (earliest === null || at < earliest) earliest = at;
@@ -315,11 +315,17 @@ export class PersistenceTracker {
     return this.currentFailure() !== null;
   }
 
+  /** 失敗確定に加え、未保存のまま後続保存中へ残した容量不足も案内する。 */
+  private channelFailureVisible(current: ChannelState): boolean {
+    if (!current.failure) return false;
+    return current.write === 'failed' || current.write === 'saving';
+  }
+
   private currentFailure(): PersistenceFailure | null {
     let failure: PersistenceFailure | null = null;
     for (const channel of CHANNELS) {
       const current = this.channels[channel];
-      if (current.write !== 'failed' || !current.failure) continue;
+      if (!this.channelFailureVisible(current)) continue;
       if (current.failure === 'quota') return 'quota';
       failure = 'transient';
     }

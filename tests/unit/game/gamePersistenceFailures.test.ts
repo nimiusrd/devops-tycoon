@@ -678,6 +678,11 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     for (let i = 0; i < 8; i += 1) await Promise.resolve();
     rejectQuota(new DOMException('full', 'QuotaExceededError'));
     for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    const whileLaterSave = game.getPersistenceStatus();
+    expect(whileLaterSave.state).toBe('failed');
+    expect(whileLaterSave.showRetry).toBe(true);
+    expect(whileLaterSave.showExport).toBe(true);
+    expect(whileLaterSave.detail).toContain('容量が不足');
     releaseOk();
     for (let i = 0; i < 40; i += 1) await Promise.resolve();
 
@@ -1229,11 +1234,21 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
       replays: [serializeReplay(makeReplay('replay-a')), serializeReplay(makeReplay('replay-b'))],
     });
 
-    expect(await game.importRunSaveText(raw)).toMatchObject({ ok: true });
+    expect(await game.importRunSaveText(raw)).toMatchObject({ ok: true, restored: 'both' });
     expect(game.getRunSaveSummary()?.seed).toBe('backed-up');
-    expect(await game.importReplayText(raw)).toMatchObject({ ok: true });
     expect(
       game
+        .listReplays()
+        .map((replay) => replay.seed)
+        .sort(),
+    ).toEqual(['replay-a', 'replay-b']);
+
+    const other = createGame({ seed: 'backup-import-replay', runStorage: new MemoryRunStorage() });
+    await other.attachReplay(new MemoryReplayStorage());
+    expect(await other.importReplayText(raw)).toMatchObject({ ok: true, restored: 'both' });
+    expect(other.getRunSaveSummary()?.seed).toBe('backed-up');
+    expect(
+      other
         .listReplays()
         .map((replay) => replay.seed)
         .sort(),
@@ -1658,6 +1673,19 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.listReplays().find((item) => item.id === replay.id)?.outcome.score).toBe(
       replay.outcome.score + 1,
     );
+  });
+
+  it('一覧が読めない取り込みは成功にしない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'import-list-failed' });
+    await game.attachReplay(storage);
+    vi.spyOn(storage, 'list').mockRejectedValue(new Error('transient'));
+    const replay = makeReplay('unverified');
+
+    const imported = await game.importReplayText(serializeReplay(replay));
+
+    expect(imported.ok).toBe(false);
+    expect(game.listReplays().some((item) => item.id === replay.id)).toBe(false);
   });
 
   it('まとめファイルの途中で保存に失敗したら、取り込み前の一覧へ戻す', async () => {

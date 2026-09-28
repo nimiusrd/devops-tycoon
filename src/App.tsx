@@ -560,7 +560,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onExportRunSave={run.exportRunSaveText}
             onImportRunSave={async (raw) => {
               const result = await run.importRunSaveText(raw);
-              return { ok: result.ok, message: result.ok ? '' : result.message };
+              return {
+                ok: result.ok,
+                message: result.ok ? '' : result.message,
+                restored: result.ok ? result.restored : undefined,
+              };
             }}
           />
         </SceneScrollReset>
@@ -602,7 +606,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               onExportReplay={run.exportReplayText}
               onImportReplay={async (raw) => {
                 const result = await run.importReplayText(raw);
-                return { ok: result.ok, message: result.ok ? '' : result.message };
+                return {
+                  ok: result.ok,
+                  message: result.ok ? '' : result.message,
+                  restored: result.ok ? result.restored : undefined,
+                };
               }}
             />
           )}

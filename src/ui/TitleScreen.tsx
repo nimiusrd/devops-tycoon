@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { createPortal } from 'react-dom';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
+import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../state/persistenceBackup';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
 import type { ResumeRisk } from '../state/resumeRisk';
@@ -128,7 +129,7 @@ export interface TitleScreenProps {
   /** 現行の途中セーブを JSON にする（無い場合は null。RI-133）。 */
   onExportRunSave?: () => string | null;
   /** JSON から途中セーブを読み込む。 */
-  onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string }>;
+  onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string; restored?: 'both' }>;
 }
 
 export function TitleScreen({
@@ -270,7 +271,11 @@ export function TitleScreen({
         if (requestId !== runSaveImportGen.current) return;
         setRunSaveShareStatus({
           kind: result.ok ? 'ok' : 'error',
-          message: result.ok ? '途中セーブを読み込みました。再開できます。' : result.message,
+          message: result.ok
+            ? result.restored === 'both'
+              ? PERSISTENCE_BACKUP_RESTORED_MESSAGE
+              : '途中セーブを読み込みました。再開できます。'
+            : result.message,
         });
       })
       .catch(() => {

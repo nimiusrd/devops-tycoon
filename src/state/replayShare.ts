@@ -28,6 +28,8 @@ export const REPLAY_SHARE_REASON_MESSAGE: Record<ReplayShareReason, string> = {
 export interface ReplayShareOk {
   ok: true;
   replay: ReplayBlob;
+  /** 統合バックアップで途中セーブも戻した。 */
+  restored?: 'both';
 }
 
 export interface ReplayShareErr {

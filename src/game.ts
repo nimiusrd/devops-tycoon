@@ -75,7 +75,7 @@ import {
   type RunRulesetIdentity,
   type RunStorage,
 } from './state/runPersistence';
-import { readPersistenceBackup } from './state/persistenceBackup';
+import { readPersistenceBackup, serializePersistenceBackup } from './state/persistenceBackup';
 import { findNextReplayKeyframeIndex } from './state/replayJump';
 import {
   parseReplayShare,
@@ -1798,6 +1798,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
         };
       }
+      const backup = readPersistenceBackup(raw);
+      if (backup && backup.replays.length > 0) {
+        const replayResult = await this.importReplayText(
+          serializePersistenceBackup({ runSave: null, replays: backup.replays }),
+        );
+        if (!replayResult.ok) {
+          return { ok: false, reason: 'corrupt', message: replayResult.message };
+        }
+        return { ...loaded, restored: 'both' as const };
+      }
       return loaded;
     },
     async attachReplay(storage, options) {
@@ -1945,6 +1955,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               tracker.settleCurrent('replay', Date.now());
             }
           }
+          if (backup.runSave) {
+            const runImported = await this.importRunSaveText(backup.runSave);
+            if (!runImported.ok) {
+              return {
+                ok: false,
+                reason: 'corrupt',
+                message: runImported.message,
+              };
+            }
+            if (last.ok) {
+              bump();
+              return { ...last, restored: 'both' as const };
+            }
+          }
           bump();
           return last;
         } finally {
@@ -1978,16 +2002,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
           const listed = await refreshReplayCache();
           if (!listed) {
-            cachedReplays = selectReplaysWithinMax(
-              [
-                ...cachedReplays.filter((item) => item.id !== loaded.replay.id),
-                structuredClone(loaded.replay),
-              ],
-              loaded.replay.id,
-            );
-            bump();
-            replayRevision += 1;
-            return loaded;
+            return {
+              ok: false as const,
+              reason: 'corrupt' as const,
+              message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+            };
           }
           const storedRow = cachedReplays.find((item) => item.id === loaded.replay.id);
           if (!storedRow || replayContentKey(storedRow) !== replayContentKey(loaded.replay)) {

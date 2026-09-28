@@ -4,6 +4,9 @@
  */
 export const PERSISTENCE_BACKUP_KIND = 'devops-tycoon-persistence-backup';
 export const PERSISTENCE_BACKUP_VERSION = 1;
+/** 途中セーブとリプレイを一度に戻したとき、どちらの取り込み口でも同じ案内にする。 */
+export const PERSISTENCE_BACKUP_RESTORED_MESSAGE =
+  '途中セーブとリプレイを読み込みました。再開できます。';
 
 export interface PersistenceBackupFile {
   kind: typeof PERSISTENCE_BACKUP_KIND;

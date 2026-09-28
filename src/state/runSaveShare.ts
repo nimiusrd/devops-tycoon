@@ -33,6 +33,8 @@ export const RUN_SAVE_SHARE_REASON_MESSAGE: Record<RunSaveShareReason, string> =
 export interface RunSaveShareOk {
   ok: true;
   save: RunSave;
+  /** 統合バックアップでリプレイも戻した。 */
+  restored?: 'both';
 }
 
 export interface RunSaveShareErr {

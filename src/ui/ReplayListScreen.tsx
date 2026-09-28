@@ -14,6 +14,7 @@ import {
 import { formatReplayRuleset } from './replayRuleset';
 import { resolveSelectedReplayId } from './replayListSelection';
 import { ResultOverlay } from './ResultOverlay';
+import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../state/persistenceBackup';
 import type { ReplayBlob } from '../state/replay';
 import { downloadTextFile } from './downloadTextFile';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
@@ -25,7 +26,7 @@ export interface ReplayListScreenProps {
   /** 選択中リプレイを JSON にする（無い場合は null。RI-133）。 */
   onExportReplay?: (id: string) => string | null;
   /** JSON からリプレイを読み込む。 */
-  onImportReplay?: (raw: string) => Promise<{ ok: boolean; message: string }>;
+  onImportReplay?: (raw: string) => Promise<{ ok: boolean; message: string; restored?: 'both' }>;
 }
 
 function formatFinishedAt(ms: number): string {
@@ -98,7 +99,11 @@ export function ReplayListScreen({
         if (requestId !== replayImportGen.current) return;
         setShareStatus({
           kind: result.ok ? 'ok' : 'error',
-          message: result.ok ? 'リプレイを読み込みました。' : result.message,
+          message: result.ok
+            ? result.restored === 'both'
+              ? PERSISTENCE_BACKUP_RESTORED_MESSAGE
+              : 'リプレイを読み込みました。'
+            : result.message,
         });
       })
       .catch(() => {

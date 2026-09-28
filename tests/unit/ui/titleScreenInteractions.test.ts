@@ -1,4 +1,5 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../../../src/state/persistenceBackup';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hooks = vi.hoisted(() => ({
@@ -570,6 +571,18 @@ describe('TitleScreen の途中セーブ共有', () => {
       '途中セーブを読み込みました。再開できます。',
     );
     for (const id of disabledIds) expect(screen.find(id).props.disabled).toBe(false);
+  });
+
+  it('統合バックアップの取り込みは、リプレイも戻ったと案内する', async () => {
+    const onImportRunSave = vi.fn(async () => ({
+      ok: true as const,
+      message: '',
+      restored: 'both' as const,
+    }));
+    const screen = mountTitle({ onImportRunSave });
+    screen.chooseFile('run-save-file', { text: async () => 'backup' });
+    await screen.settle();
+    expect(content(screen.find('run-save-share-status'))).toBe(PERSISTENCE_BACKUP_RESTORED_MESSAGE);
   });
 
   it.each(['validation', 'read', 'import'] as const)(

@@ -99,6 +99,13 @@ export class PersistenceTracker {
     return this.channels[channel].write === 'failed';
   }
 
+  /** 失敗確定、または保存中のまま案内している容量不足。 */
+  hasVisibleFailure(channel: PersistenceChannel): boolean {
+    const current = this.channels[channel];
+    if (!current.failure) return false;
+    return current.write === 'failed' || current.write === 'saving';
+  }
+
   clearSession(channel: PersistenceChannel): void {
     if (!this.session.delete(channel)) return;
     if (this.session.size === 0 && !this.hasFailure()) {

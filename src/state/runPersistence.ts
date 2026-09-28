@@ -122,12 +122,12 @@ export interface RunStorage {
    */
   replaceIfMatches?(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null>;
   /**
-   * 読み直した形が expected と一致するときだけ next を書く。
-   * 別の記録ならそれを返し、上書きしない。一致して書いたときは null。
+   * 読み直した形が expected と一致するときだけ next を書く。next が null なら削除する。
+   * 別の記録ならそれを返し、上書きも削除もしない。一致して書いたときは null。
    * 比較対象があったのに記録が消えていたら、作り直さず失敗する。
    * 比較と書き込みは同一トランザクション。
    */
-  saveIfMatches?(expected: RunSave | null, next: RunSave): Promise<RunSave | null>;
+  saveIfMatches?(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null>;
 }
 
 export interface RunPersistenceBootstrap {
@@ -583,8 +583,8 @@ export class IndexedDbRunStorage implements RunStorage {
     return write;
   }
 
-  saveIfMatches(expected: RunSave | null, next: RunSave): Promise<RunSave | null> {
-    const snapshot = structuredClone(next);
+  saveIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    const snapshot = next ? structuredClone(next) : null;
     const expectedKey = parsedRunKey(expected);
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
@@ -600,7 +600,8 @@ export class IndexedDbRunStorage implements RunStorage {
           await tx.done;
           return parsed ?? (stored === undefined ? null : (stored as RunSave));
         }
-        await tx.store.put(snapshot, RUN_RECORD_KEY);
+        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
+        else await tx.store.delete(RUN_RECORD_KEY);
         await tx.done;
         return null;
       } finally {
@@ -662,14 +663,15 @@ export class MemoryRunStorage implements RunStorage {
     return structuredClone(this.saveState);
   }
 
-  async saveIfMatches(expected: RunSave | null, next: RunSave): Promise<RunSave | null> {
+  async saveIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
     if (expected !== null && this.saveState === null) {
       throw new Error('durable run was removed');
     }
     if (parsedRunKey(this.saveState) !== parsedRunKey(expected)) {
       return this.saveState ? structuredClone(this.saveState) : null;
     }
-    await this.save(next);
+    if (next) await this.save(next);
+    else await this.clear();
     return null;
   }
 }

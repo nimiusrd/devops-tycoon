@@ -677,16 +677,17 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-roster']);
   });
 
-  it('保存後の一覧取得失敗では取り込み成功と既存キャッシュを残す', async () => {
+  it('保存後の一覧取得失敗では取り込みを戻し、既存リプレイを残す', async () => {
     const inner = new MemoryReplayStorage();
-    let failNextList = false;
+    let failedVerification = false;
     const replayStorage: ReplayStorage = {
       list: async () => {
-        if (failNextList) {
-          failNextList = false;
+        const rows = await inner.list();
+        if (!failedVerification && rows.some((item) => item.id === 'after-list-fail')) {
+          failedVerification = true;
           throw new Error('forced list failure');
         }
-        return inner.list();
+        return rows;
       },
       get: (id) => inner.get(id),
       save: (blob, options) => inner.save(blob, options),
@@ -697,28 +698,28 @@ describe('リプレイのファイル共有（RI-133）', () => {
     const existing = makeReplay({ id: 'keep-listed', seed: 'keep-listed', finishedAt: 1000 });
     expect(await game.importReplay(existing)).toBe(true);
 
-    failNextList = true;
     const incoming = makeReplay({
       id: 'after-list-fail',
       seed: 'after-list-fail',
       finishedAt: 2000,
     });
     const imported = await game.importReplayText(serializeReplay(incoming));
-    expect(imported.ok).toBe(true);
-    expect(game.listReplays().map((item) => item.id)).toEqual(['after-list-fail', 'keep-listed']);
-    expect((await inner.list()).map((item) => item.id)).toEqual(['after-list-fail', 'keep-listed']);
+    expect(imported.ok).toBe(false);
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-listed']);
+    expect((await inner.list()).map((item) => item.id)).toEqual(['keep-listed']);
   });
 
-  it('一覧再取得失敗時は同一 ID のキャッシュも取り込んだ内容へ置き換える', async () => {
+  it('一覧再取得失敗時は同一 ID を保存前の内容へ戻す', async () => {
     const inner = new MemoryReplayStorage();
-    let failNextList = false;
+    let failedVerification = false;
     const replayStorage: ReplayStorage = {
       list: async () => {
-        if (failNextList) {
-          failNextList = false;
+        const rows = await inner.list();
+        if (!failedVerification && rows.some((item) => item.seed === 'new-seed')) {
+          failedVerification = true;
           throw new Error('forced list failure');
         }
-        return inner.list();
+        return rows;
       },
       get: (id) => inner.get(id),
       save: (blob, options) => inner.save(blob, options),
@@ -734,7 +735,6 @@ describe('リプレイのファイル共有（RI-133）', () => {
     });
     expect(await game.importReplay(existing)).toBe(true);
 
-    failNextList = true;
     const incoming = makeReplay({
       id: 'same-id',
       seed: 'new-seed',
@@ -742,11 +742,11 @@ describe('リプレイのファイル共有（RI-133）', () => {
       outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 99 },
     });
     const imported = await game.importReplayText(serializeReplay(incoming));
-    expect(imported.ok).toBe(true);
+    expect(imported.ok).toBe(false);
     expect(game.listReplays()).toHaveLength(1);
-    expect(game.listReplays()[0]?.seed).toBe('new-seed');
-    expect(game.listReplays()[0]?.outcome.score).toBe(99);
-    expect(game.exportReplayText('same-id')).toContain('"score": 99');
-    expect((await inner.get('same-id'))?.outcome.score).toBe(99);
+    expect(game.listReplays()[0]?.seed).toBe('old-seed');
+    expect(game.listReplays()[0]?.outcome.score).toBe(1);
+    expect(game.exportReplayText('same-id')).toContain('"score": 1');
+    expect((await inner.get('same-id'))?.outcome.score).toBe(1);
   });
 });

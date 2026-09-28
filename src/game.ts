@@ -400,6 +400,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let runRevisionAtSession = 0;
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
+  /** リプレイ側の統合バックアップが、成功した途中セーブを戻すときだけ使う。 */
+  let undoImportedRun: (() => Promise<void>) | null = null;
   /** リプレイ取り込みの世代。最終一覧のあとでも、途中の取り込みを既存データにしない。 */
   let replayRevision = 0;
   let replayImportDepth = 0;
@@ -1105,14 +1107,42 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             const newcomers = [...byId.values()];
             if (newcomers.length > 0) {
               const cohort = newcomers.map((item) => item.id);
-              for (const blob of newcomers) await saveOntoDurable(blob, cohort);
-              durableList = await target.list();
-              for (const blob of newcomers) {
-                const kept = durableList.find((row) => row.id === blob.id);
-                if (!kept || JSON.stringify(kept) !== JSON.stringify(blob)) {
-                  throw new Error('session replay was not kept');
+              const snapshot = await target.list();
+              const written: ReplayBlob[] = [];
+              const evictedIds = new Set<string>();
+              const evictedRecords = new Map<string, ReplayBlob>();
+              try {
+                for (const blob of newcomers) {
+                  await target.save(structuredClone(blob), {
+                    pin: true,
+                    protectIds: [...new Set([...pinnedReplayIds, ...cohort])],
+                    evictedIds,
+                    evictedRecords,
+                  });
+                  written.push(structuredClone(blob));
                 }
-                if (pendingReplays.includes(blob)) completePendingReplay(blob);
+                durableList = await target.list();
+                for (const blob of newcomers) {
+                  const kept = durableList.find((row) => row.id === blob.id);
+                  if (!kept || JSON.stringify(kept) !== JSON.stringify(blob)) {
+                    throw new Error('session replay was not kept');
+                  }
+                  if (pendingReplays.includes(blob)) completePendingReplay(blob);
+                }
+              } catch (error) {
+                if (written.length > 0) {
+                  try {
+                    if (target.revertBatch) {
+                      await target.revertBatch(snapshot, written, evictedIds, evictedRecords);
+                    } else {
+                      await target.clear();
+                      for (const blob of snapshot) await target.save(structuredClone(blob));
+                    }
+                  } catch {
+                    /* 戻せなくても、セッション限りのまま返す */
+                  }
+                }
+                throw error;
               }
               continue;
             }
@@ -1647,7 +1677,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     getPersistenceStatus() {
-      return tracker.notice(resumableSave !== null || exportableReplayBlobs().length > 0);
+      const runAtRisk = tracker.isSession('run') || tracker.hasVisibleFailure('run');
+      const replayAtRisk = tracker.isSession('replay') || tracker.hasVisibleFailure('replay');
+      const canExportFailedData =
+        (runAtRisk && resumableSave !== null) ||
+        (replayAtRisk && exportableReplayBlobs().length > 0);
+      return tracker.notice(canExportFailedData);
     },
     dismissPersistenceNotice() {
       if (tracker.dismissTransientBanner()) bump();
@@ -1675,7 +1710,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             ),
           );
         }
-        if (!tracker.isSession('replay') && tracker.isFailed('replay') && replayStorage) {
+        if (!tracker.isSession('replay') && tracker.hasVisibleFailure('replay') && replayStorage) {
           const blobs = pendingReplays.filter((blob) => !replaySavesInFlight.has(blob));
           if (blobs.length > 0) {
             const cohort = [
@@ -1812,6 +1847,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }));
     },
     async importRunSaveText(raw) {
+      undoImportedRun = null;
       const loaded = parseRunSaveShare(raw);
       if (!loaded.ok) return loaded;
       const intended = loaded.save;
@@ -1832,18 +1868,24 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         let durableSettled = priorDurable === undefined || !runStorage;
         if (runStorage && priorDurable !== undefined) {
           try {
-            const current = await runStorage.load();
-            if (durableRunKey(current) !== durableRunKey(intended)) {
-              durableSettled = true;
-            } else if (priorDurable === null) {
-              await runStorage.clear();
+            if (runStorage.saveIfMatches) {
+              await runStorage.saveIfMatches(intended, priorDurable);
               durableSettled = true;
             } else {
-              await runStorage.save(priorDurable);
-              durableSettled = true;
+              const current = await runStorage.load();
+              if (durableRunKey(current) !== durableRunKey(intended)) {
+                durableSettled = true;
+              } else if (priorDurable === null) {
+                await runStorage.clear();
+                durableSettled = true;
+              } else {
+                await runStorage.save(priorDurable);
+                durableSettled = true;
+              }
             }
-          } catch {
-            durableSettled = false;
+          } catch (error) {
+            const removed = error instanceof Error && error.message === 'durable run was removed';
+            durableSettled = removed;
           }
         }
         if (!durableSettled) return;
@@ -1915,8 +1957,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
         };
       }
-      if (!adopted) return loaded;
+      if (!adopted) {
+        undoImportedRun = null;
+        return loaded;
+      }
       if (backupHasReplays && backup) {
+        undoImportedRun = null;
         const replayResult = await this.importReplayText(
           serializePersistenceBackup({ runSave: null, replays: backup.replays }),
         );
@@ -1927,6 +1973,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         noteRunDurable();
         return { ...loaded, restored: 'both' as const };
       }
+      undoImportedRun = restoreImportedRun;
       return loaded;
     },
     async attachReplay(storage, options) {
@@ -2051,12 +2098,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           }
           const intendedById = new Map<string, ReplayBlob>();
           for (const item of ranked) intendedById.set(item.replay.id, item.replay);
-          const listedById = new Map(listed.map((row) => [row.id, row]));
-          const contentMismatch = [...intendedById].some(([id, intended]) => {
-            const row = listedById.get(id);
-            return row === undefined || replayContentKey(row) !== replayContentKey(intended);
-          });
-          if (contentMismatch) {
+          let listedById = new Map(listed.map((row) => [row.id, row]));
+          const replayContentDrifted = (): boolean =>
+            [...intendedById].some(([id, intended]) => {
+              const row = listedById.get(id);
+              return row === undefined || replayContentKey(row) !== replayContentKey(intended);
+            });
+          if (replayContentDrifted()) {
             await restoreSnapshot();
             return {
               ok: false,
@@ -2067,6 +2115,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (backup.runSave) {
             const runImported = await this.importRunSaveText(backup.runSave);
             if (!runImported.ok) {
+              undoImportedRun = null;
               await restoreSnapshot();
               return {
                 ok: false,
@@ -2074,7 +2123,33 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 message: runImported.message,
               };
             }
+            try {
+              listed = replayStorage ? await replayStorage.list() : [];
+            } catch {
+              const undo = undoImportedRun;
+              undoImportedRun = null;
+              await undo?.();
+              await restoreSnapshot();
+              return {
+                ok: false,
+                reason: 'corrupt',
+                message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+              };
+            }
+            listedById = new Map(listed.map((row) => [row.id, row]));
+            if (replayContentDrifted()) {
+              const undo = undoImportedRun;
+              undoImportedRun = null;
+              await undo?.();
+              await restoreSnapshot();
+              return {
+                ok: false,
+                reason: 'corrupt',
+                message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+              };
+            }
           }
+          undoImportedRun = null;
           const matched = pendingReplays.filter((item) => {
             const row = listedById.get(item.id);
             return row !== undefined && replayContentKey(row) === replayContentKey(item);
@@ -2110,15 +2185,46 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       replayImportDepth += 1;
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {
+        const evictedIds = batch?.evictedIds ?? new Set<string>();
+        const evictedRecords = batch?.evictedRecords ?? new Map<string, ReplayBlob>();
+        let priorList: ReplayBlob[] | null = null;
+        const failedImport = () =>
+          ({
+            ok: false as const,
+            reason: 'corrupt' as const,
+            message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+          }) as const;
+        const rollbackSingle = async (refreshCache: boolean): Promise<void> => {
+          if (batch || !priorList) return;
+          try {
+            if (storage.revertBatch) {
+              await storage.revertBatch(priorList, [loaded.replay], evictedIds, evictedRecords);
+            } else {
+              await storage.clear();
+              for (const blob of priorList) await storage.save(structuredClone(blob));
+            }
+            if (refreshCache) await refreshReplayCache();
+          } catch {
+            /* 戻せなくても、取り込み失敗はそのまま返す */
+          }
+        };
         try {
+          if (!batch) {
+            try {
+              priorList = await storage.list();
+            } catch {
+              pinnedReplayIds.delete(loaded.replay.id);
+              return failedImport();
+            }
+          }
           const protectIds = [
             ...new Set([...(batch?.protectIds ?? []), ...replayRetryKept.keys()]),
           ];
           await storage.save(loaded.replay, {
             pin: true,
             protectIds: protectIds.length > 0 ? protectIds : undefined,
-            evictedIds: batch?.evictedIds,
-            evictedRecords: batch?.evictedRecords,
+            evictedIds,
+            evictedRecords,
             batchWrittenIds: batch?.writtenIds,
           });
           // 保存できた取り込みは、以後の通常完走で上限枠を占有しない。
@@ -2126,19 +2232,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
           const listed = await refreshReplayCache();
           if (!listed) {
-            return {
-              ok: false as const,
-              reason: 'corrupt' as const,
-              message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
-            };
+            await rollbackSingle(false);
+            return failedImport();
           }
           const storedRow = cachedReplays.find((item) => item.id === loaded.replay.id);
           if (!storedRow || replayContentKey(storedRow) !== replayContentKey(loaded.replay)) {
-            return {
-              ok: false as const,
-              reason: 'corrupt' as const,
-              message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
-            };
+            await rollbackSingle(true);
+            return failedImport();
           }
           if (!batch?.retainPin) {
             const matched = pendingReplays.filter(
@@ -2160,11 +2260,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           return loaded;
         } catch {
           if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
-          return {
-            ok: false as const,
-            reason: 'corrupt' as const,
-            message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
-          };
+          await rollbackSingle(false);
+          return failedImport();
         } finally {
           replayImportDepth -= 1;
         }

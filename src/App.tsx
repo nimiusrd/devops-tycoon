@@ -47,8 +47,9 @@ import { resetViewportScroll } from './ui/viewportScroll';
 import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
+import { serializePersistenceBackup } from './state/persistenceBackup';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
-import { downloadTextFile, persistenceExportMessages } from './ui/downloadTextFile';
+import { downloadTextFile, persistenceExportMessage } from './ui/downloadTextFile';
 import { PersistenceNotice } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
@@ -482,26 +483,43 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         void run.retryPersistence();
       }}
       onExport={() => {
-        const files: { filename: string; text: string; kind: 'run' | 'replay' }[] = [];
         const runText = run.exportRunSaveText();
-        if (runText) {
-          files.push({
-            filename: 'devops-tycoon-run-save.json',
-            text: runText,
-            kind: 'run',
-          });
+        const replays = run.exportPendingReplayFiles();
+        if (!runText && replays.length === 0) {
+          setExportMessage(persistenceExportMessage(null, false));
+          return;
         }
-        for (const file of run.exportPendingReplayFiles()) {
-          files.push({ ...file, kind: 'replay' });
+        if (runText && replays.length === 0) {
+          setExportMessage(
+            persistenceExportMessage(
+              runText,
+              downloadTextFile('devops-tycoon-run-save.json', runText),
+              'run',
+            ),
+          );
+          return;
         }
+        if (!runText && replays.length === 1) {
+          const file = replays[0];
+          if (!file) return;
+          setExportMessage(
+            persistenceExportMessage(
+              file.text,
+              downloadTextFile(file.filename, file.text),
+              'replay',
+            ),
+          );
+          return;
+        }
+        const backup = serializePersistenceBackup({
+          runSave: runText,
+          replays: replays.map((file) => file.text),
+        });
+        const downloaded = downloadTextFile('devops-tycoon-persistence-backup.json', backup);
         setExportMessage(
-          persistenceExportMessages(
-            files.map((file) => ({
-              text: file.text,
-              downloaded: downloadTextFile(file.filename, file.text),
-              kind: file.kind,
-            })),
-          ),
+          downloaded
+            ? null
+            : '途中セーブをファイルに保存できませんでした。リプレイをファイルに保存できませんでした。',
         );
       }}
     />

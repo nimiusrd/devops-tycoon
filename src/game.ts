@@ -70,6 +70,7 @@ import {
   type RunRulesetIdentity,
   type RunStorage,
 } from './state/runPersistence';
+import { readPersistenceBackup } from './state/persistenceBackup';
 import { findNextReplayKeyframeIndex } from './state/replayJump';
 import {
   parseReplayShare,
@@ -820,6 +821,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 metaMigrationOpen = false;
                 metaMigrationWritten = null;
                 metaStorage = target;
+                tracker.noteDurableAt('meta', Date.now());
                 tracker.clearSession('meta');
               },
             );
@@ -1014,6 +1016,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             replayStorage = target;
             cachedReplays = listed;
             bump();
+            tracker.noteDurableAt('replay', Date.now());
             tracker.clearSession('replay');
             return;
           }
@@ -1077,6 +1080,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           replayStorage = target;
           cachedReplays = listed;
           replayMigrationOpen = false;
+          tracker.noteDurableAt('replay', Date.now());
           tracker.clearSession('replay');
           bump();
           return;
@@ -1695,6 +1699,26 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return replay ? serializeReplay(replay) : null;
     },
     async importReplayText(raw) {
+      const backup = readPersistenceBackup(raw);
+      if (backup) {
+        if (backup.replays.length === 0) {
+          return {
+            ok: false,
+            reason: 'corrupt',
+            message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+          };
+        }
+        let last: ReplayShareResult = {
+          ok: false,
+          reason: 'corrupt',
+          message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+        };
+        for (const source of backup.replays) {
+          last = await this.importReplayText(source);
+          if (!last.ok) return last;
+        }
+        return last;
+      }
       const loaded = parseReplayShare(raw);
       if (!loaded.ok) return loaded;
       if (!replayStorage) {
@@ -1711,6 +1735,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const write = replayImportWrites.then(async () => {
         try {
           await storage.save(loaded.replay, { pin: true });
+          // 保存できた取り込みは、以後の通常完走で上限枠を占有しない。
+          pinnedReplayIds.delete(loaded.replay.id);
           const listed = await refreshReplayCache();
           if (!listed) {
             cachedReplays = selectReplaysWithinMax(

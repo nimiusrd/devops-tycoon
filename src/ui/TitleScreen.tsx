@@ -39,7 +39,7 @@ function ResumeRiskDialog({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  useDialogOverlayLock(dialogRef, { onDismiss: onCancel });
+  useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: onCancel });
 
   useEffect(() => {
     cancelRef.current?.focus();

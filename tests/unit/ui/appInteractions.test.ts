@@ -255,6 +255,7 @@ import {
 } from '../../../src/state/replay';
 import { REPLAY_DRAFT_MISSING_HINT } from '../../../src/state/replayJump';
 import { toRunSave } from '../../../src/state/runPersistence';
+import * as downloadTextFileModule from '../../../src/ui/downloadTextFile';
 import { observeReplayBannerHeight } from '../../../src/ui/replayBannerOffset';
 import { resetWindowScroll } from '../../../src/ui/resetWindowScroll';
 import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
@@ -1188,8 +1189,11 @@ describe('App のラン中メニュー', () => {
       if (!notice) throw new Error('保存案内がありません');
       return notice;
     };
+    const download = vi.spyOn(downloadTextFileModule, 'downloadTextFile').mockReturnValue(false);
     (findNotice().props.onExport as () => void)();
     screen.flush();
+    expect(download).toHaveBeenCalledOnce();
+    expect(download.mock.calls[0]?.[0]).toBe('devops-tycoon-persistence-backup.json');
     const notice = findNotice();
     const failed = (notice.type as Component)(notice.props);
     expect(

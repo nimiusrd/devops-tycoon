@@ -19,6 +19,8 @@ export interface ReplaySaveOptions {
   evictedIds?: Set<string>;
   /** この保存が上限で消した記録本体。開始時の一覧に無い分も、失敗時に戻す。 */
   evictedRecords?: Map<string, ReplayBlob>;
+  /** このバッチがすでに書いた id。直前退避では、その内容を別タブの記録として扱わない。 */
+  batchWrittenIds?: ReadonlySet<string>;
 }
 
 function replayPinIds(savedId: string, options?: ReplaySaveOptions): string[] | undefined {
@@ -106,6 +108,17 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         );
         const removed: ReplayBlob[] = [];
         try {
+          const previousRaw = await tx.store.get(snapshot.id);
+          const previous = previousRaw === undefined ? null : normalizeReplay(previousRaw);
+          if (
+            previous &&
+            options?.evictedRecords &&
+            !options.evictedRecords.has(previous.id) &&
+            !options.batchWrittenIds?.has(previous.id) &&
+            JSON.stringify(previous) !== JSON.stringify(snapshot)
+          ) {
+            options.evictedRecords.set(previous.id, structuredClone(previous));
+          }
           await tx.store.put(snapshot, snapshot.id);
           const all = await tx.store.getAll();
           const normalized = all
@@ -131,7 +144,9 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         }
         for (const item of removed) {
           options?.evictedIds?.add(item.id);
-          options?.evictedRecords?.set(item.id, item);
+          if (!options?.evictedRecords?.has(item.id)) {
+            options?.evictedRecords?.set(item.id, item);
+          }
         }
       } finally {
         db.close();
@@ -188,7 +203,9 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         };
         for (const id of writtenById.keys()) {
           if (snapshotById.has(id) || !matchesWritten(id)) continue;
-          await tx.store.delete(id);
+          const preimage = evacuated.get(id);
+          if (preimage) await tx.store.put(preimage, id);
+          else await tx.store.delete(id);
         }
         for (const [id, blob] of snapshotById) {
           const now = current.get(id);
@@ -199,7 +216,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
           }
           if (JSON.stringify(now) === JSON.stringify(blob)) continue;
           if (!matchesWritten(id)) continue;
-          await tx.store.put(blob, id);
+          await tx.store.put(evacuated.get(id) ?? blob, id);
         }
         for (const [id, blob] of evacuated) {
           if (snapshotById.has(id) || writtenById.has(id)) continue;
@@ -236,6 +253,16 @@ export class MemoryReplayStorage implements ReplayStorage {
   }
 
   async save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
+    const existing = this.items.get(blob.id);
+    if (
+      existing &&
+      options?.evictedRecords &&
+      !options.evictedRecords.has(blob.id) &&
+      !options.batchWrittenIds?.has(blob.id) &&
+      JSON.stringify(existing) !== JSON.stringify(blob)
+    ) {
+      options.evictedRecords.set(blob.id, structuredClone(existing));
+    }
     const next = new Map(this.items);
     next.set(blob.id, structuredClone(blob));
     const keep = keepSavedReplays([...next.values()], blob.id, options);
@@ -252,7 +279,9 @@ export class MemoryReplayStorage implements ReplayStorage {
     for (const [id, item] of next) this.items.set(id, item);
     for (const item of removed) {
       options?.evictedIds?.add(item.id);
-      options?.evictedRecords?.set(item.id, item);
+      if (!options?.evictedRecords?.has(item.id)) {
+        options?.evictedRecords?.set(item.id, item);
+      }
     }
   }
 
@@ -278,7 +307,10 @@ export class MemoryReplayStorage implements ReplayStorage {
       );
     };
     for (const id of writtenById.keys()) {
-      if (!snapshotById.has(id) && matchesWritten(id)) this.items.delete(id);
+      if (snapshotById.has(id) || !matchesWritten(id)) continue;
+      const preimage = evictedRecords?.get(id);
+      if (preimage) this.items.set(id, structuredClone(preimage));
+      else this.items.delete(id);
     }
     for (const [id, blob] of snapshotById) {
       const current = this.items.get(id);
@@ -289,7 +321,7 @@ export class MemoryReplayStorage implements ReplayStorage {
       }
       if (JSON.stringify(current) === JSON.stringify(blob)) continue;
       if (!matchesWritten(id)) continue;
-      this.items.set(id, structuredClone(blob));
+      this.items.set(id, structuredClone(evictedRecords?.get(id) ?? blob));
     }
     for (const [id, blob] of evictedRecords ?? []) {
       if (snapshotById.has(id) || writtenById.has(id)) continue;

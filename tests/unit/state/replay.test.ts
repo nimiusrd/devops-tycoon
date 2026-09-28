@@ -458,6 +458,26 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     expect((await storage.get('kept'))?.outcome.score).toBe(kept.outcome.score);
   });
 
+  it('巻き戻しは、上書き直前の別内容を開始時の内容より優先して戻す', async () => {
+    const name = nextReplayDbName('replay-revert-preimage');
+    const storage = new IndexedDbReplayStorage(name);
+    const original = makeBlob({ id: 'same', seed: 'same', finishedAt: 2000 });
+    await storage.save(original);
+    const snapshot = await storage.list();
+    const foreign = makeBlob({ id: 'same', seed: 'same', finishedAt: 2000 });
+    foreign.outcome = { ...foreign.outcome, score: 77 };
+    await storage.save(foreign);
+    const imported = makeBlob({ id: 'same', seed: 'same', finishedAt: 2000 });
+    imported.outcome = { ...imported.outcome, score: 99 };
+    const evictedIds = new Set<string>();
+    const evictedRecords = new Map<string, ReplayBlob>();
+    await storage.save(imported, { pin: true, evictedIds, evictedRecords });
+
+    await storage.revertBatch(snapshot, [imported], evictedIds, evictedRecords);
+
+    expect((await storage.get('same'))?.outcome.score).toBe(77);
+  });
+
   it('revertBatch は、このバッチが消していない欠落を戻さない', async () => {
     const name = nextReplayDbName('replay-revert-foreign-delete');
     const storage = new IndexedDbReplayStorage(name);

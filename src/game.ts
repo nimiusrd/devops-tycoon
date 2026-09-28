@@ -282,6 +282,7 @@ export interface GameHandle {
       retainPin: boolean;
       evictedIds?: Set<string>;
       evictedRecords?: Map<string, ReplayBlob>;
+      writtenIds?: ReadonlySet<string>;
     },
   ): Promise<ReplayShareResult>;
   /** リプレイのキーフレームを read-only で開く（失敗時 null）。 */
@@ -568,6 +569,30 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const index = pendingReplays.indexOf(blob);
     if (index >= 0) pendingReplays.splice(index, 1);
     return pendingReplays.length > 0;
+  };
+
+  /** 一致した未保存を外し、保護中の完走が別内容なら未保存へ戻す。残件が無いとき true。 */
+  const releaseMatchedReplayProtection = (
+    matched: readonly ReplayBlob[],
+    listedById: ReadonlyMap<string, ReplayBlob>,
+  ): boolean => {
+    for (const blob of matched) completePendingReplay(blob);
+    for (const blob of [...replayRetryKept.values()]) {
+      const row = listedById.get(blob.id);
+      if (row && replayContentKey(row) === replayContentKey(blob)) continue;
+      replayRetryKept.delete(blob.id);
+      if (!pendingReplays.some((item) => item === blob || item.id === blob.id)) {
+        pendingReplays.push(blob);
+      }
+      if (!pendingReplayErrors.has(blob)) {
+        pendingReplayErrors.set(blob, new Error('replay evicted'));
+      }
+    }
+    if (pendingReplays.length === 0) {
+      replayRetryKept.clear();
+      return true;
+    }
+    return false;
   };
 
   /** セッション開始後にメモリへ残った完走。開始時点の一覧は端末側にある。 */
@@ -1845,7 +1870,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           }
           priorMemory = resumableSave ? structuredClone(resumableSave) : null;
           priorIssue = runSaveIssue ? structuredClone(runSaveIssue) : null;
-          if (runStorage) await runStorage.save(intended);
+          if (runStorage && priorDurable !== undefined && runStorage.saveIfMatches) {
+            const foreign = await runStorage.saveIfMatches(priorDurable, intended);
+            if (foreign) throw new Error('durable run diverged');
+          } else if (runStorage) {
+            await runStorage.save(intended);
+          }
           if (latestImportedSave !== intended) {
             if (runStorage && resumableSave && resumableSave !== intended) {
               await runStorage.save(resumableSave);
@@ -1934,6 +1964,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         retainPin: boolean;
         evictedIds?: Set<string>;
         evictedRecords?: Map<string, ReplayBlob>;
+        writtenIds?: ReadonlySet<string>;
       },
     ) {
       const backup = readPersistenceBackup(raw);
@@ -1996,6 +2027,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               retainPin: true,
               evictedIds,
               evictedRecords,
+              writtenIds: new Set(writtenById.keys()),
             });
             if (!last.ok) {
               if (!writtenById.has(item.replay.id)) {
@@ -2032,31 +2064,31 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
             };
           }
-          const matched = pendingReplays.filter((item) => {
-            const row = listedById.get(item.id);
-            return row !== undefined && replayContentKey(row) === replayContentKey(item);
-          });
-          for (const blob of matched) completePendingReplay(blob);
-          if (pendingReplays.length === 0) replayRetryKept.clear();
-          if (!tracker.isSession('replay')) {
-            tracker.noteDurableAt('replay', Date.now());
-            if (matched.length > 0 && pendingReplays.length === 0) {
-              tracker.settleCurrent('replay', Date.now());
-            }
-          }
           if (backup.runSave) {
             const runImported = await this.importRunSaveText(backup.runSave);
             if (!runImported.ok) {
+              await restoreSnapshot();
               return {
                 ok: false,
                 reason: 'corrupt',
                 message: runImported.message,
               };
             }
-            if (last.ok) {
-              bump();
-              return { ...last, restored: 'both' as const };
+          }
+          const matched = pendingReplays.filter((item) => {
+            const row = listedById.get(item.id);
+            return row !== undefined && replayContentKey(row) === replayContentKey(item);
+          });
+          const pendingCleared = releaseMatchedReplayProtection(matched, listedById);
+          if (!tracker.isSession('replay')) {
+            tracker.noteDurableAt('replay', Date.now());
+            if (matched.length > 0 && pendingCleared) {
+              tracker.settleCurrent('replay', Date.now());
             }
+          }
+          if (backup.runSave && last.ok) {
+            bump();
+            return { ...last, restored: 'both' as const };
           }
           bump();
           return last;
@@ -2087,6 +2119,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             protectIds: protectIds.length > 0 ? protectIds : undefined,
             evictedIds: batch?.evictedIds,
             evictedRecords: batch?.evictedRecords,
+            batchWrittenIds: batch?.writtenIds,
           });
           // 保存できた取り込みは、以後の通常完走で上限枠を占有しない。
           // まとめファイルの途中では、バッチが終わるまで pin を残す。
@@ -2113,11 +2146,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 item.id === loaded.replay.id &&
                 replayContentKey(item) === replayContentKey(loaded.replay),
             );
-            for (const blob of matched) completePendingReplay(blob);
-            if (pendingReplays.length === 0) replayRetryKept.clear();
+            const listedById = new Map(cachedReplays.map((row) => [row.id, row]));
+            const pendingCleared = releaseMatchedReplayProtection(matched, listedById);
             if (!tracker.isSession('replay')) {
               tracker.noteDurableAt('replay', Date.now());
-              if (matched.length > 0 && pendingReplays.length === 0) {
+              if (matched.length > 0 && pendingCleared) {
                 tracker.settleCurrent('replay', Date.now());
               }
             }

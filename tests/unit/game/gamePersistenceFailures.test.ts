@@ -1392,6 +1392,147 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.hasResumableRun()).toBe(false);
   });
 
+  it('まとめファイルの途中セーブが失敗したら、先行したリプレイも戻す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const stored = makeReplay('stored-a');
+    await replayStorage.save(stored);
+    const game = createGame({
+      seed: 'backup-replay-then-run',
+      runStorage: new MemoryRunStorage(),
+    });
+    await game.attachReplay(replayStorage);
+    vi.spyOn(replayStorage, 'save').mockRejectedValueOnce(new Error('transient'));
+    const internals = game.engine as unknown as { phase: string; status: string };
+    game.startRun('easy', [], 'pending-a');
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    const pending = game.exportPendingReplayText();
+    expect(pending).toContain('pending-a');
+    const raw = serializePersistenceBackup({
+      runSave: '{',
+      replays: [pending!],
+    });
+
+    expect((await game.importReplayText(raw)).ok).toBe(false);
+    expect((await replayStorage.list()).map((replay) => replay.seed)).toEqual(['stored-a']);
+    expect(game.exportPendingReplayText()).toContain('pending-a');
+    expect(game.getPersistenceStatus().state).toBe('failed');
+  });
+
+  it('まとめファイルは、保存直前に変わった途中セーブを上書きしない', async () => {
+    const existing = makeRunSave('existing-save');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({
+      seed: 'backup-run-cas',
+      runStorage,
+      initialRunSave: existing,
+    });
+    await game.attachReplay(replayStorage);
+    const foreign = makeRunSave('foreign-tab');
+    const originalLoad = runStorage.load.bind(runStorage);
+    let loads = 0;
+    vi.spyOn(runStorage, 'load').mockImplementation(async () => {
+      const current = await originalLoad();
+      loads += 1;
+      if (loads === 1) await runStorage.save(foreign);
+      return current;
+    });
+    const raw = serializePersistenceBackup({
+      runSave: serializeRunSave(makeRunSave('backed-up')),
+      replays: [serializeReplay(makeReplay('replay-a'))],
+    });
+
+    expect((await game.importRunSaveText(raw)).ok).toBe(false);
+    expect((await originalLoad())?.summary.seed).toBe('foreign-tab');
+    expect(game.getRunSaveSummary()?.seed).toBe('existing-save');
+    expect(await replayStorage.list()).toEqual([]);
+  });
+
+  it('まとめ取り込みは、上書き直前の別内容を失敗時に残す', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'backup-preimage' });
+    await game.attachReplay(storage);
+    const olderA = makeReplay('older-a');
+    olderA.finishedAt = 1;
+    const olderB = makeReplay('older-b');
+    olderB.finishedAt = 2;
+    const foreign = makeReplay('older-a');
+    foreign.finishedAt = 1;
+    foreign.outcome = { ...foreign.outcome, score: 77 };
+    const raw = serializePersistenceBackup({
+      runSave: null,
+      replays: [serializeReplay(olderA), serializeReplay(olderB)],
+    });
+    const original = storage.save.bind(storage);
+    let calls = 0;
+    vi.spyOn(storage, 'save').mockImplementation(async (blob, options) => {
+      calls += 1;
+      if (calls === 1) await original(foreign, { pin: true });
+      if (calls === 2) throw new Error('quota');
+      await original(blob, options);
+    });
+
+    expect((await game.importReplayText(raw)).ok).toBe(false);
+    expect((await storage.get('older-a'))?.outcome.score).toBe(77);
+    expect(await storage.get('older-b')).toBeNull();
+  });
+
+  it('同じ ID の別内容で置き換わった保護済み完走は、残件が尽きても未保存へ戻す', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 50_000 + i;
+      await storage.save(stored);
+    }
+    const game = createGame({ seed: 'kept-content-changed' });
+    await game.attachReplay(storage);
+    const original = storage.save.bind(storage);
+    const save = vi.spyOn(storage, 'save');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    const finish = (seed: string, finishedAt: number) => {
+      save.mockRejectedValueOnce(new Error('transient'));
+      vi.spyOn(Date, 'now').mockReturnValue(finishedAt);
+      game.startRun('easy', [], seed);
+      internals.phase = 'won';
+      internals.status = 'won';
+      game.step(0);
+    };
+    finish('pending-a', 1);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    finish('pending-b', 2);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    save.mockImplementation(async (blob, options) => {
+      if (blob.seed === 'pending-b') throw new Error('quota');
+      await original(blob, options);
+    });
+    await game.retryPersistence();
+    expect((await storage.list()).map((replay) => replay.seed)).toContain('pending-a');
+    save.mockImplementation(original);
+    const storedA = (await storage.list()).find((replay) => replay.seed === 'pending-a');
+    if (!storedA) throw new Error('pending-a が端末に無い');
+    const replacement = structuredClone(storedA);
+    replacement.finishedAt = 90_000;
+    replacement.outcome = { ...replacement.outcome, score: 99 };
+    const result = await game.importReplayText(serializeReplay(replacement));
+    expect(result).toMatchObject({ ok: true });
+    const pendingB = game
+      .exportPendingReplayFiles()
+      .find((file) => file.text.includes('pending-b'));
+    expect(pendingB).toBeTruthy();
+
+    expect(await game.importReplayText(pendingB!.text)).toMatchObject({ ok: true });
+
+    expect(game.exportPendingReplayFiles().some((file) => file.text.includes('pending-a'))).toBe(
+      true,
+    );
+    expect((await storage.get(replacement.id))?.outcome.score).toBe(99);
+    expect(game.getPersistenceStatus().state).toBe('failed');
+  });
+
   it('取り込み後の記録が別内容なら、成功にせず要約も変えない', async () => {
     const existing = makeRunSave('existing-save');
     const storage = new MemoryRunStorage();

@@ -2500,4 +2500,28 @@ test.describe('狭幅オーバーレイと盤面ヒット（#529）', () => {
     if (!guideBox || !actionBox) throw new Error('ガイド / 介入バーの box が無い');
     expect(overlaps(guideBox, actionBox), '初回ガイドが介入バーを覆っている').toBe(false);
   });
+
+  test('320pxの上端ガイドは保存バナーの下から始まる', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto('/?seed=issue-145-tutorial-banner&tutorial=force');
+    await expect(page.getByTestId('title')).toBeVisible();
+    await page.evaluate(() => {
+      const game = (window as OverlayGameWindow).game;
+      if (!game) throw new Error('window.game が公開されていない');
+      game.pause();
+      game.startRun('easy', [], 'issue-145-tutorial-banner');
+      game.beginSetupSprint();
+      document.documentElement.style.setProperty('--persistence-banner-height', '72px');
+    });
+
+    const guide = page.getByTestId('tutorial-guide');
+    await expect(guide).toBeVisible();
+    await expect(guide).toHaveAttribute('data-step', 'action-bar');
+    const guideBox = await guide.boundingBox();
+    if (!guideBox) throw new Error('初回ガイドの box が無い');
+    expect(guideBox.y).toBeGreaterThanOrEqual(72);
+    const actionBar = page.getByTestId('action-bar');
+    await actionBar.scrollIntoViewIfNeeded();
+    await assertCenterNotCoveredByOverlay(page, 'action-firefight');
+  });
 });

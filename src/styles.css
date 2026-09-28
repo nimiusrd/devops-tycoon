@@ -5470,7 +5470,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 /* #529: 下端ハイライト（介入バー／連携ゲージ）は上ドックし、CTA を隠さない。 */
 .tutorial-guide[data-step='action-bar'],
 .tutorial-guide[data-step='combo-gauge'] {
-  top: 0;
+  top: var(--persistence-banner-height, 0px);
   bottom: auto;
   padding: 18px 16px 0;
 }

@@ -17,6 +17,8 @@ export interface ReplaySaveOptions {
   protectIds?: readonly string[];
   /** この保存が上限で消した id。巻き戻しは、ここにある欠落だけを戻す。 */
   evictedIds?: Set<string>;
+  /** この保存が上限で消した記録本体。開始時の一覧に無い分も、失敗時に戻す。 */
+  evictedRecords?: Map<string, ReplayBlob>;
 }
 
 function replayPinIds(savedId: string, options?: ReplaySaveOptions): string[] | undefined {
@@ -50,12 +52,14 @@ export interface ReplayStorage {
    * このバッチが書いた内容と今の記録が一致するときだけ、追加分を消し、開始時の内容へ戻す。
    * 別内容へ変わった記録と、開始時に無かった別の記録は消さない。
    * 欠落は、このバッチが上限で消した id だけを戻す。
+   * 開始時の一覧に無かった記録は、消す直前に退避した本体が欠落しているときだけ戻す。
    * 比較と書き戻しは同一トランザクション。
    */
   revertBatch?(
     snapshot: readonly ReplayBlob[],
     written: readonly ReplayBlob[],
     evictedIds?: ReadonlySet<string>,
+    evictedRecords?: ReadonlyMap<string, ReplayBlob>,
   ): Promise<void>;
 }
 
@@ -100,7 +104,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
           () => undefined,
           () => undefined,
         );
-        const removed: string[] = [];
+        const removed: ReplayBlob[] = [];
         try {
           await tx.store.put(snapshot, snapshot.id);
           const all = await tx.store.getAll();
@@ -112,7 +116,7 @@ export class IndexedDbReplayStorage implements ReplayStorage {
           for (const item of normalized) {
             if (!keepIds.has(item.id)) {
               await tx.store.delete(item.id);
-              removed.push(item.id);
+              removed.push(structuredClone(item));
             }
           }
           await tx.done;
@@ -125,7 +129,10 @@ export class IndexedDbReplayStorage implements ReplayStorage {
           await aborted;
           throw error;
         }
-        for (const id of removed) options?.evictedIds?.add(id);
+        for (const item of removed) {
+          options?.evictedIds?.add(item.id);
+          options?.evictedRecords?.set(item.id, item);
+        }
       } finally {
         db.close();
       }
@@ -151,9 +158,13 @@ export class IndexedDbReplayStorage implements ReplayStorage {
     snapshot: readonly ReplayBlob[],
     written: readonly ReplayBlob[],
     evictedIds?: ReadonlySet<string>,
+    evictedRecords?: ReadonlyMap<string, ReplayBlob>,
   ): Promise<void> {
     const writtenById = new Map(written.map((blob) => [blob.id, structuredClone(blob)]));
     const snapshotById = new Map(snapshot.map((blob) => [blob.id, structuredClone(blob)]));
+    const evacuated = new Map(
+      [...(evictedRecords ?? [])].map(([id, blob]) => [id, structuredClone(blob)]),
+    );
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
@@ -190,6 +201,15 @@ export class IndexedDbReplayStorage implements ReplayStorage {
           if (!matchesWritten(id)) continue;
           await tx.store.put(blob, id);
         }
+        for (const [id, blob] of evacuated) {
+          if (snapshotById.has(id) || writtenById.has(id)) continue;
+          const now = current.get(id);
+          if (now === undefined) {
+            await tx.store.put(blob, id);
+            continue;
+          }
+          if (JSON.stringify(now) === JSON.stringify(blob)) continue;
+        }
         await tx.done;
       } finally {
         db.close();
@@ -220,16 +240,20 @@ export class MemoryReplayStorage implements ReplayStorage {
     next.set(blob.id, structuredClone(blob));
     const keep = keepSavedReplays([...next.values()], blob.id, options);
     const keepIds = new Set(keep.map((item) => item.id));
-    const removed: string[] = [];
+    const removed: ReplayBlob[] = [];
     for (const id of [...next.keys()]) {
       if (!keepIds.has(id)) {
+        const item = next.get(id);
+        if (item) removed.push(structuredClone(item));
         next.delete(id);
-        removed.push(id);
       }
     }
     this.items.clear();
     for (const [id, item] of next) this.items.set(id, item);
-    for (const id of removed) options?.evictedIds?.add(id);
+    for (const item of removed) {
+      options?.evictedIds?.add(item.id);
+      options?.evictedRecords?.set(item.id, item);
+    }
   }
 
   async clear(): Promise<void> {
@@ -240,6 +264,7 @@ export class MemoryReplayStorage implements ReplayStorage {
     snapshot: readonly ReplayBlob[],
     written: readonly ReplayBlob[],
     evictedIds?: ReadonlySet<string>,
+    evictedRecords?: ReadonlyMap<string, ReplayBlob>,
   ): Promise<void> {
     const writtenById = new Map(written.map((blob) => [blob.id, blob]));
     const snapshotById = new Map(snapshot.map((blob) => [blob.id, blob]));
@@ -265,6 +290,15 @@ export class MemoryReplayStorage implements ReplayStorage {
       if (JSON.stringify(current) === JSON.stringify(blob)) continue;
       if (!matchesWritten(id)) continue;
       this.items.set(id, structuredClone(blob));
+    }
+    for (const [id, blob] of evictedRecords ?? []) {
+      if (snapshotById.has(id) || writtenById.has(id)) continue;
+      const current = this.items.get(id);
+      if (!current) {
+        this.items.set(id, structuredClone(blob));
+        continue;
+      }
+      if (JSON.stringify(current) === JSON.stringify(blob)) continue;
     }
   }
 }

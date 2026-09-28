@@ -1634,15 +1634,43 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const blobs = pendingReplays.filter((blob) => !replaySavesInFlight.has(blob));
           if (blobs.length > 0) {
             const cohort = [...new Set([...blobs.map((blob) => blob.id), ...replayRetryKeptIds])];
+            const saved: ReplayBlob[] = [];
             tasks.push(
               (async () => {
-                for (const blob of blobs) {
-                  await retryWrite('replay', beginReplaySave(blob, cohort), () => {
-                    replayRetryKeptIds.add(blob.id);
-                    const stillPending = completePendingReplay(blob);
-                    if (!stillPending) replayRetryKeptIds.clear();
-                    return stillPending;
-                  });
+                const storage = replayStorage;
+                try {
+                  for (const blob of blobs) {
+                    await retryWrite('replay', beginReplaySave(blob, cohort), () => {
+                      saved.push(blob);
+                      replayRetryKeptIds.add(blob.id);
+                      // 上限で後から消える分があるため、一覧を確かめるまで成功にしない。
+                      return true;
+                    });
+                  }
+                } finally {
+                  if (storage) {
+                    try {
+                      const listed = await storage.list();
+                      const listedById = new Map(listed.map((row) => [row.id, row]));
+                      for (const blob of saved) {
+                        const row = listedById.get(blob.id);
+                        if (row && replayContentKey(row) === replayContentKey(blob)) {
+                          completePendingReplay(blob);
+                        } else {
+                          replayRetryKeptIds.delete(blob.id);
+                          if (!pendingReplayErrors.has(blob)) {
+                            pendingReplayErrors.set(blob, new Error('replay evicted'));
+                          }
+                        }
+                      }
+                      if (pendingReplays.length === 0) {
+                        replayRetryKeptIds.clear();
+                        tracker.settleCurrent('replay', Date.now());
+                      }
+                    } catch {
+                      /* 一覧が読めなければ、未保存のまま失敗を残す */
+                    }
+                  }
                 }
               })(),
             );
@@ -1779,9 +1807,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         durableReplay = options.durableStorage ?? null;
         tracker.markSession('replay');
       }
-      await refreshReplayCache();
+      const listed = await refreshReplayCache();
       if (sessionOnly) {
         replayIdsAtSession = new Set(cachedReplays.map((item) => item.id));
+      } else if (listed) {
+        const now = Date.now();
+        let latest: number | null = null;
+        for (const item of cachedReplays) {
+          const at = item.finishedAt;
+          if (!Number.isFinite(at) || at > now) continue;
+          if (latest === null || at > latest) latest = at;
+        }
+        if (latest !== null) tracker.noteDurableAt('replay', latest);
       }
     },
     listReplays() {
@@ -1793,7 +1830,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     async importReplayText(
       raw: string,
-      batch?: { protectIds: readonly string[]; retainPin: boolean; evictedIds?: Set<string> },
+      batch?: {
+        protectIds: readonly string[];
+        retainPin: boolean;
+        evictedIds?: Set<string>;
+        evictedRecords?: Map<string, ReplayBlob>;
+      },
     ) {
       const backup = readPersistenceBackup(raw);
       if (backup && !batch) {
@@ -1821,12 +1863,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         const snapshot = replayStorage ? await replayStorage.list() : [];
         const writtenById = new Map<string, ReplayBlob>();
         const evictedIds = new Set<string>();
+        const evictedRecords = new Map<string, ReplayBlob>();
         const restoreSnapshot = async (): Promise<void> => {
           const storage = replayStorage;
           if (!storage) return;
           try {
             if (storage.revertBatch) {
-              await storage.revertBatch(snapshot, [...writtenById.values()], evictedIds);
+              await storage.revertBatch(
+                snapshot,
+                [...writtenById.values()],
+                evictedIds,
+                evictedRecords,
+              );
             } else {
               await storage.clear();
               for (const blob of snapshot) await storage.save(structuredClone(blob));
@@ -1848,6 +1896,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               protectIds: cohort,
               retainPin: true,
               evictedIds,
+              evictedRecords,
             });
             if (!last.ok) {
               if (!writtenById.has(item.replay.id)) {
@@ -1922,6 +1971,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             pin: true,
             protectIds: protectIds.length > 0 ? protectIds : undefined,
             evictedIds: batch?.evictedIds,
+            evictedRecords: batch?.evictedRecords,
           });
           // 保存できた取り込みは、以後の通常完走で上限枠を占有しない。
           // まとめファイルの途中では、バッチが終わるまで pin を残す。
@@ -1939,7 +1989,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             replayRevision += 1;
             return loaded;
           }
-          if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
+          const storedRow = cachedReplays.find((item) => item.id === loaded.replay.id);
+          if (!storedRow || replayContentKey(storedRow) !== replayContentKey(loaded.replay)) {
             return {
               ok: false as const,
               reason: 'corrupt' as const,

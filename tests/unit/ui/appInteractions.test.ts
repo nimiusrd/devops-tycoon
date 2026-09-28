@@ -1205,6 +1205,41 @@ describe('App のラン中メニュー', () => {
     expect(screen.run.exportRunSaveText).toHaveBeenCalledOnce();
     expect(screen.run.exportPendingReplayFiles).toHaveBeenCalledOnce();
   });
+
+  it('リプレイだけの退避失敗では途中セーブを報告しない', () => {
+    const screen = mountApp({
+      persistenceStatus: {
+        state: 'failed',
+        tone: 'danger',
+        headline: '保存失敗',
+        detail: '保存できませんでした。',
+        liveMessage: '保存に失敗しました。再試行できます。',
+        showRetry: true,
+        showExport: true,
+        persistent: true,
+      },
+      exportRunSaveText: vi.fn(() => null),
+      exportPendingReplayFiles: vi.fn(() => [
+        { filename: 'devops-tycoon-replay-1.json', text: 'replay-a' },
+        { filename: 'devops-tycoon-replay-2.json', text: 'replay-b' },
+      ]),
+    });
+    const findNotice = () => {
+      const notice = elements(screen.tree).find(
+        (item) => componentName(item) === 'PersistenceNotice',
+      );
+      if (!notice) throw new Error('保存案内がありません');
+      return notice;
+    };
+    vi.spyOn(downloadTextFileModule, 'downloadTextFile').mockReturnValue(false);
+    (findNotice().props.onExport as () => void)();
+    screen.flush();
+    const failed = (findNotice().type as Component)(findNotice().props);
+    expect(
+      elements(failed).find((node) => node.props['data-testid'] === 'persistence-export-error')
+        ?.props.children,
+    ).toBe('リプレイをファイルに保存できませんでした。');
+  });
 });
 
 describe.each(['EvolutionSimPause', 'SprintSuspendFallback'])(

@@ -49,7 +49,11 @@ import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { serializePersistenceBackup } from './state/persistenceBackup';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
-import { downloadTextFile, persistenceExportMessage } from './ui/downloadTextFile';
+import {
+  downloadTextFile,
+  persistenceExportMessage,
+  persistenceExportMessages,
+} from './ui/downloadTextFile';
 import { PersistenceNotice } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
@@ -516,11 +520,13 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           replays: replays.map((file) => file.text),
         });
         const downloaded = downloadTextFile('devops-tycoon-persistence-backup.json', backup);
-        setExportMessage(
-          downloaded
-            ? null
-            : '途中セーブをファイルに保存できませんでした。リプレイをファイルに保存できませんでした。',
-        );
+        const included = [
+          ...(runText ? [{ text: runText, downloaded, kind: 'run' as const }] : []),
+          ...(replays.length > 0
+            ? [{ text: replays[0]?.text ?? '', downloaded, kind: 'replay' as const }]
+            : []),
+        ];
+        setExportMessage(persistenceExportMessages(included));
       }}
     />
   );

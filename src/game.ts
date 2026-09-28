@@ -371,6 +371,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** セッション限りになった時点のメタ世代。再試行前の更新を既存データで戻さない。 */
   let metaRevisionAtSession = 0;
   let runRevision = 0;
+  /** セッション限りになった時点のラン世代。再試行前の完走や破棄を既存セーブで戻さない。 */
+  let runRevisionAtSession = 0;
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
   /** リプレイ取り込みの世代。最終一覧のあとでも、途中の取り込みを既存データにしない。 */
@@ -851,7 +853,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         const loaded = await durableRun.load();
         const importedAhead = latestImportedSave !== null;
         const importMoved =
-          runImportDepth > 0 || runRevision !== runRevisionAtStart || importedAhead;
+          runImportDepth > 0 ||
+          runRevision !== runRevisionAtStart ||
+          runRevision !== runRevisionAtSession ||
+          importedAhead;
         const loadedKey = loaded ? persistedRecordKey(loaded) : null;
         const ownPartial =
           runMigrationOpen && loadedKey !== null && loadedKey === runMigrationWritten;
@@ -914,6 +919,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               const importMovedNow =
                 runImportDepth > 0 ||
                 runRevision !== runRevisionAtStart ||
+                runRevision !== runRevisionAtSession ||
                 latestImportedSave !== null;
               if (!importMovedNow && canAdoptDurableRun()) {
                 const loaded = error.record as RunSave;
@@ -1512,6 +1518,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       resumableSave = runSaveIssue ? null : save;
       if (options?.sessionOnly) {
         durableRun = options.durableStorage ?? null;
+        runRevisionAtSession = runRevision;
         tracker.markSession('run');
       } else if (resumableSave) {
         tracker.noteDurableAt('run', resumableSave.savedAt);
@@ -1698,9 +1705,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const replay = cachedReplays.find((item) => item.id === id);
       return replay ? serializeReplay(replay) : null;
     },
-    async importReplayText(raw) {
+    async importReplayText(
+      raw: string,
+      batch?: { protectIds: readonly string[]; retainPin: boolean },
+    ) {
       const backup = readPersistenceBackup(raw);
-      if (backup) {
+      if (backup && !batch) {
         if (backup.replays.length === 0) {
           return {
             ok: false,
@@ -1708,16 +1718,33 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
           };
         }
-        let last: ReplayShareResult = {
-          ok: false,
-          reason: 'corrupt',
-          message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
-        };
-        for (const source of backup.replays) {
-          last = await this.importReplayText(source);
-          if (!last.ok) return last;
+        const parsed = backup.replays.map((source) => parseReplayShare(source));
+        const invalid = parsed.find((item) => !item.ok);
+        if (invalid && !invalid.ok) return invalid;
+        const cohort = parsed.flatMap((item) => (item.ok ? [item.replay.id] : []));
+        for (const id of cohort) pinnedReplayIds.add(id);
+        try {
+          let last: ReplayShareResult = {
+            ok: false,
+            reason: 'corrupt',
+            message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+          };
+          for (const source of backup.replays) {
+            last = await this.importReplayText(source, { protectIds: cohort, retainPin: true });
+            if (!last.ok) return last;
+          }
+          const listed = replayStorage ? await replayStorage.list() : [];
+          if (cohort.some((id) => !listed.some((row) => row.id === id))) {
+            return {
+              ok: false,
+              reason: 'corrupt',
+              message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+            };
+          }
+          return last;
+        } finally {
+          for (const id of cohort) pinnedReplayIds.delete(id);
         }
-        return last;
       }
       const loaded = parseReplayShare(raw);
       if (!loaded.ok) return loaded;
@@ -1734,9 +1761,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       replayRevision += 1;
       const write = replayImportWrites.then(async () => {
         try {
-          await storage.save(loaded.replay, { pin: true });
+          await storage.save(loaded.replay, {
+            pin: true,
+            protectIds: batch?.protectIds ? [...batch.protectIds] : undefined,
+          });
           // 保存できた取り込みは、以後の通常完走で上限枠を占有しない。
-          pinnedReplayIds.delete(loaded.replay.id);
+          // まとめファイルの途中では、バッチが終わるまで pin を残す。
+          if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
           const listed = await refreshReplayCache();
           if (!listed) {
             cachedReplays = selectReplaysWithinMax(

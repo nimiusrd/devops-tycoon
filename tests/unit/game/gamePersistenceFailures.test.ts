@@ -746,17 +746,48 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
 
     other.newRun();
     await other.retryPersistence();
-    expect(other.getRunSaveSummary()?.seed).toBe('stored-run');
+    expect(other.getRunSaveSummary()).toBeNull();
     expect(other.engine.snapshot().phase).toBe('title');
-    overwrite.mockRejectedValueOnce(new Error('transient'));
-    other.startRun('easy', [], 'after-adopt');
-    await Promise.resolve();
-    await Promise.resolve();
-    const adopted = other.getPersistenceStatus();
-    expect(adopted.state).toBe('failed');
-    expect(adopted.detail).toContain('最後に端末へ保存できた時刻');
-    expect(adopted.detail).not.toContain('まだ端末へ保存できていません');
+    expect(other.getPersistenceStatus().state).toBe('session');
     expect((await durableExisting.load())?.summary.seed).toBe('stored-run');
+  });
+
+  it('セッション中にランを動かしていなければ、再試行で既存セーブを採用する', async () => {
+    const durable = new MemoryRunStorage();
+    await durable.save(makeRunSave('stored-run'));
+    const game = createGame({ seed: 'adopt-unchanged' });
+    game.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+
+    await game.retryPersistence();
+
+    expect(game.getRunSaveSummary()?.seed).toBe('stored-run');
+    expect(game.getPersistenceStatus().state).not.toBe('session');
+  });
+
+  it('セッション中に完走してから再試行しても、以前の途中セーブは戻さない', async () => {
+    const durable = new MemoryRunStorage();
+    await durable.save(makeRunSave('stored-run'));
+    const game = createGame({ seed: 'finish-before-retry' });
+    game.attachRunPersistence(new MemoryRunStorage(), null, null, {
+      sessionOnly: true,
+      durableStorage: durable,
+    });
+    game.startRun('easy', [], 'memory-run');
+    const internals = game.engine as unknown as { phase: string; status: string };
+    internals.phase = 'won';
+    internals.status = 'won';
+    game.step(0);
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+
+    await game.retryPersistence();
+
+    expect(game.getRunSaveSummary()?.seed).not.toBe('stored-run');
+    expect(game.engine.snapshot().phase).toBe('won');
+    expect(game.getPersistenceStatus().state).toBe('session');
+    expect((await durable.load())?.summary.seed).toBe('stored-run');
   });
 
   it('空の永続先への再試行は現在のメタを保存し、失敗時はセッション限りを維持する', async () => {
@@ -1080,6 +1111,31 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
         .map((replay) => replay.seed)
         .sort(),
     ).toEqual(['replay-a', 'replay-b']);
+  });
+
+  it('まとめファイルの古いリプレイは、上限いっぱいでも全部残す', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const stored = makeReplay(`stored-${i}`);
+      stored.finishedAt = 50_000 + i;
+      await storage.save(stored);
+    }
+    const game = createGame({ seed: 'backup-cap' });
+    await game.attachReplay(storage);
+    const olderA = makeReplay('older-a');
+    olderA.finishedAt = 1;
+    const olderB = makeReplay('older-b');
+    olderB.finishedAt = 2;
+    const raw = serializePersistenceBackup({
+      runSave: null,
+      replays: [serializeReplay(olderA), serializeReplay(olderB)],
+    });
+
+    expect(await game.importReplayText(raw)).toMatchObject({ ok: true });
+    const seeds = (await storage.list()).map((replay) => replay.seed);
+    expect(seeds).toContain('older-a');
+    expect(seeds).toContain('older-b');
+    expect(seeds).toHaveLength(REPLAY_MAX_COUNT);
   });
 
   it('セッション復旧と同じ再試行で、別チャネルの保存失敗も書き直す', async () => {

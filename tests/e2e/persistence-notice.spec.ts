@@ -114,7 +114,64 @@ test('起動時に保存先を読めないときはセッション限りを表�
   await page.evaluate(() => {
     (window as unknown as { __setIdbFail: (next: boolean) => void }).__setIdbFail(false);
   });
+  await page.clock.install();
   await page.getByTestId('persistence-retry').click();
   await expect(notice).not.toHaveAttribute('data-state', 'session');
+  await expect(notice).toHaveAttribute('data-persistent', 'false');
+  await expect(notice).toHaveAttribute('data-quiet-placement', 'inline');
   await expect(page.getByTestId('persistence-live')).toContainText('読み直せました');
+  await expect(page.getByTestId('persistence-notice-headline')).toHaveText('保存済み');
+
+  const quietViewports = [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 768 },
+    { width: 1280, height: 800 },
+    { width: 1440, height: 900 },
+  ] as const;
+
+  for (const viewport of quietViewports) {
+    await page.setViewportSize(viewport);
+    await expect(page.getByTestId('hud')).toBeVisible();
+    const placement = await page.evaluate(() => {
+      const noticeEl = document.querySelector('[data-testid="persistence-notice"]');
+      const hudEl = document.querySelector('[data-testid="hud"]');
+      const toggleEl = document.querySelector('[data-testid="hud-toggle"]');
+      if (
+        !(noticeEl instanceof HTMLElement) ||
+        !(hudEl instanceof HTMLElement) ||
+        !(toggleEl instanceof HTMLElement)
+      ) {
+        return null;
+      }
+      const noticeBox = noticeEl.getBoundingClientRect();
+      const hudBox = hudEl.getBoundingClientRect();
+      const toggleBox = toggleEl.getBoundingClientRect();
+      const hits = (a: DOMRect, b: DOMRect) =>
+        a.left < b.right - 0.5 &&
+        a.right > b.left + 0.5 &&
+        a.top < b.bottom - 0.5 &&
+        a.bottom > b.top + 0.5;
+      const detail = noticeEl.querySelector('[data-testid="persistence-notice-detail"]');
+      const detailHidden =
+        !(detail instanceof HTMLElement) || getComputedStyle(detail).display === 'none';
+      return {
+        overlapsHud: hits(noticeBox, hudBox),
+        overlapsToggle: hits(noticeBox, toggleBox),
+        belowHud: noticeBox.top >= hudBox.bottom - 1,
+        detailHidden,
+        narrow: document.documentElement.dataset.responsiveWidth === 'narrow',
+      };
+    });
+    expect(placement, `${viewport.width}x${viewport.height} の復旧チップ`).not.toBeNull();
+    expect(placement!.overlapsHud, `${viewport.width} で HUD と重なる`).toBe(false);
+    expect(placement!.overlapsToggle, `${viewport.width} で KPI詳細と重なる`).toBe(false);
+    expect(placement!.belowHud, `${viewport.width} で HUD の下にない`).toBe(true);
+    expect(placement!.detailHidden, `${viewport.width} の詳細表示`).toBe(placement!.narrow);
+    const fits = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+    );
+    expect(fits, `${viewport.width}x${viewport.height} で横スクロール`).toBe(true);
+  }
 });

@@ -5,7 +5,7 @@ import {
   persistenceExportMessage,
   persistenceExportMessages,
 } from '../../../src/ui/downloadTextFile';
-import { PersistenceNotice } from '../../../src/ui/PersistenceNotice';
+import { PersistenceNotice, PersistenceQuietChip } from '../../../src/ui/PersistenceNotice';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
 
@@ -45,8 +45,15 @@ function render(
   onRetry = vi.fn(),
   onExport = vi.fn(),
   exportMessage: string | null = null,
+  quietPlacement: 'inline' | 'overlay' = 'overlay',
 ) {
-  return createElement(PersistenceNotice, { notice, onRetry, onExport, exportMessage });
+  return createElement(PersistenceNotice, {
+    notice,
+    onRetry,
+    onExport,
+    exportMessage,
+    quietPlacement,
+  });
 }
 
 describe('PersistenceNotice', () => {
@@ -124,6 +131,73 @@ describe('PersistenceNotice', () => {
     expect(
       elements(tree).some((element) => element.props['data-testid'] === 'persistence-retry'),
     ).toBe(false);
+  });
+
+  it('HUD がある画面では復旧チップをヘッダー側に任せ、常駐バナーは残す', () => {
+    const quiet = render(
+      {
+        ...base,
+        state: 'saved',
+        tone: 'quiet',
+        headline: '保存済み',
+        detail: '保存済みデータを読み直せました。',
+        liveMessage: '保存済みデータを読み直せました。',
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      },
+      vi.fn(),
+      vi.fn(),
+      null,
+      'inline',
+    );
+    expect(
+      elements(quiet).some((element) => element.props['data-testid'] === 'persistence-notice'),
+    ).toBe(false);
+    expect(find(quiet, 'persistence-live').props.children).toBe('保存済みデータを読み直せました。');
+
+    const failed = render(base, vi.fn(), vi.fn(), null, 'inline');
+    expect(find(failed, 'persistence-notice').props['data-persistent']).toBe('true');
+    expect(find(failed, 'persistence-retry').props).toBeTruthy();
+  });
+
+  it('復旧チップは見出しと詳細を HUD の下へ出し、平常時と常駐中は出さない', () => {
+    const saved: PersistenceNoticeModel = {
+      ...base,
+      state: 'saved',
+      tone: 'quiet',
+      headline: '保存済み',
+      detail: '保存済みデータを読み直せました。',
+      liveMessage: '保存済みデータを読み直せました。',
+      showRetry: false,
+      showExport: false,
+      persistent: false,
+    };
+    const chip = expand(createElement(PersistenceQuietChip, { notice: saved, active: true }));
+    expect(find(chip, 'persistence-quiet-slot').props.className).toBe('persistence-quiet-slot');
+    expect(find(chip, 'persistence-notice').props).toMatchObject({
+      'data-persistent': 'false',
+      'data-quiet-placement': 'inline',
+      'data-state': 'saved',
+      className: 'persistence-notice persistence-notice-quiet',
+    });
+    expect(find(chip, 'persistence-notice-headline').props.children).toBe('保存済み');
+    expect(find(chip, 'persistence-notice-detail').props.children).toBe(
+      '保存済みデータを読み直せました。',
+    );
+
+    expect(
+      expand(createElement(PersistenceQuietChip, { notice: saved, active: false })),
+    ).toBeNull();
+    expect(expand(createElement(PersistenceQuietChip, { notice: base, active: true }))).toBeNull();
+    expect(
+      expand(
+        createElement(PersistenceQuietChip, {
+          notice: { ...saved, state: 'idle', headline: '', detail: '', liveMessage: '' },
+          active: true,
+        }),
+      ),
+    ).toBeNull();
   });
 
   it('書き出し失敗はバナーと読み上げに出し、成功時は文を足さない', () => {

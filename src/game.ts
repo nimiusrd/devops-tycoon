@@ -1850,6 +1850,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               evictedIds,
             });
             if (!last.ok) {
+              if (!writtenById.has(item.replay.id)) {
+                writtenById.set(item.replay.id, item.replay);
+              }
               await restoreSnapshot();
               return last;
             }
@@ -1886,6 +1889,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             return row !== undefined && replayContentKey(row) === replayContentKey(item);
           });
           for (const blob of matched) completePendingReplay(blob);
+          if (pendingReplays.length === 0) replayRetryKeptIds.clear();
           if (!tracker.isSession('replay')) {
             tracker.noteDurableAt('replay', Date.now());
             if (matched.length > 0 && pendingReplays.length === 0) {
@@ -1949,6 +1953,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 replayContentKey(item) === replayContentKey(loaded.replay),
             );
             for (const blob of matched) completePendingReplay(blob);
+            if (pendingReplays.length === 0) replayRetryKeptIds.clear();
             if (!tracker.isSession('replay')) {
               tracker.noteDurableAt('replay', Date.now());
               if (matched.length > 0 && pendingReplays.length === 0) {

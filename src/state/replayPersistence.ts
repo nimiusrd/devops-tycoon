@@ -95,19 +95,37 @@ export class IndexedDbReplayStorage implements ReplayStorage {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
-        await db.put(REPLAYS_STORE_NAME, snapshot, snapshot.id);
-        const all = await db.getAll(REPLAYS_STORE_NAME);
-        const normalized = all
-          .map((raw) => normalizeReplay(raw))
-          .filter((item): item is ReplayBlob => item !== null);
-        const keep = keepSavedReplays(normalized, snapshot.id, options);
-        const keepIds = new Set(keep.map((item) => item.id));
-        for (const item of normalized) {
-          if (!keepIds.has(item.id)) {
-            await db.delete(REPLAYS_STORE_NAME, item.id);
-            options?.evictedIds?.add(item.id);
+        const tx = db.transaction(REPLAYS_STORE_NAME, 'readwrite');
+        const aborted = tx.done.then(
+          () => undefined,
+          () => undefined,
+        );
+        const removed: string[] = [];
+        try {
+          await tx.store.put(snapshot, snapshot.id);
+          const all = await tx.store.getAll();
+          const normalized = all
+            .map((raw) => normalizeReplay(raw))
+            .filter((item): item is ReplayBlob => item !== null);
+          const keep = keepSavedReplays(normalized, snapshot.id, options);
+          const keepIds = new Set(keep.map((item) => item.id));
+          for (const item of normalized) {
+            if (!keepIds.has(item.id)) {
+              await tx.store.delete(item.id);
+              removed.push(item.id);
+            }
           }
+          await tx.done;
+        } catch (error) {
+          try {
+            tx.abort();
+          } catch {
+            /* すでに失敗したトランザクション */
+          }
+          await aborted;
+          throw error;
         }
+        for (const id of removed) options?.evictedIds?.add(id);
       } finally {
         db.close();
       }
@@ -198,15 +216,20 @@ export class MemoryReplayStorage implements ReplayStorage {
   }
 
   async save(blob: ReplayBlob, options?: ReplaySaveOptions): Promise<void> {
-    this.items.set(blob.id, structuredClone(blob));
-    const keep = keepSavedReplays([...this.items.values()], blob.id, options);
+    const next = new Map(this.items);
+    next.set(blob.id, structuredClone(blob));
+    const keep = keepSavedReplays([...next.values()], blob.id, options);
     const keepIds = new Set(keep.map((item) => item.id));
-    for (const id of [...this.items.keys()]) {
+    const removed: string[] = [];
+    for (const id of [...next.keys()]) {
       if (!keepIds.has(id)) {
-        this.items.delete(id);
-        options?.evictedIds?.add(id);
+        next.delete(id);
+        removed.push(id);
       }
     }
+    this.items.clear();
+    for (const [id, item] of next) this.items.set(id, item);
+    for (const id of removed) options?.evictedIds?.add(id);
   }
 
   async clear(): Promise<void> {

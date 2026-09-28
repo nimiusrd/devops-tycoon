@@ -333,6 +333,44 @@ describe('IndexedDB リプレイ永続化（RI-61）', () => {
     expect(listed[0]?.id).toBe(`id-${REPLAY_MAX_COUNT + 2}`);
     expect(listed.some((r) => r.id === 'id-0')).toBe(false);
   });
+
+  it('上限削除が失敗したら、追加も削除も残さない', async () => {
+    const name = nextReplayDbName('replay-atomic');
+    const storage = new IndexedDbReplayStorage(name);
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `kept-${i}`,
+          seed: `kept-${i}`,
+          finishedAt: 1000 + i,
+        }),
+      );
+    }
+    const evictedIds = new Set<string>();
+    const originalDelete = IDBObjectStore.prototype.delete;
+    IDBObjectStore.prototype.delete = function deleteAndFail(): ReturnType<
+      IDBObjectStore['delete']
+    > {
+      IDBObjectStore.prototype.delete = originalDelete;
+      throw new DOMException('delete failed', 'UnknownError');
+    };
+
+    try {
+      await expect(
+        storage.save(makeBlob({ id: 'incoming', seed: 'incoming', finishedAt: 9000 }), {
+          evictedIds,
+        }),
+      ).rejects.toThrow('delete failed');
+
+      const listed = await storage.list();
+      expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+      expect(listed.some((replay) => replay.id === 'incoming')).toBe(false);
+      expect(listed.some((replay) => replay.id === 'kept-0')).toBe(true);
+      expect(evictedIds.size).toBe(0);
+    } finally {
+      IDBObjectStore.prototype.delete = originalDelete;
+    }
+  });
 });
 
 describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {

@@ -120,8 +120,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     const empty = await openGameDb(name);
     await empty.delete(RUN_STORE_NAME, RUN_RECORD_KEY);
     empty.close();
-    expect(await storage.replaceIfMatches(second, third)).toBeNull();
-    expect((await storage.load())?.savedAt).toBe(3000);
+    await expect(storage.replaceIfMatches(second, third)).rejects.toThrow(
+      'durable run was removed',
+    );
+    expect(await storage.load()).toBeNull();
   });
 
   it('メモリの replaceIfMatches は一致したときだけ save し、別のセーブは残す', async () => {
@@ -140,6 +142,11 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     await storage.save(foreign);
     expect((await storage.replaceIfMatches(first, second))?.savedAt).toBe(7777);
     expect((await storage.load())?.savedAt).toBe(7777);
+    await storage.clear();
+    await expect(storage.replaceIfMatches(foreign, second)).rejects.toThrow(
+      'durable run was removed',
+    );
+    expect(await storage.load()).toBeNull();
   });
 
   it('RI-117: 新規セーブは現行ルールセットを記録し、一致時だけ互換になる', () => {

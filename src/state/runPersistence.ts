@@ -545,7 +545,12 @@ export class IndexedDbRunStorage implements RunStorage {
       try {
         const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
         const stored = await tx.store.get(RUN_RECORD_KEY);
-        if (stored !== undefined && JSON.stringify(stored) !== expectedKey) {
+        if (stored === undefined) {
+          if (expected !== null) {
+            await tx.done;
+            throw new Error('durable run was removed');
+          }
+        } else if (JSON.stringify(stored) !== expectedKey) {
           const parsed = parseRunSave(stored);
           await tx.done;
           return parsed ?? (stored as RunSave);
@@ -602,6 +607,9 @@ export class MemoryRunStorage implements RunStorage {
   }
 
   async replaceIfMatches(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null> {
+    if (expected !== null && this.saveState === null) {
+      throw new Error('durable run was removed');
+    }
     if (this.saveState === null || JSON.stringify(this.saveState) === JSON.stringify(expected)) {
       if (next) await this.save(next);
       else await this.clear();

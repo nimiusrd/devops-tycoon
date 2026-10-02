@@ -4937,6 +4937,29 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   background: var(--visual-color-banner-ok-bg);
   color: var(--visual-color-banner-ok-text);
 }
+/* 復旧チップは HUD の操作列を覆わない（#546）。
+   広幅はヘッダー右端、狭幅は見出しだけを左へ。いずれも HUD の次の行。
+   常駐バナーと違い、タイトル余白用の高さ変数は増やさない。 */
+.persistence-quiet-slot {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  pointer-events: none;
+}
+.persistence-quiet-slot .persistence-notice-quiet {
+  position: relative;
+  top: auto;
+  right: auto;
+  z-index: 50;
+  width: max-content;
+  max-width: min(16rem, 100%);
+}
+:root[data-responsive-width='narrow'] .persistence-quiet-slot {
+  justify-content: flex-start;
+}
+:root[data-responsive-width='narrow'] .persistence-quiet-slot .persistence-notice-detail {
+  display: none;
+}
 .persistence-notice-headline,
 .persistence-notice-detail {
   margin: 0;

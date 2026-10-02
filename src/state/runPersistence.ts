@@ -532,7 +532,8 @@ export class IndexedDbRunStorage implements RunStorage {
       const stored = await tx.objectStore(RUN_STORE_NAME).get(RUN_RECORD_KEY);
       const generation = generationValue(await tx.objectStore(GENERATION_STORE_NAME).get('run'));
       await tx.done;
-      this.noteGeneration(generation);
+      // 初回の観測だけ世代を採用する。後から読むと、取り込みが最新世代を自分の書き込み権にしてしまう。
+      if (!this.generationReady) this.noteGeneration(generation);
       if (stored === undefined) return null;
       const parsed = parseRunSave(stored);
       if (!parsed) {
@@ -713,6 +714,12 @@ export class IndexedDbRunStorage implements RunStorage {
         const generationStore = tx.objectStore(GENERATION_STORE_NAME);
         const stored = await runStore.get(RUN_RECORD_KEY);
         const parsed = stored === undefined ? null : parseRunSave(stored);
+        const generation = generationValue(await generationStore.get('run'));
+        if (!this.acceptsGeneration(generation)) {
+          await tx.done;
+          this.foreignBlocked = true;
+          throw new TabConflictError();
+        }
         if (parsedRunKey(parsed) !== expectedKey) {
           if (expected !== null && stored === undefined) {
             await tx.done;

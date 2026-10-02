@@ -93,6 +93,7 @@ describe('複数タブの保存（RI-144）', () => {
 
     gameB.setPreferredCardIds(['docs']);
     gameB.setSoundMuted(false);
+    expect(gameB.getMeta().soundMuted).toBe(false);
     expect(gameB.purchaseMetaUnlock('unlock-devin')).toEqual({ ok: false, reason: 'other_tab' });
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(await reader.load()).toMatchObject({
@@ -184,9 +185,16 @@ describe('複数タブの保存（RI-144）', () => {
     await writer.save(current);
     expect((await reader.compareAndSave(stale)).ok).toBe(false);
 
+    const fresh = new IndexedDbRunStorage(name);
+    await fresh.load();
+    await writer.save(toRunSave(exported!, 2_500));
+    await fresh.load();
+    await expect(fresh.saveIfMatches(current, imported)).rejects.toBeInstanceOf(TabConflictError);
+    expect((await writer.load())?.savedAt).toBe(2_500);
+
     await expect(reader.saveIfMatches(current, imported)).rejects.toBeInstanceOf(TabConflictError);
     await expect(reader.clear()).rejects.toBeInstanceOf(TabConflictError);
-    expect((await writer.load())?.savedAt).toBe(2_000);
+    expect((await writer.load())?.savedAt).toBe(2_500);
     expect((await writer.load())?.state.seed).toBe('import-block');
 
     const [bootA, bootB] = await Promise.all([

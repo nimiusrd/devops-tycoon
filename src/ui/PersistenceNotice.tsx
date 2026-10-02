@@ -113,7 +113,12 @@ export function PersistenceNotice({
         {liveText}
       </span>
       {tabConflict && onTakeOver ? (
-        <TabConflictNotice onTakeOver={onTakeOver} bannerRef={bindPersistentBanner} />
+        <TabConflictNotice
+          onTakeOver={onTakeOver}
+          bannerRef={bindPersistentBanner}
+          showExport={notice.showExport}
+          onExport={onExport}
+        />
       ) : null}
       {showBanner ? (
         <div

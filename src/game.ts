@@ -665,6 +665,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     pendingReplays.push(blob);
     // 完走時点で共有配列から切り離す。非同期完了で次ランのフレームを消さない。
     keyframes = [];
+    if (tabConflict) {
+      // 上限削除で別タブのリプレイを追い出さない。書き出しできる未保存として残す。
+      pendingReplayErrors.set(blob, new TabConflictError());
+      publishUnsavedReplay(blob);
+      const generation = tracker.begin('replay');
+      if (tracker.fail('replay', generation, new TabConflictError())) bump();
+      return;
+    }
     trackWrite('replay', beginReplaySave(blob), () => completePendingReplay(blob));
   };
 
@@ -673,6 +681,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     blob: ReplayBlob,
     extraProtectIds?: readonly string[],
   ): Promise<void> => {
+    if (tabConflict) {
+      pendingReplayErrors.set(blob, new TabConflictError());
+      publishUnsavedReplay(blob);
+      return Promise.reject(new TabConflictError());
+    }
     replaySavesInFlight.add(blob);
     const work = saveReplayBlob(blob, extraProtectIds).finally(() => {
       replaySavesInFlight.delete(blob);
@@ -1706,11 +1719,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return { ok: true };
     },
     setSoundMuted(muted) {
-      if (!metaReady || tabConflict) return;
+      if (!metaReady) return;
       const next = withSoundMuted(meta, muted);
       if (next === meta) return;
       meta = next;
-      persistMeta();
+      // 競合中もこのタブの音は止める。端末のメタには書かない。
+      if (!tabConflict) persistMeta();
       bump();
     },
     setPreferredCardIds(cardIds) {
@@ -1769,9 +1783,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getPersistenceStatus() {
       const runAtRisk = tracker.isSession('run') || tracker.hasVisibleFailure('run');
       const replayAtRisk = tracker.isSession('replay') || tracker.hasVisibleFailure('replay');
+      const unsavedReplay = exportableReplayBlobs().length > 0;
       const canExportFailedData =
         (runAtRisk && resumableSave !== null) ||
-        (replayAtRisk && exportableReplayBlobs().length > 0);
+        (replayAtRisk && unsavedReplay) ||
+        (tabConflict && unsavedReplay);
       return tracker.notice(canExportFailedData);
     },
     dismissPersistenceNotice() {
@@ -2076,7 +2092,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       runSaveImportWrites = write.catch(() => undefined);
       try {
         await write;
-      } catch {
+      } catch (error) {
+        if (isTabConflict(error)) {
+          tabConflict = true;
+          bump();
+        }
         if (priorDurable !== undefined) await restoreImportedRun();
         return {
           ok: false,

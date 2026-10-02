@@ -64,5 +64,12 @@ describe('別タブ競合の案内', () => {
     expect(
       elements(node).some((element) => element.props['data-testid'] === 'persistence-retry'),
     ).toBe(false);
+    const exporter = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-export',
+    );
+    expect(exporter?.type).toBe('button');
+    expect(String(elements(node).map((element) => element.props.children))).toContain(
+      '未保存のデータは破棄',
+    );
   });
 });

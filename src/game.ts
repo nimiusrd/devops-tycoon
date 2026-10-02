@@ -1447,6 +1447,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
   const recordIfFinished = (): boolean => {
     if (!metaReady || tabConflict) return false;
+    // 先の完了保存が残っているあいだは、次の完走で報酬もリプレイも上書きしない。
+    if (finishCommitPending) return true;
     const s = engine.snapshot();
     if (recorded || (s.status !== 'won' && s.status !== 'lost')) return false;
     recorded = true;
@@ -1577,7 +1579,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return { ...state, ...resolveWhatIf() };
     },
     startRun(difficulty, trials, runSeed, scenario) {
-      if (replayMode) return engine.snapshot();
+      if (replayMode || finishCommitPending) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1598,7 +1600,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     startDailyRun(dateStr) {
-      if (replayMode) return engine.snapshot();
+      if (replayMode || finishCommitPending) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1801,6 +1803,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     newRun(runSeed) {
+      if (finishCommitPending) return engine.snapshot();
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
@@ -2010,7 +2013,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
     },
     resumeRun() {
-      if (replayMode || runSaveIssue || !resumableSave) return null;
+      if (replayMode || finishCommitPending || runSaveIssue || !resumableSave) return null;
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;

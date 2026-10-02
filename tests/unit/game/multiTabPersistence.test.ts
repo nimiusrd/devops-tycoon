@@ -487,6 +487,13 @@ describe('複数タブの保存（RI-144）', () => {
     if (!imported.ok) expect(imported.message).toContain('再試行');
     expect((await new IndexedDbRunStorage(name).load())?.summary.seed).toBe('finish-export');
     expect((await new IndexedDbMetaStorage(name).load())?.points).toBe(40);
+    const heldReplay = files[0]?.text;
+    game.newRun();
+    game.startRun('easy', [], 'second-run');
+    game.startDailyRun();
+    expect(game.resumeRun()).toBeNull();
+    expect(game.phase()).toBe('lost');
+    expect(game.exportPendingReplayFiles().some((file) => file.text === heldReplay)).toBe(true);
     runStorage.adoptRunGeneration(999);
     await game.retryPersistence();
     await waitFor(async () => {

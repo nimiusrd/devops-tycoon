@@ -406,6 +406,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let runRevisionAtSession = 0;
   /** 別タブが先に記録を更新した。このタブからは上書きも削除もしない。 */
   let tabConflict = false;
+  /** ラン完了の報酬と途中セーブ破棄が、まだ端末で確定していない。 */
+  let finishCommitPending = false;
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
   /** リプレイ側の統合バックアップが、成功した途中セーブを戻すときだけ使う。 */
@@ -734,6 +736,27 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * 観測した世代と一致するときだけメタを書く。
    * 別タブの記録なら、その内容を画面へ戻して保存を止める。
    */
+  const commitFinishedRun = (): Promise<void> => {
+    const metas = metaStorage;
+    const runs = runStorage;
+    if (!(metas instanceof IndexedDbMetaStorage) || !(runs instanceof IndexedDbRunStorage)) {
+      return writeDurableMeta(structuredClone(meta));
+    }
+    finishCommitPending = true;
+    const expectedRun = runs.observedRunGeneration();
+    return metas.compareAndSave(structuredClone(meta), expectedRun).then((result) => {
+      if (!result.ok) {
+        if (result.current) meta = structuredClone(result.current);
+        tabConflict = true;
+        finishCommitPending = false;
+        lastRunReward = null;
+        throw new TabConflictError();
+      }
+      if (result.runGeneration !== undefined) runs.adoptRunGeneration(result.runGeneration);
+      finishCommitPending = false;
+    });
+  };
+
   const writeDurableMeta = (snapshot: MetaState, expectedRunGeneration?: number): Promise<void> => {
     const storage = metaStorage;
     if (!storage) return Promise.resolve();
@@ -1381,19 +1404,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       meta = applyRunReward(meta, input);
     }
     if (runStorage instanceof IndexedDbRunStorage && metaStorage instanceof IndexedDbMetaStorage) {
-      // 報酬とリプレイの前に、途中セーブの世代がまだ自分の観測と一致するか同じトランザクションで見る。
-      const expectedRun = runStorage.observedRunGeneration();
       metaRevision += 1;
-      const work = writeDurableMeta(structuredClone(meta), expectedRun);
+      const work = commitFinishedRun();
       trackWrite('meta', work);
       void work.then(
         () => {
           if (!tabConflict) persistRunIfNeeded();
         },
-        () => {
-          lastRunReward = null;
-          bump();
-        },
+        () => undefined,
       );
       return true;
     }
@@ -1823,7 +1841,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       try {
         if (tracker.isSession()) await recoverDurableLoads();
         const tasks: Promise<void>[] = [];
-        if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
+        if (
+          finishCommitPending &&
+          !tabConflict &&
+          metaStorage instanceof IndexedDbMetaStorage &&
+          runStorage instanceof IndexedDbRunStorage
+        ) {
+          metaRevision += 1;
+          tasks.push(
+            retryWrite('meta', commitFinishedRun()).then(() => {
+              if (!tabConflict) persistRunIfNeeded();
+            }),
+          );
+        } else if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
           const snapshot = structuredClone(meta);
           tasks.push(retryWrite('meta', writeDurableMeta(snapshot)));
         }

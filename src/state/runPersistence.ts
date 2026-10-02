@@ -524,6 +524,11 @@ export class IndexedDbRunStorage implements RunStorage {
     return this.generationReady ? this.observedGeneration : 0;
   }
 
+  /** 同じトランザクションで確定した世代を、完了後に採用する。 */
+  adoptRunGeneration(generation: number): void {
+    this.noteGeneration(generation);
+  }
+
   /** 別タブの記録を見つけたあとは、取り込みを含むすべての変更を止める。 */
   private refuseForeignWrite(): void {
     if (this.foreignBlocked) throw new TabConflictError();
@@ -640,7 +645,9 @@ export class IndexedDbRunStorage implements RunStorage {
         if (stored !== undefined) {
           const parsed = parseRunSave(stored);
           if (parsed) {
+            const generation = generationValue(await generationStore.get('run'));
             await tx.done;
+            this.noteGeneration(generation);
             return parsed;
           }
           await runStore.delete(RUN_RECORD_KEY);

@@ -5,6 +5,7 @@ import {
   GENERATION_STORE_NAME,
   META_RECORD_KEY,
   META_STORE_NAME,
+  RUN_STORE_NAME,
   openGameDb,
   type GameDatabase,
 } from './gameDb';
@@ -125,9 +126,14 @@ export class IndexedDbMetaStorage implements MetaStorage {
       if (this.foreignBlocked) return this.conflictResult();
       const db = await this.open();
       try {
-        const tx = db.transaction([META_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+        const storeNames =
+          expectedRunGeneration === undefined
+            ? ([META_STORE_NAME, GENERATION_STORE_NAME] as const)
+            : ([META_STORE_NAME, RUN_STORE_NAME, GENERATION_STORE_NAME] as const);
+        const tx = db.transaction(storeNames, 'readwrite');
         const metaStore = tx.objectStore(META_STORE_NAME);
         const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        let nextRunGeneration: number | undefined;
         if (expectedRunGeneration !== undefined) {
           const runGeneration = generationValue(await generationStore.get('run'));
           if (runGeneration !== expectedRunGeneration) {
@@ -138,6 +144,7 @@ export class IndexedDbMetaStorage implements MetaStorage {
               current: existing === undefined ? null : normalizeMeta(existing),
             };
           }
+          nextRunGeneration = runGeneration + 1;
         }
         const generation = generationValue(await generationStore.get('meta'));
         if (!this.acceptsGeneration(generation)) {
@@ -152,10 +159,16 @@ export class IndexedDbMetaStorage implements MetaStorage {
         await metaStore.put(snapshot, META_RECORD_KEY);
         const next = generation + 1;
         await generationStore.put(next, 'meta');
+        if (nextRunGeneration !== undefined) {
+          await tx.objectStore(RUN_STORE_NAME).delete(RUN_RECORD_KEY);
+          await generationStore.put(nextRunGeneration, 'run');
+        }
         await tx.done;
         this.observedGeneration = next;
         this.generationReady = true;
-        return { ok: true as const };
+        return nextRunGeneration === undefined
+          ? { ok: true as const }
+          : { ok: true as const, runGeneration: nextRunGeneration };
       } finally {
         db.close();
       }
@@ -177,7 +190,10 @@ export class IndexedDbMetaStorage implements MetaStorage {
         const generationStore = tx.objectStore(GENERATION_STORE_NAME);
         const existing = await metaStore.get(META_RECORD_KEY);
         if (existing !== undefined) {
+          const generation = generationValue(await generationStore.get('meta'));
           await tx.done;
+          this.observedGeneration = generation;
+          this.generationReady = true;
           return normalizeMeta(existing);
         }
         await metaStore.put(snapshot, META_RECORD_KEY);

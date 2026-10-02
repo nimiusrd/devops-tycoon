@@ -313,4 +313,67 @@ describe('複数タブの保存（RI-144）', () => {
     expect((await runs.load())?.summary.seed).toBe('finish-a');
     expect(gameB.getMeta().points).toBe(40);
   });
+
+  it('報酬の確定と別タブの途中セーブ更新は、同時に残らない', async () => {
+    const engine = createRunEngine({ seed: 'finish-race' });
+    engine.startRun('easy', [], 'finish-race');
+    const setup = engine.exportPersistState();
+    expect(setup).not.toBeNull();
+    const name = databaseName();
+    await new IndexedDbMetaStorage(name).save({ ...defaultMeta(), points: 40, bestScore: 0 });
+    await new IndexedDbRunStorage(name).save(toRunSave(setup!, 1_000));
+    const metaB = await initializeMetaPersistence(new IndexedDbMetaStorage(name));
+    const runB = await initializeRunPersistence(new IndexedDbRunStorage(name));
+    const gameB = createGame({ seed: 'finish-b', metaReady: false });
+    gameB.attachMetaPersistence(metaB.meta, metaB.storage, {
+      loadedFromDevice: metaB.loadedFromDevice,
+    });
+    gameB.attachRunPersistence(runB.storage, runB.save, runB.issue);
+    gameB.resumeRun();
+    gameB.beginSetupSprint();
+    const runs = new IndexedDbRunStorage(name);
+    await waitFor(async () => {
+      expect(gameB.phase()).toBe('sprint');
+    });
+    const metaA = await initializeMetaPersistence(new IndexedDbMetaStorage(name));
+    const runA = await initializeRunPersistence(new IndexedDbRunStorage(name));
+    const gameA = createGame({ seed: 'finish-a', metaReady: false });
+    gameA.attachMetaPersistence(metaA.meta, metaA.storage, {
+      loadedFromDevice: metaA.loadedFromDevice,
+    });
+    gameA.attachRunPersistence(runA.storage, runA.save, runA.issue);
+    gameA.startRun('easy', [], 'finish-a');
+    const internals = gameB.engine as unknown as {
+      phase: string;
+      budget: number;
+      shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
+    };
+    internals.phase = 'shop';
+    internals.budget = 10;
+    internals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+    gameB.buyShopCard('copilot');
+    const metas = new IndexedDbMetaStorage(name);
+    await waitFor(async () => {
+      const saved = await runs.load();
+      const points = (await metas.load())?.points;
+      const settled = saved?.summary.seed === 'finish-a' || points !== 40 || saved === null;
+      expect(settled).toBe(true);
+    });
+    const saved = await runs.load();
+    const points = (await metas.load())?.points;
+    expect(saved?.summary.seed === 'finish-a' && points !== 40).toBe(false);
+  });
+
+  it('空確認で見つけたメタは、その世代のまま続きを書ける', async () => {
+    const name = databaseName();
+    const writer = new IndexedDbMetaStorage(name);
+    await writer.save({ ...defaultMeta(), points: 3 });
+    const reader = new IndexedDbMetaStorage(name);
+    const existing = await reader.insertIfAbsent({ ...defaultMeta(), points: 99 });
+    expect(existing?.points).toBe(3);
+    const next = { ...existing!, soundMuted: false };
+    expect((await reader.compareAndSave(next)).ok).toBe(true);
+    expect((await writer.load())?.soundMuted).toBe(false);
+    expect((await writer.load())?.points).toBe(3);
+  });
 });

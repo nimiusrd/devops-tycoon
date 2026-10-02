@@ -55,6 +55,7 @@ import {
   persistenceExportMessages,
 } from './ui/downloadTextFile';
 import { PersistenceNotice } from './ui/PersistenceNotice';
+import { TabConflictNotice } from './ui/TabConflictNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -948,6 +949,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   return (
     <>
       {persistenceNotice}
+      {run.tabConflict ? <TabConflictNotice onTakeOver={run.takeOverForeignTab} /> : null}
       {phaseBody}
     </>
   );

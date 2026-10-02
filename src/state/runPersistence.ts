@@ -17,7 +17,14 @@ import {
   MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
   QUARTER_DELIVERY_GOAL_MUL,
 } from '../sim/run/quarterReview';
-import { GAME_DB_NAME, openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from './gameDb';
+import {
+  GAME_DB_NAME,
+  GENERATION_STORE_NAME,
+  openGameDb,
+  RUN_RECORD_KEY,
+  RUN_STORE_NAME,
+} from './gameDb';
+import { generationValue, type DurableWriteResult } from './tabConflict';
 import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
 import { cloneTrendHistory } from '../sim/run/trendHistory';
 
@@ -128,6 +135,12 @@ export interface RunStorage {
    * 比較と書き込みは同一トランザクション。
    */
   saveIfMatches?(expected: RunSave | null, next: RunSave | null): Promise<RunSave | null>;
+  /**
+   * この保存先が観測した世代と一致するときだけ書く。next が null なら削除する。
+   * 別タブが先に書いていたら、その記録を返して上書きも削除もしない。
+   * 記録がもともと無い削除は世代を進めない。
+   */
+  compareAndSave?(next: RunSave | null): Promise<DurableWriteResult<RunSave | null>>;
 }
 
 export interface RunPersistenceBootstrap {
@@ -487,14 +500,34 @@ function parsedRunKey(value: RunSave | null): string {
 
 export class IndexedDbRunStorage implements RunStorage {
   private writes: Promise<void> = Promise.resolve();
+  /** load または自分の書き込みで観測した世代。未観測の初回書き込みは 0 だけを受け入れる。 */
+  private observedGeneration = 0;
+  private generationReady = false;
+  /** 別タブの記録を見つけたあとは、このインスタンスから上書きも削除もしない。 */
+  private foreignBlocked = false;
 
   constructor(private readonly dbName: string = GAME_DB_NAME) {}
+
+  /** 未観測なら世代 0 だけを自分の初回書き込みとして認める。 */
+  private acceptsGeneration(generation: number): boolean {
+    if (!this.generationReady) return generation === 0;
+    return generation === this.observedGeneration;
+  }
+
+  private noteGeneration(generation: number): void {
+    this.observedGeneration = generation;
+    this.generationReady = true;
+  }
 
   async load(): Promise<RunSave | null> {
     await this.writes.catch(() => undefined);
     const db = await openGameDb(this.dbName);
     try {
-      const stored = await db.get(RUN_STORE_NAME, RUN_RECORD_KEY);
+      const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readonly');
+      const stored = await tx.objectStore(RUN_STORE_NAME).get(RUN_RECORD_KEY);
+      const generation = generationValue(await tx.objectStore(GENERATION_STORE_NAME).get('run'));
+      await tx.done;
+      this.noteGeneration(generation);
       if (stored === undefined) return null;
       const parsed = parseRunSave(stored);
       if (!parsed) {
@@ -512,7 +545,13 @@ export class IndexedDbRunStorage implements RunStorage {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
-        await db.put(RUN_STORE_NAME, snapshot, RUN_RECORD_KEY);
+        const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+        const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        await tx.objectStore(RUN_STORE_NAME).put(snapshot, RUN_RECORD_KEY);
+        const next = generationValue(await generationStore.get('run')) + 1;
+        await generationStore.put(next, 'run');
+        await tx.done;
+        this.noteGeneration(next);
       } finally {
         db.close();
       }
@@ -521,22 +560,84 @@ export class IndexedDbRunStorage implements RunStorage {
     return write;
   }
 
+  compareAndSave(next: RunSave | null): Promise<DurableWriteResult<RunSave | null>> {
+    const snapshot = next ? structuredClone(next) : null;
+    const write = this.writes.then(async () => {
+      if (this.foreignBlocked) return this.conflictResult();
+      const db = await openGameDb(this.dbName);
+      try {
+        const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+        const runStore = tx.objectStore(RUN_STORE_NAME);
+        const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        const generation = generationValue(await generationStore.get('run'));
+        const stored = await runStore.get(RUN_RECORD_KEY);
+        if (!this.acceptsGeneration(generation)) {
+          const parsed = stored === undefined ? null : parseRunSave(stored);
+          await tx.done;
+          this.foreignBlocked = true;
+          return {
+            ok: false as const,
+            current: parsed ?? (stored === undefined ? null : (stored as RunSave)),
+          };
+        }
+        if (snapshot) await runStore.put(snapshot, RUN_RECORD_KEY);
+        else if (stored !== undefined) await runStore.delete(RUN_RECORD_KEY);
+        else {
+          await tx.done;
+          this.noteGeneration(generation);
+          return { ok: true as const };
+        }
+        const nextGeneration = generation + 1;
+        await generationStore.put(nextGeneration, 'run');
+        await tx.done;
+        this.noteGeneration(nextGeneration);
+        return { ok: true as const };
+      } finally {
+        db.close();
+      }
+    });
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
+  private async conflictResult(): Promise<DurableWriteResult<RunSave | null>> {
+    const db = await openGameDb(this.dbName);
+    try {
+      const stored = await db.get(RUN_STORE_NAME, RUN_RECORD_KEY);
+      if (stored === undefined) return { ok: false, current: null };
+      const parsed = parseRunSave(stored);
+      return { ok: false, current: parsed ?? (stored as RunSave) };
+    } finally {
+      db.close();
+    }
+  }
+
   insertIfAbsent(save: RunSave | null): Promise<RunSave | null> {
     const snapshot = save ? structuredClone(save) : null;
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
-        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
-        const stored = await tx.store.get(RUN_RECORD_KEY);
+        const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+        const runStore = tx.objectStore(RUN_STORE_NAME);
+        const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        const stored = await runStore.get(RUN_RECORD_KEY);
         if (stored !== undefined) {
           const parsed = parseRunSave(stored);
           if (parsed) {
             await tx.done;
             return parsed;
           }
-          await tx.store.delete(RUN_RECORD_KEY);
+          await runStore.delete(RUN_RECORD_KEY);
         }
-        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
+        if (snapshot) await runStore.put(snapshot, RUN_RECORD_KEY);
+        if (stored !== undefined || snapshot) {
+          const next = generationValue(await generationStore.get('run')) + 1;
+          await generationStore.put(next, 'run');
+          this.noteGeneration(next);
+        }
         await tx.done;
         return null;
       } finally {
@@ -556,8 +657,10 @@ export class IndexedDbRunStorage implements RunStorage {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
-        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
-        const stored = await tx.store.get(RUN_RECORD_KEY);
+        const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+        const runStore = tx.objectStore(RUN_STORE_NAME);
+        const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        const stored = await runStore.get(RUN_RECORD_KEY);
         if (stored === undefined) {
           if (expected !== null) {
             await tx.done;
@@ -568,9 +671,16 @@ export class IndexedDbRunStorage implements RunStorage {
           await tx.done;
           return parsed ?? (stored as RunSave);
         }
-        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
-        else await tx.store.delete(RUN_RECORD_KEY);
+        if (snapshot) await runStore.put(snapshot, RUN_RECORD_KEY);
+        else if (stored !== undefined) await runStore.delete(RUN_RECORD_KEY);
+        else {
+          await tx.done;
+          return null;
+        }
+        const next = generationValue(await generationStore.get('run')) + 1;
+        await generationStore.put(next, 'run');
         await tx.done;
+        this.noteGeneration(next);
         return null;
       } finally {
         db.close();
@@ -589,8 +699,10 @@ export class IndexedDbRunStorage implements RunStorage {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
-        const tx = db.transaction(RUN_STORE_NAME, 'readwrite');
-        const stored = await tx.store.get(RUN_RECORD_KEY);
+        const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+        const runStore = tx.objectStore(RUN_STORE_NAME);
+        const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        const stored = await runStore.get(RUN_RECORD_KEY);
         const parsed = stored === undefined ? null : parseRunSave(stored);
         if (parsedRunKey(parsed) !== expectedKey) {
           if (expected !== null && stored === undefined) {
@@ -600,9 +712,16 @@ export class IndexedDbRunStorage implements RunStorage {
           await tx.done;
           return parsed ?? (stored === undefined ? null : (stored as RunSave));
         }
-        if (snapshot) await tx.store.put(snapshot, RUN_RECORD_KEY);
-        else await tx.store.delete(RUN_RECORD_KEY);
+        if (snapshot) await runStore.put(snapshot, RUN_RECORD_KEY);
+        else if (stored !== undefined) await runStore.delete(RUN_RECORD_KEY);
+        else {
+          await tx.done;
+          return null;
+        }
+        const next = generationValue(await generationStore.get('run')) + 1;
+        await generationStore.put(next, 'run');
         await tx.done;
+        this.noteGeneration(next);
         return null;
       } finally {
         db.close();
@@ -619,7 +738,13 @@ export class IndexedDbRunStorage implements RunStorage {
     const write = this.writes.then(async () => {
       const db = await openGameDb(this.dbName);
       try {
-        await db.delete(RUN_STORE_NAME, RUN_RECORD_KEY);
+        const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+        const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        await tx.objectStore(RUN_STORE_NAME).delete(RUN_RECORD_KEY);
+        const next = generationValue(await generationStore.get('run')) + 1;
+        await generationStore.put(next, 'run');
+        await tx.done;
+        this.noteGeneration(next);
       } finally {
         db.close();
       }
@@ -673,6 +798,12 @@ export class MemoryRunStorage implements RunStorage {
     if (next) await this.save(next);
     else await this.clear();
     return null;
+  }
+
+  async compareAndSave(next: RunSave | null): Promise<DurableWriteResult<RunSave | null>> {
+    if (next) await this.save(next);
+    else await this.clear();
+    return { ok: true };
   }
 }
 

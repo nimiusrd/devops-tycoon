@@ -341,6 +341,8 @@ function makeRun(overrides: Partial<UseRun> = {}): UseRun {
       persistent: false,
     },
     retryPersistence: vi.fn(async () => undefined),
+    tabConflict: false,
+    takeOverForeignTab: vi.fn(),
     runEpoch: 1,
     playbackSpeed: 1,
     setPlaybackSpeed: vi.fn(),

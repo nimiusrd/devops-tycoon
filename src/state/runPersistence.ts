@@ -529,6 +529,16 @@ export class IndexedDbRunStorage implements RunStorage {
     this.noteGeneration(generation);
   }
 
+  /** 先行する途中セーブの世代更新が終わってから続ける。 */
+  enqueue<T>(work: () => Promise<T>): Promise<T> {
+    const write = this.writes.then(work);
+    this.writes = write.then(
+      () => undefined,
+      () => undefined,
+    );
+    return write;
+  }
+
   /** 別タブの記録を見つけたあとは、取り込みを含むすべての変更を止める。 */
   private refuseForeignWrite(): void {
     if (this.foreignBlocked) throw new TabConflictError();

@@ -743,8 +743,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return writeDurableMeta(structuredClone(meta));
     }
     finishCommitPending = true;
-    const expectedRun = runs.observedRunGeneration();
-    return metas.compareAndSave(structuredClone(meta), expectedRun).then((result) => {
+    return runs.enqueue(async () => {
+      const expectedRun = runs.observedRunGeneration();
+      const result = await metas.compareAndSave(structuredClone(meta), expectedRun);
       if (!result.ok) {
         if (result.current) meta = structuredClone(result.current);
         tabConflict = true;

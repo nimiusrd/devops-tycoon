@@ -5,6 +5,7 @@ import {
   GENERATION_STORE_NAME,
   META_RECORD_KEY,
   META_STORE_NAME,
+  RUN_RECORD_KEY,
   RUN_STORE_NAME,
   openGameDb,
   type GameDatabase,

@@ -316,9 +316,14 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'persistFrameShape 後半',
   },
   {
-    id: 'state-run-persistence',
-    mutate: 'src/state/runPersistence.ts',
-    note: 'runPersistence',
+    id: 'state-run-persistence-a',
+    mutate: 'src/state/runPersistence.ts:1-500',
+    note: 'runPersistence の読み取りと互換判定',
+  },
+  {
+    id: 'state-run-persistence-b',
+    mutate: `src/state/runPersistence.ts:501-${OPEN_RANGE_END}`,
+    note: 'runPersistence の IndexedDB とメモリ保存',
   },
   {
     id: 'state-replay',

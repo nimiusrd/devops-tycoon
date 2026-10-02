@@ -239,6 +239,8 @@ describe('複数タブの保存（RI-144）', () => {
     });
     expect(gameB.getPersistenceStatus().showExport).toBe(true);
     expect(gameB.exportRunSaveText()).toContain('keep-b');
+    gameB.startRun('easy', [], 'keep-b-next');
+    expect(gameB.exportRunSaveText()).toContain('keep-b-next');
     await expect(gameB.importReplayText('{}')).resolves.toMatchObject({
       ok: false,
       message: expect.stringContaining('再読込') as unknown as string,
@@ -375,5 +377,21 @@ describe('複数タブの保存（RI-144）', () => {
     expect((await reader.compareAndSave(next)).ok).toBe(true);
     expect((await writer.load())?.soundMuted).toBe(false);
     expect((await writer.load())?.points).toBe(3);
+  });
+
+  it('途中セーブの世代が違う報酬のあとは、後続のメタも書かない', async () => {
+    const engine = createRunEngine({ seed: 'block-meta' });
+    engine.startRun('easy', [], 'block-meta');
+    const setup = engine.exportPersistState();
+    expect(setup).not.toBeNull();
+    const name = databaseName();
+    const metas = new IndexedDbMetaStorage(name);
+    await metas.save({ ...defaultMeta(), points: 1 });
+    await new IndexedDbRunStorage(name).save(toRunSave(setup!, 1_000));
+    const blocked = await metas.compareAndSave({ ...defaultMeta(), points: 2 }, 0);
+    expect(blocked.ok).toBe(false);
+    const later = await metas.compareAndSave({ ...defaultMeta(), points: 9 });
+    expect(later.ok).toBe(false);
+    expect((await new IndexedDbMetaStorage(name).load())?.points).toBe(1);
   });
 });

@@ -140,6 +140,7 @@ export class IndexedDbMetaStorage implements MetaStorage {
           if (runGeneration !== expectedRunGeneration) {
             const existing = await metaStore.get(META_RECORD_KEY);
             await tx.done;
+            this.foreignBlocked = true;
             return {
               ok: false as const,
               current: existing === undefined ? null : normalizeMeta(existing),

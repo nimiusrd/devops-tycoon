@@ -408,6 +408,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let tabConflict = false;
   /** ラン完了の報酬と途中セーブ破棄が、まだ端末で確定していない。 */
   let finishCommitPending = false;
+  /** 確定を待つ間、端末へ書かずに保持する完走リプレイ。 */
+  let pendingFinishReplay: ReplayBlob | null = null;
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
   /** リプレイ側の統合バックアップが、成功した途中セーブを戻すときだけ使う。 */
@@ -643,6 +645,42 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return blobs;
   };
 
+  const takeFinishReplay = (): ReplayBlob | null => {
+    if (!replayStorage || keyframes.length === 0 || replayMode) return null;
+    const s = engine.snapshot();
+    if (s.status !== 'won' && s.status !== 'lost') return null;
+    const finishedAt = Date.now();
+    const blob: ReplayBlob = {
+      schemaVersion: REPLAY_SCHEMA_VERSION,
+      id: buildReplayId(s.seed, finishedAt),
+      seed: s.seed,
+      difficulty: s.difficulty,
+      trials: [...s.trials],
+      finishedAt,
+      outcome: {
+        status: s.status,
+        winType: s.winType,
+        loseReason: s.loseReason,
+        diagnosis: s.diagnosis,
+        score: s.totals.delivered,
+      },
+      keyframes: structuredClone(keyframes),
+      ruleset: structuredClone(CURRENT_RUN_RULESET),
+      contentSnapshot: snapshotReplayContent(keyframes),
+    };
+    keyframes = [];
+    return blob;
+  };
+
+  const holdUnsavedFinishReplay = (): void => {
+    if (!pendingFinishReplay) return;
+    const blob = pendingFinishReplay;
+    pendingFinishReplay = null;
+    pendingReplays.push(blob);
+    pendingReplayErrors.set(blob, new TabConflictError());
+    publishUnsavedReplay(blob);
+  };
+
   const commitReplayIfFinished = (): void => {
     if (!replayStorage || keyframes.length === 0 || replayMode) return;
     const s = engine.snapshot();
@@ -701,7 +739,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
   const persistSaveableSnapshot = (): void => {
-    if (replayMode || !runStorage || tabConflict) return;
+    if (replayMode || !runStorage || finishCommitPending) return;
     const exported = engine.exportPersistState();
     if (!exported) return;
     // 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する。
@@ -709,6 +747,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     resumableSave = save;
     runSaveIssue = null;
     runRevision += 1;
+    // 競合後も書き出し用のスナップショットは進める。端末へは書かない。
+    if (tabConflict) return;
     trackWrite('run', writeDurableRun(save));
   };
 
@@ -751,10 +791,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         tabConflict = true;
         finishCommitPending = false;
         lastRunReward = null;
+        holdUnsavedFinishReplay();
         throw new TabConflictError();
       }
       if (result.runGeneration !== undefined) runs.adoptRunGeneration(result.runGeneration);
       finishCommitPending = false;
+      if (pendingFinishReplay && replayStorage) {
+        const blob = pendingFinishReplay;
+        pendingFinishReplay = null;
+        pendingReplays.push(blob);
+        trackWrite('replay', beginReplaySave(blob), () => completePendingReplay(blob));
+      }
     });
   };
 
@@ -778,7 +825,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * あわせてリプレイキーフレームを収集し、終端で commit する（RI-61）。
    */
   const persistRunIfNeeded = (): void => {
-    if (replayMode) return;
+    if (replayMode || finishCommitPending) return;
     const phase = engine.currentPhase();
     appendKeyframeIfNeeded();
     if (phase === 'title' || phase === 'won' || phase === 'lost') {
@@ -1405,6 +1452,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       meta = applyRunReward(meta, input);
     }
     if (runStorage instanceof IndexedDbRunStorage && metaStorage instanceof IndexedDbMetaStorage) {
+      pendingFinishReplay = takeFinishReplay();
       metaRevision += 1;
       const work = commitFinishedRun();
       trackWrite('meta', work);

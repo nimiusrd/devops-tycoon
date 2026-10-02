@@ -72,4 +72,34 @@ describe('別タブ競合の案内', () => {
       '未保存のデータは破棄',
     );
   });
+
+  it('書き出し失敗の一文を競合案内と読み上げに残す', () => {
+    const notice: PersistenceNoticeModel = {
+      state: 'idle',
+      tone: 'quiet',
+      headline: '',
+      detail: '',
+      liveMessage: '',
+      showRetry: false,
+      showExport: true,
+      persistent: false,
+    };
+    const node = createElement(PersistenceNotice, {
+      notice,
+      onRetry: vi.fn(),
+      onExport: vi.fn(),
+      exportMessage: 'ファイルを書き出せませんでした。',
+      tabConflict: true,
+      onTakeOver: vi.fn(),
+    });
+    const live = elements(node).find(
+      (element) => element.props['data-testid'] === 'persistence-live',
+    );
+    expect(String(live?.props.children)).toContain('ファイルを書き出せませんでした。');
+    expect(
+      elements(node).some(
+        (element) => element.props['data-testid'] === 'tab-conflict-export-error',
+      ),
+    ).toBe(true);
+  });
 });

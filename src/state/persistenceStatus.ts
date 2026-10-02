@@ -272,7 +272,7 @@ export class PersistenceTracker {
         detail: '端末への書き込みを待っています。',
         liveMessage: this.liveMessage,
         showRetry: false,
-        showExport: false,
+        showExport: canExportRun,
         persistent: false,
       };
     }
@@ -284,7 +284,7 @@ export class PersistenceTracker {
         detail: '保存済みデータを読み直せました。',
         liveMessage: this.liveMessage,
         showRetry: false,
-        showExport: false,
+        showExport: canExportRun,
         persistent: false,
       };
     }
@@ -296,7 +296,7 @@ export class PersistenceTracker {
         detail: moment,
         liveMessage: this.liveMessage,
         showRetry: false,
-        showExport: false,
+        showExport: canExportRun,
         persistent: false,
       };
     }
@@ -307,7 +307,7 @@ export class PersistenceTracker {
       detail: '',
       liveMessage: this.liveMessage,
       showRetry: false,
-      showExport: false,
+      showExport: canExportRun,
       persistent: false,
     };
   }

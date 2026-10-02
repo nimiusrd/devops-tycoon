@@ -216,4 +216,46 @@ describe('複数タブの保存（RI-144）', () => {
     await expect(gameB.importRunSaveText(`${text}\n`)).resolves.toMatchObject({ ok: false });
     expect((await writer.load())?.savedAt).toBe(4_000);
   });
+
+  it('競合した途中セーブは書き出せ、破棄の応答は後続のランを戻さない', async () => {
+    const name = databaseName();
+    const [runA, runB] = await Promise.all([
+      initializeRunPersistence(new IndexedDbRunStorage(name)),
+      initializeRunPersistence(new IndexedDbRunStorage(name)),
+    ]);
+    const gameA = createGame({ seed: 'keep-a', metaReady: false });
+    const gameB = createGame({ seed: 'keep-b', metaReady: false });
+    gameA.attachRunPersistence(runA.storage, runA.save, runA.issue);
+    gameB.attachRunPersistence(runB.storage, runB.save, runB.issue);
+    gameA.startRun('easy', [], 'keep-a');
+    const reader = new IndexedDbRunStorage(name);
+    await waitFor(async () => {
+      expect((await reader.load())?.summary.seed).toBe('keep-a');
+    });
+
+    gameB.startRun('easy', [], 'keep-b');
+    await waitFor(async () => {
+      expect(gameB.hasTabConflict()).toBe(true);
+    });
+    expect(gameB.getPersistenceStatus().showExport).toBe(true);
+    expect(gameB.exportRunSaveText()).toContain('keep-b');
+    await expect(gameB.importReplayText('{}')).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringContaining('再読込') as unknown as string,
+    });
+    expect((await reader.load())?.summary.seed).toBe('keep-a');
+
+    const gameC = createGame({ seed: 'keep-c', metaReady: false });
+    const bootC = await initializeRunPersistence(new IndexedDbRunStorage(name));
+    gameC.attachRunPersistence(bootC.storage, bootC.save, bootC.issue);
+    const fresh = new IndexedDbRunStorage(name);
+    await fresh.save(toRunSave((await reader.load())!.state, 9_000));
+    gameC.clearRunSave();
+    gameC.startRun('easy', [], 'after-clear');
+    await waitFor(async () => {
+      expect(gameC.hasTabConflict()).toBe(true);
+    });
+    expect(gameC.getRunSaveSummary()?.seed).toBe('after-clear');
+    expect((await reader.load())?.summary.seed).toBe('keep-a');
+  });
 });

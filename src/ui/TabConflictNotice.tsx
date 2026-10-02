@@ -13,6 +13,8 @@ export interface TabConflictNoticeProps {
   /** 未保存の途中セーブやリプレイを、再読込の前にファイルへ残す。 */
   showExport?: boolean;
   onExport?: () => void;
+  /** 書き出しに失敗したとき、案内へ残す一文。 */
+  exportMessage?: string | null;
 }
 
 export function TabConflictNotice({
@@ -20,6 +22,7 @@ export function TabConflictNotice({
   bannerRef,
   showExport = false,
   onExport,
+  exportMessage = null,
 }: TabConflictNoticeProps) {
   return (
     <div
@@ -42,6 +45,11 @@ export function TabConflictNotice({
         <button type="button" className="btn" data-testid="tab-conflict-export" onClick={onExport}>
           ファイルに書き出す
         </button>
+      ) : null}
+      {exportMessage ? (
+        <p className="persistence-notice-detail" data-testid="tab-conflict-export-error">
+          {exportMessage}
+        </p>
       ) : null}
       <button type="button" className="btn" data-testid="tab-conflict-reload" onClick={onTakeOver}>
         再読込して引き継ぐ

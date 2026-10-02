@@ -94,7 +94,7 @@ export function PersistenceNotice({
   const conflictText =
     '別のタブが記録を更新しました。このタブの変更は保存していません。再読込して引き継げます。';
   const liveText = tabConflict
-    ? conflictText
+    ? [conflictText, exportMessage].filter((part) => part).join(' ')
     : exportMessage
       ? `${notice.liveMessage} ${exportMessage}`.trim()
       : notice.liveMessage;
@@ -118,6 +118,7 @@ export function PersistenceNotice({
           bannerRef={bindPersistentBanner}
           showExport={notice.showExport}
           onExport={onExport}
+          exportMessage={exportMessage}
         />
       ) : null}
       {showBanner ? (

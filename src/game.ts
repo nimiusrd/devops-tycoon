@@ -488,8 +488,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     runSaveIssue = null;
     runRevision += 1;
     if (!runStorage) return;
+    const revisionAtClear = runRevision;
     const work = writeDurableRun(null).catch((error: unknown) => {
-      if (isTabConflict(error)) {
+      // 破棄の応答より前に次のランがセーブを更新していたら、その内容は戻さない。
+      if (isTabConflict(error) && resumableSave === null && runRevision === revisionAtClear) {
         resumableSave = previous;
         runSaveIssue = previousIssue;
       }
@@ -1787,7 +1789,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const canExportFailedData =
         (runAtRisk && resumableSave !== null) ||
         (replayAtRisk && unsavedReplay) ||
-        (tabConflict && unsavedReplay);
+        (tabConflict && (unsavedReplay || resumableSave !== null));
       return tracker.notice(canExportFailedData);
     },
     dismissPersistenceNotice() {
@@ -2161,6 +2163,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         writtenIds?: ReadonlySet<string>;
       },
     ) {
+      if (tabConflict) {
+        return {
+          ok: false as const,
+          reason: 'corrupt' as const,
+          message:
+            '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+        };
+      }
       const backup = readPersistenceBackup(raw);
       if (backup && !batch) {
         if (backup.replays.length === 0) {

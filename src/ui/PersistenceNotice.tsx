@@ -28,6 +28,14 @@ function showsPersistenceBanner(notice: PersistenceNoticeModel): boolean {
   return notice.state !== 'idle' && !(notice.state === 'saved' && notice.liveMessage === '');
 }
 
+/**
+ * HUD の次の行へ置くのは、復旧直後の保存済みだけ。
+ * 保存中は固定配置のままにし、書き込みのたびに盤面の高さを変えない。
+ */
+function showsInlineRecoveryChip(notice: PersistenceNoticeModel): boolean {
+  return !notice.persistent && notice.state === 'saved' && showsPersistenceBanner(notice);
+}
+
 let releaseBannerInset: (() => void) | undefined;
 
 /** 常駐バナーの実高さをタイトルの上余白へ渡す。復旧チップやアンマウントでは余白を外す。 */
@@ -45,7 +53,7 @@ export function PersistenceQuietChip({
   notice: PersistenceNoticeModel;
   active: boolean;
 }) {
-  if (!active || notice.persistent || !showsPersistenceBanner(notice)) return null;
+  if (!active || !showsInlineRecoveryChip(notice)) return null;
   return (
     <div className="persistence-quiet-slot" data-testid="persistence-quiet-slot">
       <div
@@ -81,7 +89,8 @@ export function PersistenceNotice({
     ? `${notice.liveMessage} ${exportMessage}`.trim()
     : notice.liveMessage;
   const showBanner =
-    showsPersistenceBanner(notice) && !(quietPlacement === 'inline' && !notice.persistent);
+    showsPersistenceBanner(notice) &&
+    !(quietPlacement === 'inline' && showsInlineRecoveryChip(notice));
   const content = (
     <>
       <span

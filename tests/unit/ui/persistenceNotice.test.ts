@@ -159,6 +159,30 @@ describe('PersistenceNotice', () => {
     const failed = render(base, vi.fn(), vi.fn(), null, 'inline');
     expect(find(failed, 'persistence-notice').props['data-persistent']).toBe('true');
     expect(find(failed, 'persistence-retry').props).toBeTruthy();
+
+    const saving = render(
+      {
+        ...base,
+        state: 'saving',
+        tone: 'quiet',
+        headline: '保存中',
+        detail: '端末への書き込みを待っています。',
+        liveMessage: '',
+        showRetry: false,
+        showExport: false,
+        persistent: false,
+      },
+      vi.fn(),
+      vi.fn(),
+      null,
+      'inline',
+    );
+    expect(find(saving, 'persistence-notice').props).toMatchObject({
+      'data-state': 'saving',
+      'data-persistent': 'false',
+      className: 'persistence-notice persistence-notice-quiet',
+    });
+    expect(find(saving, 'persistence-notice').props['data-quiet-placement']).toBeUndefined();
   });
 
   it('復旧チップは見出しと詳細を HUD の下へ出し、平常時と常駐中は出さない', () => {
@@ -190,6 +214,20 @@ describe('PersistenceNotice', () => {
       expand(createElement(PersistenceQuietChip, { notice: saved, active: false })),
     ).toBeNull();
     expect(expand(createElement(PersistenceQuietChip, { notice: base, active: true }))).toBeNull();
+    expect(
+      expand(
+        createElement(PersistenceQuietChip, {
+          notice: {
+            ...saved,
+            state: 'saving',
+            headline: '保存中',
+            detail: '端末への書き込みを待っています。',
+            liveMessage: '',
+          },
+          active: true,
+        }),
+      ),
+    ).toBeNull();
     expect(
       expand(
         createElement(PersistenceQuietChip, {

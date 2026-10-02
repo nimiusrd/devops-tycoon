@@ -467,6 +467,28 @@ describe('useDialogOverlayLock', () => {
     expect(dialog.getAttribute('aria-modal')).toBe('true');
   });
 
+  it('inert 配下の復旧チップは、z-index が高くてもダイアログ外の案内にしない', () => {
+    const dialog = new ElementStub().append(button());
+    dialog.zIndex = '20';
+    dialog.setAttribute('aria-modal', 'true');
+    const root = new ElementStub();
+    root.id = 'root';
+    const app = new ElementStub();
+    const chip = new ElementStub();
+    chip.zIndex = '50';
+    chip.setAttribute('data-overlay-lock-exempt', 'true');
+    chip.setAttribute('data-testid', 'persistence-notice');
+    app.append(chip);
+    root.append(app);
+    documentStub.body.append(root, dialog);
+
+    mountLock(dialog);
+
+    expect(app.inert).toBe(true);
+    expect(chip.parentElement?.inert).toBe(true);
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('操作のない復旧通知が前面にある間は aria-modal を戻さない', () => {
     const dialog = new ElementStub().append(button());
     dialog.zIndex = '20';

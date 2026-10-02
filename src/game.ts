@@ -734,12 +734,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * 観測した世代と一致するときだけメタを書く。
    * 別タブの記録なら、その内容を画面へ戻して保存を止める。
    */
-  const writeDurableMeta = (snapshot: MetaState): Promise<void> => {
+  const writeDurableMeta = (snapshot: MetaState, expectedRunGeneration?: number): Promise<void> => {
     const storage = metaStorage;
     if (!storage) return Promise.resolve();
     if (tabConflict) return Promise.reject(new TabConflictError());
     if (!(storage instanceof IndexedDbMetaStorage)) return storage.save(snapshot);
-    return storage.compareAndSave(snapshot).then((result) => {
+    return storage.compareAndSave(snapshot, expectedRunGeneration).then((result) => {
       if (!result.ok) {
         if (result.current) meta = structuredClone(result.current);
         tabConflict = true;
@@ -1351,10 +1351,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
-  const recordIfFinished = (): void => {
-    if (!metaReady || tabConflict) return;
+  const recordIfFinished = (): boolean => {
+    if (!metaReady || tabConflict) return false;
     const s = engine.snapshot();
-    if (recorded || (s.status !== 'won' && s.status !== 'lost')) return;
+    if (recorded || (s.status !== 'won' && s.status !== 'lost')) return false;
     recorded = true;
     const scoreMul = s.trials.reduce((m, id) => m * (getTrial(id)?.scoreMul ?? 1), 1);
     const input = {
@@ -1380,12 +1380,29 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = computeRunRewardBreakdown(input);
       meta = applyRunReward(meta, input);
     }
+    if (runStorage instanceof IndexedDbRunStorage && metaStorage instanceof IndexedDbMetaStorage) {
+      // 報酬とリプレイの前に、途中セーブの世代がまだ自分の観測と一致するか同じトランザクションで見る。
+      const expectedRun = runStorage.observedRunGeneration();
+      metaRevision += 1;
+      const work = writeDurableMeta(structuredClone(meta), expectedRun);
+      trackWrite('meta', work);
+      void work.then(
+        () => {
+          if (!tabConflict) persistRunIfNeeded();
+        },
+        () => {
+          lastRunReward = null;
+          bump();
+        },
+      );
+      return true;
+    }
     persistMeta();
+    return false;
   };
 
   const after = (): RunState => {
-    recordIfFinished();
-    persistRunIfNeeded();
+    if (!recordIfFinished()) persistRunIfNeeded();
     return engine.snapshot();
   };
 
@@ -1394,9 +1411,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * ただし即時敗北などで終端へ落ちた場合はセーブを破棄する。
    */
   const afterLocal = (): RunState => {
-    recordIfFinished();
+    const guarded = recordIfFinished();
     const phase = engine.currentPhase();
-    if (phase === 'won' || phase === 'lost' || phase === 'title') {
+    if (!guarded && (phase === 'won' || phase === 'lost' || phase === 'title')) {
       persistRunIfNeeded();
     }
     return engine.snapshot();

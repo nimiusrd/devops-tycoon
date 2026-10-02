@@ -258,4 +258,59 @@ describe('複数タブの保存（RI-144）', () => {
     expect(gameC.getRunSaveSummary()?.seed).toBe('after-clear');
     expect((await reader.load())?.summary.seed).toBe('keep-a');
   });
+
+  it('古い途中セーブの完走では、報酬を書いてからセーブ削除だけ競合させない', async () => {
+    const engine = createRunEngine({ seed: 'finish-stale' });
+    engine.startRun('easy', [], 'finish-stale');
+    const setup = engine.exportPersistState();
+    expect(setup).not.toBeNull();
+    const name = databaseName();
+    const metaSeed = new IndexedDbMetaStorage(name);
+    await metaSeed.save({ ...defaultMeta(), points: 40, bestScore: 0 });
+    const runSeed = new IndexedDbRunStorage(name);
+    await runSeed.save(toRunSave(setup!, 1_000));
+    const metaB = await initializeMetaPersistence(new IndexedDbMetaStorage(name));
+    const runB = await initializeRunPersistence(new IndexedDbRunStorage(name));
+    const gameB = createGame({ seed: 'finish-b', metaReady: false });
+    gameB.attachMetaPersistence(metaB.meta, metaB.storage, {
+      loadedFromDevice: metaB.loadedFromDevice,
+    });
+    gameB.attachRunPersistence(runB.storage, runB.save, runB.issue);
+    gameB.resumeRun();
+    gameB.beginSetupSprint();
+    const runs = new IndexedDbRunStorage(name);
+    await waitFor(async () => {
+      expect(gameB.phase()).toBe('sprint');
+      expect(await runs.load()).not.toBeNull();
+    });
+
+    const metaA = await initializeMetaPersistence(new IndexedDbMetaStorage(name));
+    const runA = await initializeRunPersistence(new IndexedDbRunStorage(name));
+    const gameA = createGame({ seed: 'finish-a', metaReady: false });
+    gameA.attachMetaPersistence(metaA.meta, metaA.storage, {
+      loadedFromDevice: metaA.loadedFromDevice,
+    });
+    gameA.attachRunPersistence(runA.storage, runA.save, runA.issue);
+    gameA.startRun('easy', [], 'finish-a');
+    await waitFor(async () => {
+      expect((await runs.load())?.summary.seed).toBe('finish-a');
+    });
+
+    const internals = gameB.engine as unknown as {
+      phase: string;
+      budget: number;
+      shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
+    };
+    internals.phase = 'shop';
+    internals.budget = 10;
+    internals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+    expect(gameB.buyShopCard('copilot').status).toBe('lost');
+    const metas = new IndexedDbMetaStorage(name);
+    await waitFor(async () => {
+      expect(gameB.hasTabConflict()).toBe(true);
+    });
+    expect((await metas.load())?.points).toBe(40);
+    expect((await runs.load())?.summary.seed).toBe('finish-a');
+    expect(gameB.getMeta().points).toBe(40);
+  });
 });

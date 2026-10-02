@@ -519,6 +519,11 @@ export class IndexedDbRunStorage implements RunStorage {
     this.generationReady = true;
   }
 
+  /** このインスタンスが最後に採用した途中セーブの世代。 */
+  observedRunGeneration(): number {
+    return this.generationReady ? this.observedGeneration : 0;
+  }
+
   /** 別タブの記録を見つけたあとは、取り込みを含むすべての変更を止める。 */
   private refuseForeignWrite(): void {
     if (this.foreignBlocked) throw new TabConflictError();
@@ -641,12 +646,13 @@ export class IndexedDbRunStorage implements RunStorage {
           await runStore.delete(RUN_RECORD_KEY);
         }
         if (snapshot) await runStore.put(snapshot, RUN_RECORD_KEY);
-        if (stored !== undefined || snapshot) {
-          const next = generationValue(await generationStore.get('run')) + 1;
-          await generationStore.put(next, 'run');
-          this.noteGeneration(next);
-        }
+        const next =
+          stored !== undefined || snapshot
+            ? generationValue(await generationStore.get('run')) + 1
+            : null;
+        if (next !== null) await generationStore.put(next, 'run');
         await tx.done;
+        if (next !== null) this.noteGeneration(next);
         return null;
       } finally {
         db.close();

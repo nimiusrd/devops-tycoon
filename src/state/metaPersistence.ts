@@ -30,7 +30,10 @@ export interface MetaStorage {
    * この保存先が観測した世代と一致するときだけ書く。
    * 別タブが先に書いていたら、その記録を返して上書きしない。
    */
-  compareAndSave?(meta: MetaState): Promise<DurableWriteResult<MetaState>>;
+  compareAndSave?(
+    meta: MetaState,
+    expectedRunGeneration?: number,
+  ): Promise<DurableWriteResult<MetaState>>;
 }
 
 export interface MetaPersistenceBootstrap {
@@ -113,7 +116,10 @@ export class IndexedDbMetaStorage implements MetaStorage {
     return write;
   }
 
-  compareAndSave(meta: MetaState): Promise<DurableWriteResult<MetaState>> {
+  compareAndSave(
+    meta: MetaState,
+    expectedRunGeneration?: number,
+  ): Promise<DurableWriteResult<MetaState>> {
     const snapshot = structuredClone(meta);
     const write = this.writes.then(async () => {
       if (this.foreignBlocked) return this.conflictResult();
@@ -122,6 +128,17 @@ export class IndexedDbMetaStorage implements MetaStorage {
         const tx = db.transaction([META_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
         const metaStore = tx.objectStore(META_STORE_NAME);
         const generationStore = tx.objectStore(GENERATION_STORE_NAME);
+        if (expectedRunGeneration !== undefined) {
+          const runGeneration = generationValue(await generationStore.get('run'));
+          if (runGeneration !== expectedRunGeneration) {
+            const existing = await metaStore.get(META_RECORD_KEY);
+            await tx.done;
+            return {
+              ok: false as const,
+              current: existing === undefined ? null : normalizeMeta(existing),
+            };
+          }
+        }
         const generation = generationValue(await generationStore.get('meta'));
         if (!this.acceptsGeneration(generation)) {
           const existing = await metaStore.get(META_RECORD_KEY);
@@ -240,7 +257,10 @@ export class MemoryMetaStorage implements MetaStorage {
     return structuredClone(this.state);
   }
 
-  async compareAndSave(meta: MetaState): Promise<DurableWriteResult<MetaState>> {
+  async compareAndSave(
+    meta: MetaState,
+    _expectedRunGeneration?: number,
+  ): Promise<DurableWriteResult<MetaState>> {
     await this.save(meta);
     return { ok: true };
   }

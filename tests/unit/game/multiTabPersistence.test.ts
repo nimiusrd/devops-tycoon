@@ -7,11 +7,13 @@ import {
   IndexedDbMetaStorage,
   initializeMetaPersistence,
 } from '../../../src/state/metaPersistence';
+import { MemoryReplayStorage } from '../../../src/state/replayPersistence';
 import {
   IndexedDbRunStorage,
   initializeRunPersistence,
   toRunSave,
 } from '../../../src/state/runPersistence';
+import { serializeRunSave } from '../../../src/state/runSaveShare';
 import { TabConflictError } from '../../../src/state/tabConflict';
 
 import 'fake-indexeddb/auto';
@@ -29,6 +31,37 @@ function databaseName(): string {
 afterEach(async () => {
   await Promise.all(databases.splice(0).map((name) => deleteDB(name)));
 });
+
+async function finishReadyGame(seed: string) {
+  const engine = createRunEngine({ seed });
+  engine.startRun('easy', [], seed);
+  const setup = engine.exportPersistState();
+  expect(setup).not.toBeNull();
+  const name = databaseName();
+  await new IndexedDbMetaStorage(name).save({ ...defaultMeta(), points: 40, bestScore: 0 });
+  await new IndexedDbRunStorage(name).save(toRunSave(setup!, 1_000));
+  const metaBoot = await initializeMetaPersistence(new IndexedDbMetaStorage(name));
+  const runBoot = await initializeRunPersistence(new IndexedDbRunStorage(name));
+  const game = createGame({ seed: `${seed}-player`, metaReady: false });
+  game.attachMetaPersistence(metaBoot.meta, metaBoot.storage, {
+    loadedFromDevice: metaBoot.loadedFromDevice,
+  });
+  game.attachRunPersistence(runBoot.storage, runBoot.save, runBoot.issue);
+  game.resumeRun();
+  game.beginSetupSprint();
+  await waitFor(async () => {
+    expect(game.phase()).toBe('sprint');
+  });
+  const internals = game.engine as unknown as {
+    phase: string;
+    budget: number;
+    shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
+  };
+  internals.phase = 'shop';
+  internals.budget = 10;
+  internals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+  return { name, game, metaStorage: metaBoot.storage, runStorage: runBoot.storage };
+}
 
 async function waitFor(check: () => Promise<void>): Promise<void> {
   let last: unknown;
@@ -393,5 +426,73 @@ describe('複数タブの保存（RI-144）', () => {
     const later = await metas.compareAndSave({ ...defaultMeta(), points: 9 });
     expect(later.ok).toBe(false);
     expect((await new IndexedDbMetaStorage(name).load())?.points).toBe(1);
+  });
+
+  it('完了確定の前に音設定を変えても、報酬だけ先に残さない', async () => {
+    const { name, game, metaStorage } = await finishReadyGame('finish-mute');
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = metaStorage.compareAndSave.bind(metaStorage);
+    metaStorage.compareAndSave = (meta, expected) => {
+      if (expected !== undefined) return gate.then(() => original(meta, expected));
+      return original(meta, expected);
+    };
+    expect(game.buyShopCard('copilot').status).toBe('lost');
+    game.setSoundMuted(false);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const mid = await new IndexedDbMetaStorage(name).load();
+    expect(mid?.points).toBe(40);
+    expect(mid?.soundMuted).toBe(true);
+    expect(await new IndexedDbRunStorage(name).load()).not.toBeNull();
+    release();
+    await waitFor(async () => {
+      const saved = await new IndexedDbMetaStorage(name).load();
+      expect(saved?.points).not.toBe(40);
+      expect(saved?.soundMuted).toBe(false);
+      expect(await new IndexedDbRunStorage(name).load()).toBeNull();
+    });
+  });
+
+  it('完了保存が失敗しても、リプレイを書き出せ、別の途中セーブは取り込めない', async () => {
+    const { name, game, metaStorage, runStorage } = await finishReadyGame('finish-export');
+    await game.attachReplay(new MemoryReplayStorage());
+    const original = metaStorage.compareAndSave.bind(metaStorage);
+    let finishWrites = 0;
+    metaStorage.compareAndSave = (meta, expected) => {
+      if (expected !== undefined) {
+        finishWrites += 1;
+        if (finishWrites === 1) {
+          return Promise.reject(new DOMException('The transaction was aborted', 'AbortError'));
+        }
+      }
+      return original(meta, expected);
+    };
+    expect(game.buyShopCard('copilot').status).toBe('lost');
+    await waitFor(async () => {
+      expect(game.getPersistenceStatus()).toMatchObject({ state: 'failed', showExport: true });
+    });
+    const files = game.exportPendingReplayFiles();
+    expect(files.length).toBeGreaterThan(0);
+    expect(files[0]?.text).toContain('finish-export');
+    const incomingEngine = createRunEngine({ seed: 'imported-run' });
+    incomingEngine.startRun('easy', [], 'imported-run');
+    const incomingState = incomingEngine.exportPersistState();
+    expect(incomingState).not.toBeNull();
+    const imported = await game.importRunSaveText(
+      serializeRunSave(toRunSave(incomingState!, 8_000)),
+    );
+    expect(imported.ok).toBe(false);
+    if (!imported.ok) expect(imported.message).toContain('再試行');
+    expect((await new IndexedDbRunStorage(name).load())?.summary.seed).toBe('finish-export');
+    expect((await new IndexedDbMetaStorage(name).load())?.points).toBe(40);
+    runStorage.adoptRunGeneration(999);
+    await game.retryPersistence();
+    await waitFor(async () => {
+      expect((await new IndexedDbMetaStorage(name).load())?.points).not.toBe(40);
+      expect(await new IndexedDbRunStorage(name).load()).toBeNull();
+    });
+    expect(game.exportPendingReplayFiles().length + game.listReplays().length).toBeGreaterThan(0);
   });
 });

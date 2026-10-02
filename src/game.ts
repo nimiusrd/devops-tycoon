@@ -408,6 +408,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let tabConflict = false;
   /** ラン完了の報酬と途中セーブ破棄が、まだ端末で確定していない。 */
   let finishCommitPending = false;
+  /** 完了トランザクションへ後で載せるメタ変更。独立した保存はしない。 */
+  let metaFollowsFinish = false;
+  /** 最初の完了試行で確定した途中セーブ世代。再試行はこれを使う。 */
+  let finishExpectedRunGeneration: number | null = null;
   /** 確定を待つ間、端末へ書かずに保持する完走リプレイ。 */
   let pendingFinishReplay: ReplayBlob | null = null;
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
@@ -637,7 +641,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const exportableReplayBlobs = (): ReplayBlob[] => {
     const seen = new Set<string>();
     const blobs: ReplayBlob[] = [];
-    for (const blob of [...pendingReplays, ...sessionOnlyReplayBlobs()]) {
+    // 完了トランザクション失敗中のリプレイは再試行用に残したまま、書き出しだけ見えるようにする。
+    const held = pendingFinishReplay ? [pendingFinishReplay] : [];
+    for (const blob of [...held, ...pendingReplays, ...sessionOnlyReplayBlobs()]) {
       if (seen.has(blob.id)) continue;
       seen.add(blob.id);
       blobs.push(blob);
@@ -784,18 +790,23 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     finishCommitPending = true;
     return runs.enqueue(async () => {
-      const expectedRun = runs.observedRunGeneration();
+      // 先行する自分の途中セーブが世代を進めたあとに観測する。再試行は初回の世代を維持する。
+      const expectedRun = finishExpectedRunGeneration ?? runs.observedRunGeneration();
+      finishExpectedRunGeneration = expectedRun;
       const result = await metas.compareAndSave(structuredClone(meta), expectedRun);
       if (!result.ok) {
         if (result.current) meta = structuredClone(result.current);
         tabConflict = true;
         finishCommitPending = false;
+        metaFollowsFinish = false;
+        finishExpectedRunGeneration = null;
         lastRunReward = null;
         holdUnsavedFinishReplay();
         throw new TabConflictError();
       }
       if (result.runGeneration !== undefined) runs.adoptRunGeneration(result.runGeneration);
       finishCommitPending = false;
+      finishExpectedRunGeneration = null;
       if (pendingFinishReplay && replayStorage) {
         const blob = pendingFinishReplay;
         pendingFinishReplay = null;
@@ -951,7 +962,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const persistMeta = (): void => {
     if (!metaStorage || tabConflict) return;
     metaRevision += 1;
+    // 完了トランザクションより先に報酬を書かない。変更はメモリに残し、確定時のスナップショットへ載せる。
+    if (finishCommitPending) {
+      metaFollowsFinish = true;
+      return;
+    }
     trackWrite('meta', writeDurableMeta(structuredClone(meta)));
+  };
+
+  /** 完了確定のあとに、確定へ間に合わなかったメタ変更だけを書く。 */
+  const flushDeferredMeta = (): void => {
+    if (tabConflict || finishCommitPending || !metaFollowsFinish) return;
+    metaFollowsFinish = false;
+    persistMeta();
   };
 
   const retryWrite = (
@@ -1458,7 +1481,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       trackWrite('meta', work);
       void work.then(
         () => {
-          if (!tabConflict) persistRunIfNeeded();
+          if (tabConflict) return;
+          flushDeferredMeta();
+          persistRunIfNeeded();
         },
         () => undefined,
       );
@@ -1870,9 +1895,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const runAtRisk = tracker.isSession('run') || tracker.hasVisibleFailure('run');
       const replayAtRisk = tracker.isSession('replay') || tracker.hasVisibleFailure('replay');
       const unsavedReplay = exportableReplayBlobs().length > 0;
+      const metaAtRisk = tracker.isFailed('meta') || tracker.hasVisibleFailure('meta');
       const canExportFailedData =
         (runAtRisk && resumableSave !== null) ||
-        (replayAtRisk && unsavedReplay) ||
+        ((replayAtRisk || metaAtRisk) && unsavedReplay) ||
         (tabConflict && (unsavedReplay || resumableSave !== null));
       return tracker.notice(canExportFailedData);
     },
@@ -1899,7 +1925,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           metaRevision += 1;
           tasks.push(
             retryWrite('meta', commitFinishedRun()).then(() => {
-              if (!tabConflict) persistRunIfNeeded();
+              if (tabConflict) return;
+              flushDeferredMeta();
+              persistRunIfNeeded();
             }),
           );
         } else if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
@@ -2062,6 +2090,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           reason: 'corrupt' as const,
           message:
             '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+        };
+      }
+      if (finishCommitPending) {
+        return {
+          ok: false as const,
+          reason: 'corrupt' as const,
+          message:
+            'ランの完了を保存し終えるまで、別のセーブは読み込めません。保存の再試行を先にしてください。',
         };
       }
       undoImportedRun = null;

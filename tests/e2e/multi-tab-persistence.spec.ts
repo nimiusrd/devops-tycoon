@@ -11,7 +11,9 @@ type TabGameWindow = Window & {
     setSoundMuted(muted: boolean): void;
     hasTabConflict(): boolean;
     startRun(difficulty?: string, trials?: string[], seed?: string): unknown;
+    beginSetupSprint(): unknown;
     clearRunSave(): void;
+    getPersistenceStatus(): unknown;
   };
 };
 
@@ -103,6 +105,84 @@ test('古いタブの音切替では購入を巻き戻さず、競合を案内�
     });
   await other.screenshot({
     path: '/opt/cursor/artifacts/tab-conflict-phone.png',
+    fullPage: true,
+  });
+});
+
+test('320px の競合案内は復旧チップと HUD の上に重ならない', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  const other = await page.context().newPage();
+  await other.setViewportSize({ width: 320, height: 568 });
+  const initial = {
+    points: 100,
+    unlockedDifficulties: ['easy', 'normal'],
+    defeatedBosses: [],
+    achievements: ['review-exceeded'],
+    bestScore: 0,
+    unlockedCards: [],
+    unlockedRelics: [],
+  };
+  await seedMeta(page, initial);
+  await seedMeta(other, initial);
+  await page.goto('/?seed=multi-tab-layout-a');
+  await other.goto('/?tutorial=off&seed=multi-tab-layout-b');
+  await expect(other.getByTestId('title')).toBeVisible();
+  expect(
+    await page.evaluate(() => (window as TabGameWindow).game?.purchaseMetaUnlock('unlock-devin')),
+  ).toEqual({ ok: true });
+  await expect.poll(() => storedMeta(page)).toMatchObject({ points: 50 });
+  await other.evaluate(() => (window as TabGameWindow).game?.setSoundMuted(false));
+  const banner = other.getByTestId('tab-conflict-notice');
+  await expect(banner).toBeVisible();
+
+  const reserved = await other.evaluate(() => {
+    const height = getComputedStyle(document.documentElement)
+      .getPropertyValue('--persistence-banner-height')
+      .trim();
+    const box = document
+      .querySelector('[data-testid="tab-conflict-notice"]')
+      ?.getBoundingClientRect();
+    return { height, banner: box?.height ?? 0 };
+  });
+  expect(Number.parseFloat(reserved.height)).toBeGreaterThan(40);
+  expect(Math.abs(Number.parseFloat(reserved.height) - reserved.banner)).toBeLessThan(2);
+
+  await other.evaluate(() => {
+    const game = (window as TabGameWindow).game;
+    if (!game) throw new Error('game missing');
+    game.getPersistenceStatus = () => ({
+      state: 'saved',
+      tone: 'quiet',
+      headline: '保存済み',
+      detail: '保存済みデータを読み直せました。',
+      liveMessage: '保存済みデータを読み直せました。',
+      showRetry: false,
+      showExport: false,
+      persistent: false,
+    });
+    game.startRun('easy', [], 'multi-tab-layout');
+  });
+  await expect(other.getByTestId('persistence-quiet-slot')).toBeVisible();
+  await expect(other.getByTestId('hud')).toBeVisible();
+
+  const overlap = await other.evaluate(() => {
+    const bannerBox = document
+      .querySelector('[data-testid="tab-conflict-notice"]')
+      ?.getBoundingClientRect();
+    const hudBox = document.querySelector('[data-testid="hud"]')?.getBoundingClientRect();
+    const quietBox = document
+      .querySelector('[data-testid="persistence-quiet-slot"]')
+      ?.getBoundingClientRect();
+    return {
+      bannerBottom: bannerBox?.bottom ?? 0,
+      hudTop: hudBox?.top ?? 0,
+      quietTop: quietBox?.top ?? 0,
+    };
+  });
+  expect(overlap.hudTop).toBeGreaterThanOrEqual(overlap.bannerBottom - 1);
+  expect(overlap.quietTop).toBeGreaterThanOrEqual(overlap.bannerBottom - 1);
+  await other.screenshot({
+    path: '/opt/cursor/artifacts/tab-conflict-quiet-320.png',
     fullPage: true,
   });
 });

@@ -55,7 +55,6 @@ import {
   persistenceExportMessages,
 } from './ui/downloadTextFile';
 import { PersistenceNotice, PersistenceQuietChip } from './ui/PersistenceNotice';
-import { TabConflictNotice } from './ui/TabConflictNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -486,6 +485,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       notice={run.persistenceStatus}
       quietPlacement={quietInline ? 'inline' : 'overlay'}
       exportMessage={exportMessage}
+      tabConflict={run.tabConflict}
+      onTakeOver={run.takeOverForeignTab}
       onRetry={() => {
         setExportMessage(null);
         void run.retryPersistence();
@@ -953,7 +954,6 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   return (
     <>
       {persistenceNotice}
-      {run.tabConflict ? <TabConflictNotice onTakeOver={run.takeOverForeignTab} /> : null}
       {phaseBody}
     </>
   );

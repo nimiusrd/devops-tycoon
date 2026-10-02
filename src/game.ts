@@ -1942,6 +1942,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }));
     },
     async importRunSaveText(raw) {
+      if (tabConflict) {
+        return {
+          ok: false as const,
+          reason: 'corrupt' as const,
+          message:
+            '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+        };
+      }
       undoImportedRun = null;
       const loaded = parseRunSaveShare(raw);
       if (!loaded.ok) return loaded;

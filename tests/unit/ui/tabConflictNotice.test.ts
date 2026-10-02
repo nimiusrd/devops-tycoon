@@ -1,5 +1,7 @@
 import { Children, createElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import type { PersistenceNotice as PersistenceNoticeModel } from '../../../src/state/persistenceStatus';
+import { PersistenceNotice } from '../../../src/ui/PersistenceNotice';
 import { TabConflictNotice } from '../../../src/ui/TabConflictNotice';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
@@ -34,5 +36,33 @@ describe('別タブ競合の案内', () => {
     expect(button?.type).toBe('button');
     (button?.props.onClick as () => void)();
     expect(onTakeOver).toHaveBeenCalledOnce();
+  });
+
+  it('保存失敗の再試行とは重ねず、常駐バナーとして高さを測れる', () => {
+    const notice: PersistenceNoticeModel = {
+      state: 'failed',
+      tone: 'danger',
+      headline: '保存失敗',
+      detail: '容量が不足しています。',
+      liveMessage: '容量が不足して保存できません。',
+      showRetry: true,
+      showExport: true,
+      persistent: true,
+    };
+    const node = createElement(PersistenceNotice, {
+      notice,
+      onRetry: vi.fn(),
+      onExport: vi.fn(),
+      tabConflict: true,
+      onTakeOver: vi.fn(),
+    });
+    const conflict = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-notice',
+    );
+    expect(conflict?.props['data-persistent']).toBe('true');
+    expect(conflict?.props.ref).toEqual(expect.any(Function));
+    expect(
+      elements(node).some((element) => element.props['data-testid'] === 'persistence-retry'),
+    ).toBe(false);
   });
 });

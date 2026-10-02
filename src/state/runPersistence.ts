@@ -24,7 +24,7 @@ import {
   RUN_RECORD_KEY,
   RUN_STORE_NAME,
 } from './gameDb';
-import { generationValue, type DurableWriteResult } from './tabConflict';
+import { TabConflictError, generationValue, type DurableWriteResult } from './tabConflict';
 import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
 import { cloneTrendHistory } from '../sim/run/trendHistory';
 
@@ -519,6 +519,11 @@ export class IndexedDbRunStorage implements RunStorage {
     this.generationReady = true;
   }
 
+  /** 別タブの記録を見つけたあとは、取り込みを含むすべての変更を止める。 */
+  private refuseForeignWrite(): void {
+    if (this.foreignBlocked) throw new TabConflictError();
+  }
+
   async load(): Promise<RunSave | null> {
     await this.writes.catch(() => undefined);
     const db = await openGameDb(this.dbName);
@@ -543,6 +548,7 @@ export class IndexedDbRunStorage implements RunStorage {
   save(save: RunSave): Promise<void> {
     const snapshot = structuredClone(save);
     const write = this.writes.then(async () => {
+      this.refuseForeignWrite();
       const db = await openGameDb(this.dbName);
       try {
         const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
@@ -618,6 +624,7 @@ export class IndexedDbRunStorage implements RunStorage {
   insertIfAbsent(save: RunSave | null): Promise<RunSave | null> {
     const snapshot = save ? structuredClone(save) : null;
     const write = this.writes.then(async () => {
+      this.refuseForeignWrite();
       const db = await openGameDb(this.dbName);
       try {
         const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
@@ -655,6 +662,7 @@ export class IndexedDbRunStorage implements RunStorage {
     const snapshot = next ? structuredClone(next) : null;
     const expectedKey = expected === null ? null : JSON.stringify(expected);
     const write = this.writes.then(async () => {
+      this.refuseForeignWrite();
       const db = await openGameDb(this.dbName);
       try {
         const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
@@ -697,6 +705,7 @@ export class IndexedDbRunStorage implements RunStorage {
     const snapshot = next ? structuredClone(next) : null;
     const expectedKey = parsedRunKey(expected);
     const write = this.writes.then(async () => {
+      this.refuseForeignWrite();
       const db = await openGameDb(this.dbName);
       try {
         const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
@@ -736,6 +745,7 @@ export class IndexedDbRunStorage implements RunStorage {
 
   clear(): Promise<void> {
     const write = this.writes.then(async () => {
+      this.refuseForeignWrite();
       const db = await openGameDb(this.dbName);
       try {
         const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');

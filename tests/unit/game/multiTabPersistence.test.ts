@@ -1,12 +1,18 @@
 import { deleteDB } from 'idb';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createGame } from '../../../src/game';
+import { createRunEngine } from '../../../src/sim/run/engine';
 import { defaultMeta } from '../../../src/state/meta';
 import {
   IndexedDbMetaStorage,
   initializeMetaPersistence,
 } from '../../../src/state/metaPersistence';
-import { IndexedDbRunStorage, initializeRunPersistence } from '../../../src/state/runPersistence';
+import {
+  IndexedDbRunStorage,
+  initializeRunPersistence,
+  toRunSave,
+} from '../../../src/state/runPersistence';
+import { TabConflictError } from '../../../src/state/tabConflict';
 
 import 'fake-indexeddb/auto';
 
@@ -160,5 +166,46 @@ describe('複数タブの保存（RI-144）', () => {
       expect(await reader.load()).toBeNull();
     });
     expect(gameC.hasTabConflict()).toBe(false);
+  });
+
+  it('競合したタブの取り込みでは、最新の途中セーブを上書きしない', async () => {
+    const engine = createRunEngine({ seed: 'import-block' });
+    engine.startRun('easy', [], 'import-block');
+    const exported = engine.exportPersistState();
+    expect(exported).not.toBeNull();
+    const current = toRunSave(exported!, 2_000);
+    const stale = toRunSave(exported!, 1_000);
+    const imported = toRunSave({ ...exported!, seed: 'imported-over-current' }, 3_000);
+    const name = databaseName();
+    const writer = new IndexedDbRunStorage(name);
+    const reader = new IndexedDbRunStorage(name);
+    await writer.save(stale);
+    await reader.load();
+    await writer.save(current);
+    expect((await reader.compareAndSave(stale)).ok).toBe(false);
+
+    await expect(reader.saveIfMatches(current, imported)).rejects.toBeInstanceOf(TabConflictError);
+    await expect(reader.clear()).rejects.toBeInstanceOf(TabConflictError);
+    expect((await writer.load())?.savedAt).toBe(2_000);
+    expect((await writer.load())?.state.seed).toBe('import-block');
+
+    const [bootA, bootB] = await Promise.all([
+      initializeRunPersistence(new IndexedDbRunStorage(name)),
+      initializeRunPersistence(new IndexedDbRunStorage(name)),
+    ]);
+    const gameA = createGame({ seed: 'import-block', metaReady: false });
+    const gameB = createGame({ seed: 'import-block-old', metaReady: false });
+    gameA.attachRunPersistence(bootA.storage, bootA.save, bootA.issue);
+    gameB.attachRunPersistence(bootB.storage, bootB.save, bootB.issue);
+    const replacement = new IndexedDbRunStorage(name);
+    await replacement.save(toRunSave(exported!, 4_000));
+    gameB.clearRunSave();
+    await waitFor(async () => {
+      expect(gameB.hasTabConflict()).toBe(true);
+    });
+    const text = gameA.exportRunSaveText();
+    expect(text).not.toBeNull();
+    await expect(gameB.importRunSaveText(`${text}\n`)).resolves.toMatchObject({ ok: false });
+    expect((await writer.load())?.savedAt).toBe(4_000);
   });
 });

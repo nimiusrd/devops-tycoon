@@ -61,11 +61,23 @@ function rectsOverlap(a: DOMRect, b: DOMRect): boolean {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
+/** 祖先が inert または非表示なら、その案内はダイアログの外から読めない。 */
+function isConcealedFromDialog(element: HTMLElement): boolean {
+  let current: HTMLElement | null = element.parentElement;
+  while (current) {
+    if (current.inert || current.getAttribute('aria-hidden') === 'true') return true;
+    current = current.parentElement;
+  }
+  return false;
+}
+
 /**
  * 保存案内がダイアログより前面か、ダイアログの矩形に覆われていない。
  * WebGL 案内は z-index が高いが、上端は保存バナーの下から始まる。見えている操作は残す。
+ * inert や非表示の中にあるチップは、z-index が高くても案内にしない。
  */
 function exemptIsOperable(root: HTMLElement, front: HTMLElement): boolean {
+  if (isConcealedFromDialog(root)) return false;
   if (paintedZIndex(root) >= paintedZIndex(front)) return true;
   if (
     typeof root.getBoundingClientRect !== 'function' ||

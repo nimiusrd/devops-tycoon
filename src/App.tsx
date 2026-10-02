@@ -54,7 +54,7 @@ import {
   persistenceExportMessage,
   persistenceExportMessages,
 } from './ui/downloadTextFile';
-import { PersistenceNotice } from './ui/PersistenceNotice';
+import { PersistenceNotice, PersistenceQuietChip } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -478,9 +478,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     }
   }, [state.zoom.level]);
 
+  const quietInline =
+    phase !== 'title' && phase !== 'won' && phase !== 'lost' && phase !== 'quarterReview';
   const persistenceNotice = (
     <PersistenceNotice
       notice={run.persistenceStatus}
+      quietPlacement={quietInline ? 'inline' : 'overlay'}
       exportMessage={exportMessage}
       onRetry={() => {
         setExportMessage(null);
@@ -712,6 +715,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         expanded={hudExpanded}
         onExpandedChange={setHudExpanded}
       />
+      <PersistenceQuietChip notice={run.persistenceStatus} active={quietInline} />
       <RunBar
         state={state}
         onOpenFormation={() => setFormationOpen(true)}

@@ -10,7 +10,7 @@
 | UI | React 19 / Framer Motion | HUD、カード、画面遷移、離散UI |
 | 盤面 | PixiJS / pixi-viewport | 現場、部署、全社の動的描画とカメラ |
 | シミュレーション | 純TypeScript / seed付きPRNG | 固定タイムステップ、決定論 |
-| 状態と遷移 | `RunEngine` / 純TS遷移表 / XState | ラン状態の正本、遷移検証、契約可視化 |
+| 状態と遷移 | `RunEngine` / 純TS遷移表 | ラン状態の正本、遷移検証 |
 | 重い試算 | Web Worker / Comlink | what-if計算 |
 | グラフ | Recharts | リザルトの静的分析 |
 | 永続化 | IndexedDB / idb | メタ進行、ラン途中セーブ、リプレイ |
@@ -41,7 +41,7 @@ IndexedDB ◀──── Meta / RunSave / Replayの直列化境界
 | パス | 責務 |
 | --- | --- |
 | `src/sim/` | ドメイン型、確率モデル、ラン進行、組織集約 |
-| `src/state/` | メタ進行、IndexedDB、セーブ、リプレイ、XState契約 |
+| `src/state/` | メタ進行、IndexedDB、セーブ、リプレイ |
 | `src/data/` | カード、レリック、イベント、難易度などの宣言的定義 |
 | `src/render/` | 状態から描画計画への純変換、Pixiアダプタ |
 | `src/ui/` | React画面、HUD、入力UI |

@@ -5,8 +5,23 @@ import {
   RUN_PHASES,
   RUN_PHASE_TRANSITIONS,
   canTransition,
+  type RunEventType,
 } from '../../../src/sim/run/phases';
 import type { RunPhase } from '../../../src/sim/run/types';
+
+/** 正本の表でイベント列をたどる。不正イベントを no-op として扱わない。 */
+function followPath(events: readonly RunEventType[]): RunPhase[] {
+  const phases: RunPhase[] = ['title'];
+  for (const event of events) {
+    const from = phases[phases.length - 1]!;
+    const next = RUN_PHASE_TRANSITIONS[from][event];
+    if (!next) throw new Error(`不正なイベント: ${from} / ${event}`);
+    phases.push(next);
+  }
+  return phases;
+}
+
+const TO_BEAT = ['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'] as const;
 
 describe('フェーズ遷移表（単一の真実源 / RI-39）', () => {
   it('全フェーズが遷移表の行として網羅されている', () => {
@@ -52,6 +67,56 @@ describe('フェーズ遷移表（単一の真実源 / RI-39）', () => {
       }
     }
     expect([...reached].sort()).toEqual([...RUN_PHASES].sort());
+  });
+
+  it('通常スプリントはリザルト・ドラフト・進化・ビートを経て編成へ戻る', () => {
+    expect(followPath([...TO_BEAT, 'ENTER_SPRINT', 'BEGIN'])).toEqual([
+      'title',
+      'setup',
+      'sprint',
+      'result',
+      'draft',
+      'evolution',
+      'beat',
+      'setup',
+      'sprint',
+    ]);
+  });
+
+  it.each([
+    ['ENTER_SHOP', 'shop'],
+    ['ENTER_REST', 'rest'],
+    ['ENTER_RECRUIT', 'recruit'],
+  ] as const)('ビートの %s は %s から編成を経て次スプリントへ進む', (event, phase) => {
+    expect(followPath([...TO_BEAT, event, 'RESOLVE', 'BEGIN']).slice(-4)).toEqual([
+      'beat',
+      phase,
+      'setup',
+      'sprint',
+    ]);
+  });
+
+  it('即時採用成功などの RESOLVE はビートから直接編成へ戻る', () => {
+    expect(followPath([...TO_BEAT, 'RESOLVE']).slice(-2)).toEqual(['beat', 'setup']);
+  });
+
+  it.each([
+    ['REVIEW_WON', 'won'],
+    ['REVIEW_CONTINUE', 'setup'],
+    ['REVIEW_LOST', 'lost'],
+  ] as const)('ボス完了後の四半期レビューは %s で %s へ分岐する', (event, phase) => {
+    expect(followPath(['START', 'BEGIN', 'BOSS_REVIEW', event])).toEqual([
+      'title',
+      'setup',
+      'sprint',
+      'quarterReview',
+      phase,
+    ]);
+  });
+
+  it('title では BEGIN が定義されず、編成を迂回してスプリントに入れない', () => {
+    expect(RUN_PHASE_TRANSITIONS.title.BEGIN).toBeUndefined();
+    expect(canTransition('title', 'sprint')).toBe(false);
   });
 
   it('canTransition は表のエッジのみ許可する', () => {

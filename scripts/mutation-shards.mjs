@@ -85,6 +85,16 @@ export const OPEN_RANGE_END = 99999;
 
 const MUTATION_RANGE_RE = /^(.*?):(\d+)(?::\d+)?-(\d+)(?::\d+)?$/;
 
+// 固定行番号ではコード削除後にメソッド本体を横切り、BlockStatement mutant が欠ける。
+// 読み取り・互換判定と保存実装を、IndexedDbRunStorage の宣言行で分ける。
+const RUN_PERSISTENCE_STORAGE_START =
+  readFileSync(join(REPO_ROOT, 'src/state/runPersistence.ts'), 'utf8')
+    .split('\n')
+    .findIndex((line) => line.startsWith('export class IndexedDbRunStorage ')) + 1;
+if (RUN_PERSISTENCE_STORAGE_START === 0) {
+  throw new Error('src/state/runPersistence.ts の IndexedDbRunStorage 宣言が見つかりません');
+}
+
 /**
  * @typedef {{ id: string, mutate: string, note: string }} MutationShard
  */
@@ -317,12 +327,12 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'state-run-persistence-a',
-    mutate: 'src/state/runPersistence.ts:1-500',
+    mutate: `src/state/runPersistence.ts:1-${RUN_PERSISTENCE_STORAGE_START - 1}`,
     note: 'runPersistence の読み取りと互換判定',
   },
   {
     id: 'state-run-persistence-b',
-    mutate: `src/state/runPersistence.ts:501-${OPEN_RANGE_END}`,
+    mutate: `src/state/runPersistence.ts:${RUN_PERSISTENCE_STORAGE_START}-${OPEN_RANGE_END}`,
     note: 'runPersistence の IndexedDB とメモリ保存',
   },
   {

@@ -4,10 +4,11 @@ import { createGame } from '../../../src/game';
 import { displayedQuarterSprintIndex } from '../../../src/render/sprintProgressView';
 import { createRunEngine } from '../../../src/sim/run/engine';
 import {
-  goalProgressStatus,
-  MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
-} from '../../../src/sim/run/quarterReview';
-import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../../src/state/gameDb';
+  GENERATION_STORE_NAME,
+  openGameDb,
+  RUN_RECORD_KEY,
+  RUN_STORE_NAME,
+} from '../../../src/state/gameDb';
 import {
   CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
@@ -37,6 +38,33 @@ function makeRunSave(seed = 'ri72-run-save'): RunSave {
   const frame = engine.exportReplayFrame();
   if (!state || !frame) throw new Error('failed to export run save fixture');
   return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
+}
+
+async function storedRunRecord(name: string): Promise<{ record: unknown; generation: unknown }> {
+  const db = await openGameDb(name);
+  try {
+    const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readonly');
+    const record = await tx.objectStore(RUN_STORE_NAME).get(RUN_RECORD_KEY);
+    const generation = await tx.objectStore(GENERATION_STORE_NAME).get('run');
+    await tx.done;
+    return { record, generation };
+  } finally {
+    db.close();
+  }
+}
+
+async function storeLegacyRunRecord(name: string, schemaVersion: number): Promise<unknown> {
+  const legacy = { ...makeRunSave(`legacy-schema-${schemaVersion}`), schemaVersion };
+  const db = await openGameDb(name);
+  try {
+    const tx = db.transaction([RUN_STORE_NAME, GENERATION_STORE_NAME], 'readwrite');
+    await tx.objectStore(RUN_STORE_NAME).put(legacy, RUN_RECORD_KEY);
+    await tx.objectStore(GENERATION_STORE_NAME).put(7, 'run');
+    await tx.done;
+  } finally {
+    db.close();
+  }
+  return legacy;
 }
 
 /** fire-and-forget の IndexedDB 書き込みが完了するまで待つ。 */
@@ -194,6 +222,58 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(await storage.load()).toBeNull();
   });
 
+  it.each([4, 5, 6, 7])(
+    'v%s は読み込みと不一致 CAS で記録・世代を保ち、一致 CAS で明示削除できる',
+    async (schemaVersion) => {
+      const name = `devops-tycoon-legacy-cas-${schemaVersion}`;
+      databases.push(name);
+      const legacy = await storeLegacyRunRecord(name, schemaVersion);
+      const storage = new IndexedDbRunStorage(name);
+
+      const loaded = await storage.load();
+      expect(loaded?.ruleset).toBeNull();
+      const boot = await initializeRunPersistence(storage);
+      expect(boot).toMatchObject({
+        save: null,
+        issue: { kind: 'ruleset-unknown', summary: loaded!.summary },
+        storage,
+        sessionOnly: false,
+        durableStorage: storage,
+      });
+      expect(await storedRunRecord(name)).toEqual({ record: legacy, generation: 7 });
+      expect(storage.observedRunGeneration()).toBe(7);
+
+      expect(await storage.insertIfAbsent(makeRunSave('would-overwrite-legacy'))).toEqual(loaded);
+      expect(await storage.saveIfMatches(makeRunSave('different-expected'), null)).toEqual(loaded);
+      expect(await storedRunRecord(name)).toEqual({ record: legacy, generation: 7 });
+
+      expect(await storage.saveIfMatches(loaded, null)).toBeNull();
+      expect(await storedRunRecord(name)).toEqual({ record: undefined, generation: 8 });
+      expect(await storage.load()).toBeNull();
+    },
+  );
+
+  it.each([4, 5, 6, 7])(
+    'v%s を読み込んだタブは別タブが書いた現行セーブを CAS で削除しない',
+    async (schemaVersion) => {
+      const name = `devops-tycoon-legacy-foreign-${schemaVersion}`;
+      databases.push(name);
+      await storeLegacyRunRecord(name, schemaVersion);
+      const storage = new IndexedDbRunStorage(name);
+      const expected = await storage.load();
+      const otherTab = new IndexedDbRunStorage(name);
+      await otherTab.load();
+      const foreign = makeRunSave('other-tab-current-save');
+      expect(await otherTab.compareAndSave(foreign)).toEqual({ ok: true });
+
+      await expect(storage.saveIfMatches(expected, null)).rejects.toMatchObject({
+        name: 'TabConflictError',
+      });
+      expect(await storage.compareAndSave(null)).toEqual({ ok: false, current: foreign });
+      expect(await storedRunRecord(name)).toEqual({ record: foreign, generation: 8 });
+    },
+  );
+
   it('保存を直列化し、最後の状態を往復できる', async () => {
     const storage = indexedDbStorage();
     const engine = createRunEngine({ seed: 'ri58-serial' });
@@ -257,67 +337,44 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         schemaVersion: 3,
       }),
     ).toBeNull();
-
-    const legacyV7 = parseRunSave({
-      ...valid,
-      schemaVersion: 7,
-    });
-    expect(legacyV7?.ruleset).toBeNull();
-    expect(getRunSaveCompatibilityIssue(legacyV7!)).toMatchObject({
-      kind: 'ruleset-unknown',
-    });
   });
 
-  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して現行スキーマとして復元する', () => {
-    const valid = makeRunSave('ri84-v4-goal-migration');
-    const legacyDeliveryTarget = 1950;
-    const parsed = parseRunSave({
-      ...valid,
-      schemaVersion: 4,
-      state: {
-        ...valid.state,
-        difficulty: 'normal',
-        quarterGoal: {
-          ...valid.state.quarterGoal,
-          deliveryTarget: legacyDeliveryTarget,
+  it.each([4, 5, 6, 7])(
+    'v%s は保存時の Delivery 目標を変えず、ルールセット不明として保持する',
+    (schemaVersion) => {
+      const valid = makeRunSave(`legacy-goal-${schemaVersion}`);
+      const legacy = {
+        ...valid,
+        schemaVersion,
+        summary: { ...valid.summary, difficulty: 'normal' },
+        state: {
+          ...valid.state,
+          difficulty: 'normal',
+          quarterGoal: { ...valid.state.quarterGoal, deliveryTarget: 1950 },
         },
-      },
-      summary: { ...valid.summary, difficulty: 'normal' },
-    });
+      };
+      const before = structuredClone(legacy);
 
-    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
-    // v4 normal 倍率 1.95 → 現行（RI-77）2.25 へスケールする。
-    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
-      Math.round((legacyDeliveryTarget * 2.25) / 1.95),
-    );
-  });
+      const parsed = parseRunSave(legacy);
 
-  it('RI-77: v5 の途中セーブは現行 Delivery 倍率へ移行して現行スキーマとして復元する', () => {
-    const valid = makeRunSave('ri77-v5-goal-migration');
-    const legacyDeliveryTarget = 3510;
-    const parsed = parseRunSave({
-      ...valid,
-      schemaVersion: 5,
-      state: {
-        ...valid.state,
-        difficulty: 'normal',
-        quarterGoal: {
-          ...valid.state.quarterGoal,
-          deliveryTarget: legacyDeliveryTarget,
-        },
-      },
-      summary: { ...valid.summary, difficulty: 'normal' },
-    });
+      expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+      expect(parsed?.summary).toEqual(legacy.summary);
+      expect(parsed?.state).toEqual(legacy.state);
+      expect(parsed?.state.quarterGoal.deliveryTarget).toBe(1950);
+      expect(parsed?.ruleset).toBeNull();
+      expect(getRunSaveCompatibilityIssue(parsed!)).toMatchObject({
+        kind: 'ruleset-unknown',
+        summary: legacy.summary,
+        savedRuleset: null,
+      });
+      expect(parseRunSave(parsed)).toEqual(parsed);
+      parsed!.state.quarterGoal.deliveryTarget = 0;
+      expect(legacy).toEqual(before);
+    },
+  );
 
-    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
-    // v5 normal 倍率 1.8 → 現行 2.25。
-    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
-      Math.round((legacyDeliveryTarget * 2.25) / 1.8),
-    );
-  });
-
-  it('RI-128: v6 の途中セーブは欠落した trendHistory を空配列へ補完する', () => {
-    const valid = makeRunSave('ri128-v6-trend-backfill');
+  it('v6 の欠落した trendHistory は再開用に補完せず、そのまま保持する', () => {
+    const valid = makeRunSave('legacy-v6-trend-history');
     const { trendHistory: _omitted, ...stateWithoutTrend } = valid.state;
     const parsed = parseRunSave({
       ...valid,
@@ -326,11 +383,23 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     });
 
     expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
-    expect(parsed?.state.trendHistory).toEqual([]);
+    expect(parsed?.state).toEqual(stateWithoutTrend);
+    expect(parsed?.state).not.toHaveProperty('trendHistory');
+    expect(parseRunSave(parsed)).toEqual(parsed);
   });
 
-  it('RI-128: v7 の trendHistory は往復で同一内容を保つ', () => {
-    const valid = makeRunSave('ri128-v7-trend-roundtrip');
+  it('現行 v8 は欠落した trendHistory を空配列へ補完する', () => {
+    const valid = makeRunSave('current-v8-trend-backfill');
+    const { trendHistory: _omitted, ...stateWithoutTrend } = valid.state;
+    const parsed = parseRunSave({ ...valid, state: stateWithoutTrend });
+
+    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    expect(parsed?.state.trendHistory).toEqual([]);
+    expect(getRunSaveCompatibilityIssue(parsed!)).toBeNull();
+  });
+
+  it('RI-128: 現行 v8 の trendHistory は往復で同一内容を保つ', () => {
+    const valid = makeRunSave('ri128-v8-trend-roundtrip');
     const history = [
       {
         quarterNumber: 1,
@@ -368,78 +437,6 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(parsed?.state.trendHistory).not.toBe(history);
     parsed!.state.trendHistory[0]!.company.shipping = 0;
     expect(history[0]!.company.shipping).toBe(80);
-  });
-
-  it('RI-84: v4 の quarterReview は移行後の目標から再構築する', () => {
-    const valid = makeRunSave('ri84-v4-review-migration');
-    const parsed = parseRunSave({
-      ...valid,
-      schemaVersion: 4,
-      summary: { ...valid.summary, difficulty: 'normal', phase: 'quarterReview' },
-      state: {
-        ...valid.state,
-        difficulty: 'normal',
-        phase: 'quarterReview',
-        org: { ...valid.state.org, quality: 99 },
-        quarterTotals: {
-          ...valid.state.quarterTotals,
-          delivered: 1260,
-          completed: 2,
-          rework: 1,
-        },
-        extras: {
-          ...valid.state.extras,
-          teams: valid.state.extras.teams?.map((team) => ({
-            ...team,
-            aiDependency: 40,
-            quality: 99,
-          })),
-          winEvalOrg: { ...valid.state.org, aiDependency: 90 },
-        },
-        quarterGoal: { ...valid.state.quarterGoal, deliveryTarget: 1260 },
-        quarterReview: {
-          goal: { ...valid.state.quarterGoal, deliveryTarget: 1260 },
-          outcome: 'met',
-          trust: { ...valid.state.stakeholderTrust },
-          progress: [
-            {
-              id: 'delivery',
-              label: 'Delivery（四半期累計）',
-              target: 1260,
-              actual: 1260,
-              status: 'met',
-            },
-            { id: 'quality', label: 'Quality', target: 45, actual: 40, status: 'missed' },
-            { id: 'techDebt', label: 'Tech Debt', target: 55, actual: 40, status: 'met' },
-            { id: 'morale', label: 'Morale', target: 40, actual: 50, status: 'met' },
-            { id: 'incident', label: 'Incident', target: 6, actual: 1, status: 'met' },
-          ],
-          missedReasons: [],
-          availableAdjustments: [],
-          bossCleared: true,
-        },
-      },
-    });
-
-    const review = parsed?.state.quarterReview;
-    // 1260 × 2.25/1.95 → 1454（下限 MIN_ADJUSTED より上）。
-    const migratedDelivery = Math.round((1260 * 2.25) / 1.95);
-    expect(migratedDelivery).toBeGreaterThan(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET);
-    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(migratedDelivery);
-    expect(review?.goal.deliveryTarget).toBe(migratedDelivery);
-    expect(review?.progress.length).toBeGreaterThan(0);
-    expect(review?.progress.find((item) => item.id === 'delivery')?.target).toBe(migratedDelivery);
-    expect(review?.progress.find((item) => item.id === 'quality')).toMatchObject({
-      actual: 40,
-      status: 'missed',
-    });
-    expect(review?.progress.find((item) => item.id === 'quality')?.status).toBe(
-      goalProgressStatus(40, 45, true),
-    );
-    expect(review?.missedReasons).not.toContain(
-      'AI 過信: AI 利用率は高いが手戻り・品質が追いついていない。',
-    );
-    expect(review?.outcome).not.toBe('met');
   });
 
   it('現行スキーマのセーブは不足 replayKeyframes を空配列に正規化する', () => {

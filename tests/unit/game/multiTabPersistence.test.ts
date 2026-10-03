@@ -667,4 +667,89 @@ describe('複数タブの保存（RI-144）', () => {
     });
     expect(saved).toBe(0);
   });
+
+  it('保存の待ち中に競合したら、書き込んだリプレイを戻す', async () => {
+    const name = databaseName();
+    await new IndexedDbMetaStorage(name).save(defaultMeta());
+    const metaBoot = await initializeMetaPersistence(new IndexedDbMetaStorage(name));
+    const game = createGame({ seed: 'replay-after-save', metaReady: false });
+    game.attachMetaPersistence(metaBoot.meta, metaBoot.storage, {
+      loadedFromDevice: metaBoot.loadedFromDevice,
+    });
+    let releaseSave!: () => void;
+    const saveGate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    let gated = false;
+    const replays = new MemoryReplayStorage();
+    const originalSave = replays.save.bind(replays);
+    replays.save = async (blob, options) => {
+      if (!gated) {
+        gated = true;
+        await saveGate;
+      }
+      return originalSave(blob, options);
+    };
+    await game.attachReplay(replays);
+    const engine = createRunEngine({ seed: 'replay-after-save' });
+    engine.startRun('easy', [], 'replay-after-save');
+    const frame = engine.exportReplayFrame();
+    expect(frame).not.toBeNull();
+    const importing = game.importReplayText(
+      serializeReplay({
+        schemaVersion: REPLAY_SCHEMA_VERSION,
+        id: 'replay-after-save',
+        seed: 'replay-after-save',
+        difficulty: 'easy',
+        trials: [],
+        finishedAt: 2_000,
+        outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 10 },
+        keyframes: [{ phase: 'setup', frame: frame! }],
+        ruleset: { ...CURRENT_RUN_RULESET },
+        contentSnapshot: snapshotReplayContent([{ phase: 'setup', frame: frame! }]),
+      }),
+    );
+    await waitFor(async () => {
+      expect(gated).toBe(true);
+    });
+    await new IndexedDbMetaStorage(name).save({ ...defaultMeta(), points: 4 });
+    game.setSoundMuted(false);
+    await waitFor(async () => {
+      expect(game.hasTabConflict()).toBe(true);
+    });
+    releaseSave();
+    await expect(importing).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringContaining('再読込') as unknown as string,
+    });
+    expect(game.listReplays().some((item) => item.id === 'replay-after-save')).toBe(false);
+  });
+
+  it('即時敗北でも完走リプレイは1件だけ保存する', async () => {
+    const { game } = await finishReadyGame('finish-replay-once');
+    await game.attachReplay(new MemoryReplayStorage());
+    game.leaveShop();
+    game.beginSetupSprint();
+    await waitFor(async () => {
+      expect(game.phase()).toBe('sprint');
+    });
+    const internals = game.engine as unknown as {
+      budget: number;
+      deck: Array<{ defId: string; level: number }>;
+      sprint: { complete: boolean; focus: number; cardPiles: { hand: number[] } } | null;
+    };
+    internals.budget = -1;
+    internals.deck = [{ defId: 'copilot', level: 1 }];
+    expect(internals.sprint).not.toBeNull();
+    internals.sprint!.complete = false;
+    internals.sprint!.focus = 99;
+    internals.sprint!.cardPiles.hand = [0];
+    game.playCard(0);
+    expect(game.phase()).toBe('lost');
+    await waitFor(async () => {
+      expect(game.getPersistenceStatus().state).toBe('saved');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(game.listReplays()).toHaveLength(1);
+  });
 });

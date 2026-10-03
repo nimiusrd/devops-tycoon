@@ -845,6 +845,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const persistRunIfNeeded = (): void => {
     if (replayMode) return;
     const phase = engine.currentPhase();
+    // 完走リプレイは recordIfFinished が既に退避している。終端フレームを足して二重にしない。
+    if (finishCommitPending && (phase === 'title' || phase === 'won' || phase === 'lost')) return;
     appendKeyframeIfNeeded();
     if (phase === 'title' || phase === 'won' || phase === 'lost') {
       // 完了トランザクションが途中セーブの削除を持つ。待ちのあいだはここでは消さない。
@@ -864,7 +866,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const flushHeldRunAfterFinish = (): void => {
     if (tabConflict || replayMode) return;
     const phase = engine.currentPhase();
-    if (phase === 'title' || phase === 'won' || phase === 'lost' || !resumableSave || !runStorage) {
+    if (phase === 'won' || phase === 'lost') {
+      if (recorded) {
+        clearRunSaveInternal();
+        return;
+      }
+      persistRunIfNeeded();
+      return;
+    }
+    if (phase === 'title' || !resumableSave || !runStorage) {
       persistRunIfNeeded();
       return;
     }
@@ -2591,6 +2601,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             evictedRecords,
             batchWrittenIds: batch?.writtenIds,
           });
+          if (tabConflict) {
+            await rollbackSingle(true);
+            if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
+            return {
+              ok: false as const,
+              reason: 'corrupt' as const,
+              message:
+                '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+            };
+          }
           // 保存できた取り込みは、以後の通常完走で上限枠を占有しない。
           // まとめファイルの途中では、バッチが終わるまで pin を残す。
           if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);

@@ -254,6 +254,8 @@ export interface GameHandle {
   clearRunSave(): void;
   /** 別タブが先に記録を更新し、このタブからの保存を止めている。 */
   hasTabConflict(): boolean;
+  /** ラン完了の保存に失敗し、再試行まで次のランを始められない。 */
+  finishSaveBlocksNewRun(): boolean;
   /** 最新の記録を読み直して操作を引き継ぐ。 */
   takeOverForeignTab(): void;
   /** 現行の途中セーブを JSON 文字列にする（無い場合は null。RI-133）。 */
@@ -1481,6 +1483,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return true;
   };
 
+  /** 完了保存が失敗しているあいだは、保存されない次のランを始めさせない。 */
+  const isFinishSaveBlockingNewRun = (): boolean => finishCommitPending && tracker.isFailed('meta');
+
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
   const recordIfFinished = (): boolean => {
     if (!metaReady || tabConflict) return false;
@@ -1594,7 +1599,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return { ...state, ...resolveWhatIf() };
     },
     startRun(difficulty, trials, runSeed, scenario) {
-      if (replayMode) return engine.snapshot();
+      if (replayMode || isFinishSaveBlockingNewRun()) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1615,7 +1620,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     startDailyRun(dateStr) {
-      if (replayMode) return engine.snapshot();
+      if (replayMode || isFinishSaveBlockingNewRun()) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1818,6 +1823,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     newRun(runSeed) {
+      if (isFinishSaveBlockingNewRun()) return engine.snapshot();
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
@@ -2033,7 +2039,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
     },
     resumeRun() {
-      if (replayMode || runSaveIssue || !resumableSave) return null;
+      if (replayMode || isFinishSaveBlockingNewRun() || runSaveIssue || !resumableSave) return null;
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -2083,6 +2089,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     hasTabConflict() {
       return tabConflict;
+    },
+    finishSaveBlocksNewRun() {
+      return isFinishSaveBlockingNewRun();
     },
     takeOverForeignTab() {
       if (typeof window === 'undefined') return;

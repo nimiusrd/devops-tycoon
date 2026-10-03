@@ -203,6 +203,14 @@ describe('RunResultScreen の勝敗・報酬表示', () => {
   });
 });
 
+describe('RunResultScreen の次のラン', () => {
+  it('完了保存の失敗中は次のランへ進まず、理由を示す', () => {
+    const screen = mountResult({ newRunBlocked: true });
+    expect(screen.find('new-run').props.disabled).toBe(true);
+    expect(content(screen.find('finish-save-block'))).toContain('保存の再試行が終わるまで');
+  });
+});
+
 describe('RunResultScreen の診断コピー', () => {
   it('完全なルールセットとラン条件をコピーし、完了を通知する', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);

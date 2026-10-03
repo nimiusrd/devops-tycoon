@@ -22,7 +22,6 @@ import {
   withPreferredCardIds,
   type MetaState,
   getDailyRecord,
-  parseLegacyMeta,
   TUTORIAL_CONTENT_VERSION,
   type RunRewardInput,
 } from '../../../src/state/meta';
@@ -145,15 +144,15 @@ describe('メタ進行とアンロック（第17章）', () => {
   });
 
   it('旧セーブに collectedDiagnoses が欠けていても空配列で補完される', () => {
-    const raw = JSON.stringify({
+    const saved = {
       points: 10,
       unlockedDifficulties: ['easy', 'normal'],
       defeatedBosses: [],
       achievements: [],
       collectedWinTypes: [],
       bestScore: 0,
-    });
-    expect(parseLegacyMeta(raw)?.collectedDiagnoses).toEqual([]);
+    };
+    expect(normalizeMeta(saved).collectedDiagnoses).toEqual([]);
   });
 
   it('敗北でも四半期修正経験で学習ボーナスが入る', () => {
@@ -315,7 +314,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(next.points).toBeGreaterThan(0);
   });
 
-  it('JSON 化して読み戻すと往復する', () => {
+  it('現行メタの正規化は既存の進行と設定を保持する', () => {
     const meta = applyRunReward(defaultMeta(), {
       won: true,
       difficulty: 'normal',
@@ -324,30 +323,40 @@ describe('メタ進行とアンロック（第17章）', () => {
       scoreMul: 1,
       maxCombo: 3,
     });
-    expect(parseLegacyMeta(JSON.stringify(meta))).toEqual(meta);
-  });
-
-  it('壊れた保存データは null を返す（呼び出し側で初期値へ倒す）', () => {
-    expect(parseLegacyMeta('{not json')).toBeNull();
+    const saved: MetaState = {
+      ...meta,
+      collectedWinTypes: ['healthy'],
+      collectedDiagnoses: ['reviewHell'],
+      unlockedCards: ['devin'],
+      unlockedRelics: ['strong-ci'],
+      preferredCardIds: ['devin', 'docs'],
+      dailyRuns: {
+        [dailyRunKey('2026-09-05')]: { bestScore: 200, rewardClaimed: true },
+      },
+      soundMuted: false,
+      seenTutorial: true,
+      seenTutorialVersion: TUTORIAL_CONTENT_VERSION,
+    };
+    expect(normalizeMeta(saved)).toEqual(saved);
   });
 
   it('旧セーブに新フィールドが欠けていても既定値で補完される', () => {
-    const raw = JSON.stringify({
+    const saved = {
       points: 42,
       unlockedDifficulties: ['easy', 'normal'],
       defeatedBosses: [],
       achievements: ['first-clear'],
       bestScore: 100,
-    });
-    const restored = parseLegacyMeta(raw);
+    };
+    const restored = normalizeMeta(saved);
     expect(restored).toEqual({
       ...defaultMeta(),
       points: 42,
       achievements: ['first-clear'],
       bestScore: 100,
     });
-    expect(restored?.seenTutorial).toBe(false);
-    expect(restored?.preferredCardIds).toEqual([]);
+    expect(restored.seenTutorial).toBe(false);
+    expect(restored.preferredCardIds).toEqual([]);
   });
 
   it('研修方針 preferredCardIds を正規化し、未解放・超過を落とす（RI-34⁗）', () => {
@@ -928,7 +937,7 @@ describe('メタ進行とアンロック（第17章）', () => {
   });
 
   it('旧セーブに dailyRuns が欠けていても既定値で補完される', () => {
-    const raw = JSON.stringify({
+    const saved = {
       points: 42,
       unlockedDifficulties: ['easy', 'normal'],
       defeatedBosses: [],
@@ -936,12 +945,12 @@ describe('メタ進行とアンロック（第17章）', () => {
       bestScore: 100,
       unlockedCards: [],
       unlockedRelics: [],
-    });
-    expect(parseLegacyMeta(raw)?.dailyRuns).toEqual({});
+    };
+    expect(normalizeMeta(saved).dailyRuns).toEqual({});
   });
 
   it('旧セーブの unlockedPresets は読み捨てる（RI-25）', () => {
-    const raw = JSON.stringify({
+    const saved = {
       points: 10,
       unlockedDifficulties: ['easy', 'normal'],
       defeatedBosses: [],
@@ -950,9 +959,9 @@ describe('メタ進行とアンロック（第17章）', () => {
       unlockedCards: [],
       unlockedRelics: [],
       unlockedPresets: ['legacy-preset'],
-    });
-    const meta = parseLegacyMeta(raw);
-    expect(meta?.points).toBe(10);
+    };
+    const meta = normalizeMeta(saved);
+    expect(meta.points).toBe(10);
     expect(meta).not.toHaveProperty('unlockedPresets');
   });
 
@@ -1483,27 +1492,28 @@ describe('RI-91-B5 meta survived mutants', () => {
     });
   });
 
-  describe('parseLegacyMeta 失敗枝', () => {
+  describe('normalizeMeta の入力補完', () => {
     it.each([
-      ['null', 'null'],
-      ['number', '42'],
-      ['string', '"str"'],
-      ['array', '[]'],
-      ['boolean', 'true'],
-    ] as const)('%s は null', (_label, raw) => {
-      expect(parseLegacyMeta(raw)).toBeNull();
+      ['undefined', undefined],
+      ['null', null],
+      ['number', 42],
+      ['string', 'str'],
+      ['array', []],
+      ['boolean', true],
+    ] as const)('%s は初期メタへ戻す', (_label, value) => {
+      expect(normalizeMeta(value)).toEqual(defaultMeta());
     });
 
-    it('壊れた JSON は catch で null', () => {
-      expect(parseLegacyMeta('{not json')).toBeNull();
-      expect(parseLegacyMeta('')).toBeNull();
+    it('空オブジェクトは全フィールドを既定値で補完する', () => {
+      expect(normalizeMeta({})).toEqual(defaultMeta());
     });
 
-    it('正常オブジェクトは normalizeMeta 相当', () => {
-      const raw = JSON.stringify({ points: 17, unlockedDifficulties: ['easy'] });
-      expect(parseLegacyMeta(raw)).toEqual(
-        normalizeMeta({ points: 17, unlockedDifficulties: ['easy'] }),
-      );
+    it('保存済みポイントと難易度を保持し、残りは既定値で補完する', () => {
+      expect(normalizeMeta({ points: 17, unlockedDifficulties: ['easy'] })).toEqual({
+        ...defaultMeta(),
+        points: 17,
+        unlockedDifficulties: ['easy'],
+      });
     });
   });
 

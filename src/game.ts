@@ -857,6 +857,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     persistSaveableSnapshot();
   };
 
+  /**
+   * 完了保存の待ち中に残した途中セーブを端末へ書く。
+   * スプリント中は現在フェーズから再生成せず、保持したスナップショットを使う。
+   */
+  const flushHeldRunAfterFinish = (): void => {
+    if (tabConflict || replayMode) return;
+    const phase = engine.currentPhase();
+    if (phase === 'title' || phase === 'won' || phase === 'lost' || !resumableSave || !runStorage) {
+      persistRunIfNeeded();
+      return;
+    }
+    trackWrite('run', writeDurableRun(structuredClone(resumableSave)));
+  };
+
   /** Worker があれば非同期、なければ同期フォールバックで試算する（RI-13）。 */
   const resolveWhatIf = (): Pick<RunState, 'whatIf' | 'whatIfStatus'> => {
     const input = engine.whatIfComputeInput();
@@ -1509,7 +1523,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         () => {
           if (tabConflict) return;
           flushDeferredMeta();
-          persistRunIfNeeded();
+          flushHeldRunAfterFinish();
         },
         () => undefined,
       );
@@ -1955,7 +1969,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             retryWrite('meta', commitFinishedRun()).then(() => {
               if (tabConflict) return;
               flushDeferredMeta();
-              persistRunIfNeeded();
+              flushHeldRunAfterFinish();
             }),
           );
         } else if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {

@@ -588,6 +588,29 @@ describe('複数タブの保存（RI-144）', () => {
     expect(game.hasResumableRun()).toBe(false);
   });
 
+  it('完了保存の成功時は、スプリント中でも待ちの途中セーブを端末へ書く', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { name, game } = await finishReadyGame('finish-sprint', ({ metaStorage }) => {
+      const original = metaStorage.compareAndSave.bind(metaStorage);
+      metaStorage.compareAndSave = (meta, expected) => {
+        if (expected !== undefined) return gate.then(() => original(meta, expected));
+        return original(meta, expected);
+      };
+    });
+    expect(game.buyShopCard('copilot').status).toBe('lost');
+    game.startRun('easy', [], 'during-sprint');
+    game.beginSetupSprint();
+    expect(game.phase()).toBe('sprint');
+    release();
+    await waitFor(async () => {
+      expect((await new IndexedDbRunStorage(name).load())?.summary.seed).toBe('during-sprint');
+    });
+    expect((await new IndexedDbMetaStorage(name).load())?.points).not.toBe(40);
+  });
+
   it('一覧を待っているあいだに競合したら、リプレイは保存しない', async () => {
     const name = databaseName();
     await new IndexedDbMetaStorage(name).save(defaultMeta());

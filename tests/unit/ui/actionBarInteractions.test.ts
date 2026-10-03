@@ -1,6 +1,8 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const motionPreference = vi.hoisted(() => ({ reduced: false }));
+
 const hooks = vi.hoisted(() => ({
   cursor: 0,
   dirty: false,
@@ -75,6 +77,7 @@ vi.mock('react', async (importOriginal) => ({
 vi.mock('framer-motion', () => ({
   AnimatePresence: 'div',
   motion: { div: 'div', span: 'span' },
+  useReducedMotion: () => motionPreference.reduced,
 }));
 vi.mock('../../../src/ui/responsiveMode', () => ({
   useResponsiveMode: () => ({ width: 'narrow', height: 'short' }),
@@ -175,6 +178,7 @@ function mountActionBar(overrides: Partial<ActionBarProps> = {}) {
 }
 
 beforeEach(() => {
+  motionPreference.reduced = false;
   vi.useFakeTimers();
   const listeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
   const win = {
@@ -247,16 +251,148 @@ describe('ActionBar の状態表示', () => {
     ]);
     expect(bar.find('combo-gauge').props['data-gauge']).toBe(0.37);
     expect(elements(bar.find('combo-gauge'))[1].props.style).toEqual({ width: '37%' });
-    expect(content(bar.find('action-badge-interruptReview'))).toBe('PR 1');
-    expect(content(bar.find('action-badge-firefight'))).toBe('1');
-    expect(content(bar.find('action-badge-assignTask'))).toBe('2');
+    expect(content(bar.find('action-badge-interruptReview'))).toBe('レビュー待ち 1件');
+    expect(content(bar.find('action-badge-firefight'))).toBe('炎上 1件');
+    expect(content(bar.find('action-badge-assignTask'))).toBe('差配候補 2件');
     expect(bar.find('action-interruptReview').props['aria-label']).toContain(
-      '割り込みレビュー。集中力コスト 3。対象 PR 1。',
+      '割り込みレビュー。集中力コスト 3。対象 レビュー待ち 1件。',
     );
     expect(bar.find('action-assignTask').props.title).toContain('クリックで武装');
     expect(bar.byClass('action').every((node) => node.props.disabled === false)).toBe(true);
     expect(bar.query('assign-assignee')).toBeUndefined();
     expect(bar.find('term-tip-focus').props['data-placement']).toBe('inline');
+  });
+
+  it('説明確認は利用不可の介入も選べ、発動・武装せず対象と代償を読める', () => {
+    const onActionInspect = vi.fn();
+    const bar = mountActionBar({
+      sprint: actionSprint({ focus: 0, cooldowns: { splitPr: 25 } }),
+      onActionInspect,
+    });
+    const actionOrder = [
+      'interruptReview',
+      'splitPr',
+      'firefight',
+      'assignTask',
+      'aiThrottle',
+      'pairReview',
+      'overtime',
+      'andon',
+    ];
+    expect(bar.byClass('action').map((node) => node.props['data-testid'])).toEqual(
+      actionOrder.map((id) => `action-${id}`),
+    );
+    const selector = bar.find('action-inspect-select');
+    const options = elements(selector).filter((node) => node.type === 'option');
+    expect(options.map((node) => node.props.value)).toEqual(actionOrder);
+    expect(options.every((node) => !node.props.disabled)).toBe(true);
+
+    (bar.find('action-inspect').props.onToggle as (event: unknown) => void)({
+      currentTarget: { open: true },
+    });
+    bar.update({});
+    expect(onActionInspect).toHaveBeenLastCalledWith('interruptReview');
+    (selector.props.onChange as (event: unknown) => void)({
+      currentTarget: { value: 'splitPr' },
+    });
+    bar.update({});
+    expect(onActionInspect).toHaveBeenLastCalledWith('splitPr');
+    expect(content(bar.find('action-inspect-detail'))).toContain('分割候補 2件');
+    expect(content(bar.find('action-inspect-detail'))).toContain('進捗・士気');
+    expect(content(bar.find('action-inspect-detail'))).toContain('集中力2');
+    expect(content(bar.find('action-inspect-detail'))).toContain('CD50 tick（残り 25 tick）');
+    expect(content(bar.find('action-inspect-detail'))).toContain('クールダウン中');
+    expect(bar.props.onAction).not.toHaveBeenCalled();
+    expect(bar.props.onArm).not.toHaveBeenCalled();
+
+    const focus = vi.fn();
+    const detail = { open: true, querySelector: () => ({ focus }) };
+    const preventDefault = vi.fn();
+    (bar.find('action-inspect').props.onKeyDown as (event: unknown) => void)({
+      key: 'Escape',
+      currentTarget: detail,
+      preventDefault,
+      stopPropagation: vi.fn(),
+    });
+    bar.update({});
+    expect(detail.open).toBe(false);
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(focus).toHaveBeenCalledOnce();
+    expect(onActionInspect).toHaveBeenLastCalledWith(null);
+  });
+
+  it('カードのhover・focusは作用先だけを示し、離れたら解除する', () => {
+    const onActionInspect = vi.fn();
+    const bar = mountActionBar({ onActionInspect });
+    const cell = bar.byClass('action-cell')[0];
+    (cell.props.onMouseEnter as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith('interruptReview');
+    (cell.props.onMouseLeave as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith(null);
+    (bar.find('action-splitPr').props.onFocus as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith('splitPr');
+    (bar.find('action-splitPr').props.onBlur as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith(null);
+    expect(bar.props.onAction).not.toHaveBeenCalled();
+    expect(bar.props.onArm).not.toHaveBeenCalled();
+  });
+
+  it('pointerとfocusを別々に保持し、一方から離れても残る作用先を示す', () => {
+    const onActionInspect = vi.fn();
+    const bar = mountActionBar({ onActionInspect });
+    const reviewCell = bar.byClass('action-cell')[0];
+    const splitCell = bar.byClass('action-cell')[1];
+    const review = bar.find('action-interruptReview');
+    (review.props.onFocus as () => void)();
+    (reviewCell.props.onMouseEnter as () => void)();
+    (reviewCell.props.onMouseLeave as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith('interruptReview');
+    (splitCell.props.onMouseEnter as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith('splitPr');
+    (review.props.onBlur as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith('splitPr');
+    (splitCell.props.onMouseLeave as () => void)();
+    expect(onActionInspect).toHaveBeenLastCalledWith(null);
+  });
+
+  it('説明確認の状態は武装中の介入と一致し、一時停止理由も反映する', () => {
+    const bar = mountActionBar({ armedId: 'splitPr' });
+    (bar.find('action-inspect-select').props.onChange as (event: unknown) => void)({
+      currentTarget: { value: 'splitPr' },
+    });
+    bar.update({});
+    const stateText = () => {
+      const facts = bar.byClass('action-inspect-facts')[0];
+      return elements(facts)
+        .filter((node) => node.type === 'dd')
+        .map(content)
+        .at(-1);
+    };
+    expect(stateText()).toBe('武装中');
+    bar.update({ paused: true });
+    expect(stateText()).toBe('一時停止中');
+  });
+
+  it('reduced motionでも集中力コストと失敗理由を残し、移動アニメーションを止める', () => {
+    motionPreference.reduced = true;
+    const bar = mountActionBar({
+      onAction: vi.fn(() => ({
+        ok: true,
+        effect: { actionId: 'interruptReview', focusCost: 3, gaugeGain: 0 },
+      })),
+    });
+    bar.click('action-interruptReview');
+    const pop = bar.byClass('focus-feedback-cost')[0];
+    expect(content(pop)).toBe('-3');
+    expect(pop.props.initial).toBe(false);
+    expect(pop.props.animate).toEqual({ opacity: 1 });
+    expect(pop.props.transition).toMatchObject({ duration: 0 });
+    bar.update({ onAction: vi.fn(() => ({ ok: false, reason: 'no-focus' })) });
+    bar.click('action-interruptReview');
+    const toast = bar.find('action-toast');
+    expect(content(toast)).toBe('集中力不足');
+    expect(toast.props.initial).toBe(false);
+    expect(toast.props.transition).toEqual({ duration: 0 });
   });
 
   it.each([
@@ -403,7 +539,7 @@ describe('ActionBar の武装と担当選択', () => {
     const onArm = vi.fn();
     const bar = mountActionBar({ sprint: actionSprint({ tasks }), onAction, onArm });
 
-    expect(content(bar.find('action-badge-splitPr'))).toBe('1');
+    expect(content(bar.find('action-badge-splitPr'))).toBe('分割候補 1件');
     bar.click('action-splitPr');
     expect(onArm).toHaveBeenCalledExactlyOnceWith('splitPr');
     expect(onAction).not.toHaveBeenCalled();

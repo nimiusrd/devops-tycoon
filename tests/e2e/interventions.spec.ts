@@ -1,4 +1,10 @@
-import { expect, test, openSprintResultDetails } from './fixtures';
+import {
+  expect,
+  test,
+  beginPublicSprint,
+  advanceCurrentSprintToReviewQueue,
+  openSprintResultDetails,
+} from './fixtures';
 import { STABILITY_COMBO_CAP, comboMultiplier, deliveryComboMultiplier } from '../../src/sim/model';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
@@ -16,41 +22,51 @@ type GameWindow = Window & {
 };
 
 test('割り込みレビューを発動すると Review 渋滞が捌ける（第6.1 / DoD）', async ({ page }) => {
-  await page.goto('/?seed=ops');
+  await beginPublicSprint(page, { seed: 'ops', difficulty: 'normal' });
+  await advanceCurrentSprintToReviewQueue(page, 4);
 
   const before = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
-    g.pause();
-    g.startRun('normal', [], 'ops');
-    g.beginSetupSprint();
-    let guard = 0;
-    let s = g.getState();
-    while (guard < 4000) {
-      s = g.step(100);
-      if (!s.sprint || s.sprint.complete) break;
-      const q = s.sprint.tasks.filter((t) => t.lane === 'review').length;
-      if (q >= 4) return { queue: q, focus: s.sprint.focus };
-      guard += 1;
-    }
-    const q = s.sprint ? s.sprint.tasks.filter((t) => t.lane === 'review').length : 0;
-    return { queue: q, focus: s.sprint?.focus ?? 0 };
+    const sprint = g.getState().sprint!;
+    return {
+      queue: sprint.tasks.filter((t) => t.lane === 'review').length,
+      focus: sprint.focus,
+      count: sprint.metrics.actionCounts.interruptReview ?? 0,
+      focusSpent: sprint.metrics.focusSpent,
+      seniorHp: g.getState().org.seniorHp,
+    };
   });
   expect(before.queue).toBeGreaterThanOrEqual(4);
 
+  // 実際の1クリックが発動経路を通り、集中力と回数を一度だけ更新する。
+  await page.clock.install();
+  await page.getByTestId('action-interruptReview').click();
   const after = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
-    const outcome = g.dispatch('interruptReview');
     const s = g.getState();
     return {
-      ok: outcome.ok,
       queue: s.sprint!.tasks.filter((t) => t.lane === 'review').length,
       focus: s.sprint!.focus,
+      count: s.sprint!.metrics.actionCounts.interruptReview ?? 0,
+      focusSpent: s.sprint!.metrics.focusSpent,
+      seniorHp: s.org.seniorHp,
+      extraHpCost: s.sprint!.interventionEvents.at(-1)?.effect.hpCost ?? 0,
     };
   });
 
-  expect(after.ok).toBe(true);
   expect(after.queue).toBeLessThan(before.queue);
   expect(after.focus).toBe(before.focus - 3);
+  expect(after.count).toBe(before.count + 1);
+  expect(after.focusSpent).toBe(before.focusSpent + 3);
+  const hpSpent = before.seniorHp - after.seniorHp;
+  expect(hpSpent, 'Review処理のHP消費も追加コストへ加算される').toBeGreaterThan(after.extraHpCost);
+  // 介入自身の点火はサマリーで優先し、実行結果の総消費は保持中の履歴から読む。
+  await expect(page.getByTestId('event-ticker')).toHaveAttribute('data-feedback-held', 'true');
+  await page.getByTestId('event-ticker-heading').click();
+  await expect(page.getByTestId('event-ticker-list')).toContainText(
+    `シニアHP -${Math.round(hpSpent * 100) / 100}`,
+  );
+  await expect(page.getByTestId('event-ticker-list')).toContainText('集中力 -3');
 });
 
 test('割り込みレビュー成功時に盤面スイープ演出が出る（RI-50）', async ({ page }) => {
@@ -298,7 +314,7 @@ test('Review に対象があるとき対象数バッジを表示する（RI-51�
     }
   });
 
-  await expect(page.getByTestId('action-badge-interruptReview')).toContainText('PR');
+  await expect(page.getByTestId('action-badge-interruptReview')).toContainText('レビュー待ち');
   await expect(page.getByTestId('action-interruptReview')).toBeEnabled();
 });
 

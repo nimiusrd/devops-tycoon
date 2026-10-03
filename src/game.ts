@@ -2615,6 +2615,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           // まとめファイルの途中では、バッチが終わるまで pin を残す。
           if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
           const listed = await refreshReplayCache();
+          if (tabConflict) {
+            await rollbackSingle(true);
+            if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
+            return {
+              ok: false as const,
+              reason: 'corrupt' as const,
+              message:
+                '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+            };
+          }
           if (!listed) {
             await rollbackSingle(false);
             return failedImport();

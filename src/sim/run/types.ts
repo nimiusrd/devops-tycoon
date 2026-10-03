@@ -33,7 +33,7 @@ export type { RosterState, GrowthOutcome } from '../member/types';
  */
 export type SprintKind = 'normal' | 'elite' | 'boss';
 
-/** ランの進行フェーズ（XState の状態と一致させる。第3章）。 */
+/** ランの進行フェーズ（純TS遷移表で遷移を検証する。第3章）。 */
 export type RunPhase =
   | 'title'
   | 'setup'

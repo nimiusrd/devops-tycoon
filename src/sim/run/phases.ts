@@ -5,13 +5,12 @@
  * 編成（setup）→ スプリント → リザルト → ドラフト → 進化 → ビート（判定/選択）→ 編成（setup）…
  * → ボススプリント → 四半期レビュー → 勝敗/継続。ショップ/休息/採用もビート経由で setup に戻る（RI-77）。
  *
- * この表を `RunEngine.setPhase()`（実ランタイムの遷移検証）と
- * `src/state/runMachine.ts`（XState マシン生成。契約テスト/可視化用）の両方が参照することで、
- * フェーズ遷移の二重管理を防ぐ。sim 層の純TS・XState 非依存は維持する（第22.3）。
+ * `RunEngine.setPhase()` がこの表で実ランタイムの遷移を検証する。
+ * 契約テストも同じ表を参照し、フェーズ遷移の二重管理を防ぐ（第22.3）。
  */
 import type { RunPhase } from './types';
 
-/** 遷移イベント名の一覧（表とマシンで共有する）。 */
+/** 遷移イベント名の一覧（遷移表のキーを型で制約する）。 */
 export const RUN_EVENT_TYPES = [
   'START',
   'BEGIN',
@@ -51,7 +50,7 @@ export const RUN_PHASES: readonly RunPhase[] = [
   'lost',
 ] satisfies readonly RunPhase[];
 
-/** 終端フェーズ（出エッジを持たない。XState では final state になる）。 */
+/** 終端フェーズ（出エッジを持たない）。 */
 export const FINAL_PHASES: ReadonlySet<RunPhase> = new Set<RunPhase>(['won', 'lost']);
 
 /**

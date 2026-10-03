@@ -1,0 +1,2390 @@
+{
+  "issue": 536,
+  "generatedAt": "2026-10-03T06:43:36.383Z",
+  "baselineCommit": "eec041ad170d6ac911044e875fb1dca78452d35e",
+  "proposedRevision": "同commitからの今回のUI変更を適用したworking tree",
+  "runtime": {
+    "node": "v24.21.0",
+    "chromium": "154.0.8037.92",
+    "reducedMotion": "reduce",
+    "scale": 1,
+    "publicFixtureMethods": ["startRun", "pause", "beginSetupSprint", "step", "getState"],
+    "screenshotStabilization": [
+      "CSS animation/transition disabled",
+      "__boardPixiTest.freezeForScreenshot",
+      "assets=5"
+    ],
+    "screenshotScrollExpansion": "viewport images are actual initial views; full/actions images expose internal SprintLayout scroll contents only during screenshot, preserving measured stage dimensions; all metrics come from unmodified actual viewport layout",
+    "stateMode": "first sprint; no manipulation of engine internals"
+  },
+  "methodology": {
+    "stateCreation": "双方ともstartRun → pause → beginSetupSprint → pause → 公開step(100ms)だけで作成。内部engine、tasks、org、focusの書換えなし。",
+    "normal": "issue-536-panel-normal / normal / tick4。Review0、未鎮火Incident0。",
+    "review": "ops / easy / tick10。Review8件、未鎮火Incident2件を併発。純粋なReviewのみの状態ではない。",
+    "fire": "ri34-burn / hard / tick5。最初の未鎮火Incident1件、Review2件。",
+    "comparison": "5viewport × 3状態 = 15組。全状態に加えてtasks/org/focusのSHA-256を比較。すべて一致。",
+    "screenshots": "viewport画像は実画面。full/actions画像では、内部スクロール全内容を撮るため双方とも撮影時のみ通常フローへ展開し、元のstage寸法を固定。寸法とoverflowは展開前の実viewportで測定。",
+    "fullLocalEvidence": "evidence/issue-536/index.html と measurements.json（gitignored）に全108画像と生の測定値を保持。",
+    "humanMeasurement": "理解、探索時間、誤操作、重要イベント認知の人間による計測は未実施。DOM寸法・文字のoverflowと画像の確認は理解度評価の代用にはしない。",
+    "decorativeRendering": "ローカルfull画像には既存PointPopsの描画専用Math.randomによる浮動位置差があり、ピクセル完全一致は保証しない。シミュレーションのseed/stateは一致。永続化したaction PNG12枚にはその盤面装飾は含まれない。"
+  },
+  "comparisons": [
+    {
+      "viewport": {
+        "name": "phone-se",
+        "width": 320,
+        "height": 568
+      },
+      "scene": "normal",
+      "seed": "issue-536-panel-normal",
+      "difficulty": "normal",
+      "tick": 4,
+      "taskLaneCounts": {
+        "backlog": 42,
+        "coding": 7,
+        "review": 0,
+        "rework": 0,
+        "done": 1
+      },
+      "incidentCount": 0,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 384.328125,
+          "width": 292,
+          "height": 119.15625
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 364.390625,
+          "width": 292,
+          "height": 159.03125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 386.328125,
+          "width": 288,
+          "height": 115.15625
+        },
+        "footer": {
+          "x": 14,
+          "y": 575.421875,
+          "width": 292,
+          "height": 436.1875
+        },
+        "internalScroll": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "clientHeight": 568,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 60.25,
+        "minimumActionTargetHeight": 141.328125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 384.328125,
+          "width": 292,
+          "height": 119.15625
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 364.390625,
+          "width": 292,
+          "height": 159.03125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 386.328125,
+          "width": 288,
+          "height": 115.15625
+        },
+        "footer": {
+          "x": 14,
+          "y": 575.421875,
+          "width": 292,
+          "height": 810.6875
+        },
+        "internalScroll": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "clientHeight": 568,
+          "scrollHeight": 1398,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 129.5,
+        "minimumActionTargetHeight": 150.546875,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "phone-se",
+        "width": 320,
+        "height": 568
+      },
+      "scene": "review",
+      "seed": "ops",
+      "difficulty": "easy",
+      "tick": 10,
+      "taskLaneCounts": {
+        "backlog": 40,
+        "coding": 4,
+        "review": 8,
+        "rework": 2,
+        "done": 4
+      },
+      "incidentCount": 2,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 384.328125,
+          "width": 292,
+          "height": 119.15625
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 364.390625,
+          "width": 292,
+          "height": 159.03125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 386.328125,
+          "width": 288,
+          "height": 115.15625
+        },
+        "footer": {
+          "x": 14,
+          "y": 575.421875,
+          "width": 292,
+          "height": 436.1875
+        },
+        "internalScroll": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "clientHeight": 568,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 60.25,
+        "minimumActionTargetHeight": 141.328125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 422.171875,
+          "width": 292,
+          "height": 119.15625
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 402.234375,
+          "width": 292,
+          "height": 159.03125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 424.171875,
+          "width": 288,
+          "height": 115.15625
+        },
+        "footer": {
+          "x": 14,
+          "y": 613.265625,
+          "width": 292,
+          "height": 810.6875
+        },
+        "internalScroll": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "clientHeight": 568,
+          "scrollHeight": 1436,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 129.5,
+        "minimumActionTargetHeight": 150.546875,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "phone-se",
+        "width": 320,
+        "height": 568
+      },
+      "scene": "fire",
+      "seed": "ri34-burn",
+      "difficulty": "hard",
+      "tick": 5,
+      "taskLaneCounts": {
+        "backlog": 31,
+        "coding": 5,
+        "review": 2,
+        "rework": 1,
+        "done": 3
+      },
+      "incidentCount": 1,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 422.171875,
+          "width": 292,
+          "height": 119.15625
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 402.234375,
+          "width": 292,
+          "height": 159.03125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 424.171875,
+          "width": 288,
+          "height": 115.15625
+        },
+        "footer": {
+          "x": 14,
+          "y": 613.265625,
+          "width": 292,
+          "height": 414.65625
+        },
+        "internalScroll": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "clientHeight": 568,
+          "scrollHeight": 1040,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 60.25,
+        "minimumActionTargetHeight": 141.328125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 422.171875,
+          "width": 292,
+          "height": 119.15625
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 402.234375,
+          "width": 292,
+          "height": 159.03125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 424.171875,
+          "width": 288,
+          "height": 115.15625
+        },
+        "footer": {
+          "x": 14,
+          "y": 613.265625,
+          "width": 292,
+          "height": 810.6875
+        },
+        "internalScroll": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "clientHeight": 568,
+          "scrollHeight": 1436,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 129.5,
+        "minimumActionTargetHeight": 150.546875,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "phone",
+        "width": 390,
+        "height": 844
+      },
+      "scene": "normal",
+      "seed": "issue-536-panel-normal",
+      "difficulty": "normal",
+      "tick": 4,
+      "taskLaneCounts": {
+        "backlog": 42,
+        "coding": 7,
+        "review": 0,
+        "rework": 0,
+        "done": 1
+      },
+      "incidentCount": 0,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 300.46875,
+          "width": 362,
+          "height": 147.734375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 298.390625,
+          "width": 362,
+          "height": 151.90625
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 302.46875,
+          "width": 358,
+          "height": 143.734375
+        },
+        "footer": {
+          "x": 14,
+          "y": 502.296875,
+          "width": 362,
+          "height": 406.890625
+        },
+        "internalScroll": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "clientHeight": 844,
+          "scrollHeight": 921,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 77.75,
+        "minimumActionTargetHeight": 131.5625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 300.46875,
+          "width": 362,
+          "height": 147.734375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 298.390625,
+          "width": 362,
+          "height": 151.90625
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 302.46875,
+          "width": 358,
+          "height": 143.734375
+        },
+        "footer": {
+          "x": 14,
+          "y": 502.296875,
+          "width": 362,
+          "height": 766.015625
+        },
+        "internalScroll": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "clientHeight": 844,
+          "scrollHeight": 1280,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 164.5,
+        "minimumActionTargetHeight": 139.15625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "phone",
+        "width": 390,
+        "height": 844
+      },
+      "scene": "review",
+      "seed": "ops",
+      "difficulty": "easy",
+      "tick": 10,
+      "taskLaneCounts": {
+        "backlog": 40,
+        "coding": 4,
+        "review": 8,
+        "rework": 2,
+        "done": 4
+      },
+      "incidentCount": 2,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 338.3125,
+          "width": 362,
+          "height": 147.734375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 336.234375,
+          "width": 362,
+          "height": 151.90625
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 340.3125,
+          "width": 358,
+          "height": 143.734375
+        },
+        "footer": {
+          "x": 14,
+          "y": 540.140625,
+          "width": 362,
+          "height": 395.125
+        },
+        "internalScroll": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "clientHeight": 844,
+          "scrollHeight": 947,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 77.75,
+        "minimumActionTargetHeight": 131.5625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 338.3125,
+          "width": 362,
+          "height": 147.734375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 336.234375,
+          "width": 362,
+          "height": 151.90625
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 340.3125,
+          "width": 358,
+          "height": 143.734375
+        },
+        "footer": {
+          "x": 14,
+          "y": 540.140625,
+          "width": 362,
+          "height": 766.015625
+        },
+        "internalScroll": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "clientHeight": 844,
+          "scrollHeight": 1318,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 164.5,
+        "minimumActionTargetHeight": 139.15625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "phone",
+        "width": 390,
+        "height": 844
+      },
+      "scene": "fire",
+      "seed": "ri34-burn",
+      "difficulty": "hard",
+      "tick": 5,
+      "taskLaneCounts": {
+        "backlog": 31,
+        "coding": 5,
+        "review": 2,
+        "rework": 1,
+        "done": 3
+      },
+      "incidentCount": 1,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 338.3125,
+          "width": 362,
+          "height": 147.734375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 336.234375,
+          "width": 362,
+          "height": 151.90625
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 340.3125,
+          "width": 358,
+          "height": 143.734375
+        },
+        "footer": {
+          "x": 14,
+          "y": 540.140625,
+          "width": 362,
+          "height": 395.125
+        },
+        "internalScroll": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "clientHeight": 844,
+          "scrollHeight": 947,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 77.75,
+        "minimumActionTargetHeight": 131.5625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 338.3125,
+          "width": 362,
+          "height": 147.734375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 336.234375,
+          "width": 362,
+          "height": 151.90625
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 340.3125,
+          "width": 358,
+          "height": 143.734375
+        },
+        "footer": {
+          "x": 14,
+          "y": 540.140625,
+          "width": 362,
+          "height": 766.015625
+        },
+        "internalScroll": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "clientHeight": 844,
+          "scrollHeight": 1318,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 164.5,
+        "minimumActionTargetHeight": 139.15625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "tablet-portrait",
+        "width": 768,
+        "height": 1024
+      },
+      "scene": "normal",
+      "seed": "issue-536-panel-normal",
+      "difficulty": "normal",
+      "tick": 4,
+      "taskLaneCounts": {
+        "backlog": 42,
+        "coding": 7,
+        "review": 0,
+        "rework": 0,
+        "done": 1
+      },
+      "incidentCount": 0,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 261.78125,
+          "width": 740,
+          "height": 302
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 212.390625,
+          "width": 740,
+          "height": 400.78125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 263.78125,
+          "width": 736,
+          "height": 298
+        },
+        "footer": {
+          "x": 14,
+          "y": 665.171875,
+          "width": 740,
+          "height": 346.828125
+        },
+        "internalScroll": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "clientHeight": 1024,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 172.25,
+        "minimumActionTargetHeight": 101.53125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 29.578125,
+          "y": 212.390625,
+          "width": 708.84375,
+          "height": 289.296875
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 212.390625,
+          "width": 740,
+          "height": 289.296875
+        },
+        "pixiMount": {
+          "x": 31.578125,
+          "y": 214.390625,
+          "width": 704.84375,
+          "height": 285.296875
+        },
+        "footer": {
+          "x": 14,
+          "y": 553.6875,
+          "width": 740,
+          "height": 458.3125
+        },
+        "internalScroll": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "clientHeight": 1024,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 172.25,
+        "minimumActionTargetHeight": 139.15625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "tablet-portrait",
+        "width": 768,
+        "height": 1024
+      },
+      "scene": "review",
+      "seed": "ops",
+      "difficulty": "easy",
+      "tick": 10,
+      "taskLaneCounts": {
+        "backlog": 40,
+        "coding": 4,
+        "review": 8,
+        "rework": 2,
+        "done": 4
+      },
+      "incidentCount": 2,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 275.578125,
+          "width": 740,
+          "height": 302
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 228.234375,
+          "width": 740,
+          "height": 396.703125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 277.578125,
+          "width": 736,
+          "height": 298
+        },
+        "footer": {
+          "x": 14,
+          "y": 676.9375,
+          "width": 740,
+          "height": 335.0625
+        },
+        "internalScroll": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "clientHeight": 1024,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 172.25,
+        "minimumActionTargetHeight": 101.53125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 48.984375,
+          "y": 228.234375,
+          "width": 670.03125,
+          "height": 273.453125
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 228.234375,
+          "width": 740,
+          "height": 273.453125
+        },
+        "pixiMount": {
+          "x": 50.984375,
+          "y": 230.234375,
+          "width": 666.03125,
+          "height": 269.453125
+        },
+        "footer": {
+          "x": 14,
+          "y": 553.6875,
+          "width": 740,
+          "height": 458.3125
+        },
+        "internalScroll": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "clientHeight": 1024,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 172.25,
+        "minimumActionTargetHeight": 139.15625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "tablet-portrait",
+        "width": 768,
+        "height": 1024
+      },
+      "scene": "fire",
+      "seed": "ri34-burn",
+      "difficulty": "hard",
+      "tick": 5,
+      "taskLaneCounts": {
+        "backlog": 31,
+        "coding": 5,
+        "review": 2,
+        "rework": 1,
+        "done": 3
+      },
+      "incidentCount": 1,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 275.578125,
+          "width": 740,
+          "height": 302
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 228.234375,
+          "width": 740,
+          "height": 396.703125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 277.578125,
+          "width": 736,
+          "height": 298
+        },
+        "footer": {
+          "x": 14,
+          "y": 676.9375,
+          "width": 740,
+          "height": 335.0625
+        },
+        "internalScroll": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "clientHeight": 1024,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 172.25,
+        "minimumActionTargetHeight": 101.53125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 48.984375,
+          "y": 228.234375,
+          "width": 670.03125,
+          "height": 273.453125
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 228.234375,
+          "width": 740,
+          "height": 273.453125
+        },
+        "pixiMount": {
+          "x": 50.984375,
+          "y": 230.234375,
+          "width": 666.03125,
+          "height": 269.453125
+        },
+        "footer": {
+          "x": 14,
+          "y": 553.6875,
+          "width": 740,
+          "height": 458.3125
+        },
+        "internalScroll": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "clientHeight": 1024,
+          "scrollHeight": 1024,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 172.25,
+        "minimumActionTargetHeight": 139.15625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "desktop-short",
+        "width": 1024,
+        "height": 768
+      },
+      "scene": "normal",
+      "seed": "issue-536-panel-normal",
+      "difficulty": "normal",
+      "tick": 4,
+      "taskLaneCounts": {
+        "backlog": 42,
+        "coding": 7,
+        "review": 0,
+        "rework": 0,
+        "done": 1
+      },
+      "incidentCount": 0,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 154.296875,
+          "width": 996,
+          "height": 406.484375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 996,
+          "height": 426.3125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 156.296875,
+          "width": 992,
+          "height": 402.484375
+        },
+        "footer": {
+          "x": 14,
+          "y": 622.703125,
+          "width": 996,
+          "height": 133.296875
+        },
+        "internalScroll": {
+          "clientWidth": 1024,
+          "scrollWidth": 1024,
+          "clientHeight": 768,
+          "scrollHeight": 768,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 4,
+          ".action-tradeoff": 2,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 90.125,
+        "minimumActionTargetHeight": 113.296875,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 84.46875,
+          "y": 144.390625,
+          "width": 855.0625,
+          "height": 348.96875
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 996,
+          "height": 348.96875
+        },
+        "pixiMount": {
+          "x": 86.46875,
+          "y": 146.390625,
+          "width": 851.0625,
+          "height": 344.96875
+        },
+        "footer": {
+          "x": 14,
+          "y": 545.359375,
+          "width": 996,
+          "height": 210.640625
+        },
+        "internalScroll": {
+          "clientWidth": 1024,
+          "scrollWidth": 1024,
+          "clientHeight": 768,
+          "scrollHeight": 768,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 90.125,
+        "minimumActionTargetHeight": 164.640625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "desktop-short",
+        "width": 1024,
+        "height": 768
+      },
+      "scene": "review",
+      "seed": "ops",
+      "difficulty": "easy",
+      "tick": 10,
+      "taskLaneCounts": {
+        "backlog": 40,
+        "coding": 4,
+        "review": 8,
+        "rework": 2,
+        "done": 4
+      },
+      "incidentCount": 2,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 160.1875,
+          "width": 996,
+          "height": 406.484375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 996,
+          "height": 438.078125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 162.1875,
+          "width": 992,
+          "height": 402.484375
+        },
+        "footer": {
+          "x": 14,
+          "y": 634.46875,
+          "width": 996,
+          "height": 121.53125
+        },
+        "internalScroll": {
+          "clientWidth": 1024,
+          "scrollWidth": 1024,
+          "clientHeight": 768,
+          "scrollHeight": 768,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 4,
+          ".action-tradeoff": 2,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 90.125,
+        "minimumActionTargetHeight": 101.53125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 84.46875,
+          "y": 144.390625,
+          "width": 855.0625,
+          "height": 348.96875
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 996,
+          "height": 348.96875
+        },
+        "pixiMount": {
+          "x": 86.46875,
+          "y": 146.390625,
+          "width": 851.0625,
+          "height": 344.96875
+        },
+        "footer": {
+          "x": 14,
+          "y": 545.359375,
+          "width": 996,
+          "height": 210.640625
+        },
+        "internalScroll": {
+          "clientWidth": 1024,
+          "scrollWidth": 1024,
+          "clientHeight": 768,
+          "scrollHeight": 768,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 90.125,
+        "minimumActionTargetHeight": 164.640625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "desktop-short",
+        "width": 1024,
+        "height": 768
+      },
+      "scene": "fire",
+      "seed": "ri34-burn",
+      "difficulty": "hard",
+      "tick": 5,
+      "taskLaneCounts": {
+        "backlog": 31,
+        "coding": 5,
+        "review": 2,
+        "rework": 1,
+        "done": 3
+      },
+      "incidentCount": 1,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 14,
+          "y": 160.1875,
+          "width": 996,
+          "height": 406.484375
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 996,
+          "height": 438.078125
+        },
+        "pixiMount": {
+          "x": 16,
+          "y": 162.1875,
+          "width": 992,
+          "height": 402.484375
+        },
+        "footer": {
+          "x": 14,
+          "y": 634.46875,
+          "width": 996,
+          "height": 121.53125
+        },
+        "internalScroll": {
+          "clientWidth": 1024,
+          "scrollWidth": 1024,
+          "clientHeight": 768,
+          "scrollHeight": 768,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 4,
+          ".action-tradeoff": 2,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 90.125,
+        "minimumActionTargetHeight": 101.53125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 84.46875,
+          "y": 144.390625,
+          "width": 855.0625,
+          "height": 348.96875
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 996,
+          "height": 348.96875
+        },
+        "pixiMount": {
+          "x": 86.46875,
+          "y": 146.390625,
+          "width": 851.0625,
+          "height": 344.96875
+        },
+        "footer": {
+          "x": 14,
+          "y": 545.359375,
+          "width": 996,
+          "height": 210.640625
+        },
+        "internalScroll": {
+          "clientWidth": 1024,
+          "scrollWidth": 1024,
+          "clientHeight": 768,
+          "scrollHeight": 768,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 90.125,
+        "minimumActionTargetHeight": 164.640625,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "scene": "normal",
+      "seed": "issue-536-panel-normal",
+      "difficulty": "normal",
+      "tick": 4,
+      "taskLaneCounts": {
+        "backlog": 42,
+        "coding": 7,
+        "review": 0,
+        "rework": 0,
+        "done": 1
+      },
+      "incidentCount": 0,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 36,
+          "y": 144.390625,
+          "width": 1368,
+          "height": 558.3125
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 1412,
+          "height": 558.3125
+        },
+        "pixiMount": {
+          "x": 38,
+          "y": 146.390625,
+          "width": 1364,
+          "height": 554.3125
+        },
+        "footer": {
+          "x": 14,
+          "y": 754.703125,
+          "width": 1412,
+          "height": 133.296875
+        },
+        "internalScroll": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "clientHeight": 900,
+          "scrollHeight": 900,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 142.125,
+        "minimumActionTargetHeight": 113.296875,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "1ff6a218aa8fc0d8620140ed61c33e5f561d706a60b7a36ff3c836900ec2a71b",
+        "tasksDigest": "6cd0fc5b2e7732ab16a9cce9ee090ef492ba33f5215dfd5067a1b00d7f28f381",
+        "orgDigest": "de0e00f796f71601c0c2283df8ba229d72848220641f48f138b946f3dcaf5d55",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 89.96875,
+          "y": 144.390625,
+          "width": 1260.046875,
+          "height": 514.25
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 1412,
+          "height": 514.25
+        },
+        "pixiMount": {
+          "x": 91.96875,
+          "y": 146.390625,
+          "width": 1256.046875,
+          "height": 510.25
+        },
+        "footer": {
+          "x": 14,
+          "y": 710.640625,
+          "width": 1412,
+          "height": 177.359375
+        },
+        "internalScroll": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "clientHeight": 900,
+          "scrollHeight": 900,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 142.125,
+        "minimumActionTargetHeight": 131.359375,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "scene": "review",
+      "seed": "ops",
+      "difficulty": "easy",
+      "tick": 10,
+      "taskLaneCounts": {
+        "backlog": 40,
+        "coding": 4,
+        "review": 8,
+        "rework": 2,
+        "done": 4
+      },
+      "incidentCount": 2,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 21.578125,
+          "y": 144.390625,
+          "width": 1396.828125,
+          "height": 570.078125
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 1412,
+          "height": 570.078125
+        },
+        "pixiMount": {
+          "x": 23.578125,
+          "y": 146.390625,
+          "width": 1392.828125,
+          "height": 566.078125
+        },
+        "footer": {
+          "x": 14,
+          "y": 766.46875,
+          "width": 1412,
+          "height": 121.53125
+        },
+        "internalScroll": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "clientHeight": 900,
+          "scrollHeight": 900,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 142.125,
+        "minimumActionTargetHeight": 101.53125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+        "tasksDigest": "5891cbedcba6186834ce566d8a58b801d9972d042a4ddee7bcd194a286f9a8da",
+        "orgDigest": "87bfa05a9fbbe7e38455389892a7d041990236503d48dff452416ed6cedb6c59",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 89.96875,
+          "y": 144.390625,
+          "width": 1260.046875,
+          "height": 514.25
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 1412,
+          "height": 514.25
+        },
+        "pixiMount": {
+          "x": 91.96875,
+          "y": 146.390625,
+          "width": 1256.046875,
+          "height": 510.25
+        },
+        "footer": {
+          "x": 14,
+          "y": 710.640625,
+          "width": 1412,
+          "height": 177.359375
+        },
+        "internalScroll": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "clientHeight": 900,
+          "scrollHeight": 900,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 142.125,
+        "minimumActionTargetHeight": 131.359375,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "scene": "fire",
+      "seed": "ri34-burn",
+      "difficulty": "hard",
+      "tick": 5,
+      "taskLaneCounts": {
+        "backlog": 31,
+        "coding": 5,
+        "review": 2,
+        "rework": 1,
+        "done": 3
+      },
+      "incidentCount": 1,
+      "samePublicState": true,
+      "sameTasks": true,
+      "sameOrg": true,
+      "sameFocus": true,
+      "before": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 36,
+          "y": 150.265625,
+          "width": 1368,
+          "height": 558.3125
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 1412,
+          "height": 570.078125
+        },
+        "pixiMount": {
+          "x": 38,
+          "y": 152.265625,
+          "width": 1364,
+          "height": 554.3125
+        },
+        "footer": {
+          "x": 14,
+          "y": 766.46875,
+          "width": 1412,
+          "height": 121.53125
+        },
+        "internalScroll": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "clientHeight": 900,
+          "scrollHeight": 900,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 142.125,
+        "minimumActionTargetHeight": 101.53125,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      },
+      "after": {
+        "stateDigest": "f0eaa0cacc5d2d82d596da329264429633e4631a70169495b48a7db202018b48",
+        "tasksDigest": "4aca2b5f61475d92f64b904d236c4b7e2e3ec21b291e55772229f558b9011b63",
+        "orgDigest": "b4165fbe42bb516629eb5dc1ba4d2dd3048ef91e52bedb2129373645e0519077",
+        "focusDigest": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+        "board": {
+          "x": 89.96875,
+          "y": 144.390625,
+          "width": 1260.046875,
+          "height": 514.25
+        },
+        "boardStage": {
+          "x": 14,
+          "y": 144.390625,
+          "width": 1412,
+          "height": 514.25
+        },
+        "pixiMount": {
+          "x": 91.96875,
+          "y": 146.390625,
+          "width": 1256.046875,
+          "height": 510.25
+        },
+        "footer": {
+          "x": 14,
+          "y": 710.640625,
+          "width": 1412,
+          "height": 177.359375
+        },
+        "internalScroll": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "clientHeight": 900,
+          "scrollHeight": 900,
+          "scrollTop": 0
+        },
+        "pageHorizontalOverflow": false,
+        "textOverflowCount": {
+          ".action .name": 0,
+          ".action-summary": 0,
+          ".action-tradeoff": 0,
+          ".action-block-reason": 0,
+          ".action-target": 0,
+          ".action-cooldown": 0,
+          ".event-ticker-summary": 0
+        },
+        "actionCount": 8,
+        "minimumActionTargetWidth": 142.125,
+        "minimumActionTargetHeight": 131.359375,
+        "actionOrder": [
+          "interruptReview",
+          "splitPr",
+          "firefight",
+          "assignTask",
+          "aiThrottle",
+          "pairReview",
+          "overtime",
+          "andon"
+        ]
+      }
+    }
+  ],
+  "inspection": [
+    {
+      "viewport": "phone",
+      "seed": "ops",
+      "difficulty": "easy",
+      "tick": 10,
+      "actionSelected": "interruptReview",
+      "sameStateDigestBeforeAfter": true,
+      "observation": "詳細のselectで割り込みレビューを確認すると、Review工程に作用先マーカーが表示される。getStateのdigestは確認前後で一致。",
+      "observationBasis": "実ブラウザの比較画像を目視。非発火は公開getStateの一致で検証。",
+      "localFullScreenshot": "evidence/issue-536/phone-review-after-inspect-full.png"
+    },
+    {
+      "viewport": "desktop",
+      "seed": "ops",
+      "difficulty": "easy",
+      "tick": 10,
+      "actionSelected": "interruptReview",
+      "sameStateDigestBeforeAfter": true,
+      "observation": "詳細のselectで割り込みレビューを確認すると、Review工程に作用先マーカーが表示される。getStateのdigestは確認前後で一致。",
+      "observationBasis": "実ブラウザの比較画像を目視。非発火は公開getStateの一致で検証。",
+      "localFullScreenshot": "evidence/issue-536/desktop-review-after-inspect-full.png"
+    }
+  ],
+  "executedInterventions": [
+    {
+      "viewport": "desktop",
+      "stateEqual": true,
+      "beforeResourceChanges": {
+        "focus": -3,
+        "seniorHp": -6.73599999999999,
+        "morale": 2,
+        "aiLiteracy": 0
+      },
+      "afterResourceChanges": {
+        "focus": -3,
+        "seniorHp": -6.73599999999999,
+        "morale": 2,
+        "aiLiteracy": 0
+      },
+      "beforeFeedback": {
+        "held": null,
+        "text": "出来事3件割り込みレビュー: PR4件処理 / シニアHP -2 ほか2件割り込みレビュー: PR4件処理 / シニアHP -2点火! Review 落ち PR が炎上点火! Review 落ち PR が炎上",
+        "summary": "割り込みレビュー: PR4件処理 / シニアHP -2 ほか2件"
+      },
+      "afterFeedback": {
+        "held": "true",
+        "text": "出来事3件割り込みレビュー: PR4件処理 / シニアHP -6.74 / 士気 +2 / 集中力 -3 ほか2件割り込みレビュー: PR4件処理 / シニアHP -6.74 / 士気 +2 / 集中力 -3点火! Review 落ち PR が炎上点火! Review 落ち PR が炎上",
+        "summary": "割り込みレビュー: PR4件処理 / シニアHP -6.74 / 士気 +2 / 集中力 -3 ほか2件"
+      },
+      "beforeStateDigestBefore": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+      "beforeStateDigestAfter": "382f5817445d91e72562084e6a8abaccef4b7b544f43a4d7ea912172ec68e028",
+      "afterStateDigestBefore": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+      "afterStateDigestAfter": "382f5817445d91e72562084e6a8abaccef4b7b544f43a4d7ea912172ec68e028"
+    },
+    {
+      "viewport": "phone",
+      "stateEqual": true,
+      "beforeResourceChanges": {
+        "focus": -3,
+        "seniorHp": -6.73599999999999,
+        "morale": 2,
+        "aiLiteracy": 0
+      },
+      "afterResourceChanges": {
+        "focus": -3,
+        "seniorHp": -6.73599999999999,
+        "morale": 2,
+        "aiLiteracy": 0
+      },
+      "beforeFeedback": {
+        "held": null,
+        "text": "出来事3件割り込みレビュー: PR4件処理 / シニアHP -2 ほか2件割り込みレビュー: PR4件処理 / シニアHP -2点火! Review 落ち PR が炎上点火! Review 落ち PR が炎上",
+        "summary": "割り込みレビュー: PR4件処理 / シニアHP -2 ほか2件"
+      },
+      "afterFeedback": {
+        "held": "true",
+        "text": "出来事3件割り込みレビュー: PR4件処理 / シニアHP -6.74 / 士気 +2 / 集中力 -3 ほか2件割り込みレビュー: PR4件処理 / シニアHP -6.74 / 士気 +2 / 集中力 -3点火! Review 落ち PR が炎上点火! Review 落ち PR が炎上",
+        "summary": "割り込みレビュー: PR4件処理 / シニアHP -6.74 / 士気 +2 / 集中力 -3 ほか2件"
+      },
+      "beforeStateDigestBefore": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+      "beforeStateDigestAfter": "382f5817445d91e72562084e6a8abaccef4b7b544f43a4d7ea912172ec68e028",
+      "afterStateDigestBefore": "2571cf538bcd8afea2e678e0098db5a670e73fc51260b7f7b47c953a3b731fca",
+      "afterStateDigestAfter": "382f5817445d91e72562084e6a8abaccef4b7b544f43a4d7ea912172ec68e028"
+    }
+  ],
+  "visualObservations": {
+    "improvements": [
+      "8介入は同じ順序を維持し、役割、候補全数、主効果、代償、集中力、CD、利用不能理由を項目別に確認できる。",
+      "320pxと390pxでは4列から2列へ変わり、文字が折り返せる横幅を確保。すべての操作へ内部縦スクロールで到達する。",
+      "割り込みレビューの実行後、状態差分はシニアHP -6.736、集中力 -3、士気 +2。提案ティッカーはHP -6.74・集中力 -3を表示。現行は追加HP -2だけを表示。"
+    ],
+    "tradeoffs": [
+      "平常390pxのfooterは406.89pxから766.02px、320pxでは436.19pxから810.69pxへ増加し、縦スクロールが増える。",
+      "平常1440pxでは盤面558.31pxから514.25px（約7.9%）、1024pxでは406.48pxから348.97px（約14.1%）へ縮む。",
+      "本文9〜11pxは小さい。読みやすさや判断速度の改善率は人間の測定がないため結論しない。"
+    ],
+    "scope": "desktop/phone-seの平常・渋滞・炎上、desktop/phoneの非発火説明と実行後の画像を確認。primary action textのclipは提案の15例で0。"
+  },
+  "humanEvaluation": {
+    "understanding": {
+      "status": "未計測"
+    },
+    "searchTime": {
+      "status": "未計測"
+    },
+    "misoperation": {
+      "status": "未計測"
+    },
+    "importantEventRecognition": {
+      "status": "未計測"
+    }
+  },
+  "persistedImages": [
+    {
+      "file": "phone-normal-before-actions.png",
+      "viewport": "phone",
+      "scene": "normal",
+      "variant": "before",
+      "bytes": 77766,
+      "sha256": "d1872df84d28ae42404748253ac3c6c3d211a9363ec285f73d9c535a44c62cd4"
+    },
+    {
+      "file": "phone-normal-after-actions.png",
+      "viewport": "phone",
+      "scene": "normal",
+      "variant": "after",
+      "bytes": 105166,
+      "sha256": "b73e9e32f8de06227029e7fd8776a74d6f06315b52a88f6d3f764723e21ef549"
+    },
+    {
+      "file": "phone-review-before-actions.png",
+      "viewport": "phone",
+      "scene": "review",
+      "variant": "before",
+      "bytes": 74274,
+      "sha256": "b618e09874f632a8228c39fd9120cc515f0e3094234fff695e10121d62c61e9d"
+    },
+    {
+      "file": "phone-review-after-actions.png",
+      "viewport": "phone",
+      "scene": "review",
+      "variant": "after",
+      "bytes": 104658,
+      "sha256": "4f912cd5ce81ada796759b411751f87f93708b6da912d2dbac57c2e543079b5c"
+    },
+    {
+      "file": "phone-fire-before-actions.png",
+      "viewport": "phone",
+      "scene": "fire",
+      "variant": "before",
+      "bytes": 74263,
+      "sha256": "b3b483b803ec3075c60dfe0b8ba983d1c2377e92372d44cdbf1297a20d422c22"
+    },
+    {
+      "file": "phone-fire-after-actions.png",
+      "viewport": "phone",
+      "scene": "fire",
+      "variant": "after",
+      "bytes": 104013,
+      "sha256": "b438dc84e18e9e5df0d2c98bf0cb1529ee01ce0df2e7e186a5ed70f63e11a181"
+    },
+    {
+      "file": "desktop-normal-before-actions.png",
+      "viewport": "desktop",
+      "scene": "normal",
+      "variant": "before",
+      "bytes": 72813,
+      "sha256": "9ecd7817cba12237e4e50410fe0dc547b8a996fafed1e02175e30ae9b66929c6"
+    },
+    {
+      "file": "desktop-normal-after-actions.png",
+      "viewport": "desktop",
+      "scene": "normal",
+      "variant": "after",
+      "bytes": 91222,
+      "sha256": "84b7e46a17448a06629bffa9f5e92c37560f46018a09f81d49798b57dd5512ae"
+    },
+    {
+      "file": "desktop-review-before-actions.png",
+      "viewport": "desktop",
+      "scene": "review",
+      "variant": "before",
+      "bytes": 65622,
+      "sha256": "4bb3a80c8f4f8570ca61bcc090d0f7200e9657ebe345a9916a58da50e1ea1d98"
+    },
+    {
+      "file": "desktop-review-after-actions.png",
+      "viewport": "desktop",
+      "scene": "review",
+      "variant": "after",
+      "bytes": 88897,
+      "sha256": "3f2553950de575407f6dd2f26812bbfbaaaa306e0dca3a803791b5dc514403ff"
+    },
+    {
+      "file": "desktop-fire-before-actions.png",
+      "viewport": "desktop",
+      "scene": "fire",
+      "variant": "before",
+      "bytes": 65660,
+      "sha256": "09849b23c35120d863327ec3976b88218df578566f5ae640285ad7aff27ee52b"
+    },
+    {
+      "file": "desktop-fire-after-actions.png",
+      "viewport": "desktop",
+      "scene": "fire",
+      "variant": "after",
+      "bytes": 87701,
+      "sha256": "f4ebbd03653479b2815213c9bfc73e0c162ba132030f05a8caf09587f1a2dc1b"
+    }
+  ],
+  "persistedImageTotalBytes": 1012055
+}

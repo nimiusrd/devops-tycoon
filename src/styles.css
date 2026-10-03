@@ -952,6 +952,13 @@ body {
   font-size: 1.1em;
   font-variant-numeric: tabular-nums;
 }
+.board-flow-list li[data-action-target='true'] {
+  outline: 2px solid var(--mint);
+  outline-offset: -2px;
+}
+.board-flow-list li[data-action-target='true']:not(.needs-attention) {
+  background: color-mix(in srgb, var(--mint) 12%, var(--panel));
+}
 .board-flow-alert {
   position: absolute;
   top: -6px;
@@ -962,6 +969,28 @@ body {
   background: var(--visual-color-banner-hell-tag-bg);
   font-size: 8px;
   line-height: 1.2;
+}
+/* 注目中だけ下段を使い、通常の工程表示・警告の寸法を保つ。 */
+.board-flow-list li[data-action-target='true'] .board-flow-alert,
+.board-flow-target {
+  position: relative;
+  top: auto;
+  right: auto;
+  grid-row: 2;
+  grid-column: 1 / -1;
+  padding: 1px 4px;
+  border-radius: 999px;
+  font-size: 8px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.board-flow-list li[data-action-target='true'] .board-flow-alert {
+  justify-self: end;
+}
+.board-flow-target {
+  justify-self: start;
+  color: var(--mint);
+  background: var(--panel);
 }
 
 /* 吹き出し。危険粒のドラッグを奪わない（#529）。 */
@@ -1963,6 +1992,12 @@ body:has(.overlay-contained) {
   white-space: nowrap;
   pointer-events: none;
 }
+.event-ticker[data-feedback-held='true'] .event-ticker-summary {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
 .event-ticker-now {
   margin: 0;
   font-size: 10px;
@@ -2097,7 +2132,7 @@ body:has(.overlay-contained) {
 .action-target-cancel {
   appearance: none;
   flex: 0 0 auto;
-  min-height: 28px;
+  min-height: 44px;
   min-width: 44px;
   padding: 4px 10px;
   border-radius: 8px;
@@ -2237,20 +2272,35 @@ body:has(.overlay-contained) {
   background: linear-gradient(90deg, #8a6bff, #c9a8ff);
   transition: width 0.2s ease;
 }
+.action-panel {
+  container-type: inline-size;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .actions {
-  flex: 1;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 9px;
+  min-width: 0;
+}
+.action-cell {
+  display: flex;
+  min-width: 0;
 }
 .action {
   position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
   border-radius: 14px;
   padding: 9px 6px;
   text-align: center;
-  background: #3a2f68;
+  background: var(--visual-color-ink);
   border: 2px solid var(--line);
-  box-shadow: 0 4px 0 #1d1640;
+  box-shadow: 0 4px 0 var(--visual-color-board-background-bottom);
   color: var(--text);
   cursor: pointer;
   overflow: hidden;
@@ -2265,25 +2315,27 @@ body:has(.overlay-contained) {
 .action:hover:not(:disabled) {
   filter: brightness(1.12);
 }
+.action:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 2px;
+}
 .action:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #1d1640;
+  box-shadow: 0 2px 0 var(--visual-color-board-background-bottom);
 }
+/* 説明を読み比べられるよう、disabled でも本文を薄くしない。 */
 .action:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  background: var(--panel);
 }
 .action.ready {
-  border-color: #7bdcff88;
-  box-shadow:
-    0 0 0 2px #7bdcff33,
-    0 4px 0 #1d1640;
+  border-color: color-mix(in srgb, var(--visual-color-interaction-drag) 65%, var(--line));
 }
 .action.armed {
-  border-color: #ffd45c;
+  border-color: var(--sun);
   box-shadow:
-    0 0 0 2px #ffd45c55,
-    0 4px 0 #1d1640;
+    0 0 0 2px color-mix(in srgb, var(--sun) 35%, transparent),
+    0 4px 0 var(--visual-color-board-background-bottom);
 }
 .station.drop-target {
   outline: 2px dashed color-mix(in srgb, var(--visual-color-interaction-drag) 53%, transparent);
@@ -2311,29 +2363,22 @@ body:has(.overlay-contained) {
   font-size: 11px;
   color: var(--text-dim);
 }
-.action.ready::before {
-  content: 'READY';
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 8px;
-  font-weight: 900;
-  color: var(--sky);
-}
-/* armed は ready より後に定義し、武装中バッジを優先する。 */
-.action.armed::before,
-.action.armed.ready::before {
-  content: 'ARMED';
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: #ffd45c;
-}
 .action.nofocus:not(.ready) {
-  border-color: #ff5f5755;
+  border-color: color-mix(in srgb, var(--coral) 60%, var(--line));
+}
+.action-role {
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.action-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 24px;
 }
 .action .ico {
   display: inline-flex;
@@ -2342,26 +2387,32 @@ body:has(.overlay-contained) {
   line-height: 1;
 }
 .action .name {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
+  font-weight: 900;
+  line-height: 1.2;
 }
+.action-target,
 .action-summary,
 .action-tradeoff {
   width: 100%;
-  overflow: hidden;
-  font-size: 8.5px;
-  font-weight: 800;
-  line-height: 1.15;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.2;
   text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+}
+.action-target {
+  color: var(--cream);
 }
 .action-summary {
-  color: #d7ffef;
+  color: var(--mint);
 }
 .action-tradeoff {
-  color: #ffb8b0;
+  color: var(--coral);
 }
 .action .effect-tags {
   justify-content: center;
@@ -2384,6 +2435,7 @@ body:has(.overlay-contained) {
   width: 100%;
   min-width: 0;
   gap: 2px 5px;
+  margin-top: auto;
 }
 .action .cost {
   display: inline-flex;
@@ -2393,6 +2445,11 @@ body:has(.overlay-contained) {
   font-weight: 900;
   color: var(--sun);
 }
+.action-cooldown {
+  color: var(--text);
+  font-size: 9px;
+  line-height: 1.2;
+}
 .action-gauge-gain {
   color: var(--mint);
   font-size: 8.5px;
@@ -2400,67 +2457,183 @@ body:has(.overlay-contained) {
   line-height: 1;
   white-space: nowrap;
 }
+.action-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12px;
+  width: 100%;
+}
+.action-ready-label {
+  color: var(--mint);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+}
 .action .cd {
   width: 100%;
   margin-top: 2px;
-  height: 6px;
+  height: 5px;
   border-radius: 6px;
-  background: #1b1438;
+  background: var(--visual-color-board-background-bottom);
   overflow: hidden;
 }
 .action .cd > i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #3fb6ff, #7bdcff);
+  background: var(--sky);
   transition: width 0.2s ease;
 }
 .action .cd.full > i {
-  background: linear-gradient(90deg, #57e08f, #9ff0bd);
+  background: var(--mint);
 }
 .action.danger {
-  background: #4a2340;
-  border-color: #ff5f5755;
+  background: color-mix(in srgb, var(--coral) 12%, var(--panel));
+  border-color: color-mix(in srgb, var(--coral) 50%, var(--line));
 }
 .action.danger .ico {
-  filter: drop-shadow(0 0 6px #ff7a2faa);
+  color: var(--fire);
 }
 .action.heavy {
-  background: #3a2f55;
+  background: color-mix(in srgb, var(--lav) 8%, var(--panel));
 }
 .action.notarget {
-  border-color: #ff9f4355;
-  opacity: 0.72;
-}
-.action.oncooldown {
-  opacity: 0.62;
+  border-color: color-mix(in srgb, var(--sun) 50%, var(--line));
 }
 .action-target-badge {
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 8px;
-  font-weight: 900;
-  padding: 2px 5px;
-  border-radius: 6px;
-  background: #1b1438cc;
-  color: var(--sky);
-  border: 1px solid #7bdcff55;
-  line-height: 1.1;
-  z-index: 1;
-}
-.action.ready .action-target-badge {
-  top: 16px;
+  color: inherit;
+  font-weight: 800;
 }
 .action-block-reason {
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 800;
-  color: #ffb07a;
-  line-height: 1.15;
+  color: var(--sun);
+  line-height: 1.2;
   max-width: 100%;
   white-space: normal;
+}
+/* 詳細は8介入の後に一つだけ置き、元のカード間Tab順を保つ。 */
+.action-inspect {
+  min-width: 0;
+  color: var(--text);
+  font-size: 11px;
+}
+.action-inspect > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: var(--sky);
+  cursor: pointer;
+  list-style: none;
+}
+.action-inspect > summary::before {
+  content: '＋';
+}
+.action-inspect[open] > summary::before {
+  content: '−';
+}
+.action-inspect > summary::-webkit-details-marker {
+  display: none;
+}
+.action-inspect > summary:hover {
+  background: color-mix(in srgb, var(--sky) 8%, var(--panel));
+}
+.action-inspect > summary:focus-visible,
+.action-inspect select:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.action-inspect-panel {
+  min-width: 0;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.action-inspect-label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+.action-inspect select {
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--visual-color-ink);
+  color: var(--text);
+  font: inherit;
+}
+.action-inspect-facts {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0;
+}
+.action-inspect-facts > div {
+  display: grid;
+  grid-template-columns: 4em minmax(0, 1fr);
+  gap: 8px;
+}
+.action-inspect-facts dt {
+  color: var(--text-dim);
+}
+.action-inspect-facts dd {
+  margin: 0;
+}
+.action-inspect-panel p {
+  margin: 6px 0 0;
+}
+.action-inspect-hint {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+/* 8列では見出し・外側余白から詰め、比較する本文と文字サイズを保つ。 */
+.actionbar[data-responsive-width='wide'] .action-panel {
+  gap: 2px;
+}
+.actionbar[data-responsive-width='wide'] .action-heading {
+  min-height: 16px;
+}
+.actionbar[data-responsive-width='wide'] .action {
+  padding-block: 4px;
+}
+.actionbar[data-responsive-width='wide'] .action .cd {
+  margin-top: 0;
+}
+:root[data-responsive-width='narrow'] .action-panel {
+  flex: 1 1 100%;
+}
+:root[data-responsive-width='narrow'] .action-heading {
+  flex-direction: column;
+  gap: 2px;
+}
+:root[data-responsive-width='narrow'] .action-target {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+:root[data-responsive-width='narrow'] .action-inspect > summary {
+  min-height: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .action,
+  .action .cd > i,
+  .action .mod-ring > i,
+  .combo-gauge i,
+  .stability-status-meter > i {
+    transition: none;
+  }
 }
 .action.shake {
   animation: action-shake 0.35s ease;
@@ -2477,6 +2650,11 @@ body:has(.overlay-contained) {
   40%,
   80% {
     transform: translateX(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action.shake {
+    animation: none;
   }
 }
 .actionbar {
@@ -2830,7 +3008,14 @@ button.card.card-readonly:disabled {
   grid-template-columns: minmax(0, 1fr);
 }
 :root[data-responsive-width='narrow'] .actions {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* 2枚分の比較情報が読める幅を基準にし、全体のresponsive modeは増やさない。 */
+@container (max-width: 520px) {
+  :root[data-responsive-width='narrow'] .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ===== Phase 3: 周回・育成・診断 ===== */

@@ -3,11 +3,13 @@
  *
  * 発動可否は sim 公開の `canApplyAction` を正とし、対象数バッジだけ UI 側で導出する。
  */
+import { getAction } from '../data/actions';
 import {
   activeIncidents,
   ALL_ACTION_IDS,
   ANDON_TICKS,
   canApplyAction,
+  grantsStabilityOnApply,
   INTERRUPT_REVIEW_COUNT,
   OVERTIME_TICKS,
   PAIR_REVIEW_COUNT,
@@ -16,7 +18,7 @@ import {
   THROTTLE_TICKS,
 } from '../sim/actions';
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
-import type { ActionId, OrgState, SprintState } from '../sim/types';
+import type { ActionId, Lane, OrgState, SprintState } from '../sim/types';
 import type { IconKey } from './visualIcons';
 
 export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'paused';
@@ -31,6 +33,147 @@ export interface ActionAvailability {
   targetCount: number;
   targetBadge?: string;
   targetBadgeIcon?: IconKey;
+}
+
+/** 固定順の各操作に添える役割。役割で並べ替えたり操作を隠したりしない。 */
+export type ActionRole = 'review' | 'task' | 'incident' | 'flow';
+
+/** 操作前に比較する対象・主効果・代償（RI-149）。 */
+export interface ActionPresentation {
+  actionId: ActionId;
+  role: ActionRole;
+  roleLabel: string;
+  targetLabel: string;
+  effect: string;
+  tradeoff: string;
+  /** フォーカス・説明確認時に対応付ける工程。結果の移動先とは区別する。 */
+  targetLanes: readonly Lane[];
+  /** 現在の候補全数。発動による処理件数や処理上限ではない。 */
+  candidateCount?: number;
+  /** 一度の発動で扱える最大件数。処理成功や出荷を保証しない。 */
+  maxAffectedCount?: number;
+  /** 詳細文言は宣言的なアクション定義を正本にする。 */
+  description: string;
+  sideEffect: string;
+}
+
+const ACTION_ROLE_LABELS: Record<ActionRole, string> = {
+  review: 'レビューを通す',
+  task: '仕事を整える',
+  incident: '炎上に対処する',
+  flow: '流れを調整する',
+};
+
+const ACTION_PRESENTATION_META: Record<
+  ActionId,
+  { role: ActionRole; targetLanes: readonly Lane[]; effect: string; tradeoff: string }
+> = {
+  interruptReview: {
+    role: 'review',
+    targetLanes: ['review'],
+    effect: `最大${INTERRUPT_REVIEW_COUNT}件をレビュー`,
+    tradeoff: 'シニアHP消費',
+  },
+  splitPr: {
+    role: 'task',
+    targetLanes: ['coding', 'review'],
+    effect: 'PR1件分割・手戻り抑制',
+    tradeoff: '進捗・士気・シニアHP消費',
+  },
+  firefight: {
+    role: 'incident',
+    targetLanes: ['rework'],
+    effect: '炎上1件鎮火・Reviewへ',
+    tradeoff: 'シニアHP消費・先消しは割高',
+  },
+  assignTask: {
+    role: 'task',
+    targetLanes: ['backlog', 'coding'],
+    effect: '1件差配・前進',
+    tradeoff: '士気消費・担当不一致で負担増',
+  },
+  aiThrottle: {
+    role: 'flow',
+    targetLanes: ['backlog', 'coding'],
+    effect: '新規AI割当停止',
+    tradeoff: '出荷低下・成熟工程は手戻り増も',
+  },
+  pairReview: {
+    role: 'review',
+    targetLanes: ['review'],
+    effect: `最大${PAIR_REVIEW_COUNT}件をレビュー＋AI習熟`,
+    tradeoff: '集中力消費・再使用待ち',
+  },
+  overtime: {
+    role: 'flow',
+    targetLanes: ['coding', 'review'],
+    effect: '実装・Review加速',
+    tradeoff: '士気・シニアHP消費',
+  },
+  andon: {
+    role: 'flow',
+    targetLanes: ['backlog'],
+    effect: '流入停止・処理猶予',
+    tradeoff: '士気消費・薄いキューはHPも消費',
+  },
+};
+
+/** 状態から説明を導出する。対象候補数は処理上限で切り詰めない。 */
+export function planActionPresentation(sprint: SprintState, id: ActionId): ActionPresentation {
+  const def = getAction(id)!;
+  const meta = ACTION_PRESENTATION_META[id];
+  let candidateCount: number | undefined;
+  let maxAffectedCount: number | undefined;
+  let targetLabel: string;
+  switch (id) {
+    case 'interruptReview':
+    case 'pairReview':
+      candidateCount = tasksInLane(sprint, 'review').length;
+      maxAffectedCount = id === 'interruptReview' ? INTERRUPT_REVIEW_COUNT : PAIR_REVIEW_COUNT;
+      targetLabel = `レビュー待ち ${candidateCount}件`;
+      break;
+    case 'splitPr':
+      candidateCount = splitPrCandidates(sprint).length;
+      maxAffectedCount = 1;
+      targetLabel = `分割候補 ${candidateCount}件`;
+      break;
+    case 'firefight':
+      candidateCount = activeIncidents(sprint).length;
+      maxAffectedCount = 1;
+      targetLabel = `炎上 ${candidateCount}件`;
+      break;
+    case 'assignTask':
+      candidateCount = assignableTasks(sprint).length;
+      maxAffectedCount = 1;
+      targetLabel = `差配候補 ${candidateCount}件`;
+      break;
+    case 'aiThrottle':
+      targetLabel = '新規タスクのAI割当';
+      break;
+    case 'overtime':
+      targetLabel = '実装・レビュー工程';
+      break;
+    case 'andon':
+      targetLabel = '待機から実装への流入';
+      break;
+  }
+  return {
+    actionId: id,
+    ...meta,
+    targetLanes: [...meta.targetLanes],
+    roleLabel: ACTION_ROLE_LABELS[meta.role],
+    targetLabel,
+    candidateCount,
+    maxAffectedCount,
+    effect: `${meta.effect}${grantsStabilityOnApply(id, sprint) ? '＋運用安定' : ''}`,
+    description: def.description,
+    sideEffect: def.sideEffect,
+  };
+}
+
+/** 利用可否や対象数が変わっても8介入の表示順は固定する。 */
+export function planActionPresentations(sprint: SprintState): ActionPresentation[] {
+  return ALL_ACTION_IDS.map((id) => planActionPresentation(sprint, id));
 }
 
 /** アクション別の対象数（常時発動系は 0）。 */

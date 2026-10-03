@@ -6,19 +6,19 @@
  * 他アクションはクリックで即 `dispatch`。RI-51: 対象数バッジ・発動不能理由。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ACTION_DEFS } from '../data/actions';
 import {
   deriveActionAvailability,
   deriveModifierRing,
   formatInterventionFailure,
   planActionBarView,
+  planActionPresentations,
   type ActionBlockReason,
 } from '../render/actionBarView';
 import { planActionTargetPickerView } from '../render/actionTargetPickerView';
 import { isDraggableAction, planBoardDrag, type DraggableActionId } from '../render/boardDragPlan';
 import { formatActionTooltip } from '../render/eventOutcomeView';
-import { INTERRUPT_REVIEW_COUNT } from '../sim/actions';
 import type {
   ActionId,
   ActionTarget,
@@ -39,27 +39,6 @@ function escapeOwnedByFrontOverlay(): boolean {
   return document.querySelector('[role="dialog"], [data-testid="zoom-overlay"]') !== null;
 }
 
-/**
- * プレイ中に読む文言は、主効果1行・代償1行までに制限する。
- * その他の詳細な数値と条件は title / aria-label に残す。
- */
-const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }> = {
-  interruptReview: {
-    effect: `Review 最大${INTERRUPT_REVIEW_COUNT}件処理＋運用安定`,
-    tradeoff: 'シニアHP消費',
-  },
-  splitPr: { effect: '巨大PRを分割', tradeoff: '進捗・士気・HP消費' },
-  firefight: { effect: '炎上1件鎮火＋緊急時のみ運用安定', tradeoff: '平常時は高コスト' },
-  assignTask: { effect: 'タスク前進＋運用安定', tradeoff: '士気消費' },
-  aiThrottle: { effect: 'AI流入停止＋運用安定', tradeoff: '出荷速度低下' },
-  pairReview: {
-    effect: 'Review＋AI習熟＋運用安定',
-    tradeoff: '集中力消費・再使用待ち',
-  },
-  overtime: { effect: '開発速度UP', tradeoff: '士気・HP低下' },
-  andon: { effect: '流入停止・処理猶予', tradeoff: '士気消費・薄いキューはHP消費' },
-};
-
 interface FocusPop {
   id: number;
   sign: '-' | '+';
@@ -79,7 +58,7 @@ function FocusPips({ focus, max }: { focus: number; max: number }) {
   );
 }
 
-function FocusFeedbackPops({ pops }: { pops: FocusPop[] }) {
+function FocusFeedbackPops({ pops, reducedMotion }: { pops: FocusPop[]; reducedMotion: boolean }) {
   return (
     <div className="focus-feedback-pops" aria-hidden="true">
       <AnimatePresence>
@@ -87,10 +66,10 @@ function FocusFeedbackPops({ pops }: { pops: FocusPop[] }) {
           <motion.span
             key={pop.id}
             className={`focus-feedback-pop focus-feedback-${pop.tone}`}
-            initial={{ y: 6, opacity: 0, scale: 0.85 }}
-            animate={{ y: -18, opacity: 1, scale: 1 }}
-            exit={{ y: -32, opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.55, ease: 'easeOut' }}
+            initial={reducedMotion ? false : { y: 6, opacity: 0, scale: 0.85 }}
+            animate={reducedMotion ? { opacity: 1 } : { y: -18, opacity: 1, scale: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: -32, opacity: 0, scale: 0.9 }}
+            transition={{ duration: reducedMotion ? 0 : 0.55, ease: 'easeOut' }}
           >
             {pop.sign}
             <VisualIcon name="focus" size="hud" />
@@ -113,6 +92,8 @@ export interface ActionBarProps {
   armedId: DraggableActionId | null;
   onArm: (id: DraggableActionId | null) => void;
   onAction: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
+  /** 説明確認中の作用先を盤面へ対応付ける。発動や武装は行わない。 */
+  onActionInspect?: (id: ActionId | null) => void;
   /** タスク差配の担当（武装中に選択。省略＝理想担当）。 */
   assignAssignee?: 'ai' | 'senior';
   onAssignAssigneeChange?: (assignee: 'ai' | 'senior' | undefined) => void;
@@ -129,12 +110,24 @@ export function ActionBar({
   armedId,
   onArm,
   onAction,
+  onActionInspect,
   assignAssignee,
   onAssignAssigneeChange,
   outcomeFeedback,
 }: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
   const responsiveMode = useResponsiveMode();
+  const reducedMotion = useReducedMotion() ?? false;
+  const presentations = useMemo(() => planActionPresentations(sprint), [sprint]);
+  const presentationById = useMemo(
+    () => new Map(presentations.map((item) => [item.actionId, item])),
+    [presentations],
+  );
+  const [inspectId, setInspectId] = useState<ActionId>(ACTION_DEFS[0].id);
+  const [inspectOpen, setInspectOpen] = useState(false);
+  const inspectPresentation = presentationById.get(inspectId)!;
+  const inspectDefinition = ACTION_DEFS.find((item) => item.id === inspectId)!;
+  const inspectRemaining = cooldowns[inspectId] ?? 0;
   const stabilityRing = sprint.complete
     ? { active: false, remaining: 0, total: 0 }
     : deriveModifierRing(sprint, sprintTick, 'stability');
@@ -166,6 +159,20 @@ export function ActionBar({
   const nextPopId = useRef(0);
   const lastFeedbackNonce = useRef<number | null>(null);
   const actionButtonRefs = useRef<Partial<Record<ActionId, HTMLButtonElement | null>>>({});
+  const hoveredActionRef = useRef<ActionId | null>(null);
+  const focusedActionRef = useRef<ActionId | null>(null);
+  const inspectionSourceRef = useRef<'pointer' | 'focus'>('focus');
+  const updateInspection = useCallback(() => {
+    const primary =
+      inspectionSourceRef.current === 'pointer'
+        ? hoveredActionRef.current
+        : focusedActionRef.current;
+    const secondary =
+      inspectionSourceRef.current === 'pointer'
+        ? focusedActionRef.current
+        : hoveredActionRef.current;
+    onActionInspect?.(primary ?? secondary ?? (inspectOpen ? inspectId : null));
+  }, [inspectId, inspectOpen, onActionInspect]);
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const focusedArmRef = useRef<DraggableActionId | null>(null);
   const focusedOptionIdRef = useRef<number | null>(null);
@@ -296,7 +303,7 @@ export function ActionBar({
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       const target = event.target;
       if (typeof Element !== 'undefined' && target instanceof Element) {
-        const tip = target.closest('details.term-tip');
+        const tip = target.closest('details.term-tip, details.action-inspect');
         if (
           typeof HTMLDetailsElement !== 'undefined' &&
           tip instanceof HTMLDetailsElement &&
@@ -384,7 +391,7 @@ export function ActionBar({
             <VisualIcon name="focus" size="header" />
             {focus}
             <small>/{config.focusMax}</small>
-            <FocusFeedbackPops pops={focusPops} />
+            <FocusFeedbackPops pops={focusPops} reducedMotion={reducedMotion} />
           </div>
           <FocusPips focus={focus} max={config.focusMax} />
           <div
@@ -498,119 +505,230 @@ export function ActionBar({
           </ul>
         </div>
       )}
-      <div className="actions">
-        {ACTION_DEFS.map((a) => {
-          const glanceCopy = ACTION_GLANCE_COPY[a.id];
-          const availability = availabilityById.get(a.id)!;
-          const remaining = cooldowns[a.id] ?? 0;
-          const onCooldown = remaining > 0;
-          const armed = !paused && armedId === a.id;
-          const ready = availability.canActivate || armed;
-          const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
-          const modRing = sprint.complete
-            ? { active: false, remaining: 0, total: 0 }
-            : deriveModifierRing(sprint, sprintTick, a.id);
-          const modPct = modRing.active ? Math.round((modRing.remaining / modRing.total) * 100) : 0;
-          const tone = a.tone ? ` ${a.tone}` : '';
-          const blockClass =
-            availability.blockReason === 'no-target'
-              ? ' notarget'
-              : availability.blockReason === 'no-focus'
-                ? ' nofocus'
-                : availability.blockReason === 'cooldown'
-                  ? ' oncooldown'
-                  : '';
-          const dragHint = isDraggableAction(a.id)
-            ? armed
-              ? '（一覧か盤面ドラッグで対象を確定）'
-              : '（クリックで武装）'
-            : '';
-          const tooltip = `${formatActionTooltip(a)}${dragHint}`;
-          // aria-label は子テキストを上書きするため、コスト・対象数・利用不可理由もここに載せる。
-          const statusLabel = armed
-            ? '武装中。'
-            : !ready && availability.blockMessage
-              ? `利用不可: ${availability.blockMessage}。`
+      <div className="action-panel">
+        <div className="actions">
+          {ACTION_DEFS.map((a) => {
+            const presentation = presentationById.get(a.id)!;
+            const availability = availabilityById.get(a.id)!;
+            const remaining = cooldowns[a.id] ?? 0;
+            const onCooldown = remaining > 0;
+            const armed = !paused && armedId === a.id;
+            const ready = availability.canActivate || armed;
+            const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
+            const modRing = sprint.complete
+              ? { active: false, remaining: 0, total: 0 }
+              : deriveModifierRing(sprint, sprintTick, a.id);
+            const modPct = modRing.active
+              ? Math.round((modRing.remaining / modRing.total) * 100)
+              : 0;
+            const tone = a.tone ? ` ${a.tone}` : '';
+            const blockClass =
+              availability.blockReason === 'no-target'
+                ? ' notarget'
+                : availability.blockReason === 'no-focus'
+                  ? ' nofocus'
+                  : availability.blockReason === 'cooldown'
+                    ? ' oncooldown'
+                    : '';
+            const dragHint = isDraggableAction(a.id)
+              ? armed
+                ? '（一覧か盤面ドラッグで対象を確定）'
+                : '（クリックで武装）'
               : '';
-          const targetLabel = availability.targetBadge
-            ? `対象 ${availability.targetBadgeIcon === 'fire' ? '炎上 ' : ''}${availability.targetBadge}。`
-            : '';
-          const modLabel = modRing.active ? `効果残り ${modRing.remaining} tick。` : '';
-          return (
-            <button
-              type="button"
-              key={a.id}
-              ref={(node) => {
-                actionButtonRefs.current[a.id] = node;
-              }}
-              className={`action${tone}${ready ? ' ready' : ''}${armed ? ' armed' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
-              data-testid={`action-${a.id}`}
-              data-block-reason={availability.blockReason ?? ''}
-              data-armed={armed ? 'true' : undefined}
-              disabled={!ready && !armed}
-              onClick={() => handleAction(a.id)}
-              title={tooltip}
-              aria-label={`${a.label}。集中力コスト ${a.cost}。${targetLabel}${modLabel}${statusLabel}${tooltip}`}
-            >
-              {availability.targetBadge && (
-                <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>
-                  {availability.targetBadgeIcon && (
-                    <VisualIcon name={availability.targetBadgeIcon} size="hud" />
+            const tooltip = `${formatActionTooltip(a)}${dragHint}`;
+            const statusLabel = armed
+              ? '武装中。'
+              : !ready && availability.blockMessage
+                ? `利用不可: ${availability.blockMessage}。`
+                : '実行可能。';
+            const modLabel = modRing.active ? `効果残り ${modRing.remaining} tick。` : '';
+            const cooldownLabel = onCooldown
+              ? `CD 残り${remaining} tick`
+              : `CD ${a.cooldownTicks} tick`;
+            return (
+              <div
+                key={a.id}
+                className="action-cell"
+                onMouseEnter={() => {
+                  hoveredActionRef.current = a.id;
+                  inspectionSourceRef.current = 'pointer';
+                  updateInspection();
+                }}
+                onMouseLeave={() => {
+                  if (hoveredActionRef.current === a.id) hoveredActionRef.current = null;
+                  updateInspection();
+                }}
+              >
+                <button
+                  type="button"
+                  ref={(node) => {
+                    actionButtonRefs.current[a.id] = node;
+                  }}
+                  className={`action${tone}${ready ? ' ready' : ''}${armed ? ' armed' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
+                  data-testid={`action-${a.id}`}
+                  data-role={presentation.role}
+                  data-block-reason={availability.blockReason ?? ''}
+                  data-armed={armed ? 'true' : undefined}
+                  disabled={!ready && !armed}
+                  onClick={() => handleAction(a.id)}
+                  onFocus={() => {
+                    focusedActionRef.current = a.id;
+                    inspectionSourceRef.current = 'focus';
+                    updateInspection();
+                  }}
+                  onBlur={() => {
+                    if (focusedActionRef.current === a.id) focusedActionRef.current = null;
+                    updateInspection();
+                  }}
+                  title={tooltip}
+                  aria-label={`${a.label}。集中力コスト ${a.cost}。対象 ${presentation.targetLabel}。主効果 ${presentation.effect}。代償 ${presentation.tradeoff}。${cooldownLabel}。${modLabel}${statusLabel}${tooltip}`}
+                >
+                  <span className="action-role">{presentation.roleLabel}</span>
+                  <span className="action-heading">
+                    <span className="ico">
+                      <VisualIcon name={a.icon} size="hud" />
+                    </span>
+                    <span className="name">{a.label}</span>
+                  </span>
+                  <span className="action-target" data-testid={`action-target-${a.id}`}>
+                    <span
+                      className="action-target-badge"
+                      data-testid={availability.targetBadge ? `action-badge-${a.id}` : undefined}
+                    >
+                      {presentation.targetLabel}
+                    </span>
+                  </span>
+                  <span className="action-summary" data-testid={`action-summary-${a.id}`}>
+                    {presentation.effect}
+                  </span>
+                  <span className="action-tradeoff" data-testid={`action-tradeoff-${a.id}`}>
+                    {presentation.tradeoff}
+                  </span>
+                  <span className="action-resources">
+                    <span className="cost">
+                      <VisualIconText name="focus" size="hud">
+                        {a.cost}
+                      </VisualIconText>
+                    </span>
+                    <span className="action-cooldown" data-testid={`action-cooldown-${a.id}`}>
+                      {cooldownLabel}
+                    </span>
+                    <span
+                      className="action-gauge-gain"
+                      data-testid={`action-gauge-${a.id}`}
+                      title={`連携ゲージ +${Math.round(a.gauge * 100)}%`}
+                    >
+                      連携+{Math.round(a.gauge * 100)}%
+                    </span>
+                  </span>
+                  <span className="action-state">
+                    {!ready && !armed && availability.blockMessage ? (
+                      <span className="action-block-reason" data-testid={`action-reason-${a.id}`}>
+                        {availability.blockMessage}
+                      </span>
+                    ) : armed ? (
+                      <span className="action-block-reason" data-testid={`action-armed-${a.id}`}>
+                        武装中
+                      </span>
+                    ) : (
+                      <span className="action-ready-label">実行可能</span>
+                    )}
+                  </span>
+                  <span className={`cd${onCooldown ? '' : ' full'}`} aria-hidden="true">
+                    <i style={{ width: `${cdPct}%` }} />
+                  </span>
+                  {modRing.active && (
+                    <span
+                      className="mod-ring"
+                      data-testid={`action-mod-ring-${a.id}`}
+                      title={`効果残り ${modRing.remaining} tick`}
+                    >
+                      <i style={{ width: `${modPct}%` }} />
+                    </span>
                   )}
-                  {availability.targetBadge}
-                </span>
-              )}
-              <span className="ico">
-                <VisualIcon name={a.icon} size="action" />
-              </span>
-              <span className="name">{a.label}</span>
-              {!ready && !armed && availability.blockMessage && (
-                <span className="action-block-reason" data-testid={`action-reason-${a.id}`}>
-                  {availability.blockMessage}
-                </span>
-              )}
-              {armed && (
-                <span className="action-block-reason" data-testid={`action-armed-${a.id}`}>
-                  武装中
-                </span>
-              )}
-              <span className="action-summary" data-testid={`action-summary-${a.id}`}>
-                {glanceCopy.effect}
-              </span>
-              {glanceCopy.tradeoff && (
-                <span className="action-tradeoff" data-testid={`action-tradeoff-${a.id}`}>
-                  {glanceCopy.tradeoff}
-                </span>
-              )}
-              <span className="action-resources">
-                <span className="cost">
-                  <VisualIconText name="focus" size="hud">
-                    {a.cost}
-                  </VisualIconText>
-                </span>
-                <span
-                  className="action-gauge-gain"
-                  data-testid={`action-gauge-${a.id}`}
-                  title={`連携ゲージ +${Math.round(a.gauge * 100)}%`}
-                >
-                  連携+{Math.round(a.gauge * 100)}%
-                </span>
-              </span>
-              <span className={`cd${onCooldown ? '' : ' full'}`}>
-                <i style={{ width: `${cdPct}%` }} />
-              </span>
-              {modRing.active && (
-                <span
-                  className="mod-ring"
-                  data-testid={`action-mod-ring-${a.id}`}
-                  title={`効果残り ${modRing.remaining} tick`}
-                >
-                  <i style={{ width: `${modPct}%` }} />
-                </span>
-              )}
-            </button>
-          );
-        })}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <details
+          className="action-inspect"
+          data-testid="action-inspect"
+          onToggle={(event) => {
+            const open = event.currentTarget.open;
+            setInspectOpen(open);
+            onActionInspect?.(open ? inspectId : null);
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape' || !event.currentTarget.open) return;
+            event.preventDefault();
+            event.stopPropagation();
+            event.currentTarget.open = false;
+            setInspectOpen(false);
+            onActionInspect?.(null);
+            event.currentTarget.querySelector('summary')?.focus();
+          }}
+        >
+          <summary data-testid="action-inspect-toggle">介入の詳しい説明</summary>
+          <div className="action-inspect-panel" data-testid="action-inspect-detail">
+            <label className="action-inspect-label" htmlFor="action-inspect-select">
+              確認する介入
+            </label>
+            <select
+              id="action-inspect-select"
+              data-testid="action-inspect-select"
+              value={inspectId}
+              onChange={(event) => {
+                const id = event.currentTarget.value as ActionId;
+                setInspectId(id);
+                onActionInspect?.(id);
+              }}
+              onFocus={() => onActionInspect?.(inspectId)}
+            >
+              {ACTION_DEFS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <dl className="action-inspect-facts">
+              <div>
+                <dt>対象</dt>
+                <dd>{inspectPresentation.targetLabel}</dd>
+              </div>
+              <div>
+                <dt>主効果</dt>
+                <dd>{inspectPresentation.effect}</dd>
+              </div>
+              <div>
+                <dt>代償</dt>
+                <dd>{inspectPresentation.tradeoff}</dd>
+              </div>
+              <div>
+                <dt>集中力</dt>
+                <dd>{inspectDefinition.cost}</dd>
+              </div>
+              <div>
+                <dt>CD</dt>
+                <dd>
+                  {inspectDefinition.cooldownTicks} tick
+                  {inspectRemaining > 0 && `（残り ${inspectRemaining} tick）`}
+                </dd>
+              </div>
+              <div>
+                <dt>状態</dt>
+                <dd>
+                  {!paused && armedId === inspectId
+                    ? '武装中'
+                    : (availabilityById.get(inspectId)?.blockMessage ?? '実行可能')}
+                </dd>
+              </div>
+            </dl>
+            <p>{inspectPresentation.description}</p>
+            <p>注意: {inspectPresentation.sideEffect}</p>
+            <p className="action-inspect-hint">ここで介入を選んでも発動しません。</p>
+          </div>
+        </details>
       </div>
       <AnimatePresence>
         {toast && (
@@ -618,10 +736,10 @@ export function ActionBar({
             className="action-toast"
             data-testid="action-toast"
             role="status"
-            initial={{ y: 12, opacity: 0 }}
+            initial={reducedMotion ? false : { y: 12, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 8, opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: 8, opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.25 }}
           >
             {toast}
           </motion.div>

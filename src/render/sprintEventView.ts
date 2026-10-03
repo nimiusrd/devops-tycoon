@@ -4,7 +4,8 @@
  * sim の構造化 `SprintEvent` を読むだけの純関数。描画・状態は知らない（第22.2）。
  */
 import { getAction } from '../data/actions';
-import type { SprintEvent } from '../sim/types';
+import type { ActionId, InterventionOutcome, SprintEvent } from '../sim/types';
+import { formatInterventionFailure } from './actionBarView';
 import { resolveIconKey, type IconKey } from './visualIcons';
 
 /** ティッカー 1 行の表示データ。 */
@@ -17,6 +18,159 @@ export interface SprintEventView {
   text: string;
   /** 見た目のトーン。 */
   tone: 'info' | 'good' | 'bad' | 'warn';
+}
+
+/** 介入結果を読むための表示時間。期限の作成と UI タイマーで共有する（#536）。 */
+export const INTERVENTION_RESULT_HOLD_MS = 2500;
+
+/** 共通の介入経路で取得した結果。自然進行の前後差分は効果へ混ぜない（#536）。 */
+export interface SprintInterventionFeedback {
+  id: ActionId;
+  outcome: InterventionOutcome;
+  /** 連続した介入も同じ文言でも、表示保持を更新する識別子。 */
+  nonce: number;
+  /** dispatch 直前の履歴。保持中に起きた重要イベントを判別する。 */
+  previousEvents: readonly SprintEvent[];
+  /** performance.now() 基準の期限。配置変更による再マウントでも保持を延長しない。 */
+  expiresAt?: number;
+  /** dispatch の同期区間で取得した after - before。レビュー処理による消費も含む。 */
+  resourceChanges?: { focus: number; seniorHp: number; morale: number; aiLiteracy: number };
+}
+
+/** 実際に返った介入結果だけを、短時間保持する出来事行へ変換する。 */
+export function formatInterventionFeedback(feedback: SprintInterventionFeedback): SprintEventView {
+  const { id, outcome, nonce } = feedback;
+  const def = getAction(id);
+  const label = def?.label ?? id;
+  const base = { key: `outcome:${nonce}`, icon: resolveIconKey(def?.icon, 'focus') };
+  if (!outcome.ok) {
+    return {
+      ...base,
+      text: `${label}: ${outcome.reason ? formatInterventionFailure(outcome.reason, id) : '実行できませんでした'}`,
+      tone: 'warn',
+    };
+  }
+
+  const effect = outcome.effect;
+  const parts: string[] = [];
+  if (effect?.reviewedCount != null) {
+    // レビュー処理は出荷成功を意味しない。0 件も実測として示す。
+    parts.push(`PR${effect.reviewedCount}件処理`);
+  } else if (effect?.containedTaskId != null) {
+    parts.push('1件鎮火');
+  } else if (effect?.affectedTaskIds && effect.affectedTaskIds.length > 0) {
+    const count = effect.affectedTaskIds.length;
+    parts.push(
+      id === 'splitPr'
+        ? `PR${count}件分割`
+        : id === 'assignTask'
+          ? `${count}件差配`
+          : `${count}件に適用`,
+    );
+  }
+  if (effect?.modifier) {
+    const modifierLabel = {
+      andon: '流入停止開始',
+      overtime: '残業開始',
+      stability: '運用安定開始',
+      throttle: '新規タスクのAI割当停止',
+    }[effect.modifier.kind];
+    parts.push(modifierLabel);
+  }
+  if (effect?.brokeCombo) parts.push('コンボ切断');
+  const observed = feedback.resourceChanges;
+  const resourceChanges: [string, number][] = observed
+    ? [
+        ['シニアHP', observed.seniorHp],
+        ['士気', observed.morale],
+        ['AI Literacy', observed.aiLiteracy],
+        ['集中力', observed.focus],
+      ]
+    : [
+        // hpCost はレビューで失う HP を含まない追加コスト。総消費とは区別する。
+        ['追加シニアHP', -(effect?.hpCost ?? 0)],
+        ['士気', -(effect?.moraleCost ?? 0)],
+        ['AI Literacy', effect?.literacyGain ?? 0],
+        ['集中力', -(effect?.focusCost ?? 0)],
+        ['集中力', effect?.focusRefund ?? 0],
+      ];
+  for (const [resource, delta] of resourceChanges) {
+    const value = formatSpreadMagnitude(Math.abs(delta));
+    const signedValue = value ? `${delta < 0 ? '-' : '+'}${value}` : '±0';
+    if (observed && resource === '集中力' && effect?.focusRefund && effect.focusRefund > 0) {
+      const cost = formatSpreadMagnitude(effect.focusCost) ?? '0';
+      const refund = formatSpreadMagnitude(effect.focusRefund) ?? '0';
+      parts.push(`集中力 ${signedValue}（消費${cost}・還元${refund}）`);
+    } else if (value) {
+      parts.push(`${resource} ${signedValue}`);
+    }
+  }
+  const spentOrgResources = observed
+    ? observed.seniorHp < 0 || observed.morale < 0
+    : Boolean(effect?.hpCost || effect?.moraleCost);
+  return {
+    ...base,
+    text: `${label}: ${parts.length > 0 ? parts.join(' / ') : '実行完了'}`,
+    tone: effect?.brokeCombo
+      ? 'warn'
+      : id === 'firefight'
+        ? 'good'
+        : spentOrgResources
+          ? 'warn'
+          : 'info',
+  };
+}
+
+/** UI が保持期間を決め、表示モデルは新しい重要イベントを最優先する（#536）。 */
+export function formatSprintTickerRows(
+  events: readonly SprintEvent[],
+  feedback: SprintInterventionFeedback | null,
+  limit = 5,
+): SprintEventView[] {
+  const rows = formatRecentSprintEvents(events, limit);
+  if (!feedback) return rows;
+  // ring buffer の append 順を比較する。同 tick の同タスク再点火も新規として扱う。
+  // snapshot は独立コピーなので参照比較は使わず、残存する連続区間を探す。
+  const previousSignatures = feedback.previousEvents.map((event) => JSON.stringify(event));
+  const currentSignatures = events.map((event) => JSON.stringify(event));
+  let overlap = Math.min(previousSignatures.length, currentSignatures.length);
+  while (overlap > 0) {
+    const previousOffset = previousSignatures.length - overlap;
+    if (
+      currentSignatures
+        .slice(0, overlap)
+        .every((signature, index) => signature === previousSignatures[previousOffset + index])
+    ) {
+      break;
+    }
+    overlap -= 1;
+  }
+  const newEvents = events.slice(overlap);
+  const importantEvents = [...newEvents]
+    .reverse()
+    .filter(
+      (event) =>
+        event.kind === 'ignite' ||
+        event.kind === 'spread' ||
+        event.kind === 'auto-contain' ||
+        event.kind === 'combo-break',
+    );
+  // 同じ tick の二次的なコンボ切断で、点火・延焼・自動鎮火の原因と実測損失を隠さない。
+  const priority =
+    importantEvents.find(
+      (event) => event.tick === importantEvents[0]?.tick && event.kind !== 'combo-break',
+    ) ?? importantEvents[0];
+  const intervention = [...newEvents]
+    .reverse()
+    .find((event) => event.kind === 'intervention' && event.effect.actionId === feedback.id);
+  const interventionKey =
+    feedback.outcome.ok && intervention ? formatSprintEvent(intervention).key : null;
+  const priorityRow = priority ? formatSprintEvent(priority) : null;
+  return [
+    ...(priorityRow ? [priorityRow] : []),
+    formatInterventionFeedback(feedback),
+    ...rows.filter((row) => row.key !== interventionKey && row.key !== priorityRow?.key),
+  ].slice(0, limit);
 }
 
 function interventionKey(event: Extract<SprintEvent, { kind: 'intervention' }>): string {
@@ -43,7 +197,7 @@ function formatIntervention(
   }
 
   if (effect.hpCost != null && effect.hpCost > 0) {
-    parts.push(`シニアHP -${Math.round(effect.hpCost)}`);
+    parts.push(`追加シニアHP -${Math.round(effect.hpCost)}`);
   }
   if (effect.moraleCost != null && effect.moraleCost > 0) {
     parts.push(`士気 -${Math.round(effect.moraleCost)}`);

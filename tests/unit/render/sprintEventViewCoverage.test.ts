@@ -49,7 +49,7 @@ describe('スプリントティッカーの効果と履歴', () => {
     ).toEqual({
       key: '13:intervention:splitPr:0',
       icon: 'splitPr',
-      text: 'PR分割: 1件に適用 / シニアHP -1 / 士気 -2',
+      text: 'PR分割: 1件に適用 / 追加シニアHP -1 / 士気 -2',
       tone: 'warn',
     });
   });

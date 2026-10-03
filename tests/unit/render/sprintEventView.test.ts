@@ -40,7 +40,7 @@ describe('sprintEventView（RI-52）', () => {
     expect(view.icon).toBe('interruptReview');
     expect(view.text).toContain('割り込みレビュー');
     expect(view.text).toContain('PR4件処理');
-    expect(view.text).toContain('シニアHP -3');
+    expect(view.text).toContain('追加シニアHP -3');
   });
 
   it('余裕のある先消しの介入行は警告トーンにする', () => {

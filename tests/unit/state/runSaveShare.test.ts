@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../../src/game';
 import { createRunEngine } from '../../../src/sim/run/engine';
 import { defaultMeta } from '../../../src/state/meta';
@@ -261,6 +261,46 @@ describe('途中セーブのファイル共有（RI-133）', () => {
       ),
     ).toMatchObject({ ok: false, reason: 'unsupported_version' });
   });
+
+  it.each([4, 5, 6, 7])(
+    'v%s は現行ルールセットが混在しても取り込みを拒否し、既存セーブとメタを保持する',
+    async (schemaVersion) => {
+      const existing = makeRunSave('ri703-existing');
+      const runStorage = new MemoryRunStorage();
+      await runStorage.save(existing);
+      const meta = { ...defaultMeta(), points: 17, completedDailies: ['2026-08-01'] };
+      const game = createGame({
+        seed: 'ri703-share-game',
+        initialMeta: meta,
+        runStorage,
+        initialRunSave: existing,
+      });
+      const beforeState = game.getState();
+      const hydrate = vi.spyOn(game.engine, 'hydratePersistState');
+      const incoming = JSON.parse(serializeRunSave(makeRunSave('ri703-legacy'))) as {
+        schemaVersion: number;
+        state: Record<string, unknown>;
+      };
+      incoming.schemaVersion = schemaVersion;
+      if (schemaVersion <= 6) delete incoming.state.trendHistory;
+      const raw = JSON.stringify(incoming);
+      const expected = {
+        ok: false,
+        reason: 'ruleset_unknown',
+        message: RUN_SAVE_SHARE_REASON_MESSAGE.ruleset_unknown,
+      };
+
+      expect(parseRunSaveShare(raw)).toEqual(expected);
+      expect(await game.importRunSaveText(raw)).toEqual(expected);
+      expect(hydrate).not.toHaveBeenCalled();
+      expect(game.getState()).toEqual(beforeState);
+      expect(game.getRunSaveSummary()).toEqual(existing.summary);
+      expect(game.hasResumableRun()).toBe(true);
+      expect(await runStorage.load()).toEqual(existing);
+      expect(game.getMeta()).toEqual(meta);
+      hydrate.mockRestore();
+    },
+  );
 
   it('取り込み成功時はラン保存だけを置き換え、メタとリプレイは触らない', async () => {
     const existing = makeRunSave('ri133-existing');

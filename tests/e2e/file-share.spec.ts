@@ -1,10 +1,12 @@
 import { expect, test } from './fixtures';
 import type { RunState } from '../../src/sim/run/types';
 import type { RunDiagnosticInfo } from '../../src/state/diagnosticInfo';
+import type { MetaState } from '../../src/state/meta';
 import type { ReplayBlob } from '../../src/state/replay';
 import { REPLAY_SHARE_REASON_MESSAGE } from '../../src/state/replayShare';
 import type { RunSaveSummary } from '../../src/state/runPersistence';
 import { RUN_SAVE_SHARE_REASON_MESSAGE } from '../../src/state/runSaveShare';
+import { seedMeta } from './seedMeta';
 
 type ShareGameWindow = Window & {
   game?: {
@@ -13,7 +15,7 @@ type ShareGameWindow = Window & {
     resumeRun(): RunState | null;
     getRunSaveSummary(): RunSaveSummary | null;
     getDiagnosticInfo(): RunDiagnosticInfo;
-    getMeta(): { points: number };
+    getMeta(): MetaState;
     listReplays(): ReplayBlob[];
     importReplay(blob: ReplayBlob): Promise<boolean>;
     engine: {
@@ -22,27 +24,34 @@ type ShareGameWindow = Window & {
   };
 };
 
-async function storedRunSeed(page: import('@playwright/test').Page): Promise<string | null> {
-  return page.evaluate(async () => {
+async function storedRecord(
+  page: import('@playwright/test').Page,
+  store: 'runSave' | 'meta',
+): Promise<Record<string, unknown> | null> {
+  return page.evaluate(async (storeName) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('devops-tycoon');
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-    if (![...db.objectStoreNames].includes('runSave')) {
+    if (![...db.objectStoreNames].includes(storeName)) {
       db.close();
       return null;
     }
     const value = await new Promise<unknown>((resolve, reject) => {
-      const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
+      const request = db.transaction(storeName, 'readonly').objectStore(storeName).get('current');
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
     db.close();
-    if (!value || typeof value !== 'object') return null;
-    const summary = (value as { summary?: { seed?: string } }).summary;
-    return summary?.seed ?? null;
-  });
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    return value as Record<string, unknown>;
+  }, store);
+}
+
+async function storedRunSeed(page: import('@playwright/test').Page): Promise<string | null> {
+  const stored = await storedRecord(page, 'runSave');
+  return (stored?.summary as RunSaveSummary | undefined)?.seed ?? null;
 }
 
 async function persistSetupSave(
@@ -122,6 +131,56 @@ test.describe('run / replay file share (RI-133)', () => {
       RUN_SAVE_SHARE_REASON_MESSAGE.unsupported_version,
     );
     await expect(page.getByTestId('resume-run')).toBeVisible();
+  });
+
+  test('v4〜v7 の途中セーブは取り込みを拒否し、保存済みのセーブとメタを保持する', async ({
+    page,
+  }) => {
+    await seedMeta(page, { points: 17, completedDailies: ['2026-08-01'] });
+    await page.goto('/?seed=ri703-share');
+    await expect(page.getByTestId('title')).toBeVisible();
+    await persistSetupSave(page, 'ri703-existing');
+    await page.reload();
+    await expect(page.getByTestId('title')).toBeVisible();
+    await expect(page.getByTestId('resume-run')).toBeVisible();
+    const existingRecord = await storedRecord(page, 'runSave');
+    if (!existingRecord) throw new Error('run save missing');
+    const storedMetaBefore = await storedRecord(page, 'meta');
+    const metaBefore = await page.evaluate(() => (window as ShareGameWindow).game?.getMeta());
+
+    for (const schemaVersion of [4, 5, 6, 7]) {
+      await test.step(`v${schemaVersion}`, async () => {
+        const incoming = structuredClone(existingRecord);
+        incoming.schemaVersion = schemaVersion;
+        if (schemaVersion <= 6) delete (incoming.state as Record<string, unknown>).trendHistory;
+        await expect(page.getByTestId('run-save-share-status')).toHaveCount(0);
+
+        await page.getByTestId('run-save-file').setInputFiles({
+          name: `legacy-v${schemaVersion}-run-save.json`,
+          mimeType: 'application/json',
+          buffer: Buffer.from(JSON.stringify(incoming), 'utf8'),
+        });
+        await expect(page.getByTestId('run-save-share-status')).toHaveText(
+          RUN_SAVE_SHARE_REASON_MESSAGE.ruleset_unknown,
+        );
+        await expect(page.getByTestId('resume-run')).toBeVisible();
+        expect(await page.evaluate(() => (window as ShareGameWindow).game?.phase())).toBe('title');
+        expect(
+          await page.evaluate(() => (window as ShareGameWindow).game?.getRunSaveSummary()),
+        ).toEqual(existingRecord.summary);
+        expect(await page.evaluate(() => (window as ShareGameWindow).game?.getMeta())).toEqual(
+          metaBefore,
+        );
+        expect(await storedRecord(page, 'runSave')).toEqual(existingRecord);
+        expect(await storedRecord(page, 'meta')).toEqual(storedMetaBefore);
+
+        // 前回と同じ拒否文言に一致して次の取り込み完了を早まって判定しない。
+        await page.reload();
+        await expect(page.getByTestId('title')).toBeVisible();
+        await expect(page.getByTestId('resume-run')).toBeVisible();
+        expect(await storedRecord(page, 'runSave')).toEqual(existingRecord);
+      });
+    }
   });
 
   test('リプレイをファイルで往復し、拒否時は既存リプレイを残す', async ({ page }) => {

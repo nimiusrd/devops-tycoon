@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import type { RunState } from '../../src/sim/run/types';
-import type { RunSaveSummary } from '../../src/state/runPersistence';
+import type { MetaState } from '../../src/state/meta';
+import { RUN_SAVE_SCHEMA_VERSION, type RunSaveSummary } from '../../src/state/runPersistence';
+import { seedMeta } from './seedMeta';
 
 type RunGameWindow = Window & {
   game?: {
@@ -10,6 +12,7 @@ type RunGameWindow = Window & {
     phase(): string;
     isSprintRunning(): boolean;
     getState(): RunState;
+    getMeta(): MetaState;
     resumeRun(): RunState | null;
     hasResumableRun(): boolean;
     getRunSaveSummary(): RunSaveSummary | null;
@@ -18,29 +21,36 @@ type RunGameWindow = Window & {
   };
 };
 
-async function storedRunSummary(
+async function storedRecord(
   page: import('@playwright/test').Page,
-): Promise<RunSaveSummary | null> {
-  return page.evaluate(async () => {
+  store: 'runSave' | 'meta',
+): Promise<Record<string, unknown> | null> {
+  return page.evaluate(async (storeName) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('devops-tycoon');
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-    if (![...db.objectStoreNames].includes('runSave')) {
+    if (![...db.objectStoreNames].includes(storeName)) {
       db.close();
       return null;
     }
     const value = await new Promise<unknown>((resolve, reject) => {
-      const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
+      const request = db.transaction(storeName, 'readonly').objectStore(storeName).get('current');
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
     db.close();
-    if (!value || typeof value !== 'object') return null;
-    const summary = (value as { summary?: RunSaveSummary }).summary;
-    return summary ?? null;
-  });
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    return value as Record<string, unknown>;
+  }, store);
+}
+
+async function storedRunSummary(
+  page: import('@playwright/test').Page,
+): Promise<RunSaveSummary | null> {
+  const stored = await storedRecord(page, 'runSave');
+  return (stored?.summary as RunSaveSummary | undefined) ?? null;
 }
 
 async function setStoredSeniorHp(
@@ -84,39 +94,49 @@ async function setStoredSeniorHp(
 
 async function updateStoredRun(
   page: import('@playwright/test').Page,
-  mode: 'missing-ruleset' | 'mismatched-ruleset',
-): Promise<void> {
-  await page.evaluate(async (updateMode) => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('devops-tycoon');
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    const value = await new Promise<unknown>((resolve, reject) => {
-      const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  mode: 'missing-ruleset' | 'mismatched-ruleset' | 4 | 5 | 6 | 7,
+): Promise<Record<string, unknown>> {
+  return page.evaluate(
+    async ({ updateMode, currentSchemaVersion }) => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('devops-tycoon');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const value = await new Promise<unknown>((resolve, reject) => {
+        const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        db.close();
+        throw new Error('run save missing');
+      }
+      const updated = structuredClone(value) as Record<string, unknown>;
+      if (typeof updateMode === 'number') {
+        updated.schemaVersion = updateMode;
+        const state = updated.state as Record<string, unknown>;
+        if (updateMode <= 6) delete state.trendHistory;
+        else state.trendHistory ??= [];
+      } else if (updateMode === 'missing-ruleset') {
+        updated.schemaVersion = currentSchemaVersion;
+        delete updated.ruleset;
+      } else {
+        updated.ruleset = { version: 999, fingerprint: 'different-ruleset' };
+      }
+      await new Promise<void>((resolve, reject) => {
+        const request = db
+          .transaction('runSave', 'readwrite')
+          .objectStore('runSave')
+          .put(updated, 'current');
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
       db.close();
-      throw new Error('run save missing');
-    }
-    const updated = { ...(value as Record<string, unknown>) };
-    if (updateMode === 'missing-ruleset') {
-      delete updated.ruleset;
-    } else {
-      updated.ruleset = { version: 999, fingerprint: 'different-ruleset' };
-    }
-    await new Promise<void>((resolve, reject) => {
-      const request = db
-        .transaction('runSave', 'readwrite')
-        .objectStore('runSave')
-        .put(updated, 'current');
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-    db.close();
-  }, mode);
+      return updated;
+    },
+    { updateMode: mode, currentSchemaVersion: RUN_SAVE_SCHEMA_VERSION },
+  );
 }
 
 async function advanceToResult(page: import('@playwright/test').Page): Promise<void> {
@@ -173,24 +193,46 @@ test('ラン途中セーブをリロード後に続きから復元できる', as
     });
 });
 
-test('ルールセット情報のない旧セーブは理由を表示し、明示破棄まで保持する', async ({ page }) => {
+test('v4〜v7 とルールセット情報のない現行セーブは明示破棄まで保持する', async ({ page }) => {
+  await seedMeta(page, { points: 17, completedDailies: ['2026-08-01'] });
   await page.goto('/?seed=ri117-unknown-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await advanceToResult(page);
-  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
-  await updateStoredRun(page, 'missing-ruleset');
+  const metaBefore = await page.evaluate(() => (window as RunGameWindow).game?.getMeta());
+  const storedMetaBefore = await storedRecord(page, 'meta');
 
-  await page.reload();
-  await expect(page.getByTestId('title')).toBeVisible();
-  await expect(page.getByTestId('incompatible-run-save')).toBeVisible();
-  await expect(page.getByTestId('run-save-issue')).toContainText('ルールセット情報がない旧セーブ');
-  await expect(page.getByTestId('resume-run')).toHaveCount(0);
-  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
+  for (const mode of [4, 5, 6, 7, 'missing-ruleset'] as const) {
+    await test.step(
+      typeof mode === 'number' ? `v${mode}` : '現行版のルールセット欠落',
+      async () => {
+        const legacyRecord = await updateStoredRun(page, mode);
+
+        await page.reload();
+        await expect(page.getByTestId('title')).toBeVisible();
+        await expect(page.getByTestId('incompatible-run-save')).toBeVisible();
+        await expect(page.getByTestId('run-save-issue')).toContainText(
+          'ルールセット情報がない旧セーブ',
+        );
+        await expect(page.getByTestId('resume-run')).toHaveCount(0);
+        expect(await page.evaluate(() => (window as RunGameWindow).game?.resumeRun())).toBeNull();
+        expect(await page.evaluate(() => (window as RunGameWindow).game?.phase())).toBe('title');
+        expect(
+          await page.evaluate(() => (window as RunGameWindow).game?.getRunSaveSummary()),
+        ).toEqual(legacyRecord.summary);
+        expect(await page.evaluate(() => (window as RunGameWindow).game?.getMeta())).toEqual(
+          metaBefore,
+        );
+        expect(await storedRecord(page, 'runSave')).toEqual(legacyRecord);
+        expect(await storedRecord(page, 'meta')).toEqual(storedMetaBefore);
+      },
+    );
+  }
 
   await page.getByTestId('discard-run-save').click();
   await expect(page.getByTestId('incompatible-run-save')).toHaveCount(0);
   await expect.poll(() => storedRunSummary(page)).toBeNull();
+  expect(await storedRecord(page, 'meta')).toEqual(storedMetaBefore);
 });
 
 test('ルールセット不一致セーブは保存時と現在の識別子を表示する', async ({ page }) => {

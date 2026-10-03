@@ -6,7 +6,10 @@ import {
   CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
   IndexedDbRunStorage,
+  initializeRunPersistence,
+  MemoryRunStorage,
   parseRunSave,
+  RUN_SAVE_SCHEMA_VERSION,
   toRunSave,
   type RunSave,
 } from '../../../src/state/runPersistence';
@@ -21,8 +24,8 @@ function makeSave(seed = 'run-persistence-coverage'): RunSave {
   return toRunSave(state, 1234);
 }
 
-/** v5 normal の Delivery 目標 1800 は現行スキーマで 2250 に移行する。 */
-function makeLegacyReview(includeAi = false) {
+/** 保存時の目標・実績・報酬前後の値が異なる四半期レビュー。 */
+function makeReviewSave(): RunSave {
   const save = makeSave();
   const goal: QuarterGoal = {
     deliveryTarget: 1800,
@@ -30,24 +33,16 @@ function makeLegacyReview(includeAi = false) {
     techDebtLimit: 60,
     moraleTarget: 50,
     incidentLimit: 5,
-    ...(includeAi ? { aiAdoptionTarget: 50 } : {}),
+    aiAdoptionTarget: 50,
   };
   const progress: GoalKpiProgress[] = [
-    { id: 'delivery', label: 'Delivery', target: 1800, actual: 2250, status: 'exceeded' },
+    { id: 'delivery', label: '保存済み Delivery', target: 1800, actual: 2250, status: 'exceeded' },
     { id: 'quality', label: 'Quality', target: 50, actual: 50, status: 'met' },
     { id: 'techDebt', label: 'Tech Debt', target: 60, actual: 60, status: 'met' },
     { id: 'morale', label: 'Morale', target: 50, actual: 50, status: 'met' },
     { id: 'incident', label: 'Incident', target: 5, actual: 5, status: 'met' },
+    { id: 'aiAdoption', label: 'AI Adoption', target: 50, actual: 50, status: 'met' },
   ];
-  if (includeAi) {
-    progress.push({
-      id: 'aiAdoption',
-      label: 'AI Adoption',
-      target: 50,
-      actual: 50,
-      status: 'met',
-    });
-  }
   save.summary.phase = 'quarterReview';
   save.summary.quarterNumber = 2;
   save.state.phase = 'quarterReview';
@@ -57,182 +52,83 @@ function makeLegacyReview(includeAi = false) {
     ...save.state.quarterTotals,
     delivered: 2250,
     completed: 10,
-    aiAssisted: includeAi ? 5 : 0,
+    aiAssisted: 5,
     incidents: 5,
   };
   save.state.budget = 100;
   save.state.stakeholderTrust = { management: 80, customers: 80, team: 80 };
-  // 古い単一チームセーブを想定し、報酬後の組織値は保存済み KPI 実績と分ける。
-  save.state.extras.teams = undefined;
-  save.state.extras.winEvalOrg = null;
   save.state.org = { ...save.state.org, quality: 99, techDebt: 0, morale: 99, seniorHp: 99 };
+  save.state.extras.winEvalOrg = { ...save.state.org, seniorHp: 5 };
   save.state.reviewHistory = ['exceeded', 'exceeded'];
   save.state.quarterReview = {
     goal,
     outcome: 'exceeded',
-    trust: { ...save.state.stakeholderTrust },
+    trust: { management: 70, customers: 70, team: 70 },
     progress,
-    missedReasons: ['旧レビューの診断'],
+    missedReasons: ['保存済みレビューの診断'],
     availableAdjustments: ['cut_scope'],
     bossCleared: true,
   };
-  return { ...save, schemaVersion: 5 };
+  return save;
 }
 
-describe('旧ランセーブの四半期レビュー移行', () => {
-  it('保存済みの AI KPI を含む実績で達成を再判定し、履歴の末尾だけを更新する', () => {
-    const legacy = makeLegacyReview(true);
-    const before = structuredClone(legacy);
+describe('ランセーブの互換性境界', () => {
+  it.each([4, 5, 6, 7, RUN_SAVE_SCHEMA_VERSION])(
+    'ルールセット不明の v%s は目標・レビュー・履歴を再計算せず保持する',
+    (schemaVersion) => {
+      const save = makeReviewSave();
+      const raw = {
+        ...save,
+        schemaVersion,
+        ruleset: schemaVersion === RUN_SAVE_SCHEMA_VERSION ? null : save.ruleset,
+      };
+      const before = structuredClone(raw);
 
-    const parsed = parseRunSave(legacy);
+      const parsed = parseRunSave(raw);
 
-    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(2250);
-    expect(parsed?.state.quarterReview).toEqual({
-      goal: { ...legacy.state.quarterGoal, deliveryTarget: 2250 },
-      outcome: 'met',
-      trust: { management: 80, customers: 80, team: 80 },
-      progress: legacy.state.quarterReview!.progress.map((item) =>
-        item.id === 'delivery' ? { ...item, target: 2250, status: 'met' } : item,
-      ),
-      missedReasons: [],
-      availableAdjustments: [],
-      bossCleared: true,
-    });
-    expect(parsed?.state.reviewHistory).toEqual(['exceeded', 'met']);
-    expect(legacy).toEqual(before);
-    expect(getRunSaveCompatibilityIssue(parsed!)).toMatchObject({ kind: 'ruleset-unknown' });
-  });
-
-  it('全 KPI が超過達成なら exceeded を保存し、欠落した履歴に結果を追加する', () => {
-    const legacy = makeLegacyReview();
-    legacy.state.reviewHistory = [];
-    const actuals: Record<string, number> = {
-      delivery: 2700,
-      quality: 70,
-      techDebt: 30,
-      morale: 70,
-      incident: 0,
-    };
-    legacy.state.quarterReview!.progress = legacy.state.quarterReview!.progress.map((item) => ({
-      ...item,
-      actual: actuals[item.id]!,
-    }));
-    legacy.state.quarterTotals.delivered = 2700;
-    legacy.state.quarterTotals.incidents = 0;
-
-    const parsed = parseRunSave(legacy);
-
-    expect(parsed?.state.quarterReview?.outcome).toBe('exceeded');
-    expect(parsed?.state.quarterReview?.progress.map((item) => item.status)).toEqual([
-      'exceeded',
-      'exceeded',
-      'exceeded',
-      'exceeded',
-      'exceeded',
-    ]);
-    expect(parsed?.state.quarterReview?.missedReasons).toEqual([]);
-    expect(parsed?.state.reviewHistory).toEqual(['exceeded']);
-  });
-
-  it('未達でも信頼と予算に調整の余地がなければ危機状態へ移行する', () => {
-    const legacy = makeLegacyReview();
-    legacy.state.stakeholderTrust = { management: 16, customers: 16, team: 16 };
-    legacy.state.budget = 1;
-    legacy.state.quarterReview!.progress[0]!.actual = 1800;
-    legacy.state.quarterTotals.delivered = 1800;
-
-    const parsed = parseRunSave(legacy);
-
-    expect(parsed?.state.quarterReview).toMatchObject({
-      outcome: 'missed_crisis',
-      trust: { management: 16, customers: 16, team: 16 },
-      availableAdjustments: [],
-      missedReasons: ['スコープ過多: 出荷目標に対して Delivery が不足している。'],
-    });
-    expect(parsed?.state.reviewHistory).toEqual(['exceeded', 'missed_crisis']);
-  });
-
-  it('報酬前の seniorHp が残っていれば、報酬後の回復値で shutdown を回避しない', () => {
-    const legacy = makeLegacyReview();
-    legacy.state.extras.winEvalOrg = { ...legacy.state.org, seniorHp: 5 };
-    legacy.state.quarterReview!.progress[0]!.actual = 1800;
-    legacy.state.quarterReview!.progress[1]!.actual = 40;
-    legacy.state.quarterTotals.delivered = 1800;
-
-    const parsed = parseRunSave(legacy);
-
-    expect(parsed?.state.quarterReview?.outcome).toBe('shutdown');
-    expect(parsed?.state.quarterReview?.availableAdjustments).toEqual([]);
-    expect(parsed?.state.org.seniorHp).toBe(99);
-    expect(parsed?.state.reviewHistory).toEqual(['exceeded', 'shutdown']);
-  });
-
-  it.each([
-    ['重複した KPI', (progress: GoalKpiProgress[]) => [...progress, progress[0]]],
-    ['必須 KPI の欠落', (progress: GoalKpiProgress[]) => progress.slice(1)],
-    [
-      '未知の KPI',
-      (progress: GoalKpiProgress[]) => [...progress, { ...progress[0], id: 'unknown' }],
-    ],
-    [
-      '目標にない AI KPI',
-      (progress: GoalKpiProgress[]) => [...progress, { ...progress[0], id: 'aiAdoption' }],
-    ],
-    ['配列以外の進捗', () => null],
-    ['壊れた KPI 要素', (progress: GoalKpiProgress[]) => [...progress, null]],
-    [
-      '非有限の実績',
-      (progress: GoalKpiProgress[]) => [{ ...progress[0], actual: Infinity }, ...progress.slice(1)],
-    ],
-    [
-      '不明な達成状態',
-      (progress: GoalKpiProgress[]) => [
-        { ...progress[0], status: 'pending' },
-        ...progress.slice(1),
-      ],
-    ],
-  ])('%s を含むレビューは推測で補完せず拒否する', (_label, changeProgress) => {
-    const legacy = makeLegacyReview();
-    const raw = {
-      ...legacy,
-      state: {
-        ...legacy.state,
-        quarterReview: {
-          ...legacy.state.quarterReview,
-          progress: changeProgress(legacy.state.quarterReview!.progress),
-        },
-      },
-    };
-
-    expect(parseRunSave(raw)).toBeNull();
-  });
-
-  it('AI 目標があるのに対応する実績が欠落したレビューを拒否する', () => {
-    const legacy = makeLegacyReview();
-    legacy.state.quarterGoal.aiAdoptionTarget = 50;
-
-    expect(parseRunSave(legacy)).toBeNull();
-  });
-
-  it.each([null, { bossCleared: 'true' }])(
-    'レビュー本体が壊れている場合は拒否する: %j',
-    (review) => {
-      const legacy = makeLegacyReview();
-
-      expect(
-        parseRunSave({ ...legacy, state: { ...legacy.state, quarterReview: review } }),
-      ).toBeNull();
+      expect(parsed?.ruleset).toBeNull();
+      expect(parsed?.summary).toEqual(raw.summary);
+      expect(parsed?.state).toEqual(raw.state);
+      expect(parsed?.state.quarterReview).not.toBe(raw.state.quarterReview);
+      expect(parsed?.state.quarterGoal).not.toBe(raw.state.quarterGoal);
+      expect(getRunSaveCompatibilityIssue(parsed!)).toMatchObject({
+        kind: 'ruleset-unknown',
+        summary: raw.summary,
+        savedRuleset: null,
+      });
+      expect(parseRunSave(parsed)).toEqual(parsed);
+      parsed!.state.quarterReview!.progress[0]!.target = 0;
+      parsed!.state.extras.winEvalOrg!.seniorHp = 100;
+      expect(raw).toEqual(before);
     },
   );
 
-  it.each([null, { deliveryTarget: '1800' }, { deliveryTarget: Infinity }])(
-    '移行できる数値目標を持たない旧セーブは拒否する: %j',
-    (quarterGoal) => {
-      const legacy = makeLegacyReview();
+  it('現行 v8 は保存済みレビューを維持して再開できる', async () => {
+    const save = makeReviewSave();
+    const storage = new MemoryRunStorage();
+    await storage.save(save);
 
-      expect(parseRunSave({ ...legacy, state: { ...legacy.state, quarterGoal } })).toBeNull();
-    },
-  );
+    const boot = await initializeRunPersistence(storage);
+
+    expect(boot.issue).toBeNull();
+    expect(boot.save).toEqual(save);
+    const restored = createRunEngine({ seed: 'restored-review' });
+    restored.hydratePersistState(boot.save!.state);
+    expect(restored.snapshot()).toMatchObject({
+      phase: 'quarterReview',
+      quarterGoal: save.state.quarterGoal,
+      quarterReview: save.state.quarterReview,
+      reviewHistory: save.state.reviewHistory,
+    });
+  });
+
+  it.each([4, 5, 6, 7])('v%s でも壊れた要約・状態の基本構造は拒否する', (schemaVersion) => {
+    const save = { ...makeSave(), schemaVersion };
+
+    expect(parseRunSave({ ...save, summary: { ...save.summary, phase: 'sprint' } })).toBeNull();
+    expect(parseRunSave({ ...save, state: { ...save.state, seed: 'different-seed' } })).toBeNull();
+    expect(parseRunSave({ ...save, state: { ...save.state, extras: null } })).toBeNull();
+  });
 });
 
 describe('ランセーブのルールセット検証', () => {

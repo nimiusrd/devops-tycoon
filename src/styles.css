@@ -1777,7 +1777,12 @@ body:has(.overlay-contained) {
 }
 .result-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
+}
+.result-actions .finish-save-block {
+  flex: 1 1 100%;
+  margin: 0;
 }
 .result-actions .btn {
   margin-left: 0;

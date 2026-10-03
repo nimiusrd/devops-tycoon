@@ -207,7 +207,10 @@ describe('RunResultScreen の次のラン', () => {
   it('完了保存の失敗中は次のランへ進まず、理由を示す', () => {
     const screen = mountResult({ newRunBlocked: true });
     expect(screen.find('new-run').props.disabled).toBe(true);
-    expect(content(screen.find('finish-save-block'))).toContain('保存の再試行が終わるまで');
+    const reason = screen.find('finish-save-block');
+    expect(content(reason)).toContain('保存の再試行が終わるまで');
+    expect(String(reason.props.className)).toContain('title-resume-warning');
+    expect(String(reason.props.className)).not.toContain('result-title-value');
   });
 });
 

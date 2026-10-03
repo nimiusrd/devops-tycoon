@@ -3,12 +3,15 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createGame } from '../../../src/game';
 import { createRunEngine } from '../../../src/sim/run/engine';
 import { defaultMeta } from '../../../src/state/meta';
+import { REPLAY_SCHEMA_VERSION, snapshotReplayContent } from '../../../src/state/replay';
+import { serializeReplay } from '../../../src/state/replayShare';
 import {
   IndexedDbMetaStorage,
   initializeMetaPersistence,
 } from '../../../src/state/metaPersistence';
 import { MemoryReplayStorage } from '../../../src/state/replayPersistence';
 import {
+  CURRENT_RUN_RULESET,
   IndexedDbRunStorage,
   initializeRunPersistence,
   toRunSave,
@@ -550,5 +553,95 @@ describe('複数タブの保存（RI-144）', () => {
       expect((await new IndexedDbMetaStorage(name).load())?.points).not.toBe(40);
     });
     expect(await new IndexedDbRunStorage(name).load()).toBeNull();
+  });
+
+  it('完了保存の待ち中に始めたランは書き出せ、完走前のセーブは再開できない', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { game } = await finishReadyGame('finish-hold', ({ metaStorage }) => {
+      const original = metaStorage.compareAndSave.bind(metaStorage);
+      let failed = false;
+      metaStorage.compareAndSave = (meta, expected) => {
+        if (expected !== undefined && !failed) {
+          failed = true;
+          return gate.then(() =>
+            Promise.reject(new DOMException('The transaction was aborted', 'AbortError')),
+          );
+        }
+        return original(meta, expected);
+      };
+    });
+    expect(game.buyShopCard('copilot').status).toBe('lost');
+    expect(game.hasResumableRun()).toBe(false);
+    game.newRun();
+    expect(game.resumeRun()).toBeNull();
+    game.startRun('easy', [], 'during-save');
+    expect(game.exportRunSaveText()).toContain('during-save');
+    release();
+    await waitFor(async () => {
+      expect(game.finishSaveBlocksNewRun()).toBe(true);
+    });
+    expect(game.exportRunSaveText()).toContain('during-save');
+    expect(game.getPersistenceStatus().showExport).toBe(true);
+    expect(game.hasResumableRun()).toBe(false);
+  });
+
+  it('一覧を待っているあいだに競合したら、リプレイは保存しない', async () => {
+    const name = databaseName();
+    await new IndexedDbMetaStorage(name).save(defaultMeta());
+    const metaBoot = await initializeMetaPersistence(new IndexedDbMetaStorage(name));
+    const game = createGame({ seed: 'replay-race', metaReady: false });
+    game.attachMetaPersistence(metaBoot.meta, metaBoot.storage, {
+      loadedFromDevice: metaBoot.loadedFromDevice,
+    });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let armed = false;
+    let saved = 0;
+    const replays = new MemoryReplayStorage();
+    const originalList = replays.list.bind(replays);
+    const originalSave = replays.save.bind(replays);
+    replays.list = async () => {
+      if (armed) await gate;
+      return originalList();
+    };
+    replays.save = async (blob, options) => {
+      saved += 1;
+      return originalSave(blob, options);
+    };
+    await game.attachReplay(replays);
+    const engine = createRunEngine({ seed: 'replay-race' });
+    engine.startRun('easy', [], 'replay-race');
+    const frame = engine.exportReplayFrame();
+    expect(frame).not.toBeNull();
+    const raw = serializeReplay({
+      schemaVersion: REPLAY_SCHEMA_VERSION,
+      id: 'replay-race',
+      seed: 'replay-race',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: 1_000,
+      outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 10 },
+      keyframes: [{ phase: 'setup', frame: frame! }],
+      ruleset: { ...CURRENT_RUN_RULESET },
+      contentSnapshot: snapshotReplayContent([{ phase: 'setup', frame: frame! }]),
+    });
+    armed = true;
+    const importing = game.importReplayText(raw);
+    await new IndexedDbMetaStorage(name).save({ ...defaultMeta(), points: 9 });
+    game.setSoundMuted(false);
+    await waitFor(async () => {
+      expect(game.hasTabConflict()).toBe(true);
+    });
+    release();
+    await expect(importing).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringContaining('再読込') as unknown as string,
+    });
+    expect(saved).toBe(0);
   });
 });

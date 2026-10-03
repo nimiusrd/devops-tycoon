@@ -752,7 +752,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
   const persistSaveableSnapshot = (): void => {
-    if (replayMode || !runStorage || finishCommitPending) return;
+    if (replayMode || !runStorage) return;
     const exported = engine.exportPersistState();
     if (!exported) return;
     // 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する。
@@ -760,8 +760,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     resumableSave = save;
     runSaveIssue = null;
     runRevision += 1;
-    // 競合後も書き出し用のスナップショットは進める。端末へは書かない。
-    if (tabConflict) return;
+    // 競合後と完了保存の待ち中も、書き出し用のスナップショットは進める。端末へは書かない。
+    if (tabConflict || finishCommitPending) return;
     trackWrite('run', writeDurableRun(save));
   };
 
@@ -843,10 +843,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * あわせてリプレイキーフレームを収集し、終端で commit する（RI-61）。
    */
   const persistRunIfNeeded = (): void => {
-    if (replayMode || finishCommitPending) return;
+    if (replayMode) return;
     const phase = engine.currentPhase();
     appendKeyframeIfNeeded();
     if (phase === 'title' || phase === 'won' || phase === 'lost') {
+      // 完了トランザクションが途中セーブの削除を持つ。待ちのあいだはここでは消さない。
+      if (finishCommitPending) return;
       if (phase === 'won' || phase === 'lost') commitReplayIfFinished();
       clearRunSaveInternal();
       return;
@@ -1490,9 +1492,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const recordIfFinished = (): boolean => {
     if (!metaReady || tabConflict) return false;
     const finished = noteFinishedReward();
-    if (!finished) return finishCommitPending;
+    if (!finished) return false;
     if (runStorage instanceof IndexedDbRunStorage && metaStorage instanceof IndexedDbMetaStorage) {
       rememberFinishReplay();
+      // 完走前の途中セーブは、完了トランザクションが消すまで再開候補に残さない。
+      resumableSave = null;
       metaRevision += 1;
       // 先の完了保存が残っているあいだは、報酬とリプレイを足すだけにしてトランザクションは重ねない。
       if (finishCommitPending) {
@@ -1921,6 +1925,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const metaAtRisk = tracker.isFailed('meta') || tracker.hasVisibleFailure('meta');
       const canExportFailedData =
         (runAtRisk && resumableSave !== null) ||
+        (finishCommitPending && resumableSave !== null) ||
         ((replayAtRisk || metaAtRisk) && unsavedReplay) ||
         (tabConflict && (unsavedReplay || resumableSave !== null));
       return tracker.notice(canExportFailedData);
@@ -2039,7 +2044,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
     },
     resumeRun() {
-      if (replayMode || isFinishSaveBlockingNewRun() || runSaveIssue || !resumableSave) return null;
+      if (
+        replayMode ||
+        finishCommitPending ||
+        isFinishSaveBlockingNewRun() ||
+        runSaveIssue ||
+        !resumableSave
+      ) {
+        return null;
+      }
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -2066,7 +2079,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     hasResumableRun() {
-      return resumableSave !== null;
+      return resumableSave !== null && !finishCommitPending;
     },
     getRunSaveSummary() {
       if (resumableSave) return structuredClone(resumableSave.summary);
@@ -2548,6 +2561,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const protectIds = [
             ...new Set([...(batch?.protectIds ?? []), ...replayRetryKept.keys()]),
           ];
+          if (tabConflict) {
+            if (!batch?.retainPin) pinnedReplayIds.delete(loaded.replay.id);
+            return {
+              ok: false as const,
+              reason: 'corrupt' as const,
+              message:
+                '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+            };
+          }
           await storage.save(loaded.replay, {
             pin: true,
             protectIds: protectIds.length > 0 ? protectIds : undefined,

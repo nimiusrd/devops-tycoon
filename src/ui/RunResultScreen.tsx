@@ -373,7 +373,7 @@ export function RunResultScreen({
           {newRunBlocked ? (
             <p
               id="finish-save-block"
-              className="result-title-value"
+              className="title-resume-warning finish-save-block"
               data-testid="finish-save-block"
             >
               {FINISH_SAVE_BLOCKS_NEW_RUN}

@@ -412,8 +412,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let metaFollowsFinish = false;
   /** 最初の完了試行で確定した途中セーブ世代。再試行はこれを使う。 */
   let finishExpectedRunGeneration: number | null = null;
-  /** 確定を待つ間、端末へ書かずに保持する完走リプレイ。 */
-  let pendingFinishReplay: ReplayBlob | null = null;
+  /** 確定を待つ間、端末へ書かずに保持する完走リプレイ。次の完走でも消さない。 */
+  const pendingFinishReplays: ReplayBlob[] = [];
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
   /** リプレイ側の統合バックアップが、成功した途中セーブを戻すときだけ使う。 */
@@ -642,8 +642,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const seen = new Set<string>();
     const blobs: ReplayBlob[] = [];
     // 完了トランザクション失敗中のリプレイは再試行用に残したまま、書き出しだけ見えるようにする。
-    const held = pendingFinishReplay ? [pendingFinishReplay] : [];
-    for (const blob of [...held, ...pendingReplays, ...sessionOnlyReplayBlobs()]) {
+    for (const blob of [...pendingFinishReplays, ...pendingReplays, ...sessionOnlyReplayBlobs()]) {
       if (seen.has(blob.id)) continue;
       seen.add(blob.id);
       blobs.push(blob);
@@ -678,13 +677,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return blob;
   };
 
+  const rememberFinishReplay = (): void => {
+    const blob = takeFinishReplay();
+    if (!blob || pendingFinishReplays.some((item) => item.id === blob.id)) return;
+    pendingFinishReplays.push(blob);
+  };
+
   const holdUnsavedFinishReplay = (): void => {
-    if (!pendingFinishReplay) return;
-    const blob = pendingFinishReplay;
-    pendingFinishReplay = null;
-    pendingReplays.push(blob);
-    pendingReplayErrors.set(blob, new TabConflictError());
-    publishUnsavedReplay(blob);
+    const held = pendingFinishReplays.splice(0);
+    for (const blob of held) {
+      pendingReplays.push(blob);
+      pendingReplayErrors.set(blob, new TabConflictError());
+      publishUnsavedReplay(blob);
+    }
   };
 
   const commitReplayIfFinished = (): void => {
@@ -807,11 +812,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (result.runGeneration !== undefined) runs.adoptRunGeneration(result.runGeneration);
       finishCommitPending = false;
       finishExpectedRunGeneration = null;
-      if (pendingFinishReplay && replayStorage) {
-        const blob = pendingFinishReplay;
-        pendingFinishReplay = null;
-        pendingReplays.push(blob);
-        trackWrite('replay', beginReplaySave(blob), () => completePendingReplay(blob));
+      if (replayStorage) {
+        for (const blob of pendingFinishReplays.splice(0)) {
+          pendingReplays.push(blob);
+          trackWrite('replay', beginReplaySave(blob), () => completePendingReplay(blob));
+        }
       }
     });
   };
@@ -1444,11 +1449,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
   };
 
-  /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
-  const recordIfFinished = (): boolean => {
-    if (!metaReady || tabConflict) return false;
-    // 先の完了保存が残っているあいだは、次の完走で報酬もリプレイも上書きしない。
-    if (finishCommitPending) return true;
+  /** いまのランが決着していれば、メモリ上のメタへ報酬を一度だけ載せる。 */
+  const noteFinishedReward = (): boolean => {
     const s = engine.snapshot();
     if (recorded || (s.status !== 'won' && s.status !== 'lost')) return false;
     recorded = true;
@@ -1476,9 +1478,22 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = computeRunRewardBreakdown(input);
       meta = applyRunReward(meta, input);
     }
+    return true;
+  };
+
+  /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
+  const recordIfFinished = (): boolean => {
+    if (!metaReady || tabConflict) return false;
+    const finished = noteFinishedReward();
+    if (!finished) return finishCommitPending;
     if (runStorage instanceof IndexedDbRunStorage && metaStorage instanceof IndexedDbMetaStorage) {
-      pendingFinishReplay = takeFinishReplay();
+      rememberFinishReplay();
       metaRevision += 1;
+      // 先の完了保存が残っているあいだは、報酬とリプレイを足すだけにしてトランザクションは重ねない。
+      if (finishCommitPending) {
+        metaFollowsFinish = true;
+        return true;
+      }
       const work = commitFinishedRun();
       trackWrite('meta', work);
       void work.then(
@@ -1579,7 +1594,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return { ...state, ...resolveWhatIf() };
     },
     startRun(difficulty, trials, runSeed, scenario) {
-      if (replayMode || finishCommitPending) return engine.snapshot();
+      if (replayMode) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1600,7 +1615,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     startDailyRun(dateStr) {
-      if (replayMode || finishCommitPending) return engine.snapshot();
+      if (replayMode) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1803,7 +1818,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     newRun(runSeed) {
-      if (finishCommitPending) return engine.snapshot();
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
@@ -2019,7 +2033,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
     },
     resumeRun() {
-      if (replayMode || finishCommitPending || runSaveIssue || !resumableSave) return null;
+      if (replayMode || runSaveIssue || !resumableSave) return null;
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;

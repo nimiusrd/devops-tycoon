@@ -39,6 +39,7 @@ vi.mock('framer-motion', async (importOriginal) => ({
 }));
 
 import { registerBoardDragHitTest } from '../../../src/render/boardDragHit';
+import type { SprintInterventionFeedback } from '../../../src/render/sprintEventView';
 import type { SprintEvent } from '../../../src/sim/types';
 import { EventTicker, type EventTickerProps } from '../../../src/ui/EventTicker';
 
@@ -93,6 +94,8 @@ function mountTicker(props: EventTickerProps = { events: sampleEvents }) {
   };
   const frames: FrameRequestCallback[] = [];
   const browser = Object.assign(new BrowserEvents(), {
+    setTimeout: vi.fn((_callback: () => void, _delay: number) => 1),
+    clearTimeout: vi.fn(),
     getComputedStyle: () => ({ lineHeight: '18px' }),
     requestAnimationFrame: vi.fn((callback: FrameRequestCallback) => {
       frames.push(callback);
@@ -156,6 +159,8 @@ function mountTicker(props: EventTickerProps = { events: sampleEvents }) {
     addListener,
     removeListener,
     elementFromPoint,
+    setTimer: browser.setTimeout,
+    clearTimer: browser.clearTimeout,
   };
 }
 
@@ -173,6 +178,59 @@ afterEach(() => {
   registerBoardDragHitTest(null);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+describe('EventTicker の介入結果の期限（#536）', () => {
+  const outcomeFeedback: SprintInterventionFeedback = {
+    id: 'assignTask',
+    outcome: {
+      ok: true,
+      effect: { actionId: 'assignTask', affectedTaskIds: [3], focusCost: 2, gaugeGain: 0.1 },
+    },
+    nonce: 1,
+    previousEvents: sampleEvents,
+    expiresAt: 2500,
+  };
+
+  it('保持期限が過ぎた結果は配置変更による再マウントでも表示し直さない', () => {
+    vi.spyOn(performance, 'now').mockReturnValue(2501);
+    for (const dock of ['stage', 'status'] as const) {
+      const ticker = mountTicker({ events: sampleEvents, outcomeFeedback, dock });
+      expect(ticker.find('event-ticker').props['data-feedback-held']).toBe('false');
+      expect(content(ticker.find('event-ticker-summary'))).toContain('点火!');
+      expect(ticker.setTimer).toHaveBeenCalledWith(expect.any(Function), 0);
+      ticker.unmount();
+    }
+  });
+
+  it('保持途中の再マウントは残り時間だけ待ち、前のタイマーを解除する', () => {
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    const stage = mountTicker({ events: sampleEvents, outcomeFeedback, dock: 'stage' });
+    expect(stage.find('event-ticker').props['data-feedback-held']).toBe('true');
+    expect(stage.setTimer).toHaveBeenCalledWith(expect.any(Function), 1500);
+    stage.unmount();
+    expect(stage.clearTimer).toHaveBeenCalledWith(1);
+
+    clock.mockReturnValue(2000);
+    const status = mountTicker({ events: sampleEvents, outcomeFeedback, dock: 'status' });
+    expect(status.find('event-ticker').props['data-feedback-held']).toBe('true');
+    expect(status.setTimer).toHaveBeenCalledWith(expect.any(Function), 500);
+  });
+
+  it('期限と同じ時刻では保持を終了し、新しい介入には新しい期限を使う', () => {
+    vi.spyOn(performance, 'now').mockReturnValue(2500);
+    const expired = mountTicker({ events: sampleEvents, outcomeFeedback });
+    expect(expired.find('event-ticker').props['data-feedback-held']).toBe('false');
+    expired.unmount();
+
+    const next = mountTicker({
+      events: sampleEvents,
+      outcomeFeedback: { ...outcomeFeedback, nonce: 2, expiresAt: 5000 },
+    });
+    expect(next.find('event-ticker').props['data-feedback-held']).toBe('true');
+    expect(next.setTimer).toHaveBeenCalledWith(expect.any(Function), 2500);
+    expect(content(next.find('event-ticker-summary'))).toContain('1件差配');
+  });
 });
 
 describe('EventTicker の表示とフォーカス', () => {

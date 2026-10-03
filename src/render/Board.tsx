@@ -79,22 +79,32 @@ function Station({
  * 工程名と件数を盤面上部へ集約する。人物・粒の上へ個別ラベルを重ねず、
  * 「どこに何件あるか」を視線移動の少ない一列で読めるようにする。
  */
-function BoardFlowSummary({ stations }: { stations: readonly BoardStationPlan[] }) {
+function BoardFlowSummary({
+  stations,
+  actionInspection,
+}: {
+  stations: readonly BoardStationPlan[];
+  actionInspection?: { label: string; targetLanes: readonly Lane[] };
+}) {
   return (
     <section
       className="board-flow-summary"
       data-testid="board-flow-summary"
       aria-label="開発フローの工程別件数"
     >
-      <span className="board-flow-heading">開発フロー</span>
+      <span className="board-flow-heading">
+        {actionInspection ? `${actionInspection.label}の作用先` : '開発フロー'}
+      </span>
       <ol className="board-flow-list">
         {stations.map((station) => {
           const needsAttention = station.hot || station.mood === 'panic';
+          const actionTarget = actionInspection?.targetLanes.includes(station.lane) ?? false;
           return (
             <li
               key={station.lane}
               className={needsAttention ? 'needs-attention' : undefined}
               data-lane={station.lane}
+              data-action-target={actionTarget ? 'true' : undefined}
             >
               <span className="board-flow-icon" aria-hidden="true">
                 {station.icon}
@@ -102,6 +112,7 @@ function BoardFlowSummary({ stations }: { stations: readonly BoardStationPlan[] 
               <span className="board-flow-name">{station.label}</span>
               <strong data-testid={`count-${station.lane}`}>{station.count}</strong>
               {needsAttention && <span className="board-flow-alert">要対応</span>}
+              {actionTarget && <span className="board-flow-target">作用先</span>}
             </li>
           );
         })}
@@ -150,6 +161,8 @@ export interface BoardProps {
   onDragComplete?: (target: ActionTarget) => void;
   /** true なら壁時計アニメを止める（進化オーバーレイ中 / #386）。 */
   animationsPaused?: boolean;
+  /** 情報確認中の介入と作用先。HTML工程要約だけを強調し、発動や盤面操作は変えない。 */
+  actionInspection?: { label: string; targetLanes: readonly Lane[] };
 }
 
 /** 凡例（dot 凡例）。 */
@@ -175,6 +188,7 @@ export function Board({
   assignAssignee,
   onDragComplete,
   animationsPaused = false,
+  actionInspection,
 }: BoardProps) {
   // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
   const moodOverrides = useMemo(
@@ -327,7 +341,7 @@ export function Board({
           hover={hoverLane === s.lane}
         />
       ))}
-      <BoardFlowSummary stations={scene.stations} />
+      <BoardFlowSummary stations={scene.stations} actionInspection={actionInspection} />
       {scene.stations.map((s) => (
         <Bubble key={`b-${s.lane}`} s={s} />
       ))}

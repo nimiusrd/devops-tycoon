@@ -491,7 +491,9 @@ describe('SprintScreen の速度・介入操作', () => {
       expect(screen.child(ActionBar).onAction('splitPr', { taskId: 1 })).toBe(outcome);
       screen.flush();
       expect(screen.props.onDispatch).toHaveBeenCalledExactlyOnceWith('splitPr', { taskId: 1 });
-      expect(screen.props.getSprintSnapshot).not.toHaveBeenCalled();
+      // 表示保持の比較元だけを読む。演出用の事後snapshotは取得しない。
+      expect(screen.props.getSprintSnapshot).toHaveBeenCalledTimes(1);
+      expect(screen.child(EventTicker).outcomeFeedback?.outcome).toBe(outcome);
       expect(screen.child(Board)).toMatchObject({
         armedAction: 'splitPr',
         interventionTrigger: null,
@@ -557,6 +559,88 @@ describe('SprintScreen の速度・介入操作', () => {
       nonce: 2,
     });
     expect(screen.child(Board).armedAction).toBeNull();
+  });
+
+  it('dispatch直前の履歴を複製し、即時とドラッグの結果を一度ずつ出来事欄へ渡す', () => {
+    const state = makeState([makeTask(1)]);
+    const sprint = state.sprint!;
+    sprint.events = [{ tick: 1, kind: 'ignite', taskId: 2, source: 'review' }];
+    const first = success('overtime');
+    const second: InterventionOutcome = { ok: false, reason: 'no-focus' };
+    const screen = mountSprint({
+      state,
+      getSprintSnapshot: vi.fn(() => sprint),
+      onDispatch: vi.fn((_id: ActionId) => {
+        sprint.events.push({ tick: 4, kind: 'ignite', taskId: 3, source: 'review' });
+        return first;
+      }),
+    });
+    screen.child(ActionBar).onAction('overtime');
+    screen.flush();
+    const feedback = screen.child(EventTicker).outcomeFeedback!;
+    expect(feedback).toMatchObject({ id: 'overtime', outcome: first, nonce: 1 });
+    expect(feedback.previousEvents).toEqual([
+      { tick: 1, kind: 'ignite', taskId: 2, source: 'review' },
+    ]);
+    expect(feedback.previousEvents).not.toBe(sprint.events);
+    expect(screen.child(ActionBar).outcomeFeedback).toBeNull();
+    screen.update({ onDispatch: vi.fn(() => second) });
+    screen.child(ActionBar).onArm('assignTask');
+    screen.flush();
+    screen.child(Board).onDragComplete?.({ taskId: 1, lane: 'coding' });
+    screen.flush();
+    expect(screen.child(EventTicker).outcomeFeedback).toMatchObject({
+      id: 'assignTask',
+      outcome: second,
+      nonce: 2,
+    });
+    expect(screen.props.onDispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('情報確認は発動せず、別スプリントへ結果や工程強調を持ち越さない', () => {
+    const screen = mountSprint();
+    screen.child(ActionBar).onActionInspect?.('overtime');
+    screen.flush();
+    expect(screen.child(Board).actionInspection).toEqual({
+      label: '残業号令',
+      targetLanes: ['coding', 'review'],
+    });
+    expect(screen.props.onDispatch).not.toHaveBeenCalled();
+    screen.child(ActionBar).onAction('overtime');
+    screen.flush();
+    expect(screen.child(EventTicker).outcomeFeedback).not.toBeNull();
+    screen.update({ state: makeState([], { currentSprintId: 'q1-s2' }) });
+    expect(screen.child(Board).actionInspection).toBeUndefined();
+    expect(screen.child(EventTicker).outcomeFeedback).toBeNull();
+  });
+
+  it('介入の同期区間だけの実資源差分と期限を保持し、追加HPコストだけに限定しない', () => {
+    const before = makeState();
+    const after = {
+      ...before,
+      org: {
+        ...before.org,
+        seniorHp: before.org.seniorHp - 5,
+        morale: before.org.morale - 1,
+        aiLiteracy: before.org.aiLiteracy + 0.5,
+      },
+      sprint: { ...before.sprint!, focus: before.sprint!.focus - 3 },
+    };
+    const getState = vi.fn().mockReturnValueOnce(before).mockReturnValueOnce(after);
+    const screen = mountSprint({
+      state: before,
+      game: { getState } as unknown as GameHandle,
+      onDispatch: vi.fn(() => success('interruptReview', { hpCost: 0.5, focusCost: 3 })),
+    });
+    screen.child(ActionBar).onAction('interruptReview');
+    screen.flush();
+    expect(screen.child(EventTicker).outcomeFeedback).toMatchObject({
+      resourceChanges: { focus: -3, seniorHp: -5, morale: -1, aiLiteracy: 0.5 },
+      expiresAt: 5500,
+    });
+    expect(getState).toHaveBeenCalledTimes(2);
+    expect(screen.props.getSprintSnapshot).not.toHaveBeenCalled();
+    expect(screen.props.onDispatch).toHaveBeenCalledTimes(1);
   });
 });
 

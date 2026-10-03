@@ -14,9 +14,11 @@ import {
   beginCurrentSetupSprint,
   beginPublicSprint,
   openSprintResultDetails,
+  type PublicGameWindow,
 } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
 import { ACTION_DEFS } from '../../src/data/actions';
+import { planActionPresentations } from '../../src/render/actionBarView';
 import { TRIAL_DEFS } from '../../src/data/difficulties';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { BOARD_STATION_CENTERS, BOARD_VIEW } from '../../src/render/boardScene';
@@ -395,17 +397,23 @@ async function assertLayoutContract(
     await expect(summaries.first()).toBeVisible();
     await expect(summaries).toHaveCount(8);
     await expect(tradeoffs).toHaveCount(8);
-    await expect(page.getByTestId('action-tradeoff-andon')).toHaveText(
-      '士気消費・薄いキューはHP消費',
-    );
-    await expect(page.getByTestId('action-summary-andon')).toHaveText('流入停止・処理猶予');
-    await expect(page.getByTestId('action-tradeoff-pairReview')).toHaveText(
-      '集中力消費・再使用待ち',
-    );
-    for (const id of ['interruptReview', 'assignTask', 'aiThrottle', 'pairReview']) {
-      await expect(page.getByTestId(`action-summary-${id}`)).toContainText('運用安定');
+    // 工程の作用先と安定付与は、実際の状態を読む表示モデルに従う（#536）。
+    const sprint = await page.evaluate(() => {
+      const game = (window as PublicGameWindow).game;
+      if (!game?.getState().sprint) throw new Error('スプリント状態が取得できない');
+      return game.getState().sprint!;
+    });
+    for (const presentation of planActionPresentations(sprint)) {
+      await expect(page.getByTestId(`action-target-${presentation.actionId}`)).toHaveText(
+        presentation.targetLabel,
+      );
+      await expect(page.getByTestId(`action-summary-${presentation.actionId}`)).toHaveText(
+        presentation.effect,
+      );
+      await expect(page.getByTestId(`action-tradeoff-${presentation.actionId}`)).toHaveText(
+        presentation.tradeoff,
+      );
     }
-    await expect(page.getByTestId('action-summary-firefight')).toContainText('緊急時のみ運用安定');
     for (const action of ACTION_DEFS) {
       await expect(page.getByTestId(`action-gauge-${action.id}`)).toHaveText(
         `連携+${Math.round(action.gauge * 100)}%`,

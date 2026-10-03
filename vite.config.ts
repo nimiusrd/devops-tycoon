@@ -9,6 +9,10 @@ export default defineConfig({
   // GitHub Pages（プロジェクトサイト）用。未設定時はローカル/CI 既定の `/`。
   base: process.env.PAGES_BASE ?? '/',
   plugins: [react(), webglModulesPlugin()],
+  // WebGLのURL importは初期探索で辿れない。初表示時の依存再最適化・再読込を防ぐ。
+  optimizeDeps: {
+    include: ['pixi.js', 'pixi-viewport'],
+  },
   server: {
     port: 5174,
   },

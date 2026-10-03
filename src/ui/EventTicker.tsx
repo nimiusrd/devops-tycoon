@@ -19,9 +19,11 @@ import {
   hasRegisteredBoardDragHitTest,
 } from '../render/boardDragHit';
 import {
-  formatRecentSprintEvents,
+  formatSprintTickerRows,
   formatTickerSummary,
+  INTERVENTION_RESULT_HOLD_MS,
   type SprintEventView,
+  type SprintInterventionFeedback,
 } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 import {
@@ -87,6 +89,8 @@ function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
 
 export interface EventTickerProps {
   events: readonly SprintEvent[];
+  /** クリック・ドラッグ・候補選択に共通する実行結果。 */
+  outcomeFeedback?: SprintInterventionFeedback | null;
   /** コンボ HUD と同じ「今」の段数。省略時は履歴のみ。 */
   liveCombo?: number;
   /** true なら入場アニメを止め、既存行だけを静的表示する（進化オーバーレイ中）。 */
@@ -100,17 +104,24 @@ export interface EventTickerProps {
 
 export function EventTicker({
   events,
+  outcomeFeedback = null,
   liveCombo = 0,
   frozen = false,
   expanded: expandedProp,
   onExpandedChange,
   dock = 'stage',
 }: EventTickerProps) {
-  const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
-  const summary = formatTickerSummary(rows);
   const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
   const [optimisticExpanded, setOptimisticExpanded] = useState<boolean | null>(null);
+  const [expiredFeedbackNonce, setExpiredFeedbackNonce] = useState<number | null>(null);
+  const [mountedAt] = useState(() => performance.now());
+  const feedbackHeld =
+    outcomeFeedback != null &&
+    expiredFeedbackNonce !== outcomeFeedback.nonce &&
+    (outcomeFeedback.expiresAt == null || outcomeFeedback.expiresAt > mountedAt);
+  const rows = formatSprintTickerRows(events, feedbackHeld ? outcomeFeedback : null, TICKER_LIMIT);
+  const summary = formatTickerSummary(rows);
   const expanded =
     optimisticExpanded !== null && expandedProp !== optimisticExpanded
       ? optimisticExpanded
@@ -119,6 +130,17 @@ export function EventTicker({
   const pendingFocusRef = useRef(false);
   const reduceMotion = useReducedMotion() ?? false;
   const still = frozen || reduceMotion;
+
+  useEffect(() => {
+    if (!outcomeFeedback) return;
+    const nonce = outcomeFeedback.nonce;
+    const remaining =
+      outcomeFeedback.expiresAt == null
+        ? INTERVENTION_RESULT_HOLD_MS
+        : Math.max(0, outcomeFeedback.expiresAt - performance.now());
+    const timer = window.setTimeout(() => setExpiredFeedbackNonce(nonce), remaining);
+    return () => window.clearTimeout(timer);
+  }, [outcomeFeedback]);
 
   const focusList = () => {
     listRef.current?.focus({ preventScroll: true });
@@ -276,6 +298,7 @@ export function EventTicker({
       data-testid="event-ticker"
       data-expanded={expanded ? 'true' : 'false'}
       data-dock={dock}
+      data-feedback-held={feedbackHeld ? 'true' : 'false'}
       aria-label="スプリント出来事"
     >
       <button
@@ -302,6 +325,11 @@ export function EventTicker({
           role="status"
           aria-live="polite"
         >
+          {summary}
+        </p>
+      )}
+      {expanded && feedbackHeld && summary && (
+        <p className="visually-hidden" role="status" aria-live="polite">
           {summary}
         </p>
       )}

@@ -16,6 +16,12 @@ import {
   type AttentionPausePlan,
 } from '../render/attentionPause';
 import { Board } from '../render/Board';
+import { planActionPresentation } from '../render/actionBarView';
+import { getAction } from '../data/actions';
+import {
+  INTERVENTION_RESULT_HOLD_MS,
+  type SprintInterventionFeedback,
+} from '../render/sprintEventView';
 import type { DraggableActionId } from '../render/boardDragPlan';
 import { planBossSlowMotion } from '../render/juicyEffects';
 import { liveComboCount } from '../render/sprintComboView';
@@ -122,6 +128,19 @@ export function SprintScreen({
     nonce: number;
   } | null>(null);
   const feedbackNonce = useRef(0);
+  const [tickerFeedback, setTickerFeedback] = useState<{
+    sprintId: string | null;
+    feedback: SprintInterventionFeedback;
+  } | null>(null);
+  const tickerFeedbackNonce = useRef(0);
+  const [inspectedAction, setInspectedAction] = useState<{
+    sprintId: string | null;
+    id: ActionId | null;
+  }>({ sprintId: null, id: null });
+  const handleActionInspect = useCallback(
+    (id: ActionId | null) => setInspectedAction({ sprintId: state.currentSprintId, id }),
+    [state.currentSprintId],
+  );
   const triggerKey = useRef(0);
   const slowMoTimer = useRef<number | null>(null);
   const attentionTimer = useRef<number | null>(null);
@@ -234,11 +253,38 @@ export function SprintScreen({
   const handleDispatch = useCallback(
     (id: ActionId, target?: ActionTarget): InterventionOutcome => {
       if (!sprint) return { ok: false, reason: 'complete' };
-      if (isPlaybackPaused(playbackSpeed)) return { ok: false, reason: 'paused' };
+      // dispatchの同期区間だけを記録し、自然進行の差分を介入成果へ混ぜない。
+      const beforeState = game?.getState();
+      const beforeSprint = beforeState?.sprint ?? getSprintSnapshot() ?? sprint;
+      const previousEvents = [...beforeSprint.events];
       const prevTasks = sprint.tasks;
-      const outcome = onDispatch(id, target);
+      const outcome: InterventionOutcome = isPlaybackPaused(playbackSpeed)
+        ? { ok: false, reason: 'paused' }
+        : onDispatch(id, target);
+      const afterState = beforeState ? game?.getState() : undefined;
+      const resourceChanges =
+        beforeState && afterState?.sprint
+          ? {
+              focus: afterState.sprint.focus - beforeSprint.focus,
+              seniorHp: afterState.org.seniorHp - beforeState.org.seniorHp,
+              morale: afterState.org.morale - beforeState.org.morale,
+              aiLiteracy: afterState.org.aiLiteracy - beforeState.org.aiLiteracy,
+            }
+          : undefined;
+      tickerFeedbackNonce.current += 1;
+      setTickerFeedback({
+        sprintId: state.currentSprintId,
+        feedback: {
+          id,
+          outcome,
+          nonce: tickerFeedbackNonce.current,
+          previousEvents,
+          resourceChanges,
+          expiresAt: performance.now() + INTERVENTION_RESULT_HOLD_MS,
+        },
+      });
       if (outcome.ok && outcome.effect) {
-        const nextSprint = getSprintSnapshot();
+        const nextSprint = afterState?.sprint ?? getSprintSnapshot();
         const nextTasks = nextSprint ? [...nextSprint.tasks] : [...prevTasks];
         const slowMotion = planBossSlowMotion(
           state.currentSprintKind === 'boss',
@@ -281,12 +327,14 @@ export function SprintScreen({
     },
     [
       onDispatch,
+      game,
       getSprintSnapshot,
       pauseBriefly,
       playbackSpeed,
       setArmedId,
       sprint,
       state.currentSprintKind,
+      state.currentSprintId,
       state.sprintTick,
     ],
   );
@@ -360,9 +408,21 @@ export function SprintScreen({
     incidents > 0 ? Math.min(...burning.map((t) => t.burnTicksLeft ?? BURN_TICKS)) : 0;
   const burnPct = incidents > 0 ? Math.max(0, (urgentTicks / BURN_TICKS) * 100) : 0;
   const dockTickerOffBoard = responsiveMode.width === 'narrow';
+  const inspectedId =
+    inspectedAction.sprintId === state.currentSprintId ? inspectedAction.id : null;
+  const actionInspection = inspectedId
+    ? {
+        label: getAction(inspectedId)!.label,
+        targetLanes: planActionPresentation(sprint, inspectedId).targetLanes,
+      }
+    : undefined;
   const eventTicker = (
     <EventTicker
+      key={state.currentSprintId}
       events={sprint.events}
+      outcomeFeedback={
+        tickerFeedback?.sprintId === state.currentSprintId ? tickerFeedback.feedback : null
+      }
       liveCombo={liveCombo}
       frozen={overlayFrozen}
       expanded={eventTickerExpanded}
@@ -478,6 +538,7 @@ export function SprintScreen({
               assignAssignee={armedId === 'assignTask' ? assignAssignee : undefined}
               onDragComplete={handleDragComplete}
               animationsPaused={overlayFrozen}
+              actionInspection={actionInspection}
             />
             {slowMoKey > 0 && (
               <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />
@@ -512,6 +573,7 @@ export function SprintScreen({
           assignAssignee={assignAssignee}
           onAssignAssigneeChange={setAssignAssignee}
           outcomeFeedback={outcomeFeedback}
+          onActionInspect={handleActionInspect}
         />
       }
       overlays={

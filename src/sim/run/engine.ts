@@ -461,7 +461,7 @@ export class RunEngine {
 
   /**
    * フェーズを遷移表を経ずにリセットする（新規ラン・タイトル復帰の入口のみ）。
-   * XState 的にはアクターの再生成に相当し、won/lost からのリスタートもここを通る。
+   * won/lost からのリスタートもここを通る。
    */
   private resetPhase(next: 'title' | 'setup'): void {
     this.phase = next;

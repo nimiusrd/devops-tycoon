@@ -1,7 +1,7 @@
 import { deleteDB } from 'idb';
 import { afterEach, describe, expect, it } from 'vitest';
 import { META_RECORD_KEY, META_STORE_NAME, openGameDb } from '../../../src/state/gameDb';
-import { defaultMeta, type MetaState } from '../../../src/state/meta';
+import { dailyRunKey, defaultMeta, type MetaState } from '../../../src/state/meta';
 import {
   IndexedDbMetaStorage,
   initializeMetaPersistence,
@@ -50,7 +50,22 @@ describe('IndexedDB メタ永続化（RI-57）', () => {
   it('保存を直列化し、最後の状態を往復できる', async () => {
     const storage = indexedDbStorage();
     const first = { ...defaultMeta(), points: 10 };
-    const latest = { ...defaultMeta(), points: 25, achievements: ['first-clear'] };
+    const latest: MetaState = {
+      ...defaultMeta(),
+      points: 25,
+      unlockedDifficulties: ['easy', 'normal', 'hard'],
+      defeatedBosses: ['big-release'],
+      achievements: ['first-clear'],
+      collectedWinTypes: ['healthy'],
+      collectedDiagnoses: ['reviewHell'],
+      bestScore: 200,
+      unlockedCards: ['devin'],
+      unlockedRelics: ['strong-ci'],
+      preferredCardIds: ['devin', 'docs'],
+      dailyRuns: {
+        [dailyRunKey('2026-09-05')]: { bestScore: 200, rewardClaimed: true },
+      },
+    };
 
     await Promise.all([storage.save(first), storage.save(latest)]);
 

@@ -26,7 +26,7 @@
     "screenshots": "viewport画像は実画面。full/actions画像では、内部スクロール全内容を撮るため双方とも撮影時のみ通常フローへ展開し、元のstage寸法を固定。寸法とoverflowは展開前の実viewportで測定。",
     "fullLocalEvidence": "evidence/issue-536/index.html と measurements.json（gitignored）に全108画像と生の測定値を保持。",
     "humanMeasurement": "理解、探索時間、誤操作、重要イベント認知の人間による計測は未実施。DOM寸法・文字のoverflowと画像の確認は理解度評価の代用にはしない。",
-    "decorativeRendering": "ローカルfull画像には既存PointPopsの描画専用Math.randomによる浮動位置差があり、ピクセル完全一致は保証しない。シミュレーションのseed/stateは一致。永続化したaction PNG12枚にはその盤面装飾は含まれない。"
+    "decorativeRendering": "ローカルfull画像には既存PointPopsの描画専用Math.randomによる浮動位置差があり、ピクセル完全一致は保証しない。シミュレーションのseed/stateは一致。"
   },
   "comparisons": [
     {
@@ -2288,103 +2288,6 @@
       "status": "未計測"
     }
   },
-  "persistedImages": [
-    {
-      "file": "phone-normal-before-actions.png",
-      "viewport": "phone",
-      "scene": "normal",
-      "variant": "before",
-      "bytes": 77766,
-      "sha256": "d1872df84d28ae42404748253ac3c6c3d211a9363ec285f73d9c535a44c62cd4"
-    },
-    {
-      "file": "phone-normal-after-actions.png",
-      "viewport": "phone",
-      "scene": "normal",
-      "variant": "after",
-      "bytes": 105166,
-      "sha256": "b73e9e32f8de06227029e7fd8776a74d6f06315b52a88f6d3f764723e21ef549"
-    },
-    {
-      "file": "phone-review-before-actions.png",
-      "viewport": "phone",
-      "scene": "review",
-      "variant": "before",
-      "bytes": 74274,
-      "sha256": "b618e09874f632a8228c39fd9120cc515f0e3094234fff695e10121d62c61e9d"
-    },
-    {
-      "file": "phone-review-after-actions.png",
-      "viewport": "phone",
-      "scene": "review",
-      "variant": "after",
-      "bytes": 104658,
-      "sha256": "4f912cd5ce81ada796759b411751f87f93708b6da912d2dbac57c2e543079b5c"
-    },
-    {
-      "file": "phone-fire-before-actions.png",
-      "viewport": "phone",
-      "scene": "fire",
-      "variant": "before",
-      "bytes": 74263,
-      "sha256": "b3b483b803ec3075c60dfe0b8ba983d1c2377e92372d44cdbf1297a20d422c22"
-    },
-    {
-      "file": "phone-fire-after-actions.png",
-      "viewport": "phone",
-      "scene": "fire",
-      "variant": "after",
-      "bytes": 104013,
-      "sha256": "b438dc84e18e9e5df0d2c98bf0cb1529ee01ce0df2e7e186a5ed70f63e11a181"
-    },
-    {
-      "file": "desktop-normal-before-actions.png",
-      "viewport": "desktop",
-      "scene": "normal",
-      "variant": "before",
-      "bytes": 72813,
-      "sha256": "9ecd7817cba12237e4e50410fe0dc547b8a996fafed1e02175e30ae9b66929c6"
-    },
-    {
-      "file": "desktop-normal-after-actions.png",
-      "viewport": "desktop",
-      "scene": "normal",
-      "variant": "after",
-      "bytes": 91222,
-      "sha256": "84b7e46a17448a06629bffa9f5e92c37560f46018a09f81d49798b57dd5512ae"
-    },
-    {
-      "file": "desktop-review-before-actions.png",
-      "viewport": "desktop",
-      "scene": "review",
-      "variant": "before",
-      "bytes": 65622,
-      "sha256": "4bb3a80c8f4f8570ca61bcc090d0f7200e9657ebe345a9916a58da50e1ea1d98"
-    },
-    {
-      "file": "desktop-review-after-actions.png",
-      "viewport": "desktop",
-      "scene": "review",
-      "variant": "after",
-      "bytes": 88897,
-      "sha256": "3f2553950de575407f6dd2f26812bbfbaaaa306e0dca3a803791b5dc514403ff"
-    },
-    {
-      "file": "desktop-fire-before-actions.png",
-      "viewport": "desktop",
-      "scene": "fire",
-      "variant": "before",
-      "bytes": 65660,
-      "sha256": "09849b23c35120d863327ec3976b88218df578566f5ae640285ad7aff27ee52b"
-    },
-    {
-      "file": "desktop-fire-after-actions.png",
-      "viewport": "desktop",
-      "scene": "fire",
-      "variant": "after",
-      "bytes": 87701,
-      "sha256": "f4ebbd03653479b2815213c9bfc73e0c162ba132030f05a8caf09587f1a2dc1b"
-    }
-  ],
-  "persistedImageTotalBytes": 1012055
+  "persistedImages": [],
+  "persistedImageTotalBytes": 0
 }

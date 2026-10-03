@@ -1937,7 +1937,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           const snapshot = structuredClone(meta);
           tasks.push(retryWrite('meta', writeDurableMeta(snapshot)));
         }
-        if (!tracker.isSession('run') && tracker.isFailed('run') && runStorage) {
+        // 完了トランザクションが途中セーブを消す。失敗していた完走前のスナップショットは書き戻さない。
+        if (
+          !finishCommitPending &&
+          !tracker.isSession('run') &&
+          tracker.isFailed('run') &&
+          runStorage
+        ) {
           const snapshot = resumableSave ? structuredClone(resumableSave) : null;
           tasks.push(
             retryWrite('run', writeDurableRun(snapshot), undefined, resumableSave !== null),

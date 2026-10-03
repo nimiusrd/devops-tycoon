@@ -32,7 +32,14 @@ afterEach(async () => {
   await Promise.all(databases.splice(0).map((name) => deleteDB(name)));
 });
 
-async function finishReadyGame(seed: string) {
+async function finishReadyGame(
+  seed: string,
+  prepare?: (stores: {
+    game: ReturnType<typeof createGame>;
+    metaStorage: IndexedDbMetaStorage;
+    runStorage: IndexedDbRunStorage;
+  }) => void,
+) {
   const engine = createRunEngine({ seed });
   engine.startRun('easy', [], seed);
   const setup = engine.exportPersistState();
@@ -48,6 +55,7 @@ async function finishReadyGame(seed: string) {
   });
   game.attachRunPersistence(runBoot.storage, runBoot.save, runBoot.issue);
   game.resumeRun();
+  prepare?.({ game, metaStorage: metaBoot.storage, runStorage: runBoot.storage });
   game.beginSetupSprint();
   await waitFor(async () => {
     expect(game.phase()).toBe('sprint');
@@ -501,5 +509,45 @@ describe('複数タブの保存（RI-144）', () => {
       expect(await new IndexedDbRunStorage(name).load()).toBeNull();
     });
     expect(game.exportPendingReplayFiles().length + game.listReplays().length).toBeGreaterThan(0);
+  });
+
+  it('完了の再試行は、失敗していた途中セーブを書き戻さない', async () => {
+    const { name, game } = await finishReadyGame(
+      'finish-retry-run',
+      ({ metaStorage: metas, runStorage: runs }) => {
+        const originalRun = runs.compareAndSave.bind(runs);
+        let failedRunWrite = false;
+        runs.compareAndSave = (next) => {
+          if (!failedRunWrite && next) {
+            failedRunWrite = true;
+            return Promise.reject(new DOMException('The transaction was aborted', 'AbortError'));
+          }
+          return originalRun(next);
+        };
+        const originalMeta = metas.compareAndSave.bind(metas);
+        let finishWrites = 0;
+        metas.compareAndSave = (meta, expected) => {
+          if (expected !== undefined) {
+            finishWrites += 1;
+            if (finishWrites === 1) {
+              return Promise.reject(new DOMException('The transaction was aborted', 'AbortError'));
+            }
+          }
+          return originalMeta(meta, expected);
+        };
+      },
+    );
+    await waitFor(async () => {
+      expect(game.getPersistenceStatus().state).toBe('failed');
+    });
+    expect(game.buyShopCard('copilot').status).toBe('lost');
+    await waitFor(async () => {
+      expect(game.getPersistenceStatus()).toMatchObject({ state: 'failed', showRetry: true });
+    });
+    await game.retryPersistence();
+    await waitFor(async () => {
+      expect((await new IndexedDbMetaStorage(name).load())?.points).not.toBe(40);
+    });
+    expect(await new IndexedDbRunStorage(name).load()).toBeNull();
   });
 });

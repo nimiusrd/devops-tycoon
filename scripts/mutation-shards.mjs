@@ -233,12 +233,12 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'sim-sprint-f',
-    mutate: 'src/sim/sprint.ts:588-626',
+    mutate: 'src/sim/sprint.ts:588-624',
     note: 'sprint 評価（tickCooldowns / computeGrade）',
   },
   {
     id: 'sim-sprint-g',
-    mutate: `src/sim/sprint.ts:627-${OPEN_RANGE_END}`,
+    mutate: `src/sim/sprint.ts:625-${OPEN_RANGE_END}`,
     note: 'sprint 称号と summarizeSprint（computeTitleAndDiagnosis 全体。以降の追記もここ）',
   },
   {

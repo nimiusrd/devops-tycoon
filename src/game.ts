@@ -45,7 +45,8 @@ import {
   withPreferredCardIds,
   withSoundMuted,
 } from './state/meta';
-import type { MetaStorage } from './state/metaPersistence';
+import { IndexedDbMetaStorage, type MetaStorage } from './state/metaPersistence';
+import { isTabConflict, TabConflictError } from './state/tabConflict';
 import {
   PersistenceTracker,
   persistenceFailureKind,
@@ -74,6 +75,7 @@ import {
   type RunSaveCompatibilityIssue,
   type RunSaveSummary,
   type RunRulesetIdentity,
+  IndexedDbRunStorage,
   type RunStorage,
 } from './state/runPersistence';
 import { readPersistenceBackup, serializePersistenceBackup } from './state/persistenceBackup';
@@ -250,6 +252,12 @@ export interface GameHandle {
   dismissPersistenceNotice(): void;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
+  /** 別タブが先に記録を更新し、このタブからの保存を止めている。 */
+  hasTabConflict(): boolean;
+  /** ラン完了の保存に失敗し、再試行まで次のランを始められない。 */
+  finishSaveBlocksNewRun(): boolean;
+  /** 最新の記録を読み直して操作を引き継ぐ。 */
+  takeOverForeignTab(): void;
   /** 現行の途中セーブを JSON 文字列にする（無い場合は null。RI-133）。 */
   exportRunSaveText(): string | null;
   /** 保存に失敗した完走リプレイを JSON 文字列にする（無い場合は null）。 */
@@ -398,6 +406,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let runRevision = 0;
   /** セッション限りになった時点のラン世代。再試行前の完走や破棄を既存セーブで戻さない。 */
   let runRevisionAtSession = 0;
+  /** 別タブが先に記録を更新した。このタブからは上書きも削除もしない。 */
+  let tabConflict = false;
+  /** ラン完了の報酬と途中セーブ破棄が、まだ端末で確定していない。 */
+  let finishCommitPending = false;
+  /** 完了トランザクションへ後で載せるメタ変更。独立した保存はしない。 */
+  let metaFollowsFinish = false;
+  /** 最初の完了試行で確定した途中セーブ世代。再試行はこれを使う。 */
+  let finishExpectedRunGeneration: number | null = null;
+  /** 確定を待つ間、端末へ書かずに保持する完走リプレイ。次の完走でも消さない。 */
+  const pendingFinishReplays: ReplayBlob[] = [];
   /** セーブ取り込みの非同期書込みが終わるまで、移行を確定しない。 */
   let runImportDepth = 0;
   /** リプレイ側の統合バックアップが、成功した途中セーブを戻すときだけ使う。 */
@@ -472,12 +490,24 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   const clearRunSaveInternal = (): void => {
+    if (tabConflict) return;
+    const previous = resumableSave ? structuredClone(resumableSave) : null;
+    const previousIssue = runSaveIssue ? structuredClone(runSaveIssue) : null;
     latestImportedSave = null;
     resumableSave = null;
     runSaveIssue = null;
     runRevision += 1;
     if (!runStorage) return;
-    trackWrite('run', runStorage.clear(), undefined, false);
+    const revisionAtClear = runRevision;
+    const work = writeDurableRun(null).catch((error: unknown) => {
+      // 破棄の応答より前に次のランがセーブを更新していたら、その内容は戻さない。
+      if (isTabConflict(error) && resumableSave === null && runRevision === revisionAtClear) {
+        resumableSave = previous;
+        runSaveIssue = previousIssue;
+      }
+      throw error;
+    });
+    trackWrite('run', work, undefined, false);
   };
 
   const appendKeyframeIfNeeded = (): void => {
@@ -613,12 +643,55 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const exportableReplayBlobs = (): ReplayBlob[] => {
     const seen = new Set<string>();
     const blobs: ReplayBlob[] = [];
-    for (const blob of [...pendingReplays, ...sessionOnlyReplayBlobs()]) {
+    // 完了トランザクション失敗中のリプレイは再試行用に残したまま、書き出しだけ見えるようにする。
+    for (const blob of [...pendingFinishReplays, ...pendingReplays, ...sessionOnlyReplayBlobs()]) {
       if (seen.has(blob.id)) continue;
       seen.add(blob.id);
       blobs.push(blob);
     }
     return blobs;
+  };
+
+  const takeFinishReplay = (): ReplayBlob | null => {
+    if (!replayStorage || keyframes.length === 0 || replayMode) return null;
+    const s = engine.snapshot();
+    if (s.status !== 'won' && s.status !== 'lost') return null;
+    const finishedAt = Date.now();
+    const blob: ReplayBlob = {
+      schemaVersion: REPLAY_SCHEMA_VERSION,
+      id: buildReplayId(s.seed, finishedAt),
+      seed: s.seed,
+      difficulty: s.difficulty,
+      trials: [...s.trials],
+      finishedAt,
+      outcome: {
+        status: s.status,
+        winType: s.winType,
+        loseReason: s.loseReason,
+        diagnosis: s.diagnosis,
+        score: s.totals.delivered,
+      },
+      keyframes: structuredClone(keyframes),
+      ruleset: structuredClone(CURRENT_RUN_RULESET),
+      contentSnapshot: snapshotReplayContent(keyframes),
+    };
+    keyframes = [];
+    return blob;
+  };
+
+  const rememberFinishReplay = (): void => {
+    const blob = takeFinishReplay();
+    if (!blob || pendingFinishReplays.some((item) => item.id === blob.id)) return;
+    pendingFinishReplays.push(blob);
+  };
+
+  const holdUnsavedFinishReplay = (): void => {
+    const held = pendingFinishReplays.splice(0);
+    for (const blob of held) {
+      pendingReplays.push(blob);
+      pendingReplayErrors.set(blob, new TabConflictError());
+      publishUnsavedReplay(blob);
+    }
   };
 
   const commitReplayIfFinished = (): void => {
@@ -647,6 +720,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     pendingReplays.push(blob);
     // 完走時点で共有配列から切り離す。非同期完了で次ランのフレームを消さない。
     keyframes = [];
+    if (tabConflict) {
+      // 上限削除で別タブのリプレイを追い出さない。書き出しできる未保存として残す。
+      pendingReplayErrors.set(blob, new TabConflictError());
+      publishUnsavedReplay(blob);
+      const generation = tracker.begin('replay');
+      if (tracker.fail('replay', generation, new TabConflictError())) bump();
+      return;
+    }
     trackWrite('replay', beginReplaySave(blob), () => completePendingReplay(blob));
   };
 
@@ -655,6 +736,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     blob: ReplayBlob,
     extraProtectIds?: readonly string[],
   ): Promise<void> => {
+    if (tabConflict) {
+      pendingReplayErrors.set(blob, new TabConflictError());
+      publishUnsavedReplay(blob);
+      return Promise.reject(new TabConflictError());
+    }
     replaySavesInFlight.add(blob);
     const work = saveReplayBlob(blob, extraProtectIds).finally(() => {
       replaySavesInFlight.delete(blob);
@@ -666,7 +752,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
   const persistSaveableSnapshot = (): void => {
-    if (replayMode || !runStorage) return;
+    if (replayMode || !runStorage || finishCommitPending) return;
     const exported = engine.exportPersistState();
     if (!exported) return;
     // 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する。
@@ -674,7 +760,81 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     resumableSave = save;
     runSaveIssue = null;
     runRevision += 1;
-    trackWrite('run', runStorage.save(save));
+    // 競合後も書き出し用のスナップショットは進める。端末へは書かない。
+    if (tabConflict) return;
+    trackWrite('run', writeDurableRun(save));
+  };
+
+  /**
+   * 観測した世代と一致するときだけ途中セーブを書く。
+   * 別タブの記録なら上書きせず、このタブの保存を止める。
+   */
+  const writeDurableRun = (next: RunSave | null): Promise<void> => {
+    const storage = runStorage;
+    if (!storage) return Promise.resolve();
+    if (tabConflict) return Promise.reject(new TabConflictError());
+    if (!(storage instanceof IndexedDbRunStorage)) {
+      if (next) return storage.save(next);
+      return storage.clear();
+    }
+    return storage.compareAndSave(next).then((result) => {
+      if (!result.ok) {
+        tabConflict = true;
+        throw new TabConflictError();
+      }
+    });
+  };
+
+  /**
+   * 観測した世代と一致するときだけメタを書く。
+   * 別タブの記録なら、その内容を画面へ戻して保存を止める。
+   */
+  const commitFinishedRun = (): Promise<void> => {
+    const metas = metaStorage;
+    const runs = runStorage;
+    if (!(metas instanceof IndexedDbMetaStorage) || !(runs instanceof IndexedDbRunStorage)) {
+      return writeDurableMeta(structuredClone(meta));
+    }
+    finishCommitPending = true;
+    return runs.enqueue(async () => {
+      // 先行する自分の途中セーブが世代を進めたあとに観測する。再試行は初回の世代を維持する。
+      const expectedRun = finishExpectedRunGeneration ?? runs.observedRunGeneration();
+      finishExpectedRunGeneration = expectedRun;
+      const result = await metas.compareAndSave(structuredClone(meta), expectedRun);
+      if (!result.ok) {
+        if (result.current) meta = structuredClone(result.current);
+        tabConflict = true;
+        finishCommitPending = false;
+        metaFollowsFinish = false;
+        finishExpectedRunGeneration = null;
+        lastRunReward = null;
+        holdUnsavedFinishReplay();
+        throw new TabConflictError();
+      }
+      if (result.runGeneration !== undefined) runs.adoptRunGeneration(result.runGeneration);
+      finishCommitPending = false;
+      finishExpectedRunGeneration = null;
+      if (replayStorage) {
+        for (const blob of pendingFinishReplays.splice(0)) {
+          pendingReplays.push(blob);
+          trackWrite('replay', beginReplaySave(blob), () => completePendingReplay(blob));
+        }
+      }
+    });
+  };
+
+  const writeDurableMeta = (snapshot: MetaState, expectedRunGeneration?: number): Promise<void> => {
+    const storage = metaStorage;
+    if (!storage) return Promise.resolve();
+    if (tabConflict) return Promise.reject(new TabConflictError());
+    if (!(storage instanceof IndexedDbMetaStorage)) return storage.save(snapshot);
+    return storage.compareAndSave(snapshot, expectedRunGeneration).then((result) => {
+      if (!result.ok) {
+        if (result.current) meta = structuredClone(result.current);
+        tabConflict = true;
+        throw new TabConflictError();
+      }
+    });
   };
 
   /**
@@ -683,7 +843,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * あわせてリプレイキーフレームを収集し、終端で commit する（RI-61）。
    */
   const persistRunIfNeeded = (): void => {
-    if (replayMode) return;
+    if (replayMode || finishCommitPending) return;
     const phase = engine.currentPhase();
     appendKeyframeIfNeeded();
     if (phase === 'title' || phase === 'won' || phase === 'lost') {
@@ -784,6 +944,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         }
       })
       .catch((error: unknown) => {
+        if (isTabConflict(error)) {
+          tracker.ignoreConflict(channel, generation);
+          bump();
+          return;
+        }
         const preserveQuota =
           channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
         const applied = tracker.fail(channel, generation, error, preserveQuota);
@@ -802,9 +967,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   const persistMeta = (): void => {
-    if (!metaStorage) return;
+    if (!metaStorage || tabConflict) return;
     metaRevision += 1;
-    trackWrite('meta', metaStorage.save(meta));
+    // 完了トランザクションより先に報酬を書かない。変更はメモリに残し、確定時のスナップショットへ載せる。
+    if (finishCommitPending) {
+      metaFollowsFinish = true;
+      return;
+    }
+    trackWrite('meta', writeDurableMeta(structuredClone(meta)));
+  };
+
+  /** 完了確定のあとに、確定へ間に合わなかったメタ変更だけを書く。 */
+  const flushDeferredMeta = (): void => {
+    if (tabConflict || finishCommitPending || !metaFollowsFinish) return;
+    metaFollowsFinish = false;
+    persistMeta();
   };
 
   const retryWrite = (
@@ -825,6 +1002,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         tracker.succeed(channel, generation, recordDurableAt ? Date.now() : null);
       })
       .catch((error: unknown) => {
+        if (isTabConflict(error)) {
+          tracker.ignoreConflict(channel, generation);
+          return;
+        }
         const preserveQuota =
           channel === 'replay' && pendingReplays.length > 0 && tracker.keepsQuota(channel);
         const applied = tracker.fail(channel, generation, error, preserveQuota);
@@ -1270,11 +1451,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
   };
 
-  /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
-  const recordIfFinished = (): void => {
-    if (!metaReady) return;
+  /** いまのランが決着していれば、メモリ上のメタへ報酬を一度だけ載せる。 */
+  const noteFinishedReward = (): boolean => {
     const s = engine.snapshot();
-    if (recorded || (s.status !== 'won' && s.status !== 'lost')) return;
+    if (recorded || (s.status !== 'won' && s.status !== 'lost')) return false;
     recorded = true;
     const scoreMul = s.trials.reduce((m, id) => m * (getTrial(id)?.scoreMul ?? 1), 1);
     const input = {
@@ -1300,12 +1480,43 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = computeRunRewardBreakdown(input);
       meta = applyRunReward(meta, input);
     }
+    return true;
+  };
+
+  /** 完了保存が失敗しているあいだは、保存されない次のランを始めさせない。 */
+  const isFinishSaveBlockingNewRun = (): boolean => finishCommitPending && tracker.isFailed('meta');
+
+  /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
+  const recordIfFinished = (): boolean => {
+    if (!metaReady || tabConflict) return false;
+    const finished = noteFinishedReward();
+    if (!finished) return finishCommitPending;
+    if (runStorage instanceof IndexedDbRunStorage && metaStorage instanceof IndexedDbMetaStorage) {
+      rememberFinishReplay();
+      metaRevision += 1;
+      // 先の完了保存が残っているあいだは、報酬とリプレイを足すだけにしてトランザクションは重ねない。
+      if (finishCommitPending) {
+        metaFollowsFinish = true;
+        return true;
+      }
+      const work = commitFinishedRun();
+      trackWrite('meta', work);
+      void work.then(
+        () => {
+          if (tabConflict) return;
+          flushDeferredMeta();
+          persistRunIfNeeded();
+        },
+        () => undefined,
+      );
+      return true;
+    }
     persistMeta();
+    return false;
   };
 
   const after = (): RunState => {
-    recordIfFinished();
-    persistRunIfNeeded();
+    if (!recordIfFinished()) persistRunIfNeeded();
     return engine.snapshot();
   };
 
@@ -1314,9 +1525,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
    * ただし即時敗北などで終端へ落ちた場合はセーブを破棄する。
    */
   const afterLocal = (): RunState => {
-    recordIfFinished();
+    const guarded = recordIfFinished();
     const phase = engine.currentPhase();
-    if (phase === 'won' || phase === 'lost' || phase === 'title') {
+    if (!guarded && (phase === 'won' || phase === 'lost' || phase === 'title')) {
       persistRunIfNeeded();
     }
     return engine.snapshot();
@@ -1388,7 +1599,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return { ...state, ...resolveWhatIf() };
     },
     startRun(difficulty, trials, runSeed, scenario) {
-      if (replayMode) return engine.snapshot();
+      if (replayMode || isFinishSaveBlockingNewRun()) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1409,7 +1620,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     startDailyRun(dateStr) {
-      if (replayMode) return engine.snapshot();
+      if (replayMode || isFinishSaveBlockingNewRun()) return engine.snapshot();
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1612,6 +1823,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     newRun(runSeed) {
+      if (isFinishSaveBlockingNewRun()) return engine.snapshot();
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
@@ -1631,6 +1843,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     purchaseMetaUnlock(unlockId) {
+      if (tabConflict) return { ok: false, reason: 'other_tab' };
       if (!metaReady) return { ok: false, reason: 'not_ready' };
       const result = purchaseUnlock(meta, unlockId);
       if (!result.ok) return { ok: false, reason: result.reason };
@@ -1644,11 +1857,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const next = withSoundMuted(meta, muted);
       if (next === meta) return;
       meta = next;
-      persistMeta();
+      // 競合中もこのタブの音は止める。端末のメタには書かない。
+      if (!tabConflict) persistMeta();
       bump();
     },
     setPreferredCardIds(cardIds) {
-      if (!metaReady) return;
+      if (!metaReady || tabConflict) return;
       const next = withPreferredCardIds(meta, cardIds);
       if (next === meta) return;
       meta = next;
@@ -1656,7 +1870,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     markTutorialSeen() {
-      if (!metaReady || meta.seenTutorialVersion >= TUTORIAL_CONTENT_VERSION) return;
+      if (!metaReady || tabConflict || meta.seenTutorialVersion >= TUTORIAL_CONTENT_VERSION) return;
       meta = {
         ...meta,
         seenTutorial: true,
@@ -1703,15 +1917,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getPersistenceStatus() {
       const runAtRisk = tracker.isSession('run') || tracker.hasVisibleFailure('run');
       const replayAtRisk = tracker.isSession('replay') || tracker.hasVisibleFailure('replay');
+      const unsavedReplay = exportableReplayBlobs().length > 0;
+      const metaAtRisk = tracker.isFailed('meta') || tracker.hasVisibleFailure('meta');
       const canExportFailedData =
         (runAtRisk && resumableSave !== null) ||
-        (replayAtRisk && exportableReplayBlobs().length > 0);
+        ((replayAtRisk || metaAtRisk) && unsavedReplay) ||
+        (tabConflict && (unsavedReplay || resumableSave !== null));
       return tracker.notice(canExportFailedData);
     },
     dismissPersistenceNotice() {
       if (tracker.dismissTransientBanner()) bump();
     },
     async retryPersistence() {
+      if (tabConflict) return;
       if (persistenceRetry) return persistenceRetry;
       let release!: () => void;
       const current = new Promise<void>((resolve) => {
@@ -1721,17 +1939,34 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       try {
         if (tracker.isSession()) await recoverDurableLoads();
         const tasks: Promise<void>[] = [];
-        if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
-          tasks.push(retryWrite('meta', metaStorage.save(meta)));
-        }
-        if (!tracker.isSession('run') && tracker.isFailed('run') && runStorage) {
+        if (
+          finishCommitPending &&
+          !tabConflict &&
+          metaStorage instanceof IndexedDbMetaStorage &&
+          runStorage instanceof IndexedDbRunStorage
+        ) {
+          metaRevision += 1;
           tasks.push(
-            retryWrite(
-              'run',
-              resumableSave ? runStorage.save(resumableSave) : runStorage.clear(),
-              undefined,
-              resumableSave !== null,
-            ),
+            retryWrite('meta', commitFinishedRun()).then(() => {
+              if (tabConflict) return;
+              flushDeferredMeta();
+              persistRunIfNeeded();
+            }),
+          );
+        } else if (!tracker.isSession('meta') && tracker.isFailed('meta') && metaStorage) {
+          const snapshot = structuredClone(meta);
+          tasks.push(retryWrite('meta', writeDurableMeta(snapshot)));
+        }
+        // 完了トランザクションが途中セーブを消す。失敗していた完走前のスナップショットは書き戻さない。
+        if (
+          !finishCommitPending &&
+          !tracker.isSession('run') &&
+          tracker.isFailed('run') &&
+          runStorage
+        ) {
+          const snapshot = resumableSave ? structuredClone(resumableSave) : null;
+          tasks.push(
+            retryWrite('run', writeDurableRun(snapshot), undefined, resumableSave !== null),
           );
         }
         if (!tracker.isSession('replay') && tracker.hasVisibleFailure('replay') && replayStorage) {
@@ -1804,7 +2039,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
     },
     resumeRun() {
-      if (replayMode || runSaveIssue || !resumableSave) return null;
+      if (replayMode || isFinishSaveBlockingNewRun() || runSaveIssue || !resumableSave) return null;
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1852,6 +2087,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearRunSaveInternal();
       bump();
     },
+    hasTabConflict() {
+      return tabConflict;
+    },
+    finishSaveBlocksNewRun() {
+      return isFinishSaveBlockingNewRun();
+    },
+    takeOverForeignTab() {
+      if (typeof window === 'undefined') return;
+      window.location.reload();
+    },
     exportRunSaveText() {
       return resumableSave ? serializeRunSave(resumableSave) : null;
     },
@@ -1871,6 +2116,22 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }));
     },
     async importRunSaveText(raw) {
+      if (tabConflict) {
+        return {
+          ok: false as const,
+          reason: 'corrupt' as const,
+          message:
+            '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+        };
+      }
+      if (finishCommitPending) {
+        return {
+          ok: false as const,
+          reason: 'corrupt' as const,
+          message:
+            'ランの完了を保存し終えるまで、別のセーブは読み込めません。保存の再試行を先にしてください。',
+        };
+      }
       undoImportedRun = null;
       const loaded = parseRunSaveShare(raw);
       if (!loaded.ok) return loaded;
@@ -1997,7 +2258,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       runSaveImportWrites = write.catch(() => undefined);
       try {
         await write;
-      } catch {
+      } catch (error) {
+        if (isTabConflict(error)) {
+          tabConflict = true;
+          bump();
+        }
         if (priorDurable !== undefined) await restoreImportedRun();
         return {
           ok: false,
@@ -2062,6 +2327,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         writtenIds?: ReadonlySet<string>;
       },
     ) {
+      if (tabConflict) {
+        return {
+          ok: false as const,
+          reason: 'corrupt' as const,
+          message:
+            '別のタブが記録を更新したため、このタブからは読み込めません。再読込して引き継いでください。',
+        };
+      }
       const backup = readPersistenceBackup(raw);
       if (backup && !batch) {
         if (backup.replays.length === 0) {

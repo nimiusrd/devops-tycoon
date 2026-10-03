@@ -1,0 +1,105 @@
+import { Children, createElement, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import type { PersistenceNotice as PersistenceNoticeModel } from '../../../src/state/persistenceStatus';
+import { PersistenceNotice } from '../../../src/ui/PersistenceNotice';
+import { TabConflictNotice } from '../../../src/ui/TabConflictNotice';
+
+type Props = Record<string, unknown> & { children?: ReactNode };
+
+function expand(node: ReactNode): ReactNode {
+  if (!isValidElement<Props>(node)) return node;
+  if (typeof node.type === 'function') {
+    return expand((node.type as (props: Props) => ReactNode)(node.props));
+  }
+  return node;
+}
+
+function elements(node: ReactNode): ReactElement<Props>[] {
+  const expanded = expand(node);
+  if (!isValidElement<Props>(expanded)) return [];
+  return [expanded, ...Children.toArray(expanded.props.children).flatMap(elements)];
+}
+
+describe('別タブ競合の案内', () => {
+  it('理由と再読込を出し、再試行では書き戻さない', () => {
+    const onTakeOver = vi.fn();
+    const node = createElement(TabConflictNotice, { onTakeOver });
+    const notice = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-notice',
+    );
+    const button = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-reload',
+    );
+    expect(notice?.props['data-tone']).toBe('warn');
+    expect(notice?.props['data-persistent']).toBe('true');
+    expect(elements(node).some((element) => element.props.children === '再試行')).toBe(false);
+    expect(button?.type).toBe('button');
+    (button?.props.onClick as () => void)();
+    expect(onTakeOver).toHaveBeenCalledOnce();
+  });
+
+  it('保存失敗の再試行とは重ねず、常駐バナーとして高さを測れる', () => {
+    const notice: PersistenceNoticeModel = {
+      state: 'failed',
+      tone: 'danger',
+      headline: '保存失敗',
+      detail: '容量が不足しています。',
+      liveMessage: '容量が不足して保存できません。',
+      showRetry: true,
+      showExport: true,
+      persistent: true,
+    };
+    const node = createElement(PersistenceNotice, {
+      notice,
+      onRetry: vi.fn(),
+      onExport: vi.fn(),
+      tabConflict: true,
+      onTakeOver: vi.fn(),
+    });
+    const conflict = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-notice',
+    );
+    expect(conflict?.props['data-persistent']).toBe('true');
+    expect(conflict?.props.ref).toEqual(expect.any(Function));
+    expect(
+      elements(node).some((element) => element.props['data-testid'] === 'persistence-retry'),
+    ).toBe(false);
+    const exporter = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-export',
+    );
+    expect(exporter?.type).toBe('button');
+    expect(String(elements(node).map((element) => element.props.children))).toContain(
+      '未保存のデータは破棄',
+    );
+  });
+
+  it('書き出し失敗の一文を競合案内と読み上げに残す', () => {
+    const notice: PersistenceNoticeModel = {
+      state: 'idle',
+      tone: 'quiet',
+      headline: '',
+      detail: '',
+      liveMessage: '',
+      showRetry: false,
+      showExport: true,
+      persistent: false,
+    };
+    const node = createElement(PersistenceNotice, {
+      notice,
+      onRetry: vi.fn(),
+      onExport: vi.fn(),
+      exportMessage: 'ファイルを書き出せませんでした。',
+      tabConflict: true,
+      onTakeOver: vi.fn(),
+    });
+    const live = elements(node).find(
+      (element) => element.props['data-testid'] === 'persistence-live',
+    );
+    expect(String(live?.props.children)).toContain('ファイルを書き出せませんでした。');
+    expect(
+      elements(node).some(
+        (element) => element.props['data-testid'] === 'tab-conflict-export-error',
+      ),
+    ).toBe(true);
+  });
+});

@@ -63,6 +63,12 @@ export interface UseRun {
   persistenceStatus: PersistenceNotice;
   /** 失敗した自動保存、またはセッション限りの再読込を試す。 */
   retryPersistence: () => Promise<void>;
+  /** 別タブが先に記録を更新し、このタブからの保存を止めている。 */
+  tabConflict: boolean;
+  /** ラン完了の保存に失敗し、再試行まで次のランを始められない。 */
+  finishSaveBlocksNewRun: boolean;
+  /** 最新の記録を読み直して操作を引き継ぐ。 */
+  takeOverForeignTab: () => void;
   /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
   runEpoch: number;
   /**
@@ -160,6 +166,10 @@ export function useRun(game: GameHandle): UseRun {
   const [persistenceStatus, setPersistenceStatus] = useState<PersistenceNotice>(() =>
     game.getPersistenceStatus(),
   );
+  const [tabConflict, setTabConflict] = useState(() => game.hasTabConflict());
+  const [finishSaveBlocksNewRun, setFinishSaveBlocksNewRun] = useState(() =>
+    game.finishSaveBlocksNewRun(),
+  );
   // ライブリージョンは空でマウントし、次の描画で文言を入れる。
   const [announcedLiveMessage, setAnnouncedLiveMessage] = useState('');
   const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
@@ -247,6 +257,8 @@ export function useRun(game: GameHandle): UseRun {
       setResumeRisk(game.getResumeRisk());
       setRunSaveIssue(game.getRunSaveIssue());
       setPersistenceStatus(game.getPersistenceStatus());
+      setTabConflict(game.hasTabConflict());
+      setFinishSaveBlocksNewRun(game.finishSaveBlocksNewRun());
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
       setIsReplayMode(game.isReplayMode());
@@ -374,6 +386,7 @@ export function useRun(game: GameHandle): UseRun {
   );
   const setSoundMuted = useCallback((muted: boolean) => void game.setSoundMuted(muted), [game]);
   const retryPersistence = useCallback(() => game.retryPersistence(), [game]);
+  const takeOverForeignTab = useCallback(() => game.takeOverForeignTab(), [game]);
 
   useEffect(() => {
     setAnnouncedLiveMessage(persistenceStatus.liveMessage);
@@ -403,6 +416,9 @@ export function useRun(game: GameHandle): UseRun {
     runSaveIssue,
     persistenceStatus: { ...persistenceStatus, liveMessage: announcedLiveMessage },
     retryPersistence,
+    tabConflict,
+    finishSaveBlocksNewRun,
+    takeOverForeignTab,
     runEpoch,
     replays,
     isReplayMode,

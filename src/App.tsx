@@ -485,6 +485,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       notice={run.persistenceStatus}
       quietPlacement={quietInline ? 'inline' : 'overlay'}
       exportMessage={exportMessage}
+      tabConflict={run.tabConflict}
+      onTakeOver={run.takeOverForeignTab}
       onRetry={() => {
         setExportMessage(null);
         void run.retryPersistence();
@@ -561,6 +563,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onOpenHelp={() => openExclusiveTitleModal(() => setHelpOpen(true))}
             onApplyPreferred={run.setPreferredCardIds}
             onExportRunSave={run.exportRunSaveText}
+            newRunBlocked={run.finishSaveBlocksNewRun}
             onImportRunSave={async (raw) => {
               const result = await run.importRunSaveText(raw);
               return {
@@ -657,6 +660,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               meta={meta}
               diagnosticInfo={diagnosticInfo}
               lastRunReward={lastRunReward}
+              newRunBlocked={run.finishSaveBlocksNewRun}
               onNewRun={run.isReplayMode ? exitReplay : newRun}
             />
           </SceneScrollReset>

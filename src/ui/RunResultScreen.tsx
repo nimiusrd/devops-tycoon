@@ -22,6 +22,7 @@ import {
   type RunRewardBreakdown,
 } from '../state/meta';
 import type { LoseReason, RunState } from '../sim/run/types';
+import { FINISH_SAVE_BLOCKS_NEW_RUN } from './finishSaveBlock';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { copyToClipboard } from './copyToClipboard';
@@ -74,6 +75,8 @@ export interface RunResultScreenProps {
   diagnosticInfo: RunDiagnosticInfo;
   /** 今回ランで付与したメタ進行ポイント内訳。 */
   lastRunReward?: RunRewardBreakdown | null;
+  /** 完了保存の失敗中。再試行まで次のランへ進ませない。 */
+  newRunBlocked?: boolean;
   onNewRun: () => void;
 }
 
@@ -82,6 +85,7 @@ export function RunResultScreen({
   meta,
   diagnosticInfo,
   lastRunReward = null,
+  newRunBlocked = false,
   onNewRun,
 }: RunResultScreenProps) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
@@ -360,10 +364,21 @@ export function RunResultScreen({
             type="button"
             className="btn btn-primary"
             data-testid="new-run"
+            disabled={newRunBlocked}
+            aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
             onClick={onNewRun}
           >
             新しいランへ →
           </button>
+          {newRunBlocked ? (
+            <p
+              id="finish-save-block"
+              className="result-title-value"
+              data-testid="finish-save-block"
+            >
+              {FINISH_SAVE_BLOCKS_NEW_RUN}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

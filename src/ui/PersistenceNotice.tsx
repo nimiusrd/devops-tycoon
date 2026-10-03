@@ -9,6 +9,7 @@
 import { createPortal } from 'react-dom';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../state/persistenceStatus';
 import { observePersistenceBannerHeight } from './persistenceBannerInset';
+import { TabConflictNotice } from './TabConflictNotice';
 
 export interface PersistenceNoticeProps {
   notice: PersistenceNoticeModel;
@@ -21,6 +22,9 @@ export interface PersistenceNoticeProps {
    * ここでは読み上げと常駐バナーだけを残す。
    */
   quietPlacement?: 'inline' | 'overlay';
+  /** 別タブが記録を更新した。再試行バナーの代わりに再読込案内を出す。 */
+  tabConflict?: boolean;
+  onTakeOver?: () => void;
 }
 
 /** 平常時の保存済みは出さない。時刻の常時表示は盤面を覆い、視覚回帰も崩れる。 */
@@ -84,11 +88,18 @@ export function PersistenceNotice({
   onExport,
   exportMessage = null,
   quietPlacement = 'overlay',
+  tabConflict = false,
+  onTakeOver,
 }: PersistenceNoticeProps) {
-  const liveText = exportMessage
-    ? `${notice.liveMessage} ${exportMessage}`.trim()
-    : notice.liveMessage;
+  const conflictText =
+    '別のタブが記録を更新しました。このタブの変更は保存していません。再読込して引き継げます。';
+  const liveText = tabConflict
+    ? [conflictText, exportMessage].filter((part) => part).join(' ')
+    : exportMessage
+      ? `${notice.liveMessage} ${exportMessage}`.trim()
+      : notice.liveMessage;
   const showBanner =
+    !tabConflict &&
     showsPersistenceBanner(notice) &&
     !(quietPlacement === 'inline' && showsInlineRecoveryChip(notice));
   const content = (
@@ -101,6 +112,15 @@ export function PersistenceNotice({
       >
         {liveText}
       </span>
+      {tabConflict && onTakeOver ? (
+        <TabConflictNotice
+          onTakeOver={onTakeOver}
+          bannerRef={bindPersistentBanner}
+          showExport={notice.showExport}
+          onExport={onExport}
+          exportMessage={exportMessage}
+        />
+      ) : null}
       {showBanner ? (
         <div
           ref={bindPersistentBanner}

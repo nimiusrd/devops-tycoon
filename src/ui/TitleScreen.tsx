@@ -18,6 +18,7 @@ import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
+import { FINISH_SAVE_BLOCKS_NEW_RUN } from './finishSaveBlock';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
@@ -130,6 +131,8 @@ export interface TitleScreenProps {
   onExportRunSave?: () => string | null;
   /** JSON から途中セーブを読み込む。 */
   onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string; restored?: 'both' }>;
+  /** 完了保存の失敗中。再試行まで新しいランを始められない。 */
+  newRunBlocked?: boolean;
 }
 
 export function TitleScreen({
@@ -152,6 +155,7 @@ export function TitleScreen({
   onApplyPreferred,
   onExportRunSave,
   onImportRunSave,
+  newRunBlocked = false,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -324,62 +328,75 @@ export function TitleScreen({
     startDailyButtonRef.current?.focus();
   }, [dailyConfirmOpen]);
 
-  const launchControls = onStartDaily ? (
-    <section className="title-launch-row" data-testid="daily-run-section">
-      <div className="title-daily">
-        <span>デイリーラン</span>
-        <b>全員同じシードで競う</b>
-        <small>
-          UTC {today}・{dailyStatus}
-        </small>
-        <button
-          ref={startDailyButtonRef}
-          type="button"
-          data-testid="start-daily-run"
-          disabled={runSaveImporting}
-          aria-haspopup={resumableSummary ? 'dialog' : undefined}
-          aria-expanded={resumableSummary ? dailyConfirmOpen : undefined}
-          onClick={requestStartDaily}
-        >
-          本日のデイリーを始める →
-        </button>
-      </div>
-      <div className="title-mission">
-        <small>今回の設定</small>
-        <b>
-          {DIFFICULTY_TAG[difficulty]} / 試練 {trials.length}
-          {scenario !== DEFAULT_SCENARIO ? ` / ${selectedScenario.label}` : ''}
-        </b>
-        <span>
-          最終倍率 <strong>×{scoreMultiplier.toFixed(2)}</strong>
-        </span>
-      </div>
-      <button
-        type="button"
-        className="title-launch"
-        data-testid="start-run"
-        disabled={runSaveImporting}
-        onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
-      >
-        <span>
-          <small>ラン開始</small>
-          四半期を始める
-        </span>
-        <i>→</i>
-      </button>
-    </section>
-  ) : (
-    <div className="title-actions">
-      <button
-        type="button"
-        className="btn btn-primary btn-lg"
-        data-testid="start-run"
-        disabled={runSaveImporting}
-        onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
-      >
-        四半期を始める →
-      </button>
-    </div>
+  const launchBlocked = newRunBlocked || runSaveImporting;
+  const launchControls = (
+    <>
+      {newRunBlocked ? (
+        <p id="finish-save-block" className="title-resume-warning" data-testid="finish-save-block">
+          {FINISH_SAVE_BLOCKS_NEW_RUN}
+        </p>
+      ) : null}
+      {onStartDaily ? (
+        <section className="title-launch-row" data-testid="daily-run-section">
+          <div className="title-daily">
+            <span>デイリーラン</span>
+            <b>全員同じシードで競う</b>
+            <small>
+              UTC {today}・{dailyStatus}
+            </small>
+            <button
+              ref={startDailyButtonRef}
+              type="button"
+              data-testid="start-daily-run"
+              disabled={launchBlocked}
+              aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
+              aria-haspopup={resumableSummary ? 'dialog' : undefined}
+              aria-expanded={resumableSummary ? dailyConfirmOpen : undefined}
+              onClick={requestStartDaily}
+            >
+              本日のデイリーを始める →
+            </button>
+          </div>
+          <div className="title-mission">
+            <small>今回の設定</small>
+            <b>
+              {DIFFICULTY_TAG[difficulty]} / 試練 {trials.length}
+              {scenario !== DEFAULT_SCENARIO ? ` / ${selectedScenario.label}` : ''}
+            </b>
+            <span>
+              最終倍率 <strong>×{scoreMultiplier.toFixed(2)}</strong>
+            </span>
+          </div>
+          <button
+            type="button"
+            className="title-launch"
+            data-testid="start-run"
+            disabled={launchBlocked}
+            aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
+            onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
+          >
+            <span>
+              <small>ラン開始</small>
+              四半期を始める
+            </span>
+            <i>→</i>
+          </button>
+        </section>
+      ) : (
+        <div className="title-actions">
+          <button
+            type="button"
+            className="btn btn-primary btn-lg"
+            data-testid="start-run"
+            disabled={launchBlocked}
+            aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
+            onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
+          >
+            四半期を始める →
+          </button>
+        </div>
+      )}
+    </>
   );
 
   return (
@@ -762,7 +779,8 @@ export function TitleScreen({
                   type="button"
                   className="title-resume-btn"
                   data-testid="resume-run"
-                  disabled={runSaveImporting}
+                  disabled={launchBlocked}
+                  aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
                   onClick={() => {
                     if (resumeRisk?.requiresConfirm) {
                       setResumeConfirmOpen(true);

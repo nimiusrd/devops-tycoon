@@ -163,6 +163,22 @@ export class PersistenceTracker {
     return this.succeed(channel, current.generation, at);
   }
 
+  /**
+   * 別タブとの競合で書き込みを止めたとき、保存失敗にはしない。
+   * 世代が遅れていれば、いま進んでいる保存の表示は変えない。
+   */
+  ignoreConflict(channel: PersistenceChannel, generation: number): void {
+    const current = this.channels[channel];
+    if (current.generation !== generation) return;
+    if (current.savingWhileFailed) {
+      current.write = 'failed';
+      current.savingWhileFailed = false;
+      return;
+    }
+    current.write = 'idle';
+    current.failure = null;
+  }
+
   begin(channel: PersistenceChannel): number {
     const current = this.channels[channel];
     current.generation += 1;
@@ -256,7 +272,7 @@ export class PersistenceTracker {
         detail: '端末への書き込みを待っています。',
         liveMessage: this.liveMessage,
         showRetry: false,
-        showExport: false,
+        showExport: canExportRun,
         persistent: false,
       };
     }
@@ -268,7 +284,7 @@ export class PersistenceTracker {
         detail: '保存済みデータを読み直せました。',
         liveMessage: this.liveMessage,
         showRetry: false,
-        showExport: false,
+        showExport: canExportRun,
         persistent: false,
       };
     }
@@ -280,7 +296,7 @@ export class PersistenceTracker {
         detail: moment,
         liveMessage: this.liveMessage,
         showRetry: false,
-        showExport: false,
+        showExport: canExportRun,
         persistent: false,
       };
     }
@@ -291,7 +307,7 @@ export class PersistenceTracker {
       detail: '',
       liveMessage: this.liveMessage,
       showRetry: false,
-      showExport: false,
+      showExport: canExportRun,
       persistent: false,
     };
   }

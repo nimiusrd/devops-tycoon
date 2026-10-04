@@ -2,14 +2,15 @@
 import { describe, expect, it } from 'vitest';
 import { getDifficulty } from '../../../src/data/difficulties';
 import { AI_DEP_PER_TASK } from '../../../src/sim/model/process';
-import { createEngine } from '../../../src/sim/engine';
+import { createOrgState } from '../../../src/sim/org';
+import { createRng } from '../../../src/sim/rng';
 import { RunEngine } from '../../../src/sim/run/engine';
 import {
   applyScenarioOrg,
   getScenario,
   resolveAiDependencyPerTask,
 } from '../../../src/sim/scenarios';
-import { resolveSprintConfig } from '../../../src/sim/sprint';
+import { createSprint, resolveSprintConfig } from '../../../src/sim/sprint';
 import { playUntil, type PlayOptions } from '../helpers/runFlow';
 import type { ScenarioId } from '../../../src/sim/types';
 
@@ -59,11 +60,15 @@ describe('Easy + Copilot Sprint 1 (#387)', () => {
     expect(copilot.endAi).toBeGreaterThan(80);
   });
 
-  it('単体 Engine の Copilot はグローバル既定へフォールバックする', () => {
+  it('Copilot のスプリント構成はグローバル既定へフォールバックする', () => {
     expect(resolveSprintConfig('copilot').aiDependencyPerTask).toBeUndefined();
     expect(resolveSprintConfig('default').aiDependencyPerTask).toBeUndefined();
-    const engine = createEngine({ scenario: 'copilot', aiEnabled: true, seed: SEED });
-    expect(engine.snapshot().sprint.config.aiDependencyPerTask).toBeUndefined();
+    const sprint = createSprint(
+      resolveSprintConfig('copilot'),
+      createOrgState('copilot', true),
+      createRng(SEED),
+    );
+    expect(sprint.config.aiDependencyPerTask).toBeUndefined();
   });
 
   it('Easy+Copilot は既定単価、Nightmare+Copilot は 0.8 のまま', () => {

@@ -31,13 +31,18 @@ import {
   taskValue,
 } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
-import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../../src/sim/sprint';
-import { createEngine, type Engine } from '../../../src/sim/engine';
+import {
+  createSprint,
+  resolveSprintConfig,
+  reviewOne,
+  stepSprint,
+  summarizeSprint,
+} from '../../../src/sim/sprint';
+import { createRng } from '../../../src/sim/rng';
 import type {
   ActionId,
   InterventionEffect,
   OrgState,
-  SimState,
   SprintState,
   Task,
 } from '../../../src/sim/types';
@@ -48,21 +53,6 @@ const rng = () => 0.99;
 
 /** このファイルの固定 rng を束ねた共通フィクスチャの別名。 */
 const makeSprint = (org: OrgState, tasks: Task[]): SprintState => makeSprintWith(org, tasks, rng);
-
-const reviewCount = (s: SimState): number =>
-  s.sprint.tasks.filter((t) => t.lane === 'review').length;
-
-/** 述語が満たされるまで（または上限まで）1 tick ずつ前進させる。 */
-function stepUntil(e: Engine, pred: (s: SimState) => boolean, maxTicks = 4000): SimState {
-  let s = e.snapshot();
-  let guard = 0;
-  while (!pred(s) && !e.isComplete() && guard < maxTicks) {
-    e.step(100);
-    s = e.snapshot();
-    guard += 1;
-  }
-  return s;
-}
 
 /** アクション別の成功用 fixture（tasks + 発動前の観測用スナップショット）。 */
 interface ActionFixture {
@@ -607,16 +597,19 @@ describe('介入アクション: 効果ペイロード（RI-49）', () => {
 describe('介入で結果が変わる（DoD: 操作で結果が変わる）', () => {
   /** 指定 tick で 1 度だけ overtime を撃ち、最後までまわした結果を返す。 */
   function runWithIntervention(dispatchAt: number | null) {
-    const e = createEngine({ seed: 'intervene', aiEnabled: true });
-    let guard = 0;
-    while (!e.isComplete() && guard < 100_000) {
-      if (dispatchAt !== null && e.snapshot().tick === dispatchAt) {
-        e.dispatch('overtime');
+    const org = createOrgState('default', true);
+    const rng = createRng('intervene');
+    const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+    for (let tick = 0; !sprint.complete && tick < 100_000; tick += 1) {
+      if (tick === dispatchAt) {
+        expect(applyAction('overtime', sprint, org, rng, tick).ok).toBe(true);
       }
-      e.step(100);
-      guard += 1;
+      stepSprint(sprint, org, rng, tick);
     }
-    return e.result();
+    expect(sprint.complete).toBe(true);
+    const result = summarizeSprint(sprint, org);
+    expect(result.actionCounts.overtime ?? 0).toBe(dispatchAt === null ? 0 : 1);
+    return result;
   }
 
   it('介入の有無でリザルトが変わる', () => {
@@ -631,21 +624,32 @@ describe('介入で結果が変わる（DoD: 操作で結果が変わる）', ()
   });
 
   it('リザルトに介入内訳が種類別に集計される', () => {
-    const e = createEngine({ seed: 'result-interventions', aiEnabled: true });
-    stepUntil(e, (s) => reviewCount(s) >= 4);
-    expect(e.dispatch('interruptReview').ok).toBe(true);
-    expect(e.dispatch('overtime').ok).toBe(true);
-
-    let guard = 0;
-    while (!e.isComplete() && guard < 100_000) {
-      e.step(100);
-      guard += 1;
+    const org = createOrgState('default', true);
+    const rng = createRng('result-interventions');
+    const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+    let tick = 0;
+    while (
+      sprint.tasks.filter((t) => t.lane === 'review').length < 4 &&
+      !sprint.complete &&
+      tick < 4000
+    ) {
+      stepSprint(sprint, org, rng, tick);
+      tick += 1;
     }
-    expect(e.isComplete()).toBe(true);
+    expect(sprint.complete).toBe(false);
+    expect(sprint.tasks.filter((t) => t.lane === 'review').length).toBeGreaterThanOrEqual(4);
+    expect(applyAction('interruptReview', sprint, org, rng, tick).ok).toBe(true);
+    expect(applyAction('overtime', sprint, org, rng, tick).ok).toBe(true);
 
-    const result = e.result();
+    for (; !sprint.complete && tick < 100_000; tick += 1) {
+      stepSprint(sprint, org, rng, tick);
+    }
+    expect(sprint.complete).toBe(true);
+
+    const result = summarizeSprint(sprint, org);
     expect(result.actionCounts.interruptReview).toBe(1);
     expect(result.actionCounts.overtime).toBe(1);
+    expect(sprint.metrics.interventionsUsed).toBe(2);
   });
 });
 

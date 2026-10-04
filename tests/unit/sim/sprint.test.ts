@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEngine, type Engine } from '../../../src/sim/engine';
+import { createRng } from '../../../src/sim/rng';
 import type {
   SprintResult,
   SprintMetrics,
@@ -27,24 +27,26 @@ import {
 import { makeSprint, makeTask } from '../helpers/sprintFixtures';
 
 /** スプリントを最後まで自動進行させ、リザルトを返す。 */
-function runSprint(seed: string, aiEnabled: boolean): { engine: Engine; result: SprintResult } {
-  const engine = createEngine({ seed, aiEnabled, scenario: 'default' });
-  let guard = 0;
-  while (!engine.isComplete() && guard < 100_000) {
-    engine.step(1000); // 10 tick ずつ前進
-    guard += 1;
+function runSprint(
+  seed: string,
+  aiEnabled: boolean,
+): { sprint: SprintState; result: SprintResult } {
+  const org = createOrgState('default', aiEnabled);
+  const rng = createRng(seed);
+  const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+  for (let tick = 0; !sprint.complete && tick < 100_000; tick += 1) {
+    stepSprint(sprint, org, rng, tick);
   }
-  expect(engine.isComplete()).toBe(true);
-  return { engine, result: engine.result() };
+  expect(sprint.complete).toBe(true);
+  return { sprint, result: summarizeSprint(sprint, org) };
 }
 
 describe('スプリントの終了保証', () => {
   it('AIあり/なしいずれも有限ステップで完了し、全タスクが Done になる', () => {
     for (const aiEnabled of [false, true]) {
-      const { engine, result } = runSprint('finish', aiEnabled);
-      const snap = engine.snapshot();
-      expect(snap.sprint.tasks.every((t) => t.lane === 'done')).toBe(true);
-      expect(result.done).toBe(snap.sprint.config.taskCount);
+      const { sprint, result } = runSprint('finish', aiEnabled);
+      expect(sprint.tasks.every((t) => t.lane === 'done')).toBe(true);
+      expect(result.done).toBe(sprint.config.taskCount);
     }
   });
 });

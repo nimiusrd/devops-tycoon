@@ -421,6 +421,23 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   const contentSnapshot =
     parsedContentSnapshot === INVALID_REPLAY_VALUE ? null : parsedContentSnapshot;
 
+  // 保存時の表示名は保持し、画像の勝敗・出荷数だけを実際の終端状態と照合する。
+  const companyResult = contentSnapshot?.companyResult;
+  if (companyResult) {
+    const terminal = keyframes[keyframes.length - 1];
+    if (
+      !terminal ||
+      (terminal.phase !== 'won' && terminal.phase !== 'lost') ||
+      terminal.frame.status !== terminal.phase ||
+      value.outcome.status !== terminal.phase ||
+      companyResult.won !== (terminal.phase === 'won') ||
+      companyResult.delivered !== terminal.frame.totals?.delivered ||
+      companyResult.delivered !== value.outcome.score
+    ) {
+      return null;
+    }
+  }
+
   return {
     schemaVersion: REPLAY_SCHEMA_VERSION,
     id: value.id,

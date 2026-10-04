@@ -659,6 +659,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               state={state}
               meta={meta}
               diagnosticInfo={diagnosticInfo}
+              recordedCompanyResult={run.activeReplayInfo?.contentSnapshot?.companyResult}
+              isReplay={run.isReplayMode}
               lastRunReward={lastRunReward}
               newRunBlocked={run.finishSaveBlocksNewRun}
               onNewRun={run.isReplayMode ? exitReplay : newRun}

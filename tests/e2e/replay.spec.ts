@@ -146,6 +146,19 @@ test('ラン完了後にリプレイ一覧からキーフレームを read-only 
     .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
     .toBeGreaterThan(0);
 
+  const recorded = await page.evaluate(() => {
+    const game = (window as ReplayGameWindow).game!;
+    const state = game.getState();
+    const replay = game.listReplays()[0];
+    return { state, replay };
+  });
+  expect(recorded.replay.keyframes.at(-1)?.phase).toBe(recorded.state.status);
+  expect(recorded.replay.contentSnapshot?.companyResult).toMatchObject({
+    won: recorded.state.status === 'won',
+    delivered: recorded.state.totals.delivered,
+    outcome: await page.getByTestId('run-end-status').innerText(),
+  });
+
   await page.getByTestId('new-run').click();
   await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
   await page.getByTestId('open-replays').click();

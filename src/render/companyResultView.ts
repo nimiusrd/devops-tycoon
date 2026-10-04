@@ -1,0 +1,83 @@
+import { winView } from '../sim/outcome';
+import type { RunState } from '../sim/run/types';
+import { clampSeniorHpDisplay } from './seniorHpDisplay';
+import { LOSE_LABEL } from './runOutcomeLabels';
+
+/** 決着時に固定する画像の表示値。旧記録を現行の定義で再評価しない。 */
+export interface CompanyResult {
+  outcome: string;
+  won: boolean;
+  delivered: number;
+  cost: { label: string; remaining: number };
+  cards: { name: string; level: number }[];
+}
+
+/** 固定サイズの結果画像で計測する文字列の上限（UTF-16単位）。 */
+export const COMPANY_RESULT_TEXT_MAX_LENGTH = 256;
+
+function isCompanyResultText(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= COMPANY_RESULT_TEXT_MAX_LENGTH;
+}
+
+/** 記録の原文を変更せず、画像と代替テキストの表示だけを省略する。 */
+function companyResultText(text: string): string {
+  if (text.length <= COMPANY_RESULT_TEXT_MAX_LENGTH) return text;
+  let end = COMPANY_RESULT_TEXT_MAX_LENGTH - 1;
+  // UTF-16のサロゲートペアを途中で切らない。
+  const last = text.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return `${text.slice(0, end)}…`;
+}
+
+type ResultState = Pick<RunState, 'status' | 'winType' | 'loseReason' | 'totals' | 'org' | 'deck'>;
+
+export function buildCompanyResult(
+  state: ResultState,
+  cardName: (id: string) => string,
+  legacy = false,
+): CompanyResult {
+  const won = state.status === 'won';
+  // 記録に表示名がない旧結果は、現行定義へ補完せず記録されたIDを示す。
+  const outcome = legacy
+    ? `${won ? '勝利' : '敗北'}（記録: ${state.winType ?? state.loseReason ?? '種別なし'}）`
+    : won
+      ? state.winType
+        ? winView(state.winType).label
+        : '勝利'
+      : state.loseReason
+        ? LOSE_LABEL[state.loseReason].label
+        : '敗北';
+  const senior = state.org.seniorHp <= state.org.morale;
+  return {
+    outcome: companyResultText(outcome),
+    won,
+    delivered: state.totals.delivered,
+    cost: {
+      label: senior ? 'シニア体力' : '士気',
+      remaining: senior
+        ? clampSeniorHpDisplay(state.org.seniorHp)
+        : Math.min(100, Math.max(0, Math.round(state.org.morale))),
+    },
+    cards: state.deck
+      .map((card, index) => ({ card, index }))
+      .sort((a, b) => b.card.level - a.card.level || a.index - b.index)
+      .slice(0, 3)
+      .map(({ card }) => ({ name: companyResultText(cardName(card.defId)), level: card.level })),
+  };
+}
+
+export function isCompanyResult(value: unknown): value is CompanyResult {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as CompanyResult;
+  return (
+    isCompanyResultText(v.outcome) &&
+    typeof v.won === 'boolean' &&
+    Number.isFinite(v.delivered) &&
+    !!v.cost &&
+    isCompanyResultText(v.cost.label) &&
+    Number.isFinite(v.cost.remaining) &&
+    Array.isArray(v.cards) &&
+    v.cards.length <= 3 &&
+    v.cards.every((c) => !!c && isCompanyResultText(c.name) && Number.isFinite(c.level))
+  );
+}

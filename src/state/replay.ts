@@ -11,6 +11,11 @@ import {
   type RunReplayFrameInput,
   type ReplayFramePhase,
 } from '../sim/run/persist';
+import {
+  buildCompanyResult,
+  isCompanyResult,
+  type CompanyResult,
+} from '../render/companyResultView';
 import { getCard } from '../data/cards';
 import { getTrial } from '../data/difficulties';
 import { getRelic, type RelicDef } from '../data/relics';
@@ -87,6 +92,8 @@ export interface ReplayTrialSnapshot {
 
 /** リプレイ表示で参照するカード／レリック／試練定義の最小スナップショット。 */
 export interface ReplayContentSnapshot {
+  /** 決着時の画像表示値。旧記録では省略。 */
+  companyResult?: CompanyResult;
   cards: CardDef[];
   relics: RelicDef[];
   /**
@@ -217,7 +224,11 @@ function parseReplayContentSnapshot(
     }
     trials = structuredClone(value.trials);
   }
+  if (value.companyResult !== undefined && !isCompanyResult(value.companyResult)) {
+    return INVALID_REPLAY_VALUE;
+  }
   return {
+    ...(value.companyResult ? { companyResult: structuredClone(value.companyResult) } : {}),
     cards: structuredClone(value.cards),
     relics: structuredClone(value.relics),
     ...(trials ? { trials } : {}),
@@ -300,7 +311,18 @@ export function collectReplayReferencedIds(keyframes: readonly ReplayKeyframe[])
 
 export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): ReplayContentSnapshot {
   const { cardIds, relicIds, trialIds } = collectReplayReferencedIds(keyframes);
+  const terminal = [...keyframes]
+    .reverse()
+    .find((entry) => entry.phase === 'won' || entry.phase === 'lost');
   return {
+    ...(terminal
+      ? {
+          companyResult: buildCompanyResult(
+            terminal.frame,
+            (id) => getCard(id)?.name ?? `不明なカード（${id}）`,
+          ),
+        }
+      : {}),
     cards: [...cardIds]
       .map((id) => getCard(id))
       .filter((card): card is CardDef => card !== undefined)
@@ -398,6 +420,23 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   if (!isLegacyShape && parsedContentSnapshot === INVALID_REPLAY_VALUE) return null;
   const contentSnapshot =
     parsedContentSnapshot === INVALID_REPLAY_VALUE ? null : parsedContentSnapshot;
+
+  // 保存時の表示名は保持し、画像の勝敗・出荷数だけを実際の終端状態と照合する。
+  const companyResult = contentSnapshot?.companyResult;
+  if (companyResult) {
+    const terminal = keyframes[keyframes.length - 1];
+    if (
+      !terminal ||
+      (terminal.phase !== 'won' && terminal.phase !== 'lost') ||
+      terminal.frame.status !== terminal.phase ||
+      value.outcome.status !== terminal.phase ||
+      companyResult.won !== (terminal.phase === 'won') ||
+      companyResult.delivered !== terminal.frame.totals?.delivered ||
+      companyResult.delivered !== value.outcome.score
+    ) {
+      return null;
+    }
+  }
 
   return {
     schemaVersion: REPLAY_SCHEMA_VERSION,

@@ -7770,3 +7770,18 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .setup-observation {
   margin-bottom: 0.75rem;
 }
+
+/* 決着画像は静的な要約。小画面でも元のPNG全体を確認できる。 */
+.result-company-image {
+  margin-block: 1rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--visual-color-line);
+  overflow-wrap: anywhere;
+}
+.company-result-preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-block: 1rem;
+  border-radius: 0.75rem;
+}

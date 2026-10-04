@@ -21,12 +21,15 @@ import {
   type MetaState,
   type RunRewardBreakdown,
 } from '../state/meta';
-import type { LoseReason, RunState } from '../sim/run/types';
+import type { RunState } from '../sim/run/types';
 import { FINISH_SAVE_BLOCKS_NEW_RUN } from './finishSaveBlock';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { copyToClipboard } from './copyToClipboard';
 import { useReplayContent } from './replayContent';
+import { LOSE_LABEL } from '../render/runOutcomeLabels';
+import { buildCompanyResult, type CompanyResult } from '../render/companyResultView';
+import { CompanyResultImage } from './CompanyResultImage';
 import { VisualIcon } from './VisualIcon';
 
 const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind']>, string> = {
@@ -34,43 +37,10 @@ const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind
   met: '達成',
 };
 
-const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
-  seniorBurnout: { label: 'シニア燃え尽き', desc: 'レビューがシニアに集中し、体力が尽きました。' },
-  techDebt: { label: '技術的負債の崩壊', desc: '負債が上限を超え、開発が立ち行かなくなりました。' },
-  moraleCollapse: { label: 'チーム崩壊', desc: '士気が尽き、チームが機能しなくなりました。' },
-  reviewFreeze: {
-    label: 'PR 凍結',
-    desc: 'レビュー待ち行列が限界に達し、出荷ラインが止まりました。',
-  },
-  incidentCascade: {
-    label: '障害連鎖によるリリース停止',
-    desc: '障害が連続し、安定したリリースを継続できなくなりました。',
-  },
-  aiDependency: {
-    label: 'AI 依存の限界',
-    desc: 'AI 依存が高まりすぎて、チームが仕様を説明・検証できなくなりました。',
-  },
-  budgetExhausted: {
-    label: '予算枯渇',
-    desc: '予算が尽き、AI ツールを維持できなくなりました。',
-  },
-  bossFailed: { label: 'ボス突破失敗', desc: '四半期末の試練を突破できませんでした。' },
-  trustExhausted: {
-    label: '信頼枯渇',
-    desc: 'ステークホルダーの信頼が尽き、プロジェクトを継続できませんでした。',
-  },
-  reorgRequired: {
-    label: '組織再編',
-    desc: '目標未達が重なり、大規模再編としてプロジェクトが終了しました。',
-  },
-  kpiMissed: {
-    label: 'KPI未達の累積',
-    desc: '四半期目標の未達が重なり、継続判断を下せませんでした。',
-  },
-};
-
 export interface RunResultScreenProps {
   state: RunState;
+  recordedCompanyResult?: CompanyResult;
+  isReplay?: boolean;
   meta: MetaState;
   diagnosticInfo: RunDiagnosticInfo;
   /** 今回ランで付与したメタ進行ポイント内訳。 */
@@ -82,6 +52,8 @@ export interface RunResultScreenProps {
 
 export function RunResultScreen({
   state,
+  recordedCompanyResult,
+  isReplay = false,
   meta,
   diagnosticInfo,
   lastRunReward = null,
@@ -89,7 +61,14 @@ export function RunResultScreen({
   onNewRun,
 }: RunResultScreenProps) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
-  const { resolveRelic } = useReplayContent();
+  const { resolveRelic, resolveCard, isReplaySnapshot } = useReplayContent();
+  const companyResult =
+    recordedCompanyResult ??
+    buildCompanyResult(
+      state,
+      (id) => (isReplay && !isReplaySnapshot ? `記録名なし（${id}）` : resolveCard(id).name),
+      isReplay,
+    );
   const won = state.status === 'won';
   const boss = getBoss(state.bossId);
   const diag = diagnosisView(state.diagnosis);
@@ -254,6 +233,8 @@ export function RunResultScreen({
             </p>
           )}
         </div>
+
+        <CompanyResultImage key={JSON.stringify(companyResult)} result={companyResult} />
 
         <section className="result-diagnostic" data-testid="run-diagnostic-info">
           <p className="result-section-label">不具合再現情報</p>

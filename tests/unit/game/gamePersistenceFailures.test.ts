@@ -1912,6 +1912,9 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     const replacement = structuredClone(storedA);
     replacement.finishedAt = 90_000;
     replacement.outcome = { ...replacement.outcome, score: 99 };
+    // 別内容でも、終端・画像表示値と整合する正常なリプレイにする。
+    replacement.keyframes[replacement.keyframes.length - 1]!.frame.totals.delivered = 99;
+    replacement.contentSnapshot!.companyResult!.delivered = 99;
     const result = await game.importReplayText(serializeReplay(replacement));
     expect(result).toMatchObject({ ok: true });
     const pendingB = game
@@ -2144,6 +2147,8 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     const originalScore = pending.outcome.score;
     const different = JSON.parse(exported!) as ReplayBlob;
     different.outcome = { ...different.outcome, score: originalScore + 1 };
+    different.keyframes[different.keyframes.length - 1]!.frame.totals.delivered = originalScore + 1;
+    different.contentSnapshot!.companyResult!.delivered = originalScore + 1;
 
     expect(await game.importReplayText(JSON.stringify(different))).toMatchObject({ ok: true });
 

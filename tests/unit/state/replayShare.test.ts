@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { createGame } from '../../../src/game';
+import {
+  COMPANY_RESULT_TEXT_MAX_LENGTH,
+  type CompanyResult,
+} from '../../../src/render/companyResultView';
 import { RunEngine } from '../../../src/sim/run/engine';
 import { defaultMeta } from '../../../src/state/meta';
 import {
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
+  normalizeReplay,
   snapshotReplayContent,
   type ReplayBlob,
 } from '../../../src/state/replay';
@@ -34,7 +39,12 @@ function makeWonReplay(partial: Partial<ReplayBlob> & Pick<ReplayBlob, 'id' | 's
   if (!frame) throw new Error('won frame export failed');
   return makeReplay({
     ...partial,
-    outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 10, ...partial.outcome },
+    outcome: {
+      status: 'won',
+      diagnosis: 'healthyAcceleration',
+      score: frame.totals.delivered,
+      ...partial.outcome,
+    },
     keyframes: partial.keyframes ?? [{ phase: 'won', frame }],
   });
 }
@@ -443,6 +453,153 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(opened?.phase).toBe('won');
     expect(opened?.status).toBe('won');
   });
+
+  it.each([
+    [
+      '画像の勝敗',
+      (replay: ReplayBlob) => {
+        replay.contentSnapshot!.companyResult!.won = false;
+      },
+    ],
+    [
+      '画像の出荷数',
+      (replay: ReplayBlob) => {
+        replay.contentSnapshot!.companyResult!.delivered += 1;
+      },
+    ],
+    [
+      'outcome の勝敗',
+      (replay: ReplayBlob) => {
+        replay.outcome.status = 'lost';
+      },
+    ],
+    [
+      'outcome の出荷数',
+      (replay: ReplayBlob) => {
+        replay.outcome.score += 1;
+      },
+    ],
+    [
+      '終端の status',
+      (replay: ReplayBlob) => {
+        replay.keyframes[0]!.frame.status = 'lost';
+      },
+    ],
+    [
+      '終端の出荷数',
+      (replay: ReplayBlob) => {
+        replay.keyframes[0]!.frame.totals.delivered += 1;
+      },
+    ],
+    [
+      '終端の欠落',
+      (replay: ReplayBlob) => {
+        const setup = makeReplay({ id: replay.id, seed: replay.seed });
+        replay.keyframes = setup.keyframes;
+      },
+    ],
+    [
+      '終端の totals の欠落',
+      (replay: ReplayBlob) => {
+        Reflect.deleteProperty(replay.keyframes[0]!.frame, 'totals');
+      },
+    ],
+    [
+      '終端の totals が null',
+      (replay: ReplayBlob) => {
+        Reflect.set(replay.keyframes[0]!.frame, 'totals', null);
+      },
+    ],
+  ] as const)('会社結果画像と%sが矛盾するリプレイは保存せず拒否する', async (_label, mutate) => {
+    const game = createGame({ seed: 'company-result-invalid', initialMeta: defaultMeta() });
+    const storage = new MemoryReplayStorage();
+    await game.attachReplay(storage);
+    const existing = makeReplay({ id: 'keep-image', seed: 'keep-image' });
+    expect(await game.importReplay(existing)).toBe(true);
+    const replay = makeWonReplay({ id: 'invalid-image', seed: 'invalid-image' });
+    mutate(replay);
+
+    expect(normalizeReplay(replay)).toBeNull();
+    expect(await game.importReplay(replay)).toBe(false);
+    expect(await game.importReplayText(serializeReplay(replay))).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-image']);
+    expect((await storage.list()).map((item) => item.id)).toEqual(['keep-image']);
+  });
+
+  it.each(['won', 'lost'] as const)(
+    '整合する%sの画像結果は保存済みの表示名ごと取り込める',
+    (status) => {
+      const replay = makeWonReplay({ id: `image-${status}`, seed: `image-${status}` });
+      replay.outcome.status = status;
+      const terminal = replay.keyframes[0]!;
+      terminal.phase = status;
+      terminal.frame.phase = status;
+      terminal.frame.status = status;
+      const result = replay.contentSnapshot!.companyResult!;
+      result.won = status === 'won';
+      result.outcome = '保存時の決着名';
+      result.cost.label = '保存時のコスト名';
+      expect(parseReplayShare(serializeReplay(replay))).toEqual({ ok: true, replay });
+    },
+  );
+
+  it('会社結果画像のない旧スナップショットは引き続き取り込める', () => {
+    const replay = makeWonReplay({ id: 'old-image', seed: 'old-image' });
+    delete replay.contentSnapshot!.companyResult;
+    expect(parseReplayShare(serializeReplay(replay))).toEqual({ ok: true, replay });
+  });
+
+  it.each([
+    [
+      '結果名',
+      (result: CompanyResult, text: string) => {
+        result.outcome = text;
+      },
+    ],
+    [
+      'コスト名',
+      (result: CompanyResult, text: string) => {
+        result.cost.label = text;
+      },
+    ],
+    [
+      'カード名',
+      (result: CompanyResult, text: string) => {
+        result.cards[0]!.name = text;
+      },
+    ],
+  ] as const)(
+    '画像の%sが長すぎるリプレイは保存せず拒否し、上限までは保持する',
+    async (_label, setText) => {
+      const game = createGame({ seed: 'company-result-text', initialMeta: defaultMeta() });
+      const storage = new MemoryReplayStorage();
+      await game.attachReplay(storage);
+      const replay = makeWonReplay({ id: 'text-limit', seed: 'text-limit' });
+      const result = replay.contentSnapshot!.companyResult!;
+      result.cards = [{ name: '記録時のカード', level: 1 }];
+      setText(result, 'あ'.repeat(COMPANY_RESULT_TEXT_MAX_LENGTH));
+      expect(parseReplayShare(serializeReplay(replay))).toEqual({ ok: true, replay });
+      expect((await game.importReplayText(serializeReplay(replay))).ok).toBe(true);
+      const saved = await storage.list();
+
+      for (const length of [COMPANY_RESULT_TEXT_MAX_LENGTH + 1, 100_000]) {
+        const oversized = structuredClone(replay);
+        oversized.id = 'oversized-text';
+        setText(oversized.contentSnapshot!.companyResult!, 'あ'.repeat(length));
+        expect(normalizeReplay(oversized)).toBeNull();
+        expect(await game.importReplay(oversized)).toBe(false);
+        expect(await game.importReplayText(serializeReplay(oversized))).toMatchObject({
+          ok: false,
+          reason: 'corrupt',
+        });
+        expect(await storage.list()).toEqual(saved);
+        expect(game.listReplays().map((item) => item.id)).toEqual(['text-limit']);
+      }
+    },
+  );
 
   it('キーフレームの member.stats が null なら拒否し、既存リプレイは残す', async () => {
     const replayStorage = new MemoryReplayStorage();

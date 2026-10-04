@@ -60,7 +60,9 @@ export function CompanyResultImage({ result }: { result: CompanyResult }) {
           ? '画像を生成できませんでした。結果は保持されています。再試行できます。'
           : status === 'saveError'
             ? 'PNGを保存できませんでした。もう一度保存してください。'
-            : null}
+            : status === 'ready'
+              ? '画像を生成しました。内容を確認してPNGを保存できます。'
+              : null}
       </p>
       {preview && (
         <>

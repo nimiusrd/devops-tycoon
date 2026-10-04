@@ -91,6 +91,7 @@ for (const [name, width, height] of [
     await section.getByRole('button', { name: '結果画像をプレビュー' }).click();
     const img = section.getByRole('img');
     await expect(img).toBeVisible();
+    await expect(section.locator('[aria-live="polite"]')).toContainText('画像を生成しました。');
     await expect(img).toHaveAttribute('alt', /累計出荷 123 pt/);
     await expect(img).toHaveAttribute(
       'alt',
@@ -133,6 +134,7 @@ test('生成失敗から再試行でき、保存失敗でもプレビューと�
   await section.getByRole('button', { name: '画像生成を再試行' }).focus();
   await page.keyboard.press('Enter');
   await expect(section.getByRole('img')).toHaveAttribute('alt', /記録: moraleCollapse/);
+  await expect(section.locator('[aria-live="polite"]')).toContainText('画像を生成しました。');
   await page.evaluate(() => {
     URL.createObjectURL = () => {
       throw new Error('save failed');

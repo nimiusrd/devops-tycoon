@@ -9,7 +9,9 @@ import {
   IndexedDbMetaStorage,
   initializeMetaPersistence,
 } from '../../../src/state/metaPersistence';
-import { MemoryReplayStorage } from '../../../src/state/replayPersistence';
+import { getCard } from '../../../src/data/cards';
+import { buildCompanyResult } from '../../../src/render/companyResultView';
+import { IndexedDbReplayStorage, MemoryReplayStorage } from '../../../src/state/replayPersistence';
 import {
   CURRENT_RUN_RULESET,
   IndexedDbRunStorage,
@@ -89,6 +91,23 @@ async function waitFor(check: () => Promise<void>): Promise<void> {
 }
 
 describe('複数タブの保存（RI-144）', () => {
+  it('IndexedDBでの決着は終端フレームと画像表示値を一緒に保存する', async () => {
+    const { name, game } = await finishReadyGame('finish-company-result');
+    const replayStorage = new IndexedDbReplayStorage(name);
+    await game.attachReplay(replayStorage);
+    const result = game.buyShopCard('copilot');
+    expect(result.status).toBe('lost');
+    const expected = buildCompanyResult(result, (id) => getCard(id)!.name);
+    await waitFor(async () => {
+      const [replay] = await replayStorage.list();
+      expect(replay?.keyframes.at(-1)?.phase).toBe('lost');
+      expect(replay?.keyframes.filter((frame) => frame.phase === 'lost')).toHaveLength(1);
+      expect(replay?.contentSnapshot?.companyResult).toEqual(expected);
+      expect(replay?.outcome.score).toBe(result.totals.delivered);
+    });
+    expect(game.getState()).toEqual(result);
+  });
+
   it('古いタブの音設定と研修方針では、購入した進行を巻き戻さない', async () => {
     const name = databaseName();
     const seeded = new IndexedDbMetaStorage(name);

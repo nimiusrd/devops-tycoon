@@ -1518,6 +1518,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const finished = noteFinishedReward();
     if (!finished) return false;
     if (runStorage instanceof IndexedDbRunStorage && metaStorage instanceof IndexedDbMetaStorage) {
+      // 完了トランザクション経路は persistRunIfNeeded を通らないため、退避前に終端も記録する。
+      appendKeyframeIfNeeded();
       rememberFinishReplay();
       // 完走前の途中セーブは、完了トランザクションが消すまで再開候補に残さない。
       resumableSave = null;

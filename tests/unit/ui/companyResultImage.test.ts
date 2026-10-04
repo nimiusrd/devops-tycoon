@@ -28,6 +28,20 @@ function terminal() {
 }
 
 describe('会社結果画像', () => {
+  it.each([
+    [72.4000000000001, 80, 'シニア体力', 72],
+    [80, 72.6000000000001, '士気', 73],
+    [-0.4, 80, 'シニア体力', 0],
+    [120, 110, '士気', 100],
+  ])('残量を表示用の整数と0..100の範囲に固定する（%s / %s）', (hp, morale, label, remaining) => {
+    const frame = terminal();
+    frame.org.seniorHp = hp as number;
+    frame.org.morale = morale as number;
+    expect(buildCompanyResult(frame, (id) => id).cost).toEqual({ label, remaining });
+    expect(frame.org.seniorHp).toBe(hp);
+    expect(frame.org.morale).toBe(morale);
+  });
+
   it('記録の勝利種別・出荷・最大の消耗と、強化レベル上位3枚をコピーする', () => {
     const frame = terminal();
     const before = structuredClone(frame);

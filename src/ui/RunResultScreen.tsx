@@ -3,7 +3,7 @@
  *
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { getBoss } from '../data/bosses';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { loseNextActionView } from '../render/loseNextActionView';
@@ -62,16 +62,13 @@ export function RunResultScreen({
 }: RunResultScreenProps) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const { resolveRelic, resolveCard, isReplaySnapshot } = useReplayContent();
-  const companyResult = useMemo(
-    () =>
-      recordedCompanyResult ??
-      buildCompanyResult(
-        state,
-        (id) => (isReplay && !isReplaySnapshot ? `記録名なし（${id}）` : resolveCard(id).name),
-        isReplay,
-      ),
-    [recordedCompanyResult, state, resolveCard, isReplaySnapshot, isReplay],
-  );
+  const companyResult =
+    recordedCompanyResult ??
+    buildCompanyResult(
+      state,
+      (id) => (isReplay && !isReplaySnapshot ? `記録名なし（${id}）` : resolveCard(id).name),
+      isReplay,
+    );
   const won = state.status === 'won';
   const boss = getBoss(state.bossId);
   const diag = diagnosisView(state.diagnosis);

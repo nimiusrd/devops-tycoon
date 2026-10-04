@@ -1,5 +1,6 @@
 import { winView } from '../sim/outcome';
 import type { RunState } from '../sim/run/types';
+import { clampSeniorHpDisplay } from './seniorHpDisplay';
 import { LOSE_LABEL } from './runOutcomeLabels';
 
 /** 決着時に固定する画像の表示値。旧記録を現行の定義で再評価しない。 */
@@ -36,7 +37,9 @@ export function buildCompanyResult(
     delivered: state.totals.delivered,
     cost: {
       label: senior ? 'シニア体力' : '士気',
-      remaining: senior ? state.org.seniorHp : state.org.morale,
+      remaining: senior
+        ? clampSeniorHpDisplay(state.org.seniorHp)
+        : Math.min(100, Math.max(0, Math.round(state.org.morale))),
     },
     cards: state.deck
       .map((card, index) => ({ card, index }))

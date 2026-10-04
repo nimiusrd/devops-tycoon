@@ -109,11 +109,6 @@ export interface SprintBaselineBuildContext {
   /** ツール別シナリオ（RI-103。未指定は default）。 */
   scenario?: ScenarioId;
   bossId: string;
-  /**
-   * @deprecated RI-83: `goalCarryoverQuarter` / `goalCarryoverId` を使う。
-   * 旧 what-if / テスト互換のため残す（pause_ai_rollout として解釈）。
-   */
-  pauseAiDebuffQuarter?: number | null;
   /** 目標修正キャリーオーバーが有効な四半期（RI-83）。 */
   goalCarryoverQuarter?: number | null;
   /** 目標修正キャリーオーバーの ID（RI-83）。 */
@@ -228,11 +223,12 @@ export function buildSprintBaselineInput(
     effects = combineEffects(effects, deckEffects(playedCards));
   }
   if (isBoss) effects = withBossEffects(effects, ctx.bossId);
-  const carryoverQuarter = ctx.goalCarryoverQuarter ?? ctx.pauseAiDebuffQuarter ?? null;
-  const carryoverId =
-    ctx.goalCarryoverId ??
-    (ctx.pauseAiDebuffQuarter === ctx.quarterNumber ? 'pause_ai_rollout' : null);
-  effects = applyGoalCarryoverToEffects(effects, carryoverId, carryoverQuarter, ctx.quarterNumber);
+  effects = applyGoalCarryoverToEffects(
+    effects,
+    ctx.goalCarryoverId ?? null,
+    ctx.goalCarryoverQuarter ?? null,
+    ctx.quarterNumber,
+  );
   if (modifiers.reworkRateAdd) {
     effects = { ...effects, reworkRateAdd: effects.reworkRateAdd + modifiers.reworkRateAdd };
   }

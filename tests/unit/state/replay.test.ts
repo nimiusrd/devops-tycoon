@@ -1,6 +1,8 @@
 import { deleteDB } from 'idb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../../src/game';
+import { goalCarryoverHudCopy } from '../../../src/render/status';
+import type { RunReplayFrameInput } from '../../../src/sim/run/persist';
 import { RunEngine } from '../../../src/sim/run/engine';
 import { openGameDb, REPLAYS_STORE_NAME } from '../../../src/state/gameDb';
 import { defaultMeta } from '../../../src/state/meta';
@@ -262,6 +264,44 @@ describe('リプレイ正規化（RI-61）', () => {
     expect(replayContentSnapshotCovers({ ...legacySnapshot, trials: [] }, keyframes)).toBe(false);
     expect(replayContentSnapshotCovers(null, keyframes)).toBe(true);
   });
+
+  it.each([1, 2, 3])(
+    '旧 pause_ai リプレイは四半期 %s の表示を保持し、再出力は現行フィールドだけになる',
+    (quarterNumber) => {
+      const blob = makeBlob({ id: 'legacy-pause', seed: 'legacy-pause' });
+      const legacy: RunReplayFrameInput = structuredClone(blob.keyframes[0]!.frame);
+      legacy.quarterNumber = quarterNumber;
+      delete legacy.goalCarryoverQuarter;
+      delete legacy.goalCarryoverId;
+      delete legacy.extras.goalCarryoverQuarter;
+      delete legacy.extras.goalCarryoverId;
+      legacy.extras.pauseAiDebuffQuarter = 2;
+      const original = structuredClone(legacy);
+      const normalized = normalizeReplay({
+        ...blob,
+        schemaVersion: 1,
+        keyframes: [{ phase: 'setup', frame: legacy }],
+      })!;
+      const frame = normalized.keyframes[0]!.frame;
+      const carryover = { goalCarryoverQuarter: 2, goalCarryoverId: 'pause_ai_rollout' };
+      expect(frame).toMatchObject({ ...carryover, extras: carryover });
+      expect(frame.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+      expect(legacy).toEqual(original);
+      expect(normalizeReplay(normalized)).toEqual(normalized);
+
+      const replay = new RunEngine({ seed: 'legacy-pause-target' });
+      // 正規化済みフレームと、直接渡した旧フレームのどちらも表示可能。
+      for (const input of [frame, legacy]) {
+        replay.hydrateReplayFrame(input);
+        const snapshot = replay.snapshot();
+        expect(snapshot).toMatchObject(carryover);
+        const copy = goalCarryoverHudCopy(snapshot);
+        expect(copy.tone).toBe(quarterNumber === 2 ? 'watch' : 'good');
+        expect(Boolean(copy.warningChip)).toBe(quarterNumber === 2);
+        expect(replay.exportReplayFrame()!.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+      }
+    },
+  );
 
   it('buildReplayId は seed と時刻を含む', () => {
     expect(buildReplayId('seed-x', 42)).toBe('seed-x:42');

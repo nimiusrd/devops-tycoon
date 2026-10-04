@@ -355,7 +355,6 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
         'homeTeamId',
         'nextBudgetCap',
         'orgAdjust',
-        'pauseAiDebuffQuarter',
         'preferredCardIds',
         'scenario',
         'teamLockUntilSprint',

@@ -98,7 +98,8 @@ export function directWhatIfInput(overrides: Partial<WhatIfComputeInput> = {}): 
     difficulty: 'normal',
     trials: [],
     bossId: 'legacy-monolith',
-    pauseAiDebuffQuarter: null,
+    goalCarryoverQuarter: null,
+    goalCarryoverId: null,
     baseConfig: {
       taskCount: 4,
       codingSlots: 1,

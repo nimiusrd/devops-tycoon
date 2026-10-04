@@ -5,7 +5,12 @@
  * seed＋入力ログ再生（案 B）は RI-61 のリプレイ用に切り出す。
  * フェーズ遷移時のみ保存し、スプリント tick 中は更新しない。
  */
-import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
+import {
+  normalizePersistGoalCarryover,
+  isRunSavePhase,
+  type RunPersistState,
+  type RunSavePhase,
+} from '../sim/run/persist';
 import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from '../sim/run/types';
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
@@ -431,7 +436,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
       status: 'playing',
     },
     state: {
-      ...stateWithCurrentReview,
+      ...normalizePersistGoalCarryover(stateWithCurrentReview),
       trendHistory: cloneTrendHistory(stateWithCurrentReview.trendHistory),
     },
     replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),

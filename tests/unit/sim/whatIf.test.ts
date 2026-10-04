@@ -10,6 +10,7 @@ import {
   whatIfCacheKey,
   type WhatIfComputeInput,
 } from '../../../src/sim/run/whatIfState';
+import type { GoalAdjustmentId } from '../../../src/sim/run/types';
 import type { SprintBaselineInput } from '../../../src/sim/run/sprintBaseline';
 import { directWhatIfInput } from '../helpers/whatIfFixtures';
 
@@ -72,6 +73,43 @@ describe('RI-46 次スプリント what-if 試算', () => {
   it('不正な試行数を拒否する', () => {
     expect(() => previewNextSprint(input, 0)).toThrow('trials は 1 以上の整数');
   });
+
+  it.each<GoalAdjustmentId>(['pause_ai_rollout', 'quality_pivot'])(
+    '%s の現行持越し入力だけで what-if と実ランの開始条件が一致し、保存も往復する',
+    (goalCarryoverId) => {
+      const engine = new RunEngine({ seed: 'carryover-what-if', difficulty: 'easy' });
+      engine.startRun();
+      const save = engine.exportPersistState()!;
+      save.goalCarryoverQuarter = save.quarterNumber;
+      save.goalCarryoverId = goalCarryoverId;
+      save.extras.goalCarryoverQuarter = save.quarterNumber;
+      save.extras.goalCarryoverId = goalCarryoverId;
+      engine.hydratePersistState(save);
+      const input = engine.whatIfComputeInput()!;
+      expect(input).not.toHaveProperty('pauseAiDebuffQuarter');
+      expect(save.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+      const preview = computeWhatIfState(input)!;
+
+      const restored = new RunEngine({ seed: 'restored-carryover' });
+      restored.hydratePersistState(JSON.parse(JSON.stringify(engine.exportPersistState())));
+      expect(restored.whatIfComputeInput()).toEqual(input);
+      expect(restored.whatIfPreview()).toEqual(preview);
+      engine.beginSetupSprint();
+      restored.beginSetupSprint();
+      expect(restored.snapshot().sprint).toEqual(engine.snapshot().sprint);
+      const actualBaseline = (
+        engine as unknown as {
+          sprintBaselineInput: SprintBaselineInput;
+        }
+      ).sprintBaselineInput;
+      expect(preview.current).toEqual(
+        previewNextSprint({
+          ...actualBaseline,
+          seed: `${input.seed}:what-if:q${input.quarterNumber}:s${input.sprintIndexInQuarter + 1}`,
+        }),
+      );
+    },
+  );
 
   it('ドラフト候補の試算は実ラン状態を変更せず、候補別に公開する', () => {
     const engine = new RunEngine({ seed: 'what-if-engine', difficulty: 'normal' });
@@ -472,6 +510,28 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
         '',
         '',
       ].join('|'),
+    );
+  });
+
+  it('cache key は持越しの ID と対象四半期をそれぞれ区別する', () => {
+    const base = directWhatIfInput({
+      goalCarryoverQuarter: 2,
+      goalCarryoverId: 'pause_ai_rollout',
+    });
+    const variants = [
+      base,
+      { ...base, goalCarryoverQuarter: 3 },
+      { ...base, goalCarryoverId: 'quality_pivot' as const },
+      { ...base, goalCarryoverQuarter: null, goalCarryoverId: null },
+    ];
+    expect(new Set(variants.map(whatIfCacheKey)).size).toBe(variants.length);
+    expect(whatIfCacheKey(directWhatIfInput())).toBe(
+      whatIfCacheKey(
+        directWhatIfInput({
+          goalCarryoverQuarter: undefined,
+          goalCarryoverId: undefined,
+        }),
+      ),
     );
   });
 

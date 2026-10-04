@@ -30,7 +30,8 @@ function context(overrides: Partial<SprintBaselineBuildContext> = {}): SprintBas
     difficulty: 'normal',
     trials: [],
     bossId: 'big-release',
-    pauseAiDebuffQuarter: null,
+    goalCarryoverQuarter: null,
+    goalCarryoverId: null,
     quarterNumber: 1,
     baseConfig,
     ...overrides,
@@ -245,9 +246,13 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(withContext.cardEffects.incidentRateMul).toBeCloseTo(1.3);
   });
 
-  it('AI 一時停止デバフの四半期が一致すると Coding と routine 速度だけを下げる', () => {
-    const inactive = build({ ctx: { pauseAiDebuffQuarter: 2, quarterNumber: 1 } });
-    const active = build({ ctx: { pauseAiDebuffQuarter: 1, quarterNumber: 1 } });
+  it('AI 一時停止の持越しは対象四半期だけ Coding 速度と安定化効果を適用する', () => {
+    const inactive = build({
+      ctx: { goalCarryoverQuarter: 2, goalCarryoverId: 'pause_ai_rollout', quarterNumber: 1 },
+    });
+    const active = build({
+      ctx: { goalCarryoverQuarter: 1, goalCarryoverId: 'pause_ai_rollout', quarterNumber: 1 },
+    });
 
     expect(inactive.cardEffects.codingSpeedMul).toBe(1);
     expect(inactive.cardEffects.routineSpeedMul).toBe(1);

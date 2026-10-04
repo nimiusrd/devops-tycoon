@@ -11,7 +11,11 @@ import { ENTER_TEAM_FOCUS_PENALTY } from '../../../src/sim/orgscale/teamState';
 import type { TeamRunState } from '../../../src/sim/orgscale/types';
 import { createRng } from '../../../src/sim/rng';
 import { RunEngine } from '../../../src/sim/run/engine';
-import type { RunPersistState, RunReplayFrame } from '../../../src/sim/run/persist';
+import type {
+  RunPersistState,
+  RunPersistStateInput,
+  RunReplayFrame,
+} from '../../../src/sim/run/persist';
 import { MIN_QUARTER_DELIVERY_TARGET } from '../../../src/sim/run/quarterReview';
 import type {
   BeatState,
@@ -230,11 +234,11 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
   });
 
   it('hydratePersistState は旧 pauseAiDebuffQuarter を pause_ai キャリーオーバーへ復元する（RI-83）', () => {
-    const legacy = setupSave('ri83-legacy-pause-ai');
-    delete (legacy as { goalCarryoverQuarter?: unknown }).goalCarryoverQuarter;
-    delete (legacy as { goalCarryoverId?: unknown }).goalCarryoverId;
-    delete (legacy.extras as { goalCarryoverQuarter?: unknown }).goalCarryoverQuarter;
-    delete (legacy.extras as { goalCarryoverId?: unknown }).goalCarryoverId;
+    const legacy: RunPersistStateInput = setupSave('ri83-legacy-pause-ai');
+    delete legacy.goalCarryoverQuarter;
+    delete legacy.goalCarryoverId;
+    delete legacy.extras.goalCarryoverQuarter;
+    delete legacy.extras.goalCarryoverId;
     legacy.extras.pauseAiDebuffQuarter = 2;
 
     const restored = started('ri83-legacy-pause-ai-target');
@@ -247,7 +251,6 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     expect(restored.whatIfComputeInput()).toMatchObject({
       goalCarryoverQuarter: 2,
       goalCarryoverId: 'pause_ai_rollout',
-      pauseAiDebuffQuarter: 2,
     });
   });
 
@@ -257,7 +260,7 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
   ])(
     'hydratePersistState は本体の持越しを優先し、対象四半期 $carryoverQuarter にだけ効果を適用する',
     ({ carryoverQuarter, quality, techDebt }) => {
-      const state = setupSave('carryover-top-priority');
+      const state: RunPersistStateInput = setupSave('carryover-top-priority');
       state.quarterNumber = 2;
       state.org.quality = 50;
       state.org.techDebt = 20;
@@ -277,12 +280,9 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
       expect(restored.snapshot()).toMatchObject(expectedCarryover);
       expect(restored.exportPersistState()).toMatchObject({
         ...expectedCarryover,
-        extras: { ...expectedCarryover, pauseAiDebuffQuarter: null },
+        extras: expectedCarryover,
       });
-      expect(restored.whatIfComputeInput()).toMatchObject({
-        ...expectedCarryover,
-        pauseAiDebuffQuarter: null,
-      });
+      expect(restored.whatIfComputeInput()).toMatchObject(expectedCarryover);
 
       restored.beginSetupSprint();
       expect(restored.snapshot()).toMatchObject({
@@ -295,7 +295,7 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
   it.each(['goalCarryoverQuarter', 'goalCarryoverId'] as const)(
     'hydratePersistState は本体の %s が欠けると extras の持越しを組で復元する',
     (missingField) => {
-      const state = setupSave('carryover-extras-fallback');
+      const state: RunPersistStateInput = setupSave('carryover-extras-fallback');
       state.goalCarryoverQuarter = 3;
       state.goalCarryoverId = 'quality_pivot';
       state[missingField] = null;
@@ -313,7 +313,7 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
       expect(restored.snapshot()).toMatchObject(expectedCarryover);
       expect(restored.exportPersistState()).toMatchObject({
         ...expectedCarryover,
-        extras: { ...expectedCarryover, pauseAiDebuffQuarter: null },
+        extras: expectedCarryover,
       });
     },
   );
@@ -321,7 +321,7 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
   it.each(['goalCarryoverQuarter', 'goalCarryoverId'] as const)(
     'hydratePersistState は extras の %s が欠けると legacy 持越しを組で復元する',
     (missingField) => {
-      const state = setupSave('carryover-partial-extras');
+      const state: RunPersistStateInput = setupSave('carryover-partial-extras');
       state.extras.goalCarryoverQuarter = 3;
       state.extras.goalCarryoverId = 'quality_pivot';
       delete state.extras[missingField];
@@ -337,10 +337,67 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
       expect(restored.snapshot()).toMatchObject(expectedCarryover);
       expect(restored.exportPersistState()).toMatchObject({
         ...expectedCarryover,
-        extras: { ...expectedCarryover, pauseAiDebuffQuarter: 2 },
+        extras: expectedCarryover,
       });
     },
   );
+
+  it.each([1, 2, 3])(
+    '旧 pause_ai 保存は四半期 %s で現行保存と同じ開始効果になり、終了後に再適用しない',
+    (quarterNumber) => {
+      const legacy: RunPersistStateInput = setupSave('legacy-pause-quarter');
+      legacy.quarterNumber = quarterNumber;
+      delete legacy.goalCarryoverQuarter;
+      delete legacy.goalCarryoverId;
+      delete legacy.extras.goalCarryoverQuarter;
+      delete legacy.extras.goalCarryoverId;
+      legacy.extras.pauseAiDebuffQuarter = 2;
+      const restored = started('legacy-pause-quarter-target');
+      restored.hydratePersistState(legacy);
+      const canonical = restored.exportPersistState()!;
+      expect(canonical.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+      expect(restored.whatIfComputeInput()).not.toHaveProperty('pauseAiDebuffQuarter');
+      const current = started('current-pause-quarter-target');
+      current.hydratePersistState(canonical);
+      expect(current.whatIfPreview()).toEqual(restored.whatIfPreview());
+      const withoutCarryover = started('pause-quarter-without-carryover');
+      const plain = structuredClone(canonical);
+      plain.goalCarryoverQuarter = plain.extras.goalCarryoverQuarter = null;
+      plain.goalCarryoverId = plain.extras.goalCarryoverId = null;
+      withoutCarryover.hydratePersistState(plain);
+      withoutCarryover.beginSetupSprint();
+      current.beginSetupSprint();
+      restored.beginSetupSprint();
+      expect(restored.snapshot().sprint).toEqual(current.snapshot().sprint);
+      expect(
+        restored.snapshot().sprint!.cardEffects.codingSpeedMul /
+          withoutCarryover.snapshot().sprint!.cardEffects.codingSpeedMul,
+      ).toBeCloseTo(quarterNumber === 2 ? 0.85 : 1);
+    },
+  );
+
+  it('持越しが欠けた保存は、復元先の持越しを空に戻す', () => {
+    const restored = started('carryover-empty-target');
+    const active = setupSave('carryover-active');
+    active.goalCarryoverQuarter = 1;
+    active.goalCarryoverId = 'quality_pivot';
+    restored.hydratePersistState(active);
+    const empty: RunPersistStateInput = setupSave('carryover-empty');
+    delete empty.goalCarryoverQuarter;
+    delete empty.goalCarryoverId;
+    delete empty.extras.goalCarryoverQuarter;
+    delete empty.extras.goalCarryoverId;
+    restored.hydratePersistState(empty);
+    expect(restored.snapshot()).toMatchObject({
+      goalCarryoverQuarter: null,
+      goalCarryoverId: null,
+    });
+    expect(restored.exportPersistState()!.extras).toMatchObject({
+      goalCarryoverQuarter: null,
+      goalCarryoverId: null,
+    });
+    expect(restored.exportPersistState()!.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+  });
 
   it('hydratePersistState は旧 save extras の欠落値を既定値へ補完する', () => {
     const legacy = setupSave('ri72-d3-legacy-save');

@@ -52,6 +52,10 @@ test('スプリントを開始すると盤面（HUD と5レーン）が表示さ
   await expect(page.getByTestId('hud')).toBeVisible();
   const board = page.getByTestId('board');
   await expect(board).toBeVisible();
+  // HTML 盤面は GPU の準備中にも存在する。フォーカスを捕捉するダイアログが
+  // 閉じてから、背面の凡例をキーボード操作する。
+  await expect(board).toHaveAttribute('data-effect-renderer', 'pixi');
+  await expect(page.getByTestId('webgl-status')).toHaveCount(0);
   await expect(board.getByTestId('board-flow-summary')).toBeVisible();
   for (const lane of ['backlog', 'coding', 'review', 'rework', 'done']) {
     await expect(page.getByTestId(`lane-${lane}`)).toBeVisible();
@@ -62,6 +66,7 @@ test('スプリントを開始すると盤面（HUD と5レーン）が表示さ
   await expect(legend).not.toHaveAttribute('open', '');
   await expect(legendToggle).toHaveText('粒の見方');
   await legendToggle.focus();
+  await expect(legendToggle).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(legend).toHaveAttribute('open', '');
   await expect(legend.locator('.li')).toHaveCount(5);

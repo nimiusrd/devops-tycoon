@@ -18,6 +18,8 @@
 
 状態管理ライブラリは要件ではない。`RunEngine`の決定論、保存・復元、リプレイ、Reactとの同期を損なわない範囲で実装を選択する。
 
+テスト用に残る旧単独Engineは段階移行中であり、本番の固定stepは`src/data/balance/pacing.ts`を参照する。移行時に維持する保証と実装単位は[旧Engineテストの移行契約](./legacy-engine-test-migration.md)を参照する。
+
 ## 2. レイヤ境界
 
 ```text

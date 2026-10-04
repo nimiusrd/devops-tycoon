@@ -350,3 +350,6 @@ export const PACING_BALANCE = {
     integer: true,
   }),
 } as const;
+
+/** 固定タイムステップ（ms）。描画フレームレートから独立。 */
+export const FIXED_STEP_MS = PACING_BALANCE.fixedStepMs.value;

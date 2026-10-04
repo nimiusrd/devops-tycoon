@@ -1,4 +1,4 @@
-import type { CompanyResult } from '../render/companyResultView';
+import { isCompanyResult, type CompanyResult } from '../render/companyResultView';
 import { VISUAL_TOKENS } from '../render/visualTokens';
 
 /** 固定キャンバス内で全文を折り返し、長文の場合は領域に収まる文字サイズにする。 */
@@ -30,6 +30,7 @@ export function fitImageText(
 }
 
 export async function generateCompanyResultPng(result: CompanyResult): Promise<Blob> {
+  if (!isCompanyResult(result)) throw new Error('画像の表示値が不正です。');
   await document.fonts.ready;
   const canvas = document.createElement('canvas');
   // この画像だけの出力座標。盤面やDOMのレイアウトとは共有しない。

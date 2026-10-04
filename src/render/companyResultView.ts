@@ -19,6 +19,16 @@ function isCompanyResultText(value: unknown): value is string {
   return typeof value === 'string' && value.length <= COMPANY_RESULT_TEXT_MAX_LENGTH;
 }
 
+/** 記録の原文を変更せず、画像と代替テキストの表示だけを省略する。 */
+function companyResultText(text: string): string {
+  if (text.length <= COMPANY_RESULT_TEXT_MAX_LENGTH) return text;
+  let end = COMPANY_RESULT_TEXT_MAX_LENGTH - 1;
+  // UTF-16のサロゲートペアを途中で切らない。
+  const last = text.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return `${text.slice(0, end)}…`;
+}
+
 type ResultState = Pick<RunState, 'status' | 'winType' | 'loseReason' | 'totals' | 'org' | 'deck'>;
 
 export function buildCompanyResult(
@@ -39,7 +49,7 @@ export function buildCompanyResult(
         : '敗北';
   const senior = state.org.seniorHp <= state.org.morale;
   return {
-    outcome,
+    outcome: companyResultText(outcome),
     won,
     delivered: state.totals.delivered,
     cost: {
@@ -52,7 +62,7 @@ export function buildCompanyResult(
       .map((card, index) => ({ card, index }))
       .sort((a, b) => b.card.level - a.card.level || a.index - b.index)
       .slice(0, 3)
-      .map(({ card }) => ({ name: cardName(card.defId), level: card.level })),
+      .map(({ card }) => ({ name: companyResultText(cardName(card.defId)), level: card.level })),
   };
 }
 

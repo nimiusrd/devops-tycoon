@@ -1,13 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameHandle } from '../../src/game';
 import type { ReplayBlob } from '../../src/state/replay';
+import { COMPANY_RESULT_TEXT_MAX_LENGTH } from '../../src/render/companyResultView';
 
-async function openResult(page: Page, won = false, empty = false, legacy = false) {
+async function openResult(
+  page: Page,
+  won = false,
+  empty = false,
+  legacy = false,
+  cardName?: string,
+) {
   await page.goto('/?tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
   expect(
     await page.evaluate(
-      async ({ won, empty, legacy }) => {
+      async ({ won, empty, legacy, cardName }) => {
         const game = (window as Window & { game: GameHandle }).game;
         game.startRun('easy', [], 'company-image-e2e');
         const frame = game.engine.exportReplayFrame()!;
@@ -21,7 +28,7 @@ async function openResult(page: Page, won = false, empty = false, legacy = false
         frame.totals.delivered = 123;
         const card = {
           id: 'copilot',
-          name: '記録時の非常に長い日本語のカード名と経営上の選択'.repeat(5),
+          name: cardName ?? '記録時の非常に長い日本語のカード名と経営上の選択'.repeat(5),
           rarity: 'common' as const,
           cost: 1,
           focusCost: 1,
@@ -60,9 +67,11 @@ async function openResult(page: Page, won = false, empty = false, legacy = false
                 }),
           },
         };
-        return game.importReplay(blob);
+        return legacy
+          ? (await game.importReplayText(JSON.stringify(blob))).ok
+          : game.importReplay(blob);
       },
-      { won, empty, legacy },
+      { won, empty, legacy, cardName },
     ),
   ).toBe(true);
   await page.reload();
@@ -71,6 +80,40 @@ async function openResult(page: Page, won = false, empty = false, legacy = false
   await page.getByTestId('replay-keyframe-0').click();
   await expect(page.getByTestId('run-result')).toBeVisible();
 }
+
+test('旧v2の10万文字のカード名でも計測量を抑えてPNG保存できる', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const name = 'あ'.repeat(100_000);
+  await openResult(page, false, false, true, name);
+  await page.evaluate(() => {
+    const original = CanvasRenderingContext2D.prototype.measureText;
+    let calls = 0;
+    CanvasRenderingContext2D.prototype.measureText = function (text) {
+      // 失敗時も長大な入力の計測を続けず、この回帰を速やかに検出する。
+      if (++calls > 20_000 || text.length > 300) throw new Error('画像の文字計測が上限を超過');
+      return original.call(this, text);
+    };
+  });
+  const section = page.getByRole('region', { name: '会社の結果画像' });
+  await section.getByRole('button', { name: '結果画像をプレビュー' }).click();
+  await expect(section.getByRole('img')).toBeVisible();
+  await expect(section.getByRole('img')).toHaveAttribute(
+    'alt',
+    new RegExp(`${'あ'.repeat(COMPANY_RESULT_TEXT_MAX_LENGTH - 1)}…`),
+  );
+  const downloadPromise = page.waitForEvent('download');
+  await section.getByRole('button', { name: 'PNGを保存' }).click();
+  const download = await downloadPromise;
+  expect(await download.failure()).toBeNull();
+  await download.saveAs(testInfo.outputPath('legacy-long-name.png'));
+  expect(
+    await page.evaluate(() => {
+      const game = (window as Window & { game: GameHandle }).game;
+      return game.listReplays()[0]?.contentSnapshot?.cards[0]?.name;
+    }),
+  ).toBe(name);
+});
 
 for (const [name, width, height] of [
   ['phone-se', 320, 568],

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../../src/sim/run/engine';
-import { buildCompanyResult } from '../../../src/render/companyResultView';
-import { fitImageText } from '../../../src/ui/companyResultPng';
+import {
+  buildCompanyResult,
+  COMPANY_RESULT_TEXT_MAX_LENGTH,
+  isCompanyResult,
+} from '../../../src/render/companyResultView';
+import { fitImageText, generateCompanyResultPng } from '../../../src/ui/companyResultPng';
 import {
   normalizeReplay,
   REPLAY_SCHEMA_VERSION,
@@ -28,6 +32,35 @@ function terminal() {
 }
 
 describe('会社結果画像', () => {
+  it.each([
+    'あ'.repeat(100_000),
+    `${'あ'.repeat(COMPANY_RESULT_TEXT_MAX_LENGTH - 2)}😀${'あ'.repeat(100_000)}`,
+  ])('旧記録の長大な名前は原文を維持して画像用だけ省略する（%#）', (name) => {
+    const frame = terminal();
+    const before = structuredClone(frame);
+    const result = buildCompanyResult(frame, () => name, true);
+    expect(isCompanyResult(result)).toBe(true);
+    for (const card of result.cards) {
+      expect(card.name.length).toBeLessThanOrEqual(COMPANY_RESULT_TEXT_MAX_LENGTH);
+      expect(card.name.endsWith('…')).toBe(true);
+      expect(name.startsWith(card.name.slice(0, -1))).toBe(true);
+      expect(card.name).not.toMatch(/[\uD800-\uDBFF]…$/u);
+    }
+    expect(frame).toEqual(before);
+    expect(name.length).toBeGreaterThanOrEqual(100_000);
+  });
+
+  it('上限ちょうどの旧記録のカード名は省略しない', () => {
+    const name = 'あ'.repeat(COMPANY_RESULT_TEXT_MAX_LENGTH);
+    expect(buildCompanyResult(terminal(), () => name, true).cards[0]!.name).toBe(name);
+  });
+
+  it('未制限の表示モデルはCanvasの計測前に拒否する', async () => {
+    const result = buildCompanyResult(terminal(), () => '記録時のカード');
+    result.cards[0]!.name = 'あ'.repeat(100_000);
+    await expect(generateCompanyResultPng(result)).rejects.toThrow('画像の表示値が不正です。');
+  });
+
   it.each([
     [72.4000000000001, 80, 'シニア体力', 72],
     [80, 72.6000000000001, '士気', 73],

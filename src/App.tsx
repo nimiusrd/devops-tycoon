@@ -852,6 +852,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               <SceneScrollReset>
                 <DraftScreen
                   options={state.draft}
+                  companyState={state}
                   sprintNumber={displayedQuarterSprintIndex(state)}
                   budget={state.budget}
                   mulliganUsed={state.draftMulliganUsed}

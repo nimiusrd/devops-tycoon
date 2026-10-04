@@ -2,6 +2,7 @@ import { deleteDB } from 'idb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../../src/game';
 import { displayedQuarterSprintIndex } from '../../../src/render/sprintProgressView';
+import type { RunPersistStateInput } from '../../../src/sim/run/persist';
 import { createRunEngine } from '../../../src/sim/run/engine';
 import {
   GENERATION_STORE_NAME,
@@ -102,6 +103,54 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(snap.org).toEqual(exported!.org);
     expect(snap.roster).toEqual(exported!.roster);
   });
+
+  it('旧持越しを読取時に正規化し、保存と同梱リプレイから旧フィールドを除く', () => {
+    const save = makeRunSave('legacy-carryover-read');
+    const legacy: RunPersistStateInput = structuredClone(save.state);
+    delete legacy.goalCarryoverQuarter;
+    delete legacy.goalCarryoverId;
+    delete legacy.extras.goalCarryoverQuarter;
+    delete legacy.extras.goalCarryoverId;
+    legacy.extras.pauseAiDebuffQuarter = 2;
+    const raw = {
+      ...save,
+      state: legacy,
+      replayKeyframes: [{ phase: 'setup', frame: legacy }],
+    };
+    const original = structuredClone(raw);
+    const parsed = parseRunSave(raw)!;
+    const carryover = { goalCarryoverQuarter: 2, goalCarryoverId: 'pause_ai_rollout' };
+    expect(parsed.state).toMatchObject({ ...carryover, extras: carryover });
+    expect(parsed.state.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+    expect(parsed.replayKeyframes[0]!.frame).toMatchObject({ ...carryover, extras: carryover });
+    expect(parsed.replayKeyframes[0]!.frame.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+    expect(raw).toEqual(original);
+    expect(parseRunSave(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
+
+    const restored = createRunEngine({ seed: 'current-carryover-write' });
+    restored.hydratePersistState(parsed.state);
+    const current = toRunSave(restored.exportPersistState()!, 1234, parsed.replayKeyframes);
+    expect(current.state.extras).not.toHaveProperty('pauseAiDebuffQuarter');
+    expect(parseRunSave(JSON.parse(JSON.stringify(current)))).toEqual(current);
+  });
+
+  it.each([4, 5, 6, 7, RUN_SAVE_SCHEMA_VERSION])(
+    'ルールセット不明の保存 v%s は旧持越しの記録値を移行せず保持する',
+    (schemaVersion) => {
+      const save = makeRunSave('unknown-ruleset-carryover');
+      const legacy: RunPersistStateInput = structuredClone(save.state);
+      delete legacy.goalCarryoverQuarter;
+      delete legacy.goalCarryoverId;
+      delete legacy.extras.goalCarryoverQuarter;
+      delete legacy.extras.goalCarryoverId;
+      legacy.extras.pauseAiDebuffQuarter = 2;
+      const parsed = parseRunSave({ ...save, schemaVersion, ruleset: null, state: legacy })!;
+      expect(parsed.state).toEqual(legacy);
+      expect(parsed.state.extras).toHaveProperty('pauseAiDebuffQuarter', 2);
+      expect(parseRunSave(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
+      expect(getRunSaveCompatibilityIssue(parsed)?.kind).toBe('ruleset-unknown');
+    },
+  );
 
   it('insertIfAbsent は空のときだけ書き、既存セーブは上書きしない', async () => {
     const engine = createRunEngine({ seed: 'insert-absent' });

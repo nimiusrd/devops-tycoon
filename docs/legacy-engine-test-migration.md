@@ -35,6 +35,22 @@
 | dealとdraft | 同じ入力で安定した抽選、枚数、重複排除、プール制限を現行の派生seed・編成で確認する。旧クラス専用のseed文字列を現行に強制しない |
 | 次スプリントの選択とスキップ | deck追加/無追加、index進行、tickと端数リセット、focus回復、draft消去、組織指標と永続カード効果の持越しを現行phase遷移で検証する。旧クラスがmorale・HP・documentationを初期値へ戻す規則は現行の回復・持続規則へ読み替える |
 
+## #716の移行結果
+
+`sim/engine.test.ts`と`sim/cards.test.ts`の旧Engine importを解消した。カード結果の因果・未発動時の無効果・同一発動の再現性は、3 seedの実RunEngineスプリントで比較する。カード費用不足の無作用と費用ちょうどの成立、同レベル再発動時の永続加算なし、強化後の品質・セキュリティ加算差分は`playCardFromHand`で検証する。固定stepの初期境界は#714の`runEngineTiming.test.ts`を継続利用し、次スプリントで前回の端数が残らないことはライフサイクル側でも確認する。
+
+現行APIへの読み替えは次のとおり。
+
+- `startRun`はseed変更後に新規ランと同じ`setup`状態へ戻る。所持デッキと進行を初期化し、スプリントは編成後に生成する。既定の難易度はnormal、シナリオはdefault、AIは導入済みであり、旧EngineのAI未導入・依存度3は移植しない。
+- 配布seedは`seed:deal:q1-s1`、次回は`seed:deal:q1-s2`。ドラフトは完走時点ではまだなく、`acknowledgeResult`後に`seed:draft:sprintsPlayed`で生成する。解放プールと優先カードも反映する。
+- `chooseCard`と`skipDraft`は`evolution`へ進む。カード獲得時は組織へ効果を適用せず、候補外とフェーズ外の選択は状態を変えない。進化・ビート・必要なショップ/休息等を経て、次の`setup`からスプリントを起動する。
+- デッキ・チーム別baseline・組織指標は持続する。ビートによる変化を経た`setup`を次回開始の基準にし、開始時はシニアHPを満タンとの差分の50%だけ回復する。morale・documentation等を新規値へ全リセットしない。集中力は新しいスプリント上限まで回復し、費用集計・tick・端数はリセットする。
+- 所持カードのテスト構成は`setup`の`exportPersistState/hydratePersistState`で用意し、解放カードプールを明示する。旧クラスの内部deck書換えは使わず、強化は`upgradeCardAt`の返却値で検証する。
+
+検証はNode 24のDev Containerで行い、移行前の対象54テスト、移行後の対象57テスト、RunEngine・永続化関連を含む17ファイル403テストが成功した。`npm run lint`、`npm run format:check`と変更対象のTypeScript型検査も確認した。標準Dev Containerはイメージ構築時の容量不足で起動できず、一時設定の`node:24-bookworm-slim`を使った。リポジトリの環境設定は変更していない。
+
+この単位では本番コード・ゲーム値・乱数消費順・ルールセット版を変更しない。残る旧Engine依存は`sim/sprint.test.ts`・`sim/actions.test.ts`（#715）、`scenarios/easyCopilotSprint1.test.ts`・`render/status.test.ts`（#717）の4ファイルで、撤去は#718で扱う。
+
 ## RI106固定値の判断
 
 RI-106のgoldenは、工程係数をレジストリへ移す際に挙動を維持した証拠である。恒久的なゲーム仕様として単一seedのタスクID・lane・浮動小数点の最終桁を固定する理由はない。[architectureのルールセット規則](./architecture.md#52-ルールセットと再現性)と[確率モデルの変更規律](./probability-model.md#11-変更時の規律)に従い、同一ルールセット内の再現性と因果・効果量を保証する。

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_DEFS } from '../../../src/data/cards';
+import { CARD_DEFS, getCard } from '../../../src/data/cards';
 import { CARD_BALANCE } from '../../../src/data/balance';
 import {
   applyDeckBaseline,
@@ -23,7 +23,7 @@ import {
 import { IDENTITY_CARD_EFFECTS, reworkProbability } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
 import { createRng } from '../../../src/sim/rng';
-import { createEngine, type Engine } from '../../../src/sim/engine';
+import { finishSprint, startWithDeck } from '../helpers/cardLifecycle';
 import type { CardInstance, OrgState, SprintResult, Task } from '../../../src/sim/types';
 import { createSprint, resolveSprintConfig } from '../../../src/sim/sprint';
 
@@ -120,49 +120,77 @@ describe('手札配布・発動（RI-30）', () => {
     expect(playCost(4, 1)).toBe(4);
   });
 
-  it('playCardFromHand は focus を消費し cardEffects を合成する', () => {
-    const e = createEngine({
-      seed: 'play-card',
-      aiEnabled: true,
-      deck: [{ defId: 'copilot', level: 1 }],
+  it('playCardFromHand は費用を消費し、発動済みカードの効果だけを合成する', () => {
+    const state = org();
+    const sprint = createSprint(resolveSprintConfig('default'), state, createRng('play-card'));
+    const deck: CardInstance[] = [
+      { defId: 'copilot', level: 1 },
+      { defId: 'auto-test', level: 1 },
+    ];
+    sprint.cardPiles = dealHand(deck.length, createRng('play-card:deal'));
+    const before = structuredClone(sprint);
+    const beforeOrg = structuredClone(state);
+    const def = getCard('copilot')!;
+    expect(before.cardEffects).toEqual(IDENTITY_CARD_EFFECTS);
+    expect(playCardFromHand(sprint, state, deck, 0)).toEqual({
+      ok: true,
+      focusCost: 2,
+      deckIndex: 0,
     });
-    const before = e.snapshot();
-    expect(before.sprint.cardPiles.hand).toHaveLength(1);
-    expect(before.sprint.cardEffects.codingSpeedMul).toBe(1);
-    const outcome = e.playCard(before.sprint.cardPiles.hand[0]!);
-    expect(outcome.ok).toBe(true);
-    const after = e.snapshot();
-    expect(after.sprint.focus).toBeLessThan(before.sprint.focus);
-    expect(after.sprint.cardEffects.codingSpeedMul).toBeGreaterThan(1);
-    expect(after.sprint.cardPiles.hand).toHaveLength(0);
-    expect(after.sprint.cardPiles.played).toEqual([0]);
+    expect(sprint.focus).toBe(before.focus - 2);
+    expect(sprint.metrics.focusSpent).toBe(before.metrics.focusSpent + 2);
+    expect(sprint.cardEffects).toEqual(scaleEffects(def.base, 1));
+    expect(sprint.cardPiles).toEqual({ drawOrder: [], hand: [1], discard: [], played: [0] });
+    expect(state.aiDependency).toBe(beforeOrg.aiDependency + def.base.aiDependencyAdd!);
+    const played = structuredClone({ sprint, state, deck });
+    expect(playCardFromHand(sprint, state, deck, 0)).toEqual({ ok: false, reason: 'no-card' });
+    expect({ sprint, state, deck }).toEqual(played);
   });
-  it('強化後の再発動は加算系の差分だけを適用する', () => {
-    const e = createEngine({
-      seed: 'baseline-upgrade',
-      aiEnabled: true,
-      deck: [{ defId: 'auto-test', level: 1 }],
-    });
-    const deckIndex = e.snapshot().sprint.cardPiles.hand[0]!;
-    expect(e.playCard(deckIndex).ok).toBe(true);
-    const afterFirst = e.snapshot().org.quality;
 
-    // 次スプリントへ進め、強化して再発動。
-    while (!e.isComplete()) e.step(1000);
-    e.nextSprint();
-    const s = e.snapshot();
-    // 加算系 baseline は次スプリントの org に持ち越される。
-    expect(s.org.quality).toBe(afterFirst);
-    // deck[0] を強化
-    (e as unknown as { deck: Array<{ level: number }> }).deck[0]!.level = 2;
-    // 手札に戻す（新スプリントで deal 済み）
-    const hand = s.sprint.cardPiles.hand;
-    expect(hand).toContain(0);
-    const beforeSecond = e.snapshot().org.quality;
-    expect(e.playCard(0).ok).toBe(true);
-    const afterSecond = e.snapshot().org.quality;
-    expect(afterFirst).toBeGreaterThan(0);
-    expect(afterSecond).toBeGreaterThan(beforeSecond);
+  it('同じチームでの再発動は永続加算を重複させず、強化後は差分だけを適用する', () => {
+    const state = org({ quality: 40, securityLevel: 30 });
+    const teamId = 'product-t0';
+    let deck: CardInstance[] = [{ defId: 'auto-test', level: 1 }];
+    const playInNewSprint = () => {
+      const sprint = createSprint(
+        resolveSprintConfig('default'),
+        state,
+        createRng('baseline-upgrade'),
+      );
+      sprint.cardPiles = dealHand(deck.length, createRng('baseline-upgrade:deal'));
+      const before = structuredClone(sprint);
+      const cost = playCost(getCard('auto-test')!.focusCost, deck[0]!.level);
+      expect(playCardFromHand(sprint, state, deck, 0, IDENTITY_CARD_EFFECTS, teamId)).toEqual({
+        ok: true,
+        focusCost: cost,
+        deckIndex: 0,
+      });
+      expect(sprint.focus).toBe(before.focus - cost);
+      expect(sprint.metrics.focusSpent).toBe(cost);
+      return sprint;
+    };
+    const first = playInNewSprint();
+    expect(state.quality).toBe(50);
+    expect(state.securityLevel).toBe(38);
+    expect(deck[0]!.baselineAppliedByTeam).toEqual({ [teamId]: 1 });
+    const afterFirst = structuredClone(state);
+    const repeated = playInNewSprint();
+    expect(state).toEqual(afterFirst);
+    expect(repeated.cardEffects).toEqual(first.cardEffects);
+
+    deck = upgradeCardAt(deck, 0); // 内部deckを書き換えず、強化の所有元の戻り値を使う。
+    const upgraded = playInNewSprint();
+    expect(state.quality).toBe(55); // 15 - 10 = 5だけ加算。
+    expect(state.securityLevel).toBe(42); // 12 - 8 = 4だけ加算。
+    expect(upgraded.cardEffects).toEqual(scaleEffects(getCard('auto-test')!.base, 2));
+    expect(deck[0]).toMatchObject({
+      level: 2,
+      baselineAppliedLevel: 2,
+      baselineAppliedByTeam: { [teamId]: 2 },
+    });
+    const afterUpgrade = structuredClone(state);
+    playInNewSprint();
+    expect(state).toEqual(afterUpgrade);
   });
 
   it('migrateBaselineAppliedByTeam はレガシー値を全チームへ写経する', () => {
@@ -308,75 +336,56 @@ describe('ドラフト抽選（第7.1）', () => {
 });
 
 describe('デッキで結果が変わる（DoD: 手札発動で効果が出る / RI-30）', () => {
-  function run(deck: CardInstance[], playAll = true): SprintResult {
-    const e: Engine = createEngine({ seed: 'deck-cmp', aiEnabled: true, deck });
+  function run(seed: string, deck: CardInstance[], playAll = true): SprintResult {
+    const e = startWithDeck(seed, deck);
     if (playAll) {
       // 手札をすべて発動してからスプリントを進める。
       while (true) {
-        const hand = e.snapshot().sprint.cardPiles.hand;
+        const hand = e.snapshot().sprint!.cardPiles.hand;
         if (hand.length === 0) break;
         const outcome = e.playCard(hand[0]!);
+        expect(outcome.ok).toBe(true);
         if (!outcome.ok) break;
       }
     }
-    let guard = 0;
-    while (!e.isComplete() && guard < 100_000) {
-      e.step(1000);
-      guard += 1;
-    }
-    return e.result();
+    finishSprint(e);
+    return e.snapshot().lastResult!;
   }
 
-  it('カードを発動するとリザルトが変わる', () => {
-    const base = run([]);
-    const carded = run([{ defId: 'auto-test', level: 1 }]);
-    const differs =
-      base.delivered !== carded.delivered ||
-      base.rework !== carded.rework ||
-      base.incidents !== carded.incidents ||
-      base.reviewQueueMax !== carded.reviewQueueMax;
-    expect(differs).toBe(true);
-  });
+  it.each(['deck-cmp', 'card-causal-a', 'card-causal-b'])(
+    '%sはカードを発動するとリザルトが変わる',
+    (seed) => {
+      const base = run(seed, []);
+      const carded = run(seed, [{ defId: 'auto-test', level: 1 }]);
+      const differs =
+        base.delivered !== carded.delivered ||
+        base.rework !== carded.rework ||
+        base.incidents !== carded.incidents ||
+        base.reviewQueueMax !== carded.reviewQueueMax;
+      expect(differs).toBe(true);
+    },
+  );
 
-  it('未発動のデッキは結果に影響しない', () => {
-    const base = run([]);
-    const held = run([{ defId: 'auto-test', level: 1 }], false);
-    expect(held).toEqual(base);
-  });
+  it.each(['deck-cmp', 'card-causal-a', 'card-causal-b'])(
+    '%sは未発動のデッキが結果に影響しない',
+    (seed) => {
+      const base = run(seed, []);
+      const held = run(seed, [{ defId: 'auto-test', level: 1 }], false);
+      expect(held).toEqual(base);
+    },
+  );
 
-  it('同一デッキ・同一 seed・同一発動なら完全再現する', () => {
-    const a = run([{ defId: 'copilot', level: 1 }]);
-    const b = run([{ defId: 'copilot', level: 1 }]);
-    expect(a).toEqual(b);
-  });
+  it.each(['deck-cmp', 'card-causal-a', 'card-causal-b'])(
+    '%sは同一デッキ・同一発動なら完全再現する',
+    (seed) => {
+      const a = run(seed, [{ defId: 'copilot', level: 1 }]);
+      const b = run(seed, [{ defId: 'copilot', level: 1 }]);
+      expect(a).toEqual(b);
+    },
+  );
 });
 
-describe('ドラフト → 次スプリントの周回（第7.1 / engine.nextSprint）', () => {
-  it('完了時に 3 枚のドラフトが提示され、選ぶとデッキ・スプリントが進む', () => {
-    const e = createEngine({ seed: 'progress', aiEnabled: true });
-    let guard = 0;
-    while (!e.isComplete() && guard < 100_000) {
-      e.step(1000);
-      guard += 1;
-    }
-    const completed = e.snapshot();
-    expect(completed.draft).not.toBeNull();
-    expect(completed.draft).toHaveLength(3);
-
-    const picked = completed.draft![0];
-    e.nextSprint(picked);
-    const next = e.snapshot();
-
-    expect(next.sprintIndex).toBe(1);
-    expect(next.deck).toEqual([{ defId: picked, level: 1 }]);
-    expect(next.sprint.complete).toBe(false);
-    expect(next.draft).toBeNull();
-    // 集中力はスプリントごとに満タンへ回復する（第6.2）。
-    expect(next.sprint.focus).toBe(next.sprint.config.focusMax);
-    // 累積（出荷ポイント）は引き継ぐ。
-    expect(next.org.deliveryScore).toBe(completed.org.deliveryScore);
-  });
-});
+// ドラフトから次スプリントへの公開API契約はengine.test.tsで検証する。
 
 describe('RI-91-C3 cards NoCoverage / Survived mutants', () => {
   describe('emptyCardPiles', () => {
@@ -413,6 +422,28 @@ describe('RI-91-C3 cards NoCoverage / Survived mutants', () => {
         ok: false,
         reason: 'no-card',
       });
+    });
+
+    it('費用未満は副作用なしで拒否し、費用ちょうどなら集中力0で発動する', () => {
+      const state = org();
+      const sprint = baseSprint();
+      const deck: CardInstance[] = [{ defId: 'auto-test', level: 1 }];
+      sprint.cardPiles.hand = [0];
+      sprint.focus = 2;
+      const before = structuredClone({ sprint, state, deck });
+      expect(playCardFromHand(sprint, state, deck, 0)).toEqual({ ok: false, reason: 'no-focus' });
+      expect({ sprint, state, deck }).toEqual(before);
+      sprint.focus = 3;
+      expect(playCardFromHand(sprint, state, deck, 0)).toEqual({
+        ok: true,
+        focusCost: 3,
+        deckIndex: 0,
+      });
+      expect(sprint.focus).toBe(0);
+      expect(sprint.metrics.focusSpent).toBe(3);
+      expect(sprint.cardPiles.hand).toEqual([]);
+      expect(sprint.cardPiles.played).toEqual([0]);
+      expect(state.quality).toBe(before.state.quality + 10);
     });
 
     it('deck 欠落は reason invalid で拒否する', () => {

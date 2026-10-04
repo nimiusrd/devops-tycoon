@@ -12,6 +12,13 @@ export interface CompanyResult {
   cards: { name: string; level: number }[];
 }
 
+/** 固定サイズの結果画像で計測する文字列の上限（UTF-16単位）。 */
+export const COMPANY_RESULT_TEXT_MAX_LENGTH = 256;
+
+function isCompanyResultText(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= COMPANY_RESULT_TEXT_MAX_LENGTH;
+}
+
 type ResultState = Pick<RunState, 'status' | 'winType' | 'loseReason' | 'totals' | 'org' | 'deck'>;
 
 export function buildCompanyResult(
@@ -53,14 +60,14 @@ export function isCompanyResult(value: unknown): value is CompanyResult {
   if (!value || typeof value !== 'object') return false;
   const v = value as CompanyResult;
   return (
-    typeof v.outcome === 'string' &&
+    isCompanyResultText(v.outcome) &&
     typeof v.won === 'boolean' &&
     Number.isFinite(v.delivered) &&
     !!v.cost &&
-    typeof v.cost.label === 'string' &&
+    isCompanyResultText(v.cost.label) &&
     Number.isFinite(v.cost.remaining) &&
     Array.isArray(v.cards) &&
     v.cards.length <= 3 &&
-    v.cards.every((c) => !!c && typeof c.name === 'string' && Number.isFinite(c.level))
+    v.cards.every((c) => !!c && isCompanyResultText(c.name) && Number.isFinite(c.level))
   );
 }

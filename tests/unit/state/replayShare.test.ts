@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createGame } from '../../../src/game';
+import {
+  COMPANY_RESULT_TEXT_MAX_LENGTH,
+  type CompanyResult,
+} from '../../../src/render/companyResultView';
 import { RunEngine } from '../../../src/sim/run/engine';
 import { defaultMeta } from '../../../src/state/meta';
 import {
@@ -547,6 +551,55 @@ describe('リプレイのファイル共有（RI-133）', () => {
     delete replay.contentSnapshot!.companyResult;
     expect(parseReplayShare(serializeReplay(replay))).toEqual({ ok: true, replay });
   });
+
+  it.each([
+    [
+      '結果名',
+      (result: CompanyResult, text: string) => {
+        result.outcome = text;
+      },
+    ],
+    [
+      'コスト名',
+      (result: CompanyResult, text: string) => {
+        result.cost.label = text;
+      },
+    ],
+    [
+      'カード名',
+      (result: CompanyResult, text: string) => {
+        result.cards[0]!.name = text;
+      },
+    ],
+  ] as const)(
+    '画像の%sが長すぎるリプレイは保存せず拒否し、上限までは保持する',
+    async (_label, setText) => {
+      const game = createGame({ seed: 'company-result-text', initialMeta: defaultMeta() });
+      const storage = new MemoryReplayStorage();
+      await game.attachReplay(storage);
+      const replay = makeWonReplay({ id: 'text-limit', seed: 'text-limit' });
+      const result = replay.contentSnapshot!.companyResult!;
+      result.cards = [{ name: '記録時のカード', level: 1 }];
+      setText(result, 'あ'.repeat(COMPANY_RESULT_TEXT_MAX_LENGTH));
+      expect(parseReplayShare(serializeReplay(replay))).toEqual({ ok: true, replay });
+      expect((await game.importReplayText(serializeReplay(replay))).ok).toBe(true);
+      const saved = await storage.list();
+
+      for (const length of [COMPANY_RESULT_TEXT_MAX_LENGTH + 1, 100_000]) {
+        const oversized = structuredClone(replay);
+        oversized.id = 'oversized-text';
+        setText(oversized.contentSnapshot!.companyResult!, 'あ'.repeat(length));
+        expect(normalizeReplay(oversized)).toBeNull();
+        expect(await game.importReplay(oversized)).toBe(false);
+        expect(await game.importReplayText(serializeReplay(oversized))).toMatchObject({
+          ok: false,
+          reason: 'corrupt',
+        });
+        expect(await storage.list()).toEqual(saved);
+        expect(game.listReplays().map((item) => item.id)).toEqual(['text-limit']);
+      }
+    },
+  );
 
   it('キーフレームの member.stats が null なら拒否し、既存リプレイは残す', async () => {
     const replayStorage = new MemoryReplayStorage();

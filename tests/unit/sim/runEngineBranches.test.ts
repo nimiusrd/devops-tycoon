@@ -450,10 +450,10 @@ describe('RI-72-D5 RunEngine NoCoverage reachable branches', () => {
     arrangeAdjustment(pause, ['pause_ai_rollout']);
     pause.chooseGoalAdjustment('pause_ai_rollout');
     expect(pause.whatIfComputeInput()).toMatchObject({
-      pauseAiDebuffQuarter: 2,
       goalCarryoverQuarter: 2,
       goalCarryoverId: 'pause_ai_rollout',
     });
+    expect(pause.whatIfComputeInput()).not.toHaveProperty('pauseAiDebuffQuarter');
     expect(pause.snapshot()).toMatchObject({
       goalCarryoverQuarter: 2,
       goalCarryoverId: 'pause_ai_rollout',

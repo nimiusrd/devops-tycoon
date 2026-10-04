@@ -53,8 +53,6 @@ export interface WhatIfComputeInput {
   /** ツール別シナリオ（RI-103。未指定は default）。 */
   scenario?: ScenarioId;
   bossId: string;
-  /** @deprecated RI-83: goalCarryover* を優先。 */
-  pauseAiDebuffQuarter?: number | null;
   goalCarryoverQuarter?: number | null;
   goalCarryoverId?: GoalAdjustmentId | null;
   baseConfig: SprintConfig;
@@ -79,7 +77,6 @@ function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext 
     bossId: input.bossId,
     goalCarryoverQuarter: input.goalCarryoverQuarter ?? null,
     goalCarryoverId: input.goalCarryoverId ?? null,
-    pauseAiDebuffQuarter: input.pauseAiDebuffQuarter ?? null,
     quarterNumber: input.quarterNumber,
     baseConfig: input.baseConfig,
   };
@@ -135,7 +132,7 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     input.teamReviewQueue ?? 0,
     input.teamIncidents ?? 0,
     (input.otherTeamAiDependencies ?? []).join(','),
-    input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? '',
+    input.goalCarryoverQuarter ?? '',
     input.goalCarryoverId ?? '',
     input.scenario ?? '',
   ].join('|');
@@ -170,7 +167,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
     next = applyGoalCarryoverOrgTick(
       next,
       input.goalCarryoverId ?? null,
-      input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? null,
+      input.goalCarryoverQuarter ?? null,
       input.quarterNumber,
     );
     return next;

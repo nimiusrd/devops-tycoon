@@ -169,7 +169,7 @@ PLAYWRIGHT_HOST=127.0.0.1 PLAYWRIGHT_PORT=5175 npm run test:e2e
 | UI | React 19 / Framer Motion |
 | 盤面・カメラ | PixiJS / pixi-viewport |
 | 言語・ビルド | TypeScript / Vite |
-| 状態・シミュレーション | 純TypeScriptの`RunEngine` / XState遷移契約 |
+| 状態・シミュレーション | 純TypeScriptの`RunEngine` / 純TS遷移表 |
 | 永続化 | IndexedDB / idb |
 | 重い試算 | Web Worker / Comlink |
 | グラフ | Recharts |

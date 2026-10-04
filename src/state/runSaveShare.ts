@@ -14,7 +14,7 @@ import {
   type RunSave,
 } from './runPersistence';
 
-/** parseRunSave が受け付けるスキーマ（現行 + 移行対象の旧版）。 */
+/** parseRunSave が受け付けるスキーマ（現行 + 要約を保持する旧版）。 */
 const ACCEPTED_RUN_SAVE_SCHEMA_VERSIONS = new Set([4, 5, 6, 7, RUN_SAVE_SCHEMA_VERSION]);
 
 export type RunSaveShareReason =

@@ -29,8 +29,6 @@ export const TUTORIAL_CONTENT_VERSION = 10;
 /** 旧 RI-60（3ステップ）完了セーブの版。 */
 export const LEGACY_TUTORIAL_VERSION = 1;
 
-export const LEGACY_META_STORAGE_KEY = 'devops-tycoon:meta:v1';
-
 export interface MetaState {
   /** 累積メタ進行ポイント。 */
   points: number;
@@ -219,17 +217,6 @@ export function withPreferredCardIds(
     return meta;
   }
   return { ...meta, preferredCardIds: next };
-}
-
-/** 旧 JSON セーブを現行スキーマへ復元する。壊れていれば null。 */
-export function parseLegacyMeta(raw: string): MetaState | null {
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-    return normalizeMeta(parsed);
-  } catch {
-    return null;
-  }
 }
 
 export { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS } from '../data/difficulties';

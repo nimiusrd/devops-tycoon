@@ -9,6 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { getBoss } from '../../data/bosses';
+import { FIXED_STEP_MS } from '../../data/balance/pacing';
 import {
   CARD_BALANCE,
   MEMBER_BALANCE,
@@ -54,7 +55,6 @@ import {
   STAMINA_RECOVER_BETWEEN,
 } from '../member';
 import type { GrowthOutcome, LaneAssignment, RosterState } from '../member/types';
-import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng, createRngFromState, getRngState } from '../rng';
 import { DEFAULT_SEED } from '../seed';

@@ -6,6 +6,7 @@
  * RI-81: 予算コストで引き直すマリガンを提供する（F-12）。
  */
 import { useRef } from 'react';
+import { draftCompanyGuidance, type CompanyGuidanceState } from '../render/companyGuidanceView';
 import { DRAFT_MULLIGAN_COST } from '../sim/run/constants';
 import { playCost } from '../sim/cards';
 import type { WhatIfPreview as WhatIfPreviewData } from '../sim/run/types';
@@ -21,6 +22,7 @@ export interface DraftScreenProps {
   sprintNumber: number;
   /** 現在の予算（マリガン可否表示用）。 */
   budget: number;
+  companyState?: CompanyGuidanceState;
   /** 今ドラフトでマリガン済みか。 */
   mulliganUsed: boolean;
   previews: Record<string, WhatIfPreviewData>;
@@ -41,6 +43,7 @@ export function DraftScreen({
   options,
   sprintNumber,
   budget,
+  companyState,
   mulliganUsed,
   previews,
   skipPreview,
@@ -83,6 +86,7 @@ export function DraftScreen({
                 <CardView
                   key={id}
                   def={def}
+                  companyGuidance={companyState ? draftCompanyGuidance(def, companyState) : null}
                   playCost={playCost(def.focusCost, 1)}
                   onPick={() => onPick(id)}
                   disabled={readOnly}

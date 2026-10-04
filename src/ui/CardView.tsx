@@ -36,6 +36,8 @@ export interface CardViewProps {
   whatIfPreview?: WhatIfPreviewData;
   /** what-if Worker 試算中（RI-13）。 */
   whatIfComputing?: boolean;
+  /** ドラフト限定の現在状態に対応した説明。 */
+  companyGuidance?: string | null;
 }
 
 function handCardTitle(
@@ -61,6 +63,7 @@ export function CardView({
   title,
   whatIfPreview,
   whatIfComputing = false,
+  companyGuidance,
 }: CardViewProps) {
   const stars = level > 1 ? '★'.repeat(level - 1) : '';
   const className = [
@@ -115,6 +118,11 @@ export function CardView({
                 <li key={i}>{line}</li>
               ))}
             </ul>
+            {companyGuidance && (
+              <p className="card-company-guidance" data-testid={`card-company-guidance-${def.id}`}>
+                {companyGuidance}
+              </p>
+            )}
             {(whatIfPreview || whatIfComputing) && (
               <WhatIfPreview
                 preview={whatIfPreview}
@@ -151,16 +159,20 @@ export function CardView({
 
   if (onPick) {
     return (
-      <button
-        type="button"
-        className={className}
-        onClick={onPick}
-        disabled={disabled}
-        title={title}
-        data-testid={`draft-card-${def.id}`}
-      >
+      <div className={className} title={title} data-testid={`draft-option-${def.id}`}>
         {inner}
-      </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={onPick}
+          disabled={disabled}
+          title={title}
+          data-testid={`draft-card-${def.id}`}
+          aria-label={`${def.name}を取得`}
+        >
+          この施策を取得
+        </button>
+      </div>
     );
   }
   return (

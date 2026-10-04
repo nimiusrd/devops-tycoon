@@ -13,6 +13,7 @@ vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
 });
 
 import { DRAFT_MULLIGAN_COST } from '../../../src/sim/run/constants';
+import { RunEngine } from '../../../src/sim/run/engine';
 import type { WhatIfPreview } from '../../../src/sim/run/types';
 import { DraftScreen, type DraftScreenProps } from '../../../src/ui/DraftScreen';
 
@@ -71,6 +72,23 @@ const preview: WhatIfPreview = {
 };
 
 describe('ドラフトの施策選択と引き直し', () => {
+  it('会社の説明は代表カードだけに渡し、説明と取得操作を分離する', () => {
+    const engine = new RunEngine({ seed: 'draft-company-guidance', difficulty: 'easy' });
+    engine.startRun();
+    const screen = mountDraft({
+      companyState: engine.snapshot(),
+      options: ['copilot', 'auto-test', 'docs'],
+    });
+    expect(content(screen.find('card-company-guidance-copilot'))).toContain('今の会社');
+    expect(content(screen.find('card-company-guidance-auto-test'))).toContain('代償');
+    expect(screen.has('card-company-guidance-docs')).toBe(false);
+    expect(screen.find('draft-option-copilot').type).toBe('div');
+    expect(screen.find('draft-option-copilot').props.onClick).toBeUndefined();
+    expect(screen.find('draft-card-copilot').type).toBe('button');
+    expect(content(screen.find('draft-card-copilot'))).toBe('この施策を取得');
+    screen.click('draft-card-copilot');
+    expect(screen.props.onPick).toHaveBeenCalledExactlyOnceWith('copilot');
+  });
   it('提示カード・対象スプリント・発動コストを表示し、選んだ定義 ID を通知する', () => {
     const screen = mountDraft();
     expect(screen.find('draft').props).toMatchObject({
@@ -79,9 +97,9 @@ describe('ドラフトの施策選択と引き直し', () => {
       'aria-label': 'Card Draft',
     });
     expect(content(screen.find('draft-sprint-no'))).toBe('スプリント2 に向けて、施策を1枚選ぶ');
-    expect(content(screen.find('draft-card-docs'))).toContain('発動');
-    expect(content(screen.find('draft-card-docs'))).toContain('集中力');
-    expect(content(screen.find('draft-card-docs'))).toContain('2');
+    expect(content(screen.find('draft-option-docs'))).toContain('発動');
+    expect(content(screen.find('draft-option-docs'))).toContain('集中力');
+    expect(content(screen.find('draft-option-docs'))).toContain('2');
     for (const id of screen.props.options) screen.click(`draft-card-${id}`);
     expect(screen.props.onPick).toHaveBeenNthCalledWith(1, 'docs');
     expect(screen.props.onPick).toHaveBeenNthCalledWith(2, 'copilot');
@@ -133,8 +151,8 @@ describe('ドラフトの施策選択と引き直し', () => {
         expect(screen.find(id).props.title).toBe('リプレイ閲覧中は操作できません');
         screen.click(id);
       }
-      expect(screen.find('draft-card-docs').props.className).toContain('card-readonly');
-      expect(screen.find('draft-card-docs').props.className).not.toContain('card-disabled');
+      expect(screen.find('draft-option-docs').props.className).toContain('card-readonly');
+      expect(screen.find('draft-option-docs').props.className).not.toContain('card-disabled');
       expect(screen.props.onPick).not.toHaveBeenCalled();
       expect(screen.props.onSkip).not.toHaveBeenCalled();
       expect(screen.props.onMulligan).not.toHaveBeenCalled();

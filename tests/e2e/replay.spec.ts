@@ -110,9 +110,9 @@ async function assertReadOnlyDraftA11y(page: Page): Promise<void> {
 
   const card = page.getByTestId('draft-card-copilot');
   await expect(card).toBeDisabled();
-  await expect(card).toHaveClass(/card-readonly/);
-  await expect(card).not.toHaveClass(/card-disabled/);
-  await expect(card).toHaveCSS('opacity', '1');
+  await expect(page.getByTestId('draft-option-copilot')).toHaveClass(/card-readonly/);
+  await expect(page.getByTestId('draft-option-copilot')).not.toHaveClass(/card-disabled/);
+  await expect(page.getByTestId('draft-option-copilot')).toHaveCSS('opacity', '1');
   await expect(page.locator('.draft-title')).toContainText('提示された施策を確認する');
   await expect(page.locator('.draft-title')).not.toContainText('施策を1枚選ぶ');
 
@@ -678,7 +678,7 @@ test('リプレイの「カードドラフトへ」で次のドラフトキー�
   const draftCard = page.getByTestId('draft-card-copilot');
   await expect(draftCard).toBeVisible();
   await expect(draftCard).toBeDisabled();
-  await expect(draftCard).toHaveCSS('width', '220px');
+  await expect(page.getByTestId('draft-option-copilot')).toHaveCSS('width', '220px');
   await assertReadOnlyDraftA11y(page);
   await page.getByTestId('draft-exit-replay').click();
   await expect(page.getByTestId('title')).toBeVisible();
@@ -929,10 +929,15 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
   await expect(copilot).toBeVisible();
   await expect(copilot).toBeDisabled();
   await expect.poll(async () => copilot.evaluate((el) => el.tagName)).toBe('BUTTON');
-  // phone-se では flex 行幅が 220px 未満になる。button.card であれば親幅まで縮み、div 化しない。
+  // カードの幅は従来どおり維持し、その内側の取得ボタンも縮退させない。
   await expect
-    .poll(async () => copilot.evaluate((el) => Math.round(el.getBoundingClientRect().width)))
+    .poll(async () =>
+      page
+        .getByTestId('draft-option-copilot')
+        .evaluate((el) => Math.round(el.getBoundingClientRect().width)),
+    )
     .toBeGreaterThanOrEqual(180);
+  expect((await copilot.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
   const layout = await page.evaluate(() => {
     const overlay = document.querySelector('.result-overlay');

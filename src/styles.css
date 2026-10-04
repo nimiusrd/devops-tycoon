@@ -1267,7 +1267,7 @@ body:has(.overlay-contained) {
   align-items: stretch;
   justify-content: center;
 }
-.overlay-contained .draft-options button.card {
+.overlay-contained .draft-options .card {
   width: auto;
   min-width: 0;
   max-width: 100%;
@@ -1275,7 +1275,7 @@ body:has(.overlay-contained) {
 :root[data-responsive-width='narrow'] .overlay-contained .draft-options {
   grid-template-columns: 1fr;
 }
-:root[data-responsive-width='narrow'] .overlay-contained .draft-options button.card {
+:root[data-responsive-width='narrow'] .overlay-contained .draft-options .card {
   width: min(100%, 220px);
   justify-self: center;
 }
@@ -7742,4 +7742,20 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 :root[data-responsive-width='narrow'] .org-trend-dept-series {
   flex-direction: column;
+}
+
+.card-company-guidance {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.draft-options .card > .btn {
+  margin-top: auto;
+  margin-left: 0;
+  width: 100%;
+  min-height: 44px;
+}
+.setup-observation {
+  margin-bottom: 0.75rem;
 }

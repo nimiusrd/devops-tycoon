@@ -8,6 +8,8 @@
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
 import { getBoss } from '../data/bosses';
+import { useState } from 'react';
+import { setupObservation } from '../render/companyGuidanceView';
 import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
@@ -32,6 +34,9 @@ export function SetupScreen({
   onBegin,
   readOnly = false,
 }: SetupScreenProps) {
+  const [dismissedSprint, setDismissedSprint] = useState<string | null>(null);
+  const sprintKey = `${state.seed}:${state.quarterNumber}:${state.sprintIndexInQuarter}`;
+  const observation = setupObservation(state);
   const boss = getBoss(state.bossId);
   const { current: nextIndex, total } = runBarSprintView(state);
   // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
@@ -92,6 +97,28 @@ export function SetupScreen({
               <TermTip termId="aiLiteracy" />
               <TermTip termId="rework" />
             </div>
+            {observation && dismissedSprint !== sprintKey && (
+              <aside
+                className="setup-observation"
+                data-testid="setup-observation"
+                aria-label="今回見る一点"
+              >
+                <p
+                  className="formation-setup-hint"
+                  data-testid={`setup-observation-${observation.id}`}
+                >
+                  {observation.text}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setDismissedSprint(sprintKey)}
+                  data-testid="setup-observation-dismiss"
+                >
+                  案内を閉じる
+                </button>
+              </aside>
+            )}
           </div>
           <button
             type="button"

@@ -5,6 +5,11 @@
  * RunEngine.hydrateReplayFrame で read-only 表示する。純入力ログ再生は非スコープ。
  */
 import { isReplayFramePhase, type RunReplayFrame, type ReplayFramePhase } from '../sim/run/persist';
+import {
+  buildCompanyResult,
+  isCompanyResult,
+  type CompanyResult,
+} from '../render/companyResultView';
 import { getCard } from '../data/cards';
 import { getTrial } from '../data/difficulties';
 import { getRelic, type RelicDef } from '../data/relics';
@@ -81,6 +86,8 @@ export interface ReplayTrialSnapshot {
 
 /** リプレイ表示で参照するカード／レリック／試練定義の最小スナップショット。 */
 export interface ReplayContentSnapshot {
+  /** 決着時の画像表示値。旧記録では省略。 */
+  companyResult?: CompanyResult;
   cards: CardDef[];
   relics: RelicDef[];
   /**
@@ -211,7 +218,11 @@ function parseReplayContentSnapshot(
     }
     trials = structuredClone(value.trials);
   }
+  if (value.companyResult !== undefined && !isCompanyResult(value.companyResult)) {
+    return INVALID_REPLAY_VALUE;
+  }
   return {
+    ...(value.companyResult ? { companyResult: structuredClone(value.companyResult) } : {}),
     cards: structuredClone(value.cards),
     relics: structuredClone(value.relics),
     ...(trials ? { trials } : {}),
@@ -294,7 +305,18 @@ export function collectReplayReferencedIds(keyframes: readonly ReplayKeyframe[])
 
 export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): ReplayContentSnapshot {
   const { cardIds, relicIds, trialIds } = collectReplayReferencedIds(keyframes);
+  const terminal = [...keyframes]
+    .reverse()
+    .find((entry) => entry.phase === 'won' || entry.phase === 'lost');
   return {
+    ...(terminal
+      ? {
+          companyResult: buildCompanyResult(
+            terminal.frame,
+            (id) => getCard(id)?.name ?? `不明なカード（${id}）`,
+          ),
+        }
+      : {}),
     cards: [...cardIds]
       .map((id) => getCard(id))
       .filter((card): card is CardDef => card !== undefined)

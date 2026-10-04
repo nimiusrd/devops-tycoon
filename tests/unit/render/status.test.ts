@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createEngine } from '../../../src/sim/engine';
+import { createOrgState } from '../../../src/sim/org';
+import { createRng } from '../../../src/sim/rng';
+import { createSprint, resolveSprintConfig } from '../../../src/sim/sprint';
 import {
   REVIEW_FREEZE_DANGER_PEAK,
   REVIEW_FREEZE_WATCH_PEAK,
@@ -25,10 +27,22 @@ import { REVIEW_FREEZE_PEAK } from '../../../src/sim/outcome';
 import type { OrgScaleState } from '../../../src/sim/orgscale/types';
 import type { OrgState, SimState } from '../../../src/sim/types';
 
-/** 既定スナップショットに org を上書きした SimState を作る。 */
+/** 表示テスト用の初期 SimState に org を上書きする。 */
 function withOrg(org: Partial<OrgState>): SimState {
-  const base = createEngine({ seed: 'status', aiEnabled: true }).snapshot();
-  return { ...base, aiEnabled: org.aiEnabled ?? base.aiEnabled, org: { ...base.org, ...org } };
+  const baseOrg = createOrgState('default', true);
+  return {
+    seed: 'status',
+    scenario: 'default',
+    tick: 0,
+    elapsedMs: 0,
+    lastRandom: 0,
+    aiEnabled: org.aiEnabled ?? baseOrg.aiEnabled,
+    org: { ...baseOrg, ...org },
+    sprint: createSprint(resolveSprintConfig('default'), baseOrg, createRng('status')),
+    sprintIndex: 0,
+    deck: [],
+    draft: null,
+  };
 }
 
 describe('deriveStatus（状態→ステータス表示）', () => {

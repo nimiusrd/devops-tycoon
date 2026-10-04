@@ -1,12 +1,12 @@
 # 旧Engineテストの移行契約
 
-[#707](https://github.com/nimiusrd/devops-tycoon/issues/707)は、テストのために維持している単独スプリントEngineを現行シミュレーションへ段階移行するエピックである。各単位を着手前に独立Issueへ切り出し、1単位1PRで進める。初手[#714](https://github.com/nimiusrd/devops-tycoon/issues/714)で固定step定数の所有元を整理し、RI-106の回帰テストを移す。残る6ファイルの移行と旧クラス撤去は後続Issueで扱い、初手だけでエピックを閉じない。
+[#707](https://github.com/nimiusrd/devops-tycoon/issues/707)は、テストのために維持していた単独スプリントEngineを現行シミュレーションへ段階移行するエピックである。各単位を独立Issueへ切り出し、1単位1PRで進めた。初手[#714](https://github.com/nimiusrd/devops-tycoon/issues/714)で固定step定数の所有元を整理し、RI-106の回帰テストを移した。残る6ファイルを#715・#716・#717で移行し、#718で旧クラスを撤去した。下表は移行前の契約と移行先の記録である。
 
 ## 利用経路と所有元
 
 初手の調査では、`src`・`tests`・`scripts`とリポジトリ全体のimportおよび`Engine`・`createEngine`・`FIXED_STEP_MS`参照を検索した。旧クラスとfactoryの利用は下表のunit 7ファイルだけで、本番・開発ツールから旧クラスを呼ぶ経路は見つからなかった。RunEngine、playtest harness、sprintTempoのunitは固定step定数だけを旧モジュールから取得していた。
 
-`FIXED_STEP_MS`の所有元は`src/data/balance/pacing.ts`とし、`PACING_BALANCE.fixedStepMs.value`から導出する。旧Engineも同じ定数をimportする。本番のゲーム値・式・乱数消費順は変更せず、ルールセット版も増やさない。
+`FIXED_STEP_MS`の所有元は`src/data/balance/pacing.ts`とし、`PACING_BALANCE.fixedStepMs.value`から導出する。本番のゲーム値・式・乱数消費順は変更せず、ルールセット版も増やさない。
 
 | 旧Engineに依存するテスト | 保証する契約 | 移行先と実装Issue |
 | --- | --- | --- |
@@ -49,7 +49,7 @@
 
 検証はNode 24のDev Containerで行い、移行前の対象54テスト、移行後の対象57テスト、RunEngine・永続化関連を含む17ファイル403テストが成功した。`npm run lint`、`npm run format:check`と変更対象のTypeScript型検査も確認した。標準Dev Containerはイメージ構築時の容量不足で起動できず、一時設定の`node:24-bookworm-slim`を使った。リポジトリの環境設定は変更していない。
 
-この単位では本番コード・ゲーム値・乱数消費順・ルールセット版を変更しない。残る旧Engine依存は`sim/sprint.test.ts`・`sim/actions.test.ts`（#715）、`scenarios/easyCopilotSprint1.test.ts`・`render/status.test.ts`（#717）の4ファイルで、撤去は#718で扱う。
+この単位では本番コード・ゲーム値・乱数消費順・ルールセット版を変更しない。#716完了時点で残っていた`sim/sprint.test.ts`・`sim/actions.test.ts`（#715）、`scenarios/easyCopilotSprint1.test.ts`・`render/status.test.ts`（#717）の4ファイルも後続単位で移行済みである。
 
 ## RI106固定値の判断
 
@@ -72,6 +72,12 @@ RI-106のgoldenは、工程係数をレジストリへ移す際に挙動を維�
 
 移行前コミット`de73b80a`、ルールセット版7で、同一の12条件に対して旧Engineと純TSのorg・sprintを比較し完全一致を確認した。移行前の6seed合計はReviewピークがAIあり98・なし45、Reworkがあり35・なし10であり、上記の最低効果量には余裕を持たせている。この照合は初手の検証証跡であり、旧Engineを必要とする恒久テストとしては残さない。
 
-## 撤去条件
+## #718の撤去結果
 
-[#718](https://github.com/nimiusrd/devops-tycoon/issues/718)は#715・#716・#717完了後に着手する。全検索で旧Engine利用がゼロになったことを確認してから`Engine/EngineInit/createEngine`を撤去する。`SimState`等の表示・adapter型は別の責務として残す。新たな本番・開発用途が見つかった場合は、その用途と残す最小責務を記録して#707の完了範囲を更新する。
+[#714](https://github.com/nimiusrd/devops-tycoon/issues/714)・#715・#716・#717の移行完了後、リポジトリ全体（隠し設定を含む）の旧モジュール参照・`Engine/EngineInit/createEngine`を再検索した。7テストファイルの依存解消を確認し、本番・開発ツールの利用もなかったため、[#718](https://github.com/nimiusrd/devops-tycoon/issues/718)で`src/sim/engine.ts`全体を撤去した。RunEngineテスト内の同名`createEngine`ヘルパーは現行RunEngineを生成するものであり、旧factoryの利用ではない。
+
+`SimState`は`deriveStatus`と`RendererAdapter`に引き続き必要なため、`src/sim/types.ts`に保持する。旧モジュールが利用していたactions・cards・org・rng・scenarios・seed・sprint・modelも現行用途があり、撤去しない。現行RunEngine、ゲーム値・式・乱数消費順、ルールセット版7は変更しない。
+
+mutationの`sim-root-rest` shardとStryker設定はファイルglobで対象を列挙するため、旧モジュールは削除により対象から外れる。旧モジュール専用のshard・除外指定はない。SPEC対応表の固定step所有元は#714で更新済みであり、追加変更は不要である。
+
+Node 24.16.0のDev Containerで、撤去前の7移行ファイル・RunEngine関連18ファイル447テストと、撤去後の全unit 253ファイル3,683テスト（同じ対象447テストとmutation shard整合性テストを含む）が成功した。撤去後の`npm run build`・`npm run lint`・`npm run format:check`・`npm run balance:check`も成功し、バランス生成物に差分はない。全unitは`npm test -- --maxWorkers=2`、撤去前の対象unitは`npm test -- <対象パス> --maxWorkers=1`で実行した。`balance:check`はコンテナ内Gitの所有者判定を実行単位の`safe.directory=/workspaces/devops-tycoon`設定で解決して再実行した。

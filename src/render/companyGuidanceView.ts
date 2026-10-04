@@ -2,11 +2,13 @@
 import type { CardDef } from '../sim/types';
 import type { RunState } from '../sim/run/types';
 import { playCost } from '../sim/cards';
+import { foldPassives } from '../sim/run/effects';
+import { discountedShopPrice } from '../sim/run/shopPrice';
 import { formatCardDefTags } from './eventOutcomeView';
 import { seniorHpHudCopy } from './status';
 import { clampSeniorHpDisplay } from './seniorHpDisplay';
 
-export type CompanyGuidanceState = Pick<RunState, 'roster' | 'org' | 'budget'>;
+export type CompanyGuidanceState = Pick<RunState, 'roster' | 'org' | 'budget' | 'relics'>;
 
 export function draftCompanyGuidance(def: CardDef, state: CompanyGuidanceState): string | null {
   if (def.id !== 'copilot' && def.id !== 'auto-test') return null;
@@ -20,11 +22,12 @@ export function draftCompanyGuidance(def: CardDef, state: CompanyGuidanceState):
     coders.length > 0 ? `Coding担当${coders.length}人` : 'Coding担当0人（配置対象なし）';
   const current =
     def.id === 'copilot'
-      ? `AI依存度${state.org.aiDependency}・セキュリティ${state.org.securityLevel}`
-      : `品質${state.org.quality}・セキュリティ${state.org.securityLevel}`;
+      ? `AI依存度${Math.round(state.org.aiDependency)}・セキュリティ${Math.round(state.org.securityLevel)}`
+      : `品質${Math.round(state.org.quality)}・セキュリティ${Math.round(state.org.securityLevel)}`;
+  const price = discountedShopPrice(def.cost, foldPassives(state.relics).shopDiscount);
   const budget =
-    state.budget < def.cost
-      ? `取得は無料（ショップ価格${def.cost}には予算不足、現在${state.budget}）`
+    state.budget < price
+      ? `取得は無料（ショップ価格${price}には予算不足、現在${state.budget}）`
       : '取得は無料';
   return `今の会社: ${target}、${current} / 発動時の助け: ${benefit ?? '追加の有利効果なし'} / 代償: ${costs.join('・') || '不利効果なし'}、集中力${playCost(def.focusCost, 1)}（Lv1）。${budget}。出荷の見込みは予測。`;
 }

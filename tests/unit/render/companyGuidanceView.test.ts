@@ -17,6 +17,30 @@ function state() {
 }
 
 describe('現在の会社に対応したドラフト説明', () => {
+  it.each([13, 14, 15])('コスト意識の割引後価格14と予算%sを比較する', (budget) => {
+    const input = state();
+    input.relics = ['budget-discipline'];
+    input.budget = budget;
+    const text = draftCompanyGuidance(getCard('auto-test')!, input)!;
+    if (budget < 14) expect(text).toContain('ショップ価格14には予算不足');
+    else expect(text).not.toContain('予算不足');
+    expect(text).not.toContain('ショップ価格18');
+    expect(text).toContain('取得は無料');
+  });
+
+  it('組織の現在値を丸め、内部の小数値は変更しない', () => {
+    const input = state();
+    input.org.aiDependency = 27.200000000000003;
+    input.org.securityLevel = 69.80000000000001;
+    input.org.quality = 70.60000000000001;
+    const before = structuredClone(input);
+    expect(draftCompanyGuidance(getCard('copilot')!, input)).toContain(
+      'AI依存度27・セキュリティ70',
+    );
+    expect(draftCompanyGuidance(getCard('auto-test')!, input)).toContain('品質71・セキュリティ70');
+    expect(input).toEqual(before);
+  });
+
   it.each(['copilot', 'auto-test'])('代表カード %s の助けと代償は実定義のタグを使う', (id) => {
     const input = state();
     const before = structuredClone(input);

@@ -110,6 +110,11 @@ async function assertReadOnlyDraftA11y(page: Page): Promise<void> {
 
   const card = page.getByTestId('draft-card-copilot');
   await expect(card).toBeDisabled();
+  await expect(card).toHaveCSS('cursor', 'not-allowed');
+  await expect(card).toHaveCSS('opacity', '0.45');
+  await card.hover();
+  await expect(card).toHaveCSS('filter', 'none');
+  await expect(card).toHaveCSS('transform', 'none');
   await expect(page.getByTestId('draft-option-copilot')).toHaveClass(/card-readonly/);
   await expect(page.getByTestId('draft-option-copilot')).not.toHaveClass(/card-disabled/);
   await expect(page.getByTestId('draft-option-copilot')).toHaveCSS('opacity', '1');

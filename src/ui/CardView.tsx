@@ -168,7 +168,7 @@ export function CardView({
           disabled={disabled}
           title={title}
           data-testid={`draft-card-${def.id}`}
-          aria-label={`${def.name}を取得`}
+          aria-label={`${def.name}: この施策を取得`}
         >
           この施策を取得
         </button>

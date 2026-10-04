@@ -7756,6 +7756,13 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   width: 100%;
   min-height: 44px;
 }
+.draft-options .card > .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
 .setup-observation {
   margin-bottom: 0.75rem;
 }

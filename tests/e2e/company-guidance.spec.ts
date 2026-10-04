@@ -27,10 +27,15 @@ for (const viewport of viewports) {
     await expect(page.getByTestId('setup-observation-review-staff')).toContainText(
       'Review担当 0人',
     );
+    await expect(page.getByTestId('setup-observation').getByRole('status')).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
     await page.screenshot({ path: testInfo.outputPath('setup-observation.png'), fullPage: true });
     await page.getByTestId('setup-observation-dismiss').focus();
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('setup-observation')).toHaveCount(0);
+    await expect(page.getByTestId('begin-sprint')).toBeFocused();
     await page.getByTestId('assign-m2-review').click();
     await page.getByTestId('assign-m2-coding').click();
     await expect(page.getByTestId('setup-observation')).toHaveCount(0);
@@ -68,6 +73,7 @@ for (const viewport of viewports) {
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
     const pick = page.getByTestId('draft-card-auto-test');
+    await expect(pick).toHaveAccessibleName('自動テスト強化: この施策を取得');
     await pick.scrollIntoViewIfNeeded();
     await expect(pick).toBeInViewport();
     expect((await pick.boundingBox())!.height).toBeGreaterThanOrEqual(44);
@@ -79,3 +85,35 @@ for (const viewport of viewports) {
     expect(deckAfter.at(-1)?.defId).toBe('auto-test');
   });
 }
+
+test('案内を閉じたチームから別チームへ入ると、そのチームの予兆を表示する', async ({ page }) => {
+  await page.goto('/?seed=company-guidance-teams');
+  await page.getByTestId('difficulty-easy').click();
+  await page.getByTestId('start-run').click();
+  await page.evaluate(() => (window as GameWindow).game!.pause());
+  await page.getByTestId('assign-m2-coding').click();
+  await page.getByTestId('setup-observation-dismiss').click();
+  const before = await page.evaluate(() => {
+    const game = (window as GameWindow).game!;
+    game.zoomTo('company');
+    const state = game.getState();
+    const other = state.orgScale?.departments
+      .flatMap((dept) => dept.teams)
+      .find((team) => team.id !== state.activeTeamId);
+    if (!other) throw new Error('切替対象のチームが無い');
+    game.enterTeam(other.id);
+    return {
+      quarter: state.quarterNumber,
+      sprint: state.sprintIndexInQuarter,
+      team: state.activeTeamId,
+    };
+  });
+  const after = await page.evaluate(() => (window as GameWindow).game!.getState());
+  expect(after.activeTeamId).not.toBe(before.team);
+  expect(after.quarterNumber).toBe(before.quarter);
+  expect(after.sprintIndexInQuarter).toBe(before.sprint);
+  for (const member of after.roster.members.filter((m) => !m.onLeave)) {
+    await page.getByTestId(`assign-${member.id}-coding`).click();
+  }
+  await expect(page.getByTestId('setup-observation-review-staff')).toBeVisible();
+});

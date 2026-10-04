@@ -9,6 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { getBoss } from '../../data/bosses';
+import { discountedShopPrice } from './shopPrice';
 import { FIXED_STEP_MS } from '../../data/balance/pacing';
 import {
   CARD_BALANCE,
@@ -230,7 +231,6 @@ export const REST_REPAY_REWORK_RATE = -RUN_BALANCE.restReworkReduction.value;
 export const REST_UPGRADE_FOCUS_MAX = RUN_BALANCE.restFocusMaxAdd.value;
 /** ショップのレリック価格（割引前）。RI-78: 純出荷受入のため定価を抑える。 */
 export const SHOP_RELIC_COST = RUN_BALANCE.shopRelicCost.value;
-const SHOP_MINIMUM_PRICE = RUN_BALANCE.shopMinimumPrice.value;
 
 /** RI-108 より前のセーブを復元するときに使う、当時の raw 反映閾値。 */
 const LEGACY_INCIDENT_TRUST_RAW_THRESHOLD = 0.5;
@@ -1385,14 +1385,14 @@ export class RunEngine {
     );
     const cards = cardIds.map((defId) => ({
       defId,
-      cost: Math.max(SHOP_MINIMUM_PRICE, Math.round((getCard(defId)?.cost ?? 12) * (1 - discount))),
+      cost: discountedShopPrice(getCard(defId)?.cost ?? 12, discount),
       bought: false,
     }));
     const relicId = this.offerRelic(rng);
     const relic = relicId
       ? {
           id: relicId,
-          cost: Math.max(SHOP_MINIMUM_PRICE, Math.round(SHOP_RELIC_COST * (1 - discount))),
+          cost: discountedShopPrice(SHOP_RELIC_COST, discount),
           bought: false,
         }
       : undefined;

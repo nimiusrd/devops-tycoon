@@ -15,7 +15,7 @@ import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { MEMBER_BALANCE, OUTCOME_BALANCE } from '../../src/data/balance';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
-import { FIXED_STEP_MS } from '../../src/sim/engine';
+import { FIXED_STEP_MS } from '../../src/data/balance/pacing';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import {
   RunEngine,

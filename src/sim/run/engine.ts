@@ -9,6 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { getBoss } from '../../data/bosses';
+import { FIXED_STEP_MS } from '../../data/balance/pacing';
 import {
   CARD_BALANCE,
   MEMBER_BALANCE,
@@ -54,7 +55,6 @@ import {
   STAMINA_RECOVER_BETWEEN,
 } from '../member';
 import type { GrowthOutcome, LaneAssignment, RosterState } from '../member/types';
-import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng, createRngFromState, getRngState } from '../rng';
 import { DEFAULT_SEED } from '../seed';
@@ -201,6 +201,9 @@ import type {
 import {
   isReplayFramePhase,
   isRunSavePhase,
+  normalizePersistGoalCarryover,
+  type RunPersistStateInput,
+  type RunReplayFrameInput,
   type CounterfactualFrame,
   type RunPersistState,
   type RunReplayFrame,
@@ -760,8 +763,6 @@ export class RunEngine {
         bossId: this.bossId,
         goalCarryoverQuarter: this.goalCarryoverQuarter,
         goalCarryoverId: this.goalCarryoverId,
-        pauseAiDebuffQuarter:
-          this.goalCarryoverId === 'pause_ai_rollout' ? this.goalCarryoverQuarter : null,
         quarterNumber: this.quarterNumber,
         baseConfig: this.baseConfig,
       },
@@ -2169,8 +2170,6 @@ export class RunEngine {
       bossId: this.bossId,
       goalCarryoverQuarter: this.goalCarryoverQuarter,
       goalCarryoverId: this.goalCarryoverId,
-      pauseAiDebuffQuarter:
-        this.goalCarryoverId === 'pause_ai_rollout' ? this.goalCarryoverQuarter : null,
       baseConfig: { ...this.baseConfig },
       // 入り込み先の滞留を試算でも本番 beginSprint と同じく載せる。
       teamReviewQueue: activeTeam?.reviewQueue ?? 0,
@@ -2335,9 +2334,6 @@ export class RunEngine {
         nextBudgetCap: this.nextBudgetCap,
         goalCarryoverQuarter: this.goalCarryoverQuarter,
         goalCarryoverId: this.goalCarryoverId,
-        // 旧セーブ互換: pause_ai のときだけ legacy フィールドも書く。
-        pauseAiDebuffQuarter:
-          this.goalCarryoverId === 'pause_ai_rollout' ? this.goalCarryoverQuarter : null,
         winEvalOrg: this.winEvalOrg ? structuredClone(this.winEvalOrg) : null,
         allowedCards: this.allowedCards ? [...this.allowedCards] : [],
         allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
@@ -2358,7 +2354,7 @@ export class RunEngine {
   }
 
   /** 永続スナップショットからラン状態を復元する（RI-58）。 */
-  hydratePersistState(state: RunPersistState): void {
+  hydratePersistState(state: RunPersistStateInput): void {
     if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
@@ -2373,7 +2369,7 @@ export class RunEngine {
   }
 
   /** リプレイキーフレームから閲覧用に復元する（RI-61。won/lost 可）。 */
-  hydrateReplayFrame(frame: RunReplayFrame): void {
+  hydrateReplayFrame(frame: RunReplayFrameInput): void {
     if (!isReplayFramePhase(frame.phase)) {
       throw new Error(`cannot hydrate replay frame in phase=${frame.phase}`);
     }
@@ -2387,7 +2383,7 @@ export class RunEngine {
   }
 
   private applyPersistFrame(
-    state: RunReplayFrame,
+    state: RunReplayFrameInput,
     options: {
       migrateLegacyAiDependency: boolean;
       normalizeSecurityLevel: boolean;
@@ -2395,7 +2391,7 @@ export class RunEngine {
       reconcileCoarseSecurityTrust: boolean;
     },
   ): void {
-    const cloned = structuredClone(state);
+    const cloned = normalizePersistGoalCarryover(structuredClone(state));
     this.seed = cloned.seed;
     this.difficulty = cloned.difficulty;
     this.trials = [...cloned.trials];
@@ -2469,24 +2465,8 @@ export class RunEngine {
     // RI-74: 旧セーブ（係数未保存）も現行難易度定義の上昇量へ補完する。
     this.applyAiDependencyPerTask();
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
-    // RI-83: 本体 → extras → legacy pauseAiDebuffQuarter の順で復元する。
-    const topCarryoverQuarter = cloned.goalCarryoverQuarter ?? null;
-    const topCarryoverId = cloned.goalCarryoverId ?? null;
-    const extrasCarryoverQuarter = cloned.extras.goalCarryoverQuarter ?? null;
-    const extrasCarryoverId = cloned.extras.goalCarryoverId ?? null;
-    if (topCarryoverQuarter != null && topCarryoverId != null) {
-      this.goalCarryoverQuarter = topCarryoverQuarter;
-      this.goalCarryoverId = topCarryoverId;
-    } else if (extrasCarryoverQuarter != null && extrasCarryoverId != null) {
-      this.goalCarryoverQuarter = extrasCarryoverQuarter;
-      this.goalCarryoverId = extrasCarryoverId;
-    } else if (cloned.extras.pauseAiDebuffQuarter != null) {
-      this.goalCarryoverQuarter = cloned.extras.pauseAiDebuffQuarter;
-      this.goalCarryoverId = 'pause_ai_rollout';
-    } else {
-      this.goalCarryoverQuarter = null;
-      this.goalCarryoverId = null;
-    }
+    this.goalCarryoverQuarter = cloned.goalCarryoverQuarter;
+    this.goalCarryoverId = cloned.goalCarryoverId;
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
     if (this.winEvalOrg) {
       this.winEvalOrg.securityLevel = options.normalizeSecurityLevel

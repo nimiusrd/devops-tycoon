@@ -4,7 +4,13 @@
  * ラン中のフェーズ境界キーフレームを終了時にまとめて保存し、閲覧時は
  * RunEngine.hydrateReplayFrame で read-only 表示する。純入力ログ再生は非スコープ。
  */
-import { isReplayFramePhase, type RunReplayFrame, type ReplayFramePhase } from '../sim/run/persist';
+import {
+  normalizePersistGoalCarryover,
+  isReplayFramePhase,
+  type RunReplayFrame,
+  type RunReplayFrameInput,
+  type ReplayFramePhase,
+} from '../sim/run/persist';
 import { getCard } from '../data/cards';
 import { getTrial } from '../data/difficulties';
 import { getRelic, type RelicDef } from '../data/relics';
@@ -218,7 +224,7 @@ function parseReplayContentSnapshot(
   };
 }
 
-function isReplayFrame(value: unknown): value is RunReplayFrame {
+function isReplayFrame(value: unknown): value is RunReplayFrameInput {
   if (!isObject(value)) return false;
   if (typeof value.phase !== 'string' || !isReplayFramePhase(value.phase as RunPhase)) {
     return false;
@@ -347,7 +353,7 @@ export function normalizeReplayKeyframes(value: unknown): ReplayKeyframe[] {
     keyframes.push({
       phase: raw.phase as ReplayFramePhase,
       label: typeof raw.label === 'string' ? raw.label : undefined,
-      frame: structuredClone(raw.frame),
+      frame: normalizePersistGoalCarryover(structuredClone(raw.frame)),
     });
   }
   return keyframes;

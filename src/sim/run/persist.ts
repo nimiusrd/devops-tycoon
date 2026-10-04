@@ -48,15 +48,10 @@ export interface RunPersistExtras {
   baseConfig: SprintConfig;
   orgAdjust: OrgAdjustState;
   nextBudgetCap: number | null;
-  /**
-   * @deprecated RI-83: `goalCarryoverQuarter` / `goalCarryoverId` を優先。
-   * 旧セーブ互換のため残す（pause_ai_rollout として解釈）。
-   */
-  pauseAiDebuffQuarter: number | null;
-  /** 目標修正キャリーオーバーが有効な四半期（RI-83。旧セーブでは欠落しうる）。 */
-  goalCarryoverQuarter?: number | null;
-  /** 目標修正キャリーオーバーの ID（RI-83。旧セーブでは欠落しうる）。 */
-  goalCarryoverId?: GoalAdjustmentId | null;
+  /** 目標修正キャリーオーバーが有効な四半期（RI-83）。 */
+  goalCarryoverQuarter: number | null;
+  /** 目標修正キャリーオーバーの ID（RI-83）。 */
+  goalCarryoverId: GoalAdjustmentId | null;
   winEvalOrg: OrgState | null;
   /** ラン開始時に固定した解放プール。 */
   allowedCards: string[];
@@ -143,6 +138,44 @@ export type RunPersistState = Omit<
 export type RunReplayFrame = Omit<RunPersistState, 'phase'> & {
   phase: ReplayFramePhase;
 };
+
+/** 保存・リプレイの読取境界だけで受け付ける旧持越しフィールド。 */
+export type RunReplayFrameInput = Omit<
+  RunReplayFrame,
+  'goalCarryoverQuarter' | 'goalCarryoverId' | 'extras'
+> &
+  Partial<Pick<RunReplayFrame, 'goalCarryoverQuarter' | 'goalCarryoverId'>> & {
+    extras: Omit<RunPersistExtras, 'goalCarryoverQuarter' | 'goalCarryoverId'> &
+      Partial<Pick<RunPersistExtras, 'goalCarryoverQuarter' | 'goalCarryoverId'>> & {
+        /** 旧保存値は pause_ai_rollout として復元する。現行出力には含めない。 */
+        pauseAiDebuffQuarter?: number | null;
+      };
+  };
+
+export type RunPersistStateInput = Omit<RunReplayFrameInput, 'phase'> & {
+  phase: RunSavePhase;
+};
+
+/** 本体 → extras → 旧 pause_ai の順で、四半期と ID を組として正規化する。 */
+export function normalizePersistGoalCarryover<T extends RunReplayFrameInput>(
+  state: T,
+): RunReplayFrame & { phase: T['phase'] } {
+  const { pauseAiDebuffQuarter, ...extras } = state.extras;
+  let goalCarryoverQuarter: number | null = null;
+  let goalCarryoverId: GoalAdjustmentId | null = null;
+  if (state.goalCarryoverQuarter != null && state.goalCarryoverId != null) {
+    goalCarryoverQuarter = state.goalCarryoverQuarter;
+    goalCarryoverId = state.goalCarryoverId;
+  } else if (extras.goalCarryoverQuarter != null && extras.goalCarryoverId != null) {
+    goalCarryoverQuarter = extras.goalCarryoverQuarter;
+    goalCarryoverId = extras.goalCarryoverId;
+  } else if (pauseAiDebuffQuarter != null) {
+    goalCarryoverQuarter = pauseAiDebuffQuarter;
+    goalCarryoverId = 'pause_ai_rollout';
+  }
+  const carryover = { goalCarryoverQuarter, goalCarryoverId };
+  return { ...state, ...carryover, extras: { ...extras, ...carryover } };
+}
 
 /**
  * 反実仮想用の永続スライス。セーブ不可の sprint フェーズも許容する（RI-101）。

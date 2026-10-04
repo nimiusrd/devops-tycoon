@@ -5,7 +5,7 @@ import {
   SPRINT_MIN_COMPLETE_TICK,
 } from '../../../src/sim/run/sprintBaselineBuild';
 import { RunEngine } from '../../../src/sim/run/engine';
-import { FIXED_STEP_MS } from '../../../src/sim/engine';
+import { FIXED_STEP_MS } from '../../../src/data/balance/pacing';
 import { createGame } from '../../../src/game';
 import type { DifficultyId, RunState } from '../../../src/sim/run/types';
 import type { SprintState } from '../../../src/sim/types';

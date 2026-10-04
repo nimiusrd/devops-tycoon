@@ -57,7 +57,7 @@ export function DraftScreen({
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef);
   const canMulligan = !mulliganUsed && budget > DRAFT_MULLIGAN_COST;
-  const { resolveCard } = useReplayContent();
+  const { resolveCard, resolveRelic } = useReplayContent();
   const readOnlyTitle = 'リプレイ閲覧中は操作できません';
 
   return (
@@ -86,7 +86,9 @@ export function DraftScreen({
                 <CardView
                   key={id}
                   def={def}
-                  companyGuidance={companyState ? draftCompanyGuidance(def, companyState) : null}
+                  companyGuidance={
+                    companyState ? draftCompanyGuidance(def, companyState, resolveRelic) : null
+                  }
                   playCost={playCost(def.focusCost, 1)}
                   onPick={() => onPick(id)}
                   disabled={readOnly}

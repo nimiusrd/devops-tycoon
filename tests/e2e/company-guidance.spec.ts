@@ -1,8 +1,50 @@
 import { expect, test } from './fixtures';
+import type { Locator, Page } from '@playwright/test';
 import type { GameHandle } from '../../src/game';
 import type { RunState } from '../../src/sim/run/types';
 
 type GameWindow = Window & { game?: GameHandle };
+
+async function keyboardFocus(page: Page, button: Locator) {
+  await button.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(button).toBeFocused();
+  await expect(button).toBeInViewport();
+  const ring = await button.evaluate((element) => {
+    const style = getComputedStyle(element);
+    let parent = element.parentElement;
+    let background = '';
+    while (parent) {
+      background = getComputedStyle(parent).backgroundColor;
+      if (/^rgb\(/.test(background)) break;
+      parent = parent.parentElement;
+    }
+    const luminance = (color: string) => {
+      const channels = color
+        .match(/[\d.]+/g)!
+        .slice(0, 3)
+        .map(Number)
+        .map((value) => {
+          const channel = value / 255;
+          return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    };
+    const foreground = luminance(style.outlineColor);
+    const surface = luminance(background);
+    return {
+      visible: element.matches(':focus-visible'),
+      width: parseFloat(style.outlineWidth),
+      style: style.outlineStyle,
+      contrast: (Math.max(foreground, surface) + 0.05) / (Math.min(foreground, surface) + 0.05),
+    };
+  });
+  expect(ring.visible).toBe(true);
+  expect(ring.width).toBeGreaterThanOrEqual(2);
+  expect(ring.style).toBe('solid');
+  expect(ring.contrast).toBeGreaterThanOrEqual(3);
+}
 
 const viewports = [
   { name: 'phone-se', width: 320, height: 568 },
@@ -31,8 +73,8 @@ for (const viewport of viewports) {
       'aria-live',
       'polite',
     );
+    await keyboardFocus(page, page.getByTestId('setup-observation-dismiss'));
     await page.screenshot({ path: testInfo.outputPath('setup-observation.png'), fullPage: true });
-    await page.getByTestId('setup-observation-dismiss').focus();
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('setup-observation')).toHaveCount(0);
     await expect(page.getByTestId('begin-sprint')).toBeFocused();
@@ -77,7 +119,8 @@ for (const viewport of viewports) {
     await pick.scrollIntoViewIfNeeded();
     await expect(pick).toBeInViewport();
     expect((await pick.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await pick.focus();
+    await keyboardFocus(page, pick);
+    await page.screenshot({ path: testInfo.outputPath('draft-focus.png'), fullPage: true });
     await page.keyboard.press('Space');
     await expect(page.getByTestId('draft')).toHaveCount(0);
     const deckAfter = await page.evaluate(() => (window as GameWindow).game!.getState().deck);

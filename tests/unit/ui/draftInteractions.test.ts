@@ -1,5 +1,9 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const replay = vi.hoisted(() => ({
+  snapshot: null as import('../../../src/state/replay').ReplayContentSnapshot | null,
+}));
 
 // DOM のフォーカス管理と Context だけを代行し、カード・試算表示は実装を通す。
 vi.mock('react', async (importOriginal) => ({
@@ -9,9 +13,10 @@ vi.mock('react', async (importOriginal) => ({
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
-  return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };
+  return { ...actual, useReplayContent: () => actual.createReplayContentResolver(replay.snapshot) };
 });
 
+import { getCard } from '../../../src/data/cards';
 import { DRAFT_MULLIGAN_COST } from '../../../src/sim/run/constants';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { WhatIfPreview } from '../../../src/sim/run/types';
@@ -71,7 +76,39 @@ const preview: WhatIfPreview = {
   spread: { min: 0, max: 1, mean: 0.2 },
 };
 
+beforeEach(() => {
+  replay.snapshot = null;
+});
+
 describe('ドラフトの施策選択と引き直し', () => {
+  it.each([
+    { id: 'budget-discipline', discount: 0.5, price: 10 },
+    { id: 'budget-discipline', discount: undefined, price: 20 },
+    { id: 'removed-relic', discount: 0.5, price: 10 },
+  ])(
+    'リプレイでは保存済みカードとレリック $id / 割引 $discount で案内する',
+    ({ id, discount, price }) => {
+      replay.snapshot = {
+        cards: [{ ...getCard('auto-test')!, cost: 20 }],
+        relics: [
+          { id, name: '記録時のレリック', description: '', passives: { shopDiscount: discount } },
+        ],
+      };
+      const engine = new RunEngine({ seed: 'draft-replay-prices', difficulty: 'easy' });
+      engine.startRun();
+      const companyState = { ...engine.snapshot(), relics: [id], budget: price - 1 };
+      const screen = mountDraft({ companyState, options: ['auto-test'], readOnly: true });
+      expect(content(screen.find('card-company-guidance-auto-test'))).toContain(
+        `ショップ価格${price}には予算不足`,
+      );
+      const affordable = mountDraft({
+        companyState: { ...companyState, budget: price },
+        options: ['auto-test'],
+        readOnly: true,
+      });
+      expect(content(affordable.find('card-company-guidance-auto-test'))).not.toContain('予算不足');
+    },
+  );
   it('会社の説明は代表カードだけに渡し、説明と取得操作を分離する', () => {
     const engine = new RunEngine({ seed: 'draft-company-guidance', difficulty: 'easy' });
     engine.startRun();

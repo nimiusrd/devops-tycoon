@@ -1,5 +1,6 @@
 /** RI-279/280: 実測状態と既存効果タグだけから作る観察の入口。ルールや予測を変更しない。 */
 import type { CardDef } from '../sim/types';
+import { getRelic, type RelicDef } from '../data/relics';
 import type { RunState } from '../sim/run/types';
 import { playCost } from '../sim/cards';
 import { foldPassives } from '../sim/run/effects';
@@ -10,7 +11,11 @@ import { clampSeniorHpDisplay } from './seniorHpDisplay';
 
 export type CompanyGuidanceState = Pick<RunState, 'roster' | 'org' | 'budget' | 'relics'>;
 
-export function draftCompanyGuidance(def: CardDef, state: CompanyGuidanceState): string | null {
+export function draftCompanyGuidance(
+  def: CardDef,
+  state: CompanyGuidanceState,
+  resolveRelic: (id: string) => RelicDef | undefined = getRelic,
+): string | null {
   if (def.id !== 'copilot' && def.id !== 'auto-test') return null;
   const coders = state.roster.members.filter((m) => !m.onLeave && m.assignment === 'coding');
   const tags = formatCardDefTags(def);
@@ -24,7 +29,10 @@ export function draftCompanyGuidance(def: CardDef, state: CompanyGuidanceState):
     def.id === 'copilot'
       ? `AI依存度${Math.round(state.org.aiDependency)}・セキュリティ${Math.round(state.org.securityLevel)}`
       : `品質${Math.round(state.org.quality)}・セキュリティ${Math.round(state.org.securityLevel)}`;
-  const price = discountedShopPrice(def.cost, foldPassives(state.relics).shopDiscount);
+  const price = discountedShopPrice(
+    def.cost,
+    foldPassives(state.relics, resolveRelic).shopDiscount,
+  );
   const budget =
     state.budget < price
       ? `取得は無料（ショップ価格${price}には予算不足、現在${state.budget}）`

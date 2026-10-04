@@ -426,8 +426,8 @@ test('RI-78: ドラフトとショップのカード選択前に発動コスト�
     g.playCard(-1); // revision bump でドラフト画面を反映
   });
 
-  await expect(page.getByTestId('draft-card-devin')).toContainText('発動');
-  await expect(page.getByTestId('draft-card-devin').locator('[data-icon="focus"]')).toBeVisible();
+  await expect(page.getByTestId('draft-option-devin')).toContainText('発動');
+  await expect(page.getByTestId('draft-option-devin').locator('[data-icon="focus"]')).toBeVisible();
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;

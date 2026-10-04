@@ -35,13 +35,20 @@ export function downloadTextFile(
   text: string,
   mimeType = 'application/json',
 ): boolean {
+  try {
+    return downloadBlobFile(filename, new Blob([text], { type: mimeType }));
+  } catch {
+    return false;
+  }
+}
+
+export function downloadBlobFile(filename: string, blob: Blob): boolean {
   if (typeof document === 'undefined' || !document.body) return false;
   if (typeof URL.createObjectURL !== 'function') return false;
 
   let objectUrl: string | null = null;
   let link: HTMLAnchorElement | null = null;
   try {
-    const blob = new Blob([text], { type: mimeType });
     objectUrl = URL.createObjectURL(blob);
     link = document.createElement('a');
     link.href = objectUrl;

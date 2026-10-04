@@ -8,6 +8,8 @@
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
 import { getBoss } from '../data/bosses';
+import { useRef, useState } from 'react';
+import { setupObservation } from '../render/companyGuidanceView';
 import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
@@ -32,6 +34,21 @@ export function SetupScreen({
   onBegin,
   readOnly = false,
 }: SetupScreenProps) {
+  const [dismissedSprintKeys, setDismissedSprintKeys] = useState<string[]>([]);
+  const beginRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const sprintKey = JSON.stringify([
+    state.seed,
+    state.quarterNumber,
+    state.sprintIndexInQuarter,
+    state.activeTeamId,
+  ]);
+  const observation = setupObservation(state);
+  const showObservation = observation !== null && !dismissedSprintKeys.includes(sprintKey);
+  const dismissObservation = () => {
+    setDismissedSprintKeys((keys) => [...keys, sprintKey]);
+    (readOnly ? headingRef.current : beginRef.current)?.focus();
+  };
   const boss = getBoss(state.bossId);
   const { current: nextIndex, total } = runBarSprintView(state);
   // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
@@ -77,7 +94,7 @@ export function SetupScreen({
         <div className="formation-head">
           <div>
             <p className="result-eyebrow">SETUP</p>
-            <h2 className="draft-title" id="setup-heading">
+            <h2 ref={headingRef} tabIndex={-1} className="draft-title" id="setup-heading">
               {heading}
             </h2>
             <p className="formation-setup-hint">
@@ -92,8 +109,34 @@ export function SetupScreen({
               <TermTip termId="aiLiteracy" />
               <TermTip termId="rework" />
             </div>
+            <div
+              className={showObservation ? 'setup-observation' : undefined}
+              data-testid={showObservation ? 'setup-observation' : undefined}
+            >
+              <div role="status" aria-live="polite" aria-atomic="true">
+                {showObservation && (
+                  <p
+                    className="formation-setup-hint"
+                    data-testid={`setup-observation-${observation.id}`}
+                  >
+                    {observation.text}
+                  </p>
+                )}
+              </div>
+              {showObservation && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={dismissObservation}
+                  data-testid="setup-observation-dismiss"
+                >
+                  案内を閉じる
+                </button>
+              )}
+            </div>
           </div>
           <button
+            ref={beginRef}
             type="button"
             className="primary-button"
             data-testid="begin-sprint"

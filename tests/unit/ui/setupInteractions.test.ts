@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useMemo: (factory: () => unknown) => factory(),
+  useState: (initial: unknown) => [initial, vi.fn()],
+  useRef: (initial: unknown) => ({ current: initial }),
 }));
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();

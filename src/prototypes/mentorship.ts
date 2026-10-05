@@ -10,7 +10,7 @@ export interface MentorshipState {
   roster: RosterState;
   mentorId: string;
   apprenticeId: string;
-  initialReviewByMember: Record<string, number>;
+  mentorshipReviewGains: Record<string, number>;
   lessons: number;
   backlog: number;
   delivered: number;
@@ -60,7 +60,7 @@ export function createMentorshipPrototype(seed: string | number): MentorshipStat
     roster,
     mentorId: mentor.id,
     apprenticeId: apprentice.id,
-    initialReviewByMember: { [apprentice.id]: apprentice.stats.review },
+    mentorshipReviewGains: {},
     lessons: 0,
     backlog: 0,
     delivered: 0,
@@ -85,10 +85,10 @@ export function advanceMentorshipPeriod(
   };
   const mentor = roster.members.find((member) => member.id === state.mentorId);
   const apprentice = roster.members.find((member) => member.id === state.apprenticeId);
-  const initialReviewByMember = { ...state.initialReviewByMember };
-  if (apprentice && initialReviewByMember[apprentice.id] === undefined) {
-    initialReviewByMember[apprentice.id] = apprentice.stats.review;
-  }
+  const mentorshipReviewGains = { ...state.mentorshipReviewGains };
+  const baselineReview = apprentice
+    ? apprentice.stats.review - (mentorshipReviewGains[apprentice.id] ?? 0)
+    : 0;
   const taught = teach && canTeach(state, mentor, apprentice);
   const mentorCapacityCost = taught ? 3 : 0;
   const apprenticeCapacityCost = taught ? 1 : 0;
@@ -106,11 +106,12 @@ export function advanceMentorshipPeriod(
   );
   remaining -= apprenticeWork;
   const reviewGain = taught ? Math.min(10, 100 - apprentice!.stats.review) : 0;
-  if (taught) apprentice!.stats.review += reviewGain;
-  const baselineCapacity = Math.max(
-    0,
-    Math.floor((initialReviewByMember[state.apprenticeId] ?? 0) / 10) - apprenticeCapacityCost,
-  );
+  if (taught) {
+    apprentice!.stats.review += reviewGain;
+    mentorshipReviewGains[apprentice!.id] =
+      (mentorshipReviewGains[apprentice!.id] ?? 0) + reviewGain;
+  }
+  const baselineCapacity = Math.max(0, Math.floor(baselineReview / 10) - apprenticeCapacityCost);
   // 教えたという操作への得点はない。獲得能力で実際に処理した分だけ記録。
   const apprenticeGrowthWork = Math.max(0, apprenticeWork - baselineCapacity);
   const period: MentorshipPeriod = {
@@ -128,7 +129,7 @@ export function advanceMentorshipPeriod(
     ...state,
     period: state.period + 1,
     roster,
-    initialReviewByMember,
+    mentorshipReviewGains,
     lessons: state.lessons + Number(taught),
     backlog: remaining,
     delivered: state.delivered + mentorWork + apprenticeWork,

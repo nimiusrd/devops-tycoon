@@ -1,7 +1,7 @@
-import { createInitialRoster } from '../member/roster';
-import type { RosterState } from '../member/types';
-import type { Member } from '../member/types';
-import { createRng } from '../rng';
+import { createInitialRoster } from '../sim/member/roster';
+import type { RosterState } from '../sim/member/types';
+import type { Member } from '../sim/member/types';
+import { createRng } from '../sim/rng';
 
 /** RI-206: RI-151の期間単位比較へ渡せる、育成1種の隔離試作。 */
 export interface MentorshipState {
@@ -90,9 +90,10 @@ export function advanceMentorshipPeriod(
   const apprenticeCapacityCost = taught ? 1 : 0;
   let remaining = state.backlog + demand;
   const mentorCapacity = activeReviewer(mentor) ? Math.floor(mentor.stats.review / 10) : 0;
-  const apprenticeCapacity = activeReviewer(apprentice)
-    ? Math.floor(apprentice.stats.review / 10)
-    : 0;
+  const apprenticeCapacity =
+    state.mentorId !== state.apprenticeId && activeReviewer(apprentice)
+      ? Math.floor(apprentice.stats.review / 10)
+      : 0;
   const mentorWork = Math.min(remaining, Math.max(0, mentorCapacity - mentorCapacityCost));
   remaining -= mentorWork;
   const apprenticeWork = Math.min(
@@ -143,7 +144,10 @@ export function previewMentorship(state: MentorshipState) {
     apprenticeCapacityCost: 1,
     nextPeriodReviewGain: available ? Math.min(10, 100 - apprentice!.stats.review) : 0,
     effectiveFromPeriod: state.period + 2,
-    remainingLessons: Math.max(0, 2 - state.lessons),
+    remainingLessons: Math.min(
+      Math.max(0, 2 - state.lessons),
+      Math.max(0, Math.ceil((100 - (apprentice?.stats.review ?? 100)) / 10)),
+    ),
   };
 }
 

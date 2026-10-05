@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import comparison from '../../../docs/prototypes/mentorship-comparison.json';
+import comparison from '../../docs/prototypes/mentorship-comparison.json';
 import {
   advanceMentorshipPeriod,
   compareMentorshipStrategies,
@@ -95,9 +95,20 @@ describe('師弟育成の期間単位試作', () => {
     state.roster.members.find((member) => member.id === state.apprenticeId)!.stats.review = 95;
     const capped = advanceMentorshipPeriod(state, true);
     expect(capped.history[0].reviewGain).toBe(5);
-    expect(previewMentorship(capped)).toMatchObject({ available: false, nextPeriodReviewGain: 0 });
+    expect(previewMentorship(capped)).toMatchObject({
+      available: false,
+      nextPeriodReviewGain: 0,
+      remainingLessons: 0,
+    });
     expect(advanceMentorshipPeriod(capped, true).lessons).toBe(1);
     state.apprenticeId = state.mentorId;
-    expect(advanceMentorshipPeriod(state, true).lessons).toBe(0);
+    const samePerson = advanceMentorshipPeriod(state, true);
+    expect(samePerson.lessons).toBe(0);
+    expect(samePerson.delivered).toBe(6);
+    expect(samePerson.history[0]).toMatchObject({
+      mentorWork: 6,
+      apprenticeWork: 0,
+      apprenticeGrowthWork: 0,
+    });
   });
 });

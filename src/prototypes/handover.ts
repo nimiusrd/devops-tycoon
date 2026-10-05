@@ -4,6 +4,7 @@ import {
   createMentorshipPrototype,
   previewMentorship,
   type MentorshipState,
+  type ReviewWorkBudget,
 } from './mentorship';
 
 /** RI-214: 同一ロスターのReview専門家をCodingへ移す比較試作。 */
@@ -39,7 +40,13 @@ export function previewHandover(state: HandoverState) {
 /** 移動は期首、知識習得は期末。移動自体に費用や得点を付けない。 */
 export function advanceHandoverPeriod(
   state: HandoverState,
-  input: { teach?: boolean; move?: boolean; reviewDemand?: number; codingDemand?: number } = {},
+  input: {
+    teach?: boolean;
+    move?: boolean;
+    reviewDemand?: number;
+    codingDemand?: number;
+    reviewWorkBudget?: ReviewWorkBudget;
+  } = {},
 ): HandoverState {
   const { teach = false, move = false, reviewDemand = 12, codingDemand = 8 } = input;
   if (!Number.isInteger(codingDemand) || codingDemand < 0)
@@ -50,7 +57,7 @@ export function advanceHandoverPeriod(
   const prepared = moving
     ? { ...before, roster: assignMember(before.roster, before.mentorId, 'coding') }
     : before;
-  const mentorship = advanceMentorshipPeriod(prepared, teach, reviewDemand);
+  const mentorship = advanceMentorshipPeriod(prepared, teach, reviewDemand, input.reviewWorkBudget);
   const coder = mentorship.roster.members.find((member) => member.id === mentorship.mentorId);
   const capacity =
     coder && !coder.onLeave && coder.stamina > 0 && coder.assignment === 'coding'

@@ -29,6 +29,12 @@ export interface MentorshipPeriod {
   backlog: number;
 }
 
+/** 呼び出し側が当期に使える余力。未指定の師弟単独試作は従来の能力上限を使う。 */
+export interface ReviewWorkBudget {
+  mentor: number;
+  apprentice: number;
+}
+
 const activeReviewer = (member: Member | undefined): member is Member =>
   member !== undefined && !member.onLeave && member.assignment === 'review' && member.stamina > 0;
 
@@ -73,8 +79,14 @@ export function advanceMentorshipPeriod(
   state: MentorshipState,
   teach: boolean,
   demand = 12,
+  workBudget?: ReviewWorkBudget,
 ): MentorshipState {
   if (!Number.isInteger(demand) || demand < 0) throw new Error('仕事量は非負の整数');
+  if (
+    workBudget &&
+    Object.values(workBudget).some((value) => !Number.isInteger(value) || value < 0)
+  )
+    throw new Error('当期の余力は非負の整数');
   const roster: RosterState = {
     ...state.roster,
     members: state.roster.members.map((member) => ({
@@ -89,15 +101,18 @@ export function advanceMentorshipPeriod(
   const baselineReview = apprentice
     ? apprentice.stats.review - (mentorshipReviewGains[apprentice.id] ?? 0)
     : 0;
-  const taught = teach && canTeach(state, mentor, apprentice);
+  const mentorCapacity = activeReviewer(mentor)
+    ? Math.min(Math.floor(mentor.stats.review / 10), workBudget?.mentor ?? Infinity)
+    : 0;
+  const apprenticeCapacity =
+    state.mentorId !== state.apprenticeId && activeReviewer(apprentice)
+      ? Math.min(Math.floor(apprentice.stats.review / 10), workBudget?.apprentice ?? Infinity)
+      : 0;
+  const taught =
+    teach && canTeach(state, mentor, apprentice) && mentorCapacity >= 3 && apprenticeCapacity >= 1;
   const mentorCapacityCost = taught ? 3 : 0;
   const apprenticeCapacityCost = taught ? 1 : 0;
   let remaining = state.backlog + demand;
-  const mentorCapacity = activeReviewer(mentor) ? Math.floor(mentor.stats.review / 10) : 0;
-  const apprenticeCapacity =
-    state.mentorId !== state.apprenticeId && activeReviewer(apprentice)
-      ? Math.floor(apprentice.stats.review / 10)
-      : 0;
   const mentorWork = Math.min(remaining, Math.max(0, mentorCapacity - mentorCapacityCost));
   remaining -= mentorWork;
   const apprenticeWork = Math.min(
@@ -111,7 +126,11 @@ export function advanceMentorshipPeriod(
     mentorshipReviewGains[apprentice!.id] =
       (mentorshipReviewGains[apprentice!.id] ?? 0) + reviewGain;
   }
-  const baselineCapacity = Math.max(0, Math.floor(baselineReview / 10) - apprenticeCapacityCost);
+  const baselineCapacity = Math.max(
+    0,
+    Math.min(Math.floor(baselineReview / 10), workBudget?.apprentice ?? Infinity) -
+      apprenticeCapacityCost,
+  );
   // 教えたという操作への得点はない。獲得能力で実際に処理した分だけ記録。
   const apprenticeGrowthWork = Math.max(0, apprenticeWork - baselineCapacity);
   const period: MentorshipPeriod = {

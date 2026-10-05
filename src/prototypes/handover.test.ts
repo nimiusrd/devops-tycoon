@@ -8,6 +8,26 @@ import {
 } from './handover';
 
 describe('担当変更前の知識引き継ぎ', () => {
+  it('休職中に拒否された異動を記録せず、復帰後に同じ人物を異動できる', () => {
+    const initial = createHandoverPrototype(1);
+    const id = initial.mentorship.mentorId;
+    initial.mentorship.roster.members.find((member) => member.id === id)!.onLeave = true;
+    const rejected = advanceHandoverPeriod(initial, { move: true });
+    expect(rejected.movedAt).toBeNull();
+    expect(rejected.history[0].codingWork).toBe(0);
+    expect(rejected.mentorship.roster.members.find((member) => member.id === id)!.assignment).toBe(
+      'review',
+    );
+    const restored = JSON.parse(JSON.stringify(rejected));
+    restored.mentorship.roster.members.find((member: { id: string }) => member.id === id).onLeave =
+      false;
+    const moved = advanceHandoverPeriod(restored, { move: true });
+    expect(moved.movedAt).toBe(2);
+    expect(moved.history[1].codingWork).toBe(4);
+    expect(moved.mentorship.roster.members.find((member) => member.id === id)!.assignment).toBe(
+      'coding',
+    );
+  });
   it('記録した比較を同じseedと期間入力から再現する', () => {
     for (const row of comparison) {
       expect(compareHandoverStrategies(row.seed, row.periods)).toEqual(row.results);

@@ -29,7 +29,8 @@
     "balance:check": "node scripts/check-balance.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "rd:578": "vitest run src/rd/cardUpgradeBranch578/experiment.test.ts"
   },
   "dependencies": {
     "comlink": "^4.4.2",

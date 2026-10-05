@@ -37,6 +37,7 @@ export function createAbsenceReleasePrototype(
     deadline: 6,
     absence: {
       memberId: handover.mentorship.mentorId,
+      reason: 'vacation',
       announcedAt: 0,
       start: 2,
       end: 6,

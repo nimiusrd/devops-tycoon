@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { assignMember, recoverStamina } from '../sim/member/roster';
 import { createAbsenceReleasePrototype, compareAbsenceReleaseStrategies } from './absenceRelease';
 import { applyPlannedAbsence, createPlannedAbsence, previewPlannedAbsence } from './plannedAbsence';
+import type { PlannedAbsence } from './plannedAbsence';
 
 const setup = () => {
   const run = createAbsenceReleasePrototype('RI-205', 'normal');
@@ -9,6 +10,13 @@ const setup = () => {
 };
 
 describe('予定不在の編成モデル', () => {
+  it('共通型で保持したリリース予定にも理由を保存し、直接プレビューできる', () => {
+    const run = createAbsenceReleasePrototype('RI-205', 'normal');
+    const saved: PlannedAbsence = JSON.parse(JSON.stringify(run.absence));
+    expect(previewPlannedAbsence(run.handover.mentorship.roster, saved).reason).toBe('vacation');
+    const next = applyPlannedAbsence(run.handover.mentorship.roster, saved, saved.start);
+    expect(next.absence.reason).toBe('vacation');
+  });
   it.each(['vacation', 'training', 'business-trip'] as const)(
     '理由%sを開始前に確認し、同じ人物が一度復帰する',
     (reason) => {

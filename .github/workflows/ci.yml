@@ -53,7 +53,7 @@ jobs:
     needs: ci_scope
     if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
     runs-on: ubuntu-latest
-    # ブラウザ準備・直列の全E2E・本番チャンク復旧検証まで含めた実行枠。
+    # ブラウザ準備・2並列の全E2E・本番チャンク復旧検証まで含めた実行枠。
     timeout-minutes: 25
     container:
       # 視覚回帰のフォントとOSをDev Containerのベースライン撮影環境に揃える。
@@ -62,7 +62,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e -- --workers=1
+      - run: npm run test:e2e -- --workers=2
       - name: Verify production chunk recovery
         run: |
           npm run build

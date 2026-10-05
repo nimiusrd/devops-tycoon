@@ -1,0 +1,92 @@
+[
+  {
+    "scenario": "balanced",
+    "seed": "RI-252",
+    "config": {
+      "deadline": 12,
+      "implementation": 2,
+      "review": 1,
+      "verification": 1
+    },
+    "results": [
+      {
+        "strategy": "early",
+        "delivered": 6,
+        "unverified": 0,
+        "unfinished": 0,
+        "deferred": 10,
+        "implementationSpent": 7,
+        "validationSpent": 6,
+        "frozenAt": 3,
+        "automaticFreeze": false
+      },
+      {
+        "strategy": "late",
+        "delivered": 20,
+        "unverified": 0,
+        "unfinished": 0,
+        "deferred": 6,
+        "implementationSpent": 18,
+        "validationSpent": 17,
+        "frozenAt": 8,
+        "automaticFreeze": false
+      },
+      {
+        "strategy": "continue",
+        "delivered": 20,
+        "unverified": 1,
+        "unfinished": 0,
+        "deferred": 5,
+        "implementationSpent": 21,
+        "validationSpent": 18,
+        "frozenAt": 10,
+        "automaticFreeze": true
+      }
+    ]
+  },
+  {
+    "scenario": "verification-bottleneck",
+    "seed": "RI-252",
+    "config": {
+      "deadline": 12,
+      "implementation": 3,
+      "review": 3,
+      "verification": 1
+    },
+    "results": [
+      {
+        "strategy": "early",
+        "delivered": 9,
+        "unverified": 0,
+        "unfinished": 0,
+        "deferred": 9,
+        "implementationSpent": 10,
+        "validationSpent": 9,
+        "frozenAt": 3,
+        "automaticFreeze": false
+      },
+      {
+        "strategy": "late",
+        "delivered": 25,
+        "unverified": 0,
+        "unfinished": 0,
+        "deferred": 4,
+        "implementationSpent": 25,
+        "validationSpent": 24,
+        "frozenAt": 8,
+        "automaticFreeze": false
+      },
+      {
+        "strategy": "continue",
+        "delivered": 23,
+        "unverified": 3,
+        "unfinished": 0,
+        "deferred": 2,
+        "implementationSpent": 32,
+        "validationSpent": 26,
+        "frozenAt": 10,
+        "automaticFreeze": true
+      }
+    ]
+  }
+]

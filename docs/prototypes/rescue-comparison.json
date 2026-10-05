@@ -1,0 +1,266 @@
+[
+  {
+    "strategy": "unattended",
+    "ended": true,
+    "rescued": false,
+    "delivered": 176,
+    "spread": 1,
+    "burning": 1,
+    "pending": 1,
+    "seniorHp": 7.6,
+    "morale": 44.5,
+    "interventions": 0,
+    "focusSpent": 0,
+    "tick": 120,
+    "inputs": []
+  },
+  {
+    "strategy": "review-first",
+    "ended": true,
+    "rescued": false,
+    "delivered": 219,
+    "spread": 0,
+    "burning": 1,
+    "pending": 1,
+    "seniorHp": 12.6,
+    "morale": 33.5,
+    "interventions": 3,
+    "focusSpent": 9,
+    "tick": 120,
+    "inputs": [
+      {
+        "tick": 0,
+        "action": "interruptReview",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "interruptReview",
+            "focusCost": 3,
+            "gaugeGain": 0.34,
+            "reviewedCount": 4,
+            "affectedTaskIds": [0, 1, 2, 3],
+            "hpCost": 2
+          }
+        }
+      },
+      {
+        "tick": 20,
+        "action": "andon",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "andon",
+            "focusCost": 5,
+            "gaugeGain": 0.15,
+            "modifier": {
+              "kind": "andon",
+              "untilTick": 32
+            },
+            "moraleCost": 16,
+            "hpCost": 14
+          }
+        }
+      },
+      {
+        "tick": 40,
+        "action": "firefight",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "firefight",
+            "focusCost": 1,
+            "gaugeGain": 0.34,
+            "containedTaskId": 6,
+            "hpCost": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "strategy": "intake-first",
+    "ended": true,
+    "rescued": false,
+    "delivered": 201,
+    "spread": 0,
+    "burning": 0,
+    "pending": 0,
+    "seniorHp": 2.6,
+    "morale": 34,
+    "interventions": 3,
+    "focusSpent": 9,
+    "tick": 114,
+    "inputs": [
+      {
+        "tick": 0,
+        "action": "andon",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "andon",
+            "focusCost": 5,
+            "gaugeGain": 0.15,
+            "modifier": {
+              "kind": "andon",
+              "untilTick": 12
+            },
+            "moraleCost": 16,
+            "hpCost": 14
+          }
+        }
+      },
+      {
+        "tick": 20,
+        "action": "interruptReview",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "interruptReview",
+            "focusCost": 3,
+            "gaugeGain": 0.34,
+            "reviewedCount": 4,
+            "affectedTaskIds": [8, 9, 10, 11],
+            "hpCost": 2
+          }
+        }
+      },
+      {
+        "tick": 40,
+        "action": "firefight",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "firefight",
+            "focusCost": 1,
+            "gaugeGain": 0.34,
+            "containedTaskId": 4,
+            "hpCost": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "strategy": "fire-first",
+    "ended": true,
+    "rescued": false,
+    "delivered": 198,
+    "spread": 0,
+    "burning": 0,
+    "pending": 1,
+    "seniorHp": 2.1,
+    "morale": 33.5,
+    "interventions": 3,
+    "focusSpent": 9,
+    "tick": 120,
+    "inputs": [
+      {
+        "tick": 0,
+        "action": "firefight",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "firefight",
+            "focusCost": 1,
+            "gaugeGain": 0.34,
+            "containedTaskId": 6,
+            "hpCost": 2
+          }
+        }
+      },
+      {
+        "tick": 20,
+        "action": "interruptReview",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "interruptReview",
+            "focusCost": 3,
+            "gaugeGain": 0.34,
+            "reviewedCount": 4,
+            "affectedTaskIds": [9, 10, 11, 12],
+            "hpCost": 2
+          }
+        }
+      },
+      {
+        "tick": 40,
+        "action": "andon",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "andon",
+            "focusCost": 5,
+            "gaugeGain": 0.15,
+            "modifier": {
+              "kind": "andon",
+              "untilTick": 52
+            },
+            "moraleCost": 16,
+            "hpCost": 14
+          }
+        }
+      }
+    ]
+  },
+  {
+    "strategy": "contain-and-review",
+    "ended": true,
+    "rescued": true,
+    "delivered": 201,
+    "spread": 0,
+    "burning": 0,
+    "pending": 1,
+    "seniorHp": 23.05,
+    "morale": 49.5,
+    "interventions": 3,
+    "focusSpent": 5,
+    "tick": 120,
+    "inputs": [
+      {
+        "tick": 0,
+        "action": "firefight",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "firefight",
+            "focusCost": 1,
+            "gaugeGain": 0.34,
+            "containedTaskId": 6,
+            "hpCost": 2
+          }
+        }
+      },
+      {
+        "tick": 20,
+        "action": "interruptReview",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "interruptReview",
+            "focusCost": 3,
+            "gaugeGain": 0.34,
+            "reviewedCount": 4,
+            "affectedTaskIds": [9, 10, 11, 12],
+            "hpCost": 2
+          }
+        }
+      },
+      {
+        "tick": 60,
+        "action": "firefight",
+        "outcome": {
+          "ok": true,
+          "effect": {
+            "actionId": "firefight",
+            "focusCost": 1,
+            "gaugeGain": 0.34,
+            "containedTaskId": 7,
+            "hpCost": 3,
+            "focusRefund": 3
+          }
+        }
+      }
+    ]
+  }
+]

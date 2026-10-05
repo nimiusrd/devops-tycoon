@@ -74,11 +74,13 @@
       "pendingTasks": [
         {
           "id": 2,
-          "workLeft": 5
+          "workLeft": 5,
+          "reworkPending": true
         },
         {
           "id": 5,
-          "workLeft": 2
+          "workLeft": 2,
+          "reworkPending": false
         }
       ],
       "rework": 0,
@@ -141,11 +143,13 @@
       "pendingTasks": [
         {
           "id": 1,
-          "workLeft": 2
+          "workLeft": 2,
+          "reworkPending": false
         },
         {
           "id": 2,
-          "workLeft": 5
+          "workLeft": 5,
+          "reworkPending": true
         }
       ],
       "rework": 0,

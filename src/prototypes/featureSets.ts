@@ -111,7 +111,11 @@ export function summarizeFeatureSets(state: FeatureSetState) {
     completedTasks: state.tasks.filter((task) => task.done).map((task) => task.id),
     pendingTasks: state.tasks
       .filter((task) => !task.done)
-      .map((task) => ({ id: task.id, workLeft: task.workLeft })),
+      .map((task) => ({
+        id: task.id,
+        workLeft: task.workLeft,
+        reworkPending: task.reworkPending,
+      })),
     rework: state.history.filter((entry) => entry.result === 'rework').length,
     tick: state.tick,
   };

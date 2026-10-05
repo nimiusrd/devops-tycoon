@@ -4,9 +4,26 @@ import {
   createFeatureSetPrototype,
   tickFeatureSetPrototype,
   compareFeatureSetStrategies,
+  summarizeFeatureSets,
 } from './featureSets';
 
 describe('固定六タスクの機能セット出荷試作', () => {
+  it('残タスクに追加手戻りの有無を残し、発生後は残工数に置き換わる', () => {
+    let state = createFeatureSetPrototype('RI-153');
+    expect(summarizeFeatureSets(state).pendingTasks).toContainEqual({
+      id: 2,
+      workLeft: 5,
+      reworkPending: true,
+    });
+    for (let work = 0; work < 5; work += 1) state = tickFeatureSetPrototype(state, 2);
+    expect(summarizeFeatureSets(state).pendingTasks).toContainEqual({
+      id: 2,
+      workLeft: 1,
+      reworkPending: false,
+    });
+    state = tickFeatureSetPrototype(state, 2);
+    expect(summarizeFeatureSets(state).pendingTasks.some((task) => task.id === 2)).toBe(false);
+  });
   it('記録した固定盤面と攻略順序の比較を再現する', () => {
     expect(createFeatureSetPrototype(comparison.seed)).toEqual(comparison.initial);
     expect(compareFeatureSetStrategies(comparison.seed)).toEqual(comparison.results);

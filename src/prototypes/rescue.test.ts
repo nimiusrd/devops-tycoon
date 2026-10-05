@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import comparison from '../../../docs/prototypes/rescue-comparison.json';
+import comparison from '../../docs/prototypes/rescue-comparison.json';
 import {
   compareRescueStrategies,
   createRescuePrototype,

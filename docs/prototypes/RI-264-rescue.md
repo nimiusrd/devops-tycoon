@@ -4,7 +4,7 @@
 
 ## 盤面・制限・救済条件
 
-`src/sim/prototypes/rescue.ts` の `createRescuePrototype` が課題 `review-crisis-1` を新規生成する。seedは `RI-264-review-crisis-1`、20件のタスクのうち先頭6件がAI支援のcomplexレビュー待ち、次の2件が炎上中で猶予50/70tick、残り12件がバックログ。レビュー余力60・士気40・AIリテラシー25・テスト30・品質40から始める。
+`src/prototypes/rescue.ts` の `createRescuePrototype` が課題 `review-crisis-1` を新規生成する。seedは `RI-264-review-crisis-1`、20件のタスクのうち先頭6件がAI支援のcomplexレビュー待ち、次の2件が炎上中で猶予50/70tick、残り12件がバックログ。レビュー余力60・士気40・AIリテラシー25・テスト30・品質40から始める。
 
 120tickの時間制限、集中力9、成功介入最大3回。既存の割り込みレビュー・アンドン・緊急対応だけを使う。効果・費用・CD・乱数・スプリント進行は本番の `applyAction` / `stepSprint` を再利用し、別の簡略効果を作らない。入力をtick開始時に適用し、その後1tick進める。失敗入力も理由付きで記録するが成功回数・集中力は消費しない。
 

@@ -194,7 +194,8 @@ for (const viewport of VIEWPORTS) {
   test(`${viewport.name}: 介入の対象・効果・代償と8操作が各状態で読める（#536）`, async ({
     page,
   }, testInfo) => {
-    test.setTimeout(60_000);
+    // 実WebGLで3状態・8操作を計測するため、CIの描画負荷も含めた時間を確保する。
+    test.setTimeout(120_000);
     await page.setViewportSize(viewport);
     await beginPublicSprint(page, { seed: 'issue-536-panel-normal', difficulty: 'normal' });
     const measurements = [await assertPanelContract(page, '平常')];
@@ -375,7 +376,8 @@ test('touchとreduced motionでも詳細確認と1tapの結果が保持される
     await assertTargetLanes(page, ['backlog']);
     expect(await readResources(page)).toEqual(before);
     await page.getByTestId('action-inspect-toggle').tap();
-    await page.clock.install();
+    await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
+    await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
     await page.getByTestId('action-overtime').tap();
     await expect(page.getByTestId('event-ticker')).toHaveAttribute('data-feedback-held', 'true');
     await expect(page.getByTestId('event-ticker-summary')).toContainText('残業開始');
@@ -403,8 +405,12 @@ async function appendTickerEvent(page: Page, event: SprintEvent) {
 test('連続する成功・失敗で結果の2.5秒保持を更新し、期限後に履歴へ戻す（#536）', async ({
   page,
 }) => {
+  // 複数回のrunForは実WebGLのフレーム処理も待つ。
+  test.setTimeout(60_000);
   await beginPublicSprint(page, { seed: 'issue-536-feedback' });
-  await page.clock.install();
+  // 操作・描画待ちの実時間を保持期限に加算せず、runForだけで時間を進める。
+  await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
   await page.getByTestId('action-overtime').click();
   const ticker = page.getByTestId('event-ticker');
   const summary = page.getByTestId('event-ticker-summary');

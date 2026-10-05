@@ -95,10 +95,6 @@ export function advanceAbsenceReleasePeriod(state: AbsenceReleaseState): Absence
     absence.returnAssignment = specialist.assignment;
     absence.returnAiAssigned = specialist.aiAssigned;
     absence.active = true;
-    roster = assignMember(roster, absence.memberId, 'bench');
-    const departing = roster.members.find((member) => member.id === absence.memberId)!;
-    departing.assignment = 'bench';
-    departing.aiAssigned = false;
   }
   if (period === absence.end && absence.active) {
     absence.active = false;
@@ -110,10 +106,27 @@ export function advanceAbsenceReleasePeriod(state: AbsenceReleaseState): Absence
     returning.aiAssigned =
       !returning.onLeave && returning.assignment === 'coding' && absence.returnAiAssigned;
   }
+  // 保存後の編成変更でも、不在中の本人を処理対象に戻さない。
+  if (absence.active) {
+    const absent = roster.members.find((member) => member.id === absence.memberId)!;
+    absent.assignment = 'bench';
+    absent.aiAssigned = false;
+  }
   const preparing = period === absence.start - 1;
+  const successorBefore = roster.members.find(
+    (member) => member.id === state.handover.mentorship.apprenticeId,
+  )!;
   const handover = advanceHandoverPeriod(
     { ...state.handover, mentorship: { ...state.handover.mentorship, roster } },
-    { teach: preparing && state.preparation === 'handover', reviewDemand: 0, codingDemand: 0 },
+    {
+      teach: preparing && state.preparation === 'handover',
+      reviewDemand: 0,
+      codingDemand: 0,
+      reviewWorkBudget: {
+        mentor: Math.floor(specialist.stamina),
+        apprentice: Math.floor(successorBefore.stamina),
+      },
+    },
   );
   const work = handover.mentorship.history[handover.mentorship.history.length - 1];
   const mentor = handover.mentorship.roster.members.find(
@@ -136,11 +149,8 @@ export function advanceAbsenceReleasePeriod(state: AbsenceReleaseState): Absence
       : 0;
   handover.mentorship.backlog -= overtimeWork;
   handover.mentorship.delivered += overtimeWork;
-  const specialistStaminaSpent = Math.min(mentor.stamina, normalMentorCost + overtimeWork * 2);
-  const successorStaminaSpent = Math.min(
-    successor.stamina,
-    work.apprenticeWork + work.apprenticeCapacityCost,
-  );
+  const specialistStaminaSpent = normalMentorCost + overtimeWork * 2;
+  const successorStaminaSpent = work.apprenticeWork + work.apprenticeCapacityCost;
   mentor.stamina -= specialistStaminaSpent;
   successor.stamina -= successorStaminaSpent;
   const recovered = absence.active ? Math.min(5, mentor.staminaMax - mentor.stamina) : 0;

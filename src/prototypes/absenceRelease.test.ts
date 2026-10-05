@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/absence-release-comparison.json';
+import { assignMember } from '../sim/member/roster';
 import {
   advanceAbsenceReleasePeriod,
   compareAbsenceReleaseStrategies,
@@ -8,6 +9,85 @@ import {
 } from './absenceRelease';
 
 describe('予定不在のリリース準備', () => {
+  it.each(['normal', 'frontload', 'handover'] as const)(
+    '%sでも残り体力の範囲だけ処理し、払えない育成を実施しない',
+    (preparation) => {
+      const initial = createAbsenceReleasePrototype(1, preparation);
+      const { mentorId, apprenticeId } = initial.handover.mentorship;
+      for (const id of [mentorId, apprenticeId])
+        initial.handover.mentorship.roster.members.find((member) => member.id === id)!.stamina = 1;
+      const next = advanceAbsenceReleasePeriod(initial);
+      expect(next.history[0]).toMatchObject({
+        reviewWork: 2,
+        overtimeWork: 0,
+        teachingCost: 0,
+        specialistStaminaSpent: 1,
+        successorStaminaSpent: 1,
+        remaining: 38,
+      });
+      expect(next.handover.mentorship.lessons).toBe(0);
+      expect(
+        next.handover.mentorship.roster.members.find((member) => member.id === apprenticeId)!.stats
+          .review,
+      ).toBe(32);
+      expect(
+        next.handover.mentorship.roster.members
+          .filter((member) => [mentorId, apprenticeId].includes(member.id))
+          .every((member) => member.stamina === 0),
+      ).toBe(true);
+    },
+  );
+
+  it.each([
+    [2, 1, false],
+    [3, 0, false],
+    [3, 1, true],
+  ] as const)(
+    '育成余力%s/%sで実施可否と費用が一致する',
+    (mentorBudget, apprenticeBudget, taught) => {
+      const state = createAbsenceReleasePrototype(1, 'handover');
+      const { mentorId, apprenticeId } = state.handover.mentorship;
+      state.handover.mentorship.roster.members.find((member) => member.id === mentorId)!.stamina =
+        mentorBudget;
+      state.handover.mentorship.roster.members.find(
+        (member) => member.id === apprenticeId,
+      )!.stamina = apprenticeBudget;
+      const next = advanceAbsenceReleasePeriod(state);
+      expect(next.handover.mentorship.history[0].taught).toBe(taught);
+      expect(next.history[0].teachingCost).toBe(taught ? 4 : 0);
+      expect(next.handover.mentorship.roster.members.every((member) => member.stamina >= 0)).toBe(
+        true,
+      );
+    },
+  );
+
+  it('不在中の保存状態を再配置しても主力は働かず、元の配置へ復帰する', () => {
+    let state = createAbsenceReleasePrototype(1, 'normal');
+    state = advanceAbsenceReleasePeriod(advanceAbsenceReleasePeriod(state));
+    state = JSON.parse(JSON.stringify(state));
+    state.handover.mentorship.roster = assignMember(
+      state.handover.mentorship.roster,
+      state.absence.memberId,
+      'review',
+    );
+    for (let period = 3; period <= 5; period += 1) {
+      state = advanceAbsenceReleasePeriod(state);
+      expect(state.absence.active).toBe(true);
+      expect(state.history[period - 1].reviewWork).toBe(3);
+      expect(state.handover.mentorship.history[period - 1].mentorWork).toBe(0);
+      expect(
+        state.handover.mentorship.roster.members.find(
+          (member) => member.id === state.absence.memberId,
+        )!.assignment,
+      ).toBe('bench');
+    }
+    const returned = advanceAbsenceReleasePeriod(state);
+    expect(
+      returned.handover.mentorship.roster.members.find(
+        (member) => member.id === returned.absence.memberId,
+      )!.assignment,
+    ).toBe('review');
+  });
   it('記録した同条件の比較を再現する', () => {
     expect(compareAbsenceReleaseStrategies(comparison.seed)).toEqual(comparison.results);
   });

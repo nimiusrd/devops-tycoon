@@ -1,5 +1,4 @@
-import { assignMember } from '../sim/member/roster';
-import type { LaneAssignment } from '../sim/member/types';
+import { applyPlannedAbsence, type PlannedAbsence } from './plannedAbsence';
 import { advanceHandoverPeriod, createHandoverPrototype, type HandoverState } from './handover';
 
 export type AbsencePreparation = 'normal' | 'frontload' | 'handover';
@@ -10,16 +9,7 @@ export interface AbsenceReleaseState {
   handover: HandoverState;
   preparation: AbsencePreparation;
   deadline: number;
-  absence: {
-    memberId: string;
-    announcedAt: number;
-    start: number;
-    end: number;
-    active: boolean;
-    returned: boolean;
-    returnAssignment: LaneAssignment | null;
-    returnAiAssigned: boolean;
-  };
+  absence: PlannedAbsence;
   history: {
     period: number;
     absent: boolean;
@@ -81,37 +71,12 @@ export function previewAbsenceRelease(state: AbsenceReleaseState) {
 export function advanceAbsenceReleasePeriod(state: AbsenceReleaseState): AbsenceReleaseState {
   const period = state.handover.mentorship.period + 1;
   if (period > state.deadline) return state;
-  const absence = { ...state.absence };
-  let roster = {
-    ...state.handover.mentorship.roster,
-    members: state.handover.mentorship.roster.members.map((member) => ({
-      ...member,
-      stats: { ...member.stats },
-      traits: [...member.traits],
-    })),
-  };
+  const { roster, absence } = applyPlannedAbsence(
+    state.handover.mentorship.roster,
+    state.absence,
+    period,
+  );
   const specialist = roster.members.find((member) => member.id === absence.memberId)!;
-  if (period === absence.start) {
-    absence.returnAssignment = specialist.assignment;
-    absence.returnAiAssigned = specialist.aiAssigned;
-    absence.active = true;
-  }
-  if (period === absence.end && absence.active) {
-    absence.active = false;
-    absence.returned = true;
-    // 予定不在を理由に休職を解除しない。休職中は控えのままにする。
-    if (!specialist.onLeave)
-      roster = assignMember(roster, absence.memberId, absence.returnAssignment!);
-    const returning = roster.members.find((member) => member.id === absence.memberId)!;
-    returning.aiAssigned =
-      !returning.onLeave && returning.assignment === 'coding' && absence.returnAiAssigned;
-  }
-  // 保存後の編成変更でも、不在中の本人を処理対象に戻さない。
-  if (absence.active) {
-    const absent = roster.members.find((member) => member.id === absence.memberId)!;
-    absent.assignment = 'bench';
-    absent.aiAssigned = false;
-  }
   const preparing = period === absence.start - 1;
   const successorBefore = roster.members.find(
     (member) => member.id === state.handover.mentorship.apprenticeId,

@@ -1,0 +1,203 @@
+[
+  {
+    "scenario": "routine",
+    "seed": "RI-177",
+    "kinds": [
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine",
+      "routine"
+    ],
+    "results": [
+      {
+        "mode": "human",
+        "delivered": 22,
+        "completed": 11,
+        "botCompleted": 0,
+        "humanCompleted": 11,
+        "fallbackCompleted": 0,
+        "pending": 9,
+        "humanSpent": 36,
+        "botSpent": 0,
+        "falsePositives": 0,
+        "triageSpent": 0
+      },
+      {
+        "mode": "coefficient",
+        "delivered": 26,
+        "completed": 13,
+        "botCompleted": 0,
+        "humanCompleted": 13,
+        "fallbackCompleted": 0,
+        "pending": 7,
+        "humanSpent": 43.2,
+        "botSpent": 0,
+        "falsePositives": 0,
+        "triageSpent": 0
+      },
+      {
+        "mode": "dedicated",
+        "delivered": 38,
+        "completed": 19,
+        "botCompleted": 18,
+        "humanCompleted": 0,
+        "fallbackCompleted": 1,
+        "pending": 1,
+        "humanSpent": 10,
+        "botSpent": 20,
+        "falsePositives": 2,
+        "triageSpent": 2
+      }
+    ]
+  },
+  {
+    "scenario": "complex",
+    "seed": "RI-177",
+    "kinds": [
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex",
+      "complex"
+    ],
+    "results": [
+      {
+        "mode": "human",
+        "delivered": 25,
+        "completed": 5,
+        "botCompleted": 0,
+        "humanCompleted": 5,
+        "fallbackCompleted": 0,
+        "pending": 15,
+        "humanSpent": 36,
+        "botSpent": 0,
+        "falsePositives": 0,
+        "triageSpent": 0
+      },
+      {
+        "mode": "coefficient",
+        "delivered": 30,
+        "completed": 6,
+        "botCompleted": 0,
+        "humanCompleted": 6,
+        "fallbackCompleted": 0,
+        "pending": 14,
+        "humanSpent": 43.2,
+        "botSpent": 0,
+        "falsePositives": 0,
+        "triageSpent": 0
+      },
+      {
+        "mode": "dedicated",
+        "delivered": 15,
+        "completed": 3,
+        "botCompleted": 0,
+        "humanCompleted": 3,
+        "fallbackCompleted": 0,
+        "pending": 17,
+        "humanSpent": 24,
+        "botSpent": 0,
+        "falsePositives": 0,
+        "triageSpent": 0
+      }
+    ]
+  },
+  {
+    "scenario": "mixed",
+    "seed": "RI-177",
+    "kinds": [
+      "complex",
+      "routine",
+      "routine",
+      "complex",
+      "routine",
+      "routine",
+      "complex",
+      "routine",
+      "routine",
+      "complex",
+      "routine",
+      "routine",
+      "complex",
+      "routine",
+      "routine",
+      "complex",
+      "routine",
+      "routine",
+      "complex",
+      "routine"
+    ],
+    "results": [
+      {
+        "mode": "human",
+        "delivered": 25,
+        "completed": 8,
+        "botCompleted": 0,
+        "humanCompleted": 8,
+        "fallbackCompleted": 0,
+        "pending": 12,
+        "humanSpent": 36,
+        "botSpent": 0,
+        "falsePositives": 0,
+        "triageSpent": 0
+      },
+      {
+        "mode": "coefficient",
+        "delivered": 27,
+        "completed": 9,
+        "botCompleted": 0,
+        "humanCompleted": 9,
+        "fallbackCompleted": 0,
+        "pending": 11,
+        "humanSpent": 43.2,
+        "botSpent": 0,
+        "falsePositives": 0,
+        "triageSpent": 0
+      },
+      {
+        "mode": "dedicated",
+        "delivered": 39,
+        "completed": 15,
+        "botCompleted": 12,
+        "humanCompleted": 3,
+        "fallbackCompleted": 0,
+        "pending": 5,
+        "humanSpent": 24,
+        "botSpent": 13,
+        "falsePositives": 1,
+        "triageSpent": 0
+      }
+    ]
+  }
+]

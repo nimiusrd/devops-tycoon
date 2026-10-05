@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import comparison from '../../../docs/prototypes/review-bot-comparison.json';
+import comparison from '../../docs/prototypes/review-bot-comparison.json';
 import {
   compareReviewBotStrategies,
   createReviewBotPrototype,
@@ -8,6 +8,18 @@ import {
 } from './reviewBot';
 
 describe('レビューBot専用経路の試作', () => {
+  it('後から差し戻された低いIDの案件も、既存の人間FIFOの末尾に入る', () => {
+    const initial = createReviewBotPrototype(1, ['routine', 'complex'], 'dedicated');
+    initial.jobs[0].falsePositive = true;
+    let state = tickReviewBotPrototype(initial);
+    expect(state.jobs[0].humanQueuedAt).toBe(1);
+    state = tickReviewBotPrototype(state);
+    expect(state.jobs[1].humanLeft).toBe(4);
+    expect(state.jobs[0].humanLeft).toBe(4);
+    state = tickReviewBotPrototype(tickReviewBotPrototype(state));
+    expect(state.jobs[1].stage).toBe('verification');
+    expect(state.jobs[0].humanLeft).toBe(4);
+  });
   it('記録した固定盤面の比較を再現する', () => {
     for (const scenario of comparison) {
       const kinds = scenario.kinds.map((kind) => {

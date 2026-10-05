@@ -1,5 +1,5 @@
-import { getCard } from '../../data/cards';
-import { createRng } from '../rng';
+import { getCard } from '../data/cards';
+import { createRng } from '../sim/rng';
 
 export type ReviewMode = 'human' | 'coefficient' | 'dedicated';
 export type ReviewStage = 'bot' | 'human' | 'verification' | 'done';
@@ -13,6 +13,7 @@ export interface ReviewJob {
   botLeft: number;
   falsePositive: boolean;
   route: 'human' | 'bot' | 'fallback';
+  humanQueuedAt: number | null;
 }
 
 export interface ReviewBotState {
@@ -50,6 +51,7 @@ export function createReviewBotPrototype(
       botLeft: 1,
       falsePositive: rng() < 0.25,
       route: mode === 'dedicated' && kind === 'routine' ? 'bot' : 'human',
+      humanQueuedAt: mode === 'dedicated' && kind === 'routine' ? null : 0,
     })),
     humanSpent: 0,
     botSpent: 0,
@@ -71,7 +73,15 @@ export function tickReviewBotPrototype(state: ReviewBotState): ReviewBotState {
     next.humanSpent += human;
     human = 0;
   }
-  for (let i = 0; i < next.jobs.length; i += 1) {
+  const jobs = state.jobs.map((job, index) => ({ job, index }));
+  const processingOrder = [
+    ...jobs.filter(({ job }) => job.stage === 'bot'),
+    ...jobs
+      .filter(({ job }) => job.stage === 'human')
+      .sort((a, b) => a.job.humanQueuedAt! - b.job.humanQueuedAt! || a.job.id - b.job.id),
+    ...jobs.filter(({ job }) => job.stage === 'verification'),
+  ];
+  for (const { index: i } of processingOrder) {
     const before = state.jobs[i];
     const job = next.jobs[i];
     if (before.stage === 'bot') {
@@ -84,6 +94,7 @@ export function tickReviewBotPrototype(state: ReviewBotState): ReviewBotState {
           job.stage = 'human';
           job.route = 'fallback';
           job.humanLeft += 1;
+          job.humanQueuedAt = next.tick;
           next.falsePositives += 1;
         } else {
           job.stage = 'verification';

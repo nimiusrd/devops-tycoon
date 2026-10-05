@@ -4,13 +4,15 @@
 
 ## 固定盤面と資源制約
 
-`src/sim/prototypes/reviewBot.ts` は本番から独立した純TSモデル。全PRは実装済みでレビュー待ち。12tick・20件・seed `RI-177` を固定し、全routine、全complex、complex/routine/routineを繰り返す混合盤面を比較する。
+`src/prototypes/reviewBot.ts` は本番から独立した純TSモデル。全PRは実装済みでレビュー待ち。12tick・20件・seed `RI-177` を固定し、全routine、全complex、complex/routine/routineを繰り返す混合盤面を比較する。
 
 人間3枠を共通予算とする。人間のみでは3工数/tick、既存係数版は `review-bot` の実際の基本係数1.2を参照し3.6工数/tickとする。専用経路は2人間枠＋1Bot運用枠へ配分し、人間2工数/tick、Bot2件/tickとする。専用経路の初回tickには準備で人間2工数を消費する。最終検証は全方式共通で2件/tick。カード強化・アクティブ・他効果との合成はこの比較に含めない。
 
 routineの価値は2、人間レビューは3工数、Botは1工数。complexの価値は5、人間レビューは6工数でBotへ送らない。専用経路ではroutineの誤検知をseedで事前生成し、25%の閾値で判定する。誤検知を処理した案件は人間Reviewへ戻り、仕分け1＋通常レビュー3工数を消費する。再度Botへ送らない。
 
 人間・Bot経路は別々のFIFO。同じtickでBot→人間、人間→検証、Bot→検証を連続処理しない。Bot成功も共通の最終検証を通る。出荷は案件のdone状態から一度だけ集計する。対象・対象外・誤検知は `kind` / `route` / `stage` で追える。
+
+人間FIFOは `humanQueuedAt` の到着tick、同時到着ならIDの順で処理する。Botからの差戻しは検出したtickに末尾へ追加し、元のIDが小さいだけで既存のcomplex案件を追い越さない。到着tickも試作のJSON保存に含める。
 
 ## 比較結果
 

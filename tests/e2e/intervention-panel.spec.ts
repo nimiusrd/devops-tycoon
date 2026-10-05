@@ -404,7 +404,9 @@ test('連続する成功・失敗で結果の2.5秒保持を更新し、期限�
   page,
 }) => {
   await beginPublicSprint(page, { seed: 'issue-536-feedback' });
-  await page.clock.install();
+  // 操作・描画待ちの実時間を保持期限に加算せず、runForだけで時間を進める。
+  await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
   await page.getByTestId('action-overtime').click();
   const ticker = page.getByTestId('event-ticker');
   const summary = page.getByTestId('event-ticker-summary');

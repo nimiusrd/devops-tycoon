@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/mentorship-comparison.json';
+import { assignMember } from '../sim/member/roster';
 import {
   advanceMentorshipPeriod,
   compareMentorshipStrategies,
@@ -8,6 +9,61 @@ import {
 } from './mentorship';
 
 describe('師弟育成の期間単位試作', () => {
+  it('レビュー配置の弟子にはAIを配布しない', () => {
+    const state = createMentorshipPrototype(1);
+    expect(state.roster.members.find((member) => member.id === state.apprenticeId)).toMatchObject({
+      assignment: 'review',
+      aiAssigned: false,
+    });
+  });
+
+  it('弟子の一時不在では残り育成回数を消さず、同じIDの復帰後も維持する', () => {
+    const state = advanceMentorshipPeriod(createMentorshipPrototype(1), true);
+    const apprentice = state.roster.members.find((member) => member.id === state.apprenticeId)!;
+    state.roster.members = state.roster.members.filter((member) => member.id !== apprentice.id);
+    expect(previewMentorship(state)).toMatchObject({ available: false, remainingLessons: 1 });
+    const absent = advanceMentorshipPeriod(state, true);
+    expect(absent.lessons).toBe(1);
+    absent.roster.members.push(apprentice);
+    expect(previewMentorship(absent)).toMatchObject({ available: true, remainingLessons: 1 });
+  });
+
+  it('弟子IDを変更しても本人の初期能力を使い、未育成の能力差を成長扱いしない', () => {
+    const state = createMentorshipPrototype(1);
+    const originalId = state.apprenticeId;
+    const replacement = state.roster.members.find(
+      (member) => member.id !== originalId && member.id !== state.mentorId,
+    )!;
+    state.apprenticeId = replacement.id;
+    state.roster = assignMember(state.roster, replacement.id, 'review');
+    const unchanged = advanceMentorshipPeriod(state, false);
+    expect(unchanged.history[0].apprenticeWork).toBe(4);
+    expect(unchanged.history[0].apprenticeGrowthWork).toBe(0);
+    const taught = advanceMentorshipPeriod(unchanged, true);
+    expect(advanceMentorshipPeriod(taught, false).history[2].apprenticeGrowthWork).toBe(1);
+    taught.apprenticeId = originalId;
+    expect(advanceMentorshipPeriod(taught, false).history[2].apprenticeGrowthWork).toBe(0);
+  });
+
+  it('後から追加した弟子の基準を育成前に記録し、保存再開でも引き継ぐ', () => {
+    const state = createMentorshipPrototype(1);
+    const template = state.roster.members.find((member) => member.id === state.apprenticeId)!;
+    const newcomer = {
+      ...template,
+      id: 'new-apprentice',
+      stats: { ...template.stats, review: 40 },
+    };
+    state.roster.members.push(newcomer);
+    state.apprenticeId = newcomer.id;
+    const taught = advanceMentorshipPeriod(state, true);
+    expect(taught.initialReviewByMember[newcomer.id]).toBe(40);
+    expect(taught.history[0].apprenticeGrowthWork).toBe(0);
+    const restored = JSON.parse(JSON.stringify(taught));
+    expect(advanceMentorshipPeriod(restored, false).history[1].apprenticeGrowthWork).toBe(1);
+    expect(advanceMentorshipPeriod(restored, false)).toEqual(
+      advanceMentorshipPeriod(taught, false),
+    );
+  });
   it('記録した短期・中期・長期の比較を再現する', () => {
     for (const scenario of comparison) {
       expect(compareMentorshipStrategies(scenario.seed, scenario.periods)).toEqual(

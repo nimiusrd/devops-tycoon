@@ -1,4 +1,4 @@
-import { createInitialRoster } from '../sim/member/roster';
+import { assignMember, createInitialRoster } from '../sim/member/roster';
 import type { RosterState } from '../sim/member/types';
 import type { Member } from '../sim/member/types';
 import { createRng } from '../sim/rng';
@@ -10,7 +10,7 @@ export interface MentorshipState {
   roster: RosterState;
   mentorId: string;
   apprenticeId: string;
-  initialApprenticeReview: number;
+  initialReviewByMember: Record<string, number>;
   lessons: number;
   backlog: number;
   delivered: number;
@@ -50,17 +50,19 @@ function canTeach(
 }
 
 export function createMentorshipPrototype(seed: string | number): MentorshipState {
-  const roster = createInitialRoster(createRng(seed));
-  const mentor = roster.members.find((member) => member.rank === 'senior')!;
-  const apprentice = roster.members.find((member) => member.rank === 'junior')!;
-  apprentice.assignment = 'review';
+  const initialRoster = createInitialRoster(createRng(seed));
+  const mentor = initialRoster.members.find((member) => member.rank === 'senior')!;
+  const apprentice = initialRoster.members.find((member) => member.rank === 'junior')!;
+  const roster = assignMember(initialRoster, apprentice.id, 'review');
   return {
     version: 1,
     period: 0,
     roster,
     mentorId: mentor.id,
     apprenticeId: apprentice.id,
-    initialApprenticeReview: apprentice.stats.review,
+    initialReviewByMember: Object.fromEntries(
+      roster.members.map((member) => [member.id, member.stats.review]),
+    ),
     lessons: 0,
     backlog: 0,
     delivered: 0,
@@ -85,6 +87,10 @@ export function advanceMentorshipPeriod(
   };
   const mentor = roster.members.find((member) => member.id === state.mentorId);
   const apprentice = roster.members.find((member) => member.id === state.apprenticeId);
+  const initialReviewByMember = { ...state.initialReviewByMember };
+  if (apprentice && initialReviewByMember[apprentice.id] === undefined) {
+    initialReviewByMember[apprentice.id] = apprentice.stats.review;
+  }
   const taught = teach && canTeach(state, mentor, apprentice);
   const mentorCapacityCost = taught ? 3 : 0;
   const apprenticeCapacityCost = taught ? 1 : 0;
@@ -105,7 +111,7 @@ export function advanceMentorshipPeriod(
   if (taught) apprentice!.stats.review += reviewGain;
   const baselineCapacity = Math.max(
     0,
-    Math.floor(state.initialApprenticeReview / 10) - apprenticeCapacityCost,
+    Math.floor((initialReviewByMember[state.apprenticeId] ?? 0) / 10) - apprenticeCapacityCost,
   );
   // 教えたという操作への得点はない。獲得能力で実際に処理した分だけ記録。
   const apprenticeGrowthWork = Math.max(0, apprenticeWork - baselineCapacity);
@@ -124,6 +130,7 @@ export function advanceMentorshipPeriod(
     ...state,
     period: state.period + 1,
     roster,
+    initialReviewByMember,
     lessons: state.lessons + Number(taught),
     backlog: remaining,
     delivered: state.delivered + mentorWork + apprenticeWork,
@@ -146,7 +153,9 @@ export function previewMentorship(state: MentorshipState) {
     effectiveFromPeriod: state.period + 2,
     remainingLessons: Math.min(
       Math.max(0, 2 - state.lessons),
-      Math.max(0, Math.ceil((100 - (apprentice?.stats.review ?? 100)) / 10)),
+      apprentice
+        ? Math.max(0, Math.ceil((100 - apprentice.stats.review) / 10))
+        : Number.POSITIVE_INFINITY,
     ),
   };
 }

@@ -60,9 +60,7 @@ export function createMentorshipPrototype(seed: string | number): MentorshipStat
     roster,
     mentorId: mentor.id,
     apprenticeId: apprentice.id,
-    initialReviewByMember: Object.fromEntries(
-      roster.members.map((member) => [member.id, member.stats.review]),
-    ),
+    initialReviewByMember: { [apprentice.id]: apprentice.stats.review },
     lessons: 0,
     backlog: 0,
     delivered: 0,

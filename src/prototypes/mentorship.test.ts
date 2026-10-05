@@ -64,6 +64,21 @@ describe('師弟育成の期間単位試作', () => {
       advanceMentorshipPeriod(taught, false),
     );
   });
+
+  it('弟子になる前に得た能力は育成成果へ含めない', () => {
+    const state = createMentorshipPrototype(1);
+    const replacement = state.roster.members.find(
+      (member) => member.id !== state.apprenticeId && member.id !== state.mentorId,
+    )!;
+    replacement.stats.review = 50;
+    state.apprenticeId = replacement.id;
+    state.roster = assignMember(state.roster, replacement.id, 'review');
+    const selected = advanceMentorshipPeriod(state, false);
+    expect(selected.initialReviewByMember[replacement.id]).toBe(50);
+    expect(selected.history[0].apprenticeGrowthWork).toBe(0);
+    const taught = advanceMentorshipPeriod(selected, true);
+    expect(advanceMentorshipPeriod(taught, false).history[2].apprenticeGrowthWork).toBe(1);
+  });
   it('記録した短期・中期・長期の比較を再現する', () => {
     for (const scenario of comparison) {
       expect(compareMentorshipStrategies(scenario.seed, scenario.periods)).toEqual(

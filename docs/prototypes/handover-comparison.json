@@ -1,0 +1,338 @@
+[
+  {
+    "seed": "RI-214",
+    "periods": 2,
+    "results": [
+      {
+        "strategy": "immediate",
+        "codingDelivered": 8,
+        "reviewDelivered": 6,
+        "codingBacklog": 8,
+        "reviewBacklog": 18,
+        "movedAt": 1,
+        "successorReview": 32,
+        "teachingCost": 0,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 2,
+            "codingWork": 4,
+            "reviewWork": 3
+          }
+        ]
+      },
+      {
+        "strategy": "handover",
+        "codingDelivered": 0,
+        "reviewDelivered": 11,
+        "codingBacklog": 16,
+        "reviewBacklog": 13,
+        "movedAt": null,
+        "successorReview": 52,
+        "teachingCost": 8,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 0,
+            "reviewWork": 5
+          },
+          {
+            "period": 2,
+            "codingWork": 0,
+            "reviewWork": 6
+          }
+        ]
+      },
+      {
+        "strategy": "stay",
+        "codingDelivered": 0,
+        "reviewDelivered": 18,
+        "codingBacklog": 16,
+        "reviewBacklog": 6,
+        "movedAt": null,
+        "successorReview": 32,
+        "teachingCost": 0,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 2,
+            "codingWork": 0,
+            "reviewWork": 9
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seed": "RI-214",
+    "periods": 4,
+    "results": [
+      {
+        "strategy": "immediate",
+        "codingDelivered": 16,
+        "reviewDelivered": 12,
+        "codingBacklog": 16,
+        "reviewBacklog": 36,
+        "movedAt": 1,
+        "successorReview": 32,
+        "teachingCost": 0,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 2,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 3,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 4,
+            "codingWork": 4,
+            "reviewWork": 3
+          }
+        ]
+      },
+      {
+        "strategy": "handover",
+        "codingDelivered": 8,
+        "reviewDelivered": 21,
+        "codingBacklog": 24,
+        "reviewBacklog": 27,
+        "movedAt": 3,
+        "successorReview": 52,
+        "teachingCost": 8,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 0,
+            "reviewWork": 5
+          },
+          {
+            "period": 2,
+            "codingWork": 0,
+            "reviewWork": 6
+          },
+          {
+            "period": 3,
+            "codingWork": 4,
+            "reviewWork": 5
+          },
+          {
+            "period": 4,
+            "codingWork": 4,
+            "reviewWork": 5
+          }
+        ]
+      },
+      {
+        "strategy": "stay",
+        "codingDelivered": 0,
+        "reviewDelivered": 36,
+        "codingBacklog": 32,
+        "reviewBacklog": 12,
+        "movedAt": null,
+        "successorReview": 32,
+        "teachingCost": 0,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 2,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 3,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 4,
+            "codingWork": 0,
+            "reviewWork": 9
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seed": "RI-214",
+    "periods": 8,
+    "results": [
+      {
+        "strategy": "immediate",
+        "codingDelivered": 32,
+        "reviewDelivered": 24,
+        "codingBacklog": 32,
+        "reviewBacklog": 72,
+        "movedAt": 1,
+        "successorReview": 32,
+        "teachingCost": 0,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 2,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 3,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 4,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 5,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 6,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 7,
+            "codingWork": 4,
+            "reviewWork": 3
+          },
+          {
+            "period": 8,
+            "codingWork": 4,
+            "reviewWork": 3
+          }
+        ]
+      },
+      {
+        "strategy": "handover",
+        "codingDelivered": 24,
+        "reviewDelivered": 41,
+        "codingBacklog": 40,
+        "reviewBacklog": 55,
+        "movedAt": 3,
+        "successorReview": 52,
+        "teachingCost": 8,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 0,
+            "reviewWork": 5
+          },
+          {
+            "period": 2,
+            "codingWork": 0,
+            "reviewWork": 6
+          },
+          {
+            "period": 3,
+            "codingWork": 4,
+            "reviewWork": 5
+          },
+          {
+            "period": 4,
+            "codingWork": 4,
+            "reviewWork": 5
+          },
+          {
+            "period": 5,
+            "codingWork": 4,
+            "reviewWork": 5
+          },
+          {
+            "period": 6,
+            "codingWork": 4,
+            "reviewWork": 5
+          },
+          {
+            "period": 7,
+            "codingWork": 4,
+            "reviewWork": 5
+          },
+          {
+            "period": 8,
+            "codingWork": 4,
+            "reviewWork": 5
+          }
+        ]
+      },
+      {
+        "strategy": "stay",
+        "codingDelivered": 0,
+        "reviewDelivered": 72,
+        "codingBacklog": 64,
+        "reviewBacklog": 24,
+        "movedAt": null,
+        "successorReview": 32,
+        "teachingCost": 0,
+        "history": [
+          {
+            "period": 1,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 2,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 3,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 4,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 5,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 6,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 7,
+            "codingWork": 0,
+            "reviewWork": 9
+          },
+          {
+            "period": 8,
+            "codingWork": 0,
+            "reviewWork": 9
+          }
+        ]
+      }
+    ]
+  }
+]

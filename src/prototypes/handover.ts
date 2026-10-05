@@ -46,7 +46,7 @@ export function advanceHandoverPeriod(
     throw new Error('実装仕事量は非負の整数');
   const before = state.mentorship;
   const specialist = before.roster.members.find((member) => member.id === before.mentorId);
-  const moving = move && state.movedAt === null && specialist !== undefined;
+  const moving = move && state.movedAt === null && specialist !== undefined && !specialist.onLeave;
   const prepared = moving
     ? { ...before, roster: assignMember(before.roster, before.mentorId, 'coding') }
     : before;

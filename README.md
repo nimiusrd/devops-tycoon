@@ -156,6 +156,8 @@ npx playwright install chromium
 
 Chromiumの実行ファイルを明示する環境では、`PLAYWRIGHT_CHROMIUM`または`GALLERY_CHROMIUM`を指定できます。
 
+CIとCodexの標準E2Eは2ワーカーで実行します。ローカルでも `npm run test:e2e -- --workers=2` で並列数を指定できます。WebGLの並列負荷で不安定になる環境では `--workers=1` に下げてください。
+
 E2Eのポートが使用中の場合は、ホストとポートを上書きできます。
 
 ```bash

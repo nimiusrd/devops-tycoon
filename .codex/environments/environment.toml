@@ -20,7 +20,7 @@ command = "devcontainer exec --workspace-folder . npm test"
 [[actions]]
 name = "E2Eテスト"
 icon = "test"
-command = "devcontainer exec --workspace-folder . npm run test:e2e -- --workers=1"
+command = "devcontainer exec --workspace-folder . npm run test:e2e -- --workers=2"
 
 [[actions]]
 name = "Lint"

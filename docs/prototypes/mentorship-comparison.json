@@ -1,0 +1,382 @@
+[
+  {
+    "seed": "RI-206",
+    "periods": 2,
+    "results": [
+      {
+        "strategy": "concentrate",
+        "delivered": 18,
+        "backlog": 6,
+        "apprenticeReview": 32,
+        "apprenticeGrowthWork": 0,
+        "history": [
+          {
+            "period": 1,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 3
+          },
+          {
+            "period": 2,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 6
+          }
+        ]
+      },
+      {
+        "strategy": "mentor",
+        "delivered": 11,
+        "backlog": 13,
+        "apprenticeReview": 52,
+        "apprenticeGrowthWork": 1,
+        "history": [
+          {
+            "period": 1,
+            "taught": true,
+            "mentorWork": 3,
+            "apprenticeWork": 2,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 3,
+            "apprenticeCapacityCost": 1,
+            "reviewGain": 10,
+            "backlog": 7
+          },
+          {
+            "period": 2,
+            "taught": true,
+            "mentorWork": 3,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 1,
+            "mentorCapacityCost": 3,
+            "apprenticeCapacityCost": 1,
+            "reviewGain": 10,
+            "backlog": 13
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seed": "RI-206",
+    "periods": 4,
+    "results": [
+      {
+        "strategy": "concentrate",
+        "delivered": 36,
+        "backlog": 12,
+        "apprenticeReview": 32,
+        "apprenticeGrowthWork": 0,
+        "history": [
+          {
+            "period": 1,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 3
+          },
+          {
+            "period": 2,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 6
+          },
+          {
+            "period": 3,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 9
+          },
+          {
+            "period": 4,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 12
+          }
+        ]
+      },
+      {
+        "strategy": "mentor",
+        "delivered": 33,
+        "backlog": 15,
+        "apprenticeReview": 52,
+        "apprenticeGrowthWork": 5,
+        "history": [
+          {
+            "period": 1,
+            "taught": true,
+            "mentorWork": 3,
+            "apprenticeWork": 2,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 3,
+            "apprenticeCapacityCost": 1,
+            "reviewGain": 10,
+            "backlog": 7
+          },
+          {
+            "period": 2,
+            "taught": true,
+            "mentorWork": 3,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 1,
+            "mentorCapacityCost": 3,
+            "apprenticeCapacityCost": 1,
+            "reviewGain": 10,
+            "backlog": 13
+          },
+          {
+            "period": 3,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 14
+          },
+          {
+            "period": 4,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 15
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seed": "RI-206",
+    "periods": 8,
+    "results": [
+      {
+        "strategy": "concentrate",
+        "delivered": 72,
+        "backlog": 24,
+        "apprenticeReview": 32,
+        "apprenticeGrowthWork": 0,
+        "history": [
+          {
+            "period": 1,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 3
+          },
+          {
+            "period": 2,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 6
+          },
+          {
+            "period": 3,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 9
+          },
+          {
+            "period": 4,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 12
+          },
+          {
+            "period": 5,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 15
+          },
+          {
+            "period": 6,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 18
+          },
+          {
+            "period": 7,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 21
+          },
+          {
+            "period": 8,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 24
+          }
+        ]
+      },
+      {
+        "strategy": "mentor",
+        "delivered": 77,
+        "backlog": 19,
+        "apprenticeReview": 52,
+        "apprenticeGrowthWork": 13,
+        "history": [
+          {
+            "period": 1,
+            "taught": true,
+            "mentorWork": 3,
+            "apprenticeWork": 2,
+            "apprenticeGrowthWork": 0,
+            "mentorCapacityCost": 3,
+            "apprenticeCapacityCost": 1,
+            "reviewGain": 10,
+            "backlog": 7
+          },
+          {
+            "period": 2,
+            "taught": true,
+            "mentorWork": 3,
+            "apprenticeWork": 3,
+            "apprenticeGrowthWork": 1,
+            "mentorCapacityCost": 3,
+            "apprenticeCapacityCost": 1,
+            "reviewGain": 10,
+            "backlog": 13
+          },
+          {
+            "period": 3,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 14
+          },
+          {
+            "period": 4,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 15
+          },
+          {
+            "period": 5,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 16
+          },
+          {
+            "period": 6,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 17
+          },
+          {
+            "period": 7,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 18
+          },
+          {
+            "period": 8,
+            "taught": false,
+            "mentorWork": 6,
+            "apprenticeWork": 5,
+            "apprenticeGrowthWork": 2,
+            "mentorCapacityCost": 0,
+            "apprenticeCapacityCost": 0,
+            "reviewGain": 0,
+            "backlog": 19
+          }
+        ]
+      }
+    ]
+  }
+]

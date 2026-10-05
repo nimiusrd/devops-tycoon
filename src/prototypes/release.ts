@@ -1,4 +1,4 @@
-import { createRng, randInt } from '../rng';
+import { createRng, randInt } from '../sim/rng';
 
 /** RI-252: 本番のボス・保存形式から独立した段階戦の比較用モデル。 */
 export interface ReleaseConfig {
@@ -134,9 +134,12 @@ export function summarizeRelease(state: ReleaseState) {
 }
 
 export function compareReleaseStrategies(seed: string | number, config = RELEASE_CONFIG) {
+  if (config.deadline < 4) throw new Error('三つの凍結時点を比較する期限は4tick以上');
+  const late = Math.min(Math.floor((config.deadline * 2) / 3), config.deadline - 3);
+  const early = Math.min(Math.floor(config.deadline / 4), late - 1);
   return [
-    { strategy: 'early', freezeAt: 3 },
-    { strategy: 'late', freezeAt: 8 },
+    { strategy: 'early', freezeAt: early },
+    { strategy: 'late', freezeAt: late },
     { strategy: 'continue', freezeAt: null },
   ].map(({ strategy, freezeAt }) => {
     let state = createReleasePrototype(seed, config);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import comparison from '../../../docs/prototypes/release-comparison.json';
+import comparison from '../../docs/prototypes/release-comparison.json';
 import {
   compareReleaseStrategies,
   createReleasePrototype,
@@ -8,6 +8,22 @@ import {
 } from './release';
 
 describe('大型リリース段階戦の試作', () => {
+  it.each([4, 9, 12])('期限%itickでも自動凍結に先行する二つの手動凍結を比較する', (deadline) => {
+    const results = compareReleaseStrategies(1, {
+      deadline,
+      implementation: 2,
+      review: 1,
+      verification: 1,
+    });
+    expect(results[0].frozenAt).toBeLessThan(results[1].frozenAt!);
+    expect(results[1].frozenAt).toBeLessThan(results[2].frozenAt!);
+    expect(results.map((result) => result.automaticFreeze)).toEqual([false, false, true]);
+  });
+  it('三つの異なる凍結時点を確保できない期限は比較で拒否する', () => {
+    expect(() =>
+      compareReleaseStrategies(1, { deadline: 3, implementation: 2, review: 1, verification: 1 }),
+    ).toThrow();
+  });
   it('設計記録の比較結果を同じseed・資源制約から再生成できる', () => {
     for (const scenario of comparison) {
       expect(compareReleaseStrategies(scenario.seed, scenario.config)).toEqual(scenario.results);

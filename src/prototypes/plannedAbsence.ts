@@ -6,6 +6,7 @@ export type AbsenceReason = 'vacation' | 'training' | 'business-trip';
 /** 試作の期間はスプリント相当。予定不在と疲労休職を別々に保持する。 */
 export interface PlannedAbsence {
   memberId: string;
+  reason: AbsenceReason;
   announcedAt: number;
   start: number;
   end: number;
@@ -21,7 +22,7 @@ export function createPlannedAbsence(
   reason: AbsenceReason,
   start = 2,
   end = 6,
-) {
+): PlannedAbsence {
   if (!roster.members.some((member) => member.id === memberId))
     throw new Error('不在対象の人物が存在しない');
   if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end <= start)
@@ -36,7 +37,7 @@ export function createPlannedAbsence(
     returned: false,
     returnAssignment: null,
     returnAiAssigned: false,
-  } satisfies PlannedAbsence & { reason: AbsenceReason };
+  };
 }
 
 /** 期首に適用する。配置・AIの再設定では不在を解除できない。 */
@@ -73,10 +74,7 @@ export function applyPlannedAbsence<T extends PlannedAbsence>(
 }
 
 /** 編成の事前確認用。休職解除の判定は既存recoverStaminaに任せる。 */
-export function previewPlannedAbsence(
-  roster: RosterState,
-  absence: PlannedAbsence & { reason: AbsenceReason },
-) {
+export function previewPlannedAbsence(roster: RosterState, absence: PlannedAbsence) {
   const member = roster.members.find((person) => person.id === absence.memberId);
   if (!member) throw new Error('不在対象の人物が存在しない');
   return {

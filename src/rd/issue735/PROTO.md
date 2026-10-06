@@ -65,3 +65,20 @@ seed `RI-735`、意図方針は両腕とも PR分割(T0) → ペアレビュー�
 - targetDisappear: 予約前に T0 を消す。splitPr は `cancelled/target-disappeared`、消費なし（focus=6, splitCount=0）
 - pausedBlock: 予約なし腕は停止中に打てず、消費なし
 - cancelSpend: 予約を取消して再生しても消費なし
+
+## ブラウザ確認（意図方針を両腕で実行）
+
+`http://localhost:5174` で同じ seed を遊び、計画・予測を書いて開始し、終了後に手応え 4 を記録した。
+
+| 項目 | 予約なし | 予約あり |
+| --- | ---: | ---: |
+| delivered | 87 | 87 |
+| doneCount | 6 | 6 |
+| interventionsUsed | 2 | 2 |
+| focusSpent | 4 | 4 |
+| morale | 59 | 59 |
+| 待ち時間 | 14.8s | 15.1s |
+| 手の結果 | 手動 splitPr T0 success / pairReview success | 予約 splitPr T0 success@0 / pairReview success@1 |
+| 手応え | 4 | 4 |
+
+スクリプトと同じ sim 数字になった。待ち時間は壁時計（停止含む）。Adopt / Iterate / Kill は書かない。

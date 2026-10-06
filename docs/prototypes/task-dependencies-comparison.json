@@ -1,0 +1,163 @@
+{
+  "seed": "RI-154",
+  "initial": {
+    "version": 1,
+    "seed": "RI-154",
+    "tick": 0,
+    "horizon": 6,
+    "tasks": [
+      {
+        "id": "foundation",
+        "requires": [],
+        "workLeft": 3,
+        "value": 1,
+        "done": false
+      },
+      {
+        "id": "a",
+        "requires": ["foundation"],
+        "workLeft": 2,
+        "value": 6,
+        "done": false
+      },
+      {
+        "id": "b",
+        "requires": ["foundation"],
+        "workLeft": 2,
+        "value": 6,
+        "done": false
+      },
+      {
+        "id": "direct",
+        "requires": [],
+        "workLeft": 3,
+        "value": 7,
+        "done": false
+      }
+    ],
+    "shipped": [],
+    "history": []
+  },
+  "results": [
+    {
+      "strategy": "foundation-first",
+      "tick": 6,
+      "value": 7,
+      "shipped": [
+        {
+          "id": "foundation",
+          "tick": 3,
+          "value": 1
+        },
+        {
+          "id": "a",
+          "tick": 5,
+          "value": 6
+        }
+      ],
+      "remaining": [
+        {
+          "id": "b",
+          "workLeft": 1
+        },
+        {
+          "id": "direct",
+          "workLeft": 3
+        }
+      ],
+      "waitingTaskTicks": 6,
+      "history": [
+        {
+          "tick": 1,
+          "id": "foundation",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 2,
+          "id": "foundation",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 3,
+          "id": "foundation",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 4,
+          "id": "a",
+          "blocked": []
+        },
+        {
+          "tick": 5,
+          "id": "a",
+          "blocked": []
+        },
+        {
+          "tick": 6,
+          "id": "b",
+          "blocked": []
+        }
+      ]
+    },
+    {
+      "strategy": "direct-first",
+      "tick": 6,
+      "value": 8,
+      "shipped": [
+        {
+          "id": "direct",
+          "tick": 3,
+          "value": 7
+        },
+        {
+          "id": "foundation",
+          "tick": 6,
+          "value": 1
+        }
+      ],
+      "remaining": [
+        {
+          "id": "a",
+          "workLeft": 2
+        },
+        {
+          "id": "b",
+          "workLeft": 2
+        }
+      ],
+      "waitingTaskTicks": 12,
+      "history": [
+        {
+          "tick": 1,
+          "id": "direct",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 2,
+          "id": "direct",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 3,
+          "id": "direct",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 4,
+          "id": "foundation",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 5,
+          "id": "foundation",
+          "blocked": ["a", "b"]
+        },
+        {
+          "tick": 6,
+          "id": "foundation",
+          "blocked": ["a", "b"]
+        }
+      ]
+    }
+  ]
+}

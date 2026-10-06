@@ -1,0 +1,272 @@
+[
+  {
+    "seed": "RI-188",
+    "boss": "big-release",
+    "results": [
+      {
+        "strategy": "keep",
+        "removedIndex": null,
+        "hand": [4, 0, 1],
+        "selected": "copilot",
+        "delivered": 34,
+        "quality": 45,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 6,
+        "focusSpent": 5,
+        "foregone": []
+      },
+      {
+        "strategy": "omit",
+        "removedIndex": 3,
+        "hand": [0, 1, 4],
+        "selected": "copilot",
+        "delivered": 34,
+        "quality": 45,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 5,
+        "focusSpent": 5,
+        "foregone": []
+      },
+      {
+        "strategy": "retire",
+        "removedIndex": 3,
+        "hand": [0, 1, 4],
+        "selected": "copilot",
+        "delivered": 34,
+        "quality": 45,
+        "budget": 15,
+        "activeOwned": 5,
+        "candidateCount": 5,
+        "focusSpent": 5,
+        "foregone": ["review-bot"]
+      }
+    ]
+  },
+  {
+    "seed": "RI-188",
+    "boss": "security-audit",
+    "results": [
+      {
+        "strategy": "keep",
+        "removedIndex": null,
+        "hand": [4, 0, 1],
+        "selected": "auto-test",
+        "delivered": 65,
+        "quality": 55,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 6,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "omit",
+        "removedIndex": 0,
+        "hand": [1, 2, 4],
+        "selected": "auto-test",
+        "delivered": 65,
+        "quality": 55,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 5,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "retire",
+        "removedIndex": 0,
+        "hand": [1, 2, 4],
+        "selected": "auto-test",
+        "delivered": 65,
+        "quality": 55,
+        "budget": 15,
+        "activeOwned": 5,
+        "candidateCount": 5,
+        "focusSpent": 6,
+        "foregone": ["copilot"]
+      }
+    ]
+  },
+  {
+    "seed": "RI-188:1",
+    "boss": "big-release",
+    "results": [
+      {
+        "strategy": "keep",
+        "removedIndex": null,
+        "hand": [3, 1, 2],
+        "selected": "review-bot",
+        "delivered": 25,
+        "quality": 45,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 6,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "omit",
+        "removedIndex": 3,
+        "hand": [2, 1, 4],
+        "selected": "docs",
+        "delivered": 25,
+        "quality": 50,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 5,
+        "focusSpent": 5,
+        "foregone": []
+      },
+      {
+        "strategy": "retire",
+        "removedIndex": 3,
+        "hand": [2, 1, 4],
+        "selected": "docs",
+        "delivered": 25,
+        "quality": 50,
+        "budget": 15,
+        "activeOwned": 5,
+        "candidateCount": 5,
+        "focusSpent": 5,
+        "foregone": ["review-bot"]
+      }
+    ]
+  },
+  {
+    "seed": "RI-188:1",
+    "boss": "security-audit",
+    "results": [
+      {
+        "strategy": "keep",
+        "removedIndex": null,
+        "hand": [3, 1, 2],
+        "selected": "review-bot",
+        "delivered": 46,
+        "quality": 45,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 6,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "omit",
+        "removedIndex": 0,
+        "hand": [3, 2, 4],
+        "selected": "auto-test",
+        "delivered": 53,
+        "quality": 55,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 5,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "retire",
+        "removedIndex": 0,
+        "hand": [3, 2, 4],
+        "selected": "auto-test",
+        "delivered": 53,
+        "quality": 55,
+        "budget": 15,
+        "activeOwned": 5,
+        "candidateCount": 5,
+        "focusSpent": 6,
+        "foregone": ["copilot"]
+      }
+    ]
+  },
+  {
+    "seed": "RI-188:2",
+    "boss": "big-release",
+    "results": [
+      {
+        "strategy": "keep",
+        "removedIndex": null,
+        "hand": [4, 1, 3],
+        "selected": "auto-test",
+        "delivered": 25,
+        "quality": 55,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 6,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "omit",
+        "removedIndex": 3,
+        "hand": [4, 2, 0],
+        "selected": "copilot",
+        "delivered": 28,
+        "quality": 45,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 5,
+        "focusSpent": 5,
+        "foregone": []
+      },
+      {
+        "strategy": "retire",
+        "removedIndex": 3,
+        "hand": [4, 2, 0],
+        "selected": "copilot",
+        "delivered": 28,
+        "quality": 45,
+        "budget": 15,
+        "activeOwned": 5,
+        "candidateCount": 5,
+        "focusSpent": 5,
+        "foregone": ["review-bot"]
+      }
+    ]
+  },
+  {
+    "seed": "RI-188:2",
+    "boss": "security-audit",
+    "results": [
+      {
+        "strategy": "keep",
+        "removedIndex": null,
+        "hand": [4, 1, 3],
+        "selected": "auto-test",
+        "delivered": 47,
+        "quality": 55,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 6,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "omit",
+        "removedIndex": 0,
+        "hand": [4, 3, 1],
+        "selected": "auto-test",
+        "delivered": 47,
+        "quality": 55,
+        "budget": 20,
+        "activeOwned": 6,
+        "candidateCount": 5,
+        "focusSpent": 6,
+        "foregone": []
+      },
+      {
+        "strategy": "retire",
+        "removedIndex": 0,
+        "hand": [4, 3, 1],
+        "selected": "auto-test",
+        "delivered": 47,
+        "quality": 55,
+        "budget": 15,
+        "activeOwned": 5,
+        "candidateCount": 5,
+        "focusSpent": 6,
+        "foregone": ["copilot"]
+      }
+    ]
+  }
+]

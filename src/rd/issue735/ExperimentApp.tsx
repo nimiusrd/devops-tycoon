@@ -24,7 +24,8 @@ import {
 import { actionLabel } from './scripted';
 import styles from './ExperimentApp.module.css';
 
-const TICK_MS = 400;
+/** 人間が再生直後に2手打てる速さ。sim の tick 数は変えない。 */
+const TICK_MS = 900;
 
 function statusClass(status: string): string {
   if (status === 'success' || status === 'queued') return styles.statusOk;
@@ -96,7 +97,7 @@ export function Issue735ExperimentApp({ rd }: { rd: RdExperimentRef }) {
     <main className={styles.page} data-testid="rd-735" data-arm={rd.arm} data-seed={rd.seed}>
       <header className={styles.banner}>
         <div>
-          <p className={styles.hint}>R&amp;D throwaway / issue #735 / 本番ではない</p>
+          <p className={styles.hint}>R&D throwaway / issue #735 / 本番ではない</p>
           <h1>停止中の最大2手予約</h1>
           <p>
             腕: <strong>{rd.arm === 'reserve' ? '予約あり' : '予約なし'}</strong> / seed{' '}
@@ -259,8 +260,11 @@ export function Issue735ExperimentApp({ rd }: { rd: RdExperimentRef }) {
             </div>
             {state.arm === 'none' && state.paused ? (
               <p className={styles.hint}>
-                予約なし腕では停止中に介入できない。再生してから手を打つ。
+                予約なし腕では停止中に介入できない。再生したらすぐに PR分割 → ペアレビューを打つ。
               </p>
+            ) : null}
+            {state.arm === 'none' && !state.paused && !ended ? (
+              <p className={styles.hint}>再生中。意図方針の2手を今打つ。</p>
             ) : null}
           </section>
 
@@ -345,12 +349,34 @@ export function Issue735ExperimentApp({ rd }: { rd: RdExperimentRef }) {
             計画: {state.plan?.moves || '（未記入）'} / 予測:{' '}
             {state.plan?.predicted || '（未記入）'}
           </p>
-          <p>
-            実績: 出荷 {summary.delivered} / 完了 {summary.doneCount} / 介入{' '}
-            {summary.interventionsUsed} / 集中力消費 {summary.focusSpent} / 士気 {summary.morale} /
-            待ち時間{' '}
-            {summary.wallClockMs == null ? '—' : `${(summary.wallClockMs / 1000).toFixed(1)}s`}
-          </p>
+          <dl className={styles.metrics} data-testid="rd-735-actual">
+            <div>
+              <dt>出荷</dt>
+              <dd>{summary.delivered}</dd>
+            </div>
+            <div>
+              <dt>完了</dt>
+              <dd>{summary.doneCount}</dd>
+            </div>
+            <div>
+              <dt>介入</dt>
+              <dd>{summary.interventionsUsed}</dd>
+            </div>
+            <div>
+              <dt>集中力消費</dt>
+              <dd>{summary.focusSpent}</dd>
+            </div>
+            <div>
+              <dt>士気</dt>
+              <dd>{summary.morale}</dd>
+            </div>
+            <div>
+              <dt>待ち時間</dt>
+              <dd>
+                {summary.wallClockMs == null ? '—' : `${(summary.wallClockMs / 1000).toFixed(1)}s`}
+              </dd>
+            </div>
+          </dl>
           <ul>
             {summary.reserved.map((move) => (
               <li key={move.id} className={statusClass(move.status)}>

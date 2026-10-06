@@ -90,11 +90,26 @@
 
 .actions,
 .inline,
-.feel {
+.feel,
+.banner nav {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.actions :global(.btn),
+.inline :global(.btn),
+.feel :global(.btn),
+.banner :global(.btn) {
+  margin-left: 0;
+}
+
+.actions :global(.btn):disabled,
+.inline :global(.btn):disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
 }
 
 .board {

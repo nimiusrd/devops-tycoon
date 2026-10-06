@@ -1,0 +1,1 @@
+import{j as a}from"./motion-D6mcvdzH.js";function r({tags:t,testId:n="effect-tags"}){return t.length===0?null:a.jsx("div",{className:"effect-tags","data-testid":n,children:t.map((e,s)=>a.jsx("span",{className:`effect-tag tone-${e.tone}`,"data-tone":e.tone,children:e.label},s))})}export{r as E};

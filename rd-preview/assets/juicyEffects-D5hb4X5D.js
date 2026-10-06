@@ -1,0 +1,1 @@
+function o(e,r,c){if(!e)return{active:!1,clearedIncidentCount:0};const t=r.filter(n=>n.lane==="rework"&&n.incident).length,i=c.filter(n=>n.lane==="rework"&&n.incident).length;return{active:t>0&&i===0,clearedIncidentCount:t>0&&i===0?t:0}}function l(e){return e==="S"}export{l as i,o as p};

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Futuristic DevOps command arena backdrop">
+  <defs>
+    <radialGradient id="skyGlow" cx="66%" cy="30%" r="60%">
+      <stop offset="0" stop-color="#55d7ff" stop-opacity=".55"/>
+      <stop offset=".32" stop-color="#8157ff" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#030712"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#111936"/>
+      <stop offset=".52" stop-color="#10142b"/>
+      <stop offset="1" stop-color="#050713"/>
+    </linearGradient>
+    <linearGradient id="tower" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#273861"/>
+      <stop offset="1" stop-color="#081021"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#skyGlow)"/>
+  <path d="M0 0h1920v1080H0z" fill="url(#skyGlow)"/>
+  <g opacity=".52">
+    <path d="M1110 226c240-104 493-58 750 85" fill="none" stroke="#67e8ff" stroke-width="2" stroke-opacity=".22"/>
+    <path d="M1020 306c272-116 563-64 860 104" fill="none" stroke="#b59cff" stroke-width="2" stroke-opacity=".18"/>
+  </g>
+  <g opacity=".7">
+    <path d="M1110 700h90V382h-90zM1232 700h142V294h-142zM1415 700h96V436h-96zM1548 700h148V330h-148zM1740 700h118V458h-118z" fill="url(#tower)"/>
+    <path d="M1126 418h58M1257 336h88M1257 386h88M1432 472h62M1571 374h98M1571 426h98M1760 498h75" stroke="#5ee7ff" stroke-opacity=".36" stroke-width="4"/>
+  </g>
+  <path d="M0 700h1920v380H0z" fill="url(#floor)"/>
+  <g opacity=".38" stroke="#55d7ff" stroke-width="2">
+    <path d="M960 700 350 1080M960 700l610 380M960 700v380M700 700 240 1080M1220 700l460 380"/>
+    <path d="M0 770h1920M0 850h1920M0 950h1920" opacity=".55"/>
+  </g>
+  <g filter="url(#glow)">
+    <circle cx="1360" cy="310" r="86" fill="none" stroke="#79e7ff" stroke-width="5" opacity=".7"/>
+    <circle cx="1360" cy="310" r="42" fill="#63d8ff" opacity=".16"/>
+    <path d="M1320 310h80M1360 270v80" stroke="#ffd166" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+  </g>
+  <g opacity=".64" filter="url(#glow)">
+    <path d="M280 610h420l80 54-96 58H250l-88-58z" fill="#101d3a" stroke="#55d7ff" stroke-width="4"/>
+    <path d="M326 648h310M378 684h224" stroke="#ffd166" stroke-width="5" stroke-linecap="round"/>
+  </g>
+</svg>

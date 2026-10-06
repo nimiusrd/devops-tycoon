@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Cache Shield</title>
+  <desc id="desc">A defensive shield with layered cache blocks.</desc>
+  <defs><linearGradient id="shield" x1="58" y1="31" x2="198" y2="229" gradientUnits="userSpaceOnUse"><stop stop-color="#dcfce7"/><stop offset="0.5" stop-color="#22c55e"/><stop offset="1" stop-color="#14532d"/></linearGradient></defs>
+  <ellipse cx="128" cy="224" rx="57" ry="13" fill="#052e16" opacity="0.28"/>
+  <path d="M128 28 210 62v65c0 55-33 89-82 108-49-19-82-53-82-108V62l82-34Z" fill="url(#shield)" stroke="#bbf7d0" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M80 91h96v24H80zM80 125h96v24H80zM80 159h96v24H80z" fill="#052e16" opacity="0.58"/>
+  <path d="M96 103h31M142 137h20M96 171h50" stroke="#bbf7d0" stroke-width="8" stroke-linecap="round"/>
+  <path d="m104 62 24-10 24 10" fill="none" stroke="#f0fdf4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.82"/>
+</svg>

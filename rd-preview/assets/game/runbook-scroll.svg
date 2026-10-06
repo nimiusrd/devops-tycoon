@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Runbook Scroll</title>
+  <desc id="desc">A glowing operations runbook scroll with checklist marks.</desc>
+  <defs><linearGradient id="paper" x1="52" y1="36" x2="200" y2="222" gradientUnits="userSpaceOnUse"><stop stop-color="#fff7ed"/><stop offset="0.55" stop-color="#fdba74"/><stop offset="1" stop-color="#9a3412"/></linearGradient></defs>
+  <ellipse cx="128" cy="224" rx="65" ry="13" fill="#431407" opacity="0.25"/>
+  <path d="M73 45h102c18 0 32 14 32 32 0 13-8 25-20 30v82c0 17-14 31-31 31H72c13-6 21-18 21-32V72c0-15-8-25-20-27Z" fill="url(#paper)" stroke="#ffedd5" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M73 45c18 0 31 13 31 31H42c0-18 13-31 31-31ZM72 220c-18 0-31-13-31-31h62c0 18-13 31-31 31Z" fill="#fed7aa" stroke="#ffedd5" stroke-width="6"/>
+  <path d="M119 91h47M119 125h47M119 159h31" stroke="#7c2d12" stroke-width="8" stroke-linecap="round" opacity="0.65"/>
+  <path d="m86 88 8 8 15-18M86 122l8 8 15-18M86 156l8 8 15-18" fill="none" stroke="#14532d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

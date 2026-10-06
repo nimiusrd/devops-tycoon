@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">CI Bot</title>
+  <desc id="desc">A friendly DevOps robot mascot with status lights.</desc>
+  <defs>
+    <linearGradient id="shell" x1="54" y1="42" x2="206" y2="214" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d7fbff"/>
+      <stop offset="0.46" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="78" y1="78" x2="178" y2="154" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102033"/>
+      <stop offset="1" stop-color="#07111f"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <ellipse cx="128" cy="219" rx="66" ry="14" fill="#0f172a" opacity="0.24"/>
+  <path d="M52 126c0-43 34-78 76-78s76 35 76 78v36c0 30-24 54-54 54h-44c-30 0-54-24-54-54v-36Z" fill="url(#shell)"/>
+  <path d="M79 90h98c13 0 24 11 24 24v30c0 13-11 24-24 24H79c-13 0-24-11-24-24v-30c0-13 11-24 24-24Z" fill="url(#screen)" stroke="#e0f2fe" stroke-opacity="0.65" stroke-width="4"/>
+  <circle cx="93" cy="128" r="12" fill="#22c55e" filter="url(#glow)"/>
+  <circle cx="163" cy="128" r="12" fill="#38bdf8" filter="url(#glow)"/>
+  <path d="M113 148c9 8 22 8 31 0" fill="none" stroke="#a7f3d0" stroke-width="6" stroke-linecap="round"/>
+  <path d="M128 48V28" stroke="#67e8f9" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="128" cy="22" r="10" fill="#facc15" filter="url(#glow)"/>
+  <path d="M44 145H30c-9 0-16 7-16 16s7 16 16 16h15" fill="none" stroke="#60a5fa" stroke-width="12" stroke-linecap="round"/>
+  <path d="M212 145h14c9 0 16 7 16 16s-7 16-16 16h-15" fill="none" stroke="#60a5fa" stroke-width="12" stroke-linecap="round"/>
+  <path d="M95 205v22M161 205v22" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"/>
+  <path d="M84 228h27M145 228h27" stroke="#93c5fd" stroke-width="10" stroke-linecap="round"/>
+</svg>

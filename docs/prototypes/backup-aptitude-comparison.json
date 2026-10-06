@@ -1,0 +1,195 @@
+{
+  "seed": "RI-207",
+  "results": [
+    {
+      "strategy": "none",
+      "delivered": 12,
+      "remaining": 28,
+      "absenceDelivered": 0,
+      "foregoneCodingCapacity": 0,
+      "staminaSpent": 12,
+      "discovery": null,
+      "evidence": [],
+      "history": [
+        {
+          "period": 1,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 2,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 3,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 4,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 5,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 6,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        }
+      ]
+    },
+    {
+      "strategy": "successor",
+      "delivered": 30,
+      "remaining": 10,
+      "absenceDelivered": 14,
+      "foregoneCodingCapacity": 0,
+      "staminaSpent": 30,
+      "discovery": {
+        "memberId": "m1",
+        "period": 3,
+        "reviewGain": 10
+      },
+      "evidence": [
+        {
+          "period": 2,
+          "memberId": "m1",
+          "work": 3
+        },
+        {
+          "period": 3,
+          "memberId": "m1",
+          "work": 3
+        },
+        {
+          "period": 4,
+          "memberId": "m1",
+          "work": 4
+        },
+        {
+          "period": 5,
+          "memberId": "m1",
+          "work": 4
+        }
+      ],
+      "history": [
+        {
+          "period": 1,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 2,
+          "backupWork": 3,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 3,
+          "backupWork": 3,
+          "foregoneCodingCapacity": 0,
+          "discovered": true
+        },
+        {
+          "period": 4,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 5,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 6,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        }
+      ]
+    },
+    {
+      "strategy": "experienced",
+      "delivered": 32,
+      "remaining": 8,
+      "absenceDelivered": 16,
+      "foregoneCodingCapacity": 25,
+      "staminaSpent": 32,
+      "discovery": null,
+      "evidence": [
+        {
+          "period": 2,
+          "memberId": "m0",
+          "work": 4
+        },
+        {
+          "period": 3,
+          "memberId": "m0",
+          "work": 4
+        },
+        {
+          "period": 4,
+          "memberId": "m0",
+          "work": 4
+        },
+        {
+          "period": 5,
+          "memberId": "m0",
+          "work": 4
+        }
+      ],
+      "history": [
+        {
+          "period": 1,
+          "backupWork": 0,
+          "foregoneCodingCapacity": 0,
+          "discovered": false
+        },
+        {
+          "period": 2,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 5,
+          "discovered": false
+        },
+        {
+          "period": 3,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 5,
+          "discovered": false
+        },
+        {
+          "period": 4,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 5,
+          "discovered": false
+        },
+        {
+          "period": 5,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 5,
+          "discovered": false
+        },
+        {
+          "period": 6,
+          "backupWork": 4,
+          "foregoneCodingCapacity": 5,
+          "discovered": false
+        }
+      ]
+    }
+  ]
+}

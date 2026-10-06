@@ -1,5 +1,4 @@
 dist
-rd-preview
 node_modules
 coverage
 playwright-report

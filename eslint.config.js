@@ -6,17 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  {
-    ignores: [
-      'dist',
-      'rd-preview',
-      'node_modules',
-      'playwright-report',
-      'test-results',
-      'coverage',
-      'gallery',
-    ],
-  },
+  { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'coverage', 'gallery'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

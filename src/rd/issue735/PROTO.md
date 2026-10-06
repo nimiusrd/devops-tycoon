@@ -2,14 +2,9 @@
 
 本番機能ではない。Adopt / Iterate / Kill は書かない。人間が同じ seed で両腕を1スプリントずつ遊び、仮説 H1〜H3 を観察するための throwaway。
 
-## 公開プレビュー（本番 Pages ではない）
+## ブラウザで開く
 
-PR ブランチ上の静的スナップショット `rd-preview/` を jsDelivr 経由で開く。`nimiusrd.github.io/devops-tycoon` は使わない。コミットが GitHub に残るあいだ有効（ブランチ削除後も SHA は CDN に残ることがある）。
-
-- 予約なし: （push 後に SHA 付き URL を PR 本文へ書く）
-- 予約あり: （同上）
-
-ローカル開発サーバはポート 5174。
+開発サーバはポート 5174。
 
 ```bash
 npm run dev

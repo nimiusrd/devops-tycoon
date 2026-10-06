@@ -1,0 +1,67 @@
+{
+  "seeds": ["RI-156-0", "RI-156-3"],
+  "results": [
+    {
+      "seed": "RI-156-0",
+      "risk": "low",
+      "strategy": "rush",
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-0",
+      "risk": "low",
+      "strategy": "investigate",
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-3",
+      "risk": "high",
+      "strategy": "rush",
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-3",
+      "risk": "high",
+      "strategy": "investigate",
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    }
+  ]
+}

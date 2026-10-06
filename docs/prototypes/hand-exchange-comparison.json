@@ -1,0 +1,98 @@
+[
+  {
+    "seed": "RI-186",
+    "workload": "coding",
+    "results": [
+      {
+        "attempts": 0,
+        "initialHand": [3, 4, 5],
+        "selected": "review-bot",
+        "exchanges": 0,
+        "delivered": 33,
+        "completed": 7,
+        "unfinished": 9,
+        "focusSpent": 6,
+        "focusRemaining": 2,
+        "interventions": 1,
+        "seniorHp": 88.00000000000006,
+        "techDebt": 0
+      },
+      {
+        "attempts": 1,
+        "initialHand": [3, 4, 5],
+        "selected": "copilot",
+        "exchanges": 1,
+        "delivered": 38,
+        "completed": 8,
+        "unfinished": 8,
+        "focusSpent": 7,
+        "focusRemaining": 1,
+        "interventions": 1,
+        "seniorHp": 87.10000000000007,
+        "techDebt": 0
+      },
+      {
+        "attempts": 2,
+        "initialHand": [3, 4, 5],
+        "selected": "docs",
+        "exchanges": 2,
+        "delivered": 11,
+        "completed": 3,
+        "unfinished": 13,
+        "focusSpent": 6,
+        "focusRemaining": 2,
+        "interventions": 0,
+        "seniorHp": 97.30000000000003,
+        "techDebt": 0
+      }
+    ]
+  },
+  {
+    "seed": "RI-186",
+    "workload": "review",
+    "results": [
+      {
+        "attempts": 0,
+        "initialHand": [3, 4, 5],
+        "selected": "review-bot",
+        "exchanges": 0,
+        "delivered": 48,
+        "completed": 10,
+        "unfinished": 6,
+        "focusSpent": 6,
+        "focusRemaining": 2,
+        "interventions": 1,
+        "seniorHp": 86.00000000000009,
+        "techDebt": 0
+      },
+      {
+        "attempts": 1,
+        "initialHand": [3, 4, 5],
+        "selected": "copilot",
+        "exchanges": 1,
+        "delivered": 43,
+        "completed": 9,
+        "unfinished": 7,
+        "focusSpent": 7,
+        "focusRemaining": 1,
+        "interventions": 1,
+        "seniorHp": 87.60000000000008,
+        "techDebt": 0
+      },
+      {
+        "attempts": 2,
+        "initialHand": [3, 4, 5],
+        "selected": "docs",
+        "exchanges": 2,
+        "delivered": 14,
+        "completed": 4,
+        "unfinished": 12,
+        "focusSpent": 6,
+        "focusRemaining": 2,
+        "interventions": 0,
+        "seniorHp": 93.70000000000006,
+        "techDebt": 0
+      }
+    ]
+  }
+]

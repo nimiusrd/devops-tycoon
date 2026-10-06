@@ -6,10 +6,8 @@
 
 PR ブランチ上の静的スナップショット `rd-preview/` を jsDelivr 経由で開く。`nimiusrd.github.io/devops-tycoon` は使わない。コミットが GitHub に残るあいだ有効（ブランチ削除後も SHA は CDN に残ることがある）。
 
-- 予約なし: [https://cdn.jsdelivr.net/gh/nimiusrd/devops-tycoon@74c1d5f93d139e1f67a133e21e860a8ec242d8f7/rd-preview/index.html?rd=735&arm=none](https://cdn.jsdelivr.net/gh/nimiusrd/devops-tycoon@74c1d5f93d139e1f67a133e21e860a8ec242d8f7/rd-preview/index.html?rd=735&arm=none)
-- 予約あり: [https://cdn.jsdelivr.net/gh/nimiusrd/devops-tycoon@74c1d5f93d139e1f67a133e21e860a8ec242d8f7/rd-preview/index.html?rd=735&arm=reserve](https://cdn.jsdelivr.net/gh/nimiusrd/devops-tycoon@74c1d5f93d139e1f67a133e21e860a8ec242d8f7/rd-preview/index.html?rd=735&arm=reserve)
-
-予備（同じ SHA）: `https://rawcdn.githack.com/nimiusrd/devops-tycoon/74c1d5f93d139e1f67a133e21e860a8ec242d8f7/rd-preview/index.html?rd=735&arm=none` と `...arm=reserve`
+- 予約なし: （push 後に SHA 付き URL を PR 本文へ書く）
+- 予約あり: （同上）
 
 ローカル開発サーバはポート 5174。
 

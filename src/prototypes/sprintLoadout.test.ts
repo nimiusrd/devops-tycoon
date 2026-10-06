@@ -11,6 +11,25 @@ import {
 } from './sprintLoadout';
 
 describe('所持カードのスプリント持ち込み試作', () => {
+  it('JSON再開でも持ち込み対象の完全な分割だけを交換し、未選択・欠落を拒否する', () => {
+    const state = beginSprintLoadout(
+      selectSprintLoadout(createSprintLoadoutPrototype(1), [0, 1, 2, 3, 4]),
+      'big-release',
+    );
+    const restored = JSON.parse(JSON.stringify(state));
+    expect(restored.current.sprintDeckIndices).toEqual([0, 1, 2, 3, 4]);
+    const index = restored.current.sprint.cardPiles.hand[0];
+    expect(exchangeSprintLoadoutCard(restored, index).current!.exchanges).toBe(1);
+    for (const corruption of ['missing', 'unselected']) {
+      const invalid = structuredClone(restored);
+      if (corruption === 'missing') invalid.current.sprint.cardPiles.drawOrder.pop();
+      else invalid.current.sprint.cardPiles.drawOrder[1] = 5;
+      const before = structuredClone(invalid);
+      expect(exchangeSprintLoadoutCard(invalid, index)).toBe(invalid);
+      expect(invalid).toEqual(before);
+    }
+  });
+
   it.each(
     [[], [0, 1], [0, 1, 2, 3, 4, 5, 6], [0, 1, 6], [-1, 0, 1], [0, 1, 1], [0, 1, 2.5]].map(
       (indices) => ({ indices }),

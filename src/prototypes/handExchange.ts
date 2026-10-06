@@ -14,6 +14,8 @@ import type { CardInstance, OrgState, SprintState } from '../sim/types';
 export interface HandExchangeState {
   version: 1;
   deck: CardInstance[];
+  /** 未指定なら全所持カード。持ち込み試作では当該スプリントの対象位置を保存する。 */
+  sprintDeckIndices?: number[];
   org: OrgState;
   sprint: SprintState;
   tick: number;
@@ -82,18 +84,18 @@ export function exchangeHandCard(
   const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
   const drawnIndex = sprint.cardPiles.drawOrder[0];
   const allCards = Object.values(sprint.cardPiles).flat();
+  const expected = state.sprintDeckIndices ?? state.deck.map((_, index) => index);
   if (state.paused) reason = 'paused';
   else if (sprint.complete || isAwaitingMinCompleteTick(sprint)) reason = 'complete';
   else if (state.exchanges >= HAND_EXCHANGE_POLICY.maxExchanges) reason = 'limit';
   else if (handIndex < 0) reason = 'no-card';
   else if (drawnIndex === undefined) reason = 'no-draw';
   else if (
-    !Number.isInteger(deckIndex) ||
-    !Number.isInteger(drawnIndex) ||
-    !state.deck[deckIndex] ||
-    !state.deck[drawnIndex] ||
-    allCards.filter((index) => index === deckIndex).length !== 1 ||
-    allCards.filter((index) => index === drawnIndex).length !== 1
+    expected.some((index) => !Number.isInteger(index) || index < 0 || !state.deck[index]) ||
+    new Set(expected).size !== expected.length ||
+    allCards.length !== expected.length ||
+    new Set(allCards).size !== allCards.length ||
+    allCards.some((index) => !Number.isInteger(index) || !expected.includes(index))
   )
     reason = 'invalid';
   else if (sprint.focus < HAND_EXCHANGE_POLICY.focusCost) reason = 'no-focus';

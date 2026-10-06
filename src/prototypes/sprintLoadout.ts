@@ -65,6 +65,7 @@ export function beginSprintLoadout(
     boss === 'big-release' ? 'coding' : 'review',
   );
   current.deck = structuredClone(state.current?.deck ?? state.collection);
+  current.sprintDeckIndices = [...state.selected];
   if (state.current) current.org = structuredClone(state.current.org);
   else current.org.quality = 45; // 品質50が問われる監査へ準備する固定比較条件。
   current.sprint.metrics.seniorHpStart = current.org.seniorHp;

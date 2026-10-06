@@ -1,0 +1,152 @@
+{
+  "seed": "RI-240",
+  "results": [
+    {
+      "strategy": "unseen",
+      "completedSprints": 8,
+      "reservation": null,
+      "seniorHp": 88,
+      "morale": 78,
+      "quality": 60,
+      "budget": 40,
+      "relics": [],
+      "history": [
+        {
+          "afterSprint": 5,
+          "eventId": "junior-awaken",
+          "choice": 0,
+          "outcome": {
+            "aiLiteracy": 12,
+            "morale": 8
+          }
+        },
+        {
+          "afterSprint": 7,
+          "eventId": "ai-test-gen",
+          "choice": 0,
+          "outcome": {
+            "testCoverage": 12,
+            "seniorHp": -6
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "ai-test-gen",
+          "choice": 0,
+          "outcome": {
+            "testCoverage": 12,
+            "seniorHp": -6
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "review",
+      "completedSprints": 8,
+      "reservation": {
+        "originChoice": 0,
+        "selectedAfter": 4,
+        "dueAfter": 6,
+        "resolvedAfter": 7
+      },
+      "seniorHp": 84,
+      "morale": 78,
+      "quality": 70,
+      "budget": 34,
+      "relics": [],
+      "history": [
+        {
+          "afterSprint": 4,
+          "eventId": "giant-pr",
+          "choice": 0,
+          "outcome": {
+            "quality": 4,
+            "seniorHp": -14
+          }
+        },
+        {
+          "afterSprint": 5,
+          "eventId": "junior-awaken",
+          "choice": 0,
+          "outcome": {
+            "aiLiteracy": 12,
+            "morale": 8
+          }
+        },
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "choice": 0,
+          "outcome": {
+            "budget": -6,
+            "seniorHp": 4,
+            "quality": 6
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "ai-test-gen",
+          "choice": 0,
+          "outcome": {
+            "testCoverage": 12,
+            "seniorHp": -6
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "split",
+      "completedSprints": 8,
+      "reservation": {
+        "originChoice": 1,
+        "selectedAfter": 4,
+        "dueAfter": 6,
+        "resolvedAfter": 7
+      },
+      "seniorHp": 90,
+      "morale": 80,
+      "quality": 64,
+      "budget": 40,
+      "relics": ["small-pr"],
+      "history": [
+        {
+          "afterSprint": 4,
+          "eventId": "giant-pr",
+          "choice": 1,
+          "outcome": {
+            "morale": -6,
+            "grantRelic": "small-pr"
+          }
+        },
+        {
+          "afterSprint": 5,
+          "eventId": "junior-awaken",
+          "choice": 0,
+          "outcome": {
+            "aiLiteracy": 12,
+            "morale": 8
+          }
+        },
+        {
+          "afterSprint": 7,
+          "eventId": "giant-pr-follow-up",
+          "choice": 0,
+          "outcome": {
+            "seniorHp": -4,
+            "morale": 8,
+            "quality": 4
+          }
+        },
+        {
+          "afterSprint": 8,
+          "eventId": "ai-test-gen",
+          "choice": 0,
+          "outcome": {
+            "testCoverage": 12,
+            "seniorHp": -6
+          }
+        }
+      ]
+    }
+  ]
+}

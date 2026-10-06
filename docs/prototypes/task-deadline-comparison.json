@@ -1,0 +1,65 @@
+{
+  "seed": "RI-155",
+  "results": [
+    {
+      "pressure": "recoverable",
+      "strategy": "conserve",
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "focus": 2,
+      "stamina": 10,
+      "boosts": []
+    },
+    {
+      "pressure": "recoverable",
+      "strategy": "rush",
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 3,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "focus": 1,
+      "stamina": 7,
+      "boosts": [1]
+    },
+    {
+      "pressure": "missed",
+      "strategy": "conserve",
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "focus": 2,
+      "stamina": 10,
+      "boosts": []
+    },
+    {
+      "pressure": "missed",
+      "strategy": "rush",
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 5,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "focus": 1,
+      "stamina": 7,
+      "boosts": [1]
+    }
+  ]
+}

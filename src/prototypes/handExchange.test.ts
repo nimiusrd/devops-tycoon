@@ -9,6 +9,25 @@ import {
 } from './handExchange';
 
 describe('集中力を使う手札交換の隔離試作', () => {
+  it.each(['duplicate', 'missing', 'out-of-range', 'fraction', 'invalid-scope'] as const)(
+    'JSON復元後の交換対象以外の%sも無消費で拒否する',
+    (corruption) => {
+      const state = createHandExchangePrototype(1);
+      state.sprint.cardPiles = { hand: [3, 4, 5], drawOrder: [0, 1, 2], discard: [], played: [] };
+      if (corruption === 'duplicate') state.sprint.cardPiles.drawOrder = [0, 2, 2];
+      if (corruption === 'missing') state.sprint.cardPiles.drawOrder = [0, 1];
+      if (corruption === 'out-of-range') state.sprint.cardPiles.discard = [99];
+      if (corruption === 'fraction') state.sprint.cardPiles.drawOrder[2] = 1.5;
+      if (corruption === 'invalid-scope') state.sprintDeckIndices = [0, 1, 2, 3, 4, 4];
+      const restored = JSON.parse(JSON.stringify(state));
+      const before = structuredClone(restored);
+      const result = exchangeHandCard(restored, 3);
+      expect(result).toEqual({ ok: false, reason: 'invalid', state: before });
+      expect(result.state).toBe(restored);
+      expect(restored).toEqual(before);
+    },
+  );
+
   it('手札1枚と山札先頭だけを移し、入力・効果・組織・乱数を変えない', () => {
     const state = createHandExchangePrototype('RI-186');
     const before = structuredClone(state);

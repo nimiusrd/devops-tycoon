@@ -1,0 +1,699 @@
+{
+  "seed": "RI-162",
+  "results": [
+    {
+      "impact": "low",
+      "depth": "normal",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-162",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 2,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "stamina": 30,
+        "impacts": {
+          "a": "low",
+          "b": "low",
+          "c": "low"
+        },
+        "choices": {},
+        "inputs": []
+      },
+      "inputs": ["normal", "normal", "normal", "continue", "continue", "continue"],
+      "result": {
+        "done": ["a", "b", "c"],
+        "value": 24,
+        "budget": 8,
+        "cost": 12,
+        "netValue": 9,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 1
+          }
+        ],
+        "expectedLoss": 3,
+        "stamina": 27,
+        "choices": {
+          "a": "normal",
+          "b": "normal",
+          "c": "normal"
+        }
+      }
+    },
+    {
+      "impact": "low",
+      "depth": "focused",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-162",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 2,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "stamina": 30,
+        "impacts": {
+          "a": "low",
+          "b": "low",
+          "c": "low"
+        },
+        "choices": {},
+        "inputs": []
+      },
+      "inputs": ["focused", "continue", "continue", "focused", "continue", "continue"],
+      "result": {
+        "done": ["a"],
+        "value": 8,
+        "budget": 8,
+        "cost": 12,
+        "netValue": -4,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [
+          {
+            "id": "b",
+            "stage": "ci",
+            "reviewLeft": 0,
+            "ciLeft": 1
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": -1,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 0
+          }
+        ],
+        "expectedLoss": 0,
+        "stamina": 18,
+        "choices": {
+          "a": "focused",
+          "b": "focused"
+        }
+      }
+    },
+    {
+      "impact": "high",
+      "depth": "normal",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-162",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 2,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "stamina": 30,
+        "impacts": {
+          "a": "high",
+          "b": "high",
+          "c": "high"
+        },
+        "choices": {},
+        "inputs": []
+      },
+      "inputs": ["normal", "normal", "normal", "continue", "continue", "continue"],
+      "result": {
+        "done": ["a", "b", "c"],
+        "value": 24,
+        "budget": 8,
+        "cost": 12,
+        "netValue": -12,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 1
+          }
+        ],
+        "expectedLoss": 24,
+        "stamina": 27,
+        "choices": {
+          "a": "normal",
+          "b": "normal",
+          "c": "normal"
+        }
+      }
+    },
+    {
+      "impact": "high",
+      "depth": "focused",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-162",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 2,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "stamina": 30,
+        "impacts": {
+          "a": "high",
+          "b": "high",
+          "c": "high"
+        },
+        "choices": {},
+        "inputs": []
+      },
+      "inputs": ["focused", "continue", "continue", "focused", "continue", "continue"],
+      "result": {
+        "done": ["a"],
+        "value": 8,
+        "budget": 8,
+        "cost": 12,
+        "netValue": -4,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [
+          {
+            "id": "b",
+            "stage": "ci",
+            "reviewLeft": 0,
+            "ciLeft": 1
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": -1,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 0
+          }
+        ],
+        "expectedLoss": 0,
+        "stamina": 18,
+        "choices": {
+          "a": "focused",
+          "b": "focused"
+        }
+      }
+    },
+    {
+      "impact": "mixed",
+      "depth": "normal",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-162",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 2,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "stamina": 30,
+        "impacts": {
+          "a": "low",
+          "b": "high",
+          "c": "low"
+        },
+        "choices": {},
+        "inputs": []
+      },
+      "inputs": ["normal", "normal", "normal", "continue", "continue", "continue"],
+      "result": {
+        "done": ["a", "b", "c"],
+        "value": 24,
+        "budget": 8,
+        "cost": 12,
+        "netValue": 2,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 1
+          }
+        ],
+        "expectedLoss": 10,
+        "stamina": 27,
+        "choices": {
+          "a": "normal",
+          "b": "normal",
+          "c": "normal"
+        }
+      }
+    },
+    {
+      "impact": "mixed",
+      "depth": "focused",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-162",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 2,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "stamina": 30,
+        "impacts": {
+          "a": "low",
+          "b": "high",
+          "c": "low"
+        },
+        "choices": {},
+        "inputs": []
+      },
+      "inputs": ["focused", "continue", "continue", "focused", "continue", "continue"],
+      "result": {
+        "done": ["a"],
+        "value": 8,
+        "budget": 8,
+        "cost": 12,
+        "netValue": -4,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [
+          {
+            "id": "b",
+            "stage": "ci",
+            "reviewLeft": 0,
+            "ciLeft": 1
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": -1,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 0
+          }
+        ],
+        "expectedLoss": 0,
+        "stamina": 18,
+        "choices": {
+          "a": "focused",
+          "b": "focused"
+        }
+      }
+    },
+    {
+      "impact": "mixed",
+      "depth": "selective",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-162",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 2,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": -1,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "stamina": 30,
+        "impacts": {
+          "a": "low",
+          "b": "high",
+          "c": "low"
+        },
+        "choices": {},
+        "inputs": []
+      },
+      "inputs": ["normal", "focused", "continue", "continue", "normal", "continue"],
+      "result": {
+        "done": ["a", "b", "c"],
+        "value": 24,
+        "budget": 8,
+        "cost": 12,
+        "netValue": 10,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 1
+          }
+        ],
+        "expectedLoss": 2,
+        "stamina": 22,
+        "choices": {
+          "a": "normal",
+          "b": "focused",
+          "c": "normal"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,376 @@
+{
+  "seed": "RI-157",
+  "initial": {
+    "version": 1,
+    "seed": "RI-157",
+    "tick": 0,
+    "horizon": 12,
+    "slots": 2,
+    "tasks": [
+      {
+        "id": "a",
+        "domain": "product",
+        "codingLeft": 3,
+        "integrationLeft": 0,
+        "value": 6,
+        "completedTick": null
+      },
+      {
+        "id": "b",
+        "domain": "product",
+        "codingLeft": 3,
+        "integrationLeft": 0,
+        "value": 6,
+        "completedTick": null
+      },
+      {
+        "id": "c",
+        "domain": "platform",
+        "codingLeft": 4,
+        "integrationLeft": 0,
+        "value": 6,
+        "completedTick": null
+      }
+    ],
+    "conflicts": [],
+    "history": []
+  },
+  "results": [
+    {
+      "composition": "same-domain",
+      "strategy": "serial",
+      "tick": 6,
+      "shipped": [
+        {
+          "id": "a",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "id": "b",
+          "tick": 6,
+          "value": 6
+        }
+      ],
+      "value": 12,
+      "integrationEffort": 0,
+      "remaining": [],
+      "workSpent": 6,
+      "history": [
+        {
+          "ids": ["a"],
+          "tick": 1
+        },
+        {
+          "ids": ["a"],
+          "tick": 2
+        },
+        {
+          "ids": ["a"],
+          "tick": 3
+        },
+        {
+          "ids": ["b"],
+          "tick": 4
+        },
+        {
+          "ids": ["b"],
+          "tick": 5
+        },
+        {
+          "ids": ["b"],
+          "tick": 6
+        }
+      ],
+      "conflicts": []
+    },
+    {
+      "composition": "same-domain",
+      "strategy": "same-first",
+      "tick": 5,
+      "shipped": [
+        {
+          "id": "a",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "id": "b",
+          "tick": 5,
+          "value": 6
+        }
+      ],
+      "value": 12,
+      "integrationEffort": 2,
+      "remaining": [],
+      "workSpent": 8,
+      "history": [
+        {
+          "ids": ["a", "b"],
+          "tick": 1
+        },
+        {
+          "ids": ["a", "b"],
+          "tick": 2
+        },
+        {
+          "ids": ["a", "b"],
+          "tick": 3
+        },
+        {
+          "ids": ["b"],
+          "tick": 4
+        },
+        {
+          "ids": ["b"],
+          "tick": 5
+        }
+      ],
+      "conflicts": [
+        {
+          "pair": ["a", "b"],
+          "owner": "b",
+          "tick": 1,
+          "effort": 2
+        }
+      ]
+    },
+    {
+      "composition": "same-domain",
+      "strategy": "distribute",
+      "tick": 5,
+      "shipped": [
+        {
+          "id": "a",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "id": "b",
+          "tick": 5,
+          "value": 6
+        }
+      ],
+      "value": 12,
+      "integrationEffort": 2,
+      "remaining": [],
+      "workSpent": 8,
+      "history": [
+        {
+          "ids": ["a", "b"],
+          "tick": 1
+        },
+        {
+          "ids": ["a", "b"],
+          "tick": 2
+        },
+        {
+          "ids": ["a", "b"],
+          "tick": 3
+        },
+        {
+          "ids": ["b"],
+          "tick": 4
+        },
+        {
+          "ids": ["b"],
+          "tick": 5
+        }
+      ],
+      "conflicts": [
+        {
+          "pair": ["a", "b"],
+          "owner": "b",
+          "tick": 1,
+          "effort": 2
+        }
+      ]
+    },
+    {
+      "composition": "mixed-domains",
+      "strategy": "serial",
+      "tick": 10,
+      "shipped": [
+        {
+          "id": "a",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "id": "b",
+          "tick": 6,
+          "value": 6
+        },
+        {
+          "id": "c",
+          "tick": 10,
+          "value": 6
+        }
+      ],
+      "value": 18,
+      "integrationEffort": 0,
+      "remaining": [],
+      "workSpent": 10,
+      "history": [
+        {
+          "ids": ["a"],
+          "tick": 1
+        },
+        {
+          "ids": ["a"],
+          "tick": 2
+        },
+        {
+          "ids": ["a"],
+          "tick": 3
+        },
+        {
+          "ids": ["b"],
+          "tick": 4
+        },
+        {
+          "ids": ["b"],
+          "tick": 5
+        },
+        {
+          "ids": ["b"],
+          "tick": 6
+        },
+        {
+          "ids": ["c"],
+          "tick": 7
+        },
+        {
+          "ids": ["c"],
+          "tick": 8
+        },
+        {
+          "ids": ["c"],
+          "tick": 9
+        },
+        {
+          "ids": ["c"],
+          "tick": 10
+        }
+      ],
+      "conflicts": []
+    },
+    {
+      "composition": "mixed-domains",
+      "strategy": "same-first",
+      "tick": 7,
+      "shipped": [
+        {
+          "id": "a",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "id": "b",
+          "tick": 5,
+          "value": 6
+        },
+        {
+          "id": "c",
+          "tick": 7,
+          "value": 6
+        }
+      ],
+      "value": 18,
+      "integrationEffort": 2,
+      "remaining": [],
+      "workSpent": 12,
+      "history": [
+        {
+          "ids": ["a", "b"],
+          "tick": 1
+        },
+        {
+          "ids": ["a", "b"],
+          "tick": 2
+        },
+        {
+          "ids": ["a", "b"],
+          "tick": 3
+        },
+        {
+          "ids": ["b", "c"],
+          "tick": 4
+        },
+        {
+          "ids": ["b", "c"],
+          "tick": 5
+        },
+        {
+          "ids": ["c"],
+          "tick": 6
+        },
+        {
+          "ids": ["c"],
+          "tick": 7
+        }
+      ],
+      "conflicts": [
+        {
+          "pair": ["a", "b"],
+          "owner": "b",
+          "tick": 1,
+          "effort": 2
+        }
+      ]
+    },
+    {
+      "composition": "mixed-domains",
+      "strategy": "distribute",
+      "tick": 6,
+      "shipped": [
+        {
+          "id": "a",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "id": "b",
+          "tick": 6,
+          "value": 6
+        },
+        {
+          "id": "c",
+          "tick": 4,
+          "value": 6
+        }
+      ],
+      "value": 18,
+      "integrationEffort": 0,
+      "remaining": [],
+      "workSpent": 10,
+      "history": [
+        {
+          "ids": ["a", "c"],
+          "tick": 1
+        },
+        {
+          "ids": ["a", "c"],
+          "tick": 2
+        },
+        {
+          "ids": ["a", "c"],
+          "tick": 3
+        },
+        {
+          "ids": ["c", "b"],
+          "tick": 4
+        },
+        {
+          "ids": ["b"],
+          "tick": 5
+        },
+        {
+          "ids": ["b"],
+          "tick": 6
+        }
+      ],
+      "conflicts": []
+    }
+  ]
+}

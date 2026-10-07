@@ -1,0 +1,520 @@
+{
+  "seed": "RI-161",
+  "results": [
+    {
+      "bottleneck": "ci",
+      "capacity": 1,
+      "flow": "all",
+      "initial": {
+        "version": 1,
+        "seed": "RI-161",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "budget": 20,
+        "queueSequence": 0,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "inputs": [],
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "b",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": true,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          }
+        ]
+      },
+      "inputs": ["all", "all", "all", "all", "all", "all"],
+      "result": {
+        "done": ["a", "c"],
+        "value": 16,
+        "budget": 14,
+        "cost": 6,
+        "netValue": 10,
+        "queueWait": 8,
+        "upstreamWait": 0,
+        "pending": [
+          {
+            "id": "b",
+            "stage": "queue",
+            "reviewLeft": 0,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 1
+          }
+        ]
+      }
+    },
+    {
+      "bottleneck": "ci",
+      "capacity": 2,
+      "flow": "all",
+      "initial": {
+        "version": 1,
+        "seed": "RI-161",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 2,
+        "budget": 20,
+        "queueSequence": 0,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "inputs": [],
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "b",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": true,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          }
+        ]
+      },
+      "inputs": ["all", "all", "all", "all", "all", "all"],
+      "result": {
+        "done": ["a", "b", "c"],
+        "value": 24,
+        "budget": 8,
+        "cost": 12,
+        "netValue": 12,
+        "queueWait": 2,
+        "upstreamWait": 0,
+        "pending": [],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 2
+          },
+          {
+            "id": "c",
+            "attempts": 1
+          }
+        ]
+      }
+    },
+    {
+      "bottleneck": "ci",
+      "capacity": 1,
+      "flow": "paced",
+      "initial": {
+        "version": 1,
+        "seed": "RI-161",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "budget": 20,
+        "queueSequence": 0,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "inputs": [],
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "b",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": true,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          }
+        ]
+      },
+      "inputs": ["paced", "paced", "paced", "paced", "paced", "paced"],
+      "result": {
+        "done": ["a", "b"],
+        "value": 16,
+        "budget": 14,
+        "cost": 6,
+        "netValue": 10,
+        "queueWait": 0,
+        "upstreamWait": 8,
+        "pending": [
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 0,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 2
+          },
+          {
+            "id": "c",
+            "attempts": 0
+          }
+        ]
+      }
+    },
+    {
+      "bottleneck": "review",
+      "capacity": 1,
+      "flow": "all",
+      "initial": {
+        "version": 1,
+        "seed": "RI-161",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "budget": 20,
+        "queueSequence": 0,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "inputs": [],
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "b",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": true,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          }
+        ]
+      },
+      "inputs": ["all", "all", "all", "all", "all", "all"],
+      "result": {
+        "done": ["a"],
+        "value": 8,
+        "budget": 14,
+        "cost": 6,
+        "netValue": 2,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [
+          {
+            "id": "b",
+            "stage": "ci",
+            "reviewLeft": 0,
+            "ciLeft": 1
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 0
+          }
+        ]
+      }
+    },
+    {
+      "bottleneck": "review",
+      "capacity": 2,
+      "flow": "all",
+      "initial": {
+        "version": 1,
+        "seed": "RI-161",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 2,
+        "budget": 20,
+        "queueSequence": 0,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "inputs": [],
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "b",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": true,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          }
+        ]
+      },
+      "inputs": ["all", "all", "all", "all", "all", "all"],
+      "result": {
+        "done": ["a"],
+        "value": 8,
+        "budget": 8,
+        "cost": 12,
+        "netValue": -4,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [
+          {
+            "id": "b",
+            "stage": "ci",
+            "reviewLeft": 0,
+            "ciLeft": 1
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 0
+          }
+        ]
+      }
+    },
+    {
+      "bottleneck": "review",
+      "capacity": 1,
+      "flow": "paced",
+      "initial": {
+        "version": 1,
+        "seed": "RI-161",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "budget": 20,
+        "queueSequence": 0,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "inputs": [],
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "b",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": true,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2,
+            "attempts": 0,
+            "failFirst": false,
+            "queuedOrder": null,
+            "completedTick": null,
+            "value": 8
+          }
+        ]
+      },
+      "inputs": ["paced", "paced", "paced", "paced", "paced", "paced"],
+      "result": {
+        "done": ["a"],
+        "value": 8,
+        "budget": 14,
+        "cost": 6,
+        "netValue": 2,
+        "queueWait": 0,
+        "upstreamWait": 0,
+        "pending": [
+          {
+            "id": "b",
+            "stage": "ci",
+            "reviewLeft": 0,
+            "ciLeft": 1
+          },
+          {
+            "id": "c",
+            "stage": "review",
+            "reviewLeft": 3,
+            "ciLeft": 2
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a",
+            "attempts": 1
+          },
+          {
+            "id": "b",
+            "attempts": 1
+          },
+          {
+            "id": "c",
+            "attempts": 0
+          }
+        ]
+      }
+    }
+  ]
+}

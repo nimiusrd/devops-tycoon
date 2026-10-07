@@ -1,0 +1,388 @@
+{
+  "seed": "RI-159",
+  "results": [
+    {
+      "investment": "shallow",
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-159",
+          "tick": 1,
+          "horizon": 5,
+          "slots": 1,
+          "tasks": [
+            {
+              "id": "obsolete",
+              "domain": "product",
+              "codingLeft": 3,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 2
+            },
+            {
+              "id": "needed",
+              "domain": "platform",
+              "codingLeft": 3,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 8
+            }
+          ],
+          "conflicts": [],
+          "history": [
+            {
+              "ids": ["obsolete"],
+              "tick": 1
+            }
+          ]
+        },
+        "activeId": "obsolete",
+        "focus": 1,
+        "trust": 5,
+        "burningIds": [],
+        "contractIds": [],
+        "cancelled": [],
+        "inputs": []
+      },
+      "tick": 5,
+      "shipped": [
+        {
+          "id": "obsolete",
+          "tick": 4,
+          "value": 2
+        }
+      ],
+      "value": 2,
+      "integrationEffort": 0,
+      "remaining": [
+        {
+          "id": "needed",
+          "domain": "platform",
+          "codingLeft": 2,
+          "integrationLeft": 0,
+          "completedTick": null,
+          "value": 8
+        }
+      ],
+      "workSpent": 5,
+      "focus": 1,
+      "trust": 5,
+      "doneCount": 1,
+      "cancelled": [],
+      "inputs": [
+        {
+          "kind": "work",
+          "ids": ["obsolete"]
+        },
+        {
+          "kind": "work",
+          "ids": ["obsolete"]
+        },
+        {
+          "kind": "work",
+          "ids": ["obsolete"]
+        },
+        {
+          "kind": "work",
+          "ids": ["needed"]
+        }
+      ]
+    },
+    {
+      "investment": "shallow",
+      "strategy": "cancel",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-159",
+          "tick": 1,
+          "horizon": 5,
+          "slots": 1,
+          "tasks": [
+            {
+              "id": "obsolete",
+              "domain": "product",
+              "codingLeft": 3,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 2
+            },
+            {
+              "id": "needed",
+              "domain": "platform",
+              "codingLeft": 3,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 8
+            }
+          ],
+          "conflicts": [],
+          "history": [
+            {
+              "ids": ["obsolete"],
+              "tick": 1
+            }
+          ]
+        },
+        "activeId": "obsolete",
+        "focus": 1,
+        "trust": 5,
+        "burningIds": [],
+        "contractIds": [],
+        "cancelled": [],
+        "inputs": []
+      },
+      "tick": 5,
+      "shipped": [
+        {
+          "id": "needed",
+          "tick": 4,
+          "value": 8
+        }
+      ],
+      "value": 8,
+      "integrationEffort": 0,
+      "remaining": [],
+      "workSpent": 4,
+      "focus": 0,
+      "trust": 5,
+      "doneCount": 1,
+      "cancelled": [
+        {
+          "status": "cancelled",
+          "task": {
+            "id": "obsolete",
+            "domain": "product",
+            "codingLeft": 3,
+            "integrationLeft": 0,
+            "completedTick": null,
+            "value": 2
+          },
+          "tick": 1,
+          "reason": "需要低下。残り枠を必要な仕事に振り向ける",
+          "spentWork": 1,
+          "trustCost": 0
+        }
+      ],
+      "inputs": [
+        {
+          "kind": "cancel",
+          "id": "obsolete",
+          "reason": "需要低下。残り枠を必要な仕事に振り向ける"
+        },
+        {
+          "kind": "work",
+          "ids": ["needed"]
+        },
+        {
+          "kind": "work",
+          "ids": ["needed"]
+        },
+        {
+          "kind": "work",
+          "ids": ["needed"]
+        },
+        {
+          "kind": "work",
+          "ids": []
+        }
+      ]
+    },
+    {
+      "investment": "near-complete",
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-159",
+          "tick": 3,
+          "horizon": 5,
+          "slots": 1,
+          "tasks": [
+            {
+              "id": "obsolete",
+              "domain": "product",
+              "codingLeft": 1,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 2
+            },
+            {
+              "id": "needed",
+              "domain": "platform",
+              "codingLeft": 3,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 8
+            }
+          ],
+          "conflicts": [],
+          "history": [
+            {
+              "ids": ["obsolete"],
+              "tick": 1
+            },
+            {
+              "ids": ["obsolete"],
+              "tick": 2
+            },
+            {
+              "ids": ["obsolete"],
+              "tick": 3
+            }
+          ]
+        },
+        "activeId": "obsolete",
+        "focus": 1,
+        "trust": 5,
+        "burningIds": [],
+        "contractIds": [],
+        "cancelled": [],
+        "inputs": []
+      },
+      "tick": 5,
+      "shipped": [
+        {
+          "id": "obsolete",
+          "tick": 4,
+          "value": 2
+        }
+      ],
+      "value": 2,
+      "integrationEffort": 0,
+      "remaining": [
+        {
+          "id": "needed",
+          "domain": "platform",
+          "codingLeft": 2,
+          "integrationLeft": 0,
+          "completedTick": null,
+          "value": 8
+        }
+      ],
+      "workSpent": 5,
+      "focus": 1,
+      "trust": 5,
+      "doneCount": 1,
+      "cancelled": [],
+      "inputs": [
+        {
+          "kind": "work",
+          "ids": ["obsolete"]
+        },
+        {
+          "kind": "work",
+          "ids": ["needed"]
+        }
+      ]
+    },
+    {
+      "investment": "near-complete",
+      "strategy": "cancel",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-159",
+          "tick": 3,
+          "horizon": 5,
+          "slots": 1,
+          "tasks": [
+            {
+              "id": "obsolete",
+              "domain": "product",
+              "codingLeft": 1,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 2
+            },
+            {
+              "id": "needed",
+              "domain": "platform",
+              "codingLeft": 3,
+              "integrationLeft": 0,
+              "completedTick": null,
+              "value": 8
+            }
+          ],
+          "conflicts": [],
+          "history": [
+            {
+              "ids": ["obsolete"],
+              "tick": 1
+            },
+            {
+              "ids": ["obsolete"],
+              "tick": 2
+            },
+            {
+              "ids": ["obsolete"],
+              "tick": 3
+            }
+          ]
+        },
+        "activeId": "obsolete",
+        "focus": 1,
+        "trust": 5,
+        "burningIds": [],
+        "contractIds": [],
+        "cancelled": [],
+        "inputs": []
+      },
+      "tick": 5,
+      "shipped": [],
+      "value": 0,
+      "integrationEffort": 0,
+      "remaining": [
+        {
+          "id": "needed",
+          "domain": "platform",
+          "codingLeft": 1,
+          "integrationLeft": 0,
+          "completedTick": null,
+          "value": 8
+        }
+      ],
+      "workSpent": 5,
+      "focus": 0,
+      "trust": 5,
+      "doneCount": 0,
+      "cancelled": [
+        {
+          "status": "cancelled",
+          "task": {
+            "id": "obsolete",
+            "domain": "product",
+            "codingLeft": 1,
+            "integrationLeft": 0,
+            "completedTick": null,
+            "value": 2
+          },
+          "tick": 3,
+          "reason": "需要低下。残り枠を必要な仕事に振り向ける",
+          "spentWork": 3,
+          "trustCost": 0
+        }
+      ],
+      "inputs": [
+        {
+          "kind": "cancel",
+          "id": "obsolete",
+          "reason": "需要低下。残り枠を必要な仕事に振り向ける"
+        },
+        {
+          "kind": "work",
+          "ids": ["needed"]
+        },
+        {
+          "kind": "work",
+          "ids": ["needed"]
+        }
+      ]
+    }
+  ]
+}

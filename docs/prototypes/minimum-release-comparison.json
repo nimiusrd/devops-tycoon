@@ -1,0 +1,234 @@
+{
+  "seed": "RI-158",
+  "results": [
+    {
+      "pressure": "tight",
+      "strategy": "full",
+      "tick": 5,
+      "edition": "minimum",
+      "value": 6,
+      "released": [
+        {
+          "part": "core",
+          "tick": 3,
+          "value": 6
+        }
+      ],
+      "trust": 5,
+      "promise": {
+        "part": "extra",
+        "deferred": false,
+        "workLeft": 2,
+        "additionalValue": 10
+      },
+      "workSpent": 5,
+      "inputs": [
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "extra"
+        },
+        {
+          "kind": "work",
+          "id": "extra"
+        }
+      ],
+      "decisions": []
+    },
+    {
+      "pressure": "tight",
+      "strategy": "minimum",
+      "tick": 5,
+      "edition": "minimum",
+      "value": 14,
+      "released": [
+        {
+          "part": "core",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "part": "urgent",
+          "tick": 5,
+          "value": 8
+        }
+      ],
+      "trust": 4,
+      "promise": {
+        "part": "extra",
+        "deferred": true,
+        "workLeft": 4,
+        "additionalValue": 10
+      },
+      "workSpent": 5,
+      "inputs": [
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "defer"
+        },
+        {
+          "kind": "work",
+          "id": "urgent"
+        },
+        {
+          "kind": "work",
+          "id": "urgent"
+        }
+      ],
+      "decisions": [
+        {
+          "kind": "defer",
+          "tick": 3,
+          "workLeft": 4
+        }
+      ]
+    },
+    {
+      "pressure": "roomy",
+      "strategy": "full",
+      "tick": 8,
+      "edition": "full",
+      "value": 16,
+      "released": [
+        {
+          "part": "core",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "part": "extra",
+          "tick": 7,
+          "value": 10
+        }
+      ],
+      "trust": 5,
+      "promise": null,
+      "workSpent": 8,
+      "inputs": [
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "extra"
+        },
+        {
+          "kind": "work",
+          "id": "extra"
+        },
+        {
+          "kind": "work",
+          "id": "extra"
+        },
+        {
+          "kind": "work",
+          "id": "extra"
+        },
+        {
+          "kind": "work",
+          "id": "urgent"
+        }
+      ],
+      "decisions": []
+    },
+    {
+      "pressure": "roomy",
+      "strategy": "minimum",
+      "tick": 8,
+      "edition": "minimum",
+      "value": 14,
+      "released": [
+        {
+          "part": "core",
+          "tick": 3,
+          "value": 6
+        },
+        {
+          "part": "urgent",
+          "tick": 5,
+          "value": 8
+        }
+      ],
+      "trust": 4,
+      "promise": {
+        "part": "extra",
+        "deferred": true,
+        "workLeft": 4,
+        "additionalValue": 10
+      },
+      "workSpent": 5,
+      "inputs": [
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "work",
+          "id": "core"
+        },
+        {
+          "kind": "defer"
+        },
+        {
+          "kind": "work",
+          "id": "urgent"
+        },
+        {
+          "kind": "work",
+          "id": "urgent"
+        },
+        {
+          "kind": "wait"
+        },
+        {
+          "kind": "wait"
+        },
+        {
+          "kind": "wait"
+        }
+      ],
+      "decisions": [
+        {
+          "kind": "defer",
+          "tick": 3,
+          "workLeft": 4
+        }
+      ]
+    }
+  ]
+}

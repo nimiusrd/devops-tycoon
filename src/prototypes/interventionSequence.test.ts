@@ -58,6 +58,47 @@ describe('RI-168 原因に沿った2手介入', () => {
     expect(rows[5].result.netValue).toBeGreaterThan(rows[6].result.netValue);
     expect(rows[6].result.focusSpent).toBe(rows[5].result.focusSpent);
   });
+  it('確認完了tickが2なら有効、3なら無効になる', () => {
+    const split = applySequenceInput(createSequencePrototype('RI-168'), {
+      type: 'split',
+      id: 'parent',
+    });
+    const atOne = applySequenceInput(split, { type: 'wait' });
+    const onTime = applySequenceInput(atOne, { type: 'pairReview', id: 'split-1' });
+    expect(onTime.board.tick).toBe(2);
+    expect(onTime.board.integrationFails).toBe(false);
+    const atTwo = applySequenceInput(atOne, { type: 'wait' });
+    const late = applySequenceInput(atTwo, { type: 'pairReview', id: 'split-1' });
+    expect(late.board.tick).toBe(3);
+    expect(late.board.integrationFails).toBe(true);
+    expect(late.board.focusSpent).toBe(4);
+  });
+  it('対照otherの分割は確認の前後でも無消費で拒否する', () => {
+    const initial = createSequencePrototype('RI-168');
+    const split = applySequenceInput(initial, { type: 'split', id: 'parent' });
+    const reviewed = applySequenceInput(split, { type: 'pairReview', id: 'split-1' });
+    for (const state of [initial, split, reviewed]) {
+      expect(applySequenceInput(state, { type: 'split', id: 'other' })).toBe(state);
+      expect(
+        state.board.tasks
+          .filter((t) => t.kind === 'integration')
+          .every((t) => t.parentId === 'parent'),
+      ).toBe(true);
+    }
+  });
+  it('集計結果の配列と要素を書き換えても状態や重複確認の拒否を変えない', () => {
+    const split = applySequenceInput(createSequencePrototype('RI-168'), {
+      type: 'split',
+      id: 'parent',
+    });
+    const reviewed = applySequenceInput(split, { type: 'pairReview', id: 'split-1' });
+    const before = structuredClone(reviewed);
+    const summary = summarizeSequence(reviewed);
+    summary.reviewed[0].rootId = 'other';
+    summary.reviewed.splice(0);
+    expect(reviewed).toEqual(before);
+    expect(applySequenceInput(reviewed, { type: 'pairReview', id: 'split-2' })).toBe(reviewed);
+  });
   it('毎入力のJSON保存再開と再生が一致し、元状態を変更しない', () => {
     for (const row of compareSequenceStrategies(comparison.seed)) {
       let live = row.initial;

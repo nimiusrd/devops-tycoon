@@ -20,6 +20,8 @@ export function createSequencePrototype(seed: string, horizon = 10): SequenceSta
   return { version: 1, board, splitAt: null, reviewed: [], inputs: [] };
 }
 export function applySequenceInput(state: SequenceState, input: SequenceInput): SequenceState {
+  // 固定試作の分割対象はparentのみ。otherは別対象への確認の対照。
+  if (input.type === 'split' && input.id !== 'parent') return state;
   if (input.type !== 'pairReview') {
     const board = applySplitInput(state.board, input);
     if (board === state.board) return state;
@@ -43,15 +45,15 @@ export function applySequenceInput(state: SequenceState, input: SequenceInput): 
   const rootId = task.parentId ?? task.id;
   const revision = task.parentId ? 1 : 0;
   if (state.reviewed.some((r) => r.rootId === rootId && r.revision === revision)) return state;
-  // 分割後2tick以内の同じ系統でだけ境界確認が有効。完了済みの失敗を遡及取消ししない。
+  const board = applySplitInput(state.board, { type: 'wait' });
+  if (board === state.board) return state;
+  // 確認完了時点で分割後2tick以内の同系統だけ有効。
   const effective =
     rootId === 'parent' &&
     revision === 1 &&
     state.splitAt !== null &&
-    state.board.tick - state.splitAt <= 2 &&
+    board.tick - state.splitAt <= 2 &&
     state.board.failures === 0;
-  const board = applySplitInput(state.board, { type: 'wait' });
-  if (board === state.board) return state;
   board.focus -= 2;
   board.focusSpent += 2;
   if (effective) board.integrationFails = false;
@@ -66,7 +68,7 @@ export function summarizeSequence(state: SequenceState) {
   return {
     ...summarizeSplit(state.board),
     integrationFails: state.board.integrationFails,
-    reviewed: state.reviewed,
+    reviewed: structuredClone(state.reviewed),
   };
 }
 export function compareSequenceStrategies(seed: string) {

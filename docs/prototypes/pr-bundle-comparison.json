@@ -1,0 +1,423 @@
+{
+  "seed": "RI-167",
+  "results": [
+    {
+      "failFirst": false,
+      "strategy": "separate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-167",
+        "tick": 0,
+        "horizon": 7,
+        "workSpent": 0,
+        "fixedCost": 0,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": false
+          }
+        ],
+        "groups": [
+          {
+            "ids": ["a"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          },
+          {
+            "ids": ["b"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "b"
+        },
+        {
+          "type": "work",
+          "id": "b"
+        },
+        {
+          "type": "work",
+          "id": "b"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "workSpent": 6,
+        "fixedCost": 4,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "done",
+            "value": 6,
+            "doneTick": 3,
+            "rechecks": 0,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "done",
+            "value": 6,
+            "doneTick": 6,
+            "rechecks": 0,
+            "failFirst": false
+          }
+        ],
+        "remaining": []
+      }
+    },
+    {
+      "failFirst": false,
+      "strategy": "bundle",
+      "initial": {
+        "version": 1,
+        "seed": "RI-167",
+        "tick": 0,
+        "horizon": 7,
+        "workSpent": 0,
+        "fixedCost": 0,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": false
+          }
+        ],
+        "groups": [
+          {
+            "ids": ["a"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          },
+          {
+            "ids": ["b"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "bundle",
+          "ids": ["a", "b"]
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "workSpent": 4,
+        "fixedCost": 2,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "done",
+            "value": 6,
+            "doneTick": 4,
+            "rechecks": 0,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "done",
+            "value": 6,
+            "doneTick": 4,
+            "rechecks": 0,
+            "failFirst": false
+          }
+        ],
+        "remaining": []
+      }
+    },
+    {
+      "failFirst": true,
+      "strategy": "separate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-167",
+        "tick": 0,
+        "horizon": 7,
+        "workSpent": 0,
+        "fixedCost": 0,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": true
+          }
+        ],
+        "groups": [
+          {
+            "ids": ["a"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          },
+          {
+            "ids": ["b"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "b"
+        },
+        {
+          "type": "work",
+          "id": "b"
+        },
+        {
+          "type": "work",
+          "id": "b"
+        },
+        {
+          "type": "work",
+          "id": "b"
+        }
+      ],
+      "result": {
+        "value": 6,
+        "workSpent": 7,
+        "fixedCost": 6,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "done",
+            "value": 6,
+            "doneTick": 3,
+            "rechecks": 0,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 1,
+            "failFirst": true
+          }
+        ],
+        "remaining": [
+          {
+            "ids": ["b"],
+            "workLeft": 2,
+            "started": true,
+            "failed": true
+          }
+        ]
+      }
+    },
+    {
+      "failFirst": true,
+      "strategy": "bundle",
+      "initial": {
+        "version": 1,
+        "seed": "RI-167",
+        "tick": 0,
+        "horizon": 7,
+        "workSpent": 0,
+        "fixedCost": 0,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 0,
+            "failFirst": true
+          }
+        ],
+        "groups": [
+          {
+            "ids": ["a"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          },
+          {
+            "ids": ["b"],
+            "workLeft": 3,
+            "started": false,
+            "failed": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "bundle",
+          "ids": ["a", "b"]
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        },
+        {
+          "type": "work",
+          "id": "a"
+        }
+      ],
+      "result": {
+        "value": 0,
+        "workSpent": 7,
+        "fixedCost": 4,
+        "jobs": [
+          {
+            "id": "a",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 1,
+            "failFirst": false
+          },
+          {
+            "id": "b",
+            "domain": "product",
+            "stage": "review",
+            "value": 6,
+            "doneTick": null,
+            "rechecks": 1,
+            "failFirst": true
+          }
+        ],
+        "remaining": [
+          {
+            "ids": ["a", "b"],
+            "workLeft": 1,
+            "started": true,
+            "failed": true
+          }
+        ]
+      }
+    }
+  ]
+}

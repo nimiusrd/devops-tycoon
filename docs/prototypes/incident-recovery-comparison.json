@@ -1,0 +1,527 @@
+{
+  "seed": "RI-169",
+  "results": [
+    {
+      "severe": false,
+      "method": "fix",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 2,
+          "lossPerTick": 1,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "id": "incident-1",
+          "method": "fix"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 12,
+        "focusSpent": 1,
+        "customerLoss": 2,
+        "trustCost": 0,
+        "recoveryWork": 2,
+        "resolvedTick": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "severe": false,
+      "method": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 2,
+          "lossPerTick": 1,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "id": "incident-1",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 16,
+        "lostValue": 4,
+        "otherValue": 12,
+        "focusSpent": 2,
+        "customerLoss": 2,
+        "trustCost": 1,
+        "recoveryWork": 2,
+        "resolvedTick": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "netValue": 23
+      }
+    },
+    {
+      "severe": false,
+      "method": "disable",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 2,
+          "lossPerTick": 1,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "id": "incident-1",
+          "method": "disable"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 12,
+        "lostValue": 8,
+        "otherValue": 14,
+        "focusSpent": 1,
+        "customerLoss": 1,
+        "trustCost": 2,
+        "recoveryWork": 1,
+        "resolvedTick": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "netValue": 22
+      }
+    },
+    {
+      "severe": false,
+      "method": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 2,
+          "lossPerTick": 1,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "focusSpent": 0,
+        "customerLoss": 8,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "resolvedTick": null,
+        "remainingWork": 2,
+        "outstandingImpact": 2,
+        "netValue": 10
+      }
+    },
+    {
+      "severe": true,
+      "method": "fix",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 3,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 6,
+          "lossPerTick": 4,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "id": "incident-1",
+          "method": "fix"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "focusSpent": 1,
+        "customerLoss": 12,
+        "trustCost": 0,
+        "recoveryWork": 3,
+        "resolvedTick": null,
+        "remainingWork": 3,
+        "outstandingImpact": 12,
+        "netValue": -5
+      }
+    },
+    {
+      "severe": true,
+      "method": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 3,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 6,
+          "lossPerTick": 4,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "id": "incident-1",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 16,
+        "lostValue": 4,
+        "otherValue": 2,
+        "focusSpent": 2,
+        "customerLoss": 8,
+        "trustCost": 1,
+        "recoveryWork": 2,
+        "resolvedTick": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "netValue": 7
+      }
+    },
+    {
+      "severe": true,
+      "method": "disable",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 3,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 6,
+          "lossPerTick": 4,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "id": "incident-1",
+          "method": "disable"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 12,
+        "lostValue": 8,
+        "otherValue": 4,
+        "focusSpent": 1,
+        "customerLoss": 4,
+        "trustCost": 2,
+        "recoveryWork": 1,
+        "resolvedTick": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "netValue": 9
+      }
+    },
+    {
+      "severe": true,
+      "method": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-169",
+        "tick": 0,
+        "horizon": 3,
+        "focus": 4,
+        "focusSpent": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 0,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "incident": {
+          "id": "incident-1",
+          "fixWork": 6,
+          "lossPerTick": 4,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "focusSpent": 0,
+        "customerLoss": 12,
+        "trustCost": 0,
+        "recoveryWork": 0,
+        "resolvedTick": null,
+        "remainingWork": 6,
+        "outstandingImpact": 24,
+        "netValue": -16
+      }
+    }
+  ]
+}

@@ -61,7 +61,10 @@ export function applyBundleInput(state: BundleState, input: BundleInput): Bundle
       jobs.some((j) => !j || j.stage !== 'review') ||
       jobs[0]!.domain !== jobs[1]!.domain ||
       ids.some(
-        (id) => !state.groups.some((g) => g.ids.length === 1 && g.ids[0] === id && !g.started),
+        (id) =>
+          !state.groups.some(
+            (g) => g.ids.length === 1 && g.ids[0] === id && !g.started && !g.failed,
+          ),
       )
     )
       return state;

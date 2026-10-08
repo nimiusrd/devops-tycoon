@@ -33,6 +33,13 @@ describe('RI-167 関連PRの束ね', () => {
     const ended = { ...initial, tick: initial.horizon };
     expect(applyBundleInput(ended, { type: 'wait' })).toBe(ended);
   });
+  it('初回失敗後の再確認待ちを未着手PRとして束ね直さない', () => {
+    let state = createBundlePrototype('RI-167', true);
+    for (let i = 0; i < 3; i++) state = applyBundleInput(state, { type: 'work', id: 'b' });
+    expect(state.groups[1]).toMatchObject({ started: false, failed: true, workLeft: 3 });
+    expect(applyBundleInput(state, { type: 'bundle', ids: ['a', 'b'] })).toBe(state);
+    expect(summarizeBundle(state).fixedCost).toBe(2);
+  });
   it('一部の失敗は束全員の再確認になり、完了は元IDごとに一度記録する', () => {
     let state = applyBundleInput(createBundlePrototype('RI-167', true), {
       type: 'bundle',

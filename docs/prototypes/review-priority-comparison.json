@@ -1,0 +1,787 @@
+{
+  "seed": "RI-165",
+  "results": [
+    {
+      "urgent": "a",
+      "strategy": "fifo",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-165",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 1,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "deadlines": {
+          "a": 3,
+          "b": 6,
+          "c": 6
+        },
+        "values": {
+          "a": 12,
+          "b": 8,
+          "c": 8
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 20,
+        "netValue": 20,
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 2,
+          "c": 4
+        },
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "done",
+            "completedTick": 3,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "b",
+            "stage": "done",
+            "completedTick": 5,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "c",
+            "stage": "ci",
+            "completedTick": null,
+            "reviewLeft": 0,
+            "ciLeft": 1
+          }
+        ],
+        "ciCost": 6,
+        "ciWait": 0
+      }
+    },
+    {
+      "urgent": "a",
+      "strategy": "promote-b",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-165",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 1,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "deadlines": {
+          "a": 3,
+          "b": 6,
+          "c": 6
+        },
+        "values": {
+          "a": 12,
+          "b": 8,
+          "c": 8
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "promote",
+          "id": "b"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 10,
+        "netValue": 8,
+        "focus": 4,
+        "focusSpent": 2,
+        "reviewWait": {
+          "a": 2,
+          "b": 0,
+          "c": 4
+        },
+        "jobs": [
+          {
+            "id": "b",
+            "stage": "done",
+            "completedTick": 3,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "a",
+            "stage": "done",
+            "completedTick": 5,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "c",
+            "stage": "ci",
+            "completedTick": null,
+            "reviewLeft": 0,
+            "ciLeft": 1
+          }
+        ],
+        "ciCost": 6,
+        "ciWait": 0
+      }
+    },
+    {
+      "urgent": "a",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-165",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 1,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "deadlines": {
+          "a": 3,
+          "b": 6,
+          "c": 6
+        },
+        "values": {
+          "a": 12,
+          "b": 8,
+          "c": 8
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rush"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 28,
+        "netValue": 22,
+        "focus": 0,
+        "focusSpent": 6,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "done",
+            "completedTick": 2,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "b",
+            "stage": "done",
+            "completedTick": 4,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "c",
+            "stage": "done",
+            "completedTick": 6,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          }
+        ],
+        "ciCost": 6,
+        "ciWait": 5
+      }
+    },
+    {
+      "urgent": "b",
+      "strategy": "fifo",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-165",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 1,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "deadlines": {
+          "a": 6,
+          "b": 3,
+          "c": 6
+        },
+        "values": {
+          "a": 8,
+          "b": 12,
+          "c": 8
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 10,
+        "netValue": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 2,
+          "c": 4
+        },
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "done",
+            "completedTick": 3,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "b",
+            "stage": "done",
+            "completedTick": 5,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "c",
+            "stage": "ci",
+            "completedTick": null,
+            "reviewLeft": 0,
+            "ciLeft": 1
+          }
+        ],
+        "ciCost": 6,
+        "ciWait": 0
+      }
+    },
+    {
+      "urgent": "b",
+      "strategy": "promote-b",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-165",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 1,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "deadlines": {
+          "a": 6,
+          "b": 3,
+          "c": 6
+        },
+        "values": {
+          "a": 8,
+          "b": 12,
+          "c": 8
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "promote",
+          "id": "b"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 20,
+        "netValue": 18,
+        "focus": 4,
+        "focusSpent": 2,
+        "reviewWait": {
+          "a": 2,
+          "b": 0,
+          "c": 4
+        },
+        "jobs": [
+          {
+            "id": "b",
+            "stage": "done",
+            "completedTick": 3,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "a",
+            "stage": "done",
+            "completedTick": 5,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "c",
+            "stage": "ci",
+            "completedTick": null,
+            "reviewLeft": 0,
+            "ciLeft": 1
+          }
+        ],
+        "ciCost": 6,
+        "ciWait": 0
+      }
+    },
+    {
+      "urgent": "b",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "board": {
+          "version": 1,
+          "seed": "RI-165",
+          "tick": 0,
+          "horizon": 6,
+          "capacity": 1,
+          "budget": 20,
+          "queueSequence": 0,
+          "queueWait": 0,
+          "upstreamWait": 0,
+          "inputs": [],
+          "jobs": [
+            {
+              "id": "a",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "b",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            },
+            {
+              "id": "c",
+              "stage": "review",
+              "reviewLeft": 2,
+              "ciLeft": 2,
+              "attempts": 0,
+              "failFirst": false,
+              "queuedOrder": null,
+              "completedTick": null,
+              "value": 8
+            }
+          ]
+        },
+        "focus": 6,
+        "focusSpent": 0,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "deadlines": {
+          "a": 6,
+          "b": 3,
+          "c": 6
+        },
+        "values": {
+          "a": 8,
+          "b": 12,
+          "c": 8
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rush"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 18,
+        "netValue": 12,
+        "focus": 0,
+        "focusSpent": 6,
+        "reviewWait": {
+          "a": 0,
+          "b": 0,
+          "c": 0
+        },
+        "jobs": [
+          {
+            "id": "a",
+            "stage": "done",
+            "completedTick": 2,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "b",
+            "stage": "done",
+            "completedTick": 4,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          },
+          {
+            "id": "c",
+            "stage": "done",
+            "completedTick": 6,
+            "reviewLeft": 0,
+            "ciLeft": 0
+          }
+        ],
+        "ciCost": 6,
+        "ciWait": 5
+      }
+    }
+  ]
+}

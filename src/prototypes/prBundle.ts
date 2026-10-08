@@ -71,7 +71,7 @@ export function applyBundleInput(state: BundleState, input: BundleInput): Bundle
     const next = structuredClone(state);
     next.groups = next.groups.filter((g) => !ids.includes(g.ids[0]));
     next.groups.push({ ids, workLeft: 4, started: false, failed: false });
-    next.inputs.push(structuredClone(input));
+    next.inputs.push({ type: 'bundle', ids: [...ids] });
     return next;
   }
   const group =

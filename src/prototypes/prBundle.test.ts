@@ -14,6 +14,8 @@ describe('RI-167 関連PRの束ね', () => {
       { ids: ['a', 'b'], workLeft: 4, started: false, failed: false },
     ]);
     expect(bundled.jobs).toEqual(initial.jobs);
+    expect(bundled).toEqual(applyBundleInput(initial, { type: 'bundle', ids: ['a', 'b'] }));
+    expect(bundled.inputs).toEqual([{ type: 'bundle', ids: ['a', 'b'] }]);
     expect(applyBundleInput(bundled, { type: 'bundle', ids: ['a', 'b'] })).toBe(bundled);
     expect(initial.groups).toHaveLength(2);
   });

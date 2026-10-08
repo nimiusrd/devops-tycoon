@@ -1,0 +1,1069 @@
+{
+  "seed": "RI-170",
+  "results": [
+    {
+      "incidents": false,
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 50,
+        "customerLoss": 0,
+        "focusSpent": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "remainingWork": 0,
+        "resolved": [],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "stamina": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "stamina": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 12,
+            "responseSpent": 0
+          }
+        ],
+        "netValue": 50
+      }
+    },
+    {
+      "incidents": false,
+      "strategy": "coder",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "coder",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "remainingWork": 0,
+        "resolved": [],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "standby",
+            "stamina": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "stamina": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 12,
+            "responseSpent": 0
+          }
+        ],
+        "netValue": 29
+      }
+    },
+    {
+      "incidents": false,
+      "strategy": "ace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ace",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 20,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "remainingWork": 0,
+        "resolved": [],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "stamina": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "standby",
+            "stamina": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 12,
+            "responseSpent": 0
+          }
+        ],
+        "netValue": 19
+      }
+    },
+    {
+      "incidents": false,
+      "strategy": "rotate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ace",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "assign",
+          "id": "coder",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 27,
+        "customerLoss": 0,
+        "focusSpent": 2,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "remainingWork": 0,
+        "resolved": [],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "standby",
+            "stamina": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "stamina": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 12,
+            "responseSpent": 0
+          }
+        ],
+        "netValue": 25
+      }
+    },
+    {
+      "incidents": true,
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [
+          {
+            "id": "incident-1",
+            "arrivesAt": 2,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          },
+          {
+            "id": "incident-2",
+            "arrivesAt": 6,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "customerLoss": 6,
+        "focusSpent": 0,
+        "stoppedTicks": 6,
+        "responseWork": 12,
+        "remainingWork": 0,
+        "resolved": [
+          {
+            "id": "incident-1",
+            "tick": 4
+          },
+          {
+            "id": "incident-2",
+            "tick": 8
+          }
+        ],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "stamina": 8,
+            "responseSpent": 4
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "stamina": 0,
+            "responseSpent": 8
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 12,
+            "responseSpent": 0
+          }
+        ],
+        "netValue": 8
+      }
+    },
+    {
+      "incidents": true,
+      "strategy": "coder",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [
+          {
+            "id": "incident-1",
+            "arrivesAt": 2,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          },
+          {
+            "id": "incident-2",
+            "arrivesAt": 6,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "coder",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 30,
+        "customerLoss": 6,
+        "focusSpent": 1,
+        "stoppedTicks": 0,
+        "responseWork": 12,
+        "remainingWork": 0,
+        "resolved": [
+          {
+            "id": "incident-1",
+            "tick": 4
+          },
+          {
+            "id": "incident-2",
+            "tick": 8
+          }
+        ],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "standby",
+            "stamina": 0,
+            "responseSpent": 12
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "stamina": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 12,
+            "responseSpent": 0
+          }
+        ],
+        "netValue": 23
+      }
+    },
+    {
+      "incidents": true,
+      "strategy": "ace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [
+          {
+            "id": "incident-1",
+            "arrivesAt": 2,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          },
+          {
+            "id": "incident-2",
+            "arrivesAt": 6,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ace",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "customerLoss": 7,
+        "focusSpent": 1,
+        "stoppedTicks": 4,
+        "responseWork": 12,
+        "remainingWork": 0,
+        "resolved": [
+          {
+            "id": "incident-1",
+            "tick": 3
+          },
+          {
+            "id": "incident-2",
+            "tick": 10
+          }
+        ],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "stamina": 9,
+            "responseSpent": 3
+          },
+          {
+            "id": "ace",
+            "lane": "standby",
+            "stamina": 0,
+            "responseSpent": 8
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 11,
+            "responseSpent": 1
+          }
+        ],
+        "netValue": 4
+      }
+    },
+    {
+      "incidents": true,
+      "strategy": "rotate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-170",
+        "tick": 0,
+        "horizon": 10,
+        "focus": 6,
+        "focusSpent": 0,
+        "value": 0,
+        "customerLoss": 0,
+        "stoppedTicks": 0,
+        "responseWork": 0,
+        "members": [
+          {
+            "id": "coder",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 2,
+            "review": 1,
+            "response": 2,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "home": "coding",
+            "coding": 3,
+            "review": 3,
+            "response": 4,
+            "stamina": 8,
+            "staminaMax": 8,
+            "responseSpent": 0
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "home": "review",
+            "coding": 1,
+            "review": 5,
+            "response": 1,
+            "stamina": 12,
+            "staminaMax": 12,
+            "responseSpent": 0
+          }
+        ],
+        "incidents": [
+          {
+            "id": "incident-1",
+            "arrivesAt": 2,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          },
+          {
+            "id": "incident-2",
+            "arrivesAt": 6,
+            "workLeft": 6,
+            "doneTick": null,
+            "mobilizationLeft": 2,
+            "mobilized": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ace",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "assign",
+          "id": "coder",
+          "lane": "standby"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 27,
+        "customerLoss": 5,
+        "focusSpent": 2,
+        "stoppedTicks": 0,
+        "responseWork": 12,
+        "remainingWork": 0,
+        "resolved": [
+          {
+            "id": "incident-1",
+            "tick": 3
+          },
+          {
+            "id": "incident-2",
+            "tick": 8
+          }
+        ],
+        "members": [
+          {
+            "id": "coder",
+            "lane": "standby",
+            "stamina": 6,
+            "responseSpent": 6
+          },
+          {
+            "id": "ace",
+            "lane": "coding",
+            "stamina": 2,
+            "responseSpent": 6
+          },
+          {
+            "id": "reviewer",
+            "lane": "review",
+            "stamina": 12,
+            "responseSpent": 0
+          }
+        ],
+        "netValue": 20
+      }
+    }
+  ]
+}

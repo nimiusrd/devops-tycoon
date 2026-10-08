@@ -1,0 +1,601 @@
+{
+  "seed": "RI-166",
+  "results": [
+    {
+      "horizon": 3,
+      "integrationFails": false,
+      "strategy": "whole",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 3,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": false,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        }
+      ],
+      "result": {
+        "value": 0,
+        "netValue": 0,
+        "workSpent": 5,
+        "discardedWork": 0,
+        "focusSpent": 0,
+        "failures": 0,
+        "shipped": [],
+        "remaining": [
+          {
+            "id": "parent",
+            "workLeft": 1
+          }
+        ]
+      }
+    },
+    {
+      "horizon": 3,
+      "integrationFails": false,
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 3,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": false,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        }
+      ],
+      "result": {
+        "value": 4,
+        "netValue": 2,
+        "workSpent": 5,
+        "discardedWork": 2,
+        "focusSpent": 2,
+        "failures": 0,
+        "shipped": [
+          {
+            "id": "split-1",
+            "tick": 3,
+            "value": 4
+          }
+        ],
+        "remaining": [
+          {
+            "id": "split-2",
+            "workLeft": 3
+          },
+          {
+            "id": "split-3",
+            "workLeft": 2
+          }
+        ]
+      }
+    },
+    {
+      "horizon": 3,
+      "integrationFails": true,
+      "strategy": "whole",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 3,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": true,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        }
+      ],
+      "result": {
+        "value": 0,
+        "netValue": 0,
+        "workSpent": 5,
+        "discardedWork": 0,
+        "focusSpent": 0,
+        "failures": 0,
+        "shipped": [],
+        "remaining": [
+          {
+            "id": "parent",
+            "workLeft": 1
+          }
+        ]
+      }
+    },
+    {
+      "horizon": 3,
+      "integrationFails": true,
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 3,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": true,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        }
+      ],
+      "result": {
+        "value": 4,
+        "netValue": 2,
+        "workSpent": 5,
+        "discardedWork": 2,
+        "focusSpent": 2,
+        "failures": 0,
+        "shipped": [
+          {
+            "id": "split-1",
+            "tick": 3,
+            "value": 4
+          }
+        ],
+        "remaining": [
+          {
+            "id": "split-2",
+            "workLeft": 3
+          },
+          {
+            "id": "split-3",
+            "workLeft": 2
+          }
+        ]
+      }
+    },
+    {
+      "horizon": 10,
+      "integrationFails": false,
+      "strategy": "whole",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 10,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": false,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "netValue": 12,
+        "workSpent": 6,
+        "discardedWork": 0,
+        "focusSpent": 0,
+        "failures": 0,
+        "shipped": [
+          {
+            "id": "parent",
+            "tick": 4,
+            "value": 12
+          }
+        ],
+        "remaining": []
+      }
+    },
+    {
+      "horizon": 10,
+      "integrationFails": false,
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 10,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": false,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-2"
+        },
+        {
+          "type": "work",
+          "id": "split-2"
+        },
+        {
+          "type": "work",
+          "id": "split-2"
+        },
+        {
+          "type": "work",
+          "id": "split-3"
+        },
+        {
+          "type": "work",
+          "id": "split-3"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "netValue": 10,
+        "workSpent": 10,
+        "discardedWork": 2,
+        "focusSpent": 2,
+        "failures": 0,
+        "shipped": [
+          {
+            "id": "split-1",
+            "tick": 3,
+            "value": 4
+          },
+          {
+            "id": "split-2",
+            "tick": 6,
+            "value": 4
+          },
+          {
+            "id": "split-3",
+            "tick": 8,
+            "value": 4
+          }
+        ],
+        "remaining": []
+      }
+    },
+    {
+      "horizon": 10,
+      "integrationFails": true,
+      "strategy": "whole",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 10,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": true,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "parent"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "netValue": 12,
+        "workSpent": 6,
+        "discardedWork": 0,
+        "focusSpent": 0,
+        "failures": 0,
+        "shipped": [
+          {
+            "id": "parent",
+            "tick": 4,
+            "value": 12
+          }
+        ],
+        "remaining": []
+      }
+    },
+    {
+      "horizon": 10,
+      "integrationFails": true,
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-166",
+        "tick": 0,
+        "horizon": 10,
+        "nextId": 1,
+        "focus": 6,
+        "focusSpent": 0,
+        "workSpent": 2,
+        "discardedWork": 0,
+        "integrationFails": true,
+        "failures": 0,
+        "tasks": [
+          {
+            "id": "parent",
+            "parentId": null,
+            "kind": "parent",
+            "workLeft": 4,
+            "value": 12,
+            "doneTick": null,
+            "children": [],
+            "retired": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split",
+          "id": "parent"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-1"
+        },
+        {
+          "type": "work",
+          "id": "split-2"
+        },
+        {
+          "type": "work",
+          "id": "split-2"
+        },
+        {
+          "type": "work",
+          "id": "split-2"
+        },
+        {
+          "type": "work",
+          "id": "split-3"
+        },
+        {
+          "type": "work",
+          "id": "split-3"
+        },
+        {
+          "type": "work",
+          "id": "split-3"
+        },
+        {
+          "type": "work",
+          "id": "split-3"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "netValue": 10,
+        "workSpent": 12,
+        "discardedWork": 2,
+        "focusSpent": 2,
+        "failures": 1,
+        "shipped": [
+          {
+            "id": "split-1",
+            "tick": 3,
+            "value": 4
+          },
+          {
+            "id": "split-2",
+            "tick": 6,
+            "value": 4
+          },
+          {
+            "id": "split-3",
+            "tick": 10,
+            "value": 4
+          }
+        ],
+        "remaining": []
+      }
+    }
+  ]
+}

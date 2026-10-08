@@ -1,0 +1,482 @@
+{
+  "seed": "RI-171",
+  "results": [
+    {
+      "severe": false,
+      "strategy": "open",
+      "initial": {
+        "version": 1,
+        "seed": "RI-171",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 6,
+        "focusSpent": 0,
+        "isolated": null,
+        "customerLoss": 0,
+        "spreadTicks": 0,
+        "blockedCapacity": {
+          "product": 0,
+          "platform": 0
+        },
+        "recoveryWork": 0,
+        "incident": {
+          "id": "product-incident",
+          "fixWork": 2,
+          "lossPerTick": 1,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "tasks": [
+          {
+            "id": "product-job",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "product-reserve",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          },
+          {
+            "id": "platform-job",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "platform-reserve",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "repair"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 16,
+        "focusSpent": 1,
+        "customerLoss": 4,
+        "spreadTicks": 2,
+        "blockedCapacity": {
+          "product": 2,
+          "platform": 2
+        },
+        "recoveryWork": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "pausedValue": 0,
+        "remaining": [],
+        "netValue": 31
+      }
+    },
+    {
+      "severe": false,
+      "strategy": "isolate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-171",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 6,
+        "focusSpent": 0,
+        "isolated": null,
+        "customerLoss": 0,
+        "spreadTicks": 0,
+        "blockedCapacity": {
+          "product": 0,
+          "platform": 0
+        },
+        "recoveryWork": 0,
+        "incident": {
+          "id": "product-incident",
+          "fixWork": 2,
+          "lossPerTick": 1,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "tasks": [
+          {
+            "id": "product-job",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "product-reserve",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          },
+          {
+            "id": "platform-job",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "platform-reserve",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "isolate",
+          "domain": "product"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "release",
+          "domain": "product"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 16,
+        "focusSpent": 4,
+        "customerLoss": 2,
+        "spreadTicks": 0,
+        "blockedCapacity": {
+          "product": 2,
+          "platform": 0
+        },
+        "recoveryWork": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "pausedValue": 0,
+        "remaining": [],
+        "netValue": 30
+      }
+    },
+    {
+      "severe": true,
+      "strategy": "open",
+      "initial": {
+        "version": 1,
+        "seed": "RI-171",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 6,
+        "focusSpent": 0,
+        "isolated": null,
+        "customerLoss": 0,
+        "spreadTicks": 0,
+        "blockedCapacity": {
+          "product": 0,
+          "platform": 0
+        },
+        "recoveryWork": 0,
+        "incident": {
+          "id": "product-incident",
+          "fixWork": 6,
+          "lossPerTick": 4,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "tasks": [
+          {
+            "id": "product-job",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "product-reserve",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          },
+          {
+            "id": "platform-job",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "platform-reserve",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "repair"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 0,
+        "focusSpent": 1,
+        "customerLoss": 30,
+        "spreadTicks": 6,
+        "blockedCapacity": {
+          "product": 6,
+          "platform": 6
+        },
+        "recoveryWork": 6,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "pausedValue": 0,
+        "remaining": [
+          {
+            "id": "product-job",
+            "stage": "review",
+            "workLeft": 2
+          },
+          {
+            "id": "platform-job",
+            "stage": "review",
+            "workLeft": 2
+          }
+        ],
+        "netValue": -11
+      }
+    },
+    {
+      "severe": true,
+      "strategy": "isolate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-171",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 6,
+        "focusSpent": 0,
+        "isolated": null,
+        "customerLoss": 0,
+        "spreadTicks": 0,
+        "blockedCapacity": {
+          "product": 0,
+          "platform": 0
+        },
+        "recoveryWork": 0,
+        "incident": {
+          "id": "product-incident",
+          "fixWork": 6,
+          "lossPerTick": 4,
+          "rollbackValue": 4,
+          "featureValue": 8,
+          "status": "active",
+          "method": null,
+          "workLeft": 0,
+          "resolvedTick": null
+        },
+        "tasks": [
+          {
+            "id": "product-job",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "product-reserve",
+            "domain": "product",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          },
+          {
+            "id": "platform-job",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 8,
+            "admitted": true
+          },
+          {
+            "id": "platform-reserve",
+            "domain": "platform",
+            "stage": "coding",
+            "workLeft": 2,
+            "value": 4,
+            "admitted": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "isolate",
+          "domain": "product"
+        },
+        {
+          "type": "repair"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "release",
+          "domain": "product"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "focusSpent": 4,
+        "customerLoss": 24,
+        "spreadTicks": 0,
+        "blockedCapacity": {
+          "product": 6,
+          "platform": 0
+        },
+        "recoveryWork": 6,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "pausedValue": 0,
+        "remaining": [
+          {
+            "id": "product-job",
+            "stage": "review",
+            "workLeft": 2
+          }
+        ],
+        "netValue": 0
+      }
+    }
+  ]
+}

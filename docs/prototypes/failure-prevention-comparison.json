@@ -1,0 +1,504 @@
+{
+  "seed": "RI-164",
+  "results": [
+    {
+      "nextCause": "spec-omission",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work"
+      ],
+      "result": {
+        "value": 24,
+        "loss": 12,
+        "investment": 0,
+        "netValue": 12,
+        "prevention": 0,
+        "incidents": [
+          {
+            "jobId": "job-0",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": "job-1",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": "job-2",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          }
+        ],
+        "pending": []
+      }
+    },
+    {
+      "nextCause": "spec-omission",
+      "strategy": "prevent",
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        "work",
+        "work",
+        "work",
+        "work",
+        "checklist",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work"
+      ],
+      "result": {
+        "value": 24,
+        "loss": 6,
+        "investment": 2,
+        "netValue": 16,
+        "prevention": 1,
+        "incidents": [
+          {
+            "jobId": "job-0",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": "job-1",
+            "cause": "spec-omission",
+            "loss": 1,
+            "induced": false
+          },
+          {
+            "jobId": "job-2",
+            "cause": "spec-omission",
+            "loss": 1,
+            "induced": false
+          }
+        ],
+        "pending": []
+      }
+    },
+    {
+      "nextCause": "spec-omission",
+      "strategy": "farm",
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        "work",
+        "work",
+        "work",
+        "work",
+        "induce-failure",
+        "induce-failure",
+        "checklist",
+        "work",
+        "work"
+      ],
+      "result": {
+        "value": 8,
+        "loss": 13,
+        "investment": 2,
+        "netValue": -7,
+        "prevention": 1,
+        "incidents": [
+          {
+            "jobId": "job-0",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": null,
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": true
+          },
+          {
+            "jobId": null,
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": true
+          },
+          {
+            "jobId": "job-1",
+            "cause": "spec-omission",
+            "loss": 1,
+            "induced": false
+          }
+        ],
+        "pending": [
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "repair",
+            "remaining": 1
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ]
+      }
+    },
+    {
+      "nextCause": "migration-failure",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work"
+      ],
+      "result": {
+        "value": 24,
+        "loss": 12,
+        "investment": 0,
+        "netValue": 12,
+        "prevention": 0,
+        "incidents": [
+          {
+            "jobId": "job-0",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": "job-1",
+            "cause": "migration-failure",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": "job-2",
+            "cause": "migration-failure",
+            "loss": 4,
+            "induced": false
+          }
+        ],
+        "pending": []
+      }
+    },
+    {
+      "nextCause": "migration-failure",
+      "strategy": "prevent",
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        "work",
+        "work",
+        "work",
+        "work",
+        "checklist",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work",
+        "work"
+      ],
+      "result": {
+        "value": 16,
+        "loss": 12,
+        "investment": 2,
+        "netValue": 2,
+        "prevention": 1,
+        "incidents": [
+          {
+            "jobId": "job-0",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": "job-1",
+            "cause": "migration-failure",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": "job-2",
+            "cause": "migration-failure",
+            "loss": 4,
+            "induced": false
+          }
+        ],
+        "pending": [
+          {
+            "id": "job-2",
+            "cause": "migration-failure",
+            "stage": "repair",
+            "remaining": 2
+          }
+        ]
+      }
+    },
+    {
+      "nextCause": "migration-failure",
+      "strategy": "farm",
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        "work",
+        "work",
+        "work",
+        "work",
+        "induce-failure",
+        "induce-failure",
+        "checklist",
+        "work",
+        "work"
+      ],
+      "result": {
+        "value": 8,
+        "loss": 16,
+        "investment": 2,
+        "netValue": -10,
+        "prevention": 1,
+        "incidents": [
+          {
+            "jobId": "job-0",
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": false
+          },
+          {
+            "jobId": null,
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": true
+          },
+          {
+            "jobId": null,
+            "cause": "spec-omission",
+            "loss": 4,
+            "induced": true
+          },
+          {
+            "jobId": "job-1",
+            "cause": "migration-failure",
+            "loss": 4,
+            "induced": false
+          }
+        ],
+        "pending": [
+          {
+            "id": "job-1",
+            "cause": "migration-failure",
+            "stage": "repair",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          }
+        ]
+      }
+    }
+  ]
+}

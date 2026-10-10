@@ -215,6 +215,7 @@ export function ReplayListScreen({
                           type="button"
                           className="btn"
                           data-testid="replay-review-hell-open"
+                          disabled={replayImporting}
                           onClick={() => onOpen(selected.id, hellView.preferredKeyframeIndex)}
                         >
                           レビュー地獄を開く →
@@ -227,6 +228,7 @@ export function ReplayListScreen({
                           <button
                             type="button"
                             data-testid={`replay-keyframe-${index}`}
+                            disabled={replayImporting}
                             onClick={() => onOpen(selected.id, index)}
                           >
                             <b>{frame.phase}</b>

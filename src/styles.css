@@ -5114,8 +5114,12 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   cursor: pointer;
 }
 .replay-list-items button.selected,
-.replay-list-keyframes button:hover {
+.replay-list-keyframes button:hover:not(:disabled) {
   border-color: var(--tc-accent, #3d8bfd);
+}
+.replay-list-keyframes button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .replay-list-keyframes h3 {
   margin: 0 0 8px;

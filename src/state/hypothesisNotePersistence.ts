@@ -198,12 +198,21 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             const reverted = revertRecord;
             let restored =
               queuedChanges.length > 0 ? applyQueued(reverted, queuedChanges) : reverted;
-            // 待ち時間に別タブが書いた下書きは、この開始が消そうとした下書きと違うなら残す。
-            if (
+            const consumedByLaterStart =
+              !stored.draft &&
+              !!stored.bound &&
+              stored.bound.startId !== local.bound?.startId &&
+              sameDraft(stored.bound.beforeStart, reverted.draft) &&
+              sameDraft(reverted.draft, restored.draft);
+            if (consumedByLaterStart) {
+              // 後発開始がこの下書きを消費済みなら、タイトルへ戻さない。
+              restored = { ...restored, draft: null };
+            } else if (
               stored.draft &&
               sameDraft(reverted.draft, restored.draft) &&
               !sameDraft(reverted.draft, stored.draft)
             ) {
+              // 待ち時間に別タブが書いた下書きは、この開始が消そうとした下書きと違うなら残す。
               restored = { ...restored, draft: stored.draft };
             }
             // この開始が書いた bound だけを外す。次のマージは、別タブの後発 bound を消さない。
@@ -228,7 +237,8 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             if (queuedChanges.length > 0) dirty = true;
             activeOpIds = [...followOps, ...activeOpIds];
           } else if (hypothesisCommitKeptForeignBound(base, local, stored)) {
-            const display = queuedChanges.length > 0 ? applyQueued(local, queuedChanges) : local;
+            const merged = queuedChanges.length > 0 ? applyQueued(local, queuedChanges) : local;
+            const display = withoutDraftConsumedByLaterStart(merged, stored);
             publish({ record: display, saveFailed: false });
             // 表示上の解除は残す。このタブが書いた下書きだけ基準を進め、
             // 開始で消した下書きを「未変更」と見なして復活させない。
@@ -315,7 +325,13 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         void persist();
         return;
       }
-      const record = applyQueued(stored, queuedChanges);
+      // 保存値へ重ねる直前を残す。commit が失敗しても、確定前の下書きへ戻せる。
+      let applied = stored;
+      for (const item of queued) {
+        if (item.opId !== undefined) recordBeforeOp.set(item.opId, applied);
+        applied = item.change(applied);
+      }
+      const record = applied;
       loaded = true;
       if (loading === attemptGate.current) loading = null;
       publish({ ...snapshot, record });
@@ -451,6 +467,23 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
 
 function sameDraft(a: HypothesisNoteRecord['draft'], b: HypothesisNoteRecord['draft']): boolean {
   return a && b ? a.text === b.text && a.writtenAt === b.writtenAt : a === b;
+}
+
+/** 後発開始が消費した下書きを、このタブの表示へ戻さない。 */
+function withoutDraftConsumedByLaterStart(
+  display: HypothesisNoteRecord,
+  stored: HypothesisNoteRecord,
+): HypothesisNoteRecord {
+  if (
+    display.draft &&
+    !stored.draft &&
+    stored.bound &&
+    stored.bound.startId !== display.bound?.startId &&
+    sameDraft(stored.bound.beforeStart, display.draft)
+  ) {
+    return { ...display, draft: null };
+  }
+  return display;
 }
 
 function defaultStorage(): HypothesisNoteStorage {

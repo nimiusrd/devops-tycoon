@@ -3625,6 +3625,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   gap: 10px;
   min-width: 0;
 }
+.title-recipe-text:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .title-recipe-text {
   width: 100%;
   min-height: 112px;
@@ -3696,11 +3700,15 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   cursor: pointer;
   transition: 0.2s;
 }
-.title-command .trial-chip:hover,
+.title-command .trial-chip:hover:not(:disabled),
 .title-command .trial-chip.on {
   border-color: #7edfff;
   background: #142944;
   box-shadow: 0 0 20px #4dc8ff18;
+}
+.title-command .trial-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .title-command .trial-chip i {
   margin-right: 6px;

@@ -406,6 +406,35 @@ describe('仮説メモの保存', () => {
     expect(commitHypothesisNote(base, local, { ...base, generation: 2 }).draft).toBeNull();
   });
 
+  it('後発開始が消費した下書きは、タイムアウト復元で復活させない', () => {
+    const draft = { text: '狙い', writtenAt: 1 };
+    const base = {
+      ...EMPTY_HYPOTHESIS_NOTE,
+      generation: 2,
+      draft: null,
+      bound: {
+        runKey: 'run-a',
+        startId: 'start-a',
+        beforeStart: draft,
+        reflection: null,
+      },
+    };
+    const local = { ...base, draft, bound: null };
+    const later = {
+      ...base,
+      generation: 3,
+      bound: {
+        runKey: 'run-b',
+        startId: 'start-b',
+        beforeStart: draft,
+        reflection: null,
+      },
+    };
+    const kept = commitHypothesisNote(base, local, later);
+    expect(kept.draft).toBeNull();
+    expect(kept.bound?.startId).toBe('start-b');
+  });
+
   it('古いタブの解除は、後発ランの仮説を消さない', () => {
     const base = {
       ...EMPTY_HYPOTHESIS_NOTE,
@@ -1070,6 +1099,54 @@ describe('仮説メモの保存', () => {
     expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('later');
   });
 
+  it('開始保存のタイムアウトは、後発開始が消費した下書きを戻さない', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const draft = { text: '狙い', writtenAt: 1 };
+    const later = {
+      runKey: 'run-new',
+      startId: 'later',
+      beforeStart: draft,
+      reflection: null,
+    };
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = { schemaVersion: 1, draft, bound: null, generation: 1 };
+    let replaced = false;
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        await gate;
+        const result = await memory.commit(local, base);
+        if (!replaced) {
+          replaced = true;
+          memory.value = {
+            schemaVersion: 1,
+            draft: null,
+            bound: later,
+            generation: result.generation + 1,
+          };
+        }
+        return result;
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    const before = store.getSnapshot().record;
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    store.revertAbandonedStart(before);
+    release();
+    await saving;
+    await store.flush();
+    const stored = normalizeHypothesisNote(memory.value);
+    expect(stored.draft).toBeNull();
+    expect(stored.bound?.startId).toBe('later');
+    expect(store.getSnapshot().record.draft).toBeNull();
+  });
+
   it('初回読込前のタイムアウトは、保存済みメモを消さない', async () => {
     let release = () => {};
     const memory = new MemoryHypothesisNoteStorage();
@@ -1098,6 +1175,39 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.bound).toBeNull();
     expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('保存済み');
     expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
+  });
+
+  it('初回読込中の確定失敗では、操作前の下書きを戻す', async () => {
+    let release = () => {};
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '保存済み', writtenAt: 1 },
+      bound: null,
+      generation: 1,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: () =>
+        new Promise((resolve) => {
+          release = () => resolve(memory.value);
+        }),
+      commit: async () => {
+        throw new Error('quota');
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    const loading = store.load();
+    store.update((record) => editHypothesisDraft(record, '狙い', 2));
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    release();
+    await loading;
+    expect(await saving).toBe('failed');
+    store.abandonUnpersistedStart();
+    expect(store.getSnapshot().record.draft?.text).toBe('狙い');
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('保存済み');
   });
 
   it('解除の復元は、別タブの後発仮説を上書きしない', async () => {

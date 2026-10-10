@@ -250,6 +250,17 @@ function mergeDraft(
   if (local.draft === null && base.draft && !sameEntry(base.draft, current.draft)) {
     return current.draft;
   }
+  // 後発の開始が同じ下書きを消費して空にしているなら、タイムアウト復元で復活させない。
+  if (
+    local.draft &&
+    !current.draft &&
+    current.bound &&
+    sameEntry(current.bound.beforeStart, local.draft) &&
+    current.bound.startId !== base.bound?.startId &&
+    current.bound.startId !== local.bound?.startId
+  ) {
+    return current.draft;
+  }
   return local.draft;
 }
 

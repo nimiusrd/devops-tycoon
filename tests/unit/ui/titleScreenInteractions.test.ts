@@ -519,6 +519,7 @@ describe('TitleScreen のラン開始条件', () => {
       onOpenReplays: vi.fn(),
       onImportRunSave: vi.fn(async () => ({ ok: true, message: '' })),
       runLaunchPending: true,
+      onHypothesisDraftChange: vi.fn(),
     });
     for (const id of [
       'start-run',
@@ -526,14 +527,26 @@ describe('TitleScreen のラン開始条件', () => {
       'resume-run',
       'open-replays',
       'run-save-file-button',
+      'difficulty-normal',
+      'trial-low-focus',
+      'scenario-copilot',
+      'start-recipe-text',
+      'start-recipe-export',
+      'start-recipe-download',
+      'start-recipe-apply',
+      'start-recipe-file-button',
     ]) {
-      expect(screen.find(id).props.disabled).toBe(true);
+      expect(screen.find(id).props.disabled, id).toBe(true);
     }
+    expect(screen.find('hypothesis-note-input').props.disabled).not.toBe(true);
+    expect(screen.find('difficulty-normal').props.title).toBe('開始中は条件を変えられません');
     expect(screen.find('title-launch-dock').props['aria-busy']).toBe(true);
     expect(content(screen.find('start-run'))).toContain('開始中…');
     expect(content(screen.find('start-daily-run'))).toContain('開始中…');
     screen.update({ runLaunchPending: false });
     expect(screen.find('start-run').props.disabled).toBe(false);
+    expect(screen.find('difficulty-normal').props.disabled).toBe(false);
+    expect(screen.find('start-recipe-apply').props.disabled).toBe(false);
     expect(screen.find('resume-run').props.disabled).toBe(false);
     expect(screen.find('open-replays').props.disabled).toBe(false);
     expect(screen.find('title-launch-dock').props['aria-busy']).toBeUndefined();

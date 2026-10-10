@@ -345,6 +345,7 @@ export function TitleScreen({
   }, [dailyConfirmOpen]);
 
   const launchBlocked = newRunBlocked || runSaveImporting || runLaunchPending;
+  const startConditionTitle = runLaunchPending ? '開始中は条件を変えられません' : undefined;
   const launchDescribedBy = [
     newRunBlocked ? 'finish-save-block' : '',
     hypothesisUnrecorded ? 'hypothesis-start-unrecorded' : '',
@@ -536,7 +537,8 @@ export function TitleScreen({
                       key={id}
                       className={`difficulty-card${difficulty === id ? ' selected' : ''}`}
                       data-testid={`difficulty-${id}`}
-                      disabled={!unlocked}
+                      disabled={!unlocked || runLaunchPending}
+                      title={startConditionTitle}
                       onClick={() => setDifficulty(id)}
                     >
                       <span className="difficulty-kicker">
@@ -571,8 +573,9 @@ export function TitleScreen({
                     key={trial.id}
                     className={`trial-chip${trials.includes(trial.id) ? ' on' : ''}`}
                     data-testid={`trial-${trial.id}`}
+                    disabled={runLaunchPending}
                     onClick={() => toggleTrial(trial.id)}
-                    title={trial.description}
+                    title={runLaunchPending ? startConditionTitle : trial.description}
                   >
                     <i>{trials.includes(trial.id) ? '×' : '+'}</i>
                     {trial.label}
@@ -601,8 +604,9 @@ export function TitleScreen({
                       key={id}
                       className={`trial-chip${scenario === id ? ' on' : ''}`}
                       data-testid={`scenario-${id}`}
+                      disabled={runLaunchPending}
                       onClick={() => setScenario(id)}
-                      title={def.description}
+                      title={runLaunchPending ? startConditionTitle : def.description}
                     >
                       {def.label}
                     </button>
@@ -668,6 +672,8 @@ export function TitleScreen({
                   className="title-recipe-text"
                   data-testid="start-recipe-text"
                   value={recipeText}
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
                   onChange={(event) => setRecipeDraft(event.target.value)}
                   placeholder="書き出した JSON を貼り付けるか、ファイルから読み込む"
                   spellCheck={false}
@@ -677,6 +683,8 @@ export function TitleScreen({
                   <button
                     type="button"
                     data-testid="start-recipe-export"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={() => exportRecipe()}
                   >
                     書き出す
@@ -684,6 +692,8 @@ export function TitleScreen({
                   <button
                     type="button"
                     data-testid="start-recipe-download"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={downloadRecipe}
                   >
                     ファイルで保存
@@ -691,6 +701,8 @@ export function TitleScreen({
                   <button
                     type="button"
                     data-testid="start-recipe-apply"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={() => applyRecipeText(recipeText)}
                   >
                     読み込む
@@ -698,6 +710,8 @@ export function TitleScreen({
                   <button
                     type="button"
                     data-testid="start-recipe-file-button"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={() => recipeFileRef.current?.click()}
                   >
                     ファイルを開く

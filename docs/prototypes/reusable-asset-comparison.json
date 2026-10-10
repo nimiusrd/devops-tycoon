@@ -1,0 +1,1443 @@
+{
+  "results": [
+    {
+      "scenario": "single",
+      "seed": 1,
+      "strategy": "direct",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 10,
+        "premiseVersion": 0,
+        "premiseChangeAt": null,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "o1",
+            "kind": "other",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "none",
+        "stale": false,
+        "premiseVersion": 0,
+        "earnedValue": 12,
+        "stalePenalty": 0,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "completed": 2,
+        "unfinished": 1,
+        "netValue": 12
+      }
+    },
+    {
+      "scenario": "single",
+      "seed": 1,
+      "strategy": "build",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 10,
+        "premiseVersion": 0,
+        "premiseChangeAt": null,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "o1",
+            "kind": "other",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "fresh",
+        "stale": false,
+        "premiseVersion": 0,
+        "earnedValue": 12,
+        "stalePenalty": 0,
+        "focusSpent": 1,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 0,
+        "completed": 2,
+        "unfinished": 1,
+        "netValue": 11
+      }
+    },
+    {
+      "scenario": "repeat",
+      "seed": 1,
+      "strategy": "direct",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 20,
+        "premiseVersion": 0,
+        "premiseChangeAt": null,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m4",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m5",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m6",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m7",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m8",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "none",
+        "stale": false,
+        "premiseVersion": 0,
+        "earnedValue": 30,
+        "stalePenalty": 0,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "completed": 5,
+        "unfinished": 3,
+        "netValue": 30
+      }
+    },
+    {
+      "scenario": "repeat",
+      "seed": 1,
+      "strategy": "build",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 20,
+        "premiseVersion": 0,
+        "premiseChangeAt": null,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m4",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m5",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m6",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m7",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m8",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "fresh",
+        "stale": false,
+        "premiseVersion": 0,
+        "earnedValue": 48,
+        "stalePenalty": 0,
+        "focusSpent": 1,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 0,
+        "completed": 8,
+        "unfinished": 0,
+        "netValue": 47
+      }
+    },
+    {
+      "scenario": "stale-many",
+      "seed": 1,
+      "strategy": "update",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 24,
+        "premiseVersion": 0,
+        "premiseChangeAt": 8,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m4",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m5",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m6",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m7",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m8",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "update"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "fresh",
+        "stale": false,
+        "premiseVersion": 1,
+        "earnedValue": 42,
+        "stalePenalty": 0,
+        "focusSpent": 2,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 4,
+        "completed": 7,
+        "unfinished": 1,
+        "netValue": 40
+      }
+    },
+    {
+      "scenario": "stale-many",
+      "seed": 1,
+      "strategy": "retire",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 24,
+        "premiseVersion": 0,
+        "premiseChangeAt": 8,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m4",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m5",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m6",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m7",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m8",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "retire"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "retired",
+        "stale": false,
+        "premiseVersion": 1,
+        "earnedValue": 30,
+        "stalePenalty": 0,
+        "focusSpent": 1,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 0,
+        "completed": 5,
+        "unfinished": 3,
+        "netValue": 29
+      }
+    },
+    {
+      "scenario": "stale-many",
+      "seed": 1,
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 24,
+        "premiseVersion": 0,
+        "premiseChangeAt": 8,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m4",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m5",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m6",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m7",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m8",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "continue-stale"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "stale-used",
+        "stale": true,
+        "premiseVersion": 1,
+        "earnedValue": 48,
+        "stalePenalty": 14,
+        "focusSpent": 1,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 0,
+        "completed": 8,
+        "unfinished": 0,
+        "netValue": 33
+      }
+    },
+    {
+      "scenario": "stale-few",
+      "seed": 1,
+      "strategy": "update",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 24,
+        "premiseVersion": 0,
+        "premiseChangeAt": 8,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "update"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "fresh",
+        "stale": false,
+        "premiseVersion": 1,
+        "earnedValue": 18,
+        "stalePenalty": 0,
+        "focusSpent": 2,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 4,
+        "completed": 3,
+        "unfinished": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "scenario": "stale-few",
+      "seed": 1,
+      "strategy": "retire",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 24,
+        "premiseVersion": 0,
+        "premiseChangeAt": 8,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "retire"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "retired",
+        "stale": false,
+        "premiseVersion": 1,
+        "earnedValue": 18,
+        "stalePenalty": 0,
+        "focusSpent": 1,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 0,
+        "completed": 3,
+        "unfinished": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "scenario": "stale-few",
+      "seed": 1,
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 24,
+        "premiseVersion": 0,
+        "premiseChangeAt": 8,
+        "asset": "none",
+        "assetPremise": null,
+        "busy": null,
+        "focus": 2,
+        "focusSpent": 0,
+        "buildTicksSpent": 0,
+        "updateTicksSpent": 0,
+        "earnedValue": 0,
+        "stalePenalty": 0,
+        "jobs": [
+          {
+            "id": "m1",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m2",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          },
+          {
+            "id": "m3",
+            "kind": "matching",
+            "effort": 4,
+            "progress": 0,
+            "value": 6
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "continue-stale"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "asset": "stale-used",
+        "stale": true,
+        "premiseVersion": 1,
+        "earnedValue": 18,
+        "stalePenalty": 4,
+        "focusSpent": 1,
+        "buildTicksSpent": 4,
+        "updateTicksSpent": 0,
+        "completed": 3,
+        "unfinished": 0,
+        "netValue": 13
+      }
+    }
+  ]
+}

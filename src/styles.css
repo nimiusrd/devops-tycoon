@@ -7768,15 +7768,20 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  /* 再現情報 JSON 欄と同じ面。パネルと同じ色だと欄の境界が消える。 */
-  background: #080b1bcc;
+  background: var(--visual-color-field-inset);
   color: var(--text);
   font: inherit;
   font-size: 13px;
   line-height: 1.5;
-  field-sizing: content;
   resize: none;
-  overflow: hidden;
+  /* field-sizing 非対応（Firefox など）では 3 行のままなので、スクロールで全文を読めるようにする。 */
+  overflow: auto;
+  field-sizing: content;
+}
+@supports (field-sizing: content) {
+  .result-hypothesis-input {
+    overflow: hidden;
+  }
 }
 .result-hypothesis-input:focus-visible,
 .result-hypothesis-include input:focus-visible {
@@ -7810,7 +7815,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #080b1bcc;
+  background: var(--visual-color-field-inset);
   color: var(--text);
   font:
     11px/1.5 ui-monospace,

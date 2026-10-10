@@ -125,8 +125,12 @@ for (const viewport of VIEWPORTS) {
       await reflection.fill(longNote);
       const block = await review.boundingBox();
       expect(block!.width).toBeGreaterThan(240);
-      const fieldFits = await reflection.evaluate((el) => el.scrollHeight - el.clientHeight);
-      expect(fieldFits).toBeLessThanOrEqual(1);
+      const field = await reflection.evaluate((el) => ({
+        overflow: getComputedStyle(el).overflowY,
+        hidden: el.scrollHeight - el.clientHeight,
+      }));
+      expect(field.overflow).toBe('hidden');
+      expect(field.hidden).toBeLessThanOrEqual(1);
       const includeBox = await page.locator('.result-hypothesis-include').boundingBox();
       expect(includeBox!.height).toBeGreaterThanOrEqual(44);
       expect(block!.height).toBeLessThan(420);

@@ -19,7 +19,6 @@ test-results/
 blob-report/
 .playwright/
 reports/
-.stryker-tmp/
 
 # Shadow観測の証跡（ローカルコピー・取得したレポート）
 /.github/autonomous-merge/evidence/

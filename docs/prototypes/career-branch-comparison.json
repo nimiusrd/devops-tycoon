@@ -1,0 +1,333 @@
+{
+  "seed": "RI-201",
+  "results": [
+    {
+      "scenario": "short",
+      "strategy": "specialist",
+      "initial": {
+        "version": 1,
+        "seed": "RI-201",
+        "scenario": "short",
+        "period": 0,
+        "horizon": 1,
+        "deadline": 8,
+        "penalty": 6,
+        "value": 0,
+        "growth": 0,
+        "penalties": 0,
+        "members": [
+          {
+            "id": "aoi",
+            "role": "candidate",
+            "rank": "senior",
+            "level": 1,
+            "career": null,
+            "review": 8,
+            "fatigue": 0
+          },
+          {
+            "id": "jun",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          },
+          {
+            "id": "mei",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "career": "specialist"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "career": "specialist",
+        "rank": "senior",
+        "level": 1,
+        "value": 10,
+        "growth": 0,
+        "fatigue": 1,
+        "penalties": 0,
+        "score": 10,
+        "juniors": [
+          {
+            "id": "jun",
+            "rank": "junior",
+            "level": 1,
+            "review": 2
+          },
+          {
+            "id": "mei",
+            "rank": "junior",
+            "level": 1,
+            "review": 2
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "short",
+      "strategy": "coach",
+      "initial": {
+        "version": 1,
+        "seed": "RI-201",
+        "scenario": "short",
+        "period": 0,
+        "horizon": 1,
+        "deadline": 8,
+        "penalty": 6,
+        "value": 0,
+        "growth": 0,
+        "penalties": 0,
+        "members": [
+          {
+            "id": "aoi",
+            "role": "candidate",
+            "rank": "senior",
+            "level": 1,
+            "career": null,
+            "review": 8,
+            "fatigue": 0
+          },
+          {
+            "id": "jun",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          },
+          {
+            "id": "mei",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "career": "coach"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "career": "coach",
+        "rank": "senior",
+        "level": 1,
+        "value": 5,
+        "growth": 4,
+        "fatigue": 2,
+        "penalties": 6,
+        "score": -1,
+        "juniors": [
+          {
+            "id": "jun",
+            "rank": "junior",
+            "level": 1,
+            "review": 4
+          },
+          {
+            "id": "mei",
+            "rank": "junior",
+            "level": 1,
+            "review": 4
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "long",
+      "strategy": "specialist",
+      "initial": {
+        "version": 1,
+        "seed": "RI-201",
+        "scenario": "long",
+        "period": 0,
+        "horizon": 3,
+        "deadline": null,
+        "penalty": 0,
+        "value": 0,
+        "growth": 0,
+        "penalties": 0,
+        "members": [
+          {
+            "id": "aoi",
+            "role": "candidate",
+            "rank": "senior",
+            "level": 1,
+            "career": null,
+            "review": 8,
+            "fatigue": 0
+          },
+          {
+            "id": "jun",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          },
+          {
+            "id": "mei",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "career": "specialist"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "career": "specialist",
+        "rank": "senior",
+        "level": 1,
+        "value": 30,
+        "growth": 0,
+        "fatigue": 3,
+        "penalties": 0,
+        "score": 30,
+        "juniors": [
+          {
+            "id": "jun",
+            "rank": "junior",
+            "level": 1,
+            "review": 2
+          },
+          {
+            "id": "mei",
+            "rank": "junior",
+            "level": 1,
+            "review": 2
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "long",
+      "strategy": "coach",
+      "initial": {
+        "version": 1,
+        "seed": "RI-201",
+        "scenario": "long",
+        "period": 0,
+        "horizon": 3,
+        "deadline": null,
+        "penalty": 0,
+        "value": 0,
+        "growth": 0,
+        "penalties": 0,
+        "members": [
+          {
+            "id": "aoi",
+            "role": "candidate",
+            "rank": "senior",
+            "level": 1,
+            "career": null,
+            "review": 8,
+            "fatigue": 0
+          },
+          {
+            "id": "jun",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          },
+          {
+            "id": "mei",
+            "role": "junior",
+            "rank": "junior",
+            "level": 1,
+            "career": null,
+            "review": 2,
+            "fatigue": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "career": "coach"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "career": "coach",
+        "rank": "senior",
+        "level": 1,
+        "value": 35,
+        "growth": 8,
+        "fatigue": 6,
+        "penalties": 0,
+        "score": 35,
+        "juniors": [
+          {
+            "id": "jun",
+            "rank": "junior",
+            "level": 1,
+            "review": 6
+          },
+          {
+            "id": "mei",
+            "rank": "junior",
+            "level": 1,
+            "review": 6
+          }
+        ]
+      }
+    }
+  ]
+}

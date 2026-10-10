@@ -5887,6 +5887,44 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-size: 20px;
   margin: 0;
 }
+.win-combo-next {
+  color: var(--cream);
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+.win-combo-rows {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.win-combo-row-count {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+}
+/* 解放条件は 12px の通常文字。実績カードの locked 透過を重ねると 4.5:1 を下回る（DS-08）。 */
+.win-combo-rows .achievement-card.locked {
+  opacity: 1;
+}
+.win-combo-rows .achievement-card.locked .win-combo-row-count,
+.win-combo-rows .achievement-card.locked .achievement-card-hint {
+  color: var(--cream);
+}
+.win-combo-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.win-combo-cells .pill.achievement {
+  color: var(--cream);
+}
 
 /* ラン決着 */
 .run-end .run-end-badge {

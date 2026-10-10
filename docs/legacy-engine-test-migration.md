@@ -78,6 +78,6 @@ RI-106のgoldenは、工程係数をレジストリへ移す際に挙動を維�
 
 `SimState`は`deriveStatus`と`RendererAdapter`に引き続き必要なため、`src/sim/types.ts`に保持する。旧モジュールが利用していたactions・cards・org・rng・scenarios・seed・sprint・modelも現行用途があり、撤去しない。現行RunEngine、ゲーム値・式・乱数消費順、ルールセット版7は変更しない。
 
-mutationの`sim-root-rest` shardとStryker設定はファイルglobで対象を列挙するため、旧モジュールは削除により対象から外れる。旧モジュール専用のshard・除外指定はない。SPEC対応表の固定step所有元は#714で更新済みであり、追加変更は不要である。
+当時のmutationの`sim-root-rest` shardとStryker設定はファイルglobで対象を列挙していたため、旧モジュールは削除により対象から外れた。旧モジュール専用のshard・除外指定はなかった。SPEC対応表の固定step所有元は#714で更新済みであり、追加変更は不要である。
 
 Node 24.16.0のDev Containerで、撤去前の7移行ファイル・RunEngine関連18ファイル447テストと、撤去後の全unit 253ファイル3,683テスト（同じ対象447テストとmutation shard整合性テストを含む）が成功した。撤去後の`npm run build`・`npm run lint`・`npm run format:check`・`npm run balance:check`も成功し、バランス生成物に差分はない。全unitは`npm test -- --maxWorkers=2`、撤去前の対象unitは`npm test -- <対象パス> --maxWorkers=1`で実行した。`balance:check`はコンテナ内Gitの所有者判定を実行単位の`safe.directory=/workspaces/devops-tycoon`設定で解決して再実行した。

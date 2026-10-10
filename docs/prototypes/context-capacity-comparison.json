@@ -1,0 +1,456 @@
+{
+  "seed": "RI-191",
+  "results": [
+    {
+      "scenario": "feature",
+      "strategy": "empty",
+      "initial": {
+        "version": 1,
+        "scenario": "feature",
+        "board": {
+          "version": 1,
+          "seed": "RI-191",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 8,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "feature",
+              "kind": "simple",
+              "work": 6,
+              "progress": 0,
+              "value": 10,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "loaded": [],
+        "assignedDocs": {},
+        "uncovered": {},
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "shippedValue": 5,
+        "spent": 0,
+        "assignedDocs": {
+          "feature": []
+        },
+        "uncovered": {
+          "feature": ["implementation"]
+        },
+        "resolutions": [
+          "t1:feature:default-none+1",
+          "t2:feature:none+1",
+          "t3:feature:none+1",
+          "t4:feature:none+1",
+          "t5:feature:none+1",
+          "t6:feature:none+1,ship:10",
+          "context:feature:docs=none:missing=implementation",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 5
+      }
+    },
+    {
+      "scenario": "feature",
+      "strategy": "example",
+      "initial": {
+        "version": 1,
+        "scenario": "feature",
+        "board": {
+          "version": 1,
+          "seed": "RI-191",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 8,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "feature",
+              "kind": "simple",
+              "work": 6,
+              "progress": 0,
+              "value": 10,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "loaded": [],
+        "assignedDocs": {},
+        "uncovered": {},
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "set",
+          "docs": ["example"]
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "shippedValue": 10,
+        "spent": 0,
+        "assignedDocs": {
+          "feature": ["example"]
+        },
+        "uncovered": {
+          "feature": []
+        },
+        "resolutions": [
+          "t1:feature:default-none+1",
+          "t2:feature:none+1",
+          "t3:feature:none+1",
+          "t4:feature:none+1",
+          "t5:feature:none+1",
+          "t6:feature:none+1,ship:10",
+          "context:feature:docs=example:covered",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 10
+      }
+    },
+    {
+      "scenario": "feature",
+      "strategy": "specHistory",
+      "initial": {
+        "version": 1,
+        "scenario": "feature",
+        "board": {
+          "version": 1,
+          "seed": "RI-191",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 8,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "feature",
+              "kind": "simple",
+              "work": 6,
+              "progress": 0,
+              "value": 10,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "loaded": [],
+        "assignedDocs": {},
+        "uncovered": {},
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "set",
+          "docs": ["spec", "history"]
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "shippedValue": 5,
+        "spent": 0,
+        "assignedDocs": {
+          "feature": ["spec", "history"]
+        },
+        "uncovered": {
+          "feature": ["implementation"]
+        },
+        "resolutions": [
+          "t1:feature:default-none+1",
+          "t2:feature:none+1",
+          "t3:feature:none+1",
+          "t4:feature:none+1",
+          "t5:feature:none+1",
+          "t6:feature:none+1,ship:10",
+          "context:feature:docs=spec+history:missing=implementation",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 5
+      }
+    },
+    {
+      "scenario": "migration",
+      "strategy": "specHistory",
+      "initial": {
+        "version": 1,
+        "scenario": "migration",
+        "board": {
+          "version": 1,
+          "seed": "RI-191",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 8,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "migration",
+              "kind": "complex",
+              "work": 6,
+              "progress": 0,
+              "value": 18,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "loaded": [],
+        "assignedDocs": {},
+        "uncovered": {},
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "set",
+          "docs": ["spec", "history"]
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "shippedValue": 18,
+        "spent": 0,
+        "assignedDocs": {
+          "migration": ["spec", "history"]
+        },
+        "uncovered": {
+          "migration": []
+        },
+        "resolutions": [
+          "t1:migration:default-none+1",
+          "t2:migration:none+1",
+          "t3:migration:none+1",
+          "t4:migration:none+1",
+          "t5:migration:none+1",
+          "t6:migration:none+1,ship:18",
+          "context:migration:docs=spec+history:covered",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 18
+      }
+    },
+    {
+      "scenario": "migration",
+      "strategy": "exampleSpec",
+      "initial": {
+        "version": 1,
+        "scenario": "migration",
+        "board": {
+          "version": 1,
+          "seed": "RI-191",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 8,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "migration",
+              "kind": "complex",
+              "work": 6,
+              "progress": 0,
+              "value": 18,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "loaded": [],
+        "assignedDocs": {},
+        "uncovered": {},
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "set",
+          "docs": ["example", "spec"]
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "shippedValue": 13,
+        "spent": 0,
+        "assignedDocs": {
+          "migration": ["example", "spec"]
+        },
+        "uncovered": {
+          "migration": ["change"]
+        },
+        "resolutions": [
+          "t1:migration:default-none+1",
+          "t2:migration:none+1",
+          "t3:migration:none+1",
+          "t4:migration:none+1",
+          "t5:migration:none+1",
+          "t6:migration:none+1,ship:18",
+          "context:migration:docs=example+spec:missing=change",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 13
+      }
+    }
+  ]
+}

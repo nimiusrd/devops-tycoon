@@ -1,0 +1,100 @@
+{
+  "results": [
+    {
+      "metric": "moraleAtClear",
+      "samples": 20,
+      "distinct": 1,
+      "min": 100,
+      "max": 100,
+      "ceilingHits": 20,
+      "updates": {
+        "new": 1,
+        "improved": 0,
+        "tie": 19,
+        "lower": 0,
+        "missing": 0,
+        "not-eligible": 0
+      },
+      "meanBySprints": {
+        "12": 100,
+        "18": 100,
+        "24": 100,
+        "30": 100,
+        "36": 100
+      },
+      "bestSprintsPlayed": [12]
+    },
+    {
+      "metric": "seniorHpAtClear",
+      "samples": 20,
+      "distinct": 20,
+      "min": 62.96994335937531,
+      "max": 100,
+      "ceilingHits": 1,
+      "updates": {
+        "new": 1,
+        "improved": 2,
+        "tie": 0,
+        "lower": 17,
+        "missing": 0,
+        "not-eligible": 0
+      },
+      "meanBySprints": {
+        "12": 83.9,
+        "18": 92.3,
+        "24": 84.4,
+        "30": 82.9,
+        "36": 94.1
+      },
+      "bestSprintsPlayed": [30]
+    },
+    {
+      "metric": "minSeniorHp",
+      "samples": 20,
+      "distinct": 20,
+      "min": 2.341500000000374,
+      "max": 30.101750000000496,
+      "ceilingHits": 0,
+      "updates": {
+        "new": 1,
+        "improved": 1,
+        "tie": 0,
+        "lower": 18,
+        "missing": 0,
+        "not-eligible": 0
+      },
+      "meanBySprints": {
+        "12": 17.3,
+        "18": 13.4,
+        "24": 15.8,
+        "30": 9.8,
+        "36": 9.1
+      },
+      "bestSprintsPlayed": [18]
+    },
+    {
+      "metric": "budgetAtClear",
+      "samples": 20,
+      "distinct": 16,
+      "min": 2,
+      "max": 50,
+      "ceilingHits": null,
+      "updates": {
+        "new": 1,
+        "improved": 1,
+        "tie": 1,
+        "lower": 17,
+        "missing": 0,
+        "not-eligible": 0
+      },
+      "meanBySprints": {
+        "12": 41.2,
+        "18": 35.6,
+        "24": 22,
+        "30": 6.5,
+        "36": 2
+      },
+      "bestSprintsPlayed": [12]
+    }
+  ]
+}

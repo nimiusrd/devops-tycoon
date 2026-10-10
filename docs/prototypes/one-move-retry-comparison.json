@@ -1,0 +1,1764 @@
+{
+  "results": [
+    {
+      "scenario": "jam",
+      "seed": 1,
+      "record": {
+        "id": "jam-1",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 1,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 1,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "code",
+          "code",
+          "code",
+          "rest",
+          "code",
+          "review",
+          "review",
+          "review",
+          "rest",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "jam"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 2,
+        "value": 6,
+        "queue": 4,
+        "stamina": 1,
+        "jamPenalty": 18,
+        "incidents": 2,
+        "incidentPenalty": 0,
+        "invalidMoves": 3,
+        "netValue": -12
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 1,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 2,
+            "incidentPenalty": 0,
+            "invalidMoves": 3,
+            "netValue": 12
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 6,
+            "value": 18,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 2,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 18
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 2,
+            "jamPenalty": 6,
+            "incidents": 2,
+            "incidentPenalty": 0,
+            "invalidMoves": 1,
+            "netValue": 9
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 6,
+            "value": 18,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 2,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 18
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fatigue",
+      "seed": 1,
+      "record": {
+        "id": "fatigue-1",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 1,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 1,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "review",
+          "code",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "fatigue"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 2,
+        "value": 6,
+        "queue": 2,
+        "stamina": 0,
+        "jamPenalty": 0,
+        "incidents": 2,
+        "incidentPenalty": 4,
+        "invalidMoves": 7,
+        "netValue": 2
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 3,
+            "value": 9,
+            "queue": 0,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 2,
+            "incidentPenalty": 4,
+            "invalidMoves": 7,
+            "netValue": 5
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 2,
+            "jamPenalty": 0,
+            "incidents": 2,
+            "incidentPenalty": 0,
+            "invalidMoves": 1,
+            "netValue": 12
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 3,
+            "value": 9,
+            "queue": 1,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 2,
+            "incidentPenalty": 0,
+            "invalidMoves": 5,
+            "netValue": 9
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 6,
+            "value": 18,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 2,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 18
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "jam",
+      "seed": 2,
+      "record": {
+        "id": "jam-2",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 2,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 2,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "code",
+          "code",
+          "code",
+          "rest",
+          "code",
+          "review",
+          "review",
+          "review",
+          "rest",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "jam"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 4,
+        "value": 12,
+        "queue": 2,
+        "stamina": 1,
+        "jamPenalty": 16,
+        "incidents": 3,
+        "incidentPenalty": 8,
+        "invalidMoves": 2,
+        "netValue": -12
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 8,
+            "invalidMoves": 2,
+            "netValue": 7
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 6,
+            "value": 18,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 4,
+            "invalidMoves": 0,
+            "netValue": 14
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 2,
+            "jamPenalty": 6,
+            "incidents": 3,
+            "incidentPenalty": 4,
+            "invalidMoves": 1,
+            "netValue": 5
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 6,
+            "value": 18,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 4,
+            "invalidMoves": 0,
+            "netValue": 14
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fatigue",
+      "seed": 2,
+      "record": {
+        "id": "fatigue-2",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 2,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 2,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "review",
+          "code",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "fatigue"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 2,
+        "value": 6,
+        "queue": 2,
+        "stamina": 0,
+        "jamPenalty": 0,
+        "incidents": 3,
+        "incidentPenalty": 8,
+        "invalidMoves": 7,
+        "netValue": -2
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 3,
+            "value": 9,
+            "queue": 0,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 8,
+            "invalidMoves": 7,
+            "netValue": 1
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "code"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 0,
+            "invalidMoves": 1,
+            "netValue": 12
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 0,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 8,
+            "invalidMoves": 4,
+            "netValue": 4
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 6,
+            "value": 18,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 4,
+            "invalidMoves": 0,
+            "netValue": 14
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "jam",
+      "seed": 3,
+      "record": {
+        "id": "jam-3",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 3,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 3,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "code",
+          "code",
+          "code",
+          "rest",
+          "code",
+          "review",
+          "review",
+          "review",
+          "rest",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "jam"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 4,
+        "value": 12,
+        "queue": 2,
+        "stamina": 0,
+        "jamPenalty": 16,
+        "incidents": 6,
+        "incidentPenalty": 16,
+        "invalidMoves": 2,
+        "netValue": -20
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 6,
+            "incidentPenalty": 16,
+            "invalidMoves": 2,
+            "netValue": -1
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "rest"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 2,
+            "jamPenalty": 0,
+            "incidents": 6,
+            "incidentPenalty": 8,
+            "invalidMoves": 0,
+            "netValue": 4
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 0,
+            "jamPenalty": 6,
+            "incidents": 6,
+            "incidentPenalty": 8,
+            "invalidMoves": 1,
+            "netValue": 1
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "code"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 6,
+            "incidentPenalty": 4,
+            "invalidMoves": 0,
+            "netValue": 8
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fatigue",
+      "seed": 3,
+      "record": {
+        "id": "fatigue-3",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 3,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 3,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "review",
+          "code",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "fatigue"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 2,
+        "value": 6,
+        "queue": 2,
+        "stamina": 0,
+        "jamPenalty": 0,
+        "incidents": 6,
+        "incidentPenalty": 20,
+        "invalidMoves": 7,
+        "netValue": -14
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 2,
+            "value": 6,
+            "queue": 1,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 6,
+            "incidentPenalty": 16,
+            "invalidMoves": 8,
+            "netValue": -10
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "rest",
+            "code",
+            "rest"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 1,
+            "stamina": 2,
+            "jamPenalty": 0,
+            "incidents": 6,
+            "incidentPenalty": 4,
+            "invalidMoves": 1,
+            "netValue": 8
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 3,
+            "value": 9,
+            "queue": 1,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 6,
+            "incidentPenalty": 16,
+            "invalidMoves": 5,
+            "netValue": -7
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "code"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 6,
+            "incidentPenalty": 4,
+            "invalidMoves": 0,
+            "netValue": 8
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "jam",
+      "seed": 4,
+      "record": {
+        "id": "jam-4",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 4,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 4,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "code",
+          "code",
+          "code",
+          "rest",
+          "code",
+          "review",
+          "review",
+          "review",
+          "rest",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "jam"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 4,
+        "value": 12,
+        "queue": 2,
+        "stamina": 1,
+        "jamPenalty": 16,
+        "incidents": 4,
+        "incidentPenalty": 12,
+        "invalidMoves": 2,
+        "netValue": -16
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 4,
+            "incidentPenalty": 12,
+            "invalidMoves": 2,
+            "netValue": 3
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 3,
+            "jamPenalty": 0,
+            "incidents": 4,
+            "incidentPenalty": 4,
+            "invalidMoves": 0,
+            "netValue": 8
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 1,
+            "stamina": 1,
+            "jamPenalty": 6,
+            "incidents": 4,
+            "incidentPenalty": 0,
+            "invalidMoves": 2,
+            "netValue": 6
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 2,
+            "jamPenalty": 0,
+            "incidents": 4,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 12
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fatigue",
+      "seed": 4,
+      "record": {
+        "id": "fatigue-4",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 4,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 4,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "review",
+          "code",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "fatigue"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 2,
+        "value": 6,
+        "queue": 2,
+        "stamina": 0,
+        "jamPenalty": 0,
+        "incidents": 4,
+        "incidentPenalty": 12,
+        "invalidMoves": 7,
+        "netValue": -6
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 2,
+            "value": 6,
+            "queue": 1,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 4,
+            "incidentPenalty": 8,
+            "invalidMoves": 8,
+            "netValue": -2
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 1,
+            "stamina": 3,
+            "jamPenalty": 0,
+            "incidents": 4,
+            "incidentPenalty": 0,
+            "invalidMoves": 1,
+            "netValue": 12
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 3,
+            "value": 9,
+            "queue": 0,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 4,
+            "incidentPenalty": 4,
+            "invalidMoves": 6,
+            "netValue": 5
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 2,
+            "jamPenalty": 0,
+            "incidents": 4,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 12
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "jam",
+      "seed": 5,
+      "record": {
+        "id": "jam-5",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 5,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 5,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "code",
+          "code",
+          "code",
+          "rest",
+          "code",
+          "review",
+          "review",
+          "review",
+          "rest",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "jam"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 4,
+        "value": 12,
+        "queue": 2,
+        "stamina": 1,
+        "jamPenalty": 16,
+        "incidents": 3,
+        "incidentPenalty": 8,
+        "invalidMoves": 2,
+        "netValue": -12
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 1,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 8,
+            "invalidMoves": 2,
+            "netValue": 7
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "rest"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 3,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 12
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "review",
+            "review",
+            "rest",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 5,
+            "value": 15,
+            "queue": 0,
+            "stamina": 2,
+            "jamPenalty": 6,
+            "incidents": 3,
+            "incidentPenalty": 4,
+            "invalidMoves": 1,
+            "netValue": 5
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "rest"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 3,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 12
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fatigue",
+      "seed": 5,
+      "record": {
+        "id": "fatigue-5",
+        "rulesetId": "retry-proto-1",
+        "setup": {
+          "version": 1,
+          "seed": 5,
+          "tick": 0,
+          "horizon": 12,
+          "stamina": 6,
+          "queue": 0,
+          "shipped": 0,
+          "value": 0,
+          "jamPenalty": 0,
+          "incidentPenalty": 0,
+          "incidents": 0,
+          "invalidMoves": 0,
+          "rngState": 5,
+          "moves": []
+        },
+        "moves": [
+          "code",
+          "code",
+          "review",
+          "code",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review",
+          "code",
+          "review"
+        ]
+      },
+      "turning": {
+        "index": 3,
+        "kind": "fatigue"
+      },
+      "original": {
+        "tick": 12,
+        "shipped": 2,
+        "value": 6,
+        "queue": 2,
+        "stamina": 0,
+        "jamPenalty": 0,
+        "incidents": 3,
+        "incidentPenalty": 8,
+        "invalidMoves": 7,
+        "netValue": -2
+      },
+      "branches": [
+        {
+          "to": "review",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 3,
+            "value": 9,
+            "queue": 0,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 8,
+            "invalidMoves": 7,
+            "netValue": 1
+          }
+        },
+        {
+          "to": "review",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "rest",
+            "code"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 2,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 4,
+            "invalidMoves": 1,
+            "netValue": 8
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "fixed",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review",
+            "code",
+            "review"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 3,
+            "value": 9,
+            "queue": 1,
+            "stamina": 0,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 4,
+            "invalidMoves": 5,
+            "netValue": 5
+          }
+        },
+        {
+          "to": "rest",
+          "followUp": "free",
+          "moves": [
+            "code",
+            "code",
+            "review",
+            "rest",
+            "code",
+            "code",
+            "rest",
+            "review",
+            "code",
+            "rest",
+            "code",
+            "rest"
+          ],
+          "result": {
+            "tick": 12,
+            "shipped": 4,
+            "value": 12,
+            "queue": 2,
+            "stamina": 3,
+            "jamPenalty": 0,
+            "incidents": 3,
+            "incidentPenalty": 0,
+            "invalidMoves": 0,
+            "netValue": 12
+          }
+        }
+      ]
+    }
+  ]
+}

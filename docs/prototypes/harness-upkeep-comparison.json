@@ -1,0 +1,470 @@
+{
+  "seed": 198,
+  "results": [
+    {
+      "horizon": 4,
+      "strategy": "external",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 4,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "external"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "external",
+        "dueIn": null,
+        "freshTicks": 4,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 24,
+        "fees": 8,
+        "netValue": 16
+      }
+    },
+    {
+      "horizon": 4,
+      "strategy": "skip",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 4,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "inhouse"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "inhouse",
+        "dueIn": 0,
+        "freshTicks": 4,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 24,
+        "fees": 0,
+        "netValue": 24
+      }
+    },
+    {
+      "horizon": 4,
+      "strategy": "on-time",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 4,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "inhouse"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "inhouse",
+        "dueIn": 0,
+        "freshTicks": 4,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 24,
+        "fees": 0,
+        "netValue": 24
+      }
+    },
+    {
+      "horizon": 4,
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 4,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "inhouse"
+        },
+        {
+          "type": "update"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "inhouse",
+        "dueIn": 2,
+        "freshTicks": 2,
+        "staleTicks": 0,
+        "upkeepTicks": 2,
+        "value": 12,
+        "fees": 0,
+        "netValue": 12
+      }
+    },
+    {
+      "horizon": 10,
+      "strategy": "external",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 10,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "external"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "external",
+        "dueIn": null,
+        "freshTicks": 10,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 60,
+        "fees": 20,
+        "netValue": 40
+      }
+    },
+    {
+      "horizon": 10,
+      "strategy": "skip",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 10,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "inhouse"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "inhouse",
+        "dueIn": 0,
+        "freshTicks": 4,
+        "staleTicks": 6,
+        "upkeepTicks": 0,
+        "value": 36,
+        "fees": 0,
+        "netValue": 36
+      }
+    },
+    {
+      "horizon": 10,
+      "strategy": "on-time",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 10,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "inhouse"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "update"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "inhouse",
+        "dueIn": 0,
+        "freshTicks": 8,
+        "staleTicks": 0,
+        "upkeepTicks": 2,
+        "value": 48,
+        "fees": 0,
+        "netValue": 48
+      }
+    },
+    {
+      "horizon": 10,
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": 198,
+        "tick": 0,
+        "horizon": 10,
+        "kind": null,
+        "generation": 1831566011,
+        "dueIn": 4,
+        "updating": 0,
+        "freshTicks": 0,
+        "staleTicks": 0,
+        "upkeepTicks": 0,
+        "value": 0,
+        "fees": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "kind": "inhouse"
+        },
+        {
+          "type": "update"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "kind": "inhouse",
+        "dueIn": 0,
+        "freshTicks": 4,
+        "staleTicks": 4,
+        "upkeepTicks": 2,
+        "value": 32,
+        "fees": 0,
+        "netValue": 32
+      }
+    }
+  ]
+}

@@ -1143,6 +1143,37 @@ describe('仮説メモの保存', () => {
     expect(undone.bound).toBeNull();
   });
 
+  it('確定の失敗は、それより前の未保存下書きを戻さない', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'keep',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        if (local.draft?.text === '未保存') throw new Error('quota');
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    store.update((record) => editHypothesisDraft(record, '未保存', 2));
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(true);
+    expect(store.getSnapshot().record.draft?.text).toBe('未保存');
+    expect(await store.applyCommitted((record) => detachHypothesisNote(record))).toBe('failed');
+    expect(store.getSnapshot().record.draft?.text).toBe('未保存');
+    expect(store.getSnapshot().record.bound?.startId).toBe('keep');
+  });
+
   it('失敗した固定は、待ち時間の下書きと一緒に保存しない', async () => {
     let release = () => {};
     const gate = new Promise<void>((resolve) => {

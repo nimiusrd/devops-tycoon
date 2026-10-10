@@ -2355,8 +2355,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         );
         if (!replayResult.ok) {
           await restoreImportedRun();
-          await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
-          return { ok: false, reason: 'corrupt', message: replayResult.message };
+          const restored = await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
+          return {
+            ok: false,
+            reason: 'corrupt',
+            message: restored === 'failed' ? HYPOTHESIS_NOTE_SAVE_FAILED : replayResult.message,
+          };
         }
         noteRunDurable();
         return { ...loaded, restored: 'both' as const };

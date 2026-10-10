@@ -153,6 +153,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
 
   const opWaiters = new Map<number, () => void>();
   const restoreBoundOps = new Set<number>();
+  const recordBeforeOp = new Map<number, HypothesisNoteRecord>();
 
   const finishOp = (id: number, status: 'saved' | 'failed' | 'unchanged') => {
     if (opState.get(id) !== 'pending') return;
@@ -256,9 +257,16 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           const followChanges = follow.map((item) => item.change);
           queuedDuringWrite = [];
           settleOps(ops, 'failed');
-          // 失敗した固定は snapshot に残さず、後続の入力だけを失敗前のレコードへ重ねる。
+          // 失敗した確定操作だけを外す。それより前から残っている未保存の下書きは保持する。
           if (ops.length > 0) {
-            publish({ record: applyQueued(base, followChanges), saveFailed: true });
+            const foundation =
+              ops.reduce<HypothesisNoteRecord | null>(
+                (found, id) => found ?? recordBeforeOp.get(id) ?? null,
+                null,
+              ) ?? local;
+            for (const id of ops) recordBeforeOp.delete(id);
+            const kept = ops.some((id) => restoreBoundOps.has(id)) ? local : foundation;
+            publish({ record: applyQueued(kept, followChanges), saveFailed: true });
           }
           if (follow.length > 0) {
             activeOpIds = [...followOps, ...activeOpIds];
@@ -341,8 +349,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       return;
     }
     const next = change(snapshot.record);
+    if (opId !== undefined) recordBeforeOp.set(opId, snapshot.record);
     if (next === snapshot.record) {
-      if (opId !== undefined) finishOp(opId, 'unchanged');
+      if (opId !== undefined) {
+        recordBeforeOp.delete(opId);
+        finishOp(opId, 'unchanged');
+      }
       return;
     }
     if (captureChanges) {
@@ -385,6 +397,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     opState.delete(opId);
     opWaiters.delete(opId);
     restoreBoundOps.delete(opId);
+    recordBeforeOp.delete(opId);
     if (status === 'saved') return 'saved';
     if (status === 'failed') return 'failed';
     return 'unchanged';

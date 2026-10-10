@@ -1,0 +1,193 @@
+name: Codex review label
+
+on:
+  issue_comment:
+    types: [created, edited, deleted]
+  # コンフリクト中のPRやフォークでも判定を更新するため、pull_request ではなく pull_request_target を使う。
+  pull_request_target:
+    types: [synchronize, reopened, edited, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 再判定するPR番号
+        required: true
+        type: number
+
+permissions: {}
+
+env:
+  LABEL: codex/指摘なし
+  LABEL_DESCRIPTION: Codexが大きな指摘なしと判定し、その後はmainの取り込みだけで、Codexの未解決スレッドもない。詳細はActionsのCodex review label。
+  LABEL_COLOR: 0E8A16
+  CODEX_LOGIN: chatgpt-codex-connector
+  NO_FINDINGS_PREFIX: "Codex Review: Didn't find any major issues"
+
+jobs:
+  sync:
+    name: Sync label with Codex review state
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       github.event.comment.user.login == 'chatgpt-codex-connector[bot]') ||
+      (github.event_name == 'pull_request_target' &&
+       (github.event.action == 'synchronize' ||
+        github.event.action == 'reopened' ||
+        (github.event.action == 'edited' && github.event.changes.base) ||
+        github.event.label.name == 'codex/指摘なし')) ||
+      (github.event_name == 'pull_request_review' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.review.user.login == 'chatgpt-codex-connector[bot]')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: codex-review-label-${{ github.event.issue.number || github.event.pull_request.number || inputs.pr_number }}
+      cancel-in-progress: false
+    steps:
+      # PRのコードはチェックアウトも実行もせず、履歴の判定にだけgitを使う。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Evaluate Codex review state and update label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          bot="${CODEX_LOGIN}[bot]"
+
+          load_state() {
+            local pr
+            pr=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
+            pr_state=$(jq -r .state <<<"$pr")
+            head_sha=$(jq -r .head.sha <<<"$pr")
+            base_ref=$(jq -r .base.ref <<<"$pr")
+            head_repo=$(jq -r '.head.repo.full_name // ""' <<<"$pr")
+
+            # ベース変更前の判定は、変更後のベースとの差分をレビューしていない。
+            base_changed_at=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/timeline?per_page=100" |
+              jq -rs '[ add // [] | .[] | select(.event == "base_ref_changed") | .created_at ] | max // ""')
+
+            candidates=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" |
+              jq -rs --arg bot "$bot" --arg prefix "$NO_FINDINGS_PREFIX" --arg since "$base_changed_at" '
+                [ add // [] | .[]
+                  | select(.user.login == $bot and (.body | startswith($prefix)) and .created_at > $since)
+                  | (.body | capture("Reviewed commit:\\*\\* `(?<sha>[0-9a-f]{7,40})`").sha) as $sha
+                  | {at: .created_at, sha: $sha} ]
+                | sort_by(.at) | reverse | .[] | "\(.at) \(.sha)"')
+
+            findings_at=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews?per_page=100" |
+              jq -rs --arg bot "$bot" '
+                [ add // [] | .[] | select(.user.login == $bot) | .submitted_at ] | max // ""')
+
+            unresolved=$(gh api graphql --paginate \
+              -F owner="${REPO%%/*}" -F name="${REPO#*/}" -F number="$PR_NUMBER" \
+              -f query='
+                query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+                  repository(owner: $owner, name: $name) {
+                    pullRequest(number: $number) {
+                      reviewThreads(first: 100, after: $endCursor) {
+                        pageInfo { hasNextPage endCursor }
+                        nodes { isResolved comments(first: 1) { nodes { author { login } } } }
+                      }
+                    }
+                  }
+                }' |
+              jq -s --arg login "$CODEX_LOGIN" '
+                [ .[].data.repository.pullRequest.reviewThreads.nodes[]
+                  | select((.isResolved | not) and .comments.nodes[0].author.login == $login) ]
+                | length')
+
+            state=$(printf '%s\n' "$pr_state" "$head_sha" "$base_ref" "$head_repo" \
+              "$base_changed_at" "$candidates" "$findings_at" "$unresolved")
+          }
+
+          # reviewed から head までが、baseを取り込む自動マージだけで構成されているか。
+          only_base_merges() {
+            local reviewed=$1 commit p1 p2 extra merged
+            local expected=$reviewed
+            git merge-base --is-ancestor "$reviewed" "$head_sha" || return 1
+            for commit in $(git rev-list --reverse --first-parent "$reviewed..$head_sha"); do
+              read -r p1 p2 extra <<<"$(git rev-list --parents -n 1 "$commit" | cut -d' ' -f2-)"
+              [ "$p1" = "$expected" ] && [ -n "$p2" ] && [ -z "$extra" ] || return 1
+              git merge-base --is-ancestor "$p2" "$base" || return 1
+              merged=$(git merge-tree --write-tree "$p1" "$p2") || return 1
+              [ "$merged" = "$(git rev-parse "$commit^{tree}")" ] || return 1
+              expected=$commit
+            done
+          }
+
+          decide() {
+            local created_at short_sha full_sha
+            git fetch --no-tags --quiet origin \
+              "+refs/heads/$base_ref:refs/remotes/origin/$base_ref" \
+              "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/$PR_NUMBER"
+            base="refs/remotes/origin/$base_ref"
+
+            no_findings_at=""
+            reviewed=""
+            while read -r created_at short_sha; do
+              [ -n "$short_sha" ] || continue
+              full_sha=$(git rev-parse --verify --quiet "$short_sha^{commit}") || continue
+              if only_base_merges "$full_sha"; then
+                no_findings_at=$created_at
+                reviewed=$full_sha
+                break
+              fi
+            done <<<"$candidates"
+
+            if [ "$head_repo" != "$REPO" ]; then
+              reason="フォークのPRは対象外"
+            elif [ -z "$no_findings_at" ]; then
+              reason="現在のhead ${head_sha:0:10} またはmainの取り込みだけを挟んだ祖先に、Codexの指摘なし判定がない"
+            elif [[ -n "$findings_at" && "$findings_at" > "$no_findings_at" ]]; then
+              reason="指摘なし判定より新しいCodexの指摘レビューがある"
+            elif [ "$unresolved" -gt 0 ]; then
+              reason="Codexの未解決スレッドが ${unresolved} 件ある"
+            else
+              reason=""
+            fi
+          }
+
+          # 判定中に判定材料が変わったら、書き込まずに判定し直す。
+          for attempt in 1 2 3; do
+            load_state
+            if [ "$pr_state" != open ]; then
+              echo "PR #$PR_NUMBER is not open"
+              exit 0
+            fi
+            decide
+            labels=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/labels?per_page=100" --jq '.[].name')
+            has_label=$(grep -Fxc -- "$LABEL" <<<"$labels" || true)
+
+            evaluated=$state
+            load_state
+            if [ "$state" != "$evaluated" ]; then
+              echo "判定中にPRの状態が変わったため再判定する (${attempt}回目)"
+              continue
+            fi
+
+            if [ -z "$reason" ]; then
+              echo "PR #$PR_NUMBER: 指摘なし (head ${head_sha:0:10}, 判定 ${reviewed:0:10})" | tee -a "$GITHUB_STEP_SUMMARY"
+              if [ "$has_label" = 0 ]; then
+                gh label create "$LABEL" --repo "$REPO" --description "$LABEL_DESCRIPTION" --color "$LABEL_COLOR" --force
+                gh api "repos/$REPO/issues/$PR_NUMBER/labels" -f "labels[]=$LABEL" --silent
+              fi
+            else
+              echo "PR #$PR_NUMBER: ラベル対象外 ($reason)" | tee -a "$GITHUB_STEP_SUMMARY"
+              if [ "$has_label" != 0 ]; then
+                gh api -X DELETE "repos/$REPO/issues/$PR_NUMBER/labels/$(jq -rn --arg v "$LABEL" '$v | @uri')" --silent
+              fi
+            fi
+            exit 0
+          done
+
+          echo "::error::PRの状態が判定中に変わり続けたため、ラベルを更新しなかった"
+          exit 1

@@ -24,12 +24,17 @@ seed 既定値は `RI-735`。上書きするなら `&seed=任意`。入口は `?
 1. 開始前に「予定した手」と「予測した成果」を書く（H1: 計画の理解）。空欄では開始できない。
 2. 開始すると停止状態。予約なし腕は再生してからすぐに介入する（1 tick は約 0.9 秒）。予約あり腕は停止中に最大2手を予約し、再生で先頭から1 tick ずつ実行する。
 3. 終了後、実績（出荷・完了・介入結果）を予測と見比べる。手応えを 1〜5 で押す（H2）。
-4. 画面上の「待ち時間（停止含む）」が壁時計（H3）。停止中も加算される。
+4. 結果パネルと実行ログの壁時計3値が H3。停止時間は待ち時間と分けて記録する。ライブの「待ち時間（停止含む）」は 0 未満を出さない。
 
 読む数字:
 
 - 計画 / 予測（開始前に自分が書いた文）
-- 実績: 出荷・完了・介入回数・集中力消費・士気・待ち時間
+- 実績: 出荷・完了・介入回数・集中力消費・士気
+- H3 は次の3フィールド（結果パネル・実行ログの `timing including=…`・summary JSON）:
+  - `wallClockIncludingPauseMs`: 開始から終了までの壁時計（停止含む）
+  - `pausedMs`: 停止していた合計時間
+  - `wallClockExcludingPauseMs`: 壁時計から停止時間を引いた値
+- `wallClockMs` は `wallClockIncludingPauseMs` と同じ互換フィールド
 - 予約あり腕: 各予約の `success` / `fail` / `cancelled`（`target-disappeared` / `double-trigger`）
 - 手応え 1〜5
 
@@ -53,9 +58,12 @@ seed `RI-735`、意図方針は両腕とも PR分割(T0) → ペアレビュー�
 | morale | 59 | 59 |
 | aiLiteracy | 36 | 36 |
 | 予約結果 | （なし） | splitPr T0 success@0, pairReview success@1 |
-| wallClockMs（スクリプト） | 0 | 0 |
+| wallClockIncludingPauseMs（スクリプト） | 0 | 0 |
+| pausedMs（スクリプト） | 0 | 0 |
+| wallClockExcludingPauseMs（スクリプト） | 0 | 0 |
+| wallClockMs（互換=including） | 0 | 0 |
 
-壁時計の人間値はブラウザの「待ち時間」を使う。スクリプトは sim だけなので 0。
+H3 の人間値は結果パネルの3値と `rd-735-timing-json` を使う。スクリプトは `nowMs=0` なので 3値とも 0。
 
 パス/フェイル（すべて pass）:
 
@@ -77,7 +85,7 @@ seed `RI-735`、意図方針は両腕とも PR分割(T0) → ペアレビュー�
 | interventionsUsed | 2 | 2 |
 | focusSpent | 4 | 4 |
 | morale | 59 | 59 |
-| 待ち時間 | 14.8s | 15.1s |
+| 待ち時間（当時は停止含む1値） | 14.8s | 15.1s |
 | 手の結果 | 手動 splitPr T0 success / pairReview success | 予約 splitPr T0 success@0 / pairReview success@1 |
 | 手応え | 4 | 4 |
 

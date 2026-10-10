@@ -62,6 +62,8 @@ export interface ExperimentState {
   feel: 1 | 2 | 3 | 4 | 5 | null;
   wallClockStartedAtMs: number | null;
   wallClockEndedAtMs: number | null;
+  pausedAccumulatedMs: number;
+  pauseStartedAtMs: number | null;
 }
 
 export interface ExperimentSummary {
@@ -85,9 +87,62 @@ export interface ExperimentSummary {
     executedTick?: number;
   }>;
   wallClockMs: number | null;
+  wallClockIncludingPauseMs: number | null;
+  pausedMs: number | null;
+  wallClockExcludingPauseMs: number | null;
+}
+
+export interface Issue735Timing {
+  wallClockIncludingPauseMs: number | null;
+  pausedMs: number | null;
+  wallClockExcludingPauseMs: number | null;
 }
 
 const ALLOWED = new Set<string>(ISSUE_735_ACTIONS);
+
+export function clampNonNegativeMs(ms: number): number {
+  return ms < 0 ? 0 : ms;
+}
+
+function accumulatedPausedMs(state: ExperimentState, nowMs: number): number {
+  if (state.pauseStartedAtMs == null) return state.pausedAccumulatedMs;
+  return state.pausedAccumulatedMs + clampNonNegativeMs(nowMs - state.pauseStartedAtMs);
+}
+
+function closeOpenPause(state: ExperimentState, nowMs: number): void {
+  if (state.pauseStartedAtMs == null) return;
+  state.pausedAccumulatedMs = accumulatedPausedMs(state, nowMs);
+  state.pauseStartedAtMs = null;
+}
+
+export function measureIssue735Timing(state: ExperimentState, nowMs?: number): Issue735Timing {
+  if (state.wallClockStartedAtMs == null) {
+    return {
+      wallClockIncludingPauseMs: null,
+      pausedMs: null,
+      wallClockExcludingPauseMs: null,
+    };
+  }
+  const endMs = state.wallClockEndedAtMs ?? nowMs;
+  if (endMs == null) {
+    return {
+      wallClockIncludingPauseMs: null,
+      pausedMs: null,
+      wallClockExcludingPauseMs: null,
+    };
+  }
+  const including = clampNonNegativeMs(endMs - state.wallClockStartedAtMs);
+  const paused = accumulatedPausedMs(state, endMs);
+  return {
+    wallClockIncludingPauseMs: including,
+    pausedMs: paused,
+    wallClockExcludingPauseMs: clampNonNegativeMs(including - paused),
+  };
+}
+
+export function formatIssue735TimingReason(timing: Issue735Timing): string {
+  return `timing including=${timing.wallClockIncludingPauseMs} paused=${timing.pausedMs} excluding=${timing.wallClockExcludingPauseMs}`;
+}
 
 export function isIssue735Action(id: string): id is Issue735ActionId {
   return ALLOWED.has(id);
@@ -173,11 +228,14 @@ export function createIssue735Experiment(
     feel: null,
     wallClockStartedAtMs: null,
     wallClockEndedAtMs: null,
+    pausedAccumulatedMs: 0,
+    pauseStartedAtMs: null,
   };
 }
 
 export function summarizeIssue735(state: ExperimentState): ExperimentSummary {
   const metrics = state.sprint.metrics;
+  const timing = measureIssue735Timing(state);
   return {
     ended: state.sprint.complete || state.tick >= state.sprint.config.maxTicks,
     tick: state.tick,
@@ -198,10 +256,10 @@ export function summarizeIssue735(state: ExperimentState): ExperimentSummary {
       cancelReason: move.cancelReason,
       executedTick: move.executedTick,
     })),
-    wallClockMs:
-      state.wallClockStartedAtMs == null || state.wallClockEndedAtMs == null
-        ? null
-        : state.wallClockEndedAtMs - state.wallClockStartedAtMs,
+    wallClockMs: timing.wallClockIncludingPauseMs,
+    wallClockIncludingPauseMs: timing.wallClockIncludingPauseMs,
+    pausedMs: timing.pausedMs,
+    wallClockExcludingPauseMs: timing.wallClockExcludingPauseMs,
   };
 }
 
@@ -219,6 +277,8 @@ export function startIssue735(state: ExperimentState, nowMs: number): Experiment
   next.started = true;
   next.paused = true;
   next.wallClockStartedAtMs = nowMs;
+  next.pausedAccumulatedMs = 0;
+  next.pauseStartedAtMs = nowMs;
   next.logs.push({ tick: next.tick, source: 'system', result: 'paused', reason: 'start-paused' });
   return next;
 }
@@ -227,19 +287,28 @@ export function setIssue735Feel(state: ExperimentState, feel: 1 | 2 | 3 | 4 | 5)
   return { ...cloneState(state), feel };
 }
 
-export function pauseIssue735(state: ExperimentState): ExperimentState {
+export function pauseIssue735(state: ExperimentState, nowMs?: number): ExperimentState {
   if (!state.started || state.paused || summarizeIssue735(state).ended) return state;
   const next = cloneState(state);
   next.paused = true;
+  if (nowMs != null && next.pauseStartedAtMs == null) {
+    next.pauseStartedAtMs = nowMs;
+  }
   next.logs.push({ tick: next.tick, source: 'system', result: 'paused', reason: 'player-pause' });
   return next;
 }
 
 function finishIfEnded(state: ExperimentState, nowMs?: number): void {
   if (!summarizeIssue735(state).ended) return;
-  if (state.wallClockEndedAtMs == null && nowMs != null) {
-    state.wallClockEndedAtMs = nowMs;
-  }
+  if (state.wallClockEndedAtMs != null || nowMs == null) return;
+  closeOpenPause(state, nowMs);
+  state.wallClockEndedAtMs = nowMs;
+  state.logs.push({
+    tick: state.tick,
+    source: 'system',
+    result: 'success',
+    reason: formatIssue735TimingReason(measureIssue735Timing(state, nowMs)),
+  });
 }
 
 function queuedMoves(state: ExperimentState): ReservedMove[] {
@@ -362,9 +431,10 @@ function flushNextReserved(state: ExperimentState): void {
   executeOnce(state, 'reserved', next.actionId, next.targetTaskId, next);
 }
 
-export function resumeIssue735(state: ExperimentState): ExperimentState {
+export function resumeIssue735(state: ExperimentState, nowMs?: number): ExperimentState {
   if (!state.started || !state.paused || summarizeIssue735(state).ended) return state;
   const next = cloneState(state);
+  if (nowMs != null) closeOpenPause(next, nowMs);
   next.paused = false;
   next.logs.push({ tick: next.tick, source: 'system', result: 'success', reason: 'resume' });
   if (next.arm === 'reserve') flushNextReserved(next);

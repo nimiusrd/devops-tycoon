@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import type { RdArm } from '../resolveRdExperiment';
 import {
   createIssue735Experiment,
   enqueueReservedMove,
+  measureIssue735Timing,
   moveReserved,
+  pauseIssue735,
+  recordIssue735Plan,
   requestIssue735Action,
   resumeIssue735,
   startIssue735,
   summarizeIssue735,
+  tickIssue735,
 } from './experiment';
-import { runIssue735Arm, runScriptedPassFail } from './scripted';
+import { runIssue735Arm, runScriptedPassFail, SCRIPTED_PLAN } from './scripted';
 
 describe('#735 停止中の最大2手予約（R&D throwaway）', () => {
   it('パス/フェイル条件を同じ seed で満たす', () => {
@@ -68,4 +73,72 @@ describe('#735 停止中の最大2手予約（R&D throwaway）', () => {
     expect(state.paused).toBe(false);
     expect(state.tick).toBe(0);
   });
+
+  it('開始直後の待ち時間は負にならず 0 に丸める', () => {
+    const state = startIssue735(createIssue735Experiment('none', 'RI-735'), 1000);
+    expect(measureIssue735Timing(state, 800)).toEqual({
+      wallClockIncludingPauseMs: 0,
+      pausedMs: 0,
+      wallClockExcludingPauseMs: 0,
+    });
+  });
+
+  it('停止時間を待ち時間から分けて記録する', () => {
+    let state = startIssue735(createIssue735Experiment('none', 'RI-735'), 1000);
+    state = resumeIssue735(state, 1500);
+    state = pauseIssue735(state, 2500);
+    state = resumeIssue735(state, 4000);
+    const live = measureIssue735Timing(state, 5000);
+    expect(live).toEqual({
+      wallClockIncludingPauseMs: 4000,
+      pausedMs: 2000,
+      wallClockExcludingPauseMs: 2000,
+    });
+  });
+
+  it('意図方針の両腕で壁時計3値を summary とログに残す', () => {
+    for (const arm of ['none', 'reserve'] as const) {
+      const { summary, state } = runIntendedWithClock(arm);
+      expect(summary.wallClockIncludingPauseMs).toBe(16400);
+      expect(summary.pausedMs).toBe(2000);
+      expect(summary.wallClockExcludingPauseMs).toBe(14400);
+      expect(summary.wallClockMs).toBe(16400);
+      expect(
+        state.logs.some(
+          (entry) => entry.reason === 'timing including=16400 paused=2000 excluding=14400',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it('スクリプトログの壁時計3値は nowMs=0 のため 0', () => {
+    const report = runScriptedPassFail('RI-735');
+    for (const arm of [report.none, report.reserve]) {
+      expect(arm.wallClockIncludingPauseMs).toBe(0);
+      expect(arm.pausedMs).toBe(0);
+      expect(arm.wallClockExcludingPauseMs).toBe(0);
+      expect(arm.wallClockMs).toBe(0);
+    }
+  });
 });
+
+function runIntendedWithClock(arm: RdArm) {
+  let now = 10_000;
+  let state = recordIssue735Plan(createIssue735Experiment(arm, 'RI-735'), SCRIPTED_PLAN);
+  state = startIssue735(state, now);
+  now += 2000;
+  if (arm === 'reserve') {
+    state = enqueueReservedMove(state, 'splitPr', 0);
+    state = enqueueReservedMove(state, 'pairReview');
+    state = resumeIssue735(state, now);
+  } else {
+    state = resumeIssue735(state, now);
+    state = requestIssue735Action(state, 'splitPr', 0);
+    state = requestIssue735Action(state, 'pairReview');
+  }
+  while (!summarizeIssue735(state).ended) {
+    now += 900;
+    state = tickIssue735(state, now);
+  }
+  return { state, summary: summarizeIssue735(state) };
+}

@@ -8,6 +8,7 @@ import {
   enqueueReservedMove,
   INTENDED_STRATEGY,
   ISSUE_735_ACTIONS,
+  measureIssue735Timing,
   moveReserved,
   pauseIssue735,
   previewReservedQueue,
@@ -72,10 +73,8 @@ export function Issue735ExperimentApp({ rd }: { rd: RdExperimentRef }) {
     return () => window.clearInterval(id);
   }, [state.started, state.paused, ended]);
 
-  const wallClockMs =
-    state.wallClockStartedAtMs == null
-      ? null
-      : (state.wallClockEndedAtMs ?? nowMs) - state.wallClockStartedAtMs;
+  const liveTiming = measureIssue735Timing(state, nowMs);
+  const wallClockMs = liveTiming.wallClockIncludingPauseMs;
 
   const startRun = () => {
     let next = recordIssue735Plan(state, { moves: planMoves, predicted: planPredicted });
@@ -218,7 +217,9 @@ export function Issue735ExperimentApp({ rd }: { rd: RdExperimentRef }) {
                 data-testid="rd-735-toggle"
                 onClick={() =>
                   setState((current) =>
-                    current.paused ? resumeIssue735(current) : pauseIssue735(current),
+                    current.paused
+                      ? resumeIssue735(current, Date.now())
+                      : pauseIssue735(current, Date.now()),
                   )
                 }
               >
@@ -371,12 +372,35 @@ export function Issue735ExperimentApp({ rd }: { rd: RdExperimentRef }) {
               <dd>{summary.morale}</dd>
             </div>
             <div>
-              <dt>待ち時間</dt>
-              <dd>
-                {summary.wallClockMs == null ? '—' : `${(summary.wallClockMs / 1000).toFixed(1)}s`}
+              <dt>壁時計（停止含む）</dt>
+              <dd data-testid="rd-735-timing-including">
+                {summary.wallClockIncludingPauseMs == null
+                  ? '—'
+                  : `${(summary.wallClockIncludingPauseMs / 1000).toFixed(1)}s`}
+              </dd>
+            </div>
+            <div>
+              <dt>停止時間</dt>
+              <dd data-testid="rd-735-timing-paused">
+                {summary.pausedMs == null ? '—' : `${(summary.pausedMs / 1000).toFixed(1)}s`}
+              </dd>
+            </div>
+            <div>
+              <dt>壁時計（停止除く）</dt>
+              <dd data-testid="rd-735-timing-excluding">
+                {summary.wallClockExcludingPauseMs == null
+                  ? '—'
+                  : `${(summary.wallClockExcludingPauseMs / 1000).toFixed(1)}s`}
               </dd>
             </div>
           </dl>
+          <p className={styles.hint} data-testid="rd-735-timing-json">
+            {JSON.stringify({
+              wallClockIncludingPauseMs: summary.wallClockIncludingPauseMs,
+              pausedMs: summary.pausedMs,
+              wallClockExcludingPauseMs: summary.wallClockExcludingPauseMs,
+            })}
+          </p>
           <ul>
             {summary.reserved.map((move) => (
               <li key={move.id} className={statusClass(move.status)}>

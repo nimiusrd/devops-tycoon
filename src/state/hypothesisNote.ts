@@ -95,7 +95,24 @@ export function restoreHypothesisBound(
   record: HypothesisNoteRecord,
   bound: HypothesisNoteRecord['bound'],
 ): HypothesisNoteRecord {
-  return record.bound === bound ? record : { ...record, bound };
+  if (record.bound || !bound) return record;
+  return { ...record, bound };
+}
+
+/**
+ * 開始を取り消す。この開始の仮説だけを外し、待ち時間に書いた下書きは残す。
+ * 下書きを消費したままなら、開始前の下書きへ戻す。
+ */
+export function undoAbandonedBind(
+  record: HypothesisNoteRecord,
+  before: HypothesisNoteRecord,
+  intendedStartId: string,
+): HypothesisNoteRecord {
+  const ours = record.bound?.startId === intendedStartId;
+  const bound = ours ? before.bound : record.bound;
+  const draft = ours && record.draft == null ? before.draft : record.draft;
+  if (bound === record.bound && draft === record.draft) return record;
+  return { ...record, bound, draft };
 }
 
 export function editHypothesisDraft(
@@ -289,6 +306,20 @@ function mergeBound(
     return { ...current.bound, reflection: local.bound.reflection };
   }
   return local.bound;
+}
+
+/** 解除の復元では、別タブがすでに書いた後発仮説を古い仮説で上書きしない。 */
+export function commitStoredHypothesis(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  current: HypothesisNoteRecord,
+  options?: { restoreBound?: boolean },
+): HypothesisNoteRecord {
+  const next = commitHypothesisNote(base, local, current);
+  if (options?.restoreBound && current.bound && current.bound.startId !== local.bound?.startId) {
+    return { ...next, bound: current.bound };
+  }
+  return next;
 }
 
 export function commitHypothesisNote(

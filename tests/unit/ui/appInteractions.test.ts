@@ -726,6 +726,34 @@ describe('App のタイトル操作', () => {
     }
   });
 
+  it('開始取消のタイムアウトは、保存の完了を待たない', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    vi.useFakeTimers();
+    const spy = vi
+      .spyOn(hypothesisNoteStore, 'applyCommitted')
+      .mockImplementation(() => new Promise(() => undefined));
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      vi.mocked(screen.game.finishSaveBlocksNewRun).mockReturnValue(true);
+      await vi.advanceTimersByTimeAsync(HYPOTHESIS_START_SAVE_TIMEOUT_MS);
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      expect(screen.child('TitleScreen').runLaunchPending).toBe(false);
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('完走保存が開始待ちのあいだに失敗したら、開始中のままにしない', async () => {
     const screen = mountApp();
     screen.phase('title');

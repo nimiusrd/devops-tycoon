@@ -7,11 +7,7 @@
  * ラン決着時にはメタ進行を永続化する（第17章）。
  */
 import { getTrial } from './data/difficulties';
-import {
-  detachHypothesisNote,
-  HYPOTHESIS_NOTE_SAVE_FAILED,
-  restoreHypothesisBound,
-} from './state/hypothesisNote';
+import { detachHypothesisNote, HYPOTHESIS_NOTE_SAVE_FAILED } from './state/hypothesisNote';
 import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import type { ReplayFramePhase } from './sim/run/persist';
@@ -2346,9 +2342,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         if (detached === 'failed') {
           await restoreImportedRun();
           undoImportedRun = null;
-          await hypothesisNoteStore.applyCommitted((record) =>
-            restoreHypothesisBound(record, beforeHypothesis.bound),
-          );
+          await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
           return {
             ok: false,
             reason: 'corrupt',
@@ -2361,9 +2355,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         );
         if (!replayResult.ok) {
           await restoreImportedRun();
-          await hypothesisNoteStore.applyCommitted((record) =>
-            restoreHypothesisBound(record, beforeHypothesis.bound),
-          );
+          await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
           return { ok: false, reason: 'corrupt', message: replayResult.message };
         }
         noteRunDurable();
@@ -2570,9 +2562,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               undoImportedRun = null;
               await undo?.();
               await restoreSnapshot();
-              await hypothesisNoteStore.applyCommitted((record) =>
-                restoreHypothesisBound(record, beforeHypothesis.bound),
-              );
+              await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
               return {
                 ok: false,
                 reason: 'corrupt',

@@ -11,7 +11,7 @@ import {
   openGameDb,
 } from './gameDb';
 import {
-  commitHypothesisNote,
+  commitStoredHypothesis,
   EMPTY_HYPOTHESIS_NOTE,
   hypothesisCommitDroppedSessionBound,
   hypothesisCommitKeptForeignBound,
@@ -25,7 +25,11 @@ export interface HypothesisNoteStorage {
    * 端末上の最新と、このタブが読み込んだ世代を突き合わせ、変えた欄だけを書く。
    * 返り値は実際に残したレコード。
    */
-  commit(local: HypothesisNoteRecord, base: HypothesisNoteRecord): Promise<HypothesisNoteRecord>;
+  commit(
+    local: HypothesisNoteRecord,
+    base: HypothesisNoteRecord,
+    options?: { restoreBound?: boolean },
+  ): Promise<HypothesisNoteRecord>;
 }
 
 export class IndexedDbHypothesisNoteStorage implements HypothesisNoteStorage {
@@ -43,13 +47,14 @@ export class IndexedDbHypothesisNoteStorage implements HypothesisNoteStorage {
   async commit(
     local: HypothesisNoteRecord,
     base: HypothesisNoteRecord,
+    options?: { restoreBound?: boolean },
   ): Promise<HypothesisNoteRecord> {
     const db = await openGameDb(this.dbName);
     try {
       const tx = db.transaction(HYPOTHESIS_NOTE_STORE_NAME, 'readwrite');
       const store = tx.objectStore(HYPOTHESIS_NOTE_STORE_NAME);
       const current = normalizeHypothesisNote(await store.get(HYPOTHESIS_NOTE_RECORD_KEY));
-      const next = commitHypothesisNote(base, local, current);
+      const next = commitStoredHypothesis(base, local, current, options);
       await store.put(next, HYPOTHESIS_NOTE_RECORD_KEY);
       await tx.done;
       return next;
@@ -69,8 +74,9 @@ export class MemoryHypothesisNoteStorage implements HypothesisNoteStorage {
   async commit(
     local: HypothesisNoteRecord,
     base: HypothesisNoteRecord,
+    options?: { restoreBound?: boolean },
   ): Promise<HypothesisNoteRecord> {
-    const next = commitHypothesisNote(base, local, normalizeHypothesisNote(this.value));
+    const next = commitStoredHypothesis(base, local, normalizeHypothesisNote(this.value), options);
     this.value = next;
     return next;
   }
@@ -95,6 +101,11 @@ export interface HypothesisNoteStore {
    */
   applyCommitted(
     change: (record: HypothesisNoteRecord) => HypothesisNoteRecord,
+    options?: { restoreBound?: boolean },
+  ): Promise<'unchanged' | 'saved' | 'failed'>;
+  /** 永続値がまだ解除状態のときだけ、以前の仮説を戻す。 */
+  restoreBoundIfDetached(
+    bound: HypothesisNoteRecord['bound'],
   ): Promise<'unchanged' | 'saved' | 'failed'>;
   /** 保存できなかった開始分を、このセッションの表示から外す。端末へは書かない。 */
   abandonUnpersistedStart(): void;
@@ -141,6 +152,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   ) => queued.reduce((current, change) => change(current), record);
 
   const opWaiters = new Map<number, () => void>();
+  const restoreBoundOps = new Set<number>();
 
   const finishOp = (id: number, status: 'saved' | 'failed' | 'unchanged') => {
     if (opState.get(id) !== 'pending') return;
@@ -171,7 +183,11 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         activeOpIds = [];
         captureChanges = true;
         try {
-          const stored = await storage.commit(local, base);
+          const stored = await storage.commit(
+            local,
+            base,
+            ops.some((id) => restoreBoundOps.has(id)) ? { restoreBound: true } : undefined,
+          );
           const queued = queuedDuringWrite.filter((item) => !isAbandonedOp(item.opId));
           const queuedChanges = queued.map((item) => item.change);
           const followOps = queued.flatMap((item) => (item.opId === undefined ? [] : [item.opId]));
@@ -345,8 +361,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
 
   const applyCommitted = async (
     change: (record: HypothesisNoteRecord) => HypothesisNoteRecord,
+    options?: { restoreBound?: boolean },
   ): Promise<'unchanged' | 'saved' | 'failed'> => {
     const opId = nextOpId++;
+    if (options?.restoreBound) restoreBoundOps.add(opId);
     opState.set(opId, 'pending');
     let wake = () => {};
     const settled = new Promise<void>((resolve) => {
@@ -359,12 +377,14 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       pending = pending.filter((item) => item.opId !== opId);
       opState.delete(opId);
       opWaiters.delete(opId);
+      restoreBoundOps.delete(opId);
       return snapshot.saveFailed ? 'failed' : 'unchanged';
     }
     if (opState.get(opId) === 'pending') await settled;
     const status = opState.get(opId) ?? 'unchanged';
     opState.delete(opId);
     opWaiters.delete(opId);
+    restoreBoundOps.delete(opId);
     if (status === 'saved') return 'saved';
     if (status === 'failed') return 'failed';
     return 'unchanged';
@@ -389,13 +409,29 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     },
     revertAbandonedStart(record) {
       discardThroughSeq = persistSeq;
-      revertRecord = record;
       for (const [id, status] of opState) {
         if (status === 'pending') finishOp(id, 'failed');
       }
       queuedDuringWrite = queuedDuringWrite.filter((item) => !isAbandonedOp(item.opId));
-      pending = [];
-      publish({ ...snapshot, record, saveFailed: true });
+      pending = pending.filter((item) => !isAbandonedOp(item.opId));
+      if (!loaded) {
+        // 初回読込前の空 snapshot で、保存済みメモを上書きしない。
+        revertRecord = null;
+        publish({ ...snapshot, saveFailed: true });
+        return;
+      }
+      const current = snapshot.record;
+      const draft =
+        current.draft && !sameDraft(current.draft, record.draft) ? current.draft : record.draft;
+      const next = { ...record, draft };
+      revertRecord = next;
+      publish({ ...snapshot, record: next, saveFailed: true });
+    },
+    restoreBoundIfDetached(bound) {
+      if (!bound) return Promise.resolve('unchanged');
+      return applyCommitted((record) => (record.bound ? record : { ...record, bound }), {
+        restoreBound: true,
+      });
     },
   };
 }

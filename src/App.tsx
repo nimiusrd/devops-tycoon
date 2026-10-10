@@ -57,7 +57,7 @@ import {
   bindHypothesisToRun,
   detachHypothesisNote,
   newHypothesisStartId,
-  restoreHypothesisBound,
+  undoAbandonedBind,
   editHypothesisDraft,
   hypothesisForRun,
   hypothesisRunKey,
@@ -398,8 +398,16 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         game.getRunEpoch() !== epoch ||
         game.finishSaveBlocksNewRun();
       if (superseded) {
-        const settled = await savePromise;
-        if (settled !== 'unchanged') await hypothesisNoteStore.applyCommitted(() => before);
+        if (saved === 'timeout') {
+          hypothesisNoteStore.revertAbandonedStart(before);
+        } else {
+          const settled = await savePromise;
+          if (settled !== 'unchanged') {
+            await hypothesisNoteStore.applyCommitted((record) =>
+              undoAbandonedBind(record, before, intendedStartId),
+            );
+          }
+        }
         beginGuard.current = false;
         setRunLaunchPending(false);
         return;
@@ -713,9 +721,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                 );
                 if (detached === 'failed') {
                   await game.rollbackRunImport();
-                  await hypothesisNoteStore.applyCommitted((record) =>
-                    restoreHypothesisBound(record, beforeHypothesis.bound),
-                  );
+                  await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
                   return { ok: false, message: HYPOTHESIS_NOTE_SAVE_FAILED };
                 }
               }

@@ -10,6 +10,7 @@ import {
   bindHypothesisToRun,
   commitHypothesisNote,
   detachHypothesisNote,
+  undoAbandonedBind,
   editHypothesisDraft,
   hypothesisCommitDroppedSessionBound,
   hypothesisForRun,
@@ -1067,6 +1068,79 @@ describe('仮説メモの保存', () => {
     await saving;
     await store.flush();
     expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('later');
+  });
+
+  it('初回読込前のタイムアウトは、保存済みメモを消さない', async () => {
+    let release = () => {};
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '保存済み', writtenAt: 4 },
+      bound: null,
+      generation: 1,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: () =>
+        new Promise((resolve) => {
+          release = () => resolve(memory.value);
+        }),
+      commit: async (local, base) => memory.commit(local, base),
+    };
+    const store = createHypothesisNoteStore(storage);
+    const loading = store.load();
+    const saving = store.applyCommitted((record) => bindHypothesisToRun(record, 'late', 'ghost'));
+    store.revertAbandonedStart(store.getSnapshot().record);
+    release();
+    await loading;
+    await saving;
+    await store.flush();
+    expect(store.getSnapshot().record.draft?.text).toBe('保存済み');
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('保存済み');
+    expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
+  });
+
+  it('解除の復元は、別タブの後発仮説を上書きしない', async () => {
+    const oldBound = {
+      runKey: 'run-old',
+      startId: 'old',
+      beforeStart: { text: '前', writtenAt: 1 },
+      reflection: null,
+    };
+    const later = {
+      runKey: 'run-new',
+      startId: 'later',
+      beforeStart: { text: '後', writtenAt: 2 },
+      reflection: null,
+    };
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = { schemaVersion: 1, draft: null, bound: oldBound, generation: 1 };
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    await store.applyCommitted((record) => detachHypothesisNote(record));
+    memory.value = { schemaVersion: 1, draft: null, bound: later, generation: 3 };
+    await store.restoreBoundIfDetached(oldBound);
+    expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('later');
+  });
+
+  it('開始の取消は、待ち時間に書いた下書きを戻さない', () => {
+    const before = {
+      ...EMPTY_HYPOTHESIS_NOTE,
+      draft: { text: '消費前', writtenAt: 1 },
+    };
+    const typed = {
+      ...before,
+      draft: { text: '入力中', writtenAt: 2 },
+      bound: {
+        runKey: 'run-c',
+        startId: 'start-c',
+        beforeStart: { text: '消費前', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const undone = undoAbandonedBind(typed, before, 'start-c');
+    expect(undone.draft?.text).toBe('入力中');
+    expect(undone.bound).toBeNull();
   });
 
   it('失敗した固定は、待ち時間の下書きと一緒に保存しない', async () => {

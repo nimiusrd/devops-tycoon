@@ -44,6 +44,7 @@ import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
 import { HYPOTHESIS_NOTE_SAVE_FAILED, useHypothesisNote } from './ui/useHypothesisNote';
+import { HYPOTHESIS_START_UNRECORDED } from './state/hypothesisNote';
 import { resetViewportScroll } from './ui/viewportScroll';
 import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
@@ -270,6 +271,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const hypothesisKey = hypothesisRunKey(state);
   const canBeginRun = !run.isReplayMode && !run.finishSaveBlocksNewRun;
   const beginGuard = useRef(false);
+  const [hypothesisUnrecorded, setHypothesisUnrecorded] = useState(false);
   useEffect(() => {
     if (phase === 'title') beginGuard.current = false;
   }, [phase]);
@@ -375,8 +377,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         ),
       );
       if (saved === 'failed') {
-        beginGuard.current = false;
-        return;
+        hypothesisNoteStore.abandonUnpersistedStart();
+        setHypothesisUnrecorded(true);
       }
       run.startRun(difficulty, trials, scenario, seed);
     })();
@@ -407,8 +409,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         ),
       );
       if (saved === 'failed') {
-        beginGuard.current = false;
-        return;
+        hypothesisNoteStore.abandonUnpersistedStart();
+        setHypothesisUnrecorded(true);
       }
       run.startDailyRun(day);
     })();
@@ -639,6 +641,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               hypothesisNoteStore.update((record) => editHypothesisDraft(record, text, Date.now()))
             }
             hypothesisSaveFailed={hypothesisNote.saveFailed}
+            hypothesisUnrecorded={hypothesisUnrecorded}
             onImportRunSave={async (raw) => {
               const result = await run.importRunSaveText(raw);
               if (result.ok) {
@@ -1051,6 +1054,15 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   return (
     <>
       {persistenceNotice}
+      {hypothesisUnrecorded && phase !== 'title' ? (
+        <p
+          className="hypothesis-start-unrecorded"
+          role="status"
+          data-testid="hypothesis-start-unrecorded"
+        >
+          {HYPOTHESIS_START_UNRECORDED}
+        </p>
+      ) : null}
       {phaseBody}
     </>
   );

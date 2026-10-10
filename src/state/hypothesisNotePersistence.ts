@@ -96,6 +96,8 @@ export interface HypothesisNoteStore {
   applyCommitted(
     change: (record: HypothesisNoteRecord) => HypothesisNoteRecord,
   ): Promise<'unchanged' | 'saved' | 'failed'>;
+  /** 保存できなかった開始分を、このセッションの表示から外す。端末へは書かない。 */
+  abandonUnpersistedStart(): void;
 }
 
 export function createHypothesisNoteStore(storage: HypothesisNoteStorage): HypothesisNoteStore {
@@ -252,6 +254,13 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     update,
     flush,
     applyCommitted,
+    abandonUnpersistedStart() {
+      publish({
+        ...snapshot,
+        record: { ...snapshot.record, bound: null },
+        saveFailed: true,
+      });
+    },
   };
 }
 

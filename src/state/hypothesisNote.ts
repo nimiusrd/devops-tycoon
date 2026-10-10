@@ -10,6 +10,7 @@ import type { RunState } from '../sim/run/types';
 export const HYPOTHESIS_NOTE_SCHEMA_VERSION = 1 as const;
 export const HYPOTHESIS_NOTE_SAVE_FAILED =
   'メモを端末に保存できませんでした。このタブを閉じるまでは表示されます。';
+export const HYPOTHESIS_START_UNRECORDED = '仮説メモを保存できなかったので、今回は記録しません';
 /** 短い仮説1件に収める上限（コードポイント数）。 */
 export const HYPOTHESIS_NOTE_MAX_LENGTH = 120;
 

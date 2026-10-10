@@ -21,6 +21,7 @@ import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
 import { FINISH_SAVE_BLOCKS_NEW_RUN } from './finishSaveBlock';
 import { HYPOTHESIS_NOTE_SAVE_FAILED } from './useHypothesisNote';
+import { HYPOTHESIS_START_UNRECORDED } from '../state/hypothesisNote';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
@@ -139,6 +140,8 @@ export interface TitleScreenProps {
   hypothesisDraft?: string;
   onHypothesisDraftChange?: (text: string) => void;
   hypothesisSaveFailed?: boolean;
+  /** 開始時にメモを保存できず、仮説なしで始めた。 */
+  hypothesisUnrecorded?: boolean;
 }
 
 export function TitleScreen({
@@ -165,6 +168,7 @@ export function TitleScreen({
   hypothesisDraft,
   onHypothesisDraftChange,
   hypothesisSaveFailed = false,
+  hypothesisUnrecorded = false,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -338,8 +342,24 @@ export function TitleScreen({
   }, [dailyConfirmOpen]);
 
   const launchBlocked = newRunBlocked || runSaveImporting;
+  const launchDescribedBy = [
+    newRunBlocked ? 'finish-save-block' : '',
+    hypothesisUnrecorded ? 'hypothesis-start-unrecorded' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const launchControls = (
     <>
+      {hypothesisUnrecorded ? (
+        <p
+          id="hypothesis-start-unrecorded"
+          className="hypothesis-start-unrecorded-dock"
+          data-testid="hypothesis-start-unrecorded"
+          role="status"
+        >
+          {HYPOTHESIS_START_UNRECORDED}
+        </p>
+      ) : null}
       {newRunBlocked ? (
         <p id="finish-save-block" className="title-resume-warning" data-testid="finish-save-block">
           {FINISH_SAVE_BLOCKS_NEW_RUN}
@@ -358,7 +378,7 @@ export function TitleScreen({
               type="button"
               data-testid="start-daily-run"
               disabled={launchBlocked}
-              aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
+              aria-describedby={launchDescribedBy || undefined}
               aria-haspopup={resumableSummary ? 'dialog' : undefined}
               aria-expanded={resumableSummary ? dailyConfirmOpen : undefined}
               onClick={requestStartDaily}
@@ -381,7 +401,7 @@ export function TitleScreen({
             className="title-launch"
             data-testid="start-run"
             disabled={launchBlocked}
-            aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
+            aria-describedby={launchDescribedBy || undefined}
             onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
           >
             <span>
@@ -398,7 +418,7 @@ export function TitleScreen({
             className="btn btn-primary btn-lg"
             data-testid="start-run"
             disabled={launchBlocked}
-            aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
+            aria-describedby={launchDescribedBy || undefined}
             onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
           >
             四半期を始める →

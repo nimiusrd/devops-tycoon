@@ -149,3 +149,34 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId('diagnostic-include-note')).toHaveCount(0);
   });
 }
+
+for (const [name, startId] of [
+  ['通常ラン', 'start-run'],
+  ['デイリーラン', 'start-daily-run'],
+] as const) {
+  test(`仮説メモを保存できなくても${name}を開始し、320幅で案内が見える`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.addInitScript(() => {
+      const put = IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put = function (this: IDBObjectStore, ...args) {
+        if (this.name === 'hypothesisNote') {
+          throw new DOMException('quota', 'QuotaExceededError');
+        }
+        return put.apply(this, args);
+      };
+    });
+    await page.goto('/?seed=hypothesis-save-fail&tutorial=off');
+    await expect(page.getByTestId('title')).toBeVisible();
+    await page.getByTestId('hypothesis-note-input').fill('保存できない仮説');
+    await page.getByTestId(startId).click();
+    const notice = page.getByTestId('hypothesis-start-unrecorded');
+    await expect(notice).toBeVisible();
+    await expect(notice).toHaveText('仮説メモを保存できなかったので、今回は記録しません');
+    await expect(page.getByTestId('title')).not.toBeVisible();
+    const box = await notice.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(568);
+    await expect(page.getByTestId('hypothesis-review')).toHaveCount(0);
+  });
+}

@@ -104,8 +104,6 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 | `npm run test:coverage` | Vitestのユニットテストと全`src` TS/TSXのカバレッジ計測を実行 |
 | `npm run test:property` | fast-checkによるproperty testのみを100ケースずつ実行 |
 | `npm run test:watch` | Vitestをwatchモードで実行 |
-| `npm run test:mutation` | Strykerで`src/sim` / `src/state`のミューテーションテストを実行（incremental・ローカル用・CI非必須） |
-| `npm run test:mutation:force` | incrementalキャッシュを無視して対象変異を再実行する |
 | `npm run test:e2e` | Playwrightの標準E2Eを実行 |
 | `npm run test:e2e:pixi` | PixiJSの視覚回帰テストを実行 |
 | `npm run gallery` | 主要画面を撮影して`gallery/index.html`を生成 |
@@ -127,10 +125,6 @@ PBT_SEED=<seed> PBT_PATH=<path> npm run test:property
 
 特定ファイルだけ再現する場合は、末尾へ`-- rng.property`などのファイル名フィルタを追加します。反例を恒久的な回帰テストへ移すときは、失敗ログの最小入力を通常の`it`ケースとして対象のユニットテストへ追加してください。`PBT_NUM_RUNS`は正の整数、`PBT_SEED`は整数で指定します。
 
-`test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
-
-GitHub Actions の [Mutation](.github/workflows/mutation.yml) ワークフローはPR / push の必須 CI には含めていません。土・日・月の03:00 JSTに、前回成功以降に変更された軽量な`src/sim` / `src/state`だけを最大5ファイル・60分でtargeted実行します。変更がない場合は即終了し、既知の重い対象や上限超過は実行せずActions Summaryへ記録します。手動実行では通常 `mode: targeted`（既定）と `mutate` パターンを指定し、全体ベースラインが必要な場合だけ `mode: full` を明示します。
-
 多数seedのバランス比較は [Balance report](.github/workflows/balance-report.yml) を手動または毎週月曜00:00 UTCに実行できます。既定では`main`の親commitと現在のcommitを同一コホートで測定し、ルールセット・設定値・勝率・Delivery／Incident／Reworkの分布差分を30日保持のartifactへ保存します。ローカルで保存済み出力を比較する場合は次の形式です。
 
 反実仮想評価を手動で有効にする場合は、実行時間を制限するため`diffs`・`policies`・`seeds`を明示し、組み合わせを32ラン以下にしてください。
@@ -143,10 +137,6 @@ npm run balance:report -- \
   --after-root /tmp/after \
   --out-dir /tmp/balance-report
 ```
-
-コア全体は約 6,700 mutant・単一ジョブだと数時間かかるため、`mode: full` は [`scripts/mutation-shards.mjs`](scripts/mutation-shards.mjs) の **並列シャード** で実行します。全量計測は定常実行せず、コアロジックの大規模変更後など全体ベースラインが必要な場合に限って手動実行します。`force` で incremental キャッシュを無視できます。レポートはシャードごとの artifact、incremental JSON はシャード単位の Actions cache に残ります。
-
-壁時計の目安（初回・incremental なし）: シャードあたりおおむね数十分〜2時間。単一ジョブでコア全体を回すと推定 3〜6 時間で、180 分タイムアウトに達し得ます。
 
 PlaywrightのChromiumが未導入の場合は、先に次を実行します。
 
@@ -175,7 +165,7 @@ PLAYWRIGHT_HOST=127.0.0.1 PLAYWRIGHT_PORT=5175 npm run test:e2e
 | 永続化 | IndexedDB / idb |
 | 重い試算 | Web Worker / Comlink |
 | グラフ | Recharts |
-| テスト | Vitest / Playwright / Stryker（コアロジックのミューテーション・ローカル） |
+| テスト | Vitest / Playwright |
 
 `RunEngine`をラン状態の正本とし、Reactとレンダラはスナップショットを読んで表示します。シミュレーションは描画と永続化から分離し、同じseedと入力で同じ結果を返します。
 
@@ -202,7 +192,6 @@ tests/
 - [SPEC.md](SPEC.md) — 体験要件と受入条件
 - [plan/spec-mapping.md](plan/spec-mapping.md) — SPECと実装の対応
 - [plan/remaining-issues.md](plan/remaining-issues.md) — 現在の未充足・保留課題
-- [plan/mutation-remediation.md](plan/mutation-remediation.md) — ミューテーション結果に基づくテスト強化指示（現行ベースラインの RI。再計測時は新 ID）
 - [docs/architecture.md](docs/architecture.md) — 技術構成と横断規律
 - [docs/design-system.md](docs/design-system.md) — UIデザインの正本、トークン・レスポンシブ・アクセシビリティ・視覚検証の制約
 - [docs/probability-model.md](docs/probability-model.md) — 確率モデル、seed設計、数式、検証方法

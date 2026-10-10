@@ -418,6 +418,7 @@ function makeGame() {
     getRunEpoch: vi.fn(() => 1),
     hypothesisStartId: vi.fn(() => null),
     rollbackRunImport: vi.fn(async () => undefined),
+    finishSaveBlocksNewRun: vi.fn(() => false),
     isPaused: vi.fn(() => paused || holds > 0),
     getPauseEpoch: vi.fn(() => epoch),
     pause: vi.fn(() => {
@@ -722,6 +723,37 @@ describe('App のタイトル操作', () => {
       spy.mockRestore();
       hypothesisNoteStore.update((record) => ({ ...record, draft: null }));
       await hypothesisNoteStore.flush();
+    }
+  });
+
+  it('完走保存が開始待ちのあいだに失敗したら、開始中のままにしない', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockImplementation(async () => {
+      await gate;
+      return 'saved';
+    });
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      vi.mocked(screen.game.finishSaveBlocksNewRun).mockReturnValue(true);
+      release();
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      expect(screen.child('TitleScreen').runLaunchPending).toBe(false);
+    } finally {
+      spy.mockRestore();
     }
   });
 

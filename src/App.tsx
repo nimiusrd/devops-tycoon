@@ -395,7 +395,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         launchEpoch.current !== ticket ||
         game.phase() !== 'title' ||
         game.isReplayMode() ||
-        game.getRunEpoch() !== epoch;
+        game.getRunEpoch() !== epoch ||
+        game.finishSaveBlocksNewRun();
       if (superseded) {
         const settled = await savePromise;
         if (settled !== 'unchanged') await hypothesisNoteStore.applyCommitted(() => before);

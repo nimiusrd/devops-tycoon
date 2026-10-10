@@ -189,6 +189,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             ) {
               restored = { ...restored, draft: stored.draft };
             }
+            // この開始が書いた bound だけを外す。次のマージは、別タブの後発 bound を消さない。
+            if (local.bound && stored.bound?.startId === local.bound.startId) {
+              restored = { ...restored, bound: null };
+            }
             revertRecord = null;
             baseRecord = stored;
             settleOps(ops, 'failed');
@@ -231,13 +235,16 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           }
         } catch {
           captureChanges = false;
-          const followOps = queuedDuringWrite.flatMap((item) =>
-            item.opId === undefined || isAbandonedOp(item.opId) ? [] : [item.opId],
-          );
+          const follow = queuedDuringWrite.filter((item) => !isAbandonedOp(item.opId));
+          const followOps = follow.flatMap((item) => (item.opId === undefined ? [] : [item.opId]));
+          const followChanges = follow.map((item) => item.change);
           queuedDuringWrite = [];
           settleOps(ops, 'failed');
-          // 先行する書き込みだけが失敗しても、待ち行列の操作は次の保存の結果で判定する。
-          if (followOps.length > 0) {
+          // 失敗した固定は snapshot に残さず、後続の入力だけを失敗前のレコードへ重ねる。
+          if (ops.length > 0) {
+            publish({ record: applyQueued(base, followChanges), saveFailed: true });
+          }
+          if (follow.length > 0) {
             activeOpIds = [...followOps, ...activeOpIds];
             dirty = true;
           }

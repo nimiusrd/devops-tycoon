@@ -2198,7 +2198,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       undoImportedRun = null;
       const loaded = parseRunSaveShare(raw);
       if (!loaded.ok) return loaded;
-      const intended = loaded.save;
+      const intended = structuredClone(loaded.save);
+      delete intended.hypothesisStartId;
       latestImportedSave = intended;
       const revisionAtImport = runRevision;
       runImportDepth += 1;
@@ -2360,6 +2361,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         );
         if (!replayResult.ok) {
           await restoreImportedRun();
+          await hypothesisNoteStore.applyCommitted((record) =>
+            restoreHypothesisBound(record, beforeHypothesis.bound),
+          );
           return { ok: false, reason: 'corrupt', message: replayResult.message };
         }
         noteRunDurable();

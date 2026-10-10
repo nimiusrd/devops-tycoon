@@ -9,16 +9,60 @@ import type { DiagnosisType, WinType } from '../sim/run/types';
 import type { CardDef } from '../sim/types';
 import type { ReplayBlob } from '../state/replay';
 import { CURRENT_RUN_RULESET, type RunRulesetIdentity } from '../state/runPersistence';
-import { validateStartRecipe, type StartRecipeInput } from '../state/startRecipe';
+import {
+  parseStartRecipe,
+  serializeStartRecipe,
+  validateStartRecipe,
+  type StartRecipeInput,
+} from '../state/startRecipe';
 import type { MetaState } from '../state/meta';
 
-/** current=現行定義と同じ、changed=記録時と現行で定義が違う、retired=現行に無い。 */
-export type ContentStatus = 'current' | 'changed' | 'retired';
+/**
+ * current=記録時と現行が同じ、changed=定義が違う、retired=現行に無い。
+ * unknown=記録時定義が無く、同じとも変更とも言えない。
+ */
+export type ContentStatus = 'current' | 'changed' | 'retired' | 'unknown';
 /** 進化ノードは記録時の定義を持たないため、変更の有無は確かめられない。 */
 export type EvolutionStatus = 'present' | 'retired';
 
 export const BUILD_HISTORY_MAX = 20;
 export const BUILD_NAME_MAX = 24;
+
+/** カード定義のうち、現行定義との比較に使う記録時の値。 */
+export interface RecordedCardDef {
+  name: string;
+  cost: number;
+  focusCost: number;
+  base: CardDef['base'];
+  rarity: CardDef['rarity'];
+  description: string[];
+}
+
+/** レリック定義のうち、現行定義との比較に使う記録時の値。 */
+export interface RecordedRelicDef {
+  name: string;
+  effects: RelicDef['effects'] | null;
+  passives: RelicDef['passives'] | null;
+  description: string;
+}
+
+export interface BuildCard {
+  defId: string;
+  /** 一覧に出す名前。記録時の名前を優先し、無ければ要約時点の現行名、それも無ければ定義ID。 */
+  name: string;
+  count: number;
+  maxLevel: number;
+  /** スナップショットが無い、またはそのカードを含まないときは null。 */
+  recorded: RecordedCardDef | null;
+}
+
+export interface BuildRelic {
+  id: string;
+  /** 一覧に出す名前。記録時の名前を優先し、無ければ要約時点の現行名、それも無ければID。 */
+  name: string;
+  /** スナップショットが無い、またはそのレリックを含まないときは null。 */
+  recorded: RecordedRelicDef | null;
+}
 
 export interface BuildSummary {
   seed: string;
@@ -27,9 +71,9 @@ export interface BuildSummary {
   ruleset: RunRulesetIdentity | null;
   outcome: { status: 'won' | 'lost'; winType: WinType | null; diagnosis: DiagnosisType };
   sprintsPlayed: number;
-  cards: { defId: string; name: string; count: number; maxLevel: number; status: ContentStatus }[];
-  relics: { id: string; name: string; status: ContentStatus }[];
-  evolution: { id: string; name: string; status: EvolutionStatus }[];
+  cards: BuildCard[];
+  relics: BuildRelic[];
+  evolution: { id: string; name: string }[];
   roster: {
     name: string;
     rank: string;
@@ -50,6 +94,13 @@ export interface BuildHistoryEntry {
   summary: BuildSummary;
 }
 
+/** 閲覧時に現行カタログと照合した要約。履歴へはこの判定を保存しない。 */
+export interface ResolvedBuildSummary extends Omit<BuildSummary, 'cards' | 'relics' | 'evolution'> {
+  cards: (BuildCard & { status: ContentStatus })[];
+  relics: (BuildRelic & { status: ContentStatus })[];
+  evolution: { id: string; name: string; status: EvolutionStatus }[];
+}
+
 /** 開始レシピへ引き継がない構成。貸与にしないため、すべて新しいランで作り直す。 */
 export const NOT_CARRIED = [
   'deck',
@@ -60,30 +111,74 @@ export const NOT_CARRIED = [
   'budget',
 ] as const;
 
-function cardStatus(snapshot: CardDef | undefined, id: string): ContentStatus {
-  const current = getCard(id);
-  if (!current) return 'retired';
-  if (!snapshot) return 'current';
-  const shape = (def: CardDef) =>
-    JSON.stringify([def.cost, def.focusCost, def.base, def.rarity, def.description]);
-  return shape(snapshot) === shape(current) ? 'current' : 'changed';
+function cardShape(def: RecordedCardDef | CardDef): string {
+  return JSON.stringify([def.name, def.cost, def.focusCost, def.base, def.rarity, def.description]);
 }
 
-function relicStatus(snapshot: RelicDef | undefined, id: string): ContentStatus {
-  const current = getRelic(id);
-  if (!current) return 'retired';
-  if (!snapshot) return 'current';
-  const shape = (def: RelicDef) =>
-    JSON.stringify([def.effects ?? null, def.passives ?? null, def.description]);
-  return shape(snapshot) === shape(current) ? 'current' : 'changed';
+function relicShape(def: RecordedRelicDef | RelicDef): string {
+  return JSON.stringify([def.name, def.effects ?? null, def.passives ?? null, def.description]);
 }
 
-/** 終端（won/lost）フレームの実状態から要約する。終端がない記録は null。 */
+function recordedCard(def: CardDef): RecordedCardDef {
+  return {
+    name: def.name,
+    cost: def.cost,
+    focusCost: def.focusCost,
+    base: structuredClone(def.base),
+    rarity: def.rarity,
+    description: [...def.description],
+  };
+}
+
+function recordedRelic(def: RelicDef): RecordedRelicDef {
+  return {
+    name: def.name,
+    effects: structuredClone(def.effects ?? null),
+    passives: structuredClone(def.passives ?? null),
+    description: def.description,
+  };
+}
+
+/** 現行に無ければ retired。記録時定義が無ければ unknown。それ以外は記録時と現行の比較。 */
+function cardContentStatus(card: BuildCard): ContentStatus {
+  const current = getCard(card.defId);
+  if (!current) return 'retired';
+  if (!card.recorded) return 'unknown';
+  return cardShape(card.recorded) === cardShape(current) ? 'current' : 'changed';
+}
+
+function relicContentStatus(relic: BuildRelic): ContentStatus {
+  const current = getRelic(relic.id);
+  if (!current) return 'retired';
+  if (!relic.recorded) return 'unknown';
+  return relicShape(relic.recorded) === relicShape(current) ? 'current' : 'changed';
+}
+
+/**
+ * 保存した記録時定義と現行カタログを照合する。
+ * カード・レリックの current / changed / retired / unknown と、進化の present / retired はここで決める。
+ */
+export function resolveContentStatus(summary: BuildSummary): ResolvedBuildSummary {
+  return {
+    ...summary,
+    cards: summary.cards.map((card) => ({ ...card, status: cardContentStatus(card) })),
+    relics: summary.relics.map((relic) => ({ ...relic, status: relicContentStatus(relic) })),
+    evolution: summary.evolution.map((node) => ({
+      ...node,
+      status: getEvolutionNode(node.id) ? 'present' : 'retired',
+    })),
+  };
+}
+
+function buildHistoryId(replayId: string): string {
+  return `build:${replayId}`;
+}
+
+/** 末尾キーフレームが outcome と一致する勝敗フレームのときだけ要約する。 */
 export function summarizeBuild(replay: ReplayBlob): BuildSummary | null {
-  const end = [...replay.keyframes]
-    .reverse()
-    .find((keyframe) => keyframe.phase === 'won' || keyframe.phase === 'lost');
-  if (!end || replay.outcome.status !== end.phase) return null;
+  const end = replay.keyframes[replay.keyframes.length - 1];
+  if (!end || (end.phase !== 'won' && end.phase !== 'lost')) return null;
+  if (replay.outcome.status !== end.phase) return null;
   const frame = end.frame;
   const snapshotCards = new Map((replay.contentSnapshot?.cards ?? []).map((def) => [def.id, def]));
   const snapshotRelics = new Map(
@@ -115,27 +210,26 @@ export function summarizeBuild(replay: ReplayBlob): BuildSummary | null {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([defId, entry]) => {
         const snapshot = snapshotCards.get(defId);
+        const recorded = snapshot ? recordedCard(snapshot) : null;
         return {
           defId,
-          name: snapshot?.name ?? getCard(defId)?.name ?? defId,
+          name: recorded?.name ?? getCard(defId)?.name ?? defId,
           ...entry,
-          status: cardStatus(snapshot, defId),
+          recorded,
         };
       }),
     relics: [...new Set(frame.relics)].sort().map((id) => {
       const snapshot = snapshotRelics.get(id);
+      const recorded = snapshot ? recordedRelic(snapshot) : null;
       return {
         id,
-        name: snapshot?.name ?? getRelic(id)?.name ?? id,
-        status: relicStatus(snapshot, id),
+        name: recorded?.name ?? getRelic(id)?.name ?? id,
+        recorded,
       };
     }),
     evolution: Object.keys(frame.evolution.unlocked)
       .sort()
-      .map((id) => {
-        const node = getEvolutionNode(id);
-        return { id, name: node?.name ?? id, status: node ? 'present' : 'retired' };
-      }),
+      .map((id) => ({ id, name: getEvolutionNode(id)?.name ?? id })),
     roster: frame.roster.members.map((member) => ({
       name: member.name,
       rank: member.rank,
@@ -171,13 +265,15 @@ export function addBuildHistory(
   const summary = summarizeBuild(replay);
   if (!summary) return null;
   const name = sanitizeBuildName(rawName, summary);
-  const existing = history.find((entry) => entry.sourceReplayId === replay.id);
+  const existing = history.find(
+    (entry) => entry.sourceReplayId === replay.id || entry.id === buildHistoryId(replay.id),
+  );
   if (existing)
     return history.map((entry) =>
       entry === existing ? { ...structuredClone(entry), name } : entry,
     );
   const entry: BuildHistoryEntry = {
-    id: `build:${replay.id}`,
+    id: buildHistoryId(replay.id),
     name,
     sourceReplayId: replay.id,
     finishedAt: replay.finishedAt,
@@ -205,7 +301,12 @@ export type StartFromBuild =
   | { ok: true; recipe: StartRecipeInput; notCarried: typeof NOT_CARRIED }
   | {
       ok: false;
-      reason: 'no-start-frame' | 'ruleset-mismatch' | 'ruleset-unknown' | 'locked';
+      reason:
+        | 'no-start-frame'
+        | 'ruleset-mismatch'
+        | 'ruleset-unknown'
+        | 'invalid-start'
+        | 'locked';
       notCarried: typeof NOT_CARRIED;
     };
 
@@ -223,7 +324,16 @@ export function startFromBuild(
     summary.ruleset.fingerprint !== current.fingerprint
   )
     return { ok: false, reason: 'ruleset-mismatch', notCarried: NOT_CARRIED };
-  const checked = validateStartRecipe({ schemaVersion: 1, ...summary.start }, meta);
+  const parsed = parseStartRecipe(serializeStartRecipe(summary.start));
+  if (!parsed.ok) return { ok: false, reason: 'invalid-start', notCarried: NOT_CARRIED };
+  const checked = validateStartRecipe(parsed.recipe, meta);
   if (!checked.ok) return { ok: false, reason: 'locked', notCarried: NOT_CARRIED };
-  return { ok: true, recipe: structuredClone(summary.start), notCarried: NOT_CARRIED };
+  const recipe: StartRecipeInput = {
+    seed: checked.recipe.seed,
+    difficulty: checked.recipe.difficulty,
+    trials: [...checked.recipe.trials],
+    scenario: checked.recipe.scenario,
+    preferredCardIds: [...checked.recipe.preferredCardIds],
+  };
+  return { ok: true, recipe, notCarried: NOT_CARRIED };
 }

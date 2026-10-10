@@ -4,13 +4,15 @@
 
 ## 要約の契約
 
-通常のメタ・リプレイ保存から隔離した純TS試作。`summarizeBuild(replay)` は完走リプレイの終端（`won` / `lost`）フレームだけを読み、現行メタの所持では置き換えない。終端がない、または結果と終端の種類が合わない記録は要約しない。
+通常のメタ・リプレイ保存から隔離した純TS試作。`summarizeBuild(replay)` は完走リプレイの末尾キーフレームだけを読む。末尾が `won` / `lost` であり、かつ結果の種類と一致するときだけ要約する。途中の勝敗フレームや、末尾が勝敗でない記録は要約しない。現行メタの所持では置き換えない。
+
+履歴へ保存するのは記録時の比較用定義（`recorded`）であり、`current` / `changed` / `retired` / `unknown` は保存しない。閲覧時に `resolveContentStatus` が現行カタログと照合する。元リプレイが上限で消えても、この記録時定義は要約に残る。
 
 | 項目 | 読む場所 | 記録時の定義との照合 |
 | --- | --- | --- |
-| カード | 終端の `deck`。定義IDごとの枚数と最大強化レベル | `contentSnapshot.cards` と現行定義を比べ、`current` / `changed` / `retired`。名前は記録時を優先 |
-| レリック | 終端の `relics` | `contentSnapshot.relics` と比べ、同じ3分類 |
-| 進化 | 終端の `evolution.unlocked` | 記録時の定義を持たないため `present` / `retired` だけ。変更は確かめられない |
+| カード | 終端の `deck`。定義IDごとの枚数と最大強化レベル | `contentSnapshot.cards` の名前・コスト・集中力・効果・レアリティ・説明を残す。現行に無ければ `retired`、記録が無ければ `unknown`、一致なら `current`、それ以外は `changed`。一覧の名前は記録時を優先 |
+| レリック | 終端の `relics` | `contentSnapshot.relics` の名前・効果・パッシブ・説明を残し、カードと同じ4分類 |
+| 進化 | 終端の `evolution.unlocked` | 記録時の定義を持たないため `present` / `retired` だけ。これも閲覧時に現行カタログから決める。変更は確かめられない |
 | 編成 | 終端の `roster.members`（名前・段階・レベル・トレイト・配置・AI配布） | — |
 | 結果・条件 | 本体の seed・難易度・試練・ruleset・結果、ラン開始時の setup フレーム | ruleset を要約に写す |
 
@@ -18,7 +20,7 @@
 
 ## 履歴と元記録
 
-`addBuildHistory` は要約を自己完結した写しとして残し、任意の名前（空白を詰めて24文字まで、空なら「seed / 勝利種別」）を付ける。同じリプレイを再登録すると、名前だけを更新する。
+`addBuildHistory` は要約を自己完結した写しとして残し、任意の名前（空白を詰めて24文字まで、空なら「seed / 勝利種別」）を付ける。同じリプレイを再登録すると、名前だけを更新する。照合は元リプレイIDに加え、切り離し後も残る履歴ID（`build:` にリプレイIDを付けたもの）で行う。再登録しても参照は戻さない。
 
 履歴は既存リプレイの上限10件とは別に、新しい順で20件まで残す。リプレイが上限で消えたら、`detachRemovedReplays` が元記録への参照（`sourceReplayId`）を `null` にする。要約は残り、壊れた参照は残らない。元のリプレイを後から変えても、保存済みの要約は変わらない。
 
@@ -28,11 +30,12 @@
 
 | 結果 | 条件 |
 | --- | --- |
-| `ok` | 開始時の setup がある・ruleset が現行と一致・受信側メタで開始レシピが有効 |
+| `ok` | 開始時の setup がある・ruleset が現行と一致・開始レシピの構造検査と受信側メタの解放検査を通る |
 | `no-start-frame` | 開始時の setup を持たない記録 |
 | `ruleset-unknown` | 旧v1リプレイ（ruleset なし） |
 | `ruleset-mismatch` | 版または指紋が現行と違う |
-| `locked` | 未解放の難易度・研修方針（`validateStartRecipe` が拒否） |
+| `invalid-start` | 未知の難易度・試練・シナリオ・施策、試練や研修方針の重複、研修方針の上限超過（`parseStartRecipe` が拒否） |
+| `locked` | 構造は有効で、未解放の難易度・研修方針（`validateStartRecipe` が拒否） |
 
 ## 実リプレイでの確認
 

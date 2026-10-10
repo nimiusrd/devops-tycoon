@@ -113,12 +113,14 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   let writing: Promise<void> | null = null;
   let dirty = false;
   /** 書き込みの await 中に来た操作。返ったレコードへ重ね直す。 */
-  let queuedDuringWrite: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord> = [];
   let captureChanges = false;
   let nextOpId = 1;
   const opState = new Map<number, 'pending' | 'saved' | 'failed' | 'unchanged'>();
   let activeOpIds: number[] = [];
-  let queuedOpIds: number[] = [];
+  let queuedDuringWrite: Array<{
+    change: (record: HypothesisNoteRecord) => HypothesisNoteRecord;
+    opId?: number;
+  }> = [];
   let pendingOpIds: number[] = [];
   let persistSeq = 0;
   /** この番号までの開始保存は、成功しても画面と端末を戻す。 */
@@ -142,6 +144,9 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     }
   };
 
+  const isAbandonedOp = (opId: number | undefined) =>
+    opId !== undefined && opState.get(opId) === 'failed';
+
   // 入力のたびに書き込みを積まず、書き込み中の変更は最新の1件だけを後から書く。
   const persist = (): Promise<void> => {
     dirty = true;
@@ -157,13 +162,14 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         captureChanges = true;
         try {
           const stored = await storage.commit(local, base);
-          const queued = queuedDuringWrite;
-          const followOps = queuedOpIds;
+          const queued = queuedDuringWrite.filter((item) => !isAbandonedOp(item.opId));
+          const queuedChanges = queued.map((item) => item.change);
+          const followOps = queued.flatMap((item) => (item.opId === undefined ? [] : [item.opId]));
           queuedDuringWrite = [];
-          queuedOpIds = [];
           captureChanges = false;
           if (revertRecord && seq <= discardThroughSeq) {
-            const restored = queued.length > 0 ? applyQueued(revertRecord, queued) : revertRecord;
+            const restored =
+              queuedChanges.length > 0 ? applyQueued(revertRecord, queuedChanges) : revertRecord;
             revertRecord = null;
             baseRecord = stored;
             settleOps(ops, 'failed');
@@ -174,11 +180,11 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             settleOps(ops, 'failed');
             settleOps(followOps, 'failed');
             publish({
-              record: queued.length > 0 ? applyQueued(local, queued) : local,
+              record: queuedChanges.length > 0 ? applyQueued(local, queuedChanges) : local,
               saveFailed: true,
             });
           } else if (hypothesisCommitKeptForeignBound(base, local, stored)) {
-            const display = queued.length > 0 ? applyQueued(local, queued) : local;
+            const display = queuedChanges.length > 0 ? applyQueued(local, queuedChanges) : local;
             publish({ record: display, saveFailed: false });
             // 表示上の解除は残す。このタブが書いた下書きだけ基準を進め、
             // 開始で消した下書きを「未変更」と見なして復活させない。
@@ -186,15 +192,15 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             if (sameDraft(local.draft, stored.draft)) {
               baseRecord = { ...base, draft: stored.draft };
             }
-            if (queued.length > 0) dirty = true;
+            if (queuedChanges.length > 0) dirty = true;
             settleOps(ops, 'saved');
             activeOpIds = [...followOps, ...activeOpIds];
           } else {
             baseRecord = stored;
             settleOps(ops, 'saved');
             activeOpIds = [...followOps, ...activeOpIds];
-            if (queued.length > 0) {
-              publish({ ...snapshot, record: applyQueued(stored, queued) });
+            if (queuedChanges.length > 0) {
+              publish({ ...snapshot, record: applyQueued(stored, queuedChanges) });
               dirty = true;
             } else if (!dirty) {
               publish({ record: stored, saveFailed: false });
@@ -202,9 +208,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           }
         } catch {
           captureChanges = false;
-          const followOps = queuedOpIds;
+          const followOps = queuedDuringWrite.flatMap((item) =>
+            item.opId === undefined || isAbandonedOp(item.opId) ? [] : [item.opId],
+          );
           queuedDuringWrite = [];
-          queuedOpIds = [];
           settleOps(ops, 'failed');
           settleOps(followOps, 'failed');
           if (revertRecord && seq <= discardThroughSeq) {
@@ -289,8 +296,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       return;
     }
     if (captureChanges) {
-      queuedDuringWrite.push(change);
-      if (opId !== undefined) queuedOpIds.push(opId);
+      queuedDuringWrite.push({ change, opId });
     } else if (opId !== undefined) {
       activeOpIds.push(opId);
     }
@@ -339,7 +345,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     revertAbandonedStart(record) {
       discardThroughSeq = persistSeq;
       revertRecord = record;
+      for (const [id, status] of opState) {
+        if (status === 'pending') opState.set(id, 'failed');
+      }
+      queuedDuringWrite = queuedDuringWrite.filter((item) => !isAbandonedOp(item.opId));
       pending = [];
+      pendingOpIds = [];
       publish({ ...snapshot, record, saveFailed: true });
     },
   };

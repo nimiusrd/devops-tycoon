@@ -1,0 +1,78 @@
+name: Codex review label
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [synchronize]
+  pull_request_review:
+    types: [submitted]
+
+permissions: {}
+
+concurrency:
+  group: codex-review-label-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  LABEL: codex/指摘なし
+  LABEL_DESCRIPTION: Codexレビューが現在のheadで大きな指摘なしと判定。新しいpushまたはCodexの指摘で自動で外れる。
+  LABEL_COLOR: 0E8A16
+
+jobs:
+  add:
+    name: Add label on no-findings comment
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      github.event.comment.user.login == 'chatgpt-codex-connector[bot]' &&
+      startsWith(github.event.comment.body, 'Codex Review: Didn''t find any major issues')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Add label when the reviewed commit is the current head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          reviewed=$(printf '%s' "$COMMENT_BODY" | grep -oP 'Reviewed commit:\*\* `\K[0-9a-f]{7,40}' | head -n 1 || true)
+          if [ -z "$reviewed" ]; then
+            echo "::warning::Reviewed commit が見つからないためラベルを付けません"
+            exit 0
+          fi
+          head_sha=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq .head.sha)
+          case "$head_sha" in
+            "$reviewed"*) ;;
+            *)
+              echo "::notice::レビュー対象 $reviewed が現在のhead $head_sha と異なるためラベルを付けません"
+              exit 0
+              ;;
+          esac
+          gh label create "$LABEL" --repo "$REPO" --description "$LABEL_DESCRIPTION" --color "$LABEL_COLOR" --force
+          gh api "repos/$REPO/issues/$PR_NUMBER/labels" -f "labels[]=$LABEL" --silent
+
+  remove:
+    name: Remove label when the review is outdated
+    if: >-
+      github.event_name != 'issue_comment' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'codex/指摘なし') &&
+      (github.event_name == 'pull_request' ||
+       github.event.review.user.login == 'chatgpt-codex-connector[bot]')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Remove label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          encoded=$(jq -rn --arg v "$LABEL" '$v | @uri')
+          gh api -X DELETE "repos/$REPO/issues/$PR_NUMBER/labels/$encoded" --silent || true

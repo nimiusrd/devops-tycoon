@@ -5,8 +5,7 @@ import {
   type HypothesisNoteStore,
 } from '../state/hypothesisNotePersistence';
 
-export const HYPOTHESIS_NOTE_SAVE_FAILED =
-  'メモを端末に保存できませんでした。このタブを閉じるまでは表示されます。';
+export { HYPOTHESIS_NOTE_SAVE_FAILED } from '../state/hypothesisNote';
 
 /** 仮説メモの現在値を購読し、初回表示時に端末から読み込む。 */
 export function useHypothesisNote(

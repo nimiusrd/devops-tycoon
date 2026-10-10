@@ -668,6 +668,14 @@ describe('App のタイトル操作', () => {
     },
   );
 
+  it('タイトルに留まったままの再開始は、ラン開始を一度だけ実行する', () => {
+    const screen = mountApp();
+    screen.phase('title');
+    screen.invoke('TitleScreen', 'onStart', 'hard', ['half-budget'], 'copilot', 'shared-seed');
+    screen.invoke('TitleScreen', 'onStart', 'hard', ['half-budget'], 'copilot', 'shared-seed');
+    expect(screen.run.startRun).toHaveBeenCalledOnce();
+  });
+
   it('購入・研修方針・セーブ破棄・サウンド設定を対応するラン操作へ渡す', () => {
     const screen = mountApp();
     screen.invoke('TitleScreen', 'onOpenMetaShop');

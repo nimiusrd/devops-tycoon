@@ -43,7 +43,7 @@ import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
-import { useHypothesisNote } from './ui/useHypothesisNote';
+import { HYPOTHESIS_NOTE_SAVE_FAILED, useHypothesisNote } from './ui/useHypothesisNote';
 import { resetViewportScroll } from './ui/viewportScroll';
 import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
@@ -269,6 +269,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const hypothesisNote = useHypothesisNote();
   const hypothesisKey = hypothesisRunKey(state);
   const canBeginRun = !run.isReplayMode && !run.finishSaveBlocksNewRun;
+  const beginGuard = useRef(false);
+  useEffect(() => {
+    if (phase === 'title') beginGuard.current = false;
+  }, [phase]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
@@ -351,20 +355,24 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
-    if (canBeginRun) {
-      hypothesisNoteStore.update((record) =>
-        bindHypothesisToRun(
-          record,
-          hypothesisRunKey({
-            runKind: 'normal',
-            seed: seed ?? state.seed,
-            difficulty,
-            trials,
-            scenario: resolveScenarioId(scenario),
-          }),
-        ),
-      );
+    if (!canBeginRun) {
+      run.startRun(difficulty, trials, scenario, seed);
+      return;
     }
+    if (beginGuard.current) return;
+    beginGuard.current = true;
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(
+        record,
+        hypothesisRunKey({
+          runKind: 'normal',
+          seed: seed ?? state.seed,
+          difficulty,
+          trials,
+          scenario: resolveScenarioId(scenario),
+        }),
+      ),
+    );
     run.startRun(difficulty, trials, scenario, seed);
   };
   const startDailyRun = () => {
@@ -372,21 +380,25 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     closeTitleModals();
     clearHudSnapshot();
     const day = utcDateStr();
-    if (canBeginRun) {
-      hypothesisNoteStore.update((record) =>
-        bindHypothesisToRun(
-          record,
-          hypothesisRunKey({
-            runKind: 'daily',
-            dailyDate: day,
-            seed: dailySeed(day),
-            difficulty: DAILY_RUN_DIFFICULTY,
-            trials: [...DAILY_RUN_TRIALS],
-            scenario: DEFAULT_SCENARIO,
-          }),
-        ),
-      );
+    if (!canBeginRun) {
+      run.startDailyRun(day);
+      return;
     }
+    if (beginGuard.current) return;
+    beginGuard.current = true;
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(
+        record,
+        hypothesisRunKey({
+          runKind: 'daily',
+          dailyDate: day,
+          seed: dailySeed(day),
+          difficulty: DAILY_RUN_DIFFICULTY,
+          trials: [...DAILY_RUN_TRIALS],
+          scenario: DEFAULT_SCENARIO,
+        }),
+      ),
+    );
     run.startDailyRun(day);
   };
   const resumeRun = () => {
@@ -619,11 +631,13 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               const result = await run.importRunSaveText(raw);
               if (result.ok) {
                 hypothesisNoteStore.update((record) => detachHypothesisNote(record));
+                await hypothesisNoteStore.flush();
               }
+              const noteFailed = result.ok && hypothesisNoteStore.getSnapshot().saveFailed;
               return {
-                ok: result.ok,
-                message: result.ok ? '' : result.message,
-                restored: result.ok ? result.restored : undefined,
+                ok: result.ok && !noteFailed,
+                message: noteFailed ? HYPOTHESIS_NOTE_SAVE_FAILED : result.ok ? '' : result.message,
+                restored: result.ok && !noteFailed ? result.restored : undefined,
               };
             }}
           />

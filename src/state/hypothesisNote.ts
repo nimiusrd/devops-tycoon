@@ -8,6 +8,8 @@
 import type { RunState } from '../sim/run/types';
 
 export const HYPOTHESIS_NOTE_SCHEMA_VERSION = 1 as const;
+export const HYPOTHESIS_NOTE_SAVE_FAILED =
+  'メモを端末に保存できませんでした。このタブを閉じるまでは表示されます。';
 /** 短い仮説1件に収める上限（コードポイント数）。 */
 export const HYPOTHESIS_NOTE_MAX_LENGTH = 120;
 
@@ -205,6 +207,30 @@ function reflectionOnly(
   );
 }
 
+function mergeDraft(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  current: HypothesisNoteRecord,
+  currentIsBase: boolean,
+): HypothesisNoteEntry | null {
+  if (currentIsBase) return local.draft;
+  if (sameEntry(base.draft, local.draft)) return current.draft;
+  // 開始で消す下書きは、端末上の値がその下書きのままのときだけ消す。
+  if (local.draft === null && base.draft && !sameEntry(base.draft, current.draft)) {
+    return current.draft;
+  }
+  return local.draft;
+}
+
+/** 競合で自分の仮説を端末へ書けなかった。画面上の仮説は残す。 */
+export function hypothesisCommitDroppedSessionBound(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  stored: HypothesisNoteRecord,
+): boolean {
+  return reflectionOnly(base.bound, local.bound) && stored.bound?.startId !== local.bound.startId;
+}
+
 function mergeBound(
   base: HypothesisNoteRecord,
   local: HypothesisNoteRecord,
@@ -213,6 +239,10 @@ function mergeBound(
 ): BoundHypothesisNote | null {
   if (currentIsBase) return local.bound;
   if (sameBound(base.bound, local.bound)) return current.bound;
+  if (local.bound === null && base.bound) {
+    if (!current.bound || current.bound.startId === base.bound.startId) return null;
+    return current.bound;
+  }
   if (reflectionOnly(base.bound, local.bound)) {
     if (
       !current.bound ||
@@ -235,7 +265,7 @@ export function commitHypothesisNote(
   const currentIsBase = current.generation === base.generation;
   return {
     schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION,
-    draft: currentIsBase || !sameEntry(base.draft, local.draft) ? local.draft : current.draft,
+    draft: mergeDraft(base, local, current, currentIsBase),
     bound: mergeBound(base, local, current, currentIsBase),
     generation: (currentIsBase ? base.generation : current.generation) + 1,
   };

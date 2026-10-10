@@ -13,6 +13,7 @@ import {
 import {
   commitHypothesisNote,
   EMPTY_HYPOTHESIS_NOTE,
+  hypothesisCommitDroppedSessionBound,
   normalizeHypothesisNote,
   type HypothesisNoteRecord,
 } from './hypothesisNote';
@@ -128,12 +129,19 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           const queued = queuedDuringWrite;
           queuedDuringWrite = [];
           captureChanges = false;
-          baseRecord = stored;
-          if (queued.length > 0) {
-            publish({ ...snapshot, record: applyQueued(stored, queued) });
-            dirty = true;
-          } else if (!dirty) {
-            publish({ record: stored, saveFailed: false });
+          if (hypothesisCommitDroppedSessionBound(base, local, stored)) {
+            publish({
+              record: queued.length > 0 ? applyQueued(local, queued) : local,
+              saveFailed: true,
+            });
+          } else {
+            baseRecord = stored;
+            if (queued.length > 0) {
+              publish({ ...snapshot, record: applyQueued(stored, queued) });
+              dirty = true;
+            } else if (!dirty) {
+              publish({ record: stored, saveFailed: false });
+            }
           }
         } catch {
           captureChanges = false;
@@ -146,7 +154,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     return writing;
   };
 
-  const load = (): Promise<void> => {
+  const startLoad = (): Promise<void> => {
     if (loaded) return Promise.resolve();
     if (loading) return loading;
     const attemptGate: { current: Promise<void> | null } = { current: null };
@@ -172,6 +180,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     attemptGate.current = attempt;
     loading = attempt;
     return attempt;
+  };
+
+  const load = (): Promise<void> => {
+    if (!loading) return startLoad();
+    const inflight = loading;
+    return inflight.then(() => startLoad());
   };
 
   return {

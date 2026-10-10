@@ -7,7 +7,7 @@
  * ラン決着時にはメタ進行を永続化する（第17章）。
  */
 import { getTrial } from './data/difficulties';
-import { detachHypothesisNote } from './state/hypothesisNote';
+import { detachHypothesisNote, HYPOTHESIS_NOTE_SAVE_FAILED } from './state/hypothesisNote';
 import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import type { ReplayFramePhase } from './sim/run/persist';
@@ -2521,6 +2521,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           undoImportedRun = null;
           if (backup.runSave) {
             hypothesisNoteStore.update((record) => detachHypothesisNote(record));
+            await hypothesisNoteStore.flush();
+            if (hypothesisNoteStore.getSnapshot().saveFailed) {
+              return {
+                ok: false,
+                reason: 'corrupt',
+                message: HYPOTHESIS_NOTE_SAVE_FAILED,
+              };
+            }
           }
           const matched = pendingReplays.filter((item) => {
             const row = listedById.get(item.id);

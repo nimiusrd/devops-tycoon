@@ -11,6 +11,7 @@ import {
   commitHypothesisNote,
   detachHypothesisNote,
   editHypothesisDraft,
+  hypothesisCommitDroppedSessionBound,
   hypothesisForRun,
   hypothesisNoteForExport,
   hypothesisRunKey,
@@ -375,6 +376,133 @@ describe('仮説メモの保存', () => {
     expect(
       commitHypothesisNote(base, reflected, { ...base, generation: 2 }).bound?.reflection,
     ).toEqual({ text: '振り返り', writtenAt: 5 });
+  });
+
+  it('開始時の下書き削除は、別タブが更新した下書きを消さない', () => {
+    const base = {
+      ...EMPTY_HYPOTHESIS_NOTE,
+      generation: 1,
+      draft: { text: '古い', writtenAt: 1 },
+    };
+    const local = bindHypothesisToRun(base, 'run-a', 'start-a');
+    const newer = {
+      ...base,
+      generation: 2,
+      draft: { text: '新しい', writtenAt: 3 },
+    };
+    const kept = commitHypothesisNote(base, local, newer);
+    expect(kept.draft?.text).toBe('新しい');
+    expect(kept.bound?.beforeStart.text).toBe('古い');
+    expect(commitHypothesisNote(base, local, { ...base, generation: 2 }).draft).toBeNull();
+  });
+
+  it('古いタブの解除は、後発ランの仮説を消さない', () => {
+    const base = {
+      ...EMPTY_HYPOTHESIS_NOTE,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'old',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const local = detachHypothesisNote(base);
+    const later = {
+      ...base,
+      generation: 2,
+      bound: {
+        runKey: 'run-b',
+        startId: 'new',
+        beforeStart: { text: '後', writtenAt: 4 },
+        reflection: null,
+      },
+    };
+    expect(commitHypothesisNote(base, local, later).bound).toEqual(later.bound);
+    expect(commitHypothesisNote(base, local, { ...base, generation: 2 }).bound).toBeNull();
+  });
+
+  it('競合した後も先発ランの振り返りを画面に残す', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'a',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 2,
+      bound: {
+        runKey: 'run-b',
+        startId: 'b',
+        beforeStart: { text: '別', writtenAt: 2 },
+        reflection: null,
+      },
+    };
+    store.update((record) => writeHypothesisReflection(record, 'run-a', '振り返り', 5));
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(true);
+    expect(store.getSnapshot().record.bound).toMatchObject({
+      startId: 'a',
+      reflection: { text: '振り返り' },
+    });
+    expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('b');
+    expect(
+      hypothesisCommitDroppedSessionBound(
+        {
+          ...EMPTY_HYPOTHESIS_NOTE,
+          generation: 1,
+          bound: {
+            runKey: 'run-a',
+            startId: 'a',
+            beforeStart: { text: '狙い', writtenAt: 1 },
+            reflection: null,
+          },
+        },
+        store.getSnapshot().record,
+        normalizeHypothesisNote(memory.value),
+      ),
+    ).toBe(true);
+  });
+
+  it('進行中の読み込みが失敗したあとの再呼び出しは、もう一度読む', async () => {
+    let calls = 0;
+    let release: () => void = () => {};
+    const storage: HypothesisNoteStorage = {
+      load: async () => {
+        calls += 1;
+        if (calls === 1) {
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+          throw new Error('blocked');
+        }
+        return {
+          schemaVersion: 1,
+          draft: { text: '保存済み', writtenAt: 1 },
+          bound: null,
+          generation: 1,
+        };
+      },
+      commit: async (local) => local,
+    };
+    const store = createHypothesisNoteStore(storage);
+    const first = store.load();
+    const second = store.load();
+    release();
+    await second;
+    await first;
+    expect(calls).toBe(2);
+    expect(store.getSnapshot().record.draft?.text).toBe('保存済み');
   });
 
   it('別タブの下書き編集は、先に始まったランの仮説を消さない', async () => {

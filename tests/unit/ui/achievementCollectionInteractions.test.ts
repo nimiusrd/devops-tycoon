@@ -107,6 +107,37 @@ describe('実績・勝利称号・失敗図鑑のコレクション', () => {
     expect(meta.achievements).toEqual([achievement.id, achievement.id, 'unknown-achievement']);
   });
 
+  it('難易度別の勝ち方は達成・未達・難易度未解放を文言で区別し、次の目標を示す', () => {
+    const empty = mountCollection();
+    expect(content(empty.find('win-combo-count'))).toBe(`0/${4 * WIN_TITLE_DEFS.length}`);
+    expect(content(empty.find('win-combo-next'))).toContain(
+      `未達の勝ち方 ${WIN_TITLE_DEFS.length} 種`,
+    );
+    const title = WIN_TITLE_DEFS[1];
+    const screen = mountCollection({
+      ...defaultMeta(),
+      collectedWinTypes: [title.id],
+      collectedWinCombos: [`normal:${title.id}`],
+    });
+    expect(content(screen.find('win-combo-count'))).toBe(`1/${4 * WIN_TITLE_DEFS.length}`);
+    const achieved = screen.find(`win-combo-normal-${title.id}`);
+    expect(achieved.props['data-achieved']).toBe('true');
+    expect(content(achieved)).toBe(`✓ ${title.label}`);
+    const easy = screen.find(`win-combo-easy-${title.id}`);
+    expect(easy.props['data-achieved']).toBe('false');
+    expect(content(easy)).toBe(`未達 ${title.label}`);
+    expect(screen.find('win-combo-row-normal').props['data-unlocked']).toBe('true');
+    expect(content(screen.find('win-combo-row-normal'))).toContain(`1/${WIN_TITLE_DEFS.length}`);
+    const hard = screen.find('win-combo-row-hard');
+    expect(hard.props['data-unlocked']).toBe('false');
+    expect(content(hard)).toContain('難易度未解放');
+    expect(content(hard)).toContain('前の難易度でボスを突破すると解放');
+    expect(() => screen.find(`win-combo-hard-${title.id}`)).toThrow();
+    expect(content(screen.find('win-combo-next'))).toContain(
+      `未達の勝ち方 ${WIN_TITLE_DEFS.length - 1} 種`,
+    );
+  });
+
   it('閉じるボタンとダイアログの dismiss に同じ終了操作を接続する', () => {
     const screen = mountCollection();
     (screen.find('achievement-collection-close').props.onClick as () => void)();

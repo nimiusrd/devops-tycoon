@@ -24,8 +24,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      # E2E の job concurrency は ci_scope 完了後に並ぶため、古い run が後から入ると
-      # 最新の E2E を取り消せる。run ID が小さい実行だけをここで止める。
+      # より小さい run ID だけを止める。より大きい実行中の run がある再実行は自分を止める。
+      # 取り消し API が使えないフォークでは、E2E の concurrency が同時実行を防ぐ。
       - name: Cancel superseded pull request runs
         id: supersede
         if: github.event_name == 'pull_request'
@@ -45,7 +45,7 @@ jobs:
   test:
     name: Lint & Unit (Vitest)
     needs: ci_scope
-    if: ${{ always() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' }}
+    if: ${{ always() && !cancelled() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -71,7 +71,14 @@ jobs:
     name: E2E (Playwright)
     needs: ci_scope
     # pull_request では、この run が最新コミットだと判定できたときだけ E2E を始める。
-    if: ${{ always() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' && (github.event_name != 'pull_request' || needs.ci_scope.outputs.superseded == 'false') }}
+    # always() だけだと workflow の取り消し後もジョブが続くため、cancelled では止める。
+    if: ${{ always() && !cancelled() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' && (github.event_name != 'pull_request' || needs.ci_scope.outputs.superseded == 'false') }}
+    # フォークの GITHUB_TOKEN は run を取り消せない。待ち行列で同時実行だけを防ぎ、
+    # 古い run が後から入っても実行中の E2E は取り消さない。
+    concurrency:
+      group: ci-e2e-${{ github.event.pull_request.number || github.sha }}
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     # ブラウザ準備・2並列の全E2E・本番チャンク復旧検証まで含めた実行枠。
     timeout-minutes: 25

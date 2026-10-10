@@ -35,6 +35,15 @@ function belongsToPullRequest(run, prNumber, headBranch) {
   return normalized.headBranch === headBranch;
 }
 
+function activePullRequestRuns(runs, prNumber, headBranch) {
+  return runs
+    .map(normalizeRun)
+    .filter((run) => Number.isInteger(run.id))
+    .filter((run) => ACTIVE_STATUS_SET.has(run.status))
+    .filter((run) => run.event === 'pull_request')
+    .filter((run) => belongsToPullRequest(run, prNumber, headBranch));
+}
+
 export function planPullRequestRunCancellation({
   currentRunId,
   currentHeadSha,
@@ -43,23 +52,34 @@ export function planPullRequestRunCancellation({
   headBranch,
   runs,
 }) {
-  if (prHeadSha !== currentHeadSha) {
+  const activeRuns = activePullRequestRuns(runs, prNumber, headBranch);
+  // 再実行は run ID が変わらない。より大きい実行中の run があるなら、こちらが古い。
+  const superseded =
+    prHeadSha !== currentHeadSha || activeRuns.some((run) => run.id > currentRunId);
+  if (superseded) {
     return { superseded: true, cancelRunIds: [currentRunId] };
   }
 
   const cancelRunIds = [
-    ...new Set(
-      runs
-        .map(normalizeRun)
-        .filter((run) => Number.isInteger(run.id) && run.id < currentRunId)
-        .filter((run) => ACTIVE_STATUS_SET.has(run.status))
-        .filter((run) => run.event === 'pull_request')
-        .filter((run) => belongsToPullRequest(run, prNumber, headBranch))
-        .map((run) => run.id),
-    ),
+    ...new Set(activeRuns.filter((run) => run.id < currentRunId).map((run) => run.id)),
   ].sort((left, right) => left - right);
 
   return { superseded: false, cancelRunIds };
+}
+
+export function workflowRunsPath(repository, headBranch) {
+  const params = new URLSearchParams({
+    event: 'pull_request',
+    branch: headBranch,
+    per_page: '100',
+  });
+  return `repos/${repository}/actions/workflows/ci.yml/runs?${params}`;
+}
+
+export function cancelFailureKind(detail) {
+  if (detail.includes('409')) return 'already-finished';
+  if (detail.includes('403') || detail.includes('Resource not accessible')) return 'forbidden';
+  return 'fatal';
 }
 
 function assertPattern(value, pattern, label) {
@@ -84,34 +104,36 @@ export function parseWorkflowRunLines(text) {
     .map((line) => JSON.parse(line));
 }
 
-function listActiveRuns(repository, headBranch) {
-  const runs = [];
-  for (const status of ACTIVE_WORKFLOW_RUN_STATUSES) {
-    const params = new URLSearchParams({
-      event: 'pull_request',
-      branch: headBranch,
-      status,
-      per_page: '100',
-    });
-    const text = gh([
-      'api',
-      '--paginate',
-      `repos/${repository}/actions/workflows/ci.yml/runs?${params}`,
-      '--jq',
-      '.workflow_runs[] | {id,status,event,head_branch,pull_requests:[.pull_requests[].number]}',
-    ]);
-    runs.push(...parseWorkflowRunLines(text));
-  }
-  return runs;
+function listPullRequestRuns(repository, headBranch) {
+  const text = gh([
+    'api',
+    '--paginate',
+    workflowRunsPath(repository, headBranch),
+    '--jq',
+    '.workflow_runs[] | {id,status,event,head_branch,pull_requests:[.pull_requests[].number]}',
+  ]);
+  return parseWorkflowRunLines(text);
 }
 
 function cancelRun(repository, runId) {
   try {
-    gh(['api', '--method', 'POST', '--silent', `repos/${repository}/actions/runs/${runId}/cancel`]);
+    // always() のジョブは通常の cancel では止まらないため、条件を迂回して止める。
+    gh([
+      'api',
+      '--method',
+      'POST',
+      '--silent',
+      `repos/${repository}/actions/runs/${runId}/force-cancel`,
+    ]);
     return true;
   } catch (error) {
     const detail = `${error.stderr ?? ''}${error.message ?? ''}`;
-    if (detail.includes('403') || detail.includes('Resource not accessible')) {
+    const kind = cancelFailureKind(detail);
+    if (kind === 'already-finished') {
+      console.log(`run ${runId} は既に終了しているため取り消しをスキップします`);
+      return false;
+    }
+    if (kind === 'forbidden') {
       console.log(`run ${runId} はトークン権限がなく取り消せませんでした`);
       return false;
     }
@@ -163,7 +185,7 @@ function runCli() {
     return;
   }
 
-  const runs = listActiveRuns(repository, headBranch);
+  const runs = listPullRequestRuns(repository, headBranch);
   const plan = planPullRequestRunCancellation({
     currentRunId,
     currentHeadSha,
@@ -179,7 +201,11 @@ function runCli() {
     return;
   }
 
-  console.log(`同一PRの古い run を取り消します: ${plan.cancelRunIds.join(', ')}`);
+  console.log(
+    plan.superseded
+      ? `より新しい run があるため、この run を取り消します: ${plan.cancelRunIds.join(', ')}`
+      : `同一PRの古い run を取り消します: ${plan.cancelRunIds.join(', ')}`,
+  );
   for (const runId of plan.cancelRunIds) {
     cancelRun(repository, runId);
   }

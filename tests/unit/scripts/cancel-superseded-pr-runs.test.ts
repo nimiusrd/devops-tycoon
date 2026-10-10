@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  cancelFailureKind,
   planPullRequestRunCancellation,
   parseWorkflowRunLines,
+  workflowRunsPath,
 } from '../../../scripts/cancel-superseded-pr-runs.mjs';
 
 const current = {
@@ -23,11 +25,23 @@ describe('planPullRequestRunCancellation', () => {
         { id: 190, status: 'in_progress', event: 'push', pullRequestNumbers: [802] },
         { id: 195, status: 'in_progress', event: 'pull_request', pullRequestNumbers: [803] },
         { id: 200, status: 'in_progress', event: 'pull_request', pullRequestNumbers: [802] },
-        { id: 250, status: 'in_progress', event: 'pull_request', pullRequestNumbers: [802] },
+        { id: 250, status: 'completed', event: 'pull_request', pullRequestNumbers: [802] },
       ],
     });
 
     expect(plan).toEqual({ superseded: false, cancelRunIds: [100, 150] });
+  });
+
+  it('より大きい実行中の run がある再実行は、自分だけを取り消す', () => {
+    const plan = planPullRequestRunCancellation({
+      ...current,
+      runs: [
+        { id: 100, status: 'in_progress', event: 'pull_request', pullRequestNumbers: [802] },
+        { id: 250, status: 'queued', event: 'pull_request', pullRequestNumbers: [802] },
+      ],
+    });
+
+    expect(plan).toEqual({ superseded: true, cancelRunIds: [200] });
   });
 
   it('Actions API の pull_requests フィールドを同じPRとして扱う', () => {
@@ -82,6 +96,24 @@ describe('planPullRequestRunCancellation', () => {
     });
 
     expect(plan).toEqual({ superseded: true, cancelRunIds: [200] });
+  });
+});
+
+describe('workflowRunsPath', () => {
+  it('状態を指定せず、一つの一覧で後から実行中かを判定できる', () => {
+    const path = workflowRunsPath('nimiusrd/devops-tycoon', 'cursor/topic');
+
+    expect(path).toContain('event=pull_request');
+    expect(path).toContain('branch=cursor%2Ftopic');
+    expect(path).not.toContain('status=');
+  });
+});
+
+describe('cancelFailureKind', () => {
+  it('完了競合の 409 と権限不足の 403 は失敗にしない', () => {
+    expect(cancelFailureKind('HTTP 409: Conflict')).toBe('already-finished');
+    expect(cancelFailureKind('HTTP 403: Resource not accessible by integration')).toBe('forbidden');
+    expect(cancelFailureKind('HTTP 500: Server Error')).toBe('fatal');
   });
 });
 

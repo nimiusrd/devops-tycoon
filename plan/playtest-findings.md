@@ -832,7 +832,7 @@ HP・士気・負債・Review peak は `activeDangerReasons` と同じ live 全�
 
 | 敗因 | 代表シナリオ | 最初の警告（Q/S） | 危険到達 / →敗北・決着 | 敗北直前 | 機械的発動可能集合 | 限定介入（無介入との比較） | fingerprint（警告・速度・介入の抜粋） |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `seniorBurnout` | easy / `naiveNoInterventionCtl` / `pt-5` | HP 49.1（Q1/S1） | 0S / +21S・Q1 `beat` | 21.1 / 100 / 36 / 100 / 36 / 25 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 2Sの範囲で無介入・`interruptReview`・`pairReview`は危険継続、`andon`は1Sで同敗因 | `seniorHp\|0:21:beat\|` |
+| `seniorBurnout` | easy / `naiveNoInterventionCtl` / `pt-5` | HP 49.1（Q1/S1） | 0S / +21S・Q4 `beat` | 21.1 / 100 / 36 / 100 / 36 / 25 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 2Sの範囲で無介入・`interruptReview`・`pairReview`は危険離脱、`andon`は1Sで同敗因 | `seniorHp\|0:21:beat\|` |
 | `moraleCollapse` | nightmare / `naiveNoInterventionCtl` / `pt-2` | 士気36（Q1/S2） | 1S / +1S・Q1 `sprint` | 3.3 / 0.5 / 114 / 65.4 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | `firefight`・`pairReview`は危険離脱、`andon`は同じ1Sで`seniorBurnout`へ変化 | `aiDependencyUnsafe,morale,seniorHp\|1:1:sprint\|andon,firefight,pairReview` |
 | `techDebt` | nightmare / `naiveNoInterventionCtl` / `pt-4` | アクティブチーム負債60（Q1/S4） | 3S / +1S・Q1 `sprint` | 6.4 / 46 / 90 / 47.8 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`andon`は1S、`firefight`・`pairReview`は同敗因を2Sへ遅延 | `seniorHp,techDebt\|3:1:sprint\|firefight,pairReview` |
 | `reviewFreeze` | easy / `securityNeglect` / `pt-5` | Review peak 36（Q1/S3） | 2S / +1S・Q1 `sprint` | 3.5 / 100 / 0 / 100 / 60 / 70 | `firefight, pairReview, splitPr` | 全指定手を打てる危険域フレームで、無介入・`splitPr`・`pairReview`はいずれも1Sで同敗因 | `reviewQueuePeak,seniorHp\|2:1:sprint\|` |
@@ -840,7 +840,7 @@ HP・士気・負債・Review peak は `activeDangerReasons` と同じ live 全�
 | `budgetExhausted` | easy / `harnessBloated` / `pt-9` | 予算3（Q1/S3） | 2S / +1S・Q1 `setup` | 36 / 100 / 4 / 100 / 3 / 70 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`aiThrottle`・`andon`・`pairReview`はいずれも1Sで同敗因 | `budget\|2:1:setup\|` |
 | `incidentCascade` | nightmare / `flammable` / `ri139-incident-cascade` 境界frame | 連続障害5（Q1/S1） | 0S / +1S・Q1 `sprint` | 7.7 / 90.5 / 12 / 30.4 / 100 / 100 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`firefight`・`andon`はいずれも1Sで同敗因 | `consecutiveIncidentSprints\|0:1:sprint\|` |
 
-`seniorBurnout` の行は、Easy の `aiDependencyPerTask` を 1.1 にしたあと（#359）に同じ fixture を再計測した値である。危険域の HP 予兆は Q1/S1 のまま、敗北は 21 スプリント後の Q1 `beat` になった。2 スプリントの限定観測では無介入・`interruptReview`・`pairReview` は危険が続き、`andon` だけが 1 スプリントで同敗因になる。fingerprint は 7 種のまま分離している。
+`seniorBurnout` の行は、Easy の `aiDependencyPerTask` を 1.1 にしたあと（#359）に同じ fixture を再計測した値である。危険域の HP 予兆は Q1/S1 のまま、敗北は 21 スプリント後の Q4 `beat` になった。2 スプリントの限定観測では無介入・`interruptReview`・`pairReview` は危険離脱し、`andon` だけが 1 スプリントで同敗因になる。fingerprint は 7 種のまま分離している。
 
 限定反実仮想は、自然発生fixtureでは危険域内で列挙した全指定手が機械的に発動可能になる最初の
 フレームに `maxSprints: 2`、境界fixtureでは `maxSprints: 1`を指定した。いずれも `actions` に表の

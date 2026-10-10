@@ -90,6 +90,7 @@ test('引き直し後は候補が入れ替わり介入予測が試算中から�
   await page.goto('/?seed=mulligan-whatif-e2e');
   await page.getByTestId('difficulty-easy').click();
   await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('title')).toBeHidden();
 
   const draft = await page.evaluate(() => {
     const game = (window as GameWindow).game!;

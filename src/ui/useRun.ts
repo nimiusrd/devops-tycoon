@@ -278,12 +278,23 @@ export function useRun(game: GameHandle): UseRun {
       scenario?: ScenarioId,
       seed?: string,
       hypothesisStartId?: string | null,
-    ) => void game.startRun(difficulty, trials, seed, scenario, hypothesisStartId),
+    ) => {
+      if (hypothesisStartId) {
+        void game.startRun(difficulty, trials, seed, scenario, hypothesisStartId);
+        return;
+      }
+      void game.startRun(difficulty, trials, seed, scenario);
+    },
     [game],
   );
   const startDailyRun = useCallback(
-    (dateStr?: string, hypothesisStartId?: string | null) =>
-      void game.startDailyRun(dateStr, hypothesisStartId),
+    (dateStr?: string, hypothesisStartId?: string | null) => {
+      if (hypothesisStartId) {
+        void game.startDailyRun(dateStr, hypothesisStartId);
+        return;
+      }
+      void game.startDailyRun(dateStr);
+    },
     [game],
   );
   const resumeRun = useCallback(() => void game.resumeRun(), [game]);

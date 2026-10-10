@@ -26,6 +26,10 @@ describe('RI-203 経験で変わるトレイト', () => {
       effect: { trait: 'megaPrMaker', value: 6, load: 4 },
     });
     expect(traitEffect(['prSplitter'])).toEqual({ trait: 'prSplitter', value: 4, load: 1 });
+    const seen = viewTraitExperience(first);
+    seen.effects.megaPrMaker.value = 999;
+    expect(traitEffect(['megaPrMaker']).value).toBe(6);
+    expect(viewTraitExperience(first).effects.megaPrMaker.value).toBe(6);
   });
 
   it('出荷を続けても経過だけでは変わらず、分割2回で旧IDが消え新IDが一度付く', () => {

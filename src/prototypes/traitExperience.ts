@@ -75,7 +75,7 @@ export function viewTraitExperience(state: TraitState) {
     traits: [...state.person.traits],
     experience: state.person.experience,
     effect: traitEffect(state.person.traits),
-    effects: EFFECTS,
+    effects: structuredClone(EFFECTS),
   };
 }
 

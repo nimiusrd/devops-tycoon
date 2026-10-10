@@ -1,0 +1,859 @@
+{
+  "seed": "RI-200",
+  "results": [
+    {
+      "scenario": "flagship",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "flagship",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 12,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 24
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 4,
+            "platform": 1,
+            "product": 1
+          },
+          "reserve": 0
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 60,
+        "fatigue": 8,
+        "penalties": 0,
+        "score": 60,
+        "used": 6,
+        "charges": 6,
+        "forfeited": 0,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 4,
+            "used": 4,
+            "value": 32,
+            "fatigue": 4,
+            "met": true
+          },
+          {
+            "id": "platform",
+            "allocation": 1,
+            "used": 1,
+            "value": 14,
+            "fatigue": 2,
+            "met": true
+          },
+          {
+            "id": "product",
+            "allocation": 1,
+            "used": 1,
+            "value": 14,
+            "fatigue": 2,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "flagship",
+      "strategy": "even",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "flagship",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 12,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 24
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 2,
+            "platform": 2,
+            "product": 2
+          },
+          "reserve": 0
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 54,
+        "fatigue": 10,
+        "penalties": 12,
+        "score": 42,
+        "used": 6,
+        "charges": 6,
+        "forfeited": 0,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 2,
+            "used": 2,
+            "value": 22,
+            "fatigue": 2,
+            "met": false
+          },
+          {
+            "id": "platform",
+            "allocation": 2,
+            "used": 2,
+            "value": 16,
+            "fatigue": 4,
+            "met": true
+          },
+          {
+            "id": "product",
+            "allocation": 2,
+            "used": 2,
+            "value": 16,
+            "fatigue": 4,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "flagship",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "flagship",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 12,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 24
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 0,
+            "platform": 0,
+            "product": 0
+          },
+          "reserve": 0
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 36,
+        "fatigue": 0,
+        "penalties": 12,
+        "score": 24,
+        "used": 0,
+        "charges": 0,
+        "forfeited": 6,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 12,
+            "fatigue": 0,
+            "met": false
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 12,
+            "fatigue": 0,
+            "met": true
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 12,
+            "fatigue": 0,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "flagship",
+      "strategy": "reserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "flagship",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 12,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 24
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 2,
+            "platform": 2,
+            "product": 0
+          },
+          "reserve": 2
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "release"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 60,
+        "fatigue": 8,
+        "penalties": 0,
+        "score": 60,
+        "used": 6,
+        "charges": 6,
+        "forfeited": 0,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 4,
+            "used": 4,
+            "value": 32,
+            "fatigue": 4,
+            "met": true
+          },
+          {
+            "id": "platform",
+            "allocation": 2,
+            "used": 2,
+            "value": 16,
+            "fatigue": 4,
+            "met": true
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 12,
+            "fatigue": 0,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "spread",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "spread",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 10,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 4,
+            "platform": 1,
+            "product": 1
+          },
+          "reserve": 0
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 60,
+        "fatigue": 8,
+        "penalties": 20,
+        "score": 40,
+        "used": 6,
+        "charges": 6,
+        "forfeited": 0,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 4,
+            "used": 4,
+            "value": 32,
+            "fatigue": 4,
+            "met": true
+          },
+          {
+            "id": "platform",
+            "allocation": 1,
+            "used": 1,
+            "value": 14,
+            "fatigue": 2,
+            "met": false
+          },
+          {
+            "id": "product",
+            "allocation": 1,
+            "used": 1,
+            "value": 14,
+            "fatigue": 2,
+            "met": false
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "spread",
+      "strategy": "even",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "spread",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 10,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 2,
+            "platform": 2,
+            "product": 2
+          },
+          "reserve": 0
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 54,
+        "fatigue": 10,
+        "penalties": 0,
+        "score": 54,
+        "used": 6,
+        "charges": 6,
+        "forfeited": 0,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 2,
+            "used": 2,
+            "value": 22,
+            "fatigue": 2,
+            "met": true
+          },
+          {
+            "id": "platform",
+            "allocation": 2,
+            "used": 2,
+            "value": 16,
+            "fatigue": 4,
+            "met": true
+          },
+          {
+            "id": "product",
+            "allocation": 2,
+            "used": 2,
+            "value": 16,
+            "fatigue": 4,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "spread",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "spread",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 10,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 0,
+            "platform": 0,
+            "product": 0
+          },
+          "reserve": 0
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 36,
+        "fatigue": 0,
+        "penalties": 30,
+        "score": 6,
+        "used": 0,
+        "charges": 0,
+        "forfeited": 6,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 12,
+            "fatigue": 0,
+            "met": false
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 12,
+            "fatigue": 0,
+            "met": false
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 12,
+            "fatigue": 0,
+            "met": false
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "spread",
+      "strategy": "reserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-200",
+        "scenario": "spread",
+        "tick": 0,
+        "horizon": 4,
+        "pool": 6,
+        "penalty": 10,
+        "reserve": 0,
+        "forfeited": 0,
+        "opened": false,
+        "released": false,
+        "charges": 0,
+        "penalties": 0,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "platform",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          },
+          {
+            "id": "product",
+            "allocation": 0,
+            "used": 0,
+            "value": 0,
+            "fatigue": 0,
+            "deadline": 15
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "allocate",
+          "amounts": {
+            "core": 2,
+            "platform": 2,
+            "product": 0
+          },
+          "reserve": 2
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "release"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 54,
+        "fatigue": 10,
+        "penalties": 0,
+        "score": 54,
+        "used": 6,
+        "charges": 6,
+        "forfeited": 0,
+        "reserve": 0,
+        "singleLedger": true,
+        "teams": [
+          {
+            "id": "core",
+            "allocation": 2,
+            "used": 2,
+            "value": 22,
+            "fatigue": 2,
+            "met": true
+          },
+          {
+            "id": "platform",
+            "allocation": 2,
+            "used": 2,
+            "value": 16,
+            "fatigue": 4,
+            "met": true
+          },
+          {
+            "id": "product",
+            "allocation": 2,
+            "used": 2,
+            "value": 16,
+            "fatigue": 4,
+            "met": true
+          }
+        ]
+      }
+    }
+  ]
+}

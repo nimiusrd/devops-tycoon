@@ -433,7 +433,10 @@ export function TitleScreen({
   );
 
   return (
-    <div className="title-screen title-command" data-testid="title">
+    <div
+      className={`title-screen title-command${runLaunchPending ? ' title-launch-pending' : ''}`}
+      data-testid="title"
+    >
       <div className="title-world" aria-hidden="true">
         <img
           className="title-world-backdrop"
@@ -535,7 +538,7 @@ export function TitleScreen({
                     <button
                       type="button"
                       key={id}
-                      className={`difficulty-card${difficulty === id ? ' selected' : ''}`}
+                      className={`difficulty-card${difficulty === id ? ' selected' : ''}${unlocked ? '' : ' is-locked'}`}
                       data-testid={`difficulty-${id}`}
                       disabled={!unlocked || runLaunchPending}
                       title={startConditionTitle}

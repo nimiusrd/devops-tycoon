@@ -774,6 +774,43 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.bound).toBeNull();
   });
 
+  it('開始保存のタイムアウトは、打ち切った仮説に待ち時間の追記をつなげる', async () => {
+    let release = () => {};
+    let gate = Promise.resolve();
+    const arm = () => {
+      gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    const memory = new MemoryHypothesisNoteStorage();
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        await gate;
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    arm();
+    store.update((record) => editHypothesisDraft(record, '仮説 A', 3));
+    release();
+    await store.flush();
+    const before = store.getSnapshot().record;
+    arm();
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    store.update((record) => editHypothesisDraft(record, '追記 B', 8));
+    store.revertAbandonedStart(before);
+    release();
+    await saving;
+    await store.flush();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('仮説 A追記 B');
+    expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
+    expect(store.getSnapshot().record.draft?.text).toBe('仮説 A追記 B');
+  });
+
   it('固定の成功は、直後の下書き保存失敗では失敗にしない', async () => {
     let release = () => {};
     let gate = Promise.resolve();

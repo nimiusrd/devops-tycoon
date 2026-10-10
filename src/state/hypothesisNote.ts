@@ -100,6 +100,24 @@ export function restoreHypothesisBound(
 }
 
 /**
+ * 保存を打ち切った開始の下書き。消費した本文を戻し、待ち時間の追記はその後ろへつなぐ。
+ * 上限を超えた分は切り捨てる。
+ */
+export function appendAbandonedHypothesisDraft(
+  abandoned: HypothesisNoteEntry | null,
+  typed: HypothesisNoteEntry | null,
+): HypothesisNoteEntry | null {
+  if (
+    !typed ||
+    (abandoned && typed.text === abandoned.text && typed.writtenAt === abandoned.writtenAt)
+  ) {
+    return abandoned;
+  }
+  if (!abandoned) return typed;
+  return entryFrom(`${abandoned.text}${typed.text}`, typed.writtenAt) ?? abandoned;
+}
+
+/**
  * 開始を取り消す。この開始の仮説だけを外し、待ち時間に書いた下書きは残す。
  * 下書きを消費したままなら、開始前の下書きへ戻す。
  */

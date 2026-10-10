@@ -3566,8 +3566,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
     inset 0 0 40px #ffb24b12;
 }
 .title-command .difficulty-card:disabled {
-  opacity: 0.36;
   cursor: not-allowed;
+}
+.title-command .difficulty-card.is-locked {
+  opacity: 0.36;
 }
 .difficulty-kicker {
   display: flex;
@@ -3626,7 +3628,6 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   min-width: 0;
 }
 .title-recipe-text:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
 }
 .title-recipe-text {
@@ -3664,7 +3665,6 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   background: #142944;
 }
 .title-recipe-actions button:disabled {
-  opacity: 0.45;
   cursor: default;
 }
 .title-recipe-status {
@@ -3707,8 +3707,35 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   box-shadow: 0 0 20px #4dc8ff18;
 }
 .title-command .trial-chip:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
+}
+/* 押せなくするのは即時。薄い表示は 150ms 遅らせ、通常の開始ではタイトルが先に消える。 */
+.title-launch-pending .difficulty-card:disabled:not(.is-locked) {
+  transition: none;
+  animation: title-launch-dim-card 0.22s linear 150ms forwards;
+}
+.title-launch-pending .trial-chip:disabled,
+.title-launch-pending .title-recipe-text:disabled,
+.title-launch-pending .title-recipe-actions button:disabled {
+  animation: title-launch-dim-control 0.22s linear 150ms forwards;
+}
+@keyframes title-launch-dim-card {
+  to {
+    opacity: 0.36;
+  }
+}
+@keyframes title-launch-dim-control {
+  to {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-launch-pending .difficulty-card:disabled:not(.is-locked),
+  .title-launch-pending .trial-chip:disabled,
+  .title-launch-pending .title-recipe-text:disabled,
+  .title-launch-pending .title-recipe-actions button:disabled {
+    animation-duration: 0.01ms;
+  }
 }
 .title-command .trial-chip i {
   margin-right: 6px;

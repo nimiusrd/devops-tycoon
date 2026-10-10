@@ -11,11 +11,13 @@ import {
   openGameDb,
 } from './gameDb';
 import {
+  appendAbandonedHypothesisDraft,
   commitStoredHypothesis,
   EMPTY_HYPOTHESIS_NOTE,
   hypothesisCommitDroppedSessionBound,
   hypothesisCommitKeptForeignBound,
   normalizeHypothesisNote,
+  type HypothesisNoteEntry,
   type HypothesisNoteRecord,
 } from './hypothesisNote';
 
@@ -139,6 +141,8 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   /** この番号までの開始保存は、成功しても画面と端末を戻す。 */
   let discardThroughSeq = -1;
   let revertRecord: HypothesisNoteRecord | null = null;
+  let revertSourceDraft: HypothesisNoteEntry | null = null;
+  let revertTypedDraft: HypothesisNoteEntry | null = null;
   const listeners = new Set<() => void>();
 
   const publish = (next: HypothesisNoteSnapshot) => {
@@ -198,15 +202,25 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             const reverted = revertRecord;
             let restored =
               queuedChanges.length > 0 ? applyQueued(reverted, queuedChanges) : reverted;
+            // 待ち時間の追記は絶対値で書き直すので、つないだ下書きをその追記だけで上書きしない。
+            if (
+              revertTypedDraft &&
+              sameDraft(restored.draft, revertTypedDraft) &&
+              !sameDraft(reverted.draft, revertTypedDraft)
+            ) {
+              restored = { ...restored, draft: reverted.draft };
+            }
             const consumedByLaterStart =
               !stored.draft &&
               !!stored.bound &&
               stored.bound.startId !== local.bound?.startId &&
-              sameDraft(stored.bound.beforeStart, reverted.draft) &&
-              sameDraft(reverted.draft, restored.draft);
+              sameDraft(stored.bound.beforeStart, revertSourceDraft) &&
+              (sameDraft(reverted.draft, restored.draft) ||
+                sameDraft(restored.draft, revertSourceDraft) ||
+                sameDraft(restored.draft, revertTypedDraft));
             if (consumedByLaterStart) {
-              // 後発開始がこの下書きを消費済みなら、タイトルへ戻さない。
-              restored = { ...restored, draft: null };
+              // 後発開始が消費した本文は戻さない。待ち時間の追記だけ残す。
+              restored = { ...restored, draft: revertTypedDraft };
             } else if (
               stored.draft &&
               sameDraft(reverted.draft, restored.draft) &&
@@ -220,6 +234,8 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
               restored = { ...restored, bound: null };
             }
             revertRecord = null;
+            revertSourceDraft = null;
+            revertTypedDraft = null;
             baseRecord = stored;
             settleOps(ops, 'failed');
             activeOpIds = followOps;
@@ -285,6 +301,8 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           if (revertRecord && seq <= discardThroughSeq) {
             publish({ ...snapshot, record: revertRecord, saveFailed: true });
             revertRecord = null;
+            revertSourceDraft = null;
+            revertTypedDraft = null;
           } else if (!snapshot.saveFailed) {
             publish({ ...snapshot, saveFailed: true });
           }
@@ -446,12 +464,16 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       if (!loaded) {
         // 初回読込前の空 snapshot で、保存済みメモを上書きしない。
         revertRecord = null;
+        revertSourceDraft = null;
+        revertTypedDraft = null;
         publish({ ...snapshot, saveFailed: true });
         return;
       }
       const current = snapshot.record;
-      const draft =
-        current.draft && !sameDraft(current.draft, record.draft) ? current.draft : record.draft;
+      const typed = current.draft && !sameDraft(current.draft, record.draft) ? current.draft : null;
+      revertSourceDraft = record.draft;
+      revertTypedDraft = typed;
+      const draft = appendAbandonedHypothesisDraft(record.draft, typed);
       const next = { ...record, draft };
       revertRecord = next;
       publish({ ...snapshot, record: next, saveFailed: true });

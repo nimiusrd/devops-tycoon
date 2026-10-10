@@ -540,6 +540,8 @@ describe('TitleScreen のラン開始条件', () => {
     }
     expect(screen.find('hypothesis-note-input').props.disabled).not.toBe(true);
     expect(screen.find('difficulty-normal').props.title).toBe('開始中は条件を変えられません');
+    expect(screen.find('title').props.className).toContain('title-launch-pending');
+    expect(screen.find('difficulty-hard').props.className).toContain('is-locked');
     expect(screen.find('title-launch-dock').props['aria-busy']).toBe(true);
     expect(content(screen.find('start-run'))).toContain('開始中…');
     expect(content(screen.find('start-daily-run'))).toContain('開始中…');

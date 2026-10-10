@@ -1,0 +1,379 @@
+{
+  "seed": "RI-216",
+  "results": [
+    {
+      "board": "tight",
+      "strategy": "upstream",
+      "initial": {
+        "version": 1,
+        "seed": "RI-216",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 3,
+        "jobs": [
+          {
+            "id": "gate",
+            "team": "platform",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 1,
+            "deadline": null,
+            "lateValue": 1,
+            "doneTick": null
+          },
+          {
+            "id": "feature",
+            "team": "product",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 8,
+            "deadline": null,
+            "lateValue": 8,
+            "doneTick": null
+          },
+          {
+            "id": "followup",
+            "team": "incident",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 4,
+            "deadline": null,
+            "lateValue": 4,
+            "doneTick": null
+          },
+          {
+            "id": "hot",
+            "team": "incident",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 6,
+            "deadline": 2,
+            "lateValue": 0,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "wasted": 0,
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "support",
+          "team": "platform"
+        },
+        {
+          "type": "support",
+          "team": "platform"
+        },
+        {
+          "type": "support",
+          "team": "product"
+        }
+      ],
+      "result": {
+        "value": 1,
+        "wasted": 0,
+        "delivered": [
+          {
+            "id": "gate",
+            "tick": 1,
+            "value": 1
+          }
+        ],
+        "pending": ["feature", "followup", "hot"],
+        "score": 1,
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "strategy": "crisis",
+      "initial": {
+        "version": 1,
+        "seed": "RI-216",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 3,
+        "jobs": [
+          {
+            "id": "gate",
+            "team": "platform",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 1,
+            "deadline": null,
+            "lateValue": 1,
+            "doneTick": null
+          },
+          {
+            "id": "feature",
+            "team": "product",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 8,
+            "deadline": null,
+            "lateValue": 8,
+            "doneTick": null
+          },
+          {
+            "id": "followup",
+            "team": "incident",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 4,
+            "deadline": null,
+            "lateValue": 4,
+            "doneTick": null
+          },
+          {
+            "id": "hot",
+            "team": "incident",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 6,
+            "deadline": 2,
+            "lateValue": 0,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "wasted": 0,
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "support",
+          "team": "incident"
+        },
+        {
+          "type": "support",
+          "team": "incident"
+        },
+        {
+          "type": "support",
+          "team": "platform"
+        }
+      ],
+      "result": {
+        "value": 6,
+        "wasted": 0,
+        "delivered": [
+          {
+            "id": "hot",
+            "tick": 1,
+            "value": 6
+          }
+        ],
+        "pending": ["gate", "feature", "followup"],
+        "score": 6,
+        "lost": false
+      }
+    },
+    {
+      "board": "open",
+      "strategy": "upstream",
+      "initial": {
+        "version": 1,
+        "seed": "RI-216",
+        "board": "open",
+        "tick": 0,
+        "horizon": 4,
+        "jobs": [
+          {
+            "id": "gate",
+            "team": "platform",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 1,
+            "deadline": null,
+            "lateValue": 1,
+            "doneTick": null
+          },
+          {
+            "id": "feature",
+            "team": "product",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 8,
+            "deadline": null,
+            "lateValue": 8,
+            "doneTick": null
+          },
+          {
+            "id": "followup",
+            "team": "incident",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 4,
+            "deadline": null,
+            "lateValue": 4,
+            "doneTick": null
+          },
+          {
+            "id": "hot",
+            "team": "incident",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 6,
+            "deadline": 2,
+            "lateValue": 0,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "wasted": 0,
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "support",
+          "team": "platform"
+        },
+        {
+          "type": "support",
+          "team": "platform"
+        },
+        {
+          "type": "support",
+          "team": "product"
+        },
+        {
+          "type": "support",
+          "team": "product"
+        }
+      ],
+      "result": {
+        "value": 9,
+        "wasted": 0,
+        "delivered": [
+          {
+            "id": "gate",
+            "tick": 1,
+            "value": 1
+          },
+          {
+            "id": "feature",
+            "tick": 3,
+            "value": 8
+          }
+        ],
+        "pending": ["followup", "hot"],
+        "score": 9,
+        "lost": false
+      }
+    },
+    {
+      "board": "open",
+      "strategy": "crisis",
+      "initial": {
+        "version": 1,
+        "seed": "RI-216",
+        "board": "open",
+        "tick": 0,
+        "horizon": 4,
+        "jobs": [
+          {
+            "id": "gate",
+            "team": "platform",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 1,
+            "deadline": null,
+            "lateValue": 1,
+            "doneTick": null
+          },
+          {
+            "id": "feature",
+            "team": "product",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 8,
+            "deadline": null,
+            "lateValue": 8,
+            "doneTick": null
+          },
+          {
+            "id": "followup",
+            "team": "incident",
+            "requires": ["gate"],
+            "workLeft": 2,
+            "total": 2,
+            "value": 4,
+            "deadline": null,
+            "lateValue": 4,
+            "doneTick": null
+          },
+          {
+            "id": "hot",
+            "team": "incident",
+            "requires": [],
+            "workLeft": 2,
+            "total": 2,
+            "value": 6,
+            "deadline": 2,
+            "lateValue": 0,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "wasted": 0,
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "support",
+          "team": "incident"
+        },
+        {
+          "type": "support",
+          "team": "incident"
+        },
+        {
+          "type": "support",
+          "team": "platform"
+        },
+        {
+          "type": "support",
+          "team": "platform"
+        }
+      ],
+      "result": {
+        "value": 7,
+        "wasted": 0,
+        "delivered": [
+          {
+            "id": "hot",
+            "tick": 1,
+            "value": 6
+          },
+          {
+            "id": "gate",
+            "tick": 3,
+            "value": 1
+          }
+        ],
+        "pending": ["feature", "followup"],
+        "score": 7,
+        "lost": false
+      }
+    }
+  ]
+}

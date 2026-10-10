@@ -115,9 +115,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   /** 書き込みの await 中に来た操作。返ったレコードへ重ね直す。 */
   let queuedDuringWrite: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord> = [];
   let captureChanges = false;
+  let nextOpId = 1;
+  const opState = new Map<number, 'pending' | 'saved' | 'failed' | 'unchanged'>();
+  let activeOpIds: number[] = [];
+  let queuedOpIds: number[] = [];
+  let pendingOpIds: number[] = [];
   let persistSeq = 0;
-  let lastPersistSeq = 0;
-  let lastPersistOk = true;
   /** この番号までの開始保存は、成功しても画面と端末を戻す。 */
   let discardThroughSeq = -1;
   let revertRecord: HypothesisNoteRecord | null = null;
@@ -133,6 +136,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     queued: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord>,
   ) => queued.reduce((current, change) => change(current), record);
 
+  const settleOps = (ids: number[], status: 'saved' | 'failed' | 'unchanged') => {
+    for (const id of ids) {
+      if (opState.get(id) === 'pending') opState.set(id, status);
+    }
+  };
+
   // 入力のたびに書き込みを積まず、書き込み中の変更は最新の1件だけを後から書く。
   const persist = (): Promise<void> => {
     dirty = true;
@@ -143,22 +152,27 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         const local = snapshot.record;
         const base = baseRecord;
         const seq = ++persistSeq;
+        const ops = activeOpIds;
+        activeOpIds = [];
         captureChanges = true;
         try {
           const stored = await storage.commit(local, base);
           const queued = queuedDuringWrite;
+          const followOps = queuedOpIds;
           queuedDuringWrite = [];
+          queuedOpIds = [];
           captureChanges = false;
-          lastPersistSeq = seq;
           if (revertRecord && seq <= discardThroughSeq) {
             const restored = queued.length > 0 ? applyQueued(revertRecord, queued) : revertRecord;
             revertRecord = null;
             baseRecord = stored;
-            lastPersistOk = false;
+            settleOps(ops, 'failed');
+            activeOpIds = followOps;
             publish({ record: restored, saveFailed: true });
             dirty = true;
           } else if (hypothesisCommitDroppedSessionBound(base, local, stored)) {
-            lastPersistOk = false;
+            settleOps(ops, 'failed');
+            settleOps(followOps, 'failed');
             publish({
               record: queued.length > 0 ? applyQueued(local, queued) : local,
               saveFailed: true,
@@ -173,10 +187,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
               baseRecord = { ...base, draft: stored.draft };
             }
             if (queued.length > 0) dirty = true;
-            lastPersistOk = true;
+            settleOps(ops, 'saved');
+            activeOpIds = [...followOps, ...activeOpIds];
           } else {
             baseRecord = stored;
-            lastPersistOk = true;
+            settleOps(ops, 'saved');
+            activeOpIds = [...followOps, ...activeOpIds];
             if (queued.length > 0) {
               publish({ ...snapshot, record: applyQueued(stored, queued) });
               dirty = true;
@@ -186,9 +202,11 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           }
         } catch {
           captureChanges = false;
+          const followOps = queuedOpIds;
           queuedDuringWrite = [];
-          lastPersistSeq = seq;
-          lastPersistOk = false;
+          queuedOpIds = [];
+          settleOps(ops, 'failed');
+          settleOps(followOps, 'failed');
           if (revertRecord && seq <= discardThroughSeq) {
             publish({ ...snapshot, record: revertRecord, saveFailed: true });
             revertRecord = null;
@@ -218,12 +236,15 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       const stored = normalizeHypothesisNote(raw);
       baseRecord = stored;
       const queued = pending;
+      const queuedOps = pendingOpIds;
       pending = [];
+      pendingOpIds = [];
       if (revertRecord) {
         const record = queued.length > 0 ? applyQueued(revertRecord, queued) : revertRecord;
         revertRecord = null;
         loaded = true;
         if (loading === attemptGate.current) loading = null;
+        settleOps(queuedOps, 'failed');
         publish({ record, saveFailed: true });
         void persist();
         return;
@@ -232,7 +253,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       loaded = true;
       if (loading === attemptGate.current) loading = null;
       publish({ ...snapshot, record });
-      if (record !== stored) void persist();
+      if (record !== stored) {
+        activeOpIds = [...queuedOps, ...activeOpIds];
+        void persist();
+      } else {
+        settleOps(queuedOps, 'unchanged');
+      }
     })();
     attemptGate.current = attempt;
     loading = attempt;
@@ -245,17 +271,29 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     return inflight.then(() => startLoad());
   };
 
-  const update = (change: (record: HypothesisNoteRecord) => HypothesisNoteRecord) => {
+  const update = (
+    change: (record: HypothesisNoteRecord) => HypothesisNoteRecord,
+    opId?: number,
+  ) => {
     if (!loaded) {
       pending.push(change);
+      if (opId !== undefined) pendingOpIds.push(opId);
       const next = change(snapshot.record);
       if (next !== snapshot.record) publish({ ...snapshot, record: next });
       if (!loading) void load();
       return;
     }
     const next = change(snapshot.record);
-    if (next === snapshot.record) return;
-    if (captureChanges) queuedDuringWrite.push(change);
+    if (next === snapshot.record) {
+      if (opId !== undefined) opState.set(opId, 'unchanged');
+      return;
+    }
+    if (captureChanges) {
+      queuedDuringWrite.push(change);
+      if (opId !== undefined) queuedOpIds.push(opId);
+    } else if (opId !== undefined) {
+      activeOpIds.push(opId);
+    }
     publish({ ...snapshot, record: next });
     void persist();
   };
@@ -268,13 +306,17 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   const applyCommitted = async (
     change: (record: HypothesisNoteRecord) => HypothesisNoteRecord,
   ): Promise<'unchanged' | 'saved' | 'failed'> => {
-    const seq = persistSeq;
-    update(change);
+    const opId = nextOpId++;
+    opState.set(opId, 'pending');
+    update(change, opId);
     await load();
     await flush();
+    const status = opState.get(opId) ?? 'unchanged';
+    opState.delete(opId);
     if (!loaded) return snapshot.saveFailed ? 'failed' : 'unchanged';
-    if (lastPersistSeq <= seq) return 'unchanged';
-    return lastPersistOk ? 'saved' : 'failed';
+    if (status === 'saved') return 'saved';
+    if (status === 'failed') return 'failed';
+    return 'unchanged';
   };
 
   return {

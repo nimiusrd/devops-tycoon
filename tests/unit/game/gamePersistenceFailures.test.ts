@@ -1853,6 +1853,25 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(await replayStorage.list()).toEqual([]);
   });
 
+  it('単体取り込みの解除失敗では、置き換えた途中セーブを戻せる', async () => {
+    const existing = makeRunSave('existing-save');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'hypothesis-import-rollback',
+      runStorage,
+      initialRunSave: existing,
+    });
+    const imported = await game.importRunSaveText(serializeRunSave(makeRunSave('imported-run')));
+    expect(imported.ok).toBe(true);
+    expect(game.getRunSaveSummary()?.seed).toBe('imported-run');
+
+    await game.rollbackRunImport();
+
+    expect((await runStorage.load())?.summary.seed).toBe('existing-save');
+    expect(game.getRunSaveSummary()?.seed).toBe('existing-save');
+  });
+
   it('まとめ取り込みの途中失敗では、開始前の仮説を外さない', async () => {
     const runStorage = new MemoryRunStorage();
     const replayStorage = new MemoryReplayStorage();

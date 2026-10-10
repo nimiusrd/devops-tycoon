@@ -140,9 +140,12 @@ export interface GameHandle {
     trials?: string[],
     seed?: string,
     scenario?: ScenarioId,
+    hypothesisStartId?: string | null,
   ): RunState;
   /** 本日（または指定 UTC 日）のデイリーランを開始する（第23章）。 */
-  startDailyRun(dateStr?: string): RunState;
+  startDailyRun(dateStr?: string, hypothesisStartId?: string | null): RunState;
+  /** いまのランに紐づく仮説の開始 ID。途中セーブへも同じ値を書く。 */
+  hypothesisStartId(): string | null;
   /**
    * ラン開始ごとに増える世代番号（RI-60）。
    * `currentSprintId` はランを跨いで再利用されるため、ガイド再表示判定にはこちらを使う。
@@ -271,6 +274,8 @@ export interface GameHandle {
    * 失敗時は既存セーブ・メタ進行・リプレイを触らない。
    */
   importRunSaveText(raw: string): Promise<RunSaveShareResult>;
+  /** 直前に成功した単体取り込みを、仮説の解除に失敗したときだけ戻す。 */
+  rollbackRunImport(): Promise<void>;
   /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
   attachReplay(
     storage: ReplayStorage,
@@ -422,6 +427,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let runImportDepth = 0;
   /** リプレイ側の統合バックアップが、成功した途中セーブを戻すときだけ使う。 */
   let undoImportedRun: (() => Promise<void>) | null = null;
+  /** このランの仮説。途中セーブが古いランのままでも、別の開始 ID には出さない。 */
+  let activeHypothesisStartId: string | null = null;
   /** リプレイ取り込みの世代。最終一覧のあとでも、途中の取り込みを既存データにしない。 */
   let replayRevision = 0;
   let replayImportDepth = 0;
@@ -758,7 +765,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const exported = engine.exportPersistState();
     if (!exported) return;
     // 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する。
-    const save = toRunSave(exported, Date.now(), keyframes);
+    const save = toRunSave(exported, Date.now(), keyframes, activeHypothesisStartId);
     resumableSave = save;
     runSaveIssue = null;
     runRevision += 1;
@@ -1630,8 +1637,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       // オートプレイやモンテカルロは snapshot を直接使うため、UI 経路だけで試算する。
       return { ...state, ...resolveWhatIf() };
     },
-    startRun(difficulty, trials, runSeed, scenario) {
+    startRun(difficulty, trials, runSeed, scenario, hypothesisStartId) {
       if (replayMode || isFinishSaveBlockingNewRun()) return engine.snapshot();
+      activeHypothesisStartId = hypothesisStartId || null;
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1651,8 +1659,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
       return after();
     },
-    startDailyRun(dateStr) {
+    startDailyRun(dateStr, hypothesisStartId) {
       if (replayMode || isFinishSaveBlockingNewRun()) return engine.snapshot();
+      activeHypothesisStartId = hypothesisStartId || null;
       latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
@@ -1676,6 +1685,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     getRunEpoch() {
       return runEpoch;
+    },
+    hypothesisStartId() {
+      return activeHypothesisStartId;
     },
     beginSetupSprint() {
       if (replayMode) return engine.snapshot();
@@ -2103,8 +2115,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         Array.isArray(save.state.extras.preferredCardIds) ? save.state.extras.preferredCardIds : [],
       );
       engine.hydratePersistState(save.state);
+      activeHypothesisStartId = save.hypothesisStartId ?? null;
       bump();
       return after();
+    },
+    async rollbackRunImport() {
+      const undo = undoImportedRun;
+      undoImportedRun = null;
+      await undo?.();
     },
     hasResumableRun() {
       return resumableSave !== null && !finishCommitPending;

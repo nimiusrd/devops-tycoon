@@ -56,7 +56,7 @@ describe('開始前の仮説メモ（RI-295）', () => {
 
     const bound = bindHypothesisToRun(drafted, key, 'start-1');
     expect(bound.draft).toBeNull();
-    expect(hypothesisForRun(bound, key)).toEqual({
+    expect(hypothesisForRun(bound, key, 'start-1')).toEqual({
       runKey: key,
       startId: 'start-1',
       beforeStart: { text: '採用より育成', writtenAt: 1000 },
@@ -89,13 +89,21 @@ describe('開始前の仮説メモ（RI-295）', () => {
     expect(editHypothesisDraft(first, '   ', 2).draft).toBeNull();
 
     const other = hypothesisRunKey({ ...RUN, seed: 'other' });
-    expect(hypothesisForRun(first, other)).toBeNull();
+    expect(hypothesisForRun(first, other, first.bound?.startId ?? null)).toBeNull();
+    expect(hypothesisForRun(first, key, 'other-start')).toBeNull();
+    expect(hypothesisForRun(first, key, first.bound?.startId ?? null)).toBe(first.bound);
     expect(writeHypothesisReflection(first, other, '別ラン', 3)).toBe(first);
 
     const restarted = bindHypothesisToRun(first, key);
     expect(restarted.bound).toBeNull();
-    expect(hypothesisForRun(restarted, key)).toBeNull();
-    expect(hypothesisForRun(first, hypothesisRunKey({ ...RUN, scenario: 'copilot' }))).toBeNull();
+    expect(hypothesisForRun(restarted, key, null)).toBeNull();
+    expect(
+      hypothesisForRun(
+        first,
+        hypothesisRunKey({ ...RUN, scenario: 'copilot' }),
+        first.bound?.startId ?? null,
+      ),
+    ).toBeNull();
     expect(detachHypothesisNote(first).bound).toBeNull();
     expect(detachHypothesisNote(restarted)).toBe(restarted);
   });
@@ -189,7 +197,8 @@ describe('開始前の仮説メモ（RI-295）', () => {
       '振り返り',
       2,
     );
-    expect(hypothesisForRun(record, key)).not.toBeNull();
+    expect(hypothesisForRun(record, key, record.bound?.startId ?? null)).not.toBeNull();
+    expect(hypothesisForRun(record, key, 'other-start')).toBeNull();
     expect(play()).toBe(before);
   });
 });
@@ -647,6 +656,44 @@ describe('仮説メモの保存', () => {
     expect(stored.bound).toBeNull();
     expect(store.getSnapshot().record.draft?.text).toBe('残す仮説');
     expect(store.getSnapshot().record.bound).toBeNull();
+  });
+
+  it('固定の成功は、直後の下書き保存失敗では失敗にしない', async () => {
+    let release = () => {};
+    let gate = Promise.resolve();
+    const arm = () => {
+      gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    let failDraft = false;
+    const memory = new MemoryHypothesisNoteStorage();
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        await gate;
+        if (failDraft && local.draft?.text === '次回') throw new Error('quota');
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    arm();
+    store.update((record) => editHypothesisDraft(record, '狙い', 1));
+    release();
+    await store.flush();
+    arm();
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    failDraft = true;
+    store.update((record) => editHypothesisDraft(record, '次回', 4));
+    release();
+    expect(await saving).toBe('saved');
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(true);
+    expect(store.getSnapshot().record.bound?.startId).toBe('start-c');
+    expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('start-c');
   });
 
   it('仮説が無い解除は、以前の保存失敗で失敗にしない', async () => {

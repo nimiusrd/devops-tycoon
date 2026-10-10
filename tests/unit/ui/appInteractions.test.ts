@@ -247,7 +247,10 @@ import type { HudMetricSnapshot, RunMetricSnapshot } from '../../../src/render/s
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { createRunDiagnosticInfo } from '../../../src/state/diagnosticInfo';
-import { HYPOTHESIS_START_SAVE_TIMEOUT_MS } from '../../../src/state/hypothesisNote';
+import {
+  HYPOTHESIS_NOTE_SAVE_FAILED,
+  HYPOTHESIS_START_SAVE_TIMEOUT_MS,
+} from '../../../src/state/hypothesisNote';
 import { hypothesisNoteStore } from '../../../src/state/hypothesisNotePersistence';
 import { defaultMeta } from '../../../src/state/meta';
 import {
@@ -411,6 +414,8 @@ function makeGame() {
     phase: vi.fn(() => 'title' as const),
     isReplayMode: vi.fn(() => false),
     getRunEpoch: vi.fn(() => 1),
+    hypothesisStartId: vi.fn(() => null),
+    rollbackRunImport: vi.fn(async () => undefined),
     isPaused: vi.fn(() => paused || holds > 0),
     getPauseEpoch: vi.fn(() => epoch),
     pause: vi.fn(() => {
@@ -660,7 +665,10 @@ describe('App のタイトル操作', () => {
       if (action === 'onStartDaily') {
         expect(screen.run.startDailyRun).toHaveBeenCalledExactlyOnceWith(
           expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          null,
         );
+      } else if (action === 'onStart') {
+        expect(screen.run.startRun).toHaveBeenCalledExactlyOnceWith(...args, null);
       } else {
         expect(screen.run[method]).toHaveBeenCalledExactlyOnceWith(...args);
       }
@@ -780,6 +788,24 @@ describe('App のタイトル操作', () => {
     screen.invoke('TitleScreen', 'onToggleSoundMuted');
     expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(false);
     expect(audio.unlock).toHaveBeenCalledTimes(2);
+  });
+
+  it('仮説の解除に失敗した単体取り込みは、置き換えた途中セーブを戻す', async () => {
+    const screen = mountApp();
+    vi.mocked(screen.run.importRunSaveText).mockResolvedValue({
+      ok: true,
+      save: makeSharedRecords().save,
+    });
+    const detach = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
+    try {
+      expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toEqual({
+        ok: false,
+        message: HYPOTHESIS_NOTE_SAVE_FAILED,
+      });
+      expect(screen.game.rollbackRunImport).toHaveBeenCalledOnce();
+    } finally {
+      detach.mockRestore();
+    }
   });
 
   it.each([true, false])(

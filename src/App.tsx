@@ -366,10 +366,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   };
   const launchAfterHypothesis = (
     bind: Parameters<typeof hypothesisNoteStore.applyCommitted>[0],
-    start: () => void,
+    start: (hypothesisStartId: string | null) => void,
   ) => {
     if (!canBeginRun) {
-      start();
+      start(null);
       return;
     }
     if (beginGuard.current) return;
@@ -409,7 +409,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       } else {
         setHypothesisUnrecorded(false);
       }
-      start();
+      const linked =
+        saved === 'timeout' || saved === 'failed'
+          ? null
+          : (hypothesisNoteStore.getSnapshot().record.bound?.startId ?? null);
+      start(linked);
     })();
   };
   const startRun = (
@@ -433,7 +437,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             scenario: resolveScenarioId(scenario),
           }),
         ),
-      () => run.startRun(difficulty, trials, scenario, seed),
+      (hypothesisStartId) => run.startRun(difficulty, trials, scenario, seed, hypothesisStartId),
     );
   };
   const startDailyRun = () => {
@@ -454,7 +458,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             scenario: DEFAULT_SCENARIO,
           }),
         ),
-      () => run.startDailyRun(day),
+      (hypothesisStartId) => run.startDailyRun(day, hypothesisStartId),
     );
   };
   const resumeRun = () => {
@@ -695,6 +699,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   detachHypothesisNote(record),
                 );
                 if (detached === 'failed') {
+                  await game.rollbackRunImport();
                   return { ok: false, message: HYPOTHESIS_NOTE_SAVE_FAILED };
                 }
               }
@@ -797,7 +802,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               newRunBlocked={run.finishSaveBlocksNewRun}
               onNewRun={run.isReplayMode ? exitReplay : newRun}
               hypothesisNote={
-                run.isReplayMode ? null : hypothesisForRun(hypothesisNote.record, hypothesisKey)
+                run.isReplayMode
+                  ? null
+                  : hypothesisForRun(hypothesisNote.record, hypothesisKey, game.hypothesisStartId())
               }
               onHypothesisReflectionChange={(text) =>
                 hypothesisNoteStore.update((record) =>

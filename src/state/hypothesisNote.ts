@@ -139,8 +139,11 @@ export function writeHypothesisReflection(
 export function hypothesisForRun(
   record: HypothesisNoteRecord,
   runKey: string,
+  startId: string | null,
 ): BoundHypothesisNote | null {
-  return record.bound?.runKey === runKey ? record.bound : null;
+  const bound = record.bound;
+  if (!bound || !startId || bound.runKey !== runKey || bound.startId !== startId) return null;
+  return bound;
 }
 
 function normalizeEntry(raw: unknown): HypothesisNoteEntry | null {

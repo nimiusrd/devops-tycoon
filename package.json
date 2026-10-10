@@ -19,8 +19,6 @@
     "playtest:report": "node scripts/playtest-report.mjs",
     "balance:report": "node scripts/balance-report.mjs",
     "playtest:check": "node scripts/check-findings.mjs",
-    "test:mutation": "stryker run",
-    "test:mutation:force": "stryker run --force",
     "test:e2e": "playwright test",
     "test:e2e:pixi": "PIXI_E2E=1 playwright test --grep @pixi",
     "gallery": "node scripts/gallery.mjs",
@@ -33,7 +31,7 @@
   },
   "dependencies": {
     "comlink": "^4.4.2",
-    "framer-motion": "^12.0.0",
+    "framer-motion": "^14.0.0",
     "idb": "^8.0.3",
     "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.19.0",
@@ -44,12 +42,10 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.0",
-    "@stryker-mutator/core": "^9.6.1",
-    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "@vitest/coverage-v8": "4.1.9",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -61,6 +57,6 @@
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.61.1",
     "vite": "^7.0.0",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.11"
   }
 }

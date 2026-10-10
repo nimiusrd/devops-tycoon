@@ -11,6 +11,8 @@ export const HYPOTHESIS_NOTE_SCHEMA_VERSION = 1 as const;
 export const HYPOTHESIS_NOTE_SAVE_FAILED =
   'メモを端末に保存できませんでした。このタブを閉じるまでは表示されます。';
 export const HYPOTHESIS_START_UNRECORDED = '仮説メモを保存できなかったので、今回は記録しません';
+/** 開始時のメモ保存を待つ上限。古いタブの DB 更新待ちでも、この時間で仮説なしの開始へ進む。 */
+export const HYPOTHESIS_START_SAVE_TIMEOUT_MS = 1500;
 /** 短い仮説1件に収める上限（コードポイント数）。 */
 export const HYPOTHESIS_NOTE_MAX_LENGTH = 120;
 

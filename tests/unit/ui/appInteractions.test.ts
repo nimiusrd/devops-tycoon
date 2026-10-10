@@ -247,6 +247,7 @@ import type { HudMetricSnapshot, RunMetricSnapshot } from '../../../src/render/s
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { createRunDiagnosticInfo } from '../../../src/state/diagnosticInfo';
+import { HYPOTHESIS_START_SAVE_TIMEOUT_MS } from '../../../src/state/hypothesisNote';
 import { hypothesisNoteStore } from '../../../src/state/hypothesisNotePersistence';
 import { defaultMeta } from '../../../src/state/meta';
 import {
@@ -711,6 +712,35 @@ describe('App のタイトル操作', () => {
       spy.mockRestore();
       hypothesisNoteStore.update((record) => ({ ...record, draft: null }));
       await hypothesisNoteStore.flush();
+    }
+  });
+
+  it('仮説の保存が上限を超えたら、仮説なしでランを始める', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    vi.useFakeTimers();
+    const spy = vi
+      .spyOn(hypothesisNoteStore, 'applyCommitted')
+      .mockReturnValue(new Promise(() => undefined));
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      await vi.advanceTimersByTimeAsync(HYPOTHESIS_START_SAVE_TIMEOUT_MS - 1);
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).toHaveBeenCalledOnce();
+      expect(screen.child('TitleScreen').hypothesisUnrecorded).toBe(true);
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
     }
   });
 

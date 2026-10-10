@@ -386,7 +386,7 @@ export function TitleScreen({
               aria-expanded={resumableSummary ? dailyConfirmOpen : undefined}
               onClick={requestStartDaily}
             >
-              本日のデイリーを始める →
+              {runLaunchPending ? '開始中…' : '本日のデイリーを始める →'}
             </button>
           </div>
           <div className="title-mission">
@@ -409,7 +409,7 @@ export function TitleScreen({
           >
             <span>
               <small>ラン開始</small>
-              四半期を始める
+              {runLaunchPending ? '開始中…' : '四半期を始める'}
             </span>
             <i>→</i>
           </button>
@@ -424,7 +424,7 @@ export function TitleScreen({
             aria-describedby={launchDescribedBy || undefined}
             onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
           >
-            四半期を始める →
+            {runLaunchPending ? '開始中…' : '四半期を始める →'}
           </button>
         </div>
       )}

@@ -611,6 +611,44 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.draft).toBeNull();
   });
 
+  it('開始保存を諦めたあとの成功は、開始前の下書きを端末へ戻す', async () => {
+    let release = () => {};
+    let gate = Promise.resolve();
+    const arm = () => {
+      gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    const memory = new MemoryHypothesisNoteStorage();
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        await gate;
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    arm();
+    store.update((record) => editHypothesisDraft(record, '残す仮説', 3));
+    release();
+    await store.flush();
+    const before = store.getSnapshot().record;
+    arm();
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    store.revertAbandonedStart(before);
+    release();
+    await saving;
+    await store.flush();
+    const stored = normalizeHypothesisNote(memory.value);
+    expect(stored.draft?.text).toBe('残す仮説');
+    expect(stored.bound).toBeNull();
+    expect(store.getSnapshot().record.draft?.text).toBe('残す仮説');
+    expect(store.getSnapshot().record.bound).toBeNull();
+  });
+
   it('仮説が無い解除は、以前の保存失敗で失敗にしない', async () => {
     let fail = true;
     const memory = new MemoryHypothesisNoteStorage();

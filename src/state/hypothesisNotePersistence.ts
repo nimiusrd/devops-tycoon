@@ -98,6 +98,10 @@ export interface HypothesisNoteStore {
   ): Promise<'unchanged' | 'saved' | 'failed'>;
   /** 保存できなかった開始分を、このセッションの表示から外す。端末へは書かない。 */
   abandonUnpersistedStart(): void;
+  /**
+   * 開始の保存を諦める。進行中の書き込みが後から成功しても、渡したレコードを端末へ戻す。
+   */
+  revertAbandonedStart(record: HypothesisNoteRecord): void;
 }
 
 export function createHypothesisNoteStore(storage: HypothesisNoteStorage): HypothesisNoteStore {
@@ -114,6 +118,9 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   let persistSeq = 0;
   let lastPersistSeq = 0;
   let lastPersistOk = true;
+  /** この番号までの開始保存は、成功しても画面と端末を戻す。 */
+  let discardThroughSeq = -1;
+  let revertRecord: HypothesisNoteRecord | null = null;
   const listeners = new Set<() => void>();
 
   const publish = (next: HypothesisNoteSnapshot) => {
@@ -143,7 +150,14 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           queuedDuringWrite = [];
           captureChanges = false;
           lastPersistSeq = seq;
-          if (hypothesisCommitDroppedSessionBound(base, local, stored)) {
+          if (revertRecord && seq <= discardThroughSeq) {
+            const restored = queued.length > 0 ? applyQueued(revertRecord, queued) : revertRecord;
+            revertRecord = null;
+            baseRecord = stored;
+            lastPersistOk = false;
+            publish({ record: restored, saveFailed: true });
+            dirty = true;
+          } else if (hypothesisCommitDroppedSessionBound(base, local, stored)) {
             lastPersistOk = false;
             publish({
               record: queued.length > 0 ? applyQueued(local, queued) : local,
@@ -175,7 +189,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           queuedDuringWrite = [];
           lastPersistSeq = seq;
           lastPersistOk = false;
-          if (!snapshot.saveFailed) publish({ ...snapshot, saveFailed: true });
+          if (revertRecord && seq <= discardThroughSeq) {
+            publish({ ...snapshot, record: revertRecord, saveFailed: true });
+            revertRecord = null;
+          } else if (!snapshot.saveFailed) {
+            publish({ ...snapshot, saveFailed: true });
+          }
         }
       }
       writing = null;
@@ -200,6 +219,15 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       baseRecord = stored;
       const queued = pending;
       pending = [];
+      if (revertRecord) {
+        const record = queued.length > 0 ? applyQueued(revertRecord, queued) : revertRecord;
+        revertRecord = null;
+        loaded = true;
+        if (loading === attemptGate.current) loading = null;
+        publish({ record, saveFailed: true });
+        void persist();
+        return;
+      }
       const record = applyQueued(stored, queued);
       loaded = true;
       if (loading === attemptGate.current) loading = null;
@@ -265,6 +293,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         record: { ...snapshot.record, bound: null },
         saveFailed: true,
       });
+    },
+    revertAbandonedStart(record) {
+      discardThroughSeq = persistSeq;
+      revertRecord = record;
+      pending = [];
+      publish({ ...snapshot, record, saveFailed: true });
     },
   };
 }

@@ -44,7 +44,10 @@ import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
 import { HYPOTHESIS_NOTE_SAVE_FAILED, useHypothesisNote } from './ui/useHypothesisNote';
-import { HYPOTHESIS_START_UNRECORDED } from './state/hypothesisNote';
+import {
+  HYPOTHESIS_START_SAVE_TIMEOUT_MS,
+  HYPOTHESIS_START_UNRECORDED,
+} from './state/hypothesisNote';
 import { resetViewportScroll } from './ui/viewportScroll';
 import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
@@ -376,19 +379,31 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     setRunLaunchPending(true);
     const before = hypothesisNoteStore.getSnapshot().record;
     return (async () => {
-      const saved = await hypothesisNoteStore.applyCommitted(bind);
+      let timeoutId = 0;
+      const savePromise = hypothesisNoteStore.applyCommitted(bind);
+      const saved = await Promise.race([
+        savePromise,
+        new Promise<'timeout'>((resolve) => {
+          timeoutId = setTimeout(() => resolve('timeout'), HYPOTHESIS_START_SAVE_TIMEOUT_MS);
+        }),
+      ]);
+      clearTimeout(timeoutId);
       const superseded =
         launchEpoch.current !== ticket ||
         game.phase() !== 'title' ||
         game.isReplayMode() ||
         game.getRunEpoch() !== epoch;
       if (superseded) {
-        if (saved !== 'unchanged') await hypothesisNoteStore.applyCommitted(() => before);
+        const settled = await savePromise;
+        if (settled !== 'unchanged') await hypothesisNoteStore.applyCommitted(() => before);
         beginGuard.current = false;
         setRunLaunchPending(false);
         return;
       }
-      if (saved === 'failed') {
+      if (saved === 'timeout') {
+        hypothesisNoteStore.revertAbandonedStart(before);
+        setHypothesisUnrecorded(true);
+      } else if (saved === 'failed') {
         hypothesisNoteStore.abandonUnpersistedStart();
         setHypothesisUnrecorded(true);
       } else {

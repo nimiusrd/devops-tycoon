@@ -207,6 +207,34 @@ test('仮説メモを保存できなくても通常ランを開始し、次の�
   await expect(page.getByTestId('hypothesis-before-start')).toHaveText('保存できる仮説');
 });
 
+test('仮説メモの保存が止まっても、上限時間で通常ランを始めて案内を出す', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.addInitScript(() => {
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (this: IDBObjectStore, ...args) {
+      if (this.name === 'hypothesisNote') return new Promise(() => {}) as unknown as IDBRequest;
+      return put.apply(this, args);
+    };
+  });
+  await page.goto('/?seed=hypothesis-save-hang&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+  await page.getByTestId('hypothesis-note-input').fill('止まっている仮説');
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('start-run')).toContainText('開始中…');
+  const notice = page.getByTestId('hypothesis-start-unrecorded');
+  await expect(notice).toBeVisible({ timeout: 3_000 });
+  await expect(notice).toHaveText('仮説メモを保存できなかったので、今回は記録しません');
+  await expect(page.getByTestId('title')).not.toBeVisible();
+  await expect(page.getByTestId('hud')).toBeVisible();
+  const noticeBox = await notice.boundingBox();
+  const hudBox = await page.getByTestId('hud').boundingBox();
+  expect(noticeBox).not.toBeNull();
+  expect(hudBox).not.toBeNull();
+  expect(noticeBox!.y + noticeBox!.height).toBeLessThanOrEqual(hudBox!.y);
+  expect(noticeBox!.y).toBeGreaterThanOrEqual(0);
+  expect(noticeBox!.y + noticeBox!.height).toBeLessThanOrEqual(568);
+});
+
 test('仮説メモを保存できなくてもデイリーランを開始し、320幅で案内が見える', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await failHypothesisSave(page, true);

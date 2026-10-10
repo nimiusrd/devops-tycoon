@@ -530,6 +530,8 @@ describe('TitleScreen のラン開始条件', () => {
       expect(screen.find(id).props.disabled).toBe(true);
     }
     expect(screen.find('title-launch-dock').props['aria-busy']).toBe(true);
+    expect(content(screen.find('start-run'))).toContain('開始中…');
+    expect(content(screen.find('start-daily-run'))).toContain('開始中…');
     screen.update({ runLaunchPending: false });
     expect(screen.find('start-run').props.disabled).toBe(false);
     expect(screen.find('resume-run').props.disabled).toBe(false);

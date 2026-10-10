@@ -12,6 +12,7 @@ import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../state/persistenceBackup';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
+import { HYPOTHESIS_NOTE_MAX_LENGTH, hypothesisTextLength } from '../state/hypothesisNote';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
 import type { ResumeRisk } from '../state/resumeRisk';
 import type { DifficultyId } from '../sim/run/types';
@@ -19,6 +20,8 @@ import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios'
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
 import { FINISH_SAVE_BLOCKS_NEW_RUN } from './finishSaveBlock';
+import { HYPOTHESIS_NOTE_SAVE_FAILED } from './useHypothesisNote';
+import { HYPOTHESIS_START_UNRECORDED } from '../state/hypothesisNote';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
@@ -133,6 +136,14 @@ export interface TitleScreenProps {
   onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string; restored?: 'both' }>;
   /** 完了保存の失敗中。再試行まで新しいランを始められない。 */
   newRunBlocked?: boolean;
+  /** 次のランへ付ける開始前の仮説（RI-295）。未指定なら欄を出さない。 */
+  hypothesisDraft?: string;
+  onHypothesisDraftChange?: (text: string) => void;
+  hypothesisSaveFailed?: boolean;
+  /** 開始時にメモを保存できず、仮説なしで始めた。 */
+  hypothesisUnrecorded?: boolean;
+  /** 仮説の保存を待っている開始。続きから・取り込み・リプレイを止める。 */
+  runLaunchPending?: boolean;
 }
 
 export function TitleScreen({
@@ -156,6 +167,11 @@ export function TitleScreen({
   onExportRunSave,
   onImportRunSave,
   newRunBlocked = false,
+  hypothesisDraft,
+  onHypothesisDraftChange,
+  hypothesisSaveFailed = false,
+  hypothesisUnrecorded = false,
+  runLaunchPending = false,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -169,6 +185,9 @@ export function TitleScreen({
     message: string;
   }>({ kind: 'idle', message: '' });
   const recipeFileRef = useRef<HTMLInputElement>(null);
+  /** 開始クリックで進め、読み込み中のレシピを無効にする。 */
+  const recipeFileToken = useRef(0);
+  const recipeFileBlocked = useRef(false);
   const runSaveFileRef = useRef<HTMLInputElement>(null);
   const runSaveImportGen = useRef(0);
   const [runSaveImporting, setRunSaveImporting] = useState(false);
@@ -237,8 +256,12 @@ export function TitleScreen({
   const onRecipeFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file) return;
+    if (!file || recipeFileBlocked.current) return;
+    const token = ++recipeFileToken.current;
     void file.text().then((raw) => {
+      // 開始は難易度・試練・シナリオをクリック時に確定する。遅れて届いたレシピが
+      // 研修方針だけを startRun の直前に変えないよう、開始後の適用は捨てる。
+      if (token !== recipeFileToken.current || recipeFileBlocked.current) return;
       setRecipeDraft(raw);
       applyRecipeText(raw);
     });
@@ -300,22 +323,32 @@ export function TitleScreen({
     : 'まだ今日の記録はありません';
 
   const closeDailyConfirm = useCallback(() => setDailyConfirmOpen(false), []);
+  const claimRunLaunch = useCallback(() => {
+    recipeFileBlocked.current = true;
+    recipeFileToken.current += 1;
+  }, []);
   const confirmStartDaily = useCallback(() => {
+    claimRunLaunch();
     setDailyConfirmOpen(false);
     onStartDaily?.();
-  }, [onStartDaily]);
+  }, [claimRunLaunch, onStartDaily]);
   const confirmResumeFromDaily = useCallback(() => {
     setDailyConfirmOpen(false);
     onResume?.();
   }, [onResume]);
   const requestStartDaily = () => {
-    if (runSaveImporting) return;
+    if (runSaveImporting || runLaunchPending) return;
     if (resumableSummary) {
       setDailyConfirmOpen(true);
       return;
     }
+    claimRunLaunch();
     onStartDaily?.();
   };
+
+  useEffect(() => {
+    if (!runLaunchPending) recipeFileBlocked.current = false;
+  }, [runLaunchPending]);
 
   useEffect(() => {
     if (dailyConfirmOpen) {
@@ -328,9 +361,27 @@ export function TitleScreen({
     startDailyButtonRef.current?.focus();
   }, [dailyConfirmOpen]);
 
-  const launchBlocked = newRunBlocked || runSaveImporting;
+  const launchBlocked = newRunBlocked || runSaveImporting || runLaunchPending;
+  const startConditionTitle = runLaunchPending ? '開始中は条件を変えられません' : undefined;
+  const launchLockedClass = runLaunchPending ? 'btn is-launch-locked' : 'btn';
+  const launchDescribedBy = [
+    newRunBlocked ? 'finish-save-block' : '',
+    hypothesisUnrecorded ? 'hypothesis-start-unrecorded' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const launchControls = (
     <>
+      {hypothesisUnrecorded ? (
+        <p
+          id="hypothesis-start-unrecorded"
+          className="hypothesis-start-unrecorded-dock"
+          data-testid="hypothesis-start-unrecorded"
+          role="status"
+        >
+          {HYPOTHESIS_START_UNRECORDED}
+        </p>
+      ) : null}
       {newRunBlocked ? (
         <p id="finish-save-block" className="title-resume-warning" data-testid="finish-save-block">
           {FINISH_SAVE_BLOCKS_NEW_RUN}
@@ -349,12 +400,12 @@ export function TitleScreen({
               type="button"
               data-testid="start-daily-run"
               disabled={launchBlocked}
-              aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
+              aria-describedby={launchDescribedBy || undefined}
               aria-haspopup={resumableSummary ? 'dialog' : undefined}
               aria-expanded={resumableSummary ? dailyConfirmOpen : undefined}
               onClick={requestStartDaily}
             >
-              本日のデイリーを始める →
+              {runLaunchPending ? '開始中…' : '本日のデイリーを始める →'}
             </button>
           </div>
           <div className="title-mission">
@@ -372,12 +423,15 @@ export function TitleScreen({
             className="title-launch"
             data-testid="start-run"
             disabled={launchBlocked}
-            aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
-            onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
+            aria-describedby={launchDescribedBy || undefined}
+            onClick={() => {
+              claimRunLaunch();
+              onStart(difficulty, trials, scenario, recipeSeed ?? undefined);
+            }}
           >
             <span>
               <small>ラン開始</small>
-              四半期を始める
+              {runLaunchPending ? '開始中…' : '四半期を始める'}
             </span>
             <i>→</i>
           </button>
@@ -389,10 +443,13 @@ export function TitleScreen({
             className="btn btn-primary btn-lg"
             data-testid="start-run"
             disabled={launchBlocked}
-            aria-describedby={newRunBlocked ? 'finish-save-block' : undefined}
-            onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
+            aria-describedby={launchDescribedBy || undefined}
+            onClick={() => {
+              claimRunLaunch();
+              onStart(difficulty, trials, scenario, recipeSeed ?? undefined);
+            }}
           >
-            四半期を始める →
+            {runLaunchPending ? '開始中…' : '四半期を始める →'}
           </button>
         </div>
       )}
@@ -400,7 +457,10 @@ export function TitleScreen({
   );
 
   return (
-    <div className="title-screen title-command" data-testid="title">
+    <div
+      className={`title-screen title-command${runLaunchPending ? ' title-launch-pending' : ''}`}
+      data-testid="title"
+    >
       <div className="title-world" aria-hidden="true">
         <img
           className="title-world-backdrop"
@@ -502,9 +562,10 @@ export function TitleScreen({
                     <button
                       type="button"
                       key={id}
-                      className={`difficulty-card${difficulty === id ? ' selected' : ''}`}
+                      className={`difficulty-card${difficulty === id ? ' selected' : ''}${unlocked ? '' : ' is-locked'}`}
                       data-testid={`difficulty-${id}`}
-                      disabled={!unlocked}
+                      disabled={!unlocked || runLaunchPending}
+                      title={startConditionTitle}
                       onClick={() => setDifficulty(id)}
                     >
                       <span className="difficulty-kicker">
@@ -539,8 +600,9 @@ export function TitleScreen({
                     key={trial.id}
                     className={`trial-chip${trials.includes(trial.id) ? ' on' : ''}`}
                     data-testid={`trial-${trial.id}`}
+                    disabled={runLaunchPending}
                     onClick={() => toggleTrial(trial.id)}
-                    title={trial.description}
+                    title={runLaunchPending ? startConditionTitle : trial.description}
                   >
                     <i>{trials.includes(trial.id) ? '×' : '+'}</i>
                     {trial.label}
@@ -569,8 +631,9 @@ export function TitleScreen({
                       key={id}
                       className={`trial-chip${scenario === id ? ' on' : ''}`}
                       data-testid={`scenario-${id}`}
+                      disabled={runLaunchPending}
                       onClick={() => setScenario(id)}
-                      title={def.description}
+                      title={runLaunchPending ? startConditionTitle : def.description}
                     >
                       {def.label}
                     </button>
@@ -579,9 +642,53 @@ export function TitleScreen({
               </div>
             </section>
 
+            {onHypothesisDraftChange ? (
+              <section className="title-section title-recipe-section" data-testid="hypothesis-note">
+                <div className="title-section-copy">
+                  <span className="title-step">04</span>
+                  <p>
+                    <b>開始前の仮説（メモ）</b>
+                    <small>
+                      任意。今回の狙いを一行で残し、決着画面で見返す。開始レシピには含めず、seed・候補・判定は変わらない
+                    </small>
+                  </p>
+                </div>
+                <div className="title-recipe-body">
+                  <input
+                    type="text"
+                    className="title-recipe-text title-hypothesis-input"
+                    data-testid="hypothesis-note-input"
+                    aria-label="開始前の仮説"
+                    aria-describedby="hypothesis-note-count"
+                    value={hypothesisDraft ?? ''}
+                    placeholder="例: 採用より育成を優先して、士気を保ったまま突破する"
+                    onChange={(event) => onHypothesisDraftChange(event.target.value)}
+                  />
+                  <p
+                    id="hypothesis-note-count"
+                    className="title-recipe-status"
+                    data-testid="hypothesis-note-count"
+                  >
+                    {hypothesisTextLength(hypothesisDraft ?? '')}/{HYPOTHESIS_NOTE_MAX_LENGTH}
+                    文字・開始時点の内容を仮説として固定する
+                  </p>
+                  {hypothesisSaveFailed ? (
+                    <p
+                      className="title-recipe-status error"
+                      data-testid="hypothesis-note-save-failed"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      {HYPOTHESIS_NOTE_SAVE_FAILED}
+                    </p>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
             <section className="title-section title-recipe-section" data-testid="start-recipe">
               <div className="title-section-copy">
-                <span className="title-step">04</span>
+                <span className="title-step">{onHypothesisDraftChange ? '05' : '04'}</span>
                 <p>
                   <b>開始レシピ（共有）</b>
                   <small>難易度・試練・シナリオ・研修方針・seed をローカルで受け渡す</small>
@@ -592,6 +699,8 @@ export function TitleScreen({
                   className="title-recipe-text"
                   data-testid="start-recipe-text"
                   value={recipeText}
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
                   onChange={(event) => setRecipeDraft(event.target.value)}
                   placeholder="書き出した JSON を貼り付けるか、ファイルから読み込む"
                   spellCheck={false}
@@ -600,28 +709,40 @@ export function TitleScreen({
                 <div className="title-recipe-actions">
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-export"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={() => exportRecipe()}
                   >
                     書き出す
                   </button>
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-download"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={downloadRecipe}
                   >
                     ファイルで保存
                   </button>
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-apply"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={() => applyRecipeText(recipeText)}
                   >
                     読み込む
                   </button>
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-file-button"
+                    disabled={runLaunchPending}
+                    title={startConditionTitle}
                     onClick={() => recipeFileRef.current?.click()}
                   >
                     ファイルを開く
@@ -651,7 +772,7 @@ export function TitleScreen({
             {onExportRunSave || onImportRunSave ? (
               <section className="title-section title-recipe-section" data-testid="run-save-share">
                 <div className="title-section-copy">
-                  <span className="title-step">05</span>
+                  <span className="title-step">{onHypothesisDraftChange ? '06' : '05'}</span>
                   <p>
                     <b>途中セーブ（共有）</b>
                     <small>中断中のランだけをローカル JSON で受け渡す。メタ進行は含まない</small>
@@ -662,6 +783,7 @@ export function TitleScreen({
                     {onExportRunSave ? (
                       <button
                         type="button"
+                        className="btn"
                         data-testid="run-save-download"
                         disabled={!resumableSummary || !!runSaveIssue}
                         onClick={downloadRunSave}
@@ -673,8 +795,11 @@ export function TitleScreen({
                       <>
                         <button
                           type="button"
+                          className={
+                            runLaunchPending && !runSaveImporting ? 'btn is-launch-locked' : 'btn'
+                          }
                           data-testid="run-save-file-button"
-                          disabled={runSaveImporting}
+                          disabled={runSaveImporting || runLaunchPending}
                           onClick={() => runSaveFileRef.current?.click()}
                         >
                           ファイルを開く
@@ -685,7 +810,7 @@ export function TitleScreen({
                           accept="application/json,.json"
                           hidden
                           data-testid="run-save-file"
-                          disabled={runSaveImporting}
+                          disabled={runSaveImporting || runLaunchPending}
                           onChange={onRunSaveFile}
                         />
                       </>
@@ -743,7 +868,7 @@ export function TitleScreen({
                   type="button"
                   className="title-resume-btn title-resume-discard"
                   data-testid="discard-run-save"
-                  disabled={runSaveImporting}
+                  disabled={runSaveImporting || runLaunchPending}
                   onClick={onDiscardRunSave}
                 >
                   このセーブを破棄
@@ -823,17 +948,34 @@ export function TitleScreen({
                 </button>
               )}
               {onOpenReplays && (
-                <button type="button" data-testid="open-replays" onClick={onOpenReplays}>
+                <button
+                  type="button"
+                  data-testid="open-replays"
+                  disabled={runLaunchPending || runSaveImporting}
+                  onClick={onOpenReplays}
+                >
                   リプレイ
                 </button>
               )}
               {onOpenMetaShop && (
-                <button type="button" data-testid="open-meta-shop" onClick={onOpenMetaShop}>
+                <button
+                  type="button"
+                  data-testid="open-meta-shop"
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
+                  onClick={onOpenMetaShop}
+                >
                   研修ツール解禁（メタショップ）
                 </button>
               )}
               {onOpenDeckPolicy && (
-                <button type="button" data-testid="open-deck-policy" onClick={onOpenDeckPolicy}>
+                <button
+                  type="button"
+                  data-testid="open-deck-policy"
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
+                  onClick={onOpenDeckPolicy}
+                >
                   研修方針
                   {meta.preferredCardIds.length > 0 ? `（${meta.preferredCardIds.length}）` : ''}
                 </button>
@@ -842,6 +984,8 @@ export function TitleScreen({
                 <button
                   type="button"
                   data-testid="open-card-collection"
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
                   onClick={onOpenCardCollection}
                 >
                   カードコレクション
@@ -862,6 +1006,7 @@ export function TitleScreen({
         data-testid="title-launch-dock"
         role="region"
         aria-label="ラン開始"
+        aria-busy={runLaunchPending || undefined}
       >
         <div className="title-launch-dock-inner">{launchControls}</div>
       </div>
@@ -870,7 +1015,7 @@ export function TitleScreen({
         ? createPortal(
             <StartDailyConfirmDialog
               summary={resumableSummary}
-              canResume={!runSaveIssue && !!onResume}
+              canResume={!runSaveIssue && !!onResume && !runLaunchPending}
               onCancel={closeDailyConfirm}
               onResume={confirmResumeFromDaily}
               onDiscardAndStart={confirmStartDaily}

@@ -82,8 +82,9 @@ export interface UseRun {
     trials: string[],
     scenario?: ScenarioId,
     seed?: string,
+    hypothesisStartId?: string | null,
   ) => void;
-  startDailyRun: (dateStr?: string) => void;
+  startDailyRun: (dateStr?: string, hypothesisStartId?: string | null) => void;
   resumeRun: () => void;
   beginSetupSprint: () => void;
   resolveBeat: (choiceIndex?: number) => void;
@@ -271,11 +272,31 @@ export function useRun(game: GameHandle): UseRun {
   // ハンドラはエンジンを操作するだけ。UI への反映は上のポーリングが担う
   // （内部進行と window.game 経由の外部操作を同一経路で扱うため）。
   const startRun = useCallback(
-    (difficulty: DifficultyId, trials: string[], scenario?: ScenarioId, seed?: string) =>
-      void game.startRun(difficulty, trials, seed, scenario),
+    (
+      difficulty: DifficultyId,
+      trials: string[],
+      scenario?: ScenarioId,
+      seed?: string,
+      hypothesisStartId?: string | null,
+    ) => {
+      if (hypothesisStartId) {
+        void game.startRun(difficulty, trials, seed, scenario, hypothesisStartId);
+        return;
+      }
+      void game.startRun(difficulty, trials, seed, scenario);
+    },
     [game],
   );
-  const startDailyRun = useCallback((dateStr?: string) => void game.startDailyRun(dateStr), [game]);
+  const startDailyRun = useCallback(
+    (dateStr?: string, hypothesisStartId?: string | null) => {
+      if (hypothesisStartId) {
+        void game.startDailyRun(dateStr, hypothesisStartId);
+        return;
+      }
+      void game.startDailyRun(dateStr);
+    },
+    [game],
+  );
   const resumeRun = useCallback(() => void game.resumeRun(), [game]);
   const beginSetupSprint = useCallback(() => void game.beginSetupSprint(), [game]);
   const resolveBeat = useCallback(

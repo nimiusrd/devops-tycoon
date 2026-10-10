@@ -482,6 +482,78 @@ describe('TitleScreen のラン開始条件', () => {
     );
   });
 
+  it('開始クリックのあとへ届いたレシピファイルは、開始条件と研修方針を変えない', async () => {
+    let resolveText: (value: string) => void = () => {};
+    const text = new Promise<string>((resolve) => {
+      resolveText = resolve;
+    });
+    const onApplyPreferred = vi.fn();
+    const screen = mountTitle({ onApplyPreferred, onStartDaily: vi.fn() });
+    screen.chooseFile('start-recipe-file', { text: () => text });
+    screen.click('start-run');
+    expect(screen.props.onStart).toHaveBeenCalledExactlyOnceWith('easy', [], 'default', undefined);
+    resolveText(serializeStartRecipe(recipe));
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+    expect(screen.nodes.some((node) => node.props['data-testid'] === 'start-recipe-status')).toBe(
+      false,
+    );
+    expect(screen.find('difficulty-easy').props.className).toContain('selected');
+    expect(screen.find('trial-half-budget').props.className).not.toContain(' on');
+    expect(screen.find('scenario-copilot').props.className).not.toContain(' on');
+    screen.click('start-daily-run');
+    expect(screen.props.onStartDaily).toHaveBeenCalledOnce();
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+  });
+
+  it('確認後のデイリー開始でも、遅れて届いたレシピファイルは研修方針を変えない', async () => {
+    let resolveText: (value: string) => void = () => {};
+    const text = new Promise<string>((resolve) => {
+      resolveText = resolve;
+    });
+    const onApplyPreferred = vi.fn();
+    const screen = mountTitle({
+      onApplyPreferred,
+      onStartDaily: vi.fn(),
+      resumableSummary: savedRun,
+    });
+    screen.chooseFile('start-recipe-file', { text: () => text });
+    screen.click('start-daily-run');
+    expect(screen.props.onStartDaily).not.toHaveBeenCalled();
+    resolveText(serializeStartRecipe(recipe));
+    await screen.settle();
+    expect(onApplyPreferred).toHaveBeenCalledExactlyOnceWith(['docs']);
+    onApplyPreferred.mockClear();
+    let resolveLate: (value: string) => void = () => {};
+    const late = new Promise<string>((resolve) => {
+      resolveLate = resolve;
+    });
+    screen.chooseFile('start-recipe-file', { text: () => late });
+    (screen.dailyDialog().props.onDiscardAndStart as () => void)();
+    screen.flush();
+    expect(screen.props.onStartDaily).toHaveBeenCalledOnce();
+    resolveLate(serializeStartRecipe({ ...recipe, preferredCardIds: ['test'] }));
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+    expect(screen.find('difficulty-normal').props.className).toContain('selected');
+  });
+
+  it('開始の待ちが終わったあとは、レシピファイルを再び読み込める', async () => {
+    const onApplyPreferred = vi.fn();
+    const screen = mountTitle({ onApplyPreferred });
+    screen.click('start-run');
+    screen.chooseFile('start-recipe-file', { text: async () => serializeStartRecipe(recipe) });
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+    screen.update({ runLaunchPending: true });
+    screen.update({ runLaunchPending: false });
+    screen.chooseFile('start-recipe-file', { text: async () => serializeStartRecipe(recipe) });
+    await screen.settle();
+    expect(onApplyPreferred).toHaveBeenCalledExactlyOnceWith(['docs']);
+    expect(content(screen.find('start-recipe-status'))).toBe('開始条件を読み込みました。');
+  });
+
   it.each([true, false])(
     'レシピ保存の成功=%s を表示し、未適用の編集ではなく現在の条件を保存する',
     (ok) => {
@@ -510,6 +582,60 @@ describe('TitleScreen のラン開始条件', () => {
       );
     },
   );
+
+  it('仮説の保存待ちでは、開始と競合する操作を止める', () => {
+    const screen = mountTitle({
+      resumableSummary: savedRun,
+      onStartDaily: vi.fn(),
+      onResume: vi.fn(),
+      onOpenReplays: vi.fn(),
+      onOpenMetaShop: vi.fn(),
+      onOpenDeckPolicy: vi.fn(),
+      onOpenCardCollection: vi.fn(),
+      onOpenHelp: vi.fn(),
+      onImportRunSave: vi.fn(async () => ({ ok: true, message: '' })),
+      runLaunchPending: true,
+      onHypothesisDraftChange: vi.fn(),
+    });
+    for (const id of [
+      'start-run',
+      'start-daily-run',
+      'resume-run',
+      'open-replays',
+      'open-meta-shop',
+      'open-deck-policy',
+      'open-card-collection',
+      'run-save-file-button',
+      'difficulty-normal',
+      'trial-low-focus',
+      'scenario-copilot',
+      'start-recipe-text',
+      'start-recipe-export',
+      'start-recipe-download',
+      'start-recipe-apply',
+      'start-recipe-file-button',
+    ]) {
+      expect(screen.find(id).props.disabled, id).toBe(true);
+    }
+    expect(screen.find('hypothesis-note-input').props.disabled).not.toBe(true);
+    expect(screen.find('open-help').props.disabled).not.toBe(true);
+    expect(screen.find('difficulty-normal').props.title).toBe('開始中は条件を変えられません');
+    expect(screen.find('start-recipe-apply').props.className).toBe('btn is-launch-locked');
+    expect(screen.find('title').props.className).toContain('title-launch-pending');
+    expect(screen.find('difficulty-hard').props.className).toContain('is-locked');
+    expect(screen.find('title-launch-dock').props['aria-busy']).toBe(true);
+    expect(content(screen.find('start-run'))).toContain('開始中…');
+    expect(content(screen.find('start-daily-run'))).toContain('開始中…');
+    screen.update({ runLaunchPending: false });
+    expect(screen.find('start-run').props.disabled).toBe(false);
+    expect(screen.find('difficulty-normal').props.disabled).toBe(false);
+    expect(screen.find('start-recipe-apply').props.disabled).toBe(false);
+    expect(screen.find('start-recipe-apply').props.className).toBe('btn');
+    expect(screen.find('resume-run').props.disabled).toBe(false);
+    expect(screen.find('open-replays').props.disabled).toBe(false);
+    expect(screen.find('open-meta-shop').props.disabled).toBe(false);
+    expect(screen.find('title-launch-dock').props['aria-busy']).toBeUndefined();
+  });
 });
 
 describe('TitleScreen の途中セーブ共有', () => {
@@ -531,6 +657,7 @@ describe('TitleScreen の途中セーブ共有', () => {
   it('途中セーブがなければ書き出しを無効にする', () => {
     const screen = mountTitle({ onExportRunSave: vi.fn() });
     expect(screen.find('run-save-download').props.disabled).toBe(true);
+    expect(screen.find('run-save-download').props.className).toBe('btn');
     expect(screen.props.onExportRunSave).not.toHaveBeenCalled();
   });
 
@@ -546,6 +673,7 @@ describe('TitleScreen の途中セーブ共有', () => {
       resumableSummary: savedRun,
       onResume: vi.fn(),
       onStartDaily: vi.fn(),
+      onOpenReplays: vi.fn(),
       onImportRunSave,
     });
     screen.click('run-save-file-button');
@@ -557,6 +685,7 @@ describe('TitleScreen の途中セーブ共有', () => {
       'start-run',
       'start-daily-run',
       'resume-run',
+      'open-replays',
       'run-save-file-button',
       'run-save-file',
     ];

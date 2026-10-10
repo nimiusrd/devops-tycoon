@@ -1,0 +1,564 @@
+{
+  "results": [
+    {
+      "source": "recorded-boundaries",
+      "liveSimulation": false,
+      "ids": {
+        "a": "g1-plain",
+        "b": "g1-skilled"
+      },
+      "comparable": true,
+      "identity": [
+        {
+          "field": "seed",
+          "status": "match"
+        },
+        {
+          "field": "difficulty",
+          "status": "match"
+        },
+        {
+          "field": "trials",
+          "status": "match"
+        },
+        {
+          "field": "scenario",
+          "status": "match"
+        },
+        {
+          "field": "runKind",
+          "status": "match"
+        },
+        {
+          "field": "ruleset",
+          "status": "match"
+        },
+        {
+          "field": "unlockPool",
+          "status": "match"
+        },
+        {
+          "field": "preferredCards",
+          "status": "match"
+        }
+      ],
+      "rows": [
+        {
+          "sprint": 1,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 522,
+            "deliveredSprint": 493,
+            "reviewQueueMax": 24
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 623,
+            "deliveredSprint": 594,
+            "reviewQueueMax": 21
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 2,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 1207,
+            "deliveredSprint": 650,
+            "reviewQueueMax": 29
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 1373,
+            "deliveredSprint": 715,
+            "reviewQueueMax": 23
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 3,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 1852,
+            "deliveredSprint": 615,
+            "reviewQueueMax": 32
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 2135,
+            "deliveredSprint": 732,
+            "reviewQueueMax": 24
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 4,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 2630,
+            "deliveredSprint": 750,
+            "reviewQueueMax": 25
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 2812,
+            "deliveredSprint": 649,
+            "reviewQueueMax": 28
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "a",
+            "reviewQueueMax": "a"
+          }
+        },
+        {
+          "sprint": 5,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 3507,
+            "deliveredSprint": 827,
+            "reviewQueueMax": 25
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 3692,
+            "deliveredSprint": 830,
+            "reviewQueueMax": 26
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "a"
+          }
+        },
+        {
+          "sprint": 6,
+          "span": "common",
+          "a": {
+            "phase": "quarterReview",
+            "deliveredTotal": 4466,
+            "deliveredSprint": 902,
+            "reviewQueueMax": 34
+          },
+          "b": {
+            "phase": "quarterReview",
+            "deliveredTotal": 4808,
+            "deliveredSprint": 1059,
+            "reviewQueueMax": 22
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 7,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 5291,
+            "deliveredSprint": 798,
+            "reviewQueueMax": 15
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 5548,
+            "deliveredSprint": 713,
+            "reviewQueueMax": 14
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "a",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 8,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 5960,
+            "deliveredSprint": 642,
+            "reviewQueueMax": 33
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 6159,
+            "deliveredSprint": 584,
+            "reviewQueueMax": 32
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "a",
+            "reviewQueueMax": "b"
+          }
+        }
+      ],
+      "spans": {
+        "common": [1, 2, 3, 4, 5, 6, 7, 8],
+        "onlyA": [],
+        "onlyB": []
+      },
+      "bands": {
+        "shipping": {
+          "a": [4, 7, 8],
+          "b": [1, 2, 3, 5, 6],
+          "tie": []
+        },
+        "backlog": {
+          "a": [4, 5],
+          "b": [1, 2, 3, 6, 7, 8],
+          "tie": []
+        }
+      },
+      "ends": {
+        "a": {
+          "status": "lost",
+          "winType": null,
+          "loseReason": "seniorBurnout",
+          "endedAfterSprint": 8
+        },
+        "b": {
+          "status": "lost",
+          "winType": null,
+          "loseReason": "seniorBurnout",
+          "endedAfterSprint": 8
+        }
+      }
+    },
+    {
+      "source": "recorded-boundaries",
+      "liveSimulation": false,
+      "ids": {
+        "a": "g2-plain",
+        "b": "g2-skilled"
+      },
+      "comparable": true,
+      "identity": [
+        {
+          "field": "seed",
+          "status": "match"
+        },
+        {
+          "field": "difficulty",
+          "status": "match"
+        },
+        {
+          "field": "trials",
+          "status": "match"
+        },
+        {
+          "field": "scenario",
+          "status": "match"
+        },
+        {
+          "field": "runKind",
+          "status": "match"
+        },
+        {
+          "field": "ruleset",
+          "status": "match"
+        },
+        {
+          "field": "unlockPool",
+          "status": "match"
+        },
+        {
+          "field": "preferredCards",
+          "status": "match"
+        }
+      ],
+      "rows": [
+        {
+          "sprint": 1,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 617,
+            "deliveredSprint": 592,
+            "reviewQueueMax": 22
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 660,
+            "deliveredSprint": 635,
+            "reviewQueueMax": 17
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 2,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 1276,
+            "deliveredSprint": 634,
+            "reviewQueueMax": 16
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 1390,
+            "deliveredSprint": 705,
+            "reviewQueueMax": 15
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 3,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 1991,
+            "deliveredSprint": 689,
+            "reviewQueueMax": 18
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 2236,
+            "deliveredSprint": 820,
+            "reviewQueueMax": 18
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "b",
+            "reviewQueueMax": "tie"
+          }
+        },
+        {
+          "sprint": 4,
+          "span": "common",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 2949,
+            "deliveredSprint": 931,
+            "reviewQueueMax": 29
+          },
+          "b": {
+            "phase": "result",
+            "deliveredTotal": 3051,
+            "deliveredSprint": 788,
+            "reviewQueueMax": 22
+          },
+          "leads": {
+            "deliveredTotal": "b",
+            "deliveredSprint": "a",
+            "reviewQueueMax": "b"
+          }
+        },
+        {
+          "sprint": 5,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 3884,
+            "deliveredSprint": 909,
+            "reviewQueueMax": 19
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 6,
+          "span": "only-a",
+          "a": {
+            "phase": "quarterReview",
+            "deliveredTotal": 4693,
+            "deliveredSprint": 783,
+            "reviewQueueMax": 27
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 7,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 5583,
+            "deliveredSprint": 862,
+            "reviewQueueMax": 35
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 8,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 6187,
+            "deliveredSprint": 568,
+            "reviewQueueMax": 30
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 9,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 6954,
+            "deliveredSprint": 740,
+            "reviewQueueMax": 42
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 10,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 7698,
+            "deliveredSprint": 717,
+            "reviewQueueMax": 37
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 11,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 8423,
+            "deliveredSprint": 697,
+            "reviewQueueMax": 37
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 12,
+          "span": "only-a",
+          "a": {
+            "phase": "quarterReview",
+            "deliveredTotal": 9288,
+            "deliveredSprint": 835,
+            "reviewQueueMax": 40
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 13,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 9969,
+            "deliveredSprint": 655,
+            "reviewQueueMax": 35
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 14,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 10764,
+            "deliveredSprint": 764,
+            "reviewQueueMax": 30
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 15,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 11504,
+            "deliveredSprint": 714,
+            "reviewQueueMax": 33
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 16,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 12562,
+            "deliveredSprint": 1030,
+            "reviewQueueMax": 29
+          },
+          "b": null,
+          "leads": null
+        },
+        {
+          "sprint": 17,
+          "span": "only-a",
+          "a": {
+            "phase": "result",
+            "deliveredTotal": 13431,
+            "deliveredSprint": 843,
+            "reviewQueueMax": 38
+          },
+          "b": null,
+          "leads": null
+        }
+      ],
+      "spans": {
+        "common": [1, 2, 3, 4],
+        "onlyA": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+        "onlyB": []
+      },
+      "bands": {
+        "shipping": {
+          "a": [4],
+          "b": [1, 2, 3],
+          "tie": []
+        },
+        "backlog": {
+          "a": [],
+          "b": [1, 2, 4],
+          "tie": [3]
+        }
+      },
+      "ends": {
+        "a": {
+          "status": "lost",
+          "winType": null,
+          "loseReason": "budgetExhausted",
+          "endedAfterSprint": 17
+        },
+        "b": {
+          "status": "lost",
+          "winType": null,
+          "loseReason": "seniorBurnout",
+          "endedAfterSprint": 4
+        }
+      }
+    }
+  ]
+}

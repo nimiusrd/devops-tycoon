@@ -343,6 +343,20 @@ describe('ReplayListScreen のファイル共有', () => {
     expect(screen.find('replay-file').props.disabled).toBe(false);
   });
 
+  it('取り込み中は、一覧のリプレイを開けない', async () => {
+    const imported = deferred<ImportResult>();
+    const onOpen = vi.fn();
+    const onImportReplay = vi.fn(() => imported.promise);
+    const screen = mountReplayList({ onOpen, onImportReplay });
+    screen.chooseFile({ text: async () => 'backup' });
+    expect(screen.find('replay-keyframe-0').props.disabled).toBe(true);
+    screen.click('replay-keyframe-0');
+    expect(onOpen).not.toHaveBeenCalled();
+    imported.resolve({ ok: true, message: '' });
+    await screen.settle();
+    expect(screen.find('replay-keyframe-0').props.disabled).not.toBe(true);
+  });
+
   it('ファイル読込と取り込みの完了まで重複入力を止め、成功後に再び入力できる', async () => {
     const read = deferred<string>();
     const imported = deferred<ImportResult>();
@@ -355,6 +369,9 @@ describe('ReplayListScreen のファイル共有', () => {
     expect(onImportReplay).not.toHaveBeenCalled();
     expect(screen.find('replay-file').props.disabled).toBe(true);
     expect(screen.find('replay-file-button').props.disabled).toBe(true);
+    expect(screen.find('replay-list-close').props.disabled).toBe(true);
+    expect(screen.find('replay-list-close').props.className).toContain('btn');
+    expect(content(screen.find('replay-share-status'))).toBe('読み込み中…');
     screen.click('replay-file-button');
     expect(screen.fileInput.click).not.toHaveBeenCalled();
 
@@ -362,7 +379,7 @@ describe('ReplayListScreen のファイル共有', () => {
     await screen.settle();
     expect(onImportReplay).toHaveBeenCalledExactlyOnceWith('{"id":"imported"}');
     expect(screen.find('replay-file').props.disabled).toBe(true);
-    expect(screen.query('replay-share-status')).toBeUndefined();
+    expect(content(screen.find('replay-share-status'))).toBe('読み込み中…');
 
     imported.resolve({ ok: true, message: '内部向けの結果' });
     await screen.settle();
@@ -370,6 +387,7 @@ describe('ReplayListScreen のファイル共有', () => {
     expect(screen.find('replay-share-status').props.className).toBe('replay-share-status');
     expect(screen.find('replay-file').props.disabled).toBe(false);
     expect(screen.find('replay-file-button').props.disabled).toBe(false);
+    expect(screen.find('replay-list-close').props.disabled).toBe(false);
     screen.click('replay-file-button');
     expect(screen.fileInput.click).toHaveBeenCalledExactlyOnceWith();
   });

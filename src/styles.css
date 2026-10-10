@@ -738,16 +738,20 @@ body {
   cursor: pointer;
   box-shadow: 0 4px 0 #1d1640;
 }
-.btn:hover {
+.btn:hover:not(:disabled) {
   filter: brightness(1.12);
 }
 .btn:focus-visible {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
-.btn:active {
+.btn:active:not(:disabled) {
   transform: translateY(2px);
   box-shadow: 0 2px 0 #1d1640;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .btn-primary {
   background: linear-gradient(135deg, #6a57ad, #4a3a86);
@@ -3566,8 +3570,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
     inset 0 0 40px #ffb24b12;
 }
 .title-command .difficulty-card:disabled {
-  opacity: 0.36;
   cursor: not-allowed;
+}
+.title-command .difficulty-card.is-locked {
+  opacity: 0.36;
 }
 .difficulty-kicker {
   display: flex;
@@ -3625,6 +3631,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   gap: 10px;
   min-width: 0;
 }
+.title-recipe-text:disabled {
+  cursor: not-allowed;
+}
 .title-recipe-text {
   width: 100%;
   min-height: 112px;
@@ -3647,21 +3656,20 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   gap: 8px;
 }
 .title-recipe-actions button {
+  margin-left: 0;
   padding: 7px 10px;
   border: 1px solid var(--tc-line);
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(16, 23, 43, 0.94), rgba(17, 38, 70, 0.78));
+  box-shadow: none;
   color: #ced8e9;
   font-size: 12px;
+  font-weight: 400;
   cursor: pointer;
 }
-.title-recipe-actions button:hover {
+.title-recipe-actions button:hover:not(:disabled) {
   border-color: #7edfff;
   background: #142944;
-}
-.title-recipe-actions button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 .title-recipe-status {
   margin: 0;
@@ -3670,6 +3678,15 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 }
 .title-recipe-status.error {
   color: #f3b27a;
+}
+.title-hypothesis-input {
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.title-hypothesis-input:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
 }
 .title-command .trial-row {
   display: flex;
@@ -3687,11 +3704,45 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   cursor: pointer;
   transition: 0.2s;
 }
-.title-command .trial-chip:hover,
+.title-command .trial-chip:hover:not(:disabled),
 .title-command .trial-chip.on {
   border-color: #7edfff;
   background: #142944;
   box-shadow: 0 0 20px #4dc8ff18;
+}
+.title-command .trial-chip:disabled {
+  cursor: not-allowed;
+}
+/* 押せなくするのは即時。薄い表示は 150ms 遅らせ、通常の開始ではタイトルが先に消える。 */
+.title-launch-pending .difficulty-card:disabled:not(.is-locked) {
+  transition: none;
+  animation: title-launch-dim-card 0.22s linear 150ms forwards;
+}
+.title-launch-pending .trial-chip:disabled,
+.title-launch-pending .title-recipe-text:disabled {
+  animation: title-launch-dim-control 0.22s linear 150ms forwards;
+}
+.title-launch-pending .is-launch-locked:disabled {
+  opacity: 1;
+  animation: title-launch-dim-control 0.22s linear 150ms forwards;
+}
+@keyframes title-launch-dim-card {
+  to {
+    opacity: 0.36;
+  }
+}
+@keyframes title-launch-dim-control {
+  to {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-launch-pending .difficulty-card:disabled:not(.is-locked),
+  .title-launch-pending .trial-chip:disabled,
+  .title-launch-pending .title-recipe-text:disabled,
+  .title-launch-pending .is-launch-locked:disabled {
+    animation-duration: 0.01ms;
+  }
 }
 .title-command .trial-chip i {
   margin-right: 6px;
@@ -3843,6 +3894,20 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .title-resume-discard:hover {
   border-color: #f87171;
   color: #fff;
+}
+.hypothesis-start-unrecorded,
+.hypothesis-start-unrecorded-dock {
+  margin: 0 0 8px;
+  color: var(--sun);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.hypothesis-start-unrecorded {
+  margin: 8px 12px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
 }
 .title-launch-dock {
   grid-area: dock;
@@ -4075,6 +4140,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   color: #9fb0ca;
   font-size: 12px;
   cursor: pointer;
+}
+.title-footer button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .title-daily button:focus-visible,
 .title-footer button:focus-visible,
@@ -5045,8 +5114,12 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   cursor: pointer;
 }
 .replay-list-items button.selected,
-.replay-list-keyframes button:hover {
+.replay-list-keyframes button:hover:not(:disabled) {
   border-color: var(--tc-accent, #3d8bfd);
+}
+.replay-list-keyframes button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .replay-list-keyframes h3 {
   margin: 0 0 8px;
@@ -5886,6 +5959,44 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .title-collection-heading {
   font-size: 20px;
   margin: 0;
+}
+.win-combo-next {
+  color: var(--cream);
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+.win-combo-rows {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.win-combo-row-count {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+}
+/* 解放条件は 12px の通常文字。実績カードの locked 透過を重ねると 4.5:1 を下回る（DS-08）。 */
+.win-combo-rows .achievement-card.locked {
+  opacity: 1;
+}
+.win-combo-rows .achievement-card.locked .win-combo-row-count,
+.win-combo-rows .achievement-card.locked .achievement-card-hint {
+  color: var(--cream);
+}
+.win-combo-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.win-combo-cells .pill.achievement {
+  color: var(--cream);
 }
 
 /* ラン決着 */
@@ -7707,6 +7818,92 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--text-dim);
   font-size: 12px;
 }
+.result-hypothesis {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  text-align: left;
+}
+/* 320 幅ではオーバーレイとカードの左右 2rem が重なり、本文が 188px まで細くなる。 */
+:root[data-responsive-width='narrow'] .result-overlay.run-end {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+:root[data-responsive-width='narrow'] .result-overlay.run-end .result-card {
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+.result-hypothesis-text {
+  margin: 6px 0 4px;
+  color: var(--cream);
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.result-hypothesis-meta {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.result-hypothesis-meta.error {
+  color: var(--sun);
+}
+.result-hypothesis-label {
+  display: block;
+  margin-top: 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.result-hypothesis-input {
+  display: block;
+  width: 100%;
+  min-height: calc(1.5em * 3 + 16px);
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--visual-color-field-inset);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  /* field-sizing 非対応（Firefox など）では 3 行のままなので、スクロールで全文を読めるようにする。 */
+  overflow: auto;
+  field-sizing: content;
+}
+@supports (field-sizing: content) {
+  .result-hypothesis-input {
+    overflow: hidden;
+  }
+}
+.result-hypothesis-input:focus-visible,
+.result-hypothesis-include input:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.result-hypothesis-include {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 13px;
+}
+.result-hypothesis-include input {
+  width: 18px;
+  height: 18px;
+}
 .result-diagnostic-json {
   margin-top: 8px;
   color: var(--text-dim);
@@ -7720,7 +7917,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #080b1bcc;
+  background: var(--visual-color-field-inset);
   color: var(--text);
   font:
     11px/1.5 ui-monospace,

@@ -3,7 +3,7 @@
  *
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { getBoss } from '../data/bosses';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { loseNextActionView } from '../render/loseNextActionView';
@@ -21,8 +21,16 @@ import {
   type MetaState,
   type RunRewardBreakdown,
 } from '../state/meta';
+import {
+  HYPOTHESIS_NOTE_MAX_LENGTH,
+  hypothesisNoteForExport,
+  hypothesisTextLength,
+  type BoundHypothesisNote,
+} from '../state/hypothesisNote';
+import { formatPersistenceClock } from '../state/persistenceStatus';
 import type { RunState } from '../sim/run/types';
 import { FINISH_SAVE_BLOCKS_NEW_RUN } from './finishSaveBlock';
+import { HYPOTHESIS_NOTE_SAVE_FAILED } from './useHypothesisNote';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { copyToClipboard } from './copyToClipboard';
@@ -48,6 +56,10 @@ export interface RunResultScreenProps {
   /** 完了保存の失敗中。再試行まで次のランへ進ませない。 */
   newRunBlocked?: boolean;
   onNewRun: () => void;
+  /** このランの開始前に書いた仮説（RI-295）。リプレイ閲覧では渡さない。 */
+  hypothesisNote?: BoundHypothesisNote | null;
+  onHypothesisReflectionChange?: (text: string) => void;
+  hypothesisSaveFailed?: boolean;
 }
 
 export function RunResultScreen({
@@ -59,8 +71,13 @@ export function RunResultScreen({
   lastRunReward = null,
   newRunBlocked = false,
   onNewRun,
+  hypothesisNote = null,
+  onHypothesisReflectionChange,
+  hypothesisSaveFailed = false,
 }: RunResultScreenProps) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [includeNoteInDiagnostic, setIncludeNoteInDiagnostic] = useState(false);
+  const copyGeneration = useRef(0);
   const { resolveRelic, resolveCard, isReplaySnapshot } = useReplayContent();
   const companyResult =
     recordedCompanyResult ??
@@ -113,10 +130,22 @@ export function RunResultScreen({
     isDaily && state.dailyDate && diagnosticInfo.ruleset
       ? getDailyRecord(meta, state.dailyDate, diagnosticInfo.ruleset)
       : undefined;
-  const diagnosticJson = serializeRunDiagnosticInfo(diagnosticInfo);
+  const diagnosticJson = serializeRunDiagnosticInfo(
+    diagnosticInfo,
+    hypothesisNote && includeNoteInDiagnostic ? hypothesisNoteForExport(hypothesisNote) : undefined,
+  );
+  const reflectionText = hypothesisNote?.reflection?.text ?? '';
 
+  const invalidateDiagnosticCopy = () => {
+    copyGeneration.current += 1;
+    setCopyStatus('idle');
+  };
   const handleCopyDiagnostic = async () => {
-    setCopyStatus((await copyToClipboard(diagnosticJson)) ? 'copied' : 'error');
+    const generation = ++copyGeneration.current;
+    const json = diagnosticJson;
+    const copied = await copyToClipboard(json);
+    if (copyGeneration.current !== generation) return;
+    setCopyStatus(copied ? 'copied' : 'error');
   };
 
   return (
@@ -179,6 +208,60 @@ export function RunResultScreen({
                 : collectedTitle.description}
             </p>
           </div>
+        )}
+
+        {hypothesisNote && (
+          <section className="result-hypothesis" data-testid="hypothesis-review">
+            <p className="result-section-label">開始前の仮説</p>
+            <p className="result-hypothesis-text" data-testid="hypothesis-before-start">
+              {hypothesisNote.beforeStart.text}
+            </p>
+            <p className="result-hypothesis-meta" data-testid="hypothesis-before-start-time">
+              ラン開始前に記入（{formatPersistenceClock(hypothesisNote.beforeStart.writtenAt)}
+              ）・開始後は変更できない
+            </p>
+            {onHypothesisReflectionChange && (
+              <>
+                <label className="result-hypothesis-label" htmlFor="hypothesis-reflection">
+                  終了後の振り返り（任意）
+                </label>
+                <textarea
+                  id="hypothesis-reflection"
+                  className="result-hypothesis-input"
+                  data-testid="hypothesis-reflection-input"
+                  aria-describedby="hypothesis-reflection-meta"
+                  value={reflectionText}
+                  rows={3}
+                  placeholder="仮説を続ける・変えるなら、その理由"
+                  onChange={(event) => {
+                    invalidateDiagnosticCopy();
+                    onHypothesisReflectionChange(event.target.value);
+                  }}
+                />
+                <p
+                  id="hypothesis-reflection-meta"
+                  className="result-hypothesis-meta"
+                  data-testid="hypothesis-reflection-meta"
+                >
+                  {hypothesisTextLength(reflectionText)}/{HYPOTHESIS_NOTE_MAX_LENGTH}
+                  文字・決着後の追記として開始前の仮説とは分けて残す
+                  {hypothesisNote.reflection
+                    ? `（${formatPersistenceClock(hypothesisNote.reflection.writtenAt)} 更新）`
+                    : ''}
+                </p>
+              </>
+            )}
+          </section>
+        )}
+        {hypothesisSaveFailed && (
+          <p
+            className="result-hypothesis-meta error"
+            data-testid="hypothesis-note-save-failed"
+            role="status"
+            aria-live="polite"
+          >
+            {HYPOTHESIS_NOTE_SAVE_FAILED}
+          </p>
         )}
 
         <ReviewHistoryList
@@ -253,6 +336,20 @@ export function RunResultScreen({
               </dd>
             </div>
           </dl>
+          {hypothesisNote && (
+            <label className="result-hypothesis-include">
+              <input
+                type="checkbox"
+                data-testid="diagnostic-include-note"
+                checked={includeNoteInDiagnostic}
+                onChange={(event) => {
+                  setIncludeNoteInDiagnostic(event.target.checked);
+                  invalidateDiagnosticCopy();
+                }}
+              />
+              仮説メモと振り返りを含める
+            </label>
+          )}
           <button
             type="button"
             className="btn btn-secondary"

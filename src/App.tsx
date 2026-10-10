@@ -43,11 +43,29 @@ import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
+import { useHypothesisNote } from './ui/useHypothesisNote';
+import {
+  HYPOTHESIS_START_SAVE_TIMEOUT_MS,
+  HYPOTHESIS_START_UNRECORDED,
+} from './state/hypothesisNote';
 import { resetViewportScroll } from './ui/viewportScroll';
 import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { serializePersistenceBackup } from './state/persistenceBackup';
+import {
+  consumeDraftRevision,
+  editHypothesisDraft,
+  hypothesisForRun,
+  hypothesisRunKey,
+  newHypothesisStartId,
+  prepareHypothesis,
+  removeUnadoptedHypothesis,
+  writeHypothesisReflection,
+} from './state/hypothesisNote';
+import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
+import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS, dailySeed, utcDateStr } from './state/meta';
+import { DEFAULT_SCENARIO, resolveScenarioId } from './sim/scenarios';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
 import {
   downloadTextFile,
@@ -254,6 +272,24 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     if (wasBlocking && !blocking) setExportMessage(null);
     previousPersistenceState.current = persistenceState;
   }, [persistenceState]);
+  const hypothesisNote = useHypothesisNote();
+  const hypothesisKey = hypothesisRunKey(state);
+  const canBeginRun = !run.isReplayMode && !run.finishSaveBlocksNewRun;
+  const beginGuard = useRef(false);
+  const launchEpoch = useRef(0);
+  const [hypothesisUnrecorded, setHypothesisUnrecorded] = useState(false);
+  const [runLaunchPending, setRunLaunchPending] = useState(false);
+  const [trackedPhase, setTrackedPhase] = useState(phase);
+  if (trackedPhase !== phase) {
+    setTrackedPhase(phase);
+    if (phase === 'title') {
+      setHypothesisUnrecorded(false);
+      setRunLaunchPending(false);
+    }
+  }
+  useEffect(() => {
+    if (phase === 'title') beginGuard.current = false;
+  }, [phase]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
@@ -327,6 +363,93 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     setHelpOpen(false);
     setReplayListOpen(false);
   };
+  const cancelPendingLaunch = () => {
+    launchEpoch.current += 1;
+  };
+  const launchAfterHypothesis = (
+    runKey: string,
+    start: (hypothesisStartId: string | null) => void,
+  ) => {
+    if (!canBeginRun) {
+      start(null);
+      return;
+    }
+    if (beginGuard.current) return;
+    beginGuard.current = true;
+    const ticket = ++launchEpoch.current;
+    const epoch = game.getRunEpoch();
+    setRunLaunchPending(true);
+    return (async () => {
+      let timeoutId = 0;
+      const timeout = new Promise<'timeout'>((resolve) => {
+        timeoutId = setTimeout(() => resolve('timeout'), HYPOTHESIS_START_SAVE_TIMEOUT_MS);
+      });
+      const readVisibleDraft = () => {
+        const record = hypothesisNoteStore.getSnapshot().record;
+        return {
+          beforeStart: record.draft
+            ? { text: record.draft.text.trim(), writtenAt: record.draft.writtenAt }
+            : null,
+          draftRevision: record.draftRevision,
+        };
+      };
+      // 初回の読み込み前は snapshot が空でも、端末の下書きはまだ届いていない。
+      // 同じ 1.5 秒の上限で読み込みを待ち、届いた下書きだけを今回の開始に付ける。
+      let visible = readVisibleDraft();
+      if (!visible.beforeStart) {
+        const loaded = await Promise.race([
+          hypothesisNoteStore.load().then(() => 'loaded' as const),
+          timeout,
+        ]);
+        if (loaded === 'loaded') visible = readVisibleDraft();
+      }
+      const { beforeStart, draftRevision } = visible;
+      const startId = newHypothesisStartId();
+      const savePromise = beforeStart
+        ? hypothesisNoteStore.applyCommitted((record) =>
+            prepareHypothesis(record, runKey, startId, beforeStart),
+          )
+        : Promise.resolve('unchanged' as const);
+      const saved = beforeStart ? await Promise.race([savePromise, timeout]) : 'unchanged';
+      clearTimeout(timeoutId);
+      const superseded =
+        launchEpoch.current !== ticket ||
+        game.phase() !== 'title' ||
+        game.isReplayMode() ||
+        game.getRunEpoch() !== epoch ||
+        game.finishSaveBlocksNewRun();
+      const finishPending = () => {
+        beginGuard.current = false;
+        setRunLaunchPending(false);
+      };
+      const dropUnadopted = () => {
+        if (!beforeStart) return;
+        void savePromise.then((status) => {
+          if (status !== 'saved') return;
+          return hypothesisNoteStore.applyCommitted((record) =>
+            removeUnadoptedHypothesis(record, startId, beforeStart),
+          );
+        });
+      };
+      if (superseded) {
+        dropUnadopted();
+        finishPending();
+        return;
+      }
+      const adopted = Boolean(beforeStart) && saved !== 'timeout' && saved !== 'failed';
+      if (!adopted) {
+        dropUnadopted();
+        setHypothesisUnrecorded(Boolean(beforeStart));
+        start(null);
+        return;
+      }
+      void hypothesisNoteStore.applyCommitted((record) =>
+        consumeDraftRevision(record, draftRevision),
+      );
+      setHypothesisUnrecorded(false);
+      start(startId);
+    })();
+  };
   const startRun = (
     difficulty: Parameters<typeof run.startRun>[0],
     trials: string[],
@@ -336,18 +459,40 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
-    run.startRun(difficulty, trials, scenario, seed);
+    return launchAfterHypothesis(
+      hypothesisRunKey({
+        runKind: 'normal',
+        seed: seed ?? state.seed,
+        difficulty,
+        trials,
+        scenario: resolveScenarioId(scenario),
+      }),
+      (hypothesisStartId) => run.startRun(difficulty, trials, scenario, seed, hypothesisStartId),
+    );
   };
   const startDailyRun = () => {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
-    run.startDailyRun();
+    const day = utcDateStr();
+    return launchAfterHypothesis(
+      hypothesisRunKey({
+        runKind: 'daily',
+        dailyDate: day,
+        seed: dailySeed(day),
+        difficulty: DAILY_RUN_DIFFICULTY,
+        trials: [...DAILY_RUN_TRIALS],
+        scenario: DEFAULT_SCENARIO,
+      }),
+      (hypothesisStartId) => run.startDailyRun(day, hypothesisStartId),
+    );
   };
   const resumeRun = () => {
+    cancelPendingLaunch();
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
+    void hypothesisNoteStore.load();
     run.resumeRun();
   };
   const discardRunSave = () => {
@@ -355,6 +500,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     run.clearRunSave();
   };
   const openReplay = (id: string, keyframeIndex: number) => {
+    cancelPendingLaunch();
     audio.unlock();
     if (!run.openReplay(id, keyframeIndex)) return;
     closeTitleModals();
@@ -564,7 +710,16 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onApplyPreferred={run.setPreferredCardIds}
             onExportRunSave={run.exportRunSaveText}
             newRunBlocked={run.finishSaveBlocksNewRun}
+            hypothesisDraft={hypothesisNote.record.draft?.text ?? ''}
+            onHypothesisDraftChange={(text) => {
+              const writtenAt = Date.now();
+              hypothesisNoteStore.update((record) => editHypothesisDraft(record, text, writtenAt));
+            }}
+            hypothesisSaveFailed={hypothesisNote.saveFailed}
+            hypothesisUnrecorded={hypothesisUnrecorded}
+            runLaunchPending={runLaunchPending}
             onImportRunSave={async (raw) => {
+              cancelPendingLaunch();
               const result = await run.importRunSaveText(raw);
               return {
                 ok: result.ok,
@@ -664,6 +819,24 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               lastRunReward={lastRunReward}
               newRunBlocked={run.finishSaveBlocksNewRun}
               onNewRun={run.isReplayMode ? exitReplay : newRun}
+              hypothesisNote={
+                run.isReplayMode
+                  ? null
+                  : hypothesisForRun(hypothesisNote.record, hypothesisKey, game.hypothesisStartId())
+              }
+              onHypothesisReflectionChange={(text) => {
+                const writtenAt = Date.now();
+                hypothesisNoteStore.update((record) =>
+                  writeHypothesisReflection(
+                    record,
+                    hypothesisKey,
+                    game.hypothesisStartId(),
+                    text,
+                    writtenAt,
+                  ),
+                );
+              }}
+              hypothesisSaveFailed={run.isReplayMode ? false : hypothesisNote.saveFailed}
             />
           </SceneScrollReset>
         </Suspense>
@@ -959,6 +1132,15 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   return (
     <>
       {persistenceNotice}
+      {hypothesisUnrecorded && phase !== 'title' ? (
+        <p
+          className="hypothesis-start-unrecorded"
+          role="status"
+          data-testid="hypothesis-start-unrecorded"
+        >
+          {HYPOTHESIS_START_UNRECORDED}
+        </p>
+      ) : null}
       {phaseBody}
     </>
   );

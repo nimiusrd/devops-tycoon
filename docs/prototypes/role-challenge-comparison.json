@@ -1,0 +1,281 @@
+{
+  "seed": "RI-202",
+  "results": [
+    {
+      "board": "pressed",
+      "strategy": "accept",
+      "initial": {
+        "version": 1,
+        "seed": "RI-202",
+        "board": "pressed",
+        "period": 0,
+        "horizon": 2,
+        "seats": 1,
+        "targets": [8, 4],
+        "penalty": 6,
+        "placed": false,
+        "reviewValue": 0,
+        "growth": 0,
+        "growthEvents": 0,
+        "penalties": 0,
+        "history": [],
+        "members": [
+          {
+            "id": "sato",
+            "review": 8,
+            "assignment": "review"
+          },
+          {
+            "id": "mei",
+            "review": 2,
+            "assignment": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "place",
+          "assignment": "review"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "assignment": "review",
+        "seniorAssignment": "coding",
+        "meiReview": 5,
+        "reviewValue": 7,
+        "growth": 3,
+        "growthEvents": 1,
+        "penalties": 6,
+        "score": 1,
+        "history": [
+          {
+            "period": 1,
+            "review": 2,
+            "target": 8,
+            "met": false
+          },
+          {
+            "period": 2,
+            "review": 5,
+            "target": 4,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "board": "pressed",
+      "strategy": "decline",
+      "initial": {
+        "version": 1,
+        "seed": "RI-202",
+        "board": "pressed",
+        "period": 0,
+        "horizon": 2,
+        "seats": 1,
+        "targets": [8, 4],
+        "penalty": 6,
+        "placed": false,
+        "reviewValue": 0,
+        "growth": 0,
+        "growthEvents": 0,
+        "penalties": 0,
+        "history": [],
+        "members": [
+          {
+            "id": "sato",
+            "review": 8,
+            "assignment": "review"
+          },
+          {
+            "id": "mei",
+            "review": 2,
+            "assignment": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "place",
+          "assignment": "coding"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "assignment": "coding",
+        "seniorAssignment": "review",
+        "meiReview": 2,
+        "reviewValue": 16,
+        "growth": 0,
+        "growthEvents": 0,
+        "penalties": 0,
+        "score": 16,
+        "history": [
+          {
+            "period": 1,
+            "review": 8,
+            "target": 8,
+            "met": true
+          },
+          {
+            "period": 2,
+            "review": 8,
+            "target": 4,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "board": "slack",
+      "strategy": "accept",
+      "initial": {
+        "version": 1,
+        "seed": "RI-202",
+        "board": "slack",
+        "period": 0,
+        "horizon": 2,
+        "seats": 2,
+        "targets": [6, 12],
+        "penalty": 6,
+        "placed": false,
+        "reviewValue": 0,
+        "growth": 0,
+        "growthEvents": 0,
+        "penalties": 0,
+        "history": [],
+        "members": [
+          {
+            "id": "sato",
+            "review": 8,
+            "assignment": "review"
+          },
+          {
+            "id": "mei",
+            "review": 2,
+            "assignment": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "place",
+          "assignment": "review"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "assignment": "review",
+        "seniorAssignment": "review",
+        "meiReview": 5,
+        "reviewValue": 23,
+        "growth": 3,
+        "growthEvents": 1,
+        "penalties": 0,
+        "score": 23,
+        "history": [
+          {
+            "period": 1,
+            "review": 10,
+            "target": 6,
+            "met": true
+          },
+          {
+            "period": 2,
+            "review": 13,
+            "target": 12,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "board": "slack",
+      "strategy": "decline",
+      "initial": {
+        "version": 1,
+        "seed": "RI-202",
+        "board": "slack",
+        "period": 0,
+        "horizon": 2,
+        "seats": 2,
+        "targets": [6, 12],
+        "penalty": 6,
+        "placed": false,
+        "reviewValue": 0,
+        "growth": 0,
+        "growthEvents": 0,
+        "penalties": 0,
+        "history": [],
+        "members": [
+          {
+            "id": "sato",
+            "review": 8,
+            "assignment": "review"
+          },
+          {
+            "id": "mei",
+            "review": 2,
+            "assignment": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "place",
+          "assignment": "coding"
+        },
+        {
+          "type": "period"
+        },
+        {
+          "type": "period"
+        }
+      ],
+      "result": {
+        "assignment": "coding",
+        "seniorAssignment": "review",
+        "meiReview": 2,
+        "reviewValue": 16,
+        "growth": 0,
+        "growthEvents": 0,
+        "penalties": 6,
+        "score": 10,
+        "history": [
+          {
+            "period": 1,
+            "review": 8,
+            "target": 6,
+            "met": true
+          },
+          {
+            "period": 2,
+            "review": 8,
+            "target": 12,
+            "met": false
+          }
+        ]
+      }
+    }
+  ]
+}

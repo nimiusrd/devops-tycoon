@@ -1,13 +1,14 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const copyState = vi.hoisted(() => ({ value: 'idle' }));
+const copyState = vi.hoisted(() => ({ value: 'idle', generation: { current: 0 } }));
 
 // Node ではコピー通知の state と provider の接続だけを代行する。
 // 判定・報酬・診断 JSON・クリップボード処理は実装を通す。
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useState: () => [copyState.value, (value: string) => (copyState.value = value)],
+  useRef: () => copyState.generation,
 }));
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
@@ -75,6 +76,7 @@ function mountResult(overrides: Partial<RunResultScreenProps> = {}) {
 
 beforeEach(() => {
   copyState.value = 'idle';
+  copyState.generation.current = 0;
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -234,6 +236,35 @@ describe('RunResultScreen の診断コピー', () => {
     });
     expect(content(screen.find('diagnostic-copy-status'))).toBe('再現情報をコピーしました。');
     expect(screen.details().props.open).toBe(false);
+  });
+
+  it('コピー完了前の振り返り変更では、古い成功で完了表示を戻さない', async () => {
+    let release: () => void = () => {};
+    const writeText = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const screen = mountResult({
+      hypothesisNote: {
+        runKey: 'k',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+      onHypothesisReflectionChange: vi.fn(),
+    });
+    screen.click('copy-diagnostic-info');
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    (
+      screen.find('hypothesis-reflection-input').props.onChange as (event: {
+        target: { value: string };
+      }) => void
+    )({ target: { value: '変わった' } });
+    release();
+    await Promise.resolve();
+    expect(copyState.value).toBe('idle');
   });
 
   it('仮説が空でも保存失敗を表示する', () => {

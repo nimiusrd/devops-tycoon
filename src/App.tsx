@@ -58,6 +58,8 @@ import {
   writeHypothesisReflection,
 } from './state/hypothesisNote';
 import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
+import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS, dailySeed, utcDateStr } from './state/meta';
+import { DEFAULT_SCENARIO, resolveScenarioId } from './sim/scenarios';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
 import {
   downloadTextFile,
@@ -266,12 +268,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   }, [persistenceState]);
   const hypothesisNote = useHypothesisNote();
   const hypothesisKey = hypothesisRunKey(state);
-  const boundEpoch = useRef(run.runEpoch);
-  useEffect(() => {
-    if (boundEpoch.current === run.runEpoch) return;
-    boundEpoch.current = run.runEpoch;
-    hypothesisNoteStore.update((record) => bindHypothesisToRun(record, hypothesisKey));
-  }, [run.runEpoch, hypothesisKey]);
+  const canBeginRun = !run.isReplayMode && !run.finishSaveBlocksNewRun;
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
@@ -354,18 +351,49 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
+    if (canBeginRun) {
+      hypothesisNoteStore.update((record) =>
+        bindHypothesisToRun(
+          record,
+          hypothesisRunKey({
+            runKind: 'normal',
+            seed: seed ?? state.seed,
+            difficulty,
+            trials,
+            scenario: resolveScenarioId(scenario),
+          }),
+        ),
+      );
+    }
     run.startRun(difficulty, trials, scenario, seed);
   };
   const startDailyRun = () => {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
+    if (canBeginRun) {
+      const day = utcDateStr();
+      hypothesisNoteStore.update((record) =>
+        bindHypothesisToRun(
+          record,
+          hypothesisRunKey({
+            runKind: 'daily',
+            dailyDate: day,
+            seed: dailySeed(day),
+            difficulty: DAILY_RUN_DIFFICULTY,
+            trials: [...DAILY_RUN_TRIALS],
+            scenario: DEFAULT_SCENARIO,
+          }),
+        ),
+      );
+    }
     run.startDailyRun();
   };
   const resumeRun = () => {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
+    void hypothesisNoteStore.load();
     run.resumeRun();
   };
   const discardRunSave = () => {

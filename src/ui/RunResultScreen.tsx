@@ -3,7 +3,7 @@
  *
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { getBoss } from '../data/bosses';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { loseNextActionView } from '../render/loseNextActionView';
@@ -77,6 +77,7 @@ export function RunResultScreen({
 }: RunResultScreenProps) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [includeNoteInDiagnostic, setIncludeNoteInDiagnostic] = useState(false);
+  const copyGeneration = useRef(0);
   const { resolveRelic, resolveCard, isReplaySnapshot } = useReplayContent();
   const companyResult =
     recordedCompanyResult ??
@@ -135,8 +136,16 @@ export function RunResultScreen({
   );
   const reflectionText = hypothesisNote?.reflection?.text ?? '';
 
+  const invalidateDiagnosticCopy = () => {
+    copyGeneration.current += 1;
+    setCopyStatus('idle');
+  };
   const handleCopyDiagnostic = async () => {
-    setCopyStatus((await copyToClipboard(diagnosticJson)) ? 'copied' : 'error');
+    const generation = ++copyGeneration.current;
+    const json = diagnosticJson;
+    const copied = await copyToClipboard(json);
+    if (copyGeneration.current !== generation) return;
+    setCopyStatus(copied ? 'copied' : 'error');
   };
 
   return (
@@ -225,7 +234,7 @@ export function RunResultScreen({
                   rows={3}
                   placeholder="仮説を続ける・変えるなら、その理由"
                   onChange={(event) => {
-                    setCopyStatus('idle');
+                    invalidateDiagnosticCopy();
                     onHypothesisReflectionChange(event.target.value);
                   }}
                 />
@@ -335,7 +344,7 @@ export function RunResultScreen({
                 checked={includeNoteInDiagnostic}
                 onChange={(event) => {
                   setIncludeNoteInDiagnostic(event.target.checked);
-                  setCopyStatus('idle');
+                  invalidateDiagnosticCopy();
                 }}
               />
               仮説メモと振り返りを含める

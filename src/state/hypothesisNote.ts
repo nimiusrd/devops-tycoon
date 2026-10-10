@@ -202,7 +202,13 @@ function mergeBound(
   if (currentIsBase) return local.bound;
   if (sameBound(base.bound, local.bound)) return current.bound;
   if (reflectionOnly(base.bound, local.bound)) {
-    if (!current.bound || current.bound.runKey !== local.bound.runKey) return current.bound;
+    if (
+      !current.bound ||
+      current.bound.runKey !== local.bound.runKey ||
+      !sameEntry(current.bound.beforeStart, local.bound.beforeStart)
+    ) {
+      return current.bound;
+    }
     return { ...current.bound, reflection: local.bound.reflection };
   }
   return local.bound;

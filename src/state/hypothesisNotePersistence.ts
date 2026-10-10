@@ -149,12 +149,13 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   const load = (): Promise<void> => {
     if (loaded) return Promise.resolve();
     if (loading) return loading;
+    const attemptGate: { current: Promise<void> | null } = { current: null };
     const attempt = (async () => {
       let raw: unknown;
       try {
         raw = await storage.load();
       } catch {
-        if (loading === attempt) loading = null;
+        if (loading === attemptGate.current) loading = null;
         if (pending.length > 0) publish({ ...snapshot, saveFailed: true });
         return;
       }
@@ -164,10 +165,11 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       pending = [];
       const record = applyQueued(stored, queued);
       loaded = true;
-      if (loading === attempt) loading = null;
+      if (loading === attemptGate.current) loading = null;
       publish({ ...snapshot, record });
       if (record !== stored) void persist();
     })();
+    attemptGate.current = attempt;
     loading = attempt;
     return attempt;
   };

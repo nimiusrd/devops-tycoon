@@ -346,6 +346,16 @@ describe('仮説メモの保存', () => {
       },
     };
     expect(commitHypothesisNote(base, reflected, laterRun).bound).toEqual(laterRun.bound);
+    const sameKeyOtherHypothesis = {
+      ...laterRun,
+      bound: {
+        ...laterRun.bound,
+        runKey: base.bound.runKey,
+      },
+    };
+    expect(commitHypothesisNote(base, reflected, sameKeyOtherHypothesis).bound).toEqual(
+      sameKeyOtherHypothesis.bound,
+    );
     expect(
       commitHypothesisNote(base, reflected, { ...base, generation: 2 }).bound?.reflection,
     ).toEqual({ text: '振り返り', writtenAt: 5 });

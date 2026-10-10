@@ -236,6 +236,14 @@ describe('RunResultScreen の診断コピー', () => {
     expect(screen.details().props.open).toBe(false);
   });
 
+  it('仮説が空でも保存失敗を表示する', () => {
+    const screen = mountResult({ hypothesisSaveFailed: true });
+    expect(screen.has('hypothesis-review')).toBe(false);
+    expect(content(screen.find('hypothesis-note-save-failed'))).toContain(
+      'メモを端末に保存できませんでした',
+    );
+  });
+
   it('コピーが拒否されたら手動選択用 JSON を開き、再試行成功後にエラーを解除する', async () => {
     const writeText = vi.fn().mockRejectedValueOnce(new Error('permission denied'));
     vi.stubGlobal('navigator', { clipboard: { writeText } });

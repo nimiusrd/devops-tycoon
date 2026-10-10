@@ -93,7 +93,8 @@ for (const viewport of VIEWPORTS) {
       'ラン開始前に記入',
     );
 
-    await page.getByTestId('hypothesis-reflection-input').fill('育成は効いたが障害対応が遅れた');
+    const reflection = page.getByTestId('hypothesis-reflection-input');
+    await reflection.fill('育成は効いたが障害対応が遅れた');
     await expect(page.getByTestId('hypothesis-reflection-meta')).toContainText('更新');
     await expect(page.getByTestId('hypothesis-before-start')).toHaveText(
       '採用より育成を優先し、<b>士気</b>を保って突破する',
@@ -103,9 +104,11 @@ for (const viewport of VIEWPORTS) {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(docOverflow).toBeLessThanOrEqual(0);
-    await review.screenshot({
-      path: test.info().outputPath(`hypothesis-review-${viewport.name}.png`),
-    });
+    if (viewport.width !== 320) {
+      await review.screenshot({
+        path: test.info().outputPath(`hypothesis-review-${viewport.name}.png`),
+      });
+    }
 
     const json = page.getByTestId('diagnostic-json');
     expect(JSON.parse(await json.inputValue())).not.toHaveProperty('hypothesisNote');
@@ -116,6 +119,21 @@ for (const viewport of VIEWPORTS) {
       '採用より育成を優先し、<b>士気</b>を保って突破する',
     );
     expect(withNote.hypothesisNote.reflection.text).toBe('育成は効いたが障害対応が遅れた');
+
+    if (viewport.width === 320) {
+      const longNote = 'あ'.repeat(120);
+      await reflection.fill(longNote);
+      const block = await review.boundingBox();
+      expect(block!.width).toBeGreaterThan(240);
+      const fieldFits = await reflection.evaluate((el) => el.scrollHeight - el.clientHeight);
+      expect(fieldFits).toBeLessThanOrEqual(1);
+      const includeBox = await page.locator('.result-hypothesis-include').boundingBox();
+      expect(includeBox!.height).toBeGreaterThanOrEqual(44);
+      expect(block!.height).toBeLessThan(420);
+      await review.screenshot({
+        path: test.info().outputPath(`hypothesis-review-${viewport.name}.png`),
+      });
+    }
 
     await page.getByTestId('new-run').click();
     await expect(page.getByTestId('title')).toBeVisible();

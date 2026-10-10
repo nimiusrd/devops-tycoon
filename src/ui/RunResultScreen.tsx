@@ -216,13 +216,13 @@ export function RunResultScreen({
                 <label className="result-hypothesis-label" htmlFor="hypothesis-reflection">
                   終了後の振り返り（任意）
                 </label>
-                <input
+                <textarea
                   id="hypothesis-reflection"
-                  type="text"
                   className="result-hypothesis-input"
                   data-testid="hypothesis-reflection-input"
                   aria-describedby="hypothesis-reflection-meta"
                   value={reflectionText}
+                  rows={3}
                   placeholder="仮説を続ける・変えるなら、その理由"
                   onChange={(event) => onHypothesisReflectionChange(event.target.value)}
                 />
@@ -239,17 +239,17 @@ export function RunResultScreen({
                 </p>
               </>
             )}
-            {hypothesisSaveFailed && (
-              <p
-                className="result-hypothesis-meta error"
-                data-testid="hypothesis-note-save-failed"
-                role="status"
-                aria-live="polite"
-              >
-                {HYPOTHESIS_NOTE_SAVE_FAILED}
-              </p>
-            )}
           </section>
+        )}
+        {hypothesisSaveFailed && (
+          <p
+            className="result-hypothesis-meta error"
+            data-testid="hypothesis-note-save-failed"
+            role="status"
+            aria-live="polite"
+          >
+            {HYPOTHESIS_NOTE_SAVE_FAILED}
+          </p>
         )}
 
         <ReviewHistoryList

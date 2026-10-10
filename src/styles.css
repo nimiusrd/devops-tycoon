@@ -7717,12 +7717,26 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-size: 12px;
 }
 .result-hypothesis {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
   margin-top: 18px;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel);
   text-align: left;
+}
+/* 320 幅ではオーバーレイとカードの左右 2rem が重なり、本文が 188px まで細くなる。 */
+:root[data-responsive-width='narrow'] .result-overlay.run-end {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+:root[data-responsive-width='narrow'] .result-overlay.run-end .result-card {
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 .result-hypothesis-text {
   margin: 6px 0 4px;
@@ -7749,15 +7763,20 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .result-hypothesis-input {
   display: block;
   width: 100%;
-  min-height: 44px;
+  min-height: calc(1.5em * 3 + 16px);
   margin-top: 6px;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--panel);
+  /* 再現情報 JSON 欄と同じ面。パネルと同じ色だと欄の境界が消える。 */
+  background: #080b1bcc;
   color: var(--text);
   font: inherit;
   font-size: 13px;
+  line-height: 1.5;
+  field-sizing: content;
+  resize: none;
+  overflow: hidden;
 }
 .result-hypothesis-input:focus-visible,
 .result-hypothesis-include input:focus-visible {
@@ -7768,7 +7787,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 24px;
+  width: 100%;
+  min-height: 44px;
   margin: 0 0 10px;
   color: var(--text);
   font-size: 13px;

@@ -81,7 +81,7 @@ export function applyPairInput(state: PairState, input: PairInput): PairState {
     job.slots = needed;
     job.acquired += needed;
     next.freeSlots -= needed;
-    job.stage = job.reworkLeft > 0 && needed === 1 ? 'rework' : 'active';
+    job.stage = job.reworkLeft > 0 ? 'rework' : 'active';
   } else if (input.type === 'interrupt') {
     const job = next.jobs.find((item) => item.id === input.id)!;
     release(next, job);

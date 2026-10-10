@@ -65,6 +65,29 @@ describe('RI-178 ペア作業', () => {
       slots: 0,
     });
     expect(solo.freeSlots).toBe(2);
+    let resumed = apply(create('RI-178', 'complex'), { type: 'solo', id: 'c2' });
+    resumed = apply(apply(resumed, { type: 'tick' }), { type: 'tick' });
+    resumed = apply(resumed, { type: 'interrupt', id: 'c2' });
+    resumed = apply(resumed, { type: 'pair', id: 'c2' });
+    expect(resumed.jobs[1]).toMatchObject({
+      stage: 'rework',
+      progress: 2,
+      reworkLeft: 2,
+      slots: 2,
+      acquired: 3,
+      released: 1,
+    });
+    resumed = apply(resumed, { type: 'tick' });
+    expect(resumed.jobs[1]).toMatchObject({ stage: 'rework', reworkLeft: 1, reworkSpent: 1 });
+    resumed = apply(resumed, { type: 'tick' });
+    expect(resumed.jobs[1]).toMatchObject({
+      stage: 'done',
+      reworkLeft: 0,
+      reworkSpent: 2,
+      acquired: 3,
+      released: 3,
+      slots: 0,
+    });
   });
   it('未知ID・完了済み・手戻り以外の中断・期末は無消費で拒否する', () => {
     const initial = create('RI-178', 'routine');

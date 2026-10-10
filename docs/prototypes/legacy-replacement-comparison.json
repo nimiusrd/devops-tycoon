@@ -1,0 +1,392 @@
+{
+  "seed": "RI-179",
+  "results": [
+    {
+      "horizon": 5,
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-179",
+        "tick": 0,
+        "horizon": 5,
+        "mode": "legacy",
+        "tasks": [
+          {
+            "id": "migrate-a",
+            "done": false
+          },
+          {
+            "id": "migrate-b",
+            "done": false
+          },
+          {
+            "id": "migrate-c",
+            "done": false
+          }
+        ],
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "mode": "legacy",
+        "doneTasks": 0,
+        "legacyValue": 20,
+        "dualValue": 0,
+        "modernValue": 0,
+        "netValue": 20
+      }
+    },
+    {
+      "horizon": 5,
+      "strategy": "replace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-179",
+        "tick": 0,
+        "horizon": 5,
+        "mode": "legacy",
+        "tasks": [
+          {
+            "id": "migrate-a",
+            "done": false
+          },
+          {
+            "id": "migrate-b",
+            "done": false
+          },
+          {
+            "id": "migrate-c",
+            "done": false
+          }
+        ],
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "cutover"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "mode": "modern",
+        "doneTasks": 3,
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 16,
+        "netValue": 16
+      }
+    },
+    {
+      "horizon": 5,
+      "strategy": "partial",
+      "initial": {
+        "version": 1,
+        "seed": "RI-179",
+        "tick": 0,
+        "horizon": 5,
+        "mode": "legacy",
+        "tasks": [
+          {
+            "id": "migrate-a",
+            "done": false
+          },
+          {
+            "id": "migrate-b",
+            "done": false
+          },
+          {
+            "id": "migrate-c",
+            "done": false
+          }
+        ],
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "mode": "dual",
+        "doneTasks": 2,
+        "legacyValue": 0,
+        "dualValue": 6,
+        "modernValue": 0,
+        "netValue": 6
+      }
+    },
+    {
+      "horizon": 10,
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-179",
+        "tick": 0,
+        "horizon": 10,
+        "mode": "legacy",
+        "tasks": [
+          {
+            "id": "migrate-a",
+            "done": false
+          },
+          {
+            "id": "migrate-b",
+            "done": false
+          },
+          {
+            "id": "migrate-c",
+            "done": false
+          }
+        ],
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "mode": "legacy",
+        "doneTasks": 0,
+        "legacyValue": 40,
+        "dualValue": 0,
+        "modernValue": 0,
+        "netValue": 40
+      }
+    },
+    {
+      "horizon": 10,
+      "strategy": "replace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-179",
+        "tick": 0,
+        "horizon": 10,
+        "mode": "legacy",
+        "tasks": [
+          {
+            "id": "migrate-a",
+            "done": false
+          },
+          {
+            "id": "migrate-b",
+            "done": false
+          },
+          {
+            "id": "migrate-c",
+            "done": false
+          }
+        ],
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "cutover"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "mode": "modern",
+        "doneTasks": 3,
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 56,
+        "netValue": 56
+      }
+    },
+    {
+      "horizon": 10,
+      "strategy": "partial",
+      "initial": {
+        "version": 1,
+        "seed": "RI-179",
+        "tick": 0,
+        "horizon": 10,
+        "mode": "legacy",
+        "tasks": [
+          {
+            "id": "migrate-a",
+            "done": false
+          },
+          {
+            "id": "migrate-b",
+            "done": false
+          },
+          {
+            "id": "migrate-c",
+            "done": false
+          }
+        ],
+        "legacyValue": 0,
+        "dualValue": 0,
+        "modernValue": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "mode": "dual",
+        "doneTasks": 2,
+        "legacyValue": 0,
+        "dualValue": 16,
+        "modernValue": 0,
+        "netValue": 16
+      }
+    }
+  ]
+}

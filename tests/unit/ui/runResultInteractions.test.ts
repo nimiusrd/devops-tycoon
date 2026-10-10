@@ -250,6 +250,7 @@ describe('RunResultScreen の診断コピー', () => {
     const screen = mountResult({
       hypothesisNote: {
         runKey: 'k',
+        startId: 'start-k',
         beforeStart: { text: '狙い', writtenAt: 1 },
         reflection: null,
       },

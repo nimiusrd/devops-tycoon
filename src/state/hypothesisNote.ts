@@ -19,6 +19,8 @@ export interface HypothesisNoteEntry {
 
 export interface BoundHypothesisNote {
   runKey: string;
+  /** この開始だけを指す。同じ下書きから始めても開始ごとに違う。 */
+  startId: string;
   /** 開始時点で固定した仮説。開始後は変更しない。 */
   beforeStart: HypothesisNoteEntry;
   /** 決着後に書いた振り返り。 */
@@ -91,10 +93,16 @@ export function editHypothesisDraft(
   return { ...record, draft: entryFrom(text, now) };
 }
 
+/** 開始ごとの識別子。同じ下書きでもタブや開始のたびに別の値になる。 */
+export function newHypothesisStartId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
 /** ラン開始時に下書きを開始前の仮説として固定する。空なら前回の仮説だけを外す。 */
 export function bindHypothesisToRun(
   record: HypothesisNoteRecord,
   runKey: string,
+  startId: string = newHypothesisStartId(),
 ): HypothesisNoteRecord {
   const draft = record.draft;
   return {
@@ -103,6 +111,7 @@ export function bindHypothesisToRun(
     bound: draft
       ? {
           runKey,
+          startId,
           beforeStart: { text: draft.text.trim(), writtenAt: draft.writtenAt },
           reflection: null,
         }
@@ -151,6 +160,7 @@ export function normalizeHypothesisNote(raw: unknown): HypothesisNoteRecord {
     if (typeof b.runKey === 'string' && b.runKey && beforeStart) {
       bound = {
         runKey: b.runKey,
+        startId: typeof b.startId === 'string' ? b.startId : '',
         beforeStart: { ...beforeStart, text: beforeStart.text.trim() },
         reflection: normalizeEntry(b.reflection),
       };
@@ -172,6 +182,7 @@ function sameEntry(a: HypothesisNoteEntry | null, b: HypothesisNoteEntry | null)
 function sameBound(a: BoundHypothesisNote | null, b: BoundHypothesisNote | null): boolean {
   return !!a && !!b
     ? a.runKey === b.runKey &&
+        a.startId === b.startId &&
         sameEntry(a.beforeStart, b.beforeStart) &&
         sameEntry(a.reflection, b.reflection)
     : a === b;
@@ -189,6 +200,7 @@ function reflectionOnly(
     !!local &&
     !!base &&
     local.runKey === base.runKey &&
+    local.startId === base.startId &&
     sameEntry(local.beforeStart, base.beforeStart)
   );
 }
@@ -205,6 +217,7 @@ function mergeBound(
     if (
       !current.bound ||
       current.bound.runKey !== local.bound.runKey ||
+      current.bound.startId !== local.bound.startId ||
       !sameEntry(current.bound.beforeStart, local.bound.beforeStart)
     ) {
       return current.bound;

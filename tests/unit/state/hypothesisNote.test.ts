@@ -53,10 +53,11 @@ describe('開始前の仮説メモ（RI-295）', () => {
     const drafted = editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, ' 採用より育成 ', 1000);
     expect(drafted.draft).toEqual({ text: ' 採用より育成 ', writtenAt: 1000 });
 
-    const bound = bindHypothesisToRun(drafted, key);
+    const bound = bindHypothesisToRun(drafted, key, 'start-1');
     expect(bound.draft).toBeNull();
     expect(hypothesisForRun(bound, key)).toEqual({
       runKey: key,
+      startId: 'start-1',
       beforeStart: { text: '採用より育成', writtenAt: 1000 },
       reflection: null,
     });
@@ -126,7 +127,12 @@ describe('開始前の仮説メモ（RI-295）', () => {
     ).toEqual({
       schemaVersion: 1,
       draft: null,
-      bound: { runKey: 'k', beforeStart: { text: '仮説', writtenAt: 2 }, reflection: null },
+      bound: {
+        runKey: 'k',
+        startId: '',
+        beforeStart: { text: '仮説', writtenAt: 2 },
+        reflection: null,
+      },
       generation: 0,
     });
   });
@@ -325,6 +331,7 @@ describe('仮説メモの保存', () => {
       generation: 1,
       bound: {
         runKey: 'run-a',
+        startId: 'start-a',
         beforeStart: { text: '狙い', writtenAt: 1 },
         reflection: null,
       },
@@ -341,6 +348,7 @@ describe('仮説メモの保存', () => {
       generation: 2,
       bound: {
         runKey: 'run-b',
+        startId: 'start-b',
         beforeStart: { text: '別の狙い', writtenAt: 3 },
         reflection: null,
       },
@@ -355,6 +363,14 @@ describe('仮説メモの保存', () => {
     };
     expect(commitHypothesisNote(base, reflected, sameKeyOtherHypothesis).bound).toEqual(
       sameKeyOtherHypothesis.bound,
+    );
+    const sameTextOtherStart = {
+      ...base,
+      generation: 2,
+      bound: { ...base.bound, startId: 'start-other' },
+    };
+    expect(commitHypothesisNote(base, reflected, sameTextOtherStart).bound).toEqual(
+      sameTextOtherStart.bound,
     );
     expect(
       commitHypothesisNote(base, reflected, { ...base, generation: 2 }).bound?.reflection,

@@ -652,7 +652,13 @@ describe('App のタイトル操作', () => {
           : action === 'onStartDaily'
             ? 'startDailyRun'
             : 'resumeRun';
-      expect(screen.run[method]).toHaveBeenCalledExactlyOnceWith(...args);
+      if (action === 'onStartDaily') {
+        expect(screen.run.startDailyRun).toHaveBeenCalledExactlyOnceWith(
+          expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        );
+      } else {
+        expect(screen.run[method]).toHaveBeenCalledExactlyOnceWith(...args);
+      }
       expect(audio.unlock).toHaveBeenCalledOnce();
       expect(screen.has('HowToPlayScreen')).toBe(false);
       screen.phase('setup');

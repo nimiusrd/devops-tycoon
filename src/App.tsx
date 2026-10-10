@@ -371,8 +371,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
+    const day = utcDateStr();
     if (canBeginRun) {
-      const day = utcDateStr();
       hypothesisNoteStore.update((record) =>
         bindHypothesisToRun(
           record,
@@ -387,7 +387,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         ),
       );
     }
-    run.startDailyRun();
+    run.startDailyRun(day);
   };
   const resumeRun = () => {
     audio.unlock();

@@ -1,0 +1,1551 @@
+{
+  "seed": 196,
+  "results": [
+    {
+      "verifier": "thin",
+      "horizon": 5,
+      "policy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 5,
+        "verifier": "thin",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 6,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 4,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 10,
+        "checkTicks": 0,
+        "riskReduced": 0,
+        "unfinishedPenalty": 0,
+        "netValue": 20
+      }
+    },
+    {
+      "verifier": "thin",
+      "horizon": 5,
+      "policy": "flagged",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 5,
+        "verifier": "thin",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": false,
+            "checkTicksSpent": 3,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": false,
+            "checkTicksSpent": 2,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": false,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 0,
+        "realizedRisk": 0,
+        "checkTicks": 5,
+        "riskReduced": 0,
+        "unfinishedPenalty": 9,
+        "netValue": -9
+      }
+    },
+    {
+      "verifier": "thin",
+      "horizon": 5,
+      "policy": "all",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 5,
+        "verifier": "thin",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": false,
+            "checkTicksSpent": 3,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": false,
+            "checkTicksSpent": 2,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": false,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 0,
+        "realizedRisk": 0,
+        "checkTicks": 5,
+        "riskReduced": 0,
+        "unfinishedPenalty": 9,
+        "netValue": -9
+      }
+    },
+    {
+      "verifier": "thin",
+      "horizon": 10,
+      "policy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 10,
+        "verifier": "thin",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 6,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 4,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 10,
+        "checkTicks": 0,
+        "riskReduced": 0,
+        "unfinishedPenalty": 0,
+        "netValue": 20
+      }
+    },
+    {
+      "verifier": "thin",
+      "horizon": 10,
+      "policy": "flagged",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 10,
+        "verifier": "thin",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 3,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 3,
+            "riskReduced": 6,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 4,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 4,
+        "checkTicks": 6,
+        "riskReduced": 6,
+        "unfinishedPenalty": 0,
+        "netValue": 26
+      }
+    },
+    {
+      "verifier": "thin",
+      "horizon": 10,
+      "policy": "all",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 10,
+        "verifier": "thin",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 3,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": false,
+            "checkTicksSpent": 3,
+            "riskReduced": 6,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": false,
+            "checkTicksSpent": 3,
+            "riskReduced": 4,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 10,
+        "realizedRisk": 0,
+        "checkTicks": 9,
+        "riskReduced": 10,
+        "unfinishedPenalty": 6,
+        "netValue": 4
+      }
+    },
+    {
+      "verifier": "thick",
+      "horizon": 5,
+      "policy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 5,
+        "verifier": "thick",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 6,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 4,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 10,
+        "checkTicks": 0,
+        "riskReduced": 0,
+        "unfinishedPenalty": 0,
+        "netValue": 20
+      }
+    },
+    {
+      "verifier": "thick",
+      "horizon": 5,
+      "policy": "flagged",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 5,
+        "verifier": "thick",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 6,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 4,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 4,
+        "checkTicks": 2,
+        "riskReduced": 6,
+        "unfinishedPenalty": 0,
+        "netValue": 26
+      }
+    },
+    {
+      "verifier": "thick",
+      "horizon": 5,
+      "policy": "all",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 5,
+        "verifier": "thick",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 6,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": false,
+            "checkTicksSpent": 1,
+            "riskReduced": 4,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 20,
+        "realizedRisk": 0,
+        "checkTicks": 3,
+        "riskReduced": 10,
+        "unfinishedPenalty": 3,
+        "netValue": 17
+      }
+    },
+    {
+      "verifier": "thick",
+      "horizon": 10,
+      "policy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 10,
+        "verifier": "thick",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 6,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 4,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 10,
+        "checkTicks": 0,
+        "riskReduced": 0,
+        "unfinishedPenalty": 0,
+        "netValue": 20
+      }
+    },
+    {
+      "verifier": "thick",
+      "horizon": 10,
+      "policy": "flagged",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 10,
+        "verifier": "thick",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 6,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "realizedRisk": 4,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 4,
+        "checkTicks": 2,
+        "riskReduced": 6,
+        "unfinishedPenalty": 0,
+        "netValue": 26
+      }
+    },
+    {
+      "verifier": "thick",
+      "horizon": 10,
+      "policy": "all",
+      "initial": {
+        "version": 1,
+        "seed": 196,
+        "tick": 0,
+        "horizon": 10,
+        "verifier": "thick",
+        "generation": 1831566009,
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "actualRisk": 0,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "actualRisk": 6,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "actualRisk": 4,
+            "value": 10,
+            "checkTicksSpent": 0,
+            "riskReduced": null,
+            "shipped": false,
+            "checkLeft": 0,
+            "shipLeft": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "alarm"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "flagged"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "ship",
+          "id": "miss"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tasks": [
+          {
+            "id": "alarm",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 0,
+            "realizedRisk": 0,
+            "falseAlarm": true,
+            "missedSignal": false
+          },
+          {
+            "id": "flagged",
+            "signal": "uncertain",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 6,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": false
+          },
+          {
+            "id": "miss",
+            "signal": "clear",
+            "shipped": true,
+            "checkTicksSpent": 1,
+            "riskReduced": 4,
+            "realizedRisk": 0,
+            "falseAlarm": false,
+            "missedSignal": true
+          }
+        ],
+        "shippedValue": 30,
+        "realizedRisk": 0,
+        "checkTicks": 3,
+        "riskReduced": 10,
+        "unfinishedPenalty": 0,
+        "netValue": 30
+      }
+    }
+  ]
+}

@@ -1,0 +1,1480 @@
+{
+  "seed": "RI-189",
+  "results": [
+    {
+      "scenario": "volume",
+      "strategy": "fast",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "volume",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 8,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "s1",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s4",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 8,
+        "remainingBudget": 0,
+        "shippedValue": 40,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "s1",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          },
+          {
+            "id": "s4",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:s1:fast+3",
+          "t2:s1:fast+3,ship:10",
+          "t3:s2:fast+3",
+          "t4:s2:fast+3,ship:10",
+          "t5:s3:fast+3",
+          "t6:s3:fast+3,ship:10",
+          "t7:s4:fast+3",
+          "t8:s4:fast+3,ship:10"
+        ],
+        "netValue": 32
+      }
+    },
+    {
+      "scenario": "volume",
+      "strategy": "precise",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "volume",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 8,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "s1",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s4",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "precise"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 8,
+        "remainingBudget": 0,
+        "shippedValue": 20,
+        "reviewLoad": 6,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "s1",
+            "model": "precise",
+            "shipped": 10,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "model": "precise",
+            "shipped": 10,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:s1:precise+2",
+          "t2:s1:precise+2",
+          "t3:s1:precise+2,ship:10,review+3",
+          "t4:s2:precise+2",
+          "t5:s2:budget:fallback+1",
+          "t6:s2:budget:fallback+1",
+          "t7:s2:budget:fallback+1",
+          "t8:s2:budget:fallback+1,ship:10,review+3"
+        ],
+        "netValue": 6
+      }
+    },
+    {
+      "scenario": "volume",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "volume",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 8,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "s1",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s4",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "none"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 0,
+        "remainingBudget": 8,
+        "shippedValue": 10,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "s1",
+            "model": "none",
+            "shipped": 10,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:s1:none+1",
+          "t2:s1:none+1",
+          "t3:s1:none+1",
+          "t4:s1:none+1",
+          "t5:s1:none+1",
+          "t6:s1:none+1,ship:10",
+          "t7:s2:none+1",
+          "t8:s2:none+1"
+        ],
+        "netValue": 10
+      }
+    },
+    {
+      "scenario": "hard",
+      "strategy": "fast",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "hard",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 16,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c3",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 6,
+        "remainingBudget": 10,
+        "shippedValue": 18,
+        "reviewLoad": 0,
+        "defects": ["c1", "c2", "c3"],
+        "shippedJobs": [
+          {
+            "id": "c1",
+            "model": "fast",
+            "shipped": 6,
+            "defect": true
+          },
+          {
+            "id": "c2",
+            "model": "fast",
+            "shipped": 6,
+            "defect": true
+          },
+          {
+            "id": "c3",
+            "model": "fast",
+            "shipped": 6,
+            "defect": true
+          }
+        ],
+        "resolutions": [
+          "t1:c1:fast+3",
+          "t2:c1:fast+3,ship:6,defect",
+          "t3:c2:fast+3",
+          "t4:c2:fast+3,ship:6,defect",
+          "t5:c3:fast+3",
+          "t6:c3:fast+3,ship:6,defect",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 12
+      }
+    },
+    {
+      "scenario": "hard",
+      "strategy": "precise",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "hard",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 16,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c3",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "precise"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 16,
+        "remainingBudget": 0,
+        "shippedValue": 36,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "c1",
+            "model": "precise",
+            "shipped": 18,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "model": "precise",
+            "shipped": 18,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:c1:precise+2",
+          "t2:c1:precise+2",
+          "t3:c1:precise+2,ship:18",
+          "t4:c2:precise+2",
+          "t5:c2:precise+2",
+          "t6:c2:precise+2,ship:18",
+          "t7:c3:precise+2",
+          "t8:c3:precise+2"
+        ],
+        "netValue": 20
+      }
+    },
+    {
+      "scenario": "hard",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "hard",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 16,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c3",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "none"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 0,
+        "remainingBudget": 16,
+        "shippedValue": 18,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "c1",
+            "model": "none",
+            "shipped": 18,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:c1:none+1",
+          "t2:c1:none+1",
+          "t3:c1:none+1",
+          "t4:c1:none+1",
+          "t5:c1:none+1",
+          "t6:c1:none+1,ship:18",
+          "t7:c2:none+1",
+          "t8:c2:none+1"
+        ],
+        "netValue": 18
+      }
+    },
+    {
+      "scenario": "mixed",
+      "strategy": "match",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "mixed",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 10,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "s1",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "assign",
+          "model": "precise"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "assign",
+          "model": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 10,
+        "remainingBudget": 0,
+        "shippedValue": 38,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "s1",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "model": "precise",
+            "shipped": 18,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:s1:fast+3",
+          "t2:s1:fast+3,ship:10",
+          "t3:c2:precise+2",
+          "t4:c2:precise+2",
+          "t5:c2:precise+2,ship:18",
+          "t6:s3:fast+3",
+          "t7:s3:fast+3,ship:10",
+          "t8:idle"
+        ],
+        "netValue": 28
+      }
+    },
+    {
+      "scenario": "mixed",
+      "strategy": "fast",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "mixed",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 10,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "s1",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 6,
+        "remainingBudget": 4,
+        "shippedValue": 26,
+        "reviewLoad": 0,
+        "defects": ["c2"],
+        "shippedJobs": [
+          {
+            "id": "s1",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "model": "fast",
+            "shipped": 6,
+            "defect": true
+          },
+          {
+            "id": "s3",
+            "model": "fast",
+            "shipped": 10,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:s1:fast+3",
+          "t2:s1:fast+3,ship:10",
+          "t3:c2:fast+3",
+          "t4:c2:fast+3,ship:6,defect",
+          "t5:s3:fast+3",
+          "t6:s3:fast+3,ship:10",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 20
+      }
+    },
+    {
+      "scenario": "mixed",
+      "strategy": "precise",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "mixed",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 10,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "s1",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "precise"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "assign",
+          "model": "none"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 10,
+        "remainingBudget": 0,
+        "shippedValue": 28,
+        "reviewLoad": 3,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "s1",
+            "model": "precise",
+            "shipped": 10,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "model": "precise",
+            "shipped": 18,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:s1:precise+2",
+          "t2:s1:precise+2",
+          "t3:s1:precise+2,ship:10,review+3",
+          "t4:c2:precise+2",
+          "t5:c2:precise+2",
+          "t6:c2:budget:fallback+1",
+          "t7:c2:budget:fallback+1,ship:18",
+          "t8:s3:none+1"
+        ],
+        "netValue": 15
+      }
+    },
+    {
+      "scenario": "mixed",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "mixed",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 10,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "s1",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "c2",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s3",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "none"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 0,
+        "remainingBudget": 10,
+        "shippedValue": 10,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "s1",
+            "model": "none",
+            "shipped": 10,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:s1:none+1",
+          "t2:s1:none+1",
+          "t3:s1:none+1",
+          "t4:s1:none+1",
+          "t5:s1:none+1",
+          "t6:s1:none+1,ship:10",
+          "t7:c2:none+1",
+          "t8:c2:none+1"
+        ],
+        "netValue": 10
+      }
+    },
+    {
+      "scenario": "broke",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "broke",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 1,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "none"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 0,
+        "remainingBudget": 1,
+        "shippedValue": 18,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "c1",
+            "model": "none",
+            "shipped": 18,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:c1:none+1",
+          "t2:c1:none+1",
+          "t3:c1:none+1",
+          "t4:c1:none+1",
+          "t5:c1:none+1",
+          "t6:c1:none+1,ship:18",
+          "t7:s2:none+1",
+          "t8:s2:none+1"
+        ],
+        "netValue": 18
+      }
+    },
+    {
+      "scenario": "broke",
+      "strategy": "fast",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "broke",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 1,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "model": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "assign",
+          "model": "none"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 1,
+        "remainingBudget": 0,
+        "shippedValue": 6,
+        "reviewLoad": 0,
+        "defects": ["c1"],
+        "shippedJobs": [
+          {
+            "id": "c1",
+            "model": "fast",
+            "shipped": 6,
+            "defect": true
+          }
+        ],
+        "resolutions": [
+          "t1:c1:fast+3",
+          "t2:c1:budget:fallback+1",
+          "t3:c1:budget:fallback+1",
+          "t4:c1:budget:fallback+1,ship:6,defect",
+          "t5:s2:none+1",
+          "t6:s2:none+1",
+          "t7:s2:none+1",
+          "t8:s2:none+1"
+        ],
+        "netValue": 5
+      }
+    },
+    {
+      "scenario": "broke",
+      "strategy": "precise",
+      "initial": {
+        "version": 1,
+        "seed": "RI-189",
+        "scenario": "broke",
+        "tick": 0,
+        "horizon": 8,
+        "budget": 1,
+        "spent": 0,
+        "pendingModel": null,
+        "reviewLoad": 0,
+        "shippedValue": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "kind": "complex",
+            "work": 6,
+            "progress": 0,
+            "value": 18,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          },
+          {
+            "id": "s2",
+            "kind": "simple",
+            "work": 6,
+            "progress": 0,
+            "value": 10,
+            "model": null,
+            "shipped": null,
+            "defect": false
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "spent": 0,
+        "remainingBudget": 1,
+        "shippedValue": 18,
+        "reviewLoad": 0,
+        "defects": [],
+        "shippedJobs": [
+          {
+            "id": "c1",
+            "model": "none",
+            "shipped": 18,
+            "defect": false
+          }
+        ],
+        "resolutions": [
+          "t1:c1:default-none+1",
+          "t2:c1:none+1",
+          "t3:c1:none+1",
+          "t4:c1:none+1",
+          "t5:c1:none+1",
+          "t6:c1:none+1,ship:18",
+          "t7:s2:default-none+1",
+          "t8:s2:none+1"
+        ],
+        "netValue": 18
+      }
+    }
+  ]
+}

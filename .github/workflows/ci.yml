@@ -13,23 +13,39 @@ jobs:
     name: Determine whether CI is needed
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: read
+      pull-requests: read
     outputs:
       run_checks: ${{ steps.scope.outputs.run_checks }}
+      superseded: ${{ steps.supersede.outputs.superseded }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+      # E2E の job concurrency は ci_scope 完了後に並ぶため、古い run が後から入ると
+      # 最新の E2E を取り消せる。run ID が小さい実行だけをここで止める。
+      - name: Cancel superseded pull request runs
+        id: supersede
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          RUN_ID: ${{ github.run_id }}
+        run: node scripts/cancel-superseded-pr-runs.mjs
       - uses: nimiusrd/should-run-checks@3a88e3c3376253ffd2c480b5050d14151155ccb6 # v0.3.0
         id: scope
+        if: steps.supersede.outputs.superseded != 'true'
         with:
           config-path: .github/ci-skip-rules.toml
 
   test:
     name: Lint & Unit (Vitest)
     needs: ci_scope
-    if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
+    if: ${{ always() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,12 +70,8 @@ jobs:
   e2e:
     name: E2E (Playwright)
     needs: ci_scope
-    if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
-    # 同一PRの連続 push では、実行中・待ちの古い E2E を打ち切って最新コミットだけを残す。
-    # main への push はコミット SHA ごとに分け、別コミットの E2E は止めない。
-    concurrency:
-      group: ci-e2e-${{ github.event.pull_request.number || github.sha }}
-      cancel-in-progress: true
+    # pull_request では、この run が最新コミットだと判定できたときだけ E2E を始める。
+    if: ${{ always() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' && (github.event_name != 'pull_request' || needs.ci_scope.outputs.superseded == 'false') }}
     runs-on: ubuntu-latest
     # ブラウザ準備・2並列の全E2E・本番チャンク復旧検証まで含めた実行枠。
     timeout-minutes: 25

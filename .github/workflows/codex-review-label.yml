@@ -4,75 +4,113 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [synchronize]
+    types: [synchronize, reopened]
   pull_request_review:
     types: [submitted]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 再判定するPR番号
+        required: true
+        type: number
 
 permissions: {}
 
-concurrency:
-  group: codex-review-label-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: false
-
 env:
   LABEL: codex/指摘なし
-  LABEL_DESCRIPTION: Codexレビューが現在のheadで大きな指摘なしと判定。新しいpushまたはCodexの指摘で自動で外れる。
+  LABEL_DESCRIPTION: 現在のheadでCodexが大きな指摘なしと判定し、Codexの未解決スレッドもない。詳細はActionsのCodex review label。
   LABEL_COLOR: 0E8A16
+  CODEX_LOGIN: chatgpt-codex-connector
+  NO_FINDINGS_PREFIX: "Codex Review: Didn't find any major issues"
 
 jobs:
-  add:
-    name: Add label on no-findings comment
+  sync:
+    name: Sync label with Codex review state
     if: >-
-      github.event_name == 'issue_comment' &&
-      github.event.issue.pull_request &&
-      github.event.comment.user.login == 'chatgpt-codex-connector[bot]' &&
-      startsWith(github.event.comment.body, 'Codex Review: Didn''t find any major issues')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       github.event.comment.user.login == 'chatgpt-codex-connector[bot]') ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       (github.event_name == 'pull_request' ||
+        github.event.review.user.login == 'chatgpt-codex-connector[bot]'))
     runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
+    concurrency:
+      group: codex-review-label-${{ github.event.issue.number || github.event.pull_request.number || inputs.pr_number }}
+      cancel-in-progress: false
     steps:
-      - name: Add label when the reviewed commit is the current head
+      - name: Evaluate Codex review state and update label
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.issue.number }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number || inputs.pr_number }}
         run: |
-          reviewed=$(printf '%s' "$COMMENT_BODY" | grep -oP 'Reviewed commit:\*\* `\K[0-9a-f]{7,40}' | head -n 1 || true)
-          if [ -z "$reviewed" ]; then
-            echo "::warning::Reviewed commit が見つからないためラベルを付けません"
+          set -euo pipefail
+          bot="${CODEX_LOGIN}[bot]"
+
+          pr=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
+          if [ "$(jq -r .state <<<"$pr")" != open ]; then
+            echo "PR #$PR_NUMBER is not open"
             exit 0
           fi
-          head_sha=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq .head.sha)
-          case "$head_sha" in
-            "$reviewed"*) ;;
-            *)
-              echo "::notice::レビュー対象 $reviewed が現在のhead $head_sha と異なるためラベルを付けません"
-              exit 0
-              ;;
-          esac
-          gh label create "$LABEL" --repo "$REPO" --description "$LABEL_DESCRIPTION" --color "$LABEL_COLOR" --force
-          gh api "repos/$REPO/issues/$PR_NUMBER/labels" -f "labels[]=$LABEL" --silent
+          head_sha=$(jq -r .head.sha <<<"$pr")
 
-  remove:
-    name: Remove label when the review is outdated
-    if: >-
-      github.event_name != 'issue_comment' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      contains(github.event.pull_request.labels.*.name, 'codex/指摘なし') &&
-      (github.event_name == 'pull_request' ||
-       github.event.review.user.login == 'chatgpt-codex-connector[bot]')
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-    steps:
-      - name: Remove label
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          encoded=$(jq -rn --arg v "$LABEL" '$v | @uri')
-          gh api -X DELETE "repos/$REPO/issues/$PR_NUMBER/labels/$encoded" --silent || true
+          no_findings_at=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" |
+            jq -rs --arg bot "$bot" --arg head "$head_sha" --arg prefix "$NO_FINDINGS_PREFIX" '
+              [ add // [] | .[]
+                | select(.user.login == $bot and (.body | startswith($prefix)))
+                | (.body | capture("Reviewed commit:\\*\\* `(?<sha>[0-9a-f]{7,40})`").sha) as $sha
+                | select($head | startswith($sha))
+                | .created_at ] | max // ""')
+
+          findings_at=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews?per_page=100" |
+            jq -rs --arg bot "$bot" --arg head "$head_sha" '
+              [ add // [] | .[]
+                | select(.user.login == $bot and .commit_id == $head)
+                | .submitted_at ] | max // ""')
+
+          unresolved=$(gh api graphql --paginate \
+            -F owner="${REPO%%/*}" -F name="${REPO#*/}" -F number="$PR_NUMBER" \
+            -f query='
+              query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+                repository(owner: $owner, name: $name) {
+                  pullRequest(number: $number) {
+                    reviewThreads(first: 100, after: $endCursor) {
+                      pageInfo { hasNextPage endCursor }
+                      nodes { isResolved comments(first: 1) { nodes { author { login } } } }
+                    }
+                  }
+                }
+              }' |
+            jq -s --arg login "$CODEX_LOGIN" '
+              [ .[].data.repository.pullRequest.reviewThreads.nodes[]
+                | select((.isResolved | not) and .comments.nodes[0].author.login == $login) ]
+              | length')
+
+          if [ -z "$no_findings_at" ]; then
+            reason="現在のhead ${head_sha:0:10} にCodexの指摘なし判定がない"
+          elif [[ -n "$findings_at" && "$findings_at" > "$no_findings_at" ]]; then
+            reason="現在のhead ${head_sha:0:10} に指摘なし判定より新しいCodexの指摘レビューがある"
+          elif [ "$unresolved" -gt 0 ]; then
+            reason="Codexの未解決スレッドが ${unresolved} 件ある"
+          else
+            reason=""
+          fi
+
+          has_label=$(gh api "repos/$REPO/issues/$PR_NUMBER/labels" --jq '.[].name' |
+            grep -Fxc -- "$LABEL" || true)
+          if [ -z "$reason" ]; then
+            echo "PR #$PR_NUMBER: 指摘なし (head ${head_sha:0:10})" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$has_label" = 0 ]; then
+              gh label create "$LABEL" --repo "$REPO" --description "$LABEL_DESCRIPTION" --color "$LABEL_COLOR" --force
+              gh api "repos/$REPO/issues/$PR_NUMBER/labels" -f "labels[]=$LABEL" --silent
+            fi
+          else
+            echo "PR #$PR_NUMBER: ラベル対象外 ($reason)" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$has_label" != 0 ]; then
+              gh api -X DELETE "repos/$REPO/issues/$PR_NUMBER/labels/$(jq -rn --arg v "$LABEL" '$v | @uri')" --silent
+            fi
+          fi

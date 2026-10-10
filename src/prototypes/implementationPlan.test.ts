@@ -86,7 +86,14 @@ describe('RI-190 計画してから実装', () => {
     const before = structuredClone(initial);
     for (let count = 0; count < 30; count += 1) viewPlan(initial);
     expect(initial).toEqual(before);
-    expect(viewPlan(initial)).toMatchObject({ tick: 0, findings: [], planningTicks: 0 });
+    const viewed = viewPlan(initial);
+    expect(viewed).toMatchObject({ tick: 0, findings: [], planningTicks: 0 });
+    viewed.planned.push('extra');
+    viewed.findings.push('extra');
+    viewed.wandered.push('extra');
+    expect(initial.planned).toEqual([]);
+    expect(initial.findings).toEqual([]);
+    expect(initial.wandered).toEqual([]);
     const ended = structuredClone(initial);
     ended.board.tick = ended.board.horizon;
     expect(apply(ended, { type: 'plan' })).toBe(ended);

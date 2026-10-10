@@ -56,9 +56,9 @@ export function viewPlan(state: PlanState) {
     horizon: state.board.horizon,
     planningId: state.planningId,
     planningTicks: state.planningTicks,
-    planned: state.planned,
-    findings: state.findings,
-    wandered: state.wandered,
+    planned: [...state.planned],
+    findings: [...state.findings],
+    wandered: [...state.wandered],
     jobs: state.board.jobs.map((job) => ({
       id: job.id,
       kind: job.kind,

@@ -1,0 +1,655 @@
+{
+  "seed": "RI-175",
+  "results": [
+    {
+      "progress": 4,
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 4,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "wait"
+        },
+        {
+          "type": "wait"
+        },
+        {
+          "type": "wait"
+        },
+        {
+          "type": "wait"
+        }
+      ],
+      "result": {
+        "value": 22,
+        "penalty": 6,
+        "focusSpent": 0,
+        "slotFree": true,
+        "featureProgress": 6,
+        "featureStage": "done",
+        "urgentCompletedTick": 4,
+        "unfinishedValue": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "progress": 4,
+      "strategy": "checkpoint",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 4,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "checkpoint"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "resume"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "wait"
+        },
+        {
+          "type": "wait"
+        }
+      ],
+      "result": {
+        "value": 36,
+        "penalty": 0,
+        "focusSpent": 2,
+        "slotFree": true,
+        "featureProgress": 6,
+        "featureStage": "done",
+        "urgentCompletedTick": 3,
+        "unfinishedValue": 0,
+        "netValue": 34
+      }
+    },
+    {
+      "progress": 4,
+      "strategy": "reset",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 4,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "reset"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "start",
+          "id": "feature"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "penalty": 0,
+        "focusSpent": 0,
+        "slotFree": false,
+        "featureProgress": 5,
+        "featureStage": "coding",
+        "urgentCompletedTick": 3,
+        "unfinishedValue": 22,
+        "netValue": 14
+      }
+    },
+    {
+      "progress": 4,
+      "strategy": "restart",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 4,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "checkpoint"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "restart",
+          "id": "feature"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "penalty": 0,
+        "focusSpent": 1,
+        "slotFree": false,
+        "featureProgress": 4,
+        "featureStage": "coding",
+        "urgentCompletedTick": 3,
+        "unfinishedValue": 22,
+        "netValue": 13
+      }
+    },
+    {
+      "progress": 1,
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 1,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "wait"
+        }
+      ],
+      "result": {
+        "value": 22,
+        "penalty": 6,
+        "focusSpent": 0,
+        "slotFree": true,
+        "featureProgress": 6,
+        "featureStage": "done",
+        "urgentCompletedTick": 7,
+        "unfinishedValue": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "progress": 1,
+      "strategy": "checkpoint",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 1,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "checkpoint"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "resume"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "penalty": 0,
+        "focusSpent": 2,
+        "slotFree": false,
+        "featureProgress": 5,
+        "featureStage": "coding",
+        "urgentCompletedTick": 3,
+        "unfinishedValue": 22,
+        "netValue": 12
+      }
+    },
+    {
+      "progress": 1,
+      "strategy": "reset",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 1,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "reset"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "start",
+          "id": "feature"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "penalty": 0,
+        "focusSpent": 0,
+        "slotFree": false,
+        "featureProgress": 5,
+        "featureStage": "coding",
+        "urgentCompletedTick": 3,
+        "unfinishedValue": 22,
+        "netValue": 14
+      }
+    },
+    {
+      "progress": 1,
+      "strategy": "restart",
+      "initial": {
+        "version": 1,
+        "seed": "RI-175",
+        "tick": 0,
+        "horizon": 8,
+        "focus": 4,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "feature",
+            "kind": "feature",
+            "work": 6,
+            "progress": 1,
+            "value": 22,
+            "deadline": 7,
+            "lateValue": 4,
+            "missPenalty": 0,
+            "stage": "coding",
+            "completedTick": null
+          },
+          {
+            "id": "urgent",
+            "kind": "urgent",
+            "work": 2,
+            "progress": 0,
+            "value": 14,
+            "deadline": 3,
+            "lateValue": 0,
+            "missPenalty": 6,
+            "stage": "backlog",
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "checkpoint"
+        },
+        {
+          "type": "start",
+          "id": "urgent"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "restart",
+          "id": "feature"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "penalty": 0,
+        "focusSpent": 1,
+        "slotFree": false,
+        "featureProgress": 4,
+        "featureStage": "coding",
+        "urgentCompletedTick": 3,
+        "unfinishedValue": 22,
+        "netValue": 13
+      }
+    }
+  ]
+}

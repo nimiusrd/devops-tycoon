@@ -935,12 +935,24 @@ export function TitleScreen({
                 </button>
               )}
               {onOpenMetaShop && (
-                <button type="button" data-testid="open-meta-shop" onClick={onOpenMetaShop}>
+                <button
+                  type="button"
+                  data-testid="open-meta-shop"
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
+                  onClick={onOpenMetaShop}
+                >
                   研修ツール解禁（メタショップ）
                 </button>
               )}
               {onOpenDeckPolicy && (
-                <button type="button" data-testid="open-deck-policy" onClick={onOpenDeckPolicy}>
+                <button
+                  type="button"
+                  data-testid="open-deck-policy"
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
+                  onClick={onOpenDeckPolicy}
+                >
                   研修方針
                   {meta.preferredCardIds.length > 0 ? `（${meta.preferredCardIds.length}）` : ''}
                 </button>
@@ -949,6 +961,8 @@ export function TitleScreen({
                 <button
                   type="button"
                   data-testid="open-card-collection"
+                  disabled={runLaunchPending}
+                  title={startConditionTitle}
                   onClick={onOpenCardCollection}
                 >
                   カードコレクション

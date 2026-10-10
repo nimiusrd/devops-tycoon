@@ -309,7 +309,9 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             dirty = true;
           }
           if (revertRecord && seq <= discardThroughSeq) {
-            publish({ ...snapshot, record: revertRecord, saveFailed: true });
+            const restored =
+              followChanges.length > 0 ? applyQueued(revertRecord, followChanges) : revertRecord;
+            publish({ ...snapshot, record: restored, saveFailed: true });
             revertRecord = null;
             revertSourceDraft = null;
             revertTypedDraft = null;

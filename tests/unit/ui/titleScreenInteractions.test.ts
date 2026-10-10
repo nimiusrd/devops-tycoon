@@ -517,6 +517,10 @@ describe('TitleScreen のラン開始条件', () => {
       onStartDaily: vi.fn(),
       onResume: vi.fn(),
       onOpenReplays: vi.fn(),
+      onOpenMetaShop: vi.fn(),
+      onOpenDeckPolicy: vi.fn(),
+      onOpenCardCollection: vi.fn(),
+      onOpenHelp: vi.fn(),
       onImportRunSave: vi.fn(async () => ({ ok: true, message: '' })),
       runLaunchPending: true,
       onHypothesisDraftChange: vi.fn(),
@@ -526,6 +530,9 @@ describe('TitleScreen のラン開始条件', () => {
       'start-daily-run',
       'resume-run',
       'open-replays',
+      'open-meta-shop',
+      'open-deck-policy',
+      'open-card-collection',
       'run-save-file-button',
       'difficulty-normal',
       'trial-low-focus',
@@ -539,6 +546,7 @@ describe('TitleScreen のラン開始条件', () => {
       expect(screen.find(id).props.disabled, id).toBe(true);
     }
     expect(screen.find('hypothesis-note-input').props.disabled).not.toBe(true);
+    expect(screen.find('open-help').props.disabled).not.toBe(true);
     expect(screen.find('difficulty-normal').props.title).toBe('開始中は条件を変えられません');
     expect(screen.find('start-recipe-apply').props.className).toBe('btn is-launch-locked');
     expect(screen.find('title').props.className).toContain('title-launch-pending');
@@ -553,6 +561,7 @@ describe('TitleScreen のラン開始条件', () => {
     expect(screen.find('start-recipe-apply').props.className).toBe('btn');
     expect(screen.find('resume-run').props.disabled).toBe(false);
     expect(screen.find('open-replays').props.disabled).toBe(false);
+    expect(screen.find('open-meta-shop').props.disabled).toBe(false);
     expect(screen.find('title-launch-dock').props['aria-busy']).toBeUndefined();
   });
 });

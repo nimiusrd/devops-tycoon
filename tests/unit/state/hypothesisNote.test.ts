@@ -811,6 +811,47 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.draft?.text).toBe('仮説 A 追記 B');
   });
 
+  it('取消後に書いた下書きは、遅れて失敗しても残る', async () => {
+    let release = () => {};
+    let gate = Promise.resolve();
+    let fail = false;
+    const arm = () => {
+      gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    const memory = new MemoryHypothesisNoteStorage();
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        await gate;
+        if (fail) {
+          fail = false;
+          throw new Error('quota');
+        }
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    store.update((record) => editHypothesisDraft(record, '仮説 A', 1));
+    await store.flush();
+    const before = store.getSnapshot().record;
+    arm();
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    store.revertAbandonedStart(before);
+    fail = true;
+    store.update((record) => editHypothesisDraft(record, '取消後', 9));
+    release();
+    expect(await saving).toBe('failed');
+    await store.flush();
+    expect(store.getSnapshot().record.draft?.text).toBe('取消後');
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('取消後');
+  });
+
   it('固定の成功は、直後の下書き保存失敗では失敗にしない', async () => {
     let release = () => {};
     let gate = Promise.resolve();

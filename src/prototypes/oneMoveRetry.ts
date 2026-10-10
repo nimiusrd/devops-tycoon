@@ -267,16 +267,21 @@ export function createRetryRecord(scenario: RetryScenario, seed = 1): RetryRecor
 
 export const RETRY_SEEDS = [1, 2, 3, 4, 5] as const;
 
+const BRANCH_CANDIDATES = ['review', 'rest'] as const;
+
 export function compareRetryBranches(seeds: readonly number[] = RETRY_SEEDS) {
   return seeds.flatMap((seed) =>
     (['jam', 'fatigue'] as const).map((scenario) => {
       const record = createRetryRecord(scenario, seed);
       const turning = findTurningPoint(record)!;
       const original = summarizeRetry(runRetryMoves(record.setup, record.moves!));
-      const branches = (['review', 'rest'] as const).flatMap((to) =>
-        (['fixed', 'free'] as const).map((followUp) => {
-          const branch = branchAtMove(record, turning.index, to, followUp)!;
-          return { to, followUp, moves: branch.state.moves, result: settleBranch(branch).result };
+      const from = record.moves![turning.index];
+      // 転機の元の手は same-move で拒否される。候補に残すと branch が null になり比較が落ちる。
+      const branches = BRANCH_CANDIDATES.filter((to) => to !== from).flatMap((to) =>
+        (['fixed', 'free'] as const).flatMap((followUp) => {
+          const branch = branchAtMove(record, turning.index, to, followUp);
+          if (!branch) return [];
+          return [{ to, followUp, moves: branch.state.moves, result: settleBranch(branch).result }];
         }),
       );
       return { scenario, seed, record, turning, original, branches };

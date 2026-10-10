@@ -7,6 +7,7 @@ import {
   compareRetryBranches,
   createRetryPrototype as create,
   createRetryRecord,
+  findTurningPoint,
   restorableTicks,
   restoreBefore,
   runRetryMoves,
@@ -136,6 +137,21 @@ describe('RI-290 一手だけ変える再挑戦', () => {
         }
         expect(summarizeRetry(live)).toEqual(branch.result);
       }
+  });
+
+  it('転機の元の手と同じ候補は比較から外し、任意seedでも落ちない', () => {
+    const record = createRetryRecord('fatigue', 7);
+    expect(findTurningPoint(record)).toEqual({ index: 2, kind: 'fatigue' });
+    expect(record.moves![2]).toBe('review');
+    const rows = compareRetryBranches([7]);
+    const fatigue = rows.find((row) => row.scenario === 'fatigue')!;
+    expect(fatigue.branches.map((branch) => branch.to)).toEqual(['rest', 'rest']);
+    expect(fatigue.branches.map((branch) => branch.followUp)).toEqual(['fixed', 'free']);
+    for (const row of compareRetryBranches(Array.from({ length: 30 }, (_, index) => index + 1))) {
+      const from = row.record.moves![row.turning.index];
+      expect(row.branches.length).toBeGreaterThan(0);
+      expect(row.branches.every((branch) => branch.to !== from)).toBe(true);
+    }
   });
 
   it('期末後の入力は無変化で返す', () => {

@@ -75,6 +75,7 @@ function openJob(state: PlanState) {
 
 export function applyPlanInput(state: PlanState, input: PlanInput): PlanState {
   if (state.board.tick >= state.board.horizon) return state;
+  if (state.planningId !== null && input.type === 'tick') return state;
   if (input.type === 'plan') return planTick(state);
   if (input.type === 'assign') {
     const board = applyModelInput(state.board, input);

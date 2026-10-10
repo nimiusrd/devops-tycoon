@@ -24,6 +24,8 @@ describe('RI-190 計画してから実装', () => {
     expect(started.board.jobs[0]).toMatchObject({ progress: 0, work: JOB_WORK, shipped: null });
     expect(started).toMatchObject({ planningTicks: 1, findings: [], planned: [] });
     expect(started.board.tick).toBe(1);
+    expect(apply(started, { type: 'tick' })).toBe(started);
+    expect(started.board.jobs[0]).toMatchObject({ progress: 0, work: JOB_WORK });
     const sibling = withSibling(started, {
       id: 's9',
       kind: 'simple',

@@ -13,16 +13,32 @@ jobs:
     name: Determine whether CI is needed
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: read
+      pull-requests: read
     outputs:
       run_checks: ${{ steps.scope.outputs.run_checks }}
+      superseded: ${{ steps.supersede.outputs.superseded }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+      # より小さい run ID だけを止める。より大きい実行中の run がある再実行は自分を止める。
+      # 取り消し API が使えないフォークでは、E2E の concurrency が同時実行を防ぐ。
+      - name: Cancel superseded pull request runs
+        id: supersede
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          RUN_ID: ${{ github.run_id }}
+        run: node scripts/cancel-superseded-pr-runs.mjs
       - uses: nimiusrd/should-run-checks@d7138ff8549a9410601e972c41f0f1257514f390 # v1.0.0
         id: scope
+        if: steps.supersede.outputs.superseded != 'true'
         with:
           skip-extensions: |
             .md
@@ -32,7 +48,7 @@ jobs:
   test:
     name: Lint & Unit (Vitest)
     needs: ci_scope
-    if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
+    if: ${{ always() && !cancelled() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,7 +73,15 @@ jobs:
   e2e:
     name: E2E (Playwright)
     needs: ci_scope
-    if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
+    # pull_request では、この run が最新コミットだと判定できたときだけ E2E を始める。
+    # always() だけだと workflow の取り消し後もジョブが続くため、cancelled では止める。
+    if: ${{ always() && !cancelled() && needs.ci_scope.outputs.superseded != 'true' && needs.ci_scope.outputs.run_checks != 'false' && (github.event_name != 'pull_request' || needs.ci_scope.outputs.superseded == 'false') }}
+    # フォークの GITHUB_TOKEN は run を取り消せない。待ち行列で同時実行だけを防ぎ、
+    # 古い run が後から入っても実行中の E2E は取り消さない。
+    concurrency:
+      group: ci-e2e-${{ github.event.pull_request.number || github.sha }}
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     # ブラウザ準備・2並列の全E2E・本番チャンク復旧検証まで含めた実行枠。
     timeout-minutes: 25

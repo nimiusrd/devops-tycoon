@@ -1,0 +1,207 @@
+{
+  "seed": "RI-203",
+  "results": [
+    {
+      "board": "rush",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-203",
+        "board": "rush",
+        "tick": 0,
+        "horizon": 3,
+        "loadWeight": 1,
+        "value": 0,
+        "load": 0,
+        "transitions": 0,
+        "person": {
+          "id": "ren",
+          "traits": ["megaPrMaker"],
+          "experience": 0
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "id": "ren",
+        "traits": ["megaPrMaker"],
+        "experience": 0,
+        "transitions": 0,
+        "value": 18,
+        "load": 12,
+        "score": 6,
+        "effect": {
+          "trait": "megaPrMaker",
+          "value": 6,
+          "load": 4
+        }
+      }
+    },
+    {
+      "board": "rush",
+      "strategy": "train",
+      "initial": {
+        "version": 1,
+        "seed": "RI-203",
+        "board": "rush",
+        "tick": 0,
+        "horizon": 3,
+        "loadWeight": 1,
+        "value": 0,
+        "load": 0,
+        "transitions": 0,
+        "person": {
+          "id": "ren",
+          "traits": ["megaPrMaker"],
+          "experience": 0
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split"
+        },
+        {
+          "type": "split"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "id": "ren",
+        "traits": ["prSplitter"],
+        "experience": 2,
+        "transitions": 1,
+        "value": 4,
+        "load": 1,
+        "score": 3,
+        "effect": {
+          "trait": "prSplitter",
+          "value": 4,
+          "load": 1
+        }
+      }
+    },
+    {
+      "board": "congested",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-203",
+        "board": "congested",
+        "tick": 0,
+        "horizon": 6,
+        "loadWeight": 2,
+        "value": 0,
+        "load": 0,
+        "transitions": 0,
+        "person": {
+          "id": "ren",
+          "traits": ["megaPrMaker"],
+          "experience": 0
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "id": "ren",
+        "traits": ["megaPrMaker"],
+        "experience": 0,
+        "transitions": 0,
+        "value": 36,
+        "load": 24,
+        "score": -12,
+        "effect": {
+          "trait": "megaPrMaker",
+          "value": 6,
+          "load": 4
+        }
+      }
+    },
+    {
+      "board": "congested",
+      "strategy": "train",
+      "initial": {
+        "version": 1,
+        "seed": "RI-203",
+        "board": "congested",
+        "tick": 0,
+        "horizon": 6,
+        "loadWeight": 2,
+        "value": 0,
+        "load": 0,
+        "transitions": 0,
+        "person": {
+          "id": "ren",
+          "traits": ["megaPrMaker"],
+          "experience": 0
+        },
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split"
+        },
+        {
+          "type": "split"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "id": "ren",
+        "traits": ["prSplitter"],
+        "experience": 2,
+        "transitions": 1,
+        "value": 16,
+        "load": 4,
+        "score": 8,
+        "effect": {
+          "trait": "prSplitter",
+          "value": 4,
+          "load": 1
+        }
+      }
+    }
+  ]
+}

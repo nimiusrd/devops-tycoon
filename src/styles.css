@@ -3660,11 +3660,12 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   font-size: 12px;
   cursor: pointer;
 }
-.title-recipe-actions button:hover {
+.title-recipe-actions button:hover:not(:disabled) {
   border-color: #7edfff;
   background: #142944;
 }
 .title-recipe-actions button:disabled {
+  opacity: 0.45;
   cursor: default;
 }
 .title-recipe-status {
@@ -3715,8 +3716,11 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   animation: title-launch-dim-card 0.22s linear 150ms forwards;
 }
 .title-launch-pending .trial-chip:disabled,
-.title-launch-pending .title-recipe-text:disabled,
+.title-launch-pending .title-recipe-text:disabled {
+  animation: title-launch-dim-control 0.22s linear 150ms forwards;
+}
 .title-launch-pending .title-recipe-actions button:disabled {
+  opacity: 1;
   animation: title-launch-dim-control 0.22s linear 150ms forwards;
 }
 @keyframes title-launch-dim-card {

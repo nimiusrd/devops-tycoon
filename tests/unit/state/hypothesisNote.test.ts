@@ -806,9 +806,9 @@ describe('仮説メモの保存', () => {
     release();
     await saving;
     await store.flush();
-    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('仮説 A追記 B');
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('仮説 A 追記 B');
     expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
-    expect(store.getSnapshot().record.draft?.text).toBe('仮説 A追記 B');
+    expect(store.getSnapshot().record.draft?.text).toBe('仮説 A 追記 B');
   });
 
   it('固定の成功は、直後の下書き保存失敗では失敗にしない', async () => {

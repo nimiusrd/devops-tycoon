@@ -114,7 +114,8 @@ export function appendAbandonedHypothesisDraft(
     return abandoned;
   }
   if (!abandoned) return typed;
-  return entryFrom(`${abandoned.text}${typed.text}`, typed.writtenAt) ?? abandoned;
+  // メモは1行なので、挟んだ改行は空白になる。
+  return entryFrom(`${abandoned.text}\n${typed.text}`, typed.writtenAt) ?? abandoned;
 }
 
 /**

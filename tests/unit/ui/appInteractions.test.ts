@@ -249,8 +249,8 @@ import type { RunState } from '../../../src/sim/run/types';
 import { createRunDiagnosticInfo } from '../../../src/state/diagnosticInfo';
 import {
   HYPOTHESIS_START_SAVE_TIMEOUT_MS,
-  bindHypothesisToRun,
   editHypothesisDraft,
+  prepareHypothesis,
 } from '../../../src/state/hypothesisNote';
 import { hypothesisNoteStore } from '../../../src/state/hypothesisNotePersistence';
 import { defaultMeta } from '../../../src/state/meta';
@@ -787,16 +787,10 @@ describe('App のタイトル操作', () => {
   it('空の開始は、別タブが残した仮説の開始 ID を渡さない', async () => {
     const screen = mountApp();
     screen.phase('title');
-    const foreign = {
-      runKey: 'run-other',
-      startId: 'foreign-start',
-      beforeStart: { text: '別', writtenAt: 1 },
-      reflection: null,
-    };
-    const spy = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockImplementation(async () => {
-      hypothesisNoteStore.update((record) => ({ ...record, bound: foreign }));
-      return 'saved';
-    });
+    hypothesisNoteStore.update((record) =>
+      record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+    );
+    await hypothesisNoteStore.flush();
     try {
       await screen.invoke(
         'TitleScreen',
@@ -809,8 +803,9 @@ describe('App のタイトル操作', () => {
       const args = vi.mocked(screen.run.startRun).mock.calls[0];
       expect(args?.[4]).toBeNull();
     } finally {
-      spy.mockRestore();
-      hypothesisNoteStore.update((record) => ({ ...record, bound: null }));
+      hypothesisNoteStore.update((record) =>
+        record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+      );
       await hypothesisNoteStore.flush();
     }
   });
@@ -818,6 +813,8 @@ describe('App のタイトル操作', () => {
   it('仮説の保存が上限を超えたら、仮説なしでランを始める', async () => {
     const screen = mountApp();
     screen.phase('title');
+    hypothesisNoteStore.update((record) => editHypothesisDraft(record, '狙い', 1));
+    await hypothesisNoteStore.flush();
     vi.useFakeTimers();
     const spy = vi
       .spyOn(hypothesisNoteStore, 'applyCommitted')
@@ -885,12 +882,18 @@ describe('App のタイトル操作', () => {
   it('取り込み中に始まった仮説は、取り込み完了の解除で消さない', async () => {
     const screen = mountApp();
     hypothesisNoteStore.update((record) =>
-      bindHypothesisToRun(editHypothesisDraft(record, '前', 1), 'run-a', 'start-1'),
+      prepareHypothesis(editHypothesisDraft(record, '前', 1), 'run-a', 'start-1', {
+        text: '前',
+        writtenAt: 1,
+      }),
     );
     await hypothesisNoteStore.flush();
     vi.mocked(screen.run.importRunSaveText).mockImplementation(async () => {
       hypothesisNoteStore.update((record) =>
-        bindHypothesisToRun(editHypothesisDraft(record, '新しい', 2), 'run-b', 'start-2'),
+        prepareHypothesis(editHypothesisDraft(record, '新しい', 2), 'run-b', 'start-2', {
+          text: '新しい',
+          writtenAt: 2,
+        }),
       );
       await hypothesisNoteStore.flush();
       return { ok: true, save: makeSharedRecords().save };
@@ -899,7 +902,9 @@ describe('App のタイトル操作', () => {
       expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toMatchObject({
         ok: true,
       });
-      expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-2');
+      expect(hypothesisNoteStore.getSnapshot().record.notes['start-2']?.beforeStart.text).toBe(
+        '新しい',
+      );
     } finally {
       hypothesisNoteStore.update((record) => ({ ...record, draft: null, bound: null }));
       await hypothesisNoteStore.flush();
@@ -913,7 +918,10 @@ describe('App のタイトル操作', () => {
       save: makeSharedRecords().save,
     });
     hypothesisNoteStore.update((record) =>
-      bindHypothesisToRun(editHypothesisDraft(record, '狙い', 1), 'local-run', 'start-1'),
+      prepareHypothesis(editHypothesisDraft(record, '狙い', 1), 'local-run', 'keep-single', {
+        text: '狙い',
+        writtenAt: 1,
+      }),
     );
     await hypothesisNoteStore.flush();
     const detach = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
@@ -922,7 +930,9 @@ describe('App のタイトル操作', () => {
         ok: true,
       });
       expect(screen.game.rollbackRunImport).not.toHaveBeenCalled();
-      expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-1');
+      expect(hypothesisNoteStore.getSnapshot().record.notes['keep-single']?.beforeStart.text).toBe(
+        '狙い',
+      );
     } finally {
       detach.mockRestore();
       hypothesisNoteStore.update((record) => ({ ...record, draft: null, bound: null }));

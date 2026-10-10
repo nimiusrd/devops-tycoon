@@ -1,13 +1,22 @@
 /**
  * 開始前の仮説メモ（RI-295）。
  *
- * タイトルで書いた下書きをラン開始時に「開始前の仮説」として固定し、決着画面で
- * 再表示する。終了後の振り返りは別欄に保存し、開始前の仮説として見せない。
+ * 画面が一度に見せるのは、次のラン向けの下書き1件と、いまのランの仮説1件だけ。
+ * 保存はそれと別で、下書きと開始 ID ごとの仮説を分ける。履歴画面は持たない。
+ *
+ * 保持と削除:
+ * - 下書きは端末で1件。競合は draftRevision の比較で見る。
+ * - 仮説は startId ごとに1件。beforeStart は作成後に変えない。振り返りはその ID だけを更新する。
+ * - ノートは自動では消さない。別タブが決着画面で見ているメモを掃除で消さない。
+ * - schemaVersion 1 の bound は、startId があるときだけ notes[startId] へ移す。
+ *   startId が空の bound はどのランとも結び付けられないので移さない。
+ *
  * 開始レシピ・メタ進行・ラン状態には混ぜず、seed・候補・判定へ影響させない。
  */
 import type { RunState } from '../sim/run/types';
 
-export const HYPOTHESIS_NOTE_SCHEMA_VERSION = 1 as const;
+export const HYPOTHESIS_NOTE_SCHEMA_VERSION = 2 as const;
+const HYPOTHESIS_NOTE_SCHEMA_VERSION_V1 = 1;
 export const HYPOTHESIS_NOTE_SAVE_FAILED =
   'メモを端末に保存できませんでした。このタブを閉じるまでは表示されます。';
 export const HYPOTHESIS_START_UNRECORDED = '仮説メモを保存できなかったので、今回は記録しません';
@@ -22,31 +31,33 @@ export interface HypothesisNoteEntry {
   writtenAt: number;
 }
 
-export interface BoundHypothesisNote {
+/** 開始 ID に結び付いた仮説。beforeStart は作成後に変えない。 */
+export interface HypothesisNote {
   runKey: string;
-  /** この開始だけを指す。同じ下書きから始めても開始ごとに違う。 */
-  startId: string;
-  /** 開始時点で固定した仮説。開始後は変更しない。 */
   beforeStart: HypothesisNoteEntry;
-  /** 決着後に書いた振り返り。 */
   reflection: HypothesisNoteEntry | null;
+}
+
+/** 決着画面が読む形。startId はラン側の保存と突き合わせる。 */
+export interface BoundHypothesisNote extends HypothesisNote {
+  startId: string;
 }
 
 export interface HypothesisNoteRecord {
   schemaVersion: typeof HYPOTHESIS_NOTE_SCHEMA_VERSION;
-  /** 次に始めるランへ付ける下書き。 */
+  /** 次に始めるランへ付ける下書き。開始が採用されるまで消さない。 */
   draft: HypothesisNoteEntry | null;
-  /** 最後に始めたランへ付けた仮説。 */
-  bound: BoundHypothesisNote | null;
-  /** 端末へ書いた回数。別タブの古い全体上書きを混ぜるときに使う。 */
-  generation: number;
+  /** 下書きを書いた回数。別タブとの競合判定にだけ使う。 */
+  draftRevision: number;
+  /** 開始 ID ごとの仮説。キー以外のノートは更新しない。 */
+  notes: Record<string, HypothesisNote>;
 }
 
 export const EMPTY_HYPOTHESIS_NOTE: HypothesisNoteRecord = {
   schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION,
   draft: null,
-  bound: null,
-  generation: 0,
+  draftRevision: 0,
+  notes: {},
 };
 
 const LINE_BREAKS = /[\r\n\t\u2028\u2029]+/g;
@@ -85,63 +96,14 @@ export function hypothesisRunKey(
   ].join('|');
 }
 
-/** 取り込んだセーブには、この端末で開始した仮説を載せない。 */
-export function detachHypothesisNote(record: HypothesisNoteRecord): HypothesisNoteRecord {
-  return record.bound ? { ...record, bound: null } : record;
-}
-
-/** 解除に失敗したとき、その後の下書きは残して開始前の仮説だけ戻す。 */
-export function restoreHypothesisBound(
-  record: HypothesisNoteRecord,
-  bound: HypothesisNoteRecord['bound'],
-): HypothesisNoteRecord {
-  if (record.bound || !bound) return record;
-  return { ...record, bound };
-}
-
-/**
- * 保存を打ち切った開始の下書き。消費した本文を戻し、待ち時間の追記はその後ろへつなぐ。
- * 上限を超えた分は切り捨てる。
- */
-export function appendAbandonedHypothesisDraft(
-  abandoned: HypothesisNoteEntry | null,
-  typed: HypothesisNoteEntry | null,
-): HypothesisNoteEntry | null {
-  if (
-    !typed ||
-    (abandoned && typed.text === abandoned.text && typed.writtenAt === abandoned.writtenAt)
-  ) {
-    return abandoned;
-  }
-  if (!abandoned) return typed;
-  // メモは1行なので、挟んだ改行は空白になる。
-  return entryFrom(`${abandoned.text}\n${typed.text}`, typed.writtenAt) ?? abandoned;
-}
-
-/**
- * 開始を取り消す。この開始の仮説だけを外し、待ち時間に書いた下書きは残す。
- * 下書きを消費したままなら、開始前の下書きへ戻す。
- */
-export function undoAbandonedBind(
-  record: HypothesisNoteRecord,
-  before: HypothesisNoteRecord,
-  intendedStartId: string,
-): HypothesisNoteRecord {
-  // 空メモの固定は bound を消すだけで startId が残らない。null のままなら、この開始の解除として戻す。
-  const ours =
-    record.bound?.startId === intendedStartId || (record.bound == null && before.bound != null);
-  const bound = ours ? before.bound : record.bound;
-  const draft = ours && record.draft == null ? before.draft : record.draft;
-  if (bound === record.bound && draft === record.draft) return record;
-  return { ...record, bound, draft };
-}
-
 export function editHypothesisDraft(
   record: HypothesisNoteRecord,
   text: string,
   now: number,
 ): HypothesisNoteRecord {
-  return { ...record, draft: entryFrom(text, now) };
+  const draft = entryFrom(text, now);
+  if (sameEntry(record.draft, draft)) return record;
+  return { ...record, draft, draftRevision: record.draftRevision + 1 };
 }
 
 /** 開始ごとの識別子。同じ下書きでもタブや開始のたびに別の値になる。 */
@@ -149,37 +111,57 @@ export function newHypothesisStartId(): string {
   return globalThis.crypto.randomUUID();
 }
 
-/** ラン開始時に下書きを開始前の仮説として固定する。空なら前回の仮説だけを外す。 */
-export function bindHypothesisToRun(
+/**
+ * 開始の準備。下書きは消さない。同じ startId が既にあれば beforeStart は変えない。
+ */
+export function prepareHypothesis(
   record: HypothesisNoteRecord,
   runKey: string,
-  startId: string = newHypothesisStartId(),
+  startId: string,
+  beforeStart: HypothesisNoteEntry,
 ): HypothesisNoteRecord {
-  const draft = record.draft;
+  if (!startId || record.notes[startId]) return record;
+  const text = beforeStart.text.trim();
+  if (!text) return record;
   return {
     ...record,
-    draft: null,
-    bound: draft
-      ? {
-          runKey,
-          startId,
-          beforeStart: { text: draft.text.trim(), writtenAt: draft.writtenAt },
-          reflection: null,
-        }
-      : null,
+    notes: {
+      ...record.notes,
+      [startId]: {
+        runKey,
+        beforeStart: { text, writtenAt: beforeStart.writtenAt },
+        reflection: null,
+      },
+    },
   };
 }
 
-/** 決着後の振り返りを書く。対象ランの仮説が無いときは何もしない。 */
+/** 開始を採用できたときだけ、準備時点の版の下書きを消す。 */
+export function consumeDraftRevision(
+  record: HypothesisNoteRecord,
+  revision: number,
+): HypothesisNoteRecord {
+  if (record.draft == null || record.draftRevision !== revision) return record;
+  return { ...record, draft: null, draftRevision: record.draftRevision + 1 };
+}
+
+/** 決着後の振り返りを書く。対象の startId だけを変え、beforeStart は残す。 */
 export function writeHypothesisReflection(
   record: HypothesisNoteRecord,
   runKey: string,
+  startId: string | null,
   text: string,
   now: number,
 ): HypothesisNoteRecord {
-  const bound = record.bound;
-  if (!bound || bound.runKey !== runKey) return record;
-  return { ...record, bound: { ...bound, reflection: entryFrom(text, now) } };
+  if (!startId) return record;
+  const note = record.notes[startId];
+  if (!note || note.runKey !== runKey) return record;
+  const reflection = entryFrom(text, now);
+  if (sameEntry(note.reflection, reflection)) return record;
+  return {
+    ...record,
+    notes: { ...record.notes, [startId]: { ...note, reflection } },
+  };
 }
 
 export function hypothesisForRun(
@@ -187,9 +169,10 @@ export function hypothesisForRun(
   runKey: string,
   startId: string | null,
 ): BoundHypothesisNote | null {
-  const bound = record.bound;
-  if (!bound || !startId || bound.runKey !== runKey || bound.startId !== startId) return null;
-  return bound;
+  if (!startId) return null;
+  const note = record.notes[startId];
+  if (!note || note.runKey !== runKey) return null;
+  return { ...note, startId };
 }
 
 function normalizeEntry(raw: unknown): HypothesisNoteEntry | null {
@@ -201,170 +184,151 @@ function normalizeEntry(raw: unknown): HypothesisNoteEntry | null {
   return clean.trim() ? { text: clean, writtenAt } : null;
 }
 
+function normalizeNote(raw: unknown): HypothesisNote | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Record<string, unknown>;
+  const beforeStart = normalizeEntry(value.beforeStart);
+  if (typeof value.runKey !== 'string' || !value.runKey || !beforeStart) return null;
+  return {
+    runKey: value.runKey,
+    beforeStart: { ...beforeStart, text: beforeStart.text.trim() },
+    reflection: normalizeEntry(value.reflection),
+  };
+}
+
+function revisionOf(raw: unknown): number {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 ? raw : 0;
+}
+
 /** 保存値を検証する。読めない値は空のメモとして扱い、ゲームの進行は止めない。 */
 export function normalizeHypothesisNote(raw: unknown): HypothesisNoteRecord {
   if (!raw || typeof raw !== 'object') return EMPTY_HYPOTHESIS_NOTE;
   const value = raw as Record<string, unknown>;
-  if (value.schemaVersion !== HYPOTHESIS_NOTE_SCHEMA_VERSION) return EMPTY_HYPOTHESIS_NOTE;
+  if (
+    value.schemaVersion !== HYPOTHESIS_NOTE_SCHEMA_VERSION &&
+    value.schemaVersion !== HYPOTHESIS_NOTE_SCHEMA_VERSION_V1
+  ) {
+    return EMPTY_HYPOTHESIS_NOTE;
+  }
   const draft = normalizeEntry(value.draft);
-  let bound: BoundHypothesisNote | null = null;
-  if (value.bound && typeof value.bound === 'object') {
-    const b = value.bound as Record<string, unknown>;
-    const beforeStart = normalizeEntry(b.beforeStart);
-    if (typeof b.runKey === 'string' && b.runKey && beforeStart) {
-      bound = {
-        runKey: b.runKey,
-        startId: typeof b.startId === 'string' ? b.startId : '',
-        beforeStart: { ...beforeStart, text: beforeStart.text.trim() },
-        reflection: normalizeEntry(b.reflection),
-      };
+  const notes: Record<string, HypothesisNote> = {};
+  if (value.notes && typeof value.notes === 'object') {
+    for (const [startId, note] of Object.entries(value.notes as Record<string, unknown>)) {
+      if (!startId) continue;
+      const normalized = normalizeNote(note);
+      if (normalized) notes[startId] = normalized;
     }
   }
-  const generation =
-    typeof value.generation === 'number' &&
-    Number.isInteger(value.generation) &&
-    value.generation >= 0
-      ? value.generation
-      : 0;
-  return { schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION, draft, bound, generation };
+  if (value.schemaVersion === HYPOTHESIS_NOTE_SCHEMA_VERSION_V1) {
+    const legacy = normalizeNote(value.bound);
+    const legacyId =
+      value.bound && typeof value.bound === 'object'
+        ? (value.bound as Record<string, unknown>).startId
+        : '';
+    if (legacy && typeof legacyId === 'string' && legacyId && !notes[legacyId]) {
+      notes[legacyId] = legacy;
+    }
+  }
+  const draftRevision =
+    value.schemaVersion === HYPOTHESIS_NOTE_SCHEMA_VERSION
+      ? revisionOf(value.draftRevision)
+      : revisionOf(value.generation);
+  return {
+    schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION,
+    draft,
+    draftRevision,
+    notes,
+  };
 }
 
 function sameEntry(a: HypothesisNoteEntry | null, b: HypothesisNoteEntry | null): boolean {
   return !!a && !!b ? a.text === b.text && a.writtenAt === b.writtenAt : a === b;
 }
 
-function sameBound(a: BoundHypothesisNote | null, b: BoundHypothesisNote | null): boolean {
-  return !!a && !!b
-    ? a.runKey === b.runKey &&
-        a.startId === b.startId &&
-        sameEntry(a.beforeStart, b.beforeStart) &&
-        sameEntry(a.reflection, b.reflection)
-    : a === b;
+function sameNote(a: HypothesisNote | undefined, b: HypothesisNote | undefined): boolean {
+  if (!a || !b) return a === b;
+  return (
+    a.runKey === b.runKey &&
+    sameEntry(a.beforeStart, b.beforeStart) &&
+    sameEntry(a.reflection, b.reflection)
+  );
 }
 
-/**
- * 読み込み時の世代と端末上の世代がずれていたら、このタブが変えた欄だけを採用する。
- * 変えていない欄は、別タブが先に書いた内容を残す。
- */
-function reflectionOnly(
-  base: BoundHypothesisNote | null,
-  local: BoundHypothesisNote | null,
-): local is BoundHypothesisNote {
-  return (
-    !!local &&
-    !!base &&
-    local.runKey === base.runKey &&
-    local.startId === base.startId &&
-    sameEntry(local.beforeStart, base.beforeStart)
-  );
+/** このタブの下書き変更を、別タブが先に書いた下書きへ上書きできない。 */
+export function hypothesisDraftConflict(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  current: HypothesisNoteRecord,
+): boolean {
+  const localChanged = local.draftRevision !== base.draftRevision;
+  const diskChanged = current.draftRevision !== base.draftRevision;
+  return localChanged && diskChanged && !sameEntry(local.draft, current.draft);
 }
 
 function mergeDraft(
   base: HypothesisNoteRecord,
   local: HypothesisNoteRecord,
   current: HypothesisNoteRecord,
-  currentIsBase: boolean,
-): HypothesisNoteEntry | null {
-  if (currentIsBase) return local.draft;
-  if (sameEntry(base.draft, local.draft)) return current.draft;
-  // 開始で消す下書きは、端末上の値がその下書きのままのときだけ消す。
-  if (local.draft === null && base.draft && !sameEntry(base.draft, current.draft)) {
-    return current.draft;
+) {
+  if (hypothesisDraftConflict(base, local, current)) {
+    return { draft: current.draft, draftRevision: current.draftRevision };
   }
-  // 後発の開始が同じ下書きを消費して空にしているなら、タイムアウト復元で復活させない。
-  if (
-    local.draft &&
-    !current.draft &&
-    current.bound &&
-    sameEntry(current.bound.beforeStart, local.draft) &&
-    current.bound.startId !== base.bound?.startId &&
-    current.bound.startId !== local.bound?.startId
-  ) {
-    return current.draft;
+  if (local.draftRevision === base.draftRevision) {
+    return { draft: current.draft, draftRevision: current.draftRevision };
   }
-  return local.draft;
+  return {
+    draft: local.draft,
+    draftRevision: Math.max(local.draftRevision, current.draftRevision),
+  };
 }
 
-/** 競合で自分の仮説を端末へ書けなかった。画面上の仮説は残す。 */
-export function hypothesisCommitDroppedSessionBound(
-  base: HypothesisNoteRecord,
-  local: HypothesisNoteRecord,
-  stored: HypothesisNoteRecord,
-): boolean {
-  const baseBound = base.bound;
-  const localBound = local.bound;
-  if (!baseBound || !reflectionOnly(baseBound, localBound)) return false;
-  return (
-    !sameEntry(baseBound.reflection, localBound.reflection) &&
-    stored.bound?.startId !== localBound.startId
-  );
-}
-
-/** 解除は競合する後発ランを端末に残し、このタブの表示は外したままにする。 */
-export function hypothesisCommitKeptForeignBound(
-  base: HypothesisNoteRecord,
-  local: HypothesisNoteRecord,
-  stored: HypothesisNoteRecord,
-): boolean {
-  return (
-    local.bound === null &&
-    !!base.bound &&
-    !!stored.bound &&
-    stored.bound.startId !== base.bound.startId
-  );
-}
-
-function mergeBound(
+function mergeNotes(
   base: HypothesisNoteRecord,
   local: HypothesisNoteRecord,
   current: HypothesisNoteRecord,
-  currentIsBase: boolean,
-): BoundHypothesisNote | null {
-  if (currentIsBase) return local.bound;
-  if (sameBound(base.bound, local.bound)) return current.bound;
-  if (local.bound === null && base.bound) {
-    if (!current.bound || current.bound.startId === base.bound.startId) return null;
-    return current.bound;
-  }
-  if (reflectionOnly(base.bound, local.bound)) {
-    if (
-      !current.bound ||
-      current.bound.runKey !== local.bound.runKey ||
-      current.bound.startId !== local.bound.startId ||
-      !sameEntry(current.bound.beforeStart, local.bound.beforeStart)
-    ) {
-      return current.bound;
+): Record<string, HypothesisNote> {
+  const ids = new Set([
+    ...Object.keys(base.notes),
+    ...Object.keys(local.notes),
+    ...Object.keys(current.notes),
+  ]);
+  const notes: Record<string, HypothesisNote> = {};
+  for (const id of ids) {
+    const previous = base.notes[id];
+    const ours = local.notes[id];
+    const disk = current.notes[id];
+    if (!ours || sameNote(previous, ours)) {
+      const kept = disk ?? ours ?? previous;
+      if (kept) notes[id] = kept;
+      continue;
     }
-    return { ...current.bound, reflection: local.bound.reflection };
+    if (!disk || sameNote(previous, disk)) {
+      notes[id] = ours;
+      continue;
+    }
+    notes[id] = {
+      runKey: disk.runKey,
+      beforeStart: disk.beforeStart,
+      reflection: sameEntry(previous?.reflection ?? null, disk.reflection)
+        ? ours.reflection
+        : disk.reflection,
+    };
   }
-  return local.bound;
+  return notes;
 }
 
-/** 解除の復元では、別タブがすでに書いた後発仮説を古い仮説で上書きしない。 */
-export function commitStoredHypothesis(
-  base: HypothesisNoteRecord,
-  local: HypothesisNoteRecord,
-  current: HypothesisNoteRecord,
-  options?: { restoreBound?: boolean },
-): HypothesisNoteRecord {
-  const next = commitHypothesisNote(base, local, current);
-  if (options?.restoreBound && current.bound && current.bound.startId !== local.bound?.startId) {
-    return { ...next, bound: current.bound };
-  }
-  return next;
-}
-
+/** 下書きは版番号、仮説は startId ごとにマージする。ノートは消さない。 */
 export function commitHypothesisNote(
   base: HypothesisNoteRecord,
   local: HypothesisNoteRecord,
   current: HypothesisNoteRecord,
 ): HypothesisNoteRecord {
-  const currentIsBase = current.generation === base.generation;
+  const draft = mergeDraft(base, local, current);
   return {
     schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION,
-    draft: mergeDraft(base, local, current, currentIsBase),
-    bound: mergeBound(base, local, current, currentIsBase),
-    generation: (currentIsBase ? base.generation : current.generation) + 1,
+    draft: draft.draft,
+    draftRevision: draft.draftRevision,
+    notes: mergeNotes(base, local, current),
   };
 }
 

@@ -1,0 +1,443 @@
+{
+  "seed": "RI-176",
+  "results": [
+    {
+      "scenario": "calm",
+      "strategy": "react",
+      "initial": {
+        "version": 1,
+        "seed": "RI-176",
+        "tick": 0,
+        "horizon": 6,
+        "scenario": "calm",
+        "availableFocus": 6,
+        "reservedFocus": 0,
+        "availableSpent": 0,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "actionable": true,
+        "lossPerIncident": 5,
+        "incidentLoss": 0,
+        "shippedValue": 0,
+        "armed": false,
+        "fired": false,
+        "held": false,
+        "firedTick": null,
+        "arrivals": [0, 0, 0, 0, 1, 0, 0],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick",
+          "manual": "firefight"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "availableFocus": 0,
+        "reservedFocus": 0,
+        "availableSpent": 6,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "incidentLoss": 0,
+        "shippedValue": 18,
+        "fired": false,
+        "firedTick": null,
+        "held": false,
+        "resolutions": [
+          "t1:arrive+0,auto:skip,manual:ship,loss:0",
+          "t2:arrive+0,auto:skip,manual:ship,loss:0",
+          "t3:arrive+0,auto:skip,loss:0",
+          "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+          "t5:arrive+0,auto:skip,loss:0",
+          "t6:arrive+0,auto:skip,loss:0"
+        ],
+        "netValue": 18
+      }
+    },
+    {
+      "scenario": "calm",
+      "strategy": "reserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-176",
+        "tick": 0,
+        "horizon": 6,
+        "scenario": "calm",
+        "availableFocus": 6,
+        "reservedFocus": 0,
+        "availableSpent": 0,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "actionable": true,
+        "lossPerIncident": 5,
+        "incidentLoss": 0,
+        "shippedValue": 0,
+        "armed": false,
+        "fired": false,
+        "held": false,
+        "firedTick": null,
+        "arrivals": [0, 0, 0, 0, 1, 0, 0],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "reserve"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick",
+          "manual": "firefight"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "availableFocus": 0,
+        "reservedFocus": 2,
+        "availableSpent": 4,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "incidentLoss": 0,
+        "shippedValue": 9,
+        "fired": false,
+        "firedTick": null,
+        "held": false,
+        "resolutions": [
+          "t1:arrive+0,auto:skip,manual:ship,loss:0",
+          "t2:arrive+0,auto:skip,loss:0",
+          "t3:arrive+0,auto:skip,loss:0",
+          "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+          "t5:arrive+0,auto:skip,loss:0",
+          "t6:arrive+0,auto:skip,loss:0"
+        ],
+        "netValue": 9
+      }
+    },
+    {
+      "scenario": "crisis",
+      "strategy": "react",
+      "initial": {
+        "version": 1,
+        "seed": "RI-176",
+        "tick": 0,
+        "horizon": 6,
+        "scenario": "crisis",
+        "availableFocus": 6,
+        "reservedFocus": 0,
+        "availableSpent": 0,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "actionable": true,
+        "lossPerIncident": 5,
+        "incidentLoss": 0,
+        "shippedValue": 0,
+        "armed": false,
+        "fired": false,
+        "held": false,
+        "firedTick": null,
+        "arrivals": [0, 0, 2, 0, 0, 0, 0],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick",
+          "manual": "firefight"
+        },
+        {
+          "type": "tick",
+          "manual": "firefight"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "availableFocus": 0,
+        "reservedFocus": 0,
+        "availableSpent": 6,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "incidentLoss": 5,
+        "shippedValue": 9,
+        "fired": false,
+        "firedTick": null,
+        "held": false,
+        "resolutions": [
+          "t1:arrive+0,auto:skip,manual:ship,loss:0",
+          "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+          "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+          "t4:arrive+0,auto:skip,loss:0",
+          "t5:arrive+0,auto:skip,loss:0",
+          "t6:arrive+0,auto:skip,loss:0"
+        ],
+        "netValue": 4
+      }
+    },
+    {
+      "scenario": "crisis",
+      "strategy": "reserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-176",
+        "tick": 0,
+        "horizon": 6,
+        "scenario": "crisis",
+        "availableFocus": 6,
+        "reservedFocus": 0,
+        "availableSpent": 0,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "actionable": true,
+        "lossPerIncident": 5,
+        "incidentLoss": 0,
+        "shippedValue": 0,
+        "armed": false,
+        "fired": false,
+        "held": false,
+        "firedTick": null,
+        "arrivals": [0, 0, 2, 0, 0, 0, 0],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "reserve"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick",
+          "manual": "firefight"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "availableFocus": 0,
+        "reservedFocus": 0,
+        "availableSpent": 4,
+        "reservedSpent": 2,
+        "incidents": 0,
+        "incidentLoss": 0,
+        "shippedValue": 9,
+        "fired": true,
+        "firedTick": 2,
+        "held": false,
+        "resolutions": [
+          "t1:arrive+0,auto:skip,manual:ship,loss:0",
+          "t2:arrive+2,auto,manual:firefight,loss:0",
+          "t3:arrive+0,auto:skip,loss:0",
+          "t4:arrive+0,auto:skip,loss:0",
+          "t5:arrive+0,auto:skip,loss:0",
+          "t6:arrive+0,auto:skip,loss:0"
+        ],
+        "netValue": 9
+      }
+    },
+    {
+      "scenario": "untargetable",
+      "strategy": "reserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-176",
+        "tick": 0,
+        "horizon": 6,
+        "scenario": "untargetable",
+        "availableFocus": 6,
+        "reservedFocus": 0,
+        "availableSpent": 0,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "actionable": false,
+        "lossPerIncident": 5,
+        "incidentLoss": 0,
+        "shippedValue": 0,
+        "armed": false,
+        "fired": false,
+        "held": false,
+        "firedTick": null,
+        "arrivals": [0, 0, 2, 0, 0, 0, 0],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "reserve"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "availableFocus": 0,
+        "reservedFocus": 2,
+        "availableSpent": 4,
+        "reservedSpent": 0,
+        "incidents": 2,
+        "incidentLoss": 50,
+        "shippedValue": 18,
+        "fired": false,
+        "firedTick": null,
+        "held": true,
+        "resolutions": [
+          "t1:arrive+0,auto:skip,manual:ship,loss:0",
+          "t2:arrive+2,auto:hold,manual:ship,loss:10",
+          "t3:arrive+0,auto:hold,loss:10",
+          "t4:arrive+0,auto:hold,loss:10",
+          "t5:arrive+0,auto:hold,loss:10",
+          "t6:arrive+0,auto:hold,loss:10"
+        ],
+        "netValue": -32
+      }
+    },
+    {
+      "scenario": "untargetable",
+      "strategy": "refund",
+      "initial": {
+        "version": 1,
+        "seed": "RI-176",
+        "tick": 0,
+        "horizon": 6,
+        "scenario": "untargetable",
+        "availableFocus": 6,
+        "reservedFocus": 0,
+        "availableSpent": 0,
+        "reservedSpent": 0,
+        "incidents": 0,
+        "actionable": false,
+        "lossPerIncident": 5,
+        "incidentLoss": 0,
+        "shippedValue": 0,
+        "armed": false,
+        "fired": false,
+        "held": false,
+        "firedTick": null,
+        "arrivals": [0, 0, 2, 0, 0, 0, 0],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "reserve"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "cancel"
+        },
+        {
+          "type": "tick",
+          "manual": "ship"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "availableFocus": 0,
+        "reservedFocus": 0,
+        "availableSpent": 6,
+        "reservedSpent": 0,
+        "incidents": 2,
+        "incidentLoss": 50,
+        "shippedValue": 27,
+        "fired": false,
+        "firedTick": null,
+        "held": false,
+        "resolutions": [
+          "t1:arrive+0,auto:skip,manual:ship,loss:0",
+          "t2:arrive+2,auto:hold,manual:ship,loss:10",
+          "t3:arrive+0,auto:skip,manual:ship,loss:10",
+          "t4:arrive+0,auto:skip,loss:10",
+          "t5:arrive+0,auto:skip,loss:10",
+          "t6:arrive+0,auto:skip,loss:10"
+        ],
+        "netValue": -23
+      }
+    }
+  ]
+}

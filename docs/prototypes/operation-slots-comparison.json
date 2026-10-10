@@ -1,0 +1,228 @@
+{
+  "results": [
+    {
+      "workload": "routine",
+      "seed": 1,
+      "strategy": "lights",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "workload": "routine",
+        "slotCap": 2,
+        "owned": ["lint", "tests", "platform"],
+        "active": [],
+        "focus": 3,
+        "focusSpent": 0,
+        "basePerTick": 1,
+        "earnedValue": 0,
+        "upkeepPaid": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "enable",
+          "id": "lint"
+        },
+        {
+          "type": "enable",
+          "id": "tests"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "active": ["lint", "tests"],
+        "usedSlots": 2,
+        "ownedCount": 3,
+        "earnedValue": 18,
+        "upkeepPaid": 0,
+        "focusSpent": 2,
+        "netValue": 16
+      }
+    },
+    {
+      "workload": "routine",
+      "seed": 1,
+      "strategy": "platform",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "workload": "routine",
+        "slotCap": 2,
+        "owned": ["lint", "tests", "platform"],
+        "active": [],
+        "focus": 3,
+        "focusSpent": 0,
+        "basePerTick": 1,
+        "earnedValue": 0,
+        "upkeepPaid": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "enable",
+          "id": "platform"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "active": ["platform"],
+        "usedSlots": 2,
+        "ownedCount": 3,
+        "earnedValue": 18,
+        "upkeepPaid": 6,
+        "focusSpent": 1,
+        "netValue": 11
+      }
+    },
+    {
+      "workload": "migration",
+      "seed": 1,
+      "strategy": "lights",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "workload": "migration",
+        "slotCap": 2,
+        "owned": ["lint", "tests", "platform"],
+        "active": [],
+        "focus": 3,
+        "focusSpent": 0,
+        "basePerTick": 1,
+        "earnedValue": 0,
+        "upkeepPaid": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "enable",
+          "id": "lint"
+        },
+        {
+          "type": "enable",
+          "id": "tests"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "active": ["lint", "tests"],
+        "usedSlots": 2,
+        "ownedCount": 3,
+        "earnedValue": 6,
+        "upkeepPaid": 0,
+        "focusSpent": 2,
+        "netValue": 4
+      }
+    },
+    {
+      "workload": "migration",
+      "seed": 1,
+      "strategy": "platform",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "workload": "migration",
+        "slotCap": 2,
+        "owned": ["lint", "tests", "platform"],
+        "active": [],
+        "focus": 3,
+        "focusSpent": 0,
+        "basePerTick": 1,
+        "earnedValue": 0,
+        "upkeepPaid": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "enable",
+          "id": "platform"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "active": ["platform"],
+        "usedSlots": 2,
+        "ownedCount": 3,
+        "earnedValue": 30,
+        "upkeepPaid": 6,
+        "focusSpent": 1,
+        "netValue": 23
+      }
+    }
+  ]
+}

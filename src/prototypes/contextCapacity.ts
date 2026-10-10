@@ -99,7 +99,7 @@ function openJob(state: ContextState) {
 }
 
 function sameDocs(left: readonly string[], right: readonly string[]): boolean {
-  return left.length === right.length && left.every((doc, index) => doc === right[index]);
+  return left.length === right.length && left.every((doc) => right.includes(doc));
 }
 
 export function applyContextInput(state: ContextState, input: ContextInput): ContextState {

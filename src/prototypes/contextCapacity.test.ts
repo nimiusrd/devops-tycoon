@@ -55,7 +55,9 @@ describe('RI-191 コンテキストの容量制限', () => {
     ]);
     const loaded = apply(initial, { type: 'set', docs: ['spec', 'history'] });
     expect(apply(loaded, { type: 'inspect', doc: 'example' })).toBe(loaded);
+    expect(apply(loaded, { type: 'set', docs: ['history', 'spec'] })).toBe(loaded);
     expect(loaded.loaded).toEqual(['spec', 'history']);
+    expect(loaded.inputs).toHaveLength(1);
   });
 
   it('閲覧と期末は資料も進捗も動かさない', () => {

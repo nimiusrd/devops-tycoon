@@ -1037,6 +1037,10 @@
           "type": "tick"
         },
         {
+          "type": "assign",
+          "model": "none"
+        },
+        {
           "type": "tick"
         }
       ],
@@ -1069,7 +1073,7 @@
           "t5:c2:precise+2",
           "t6:c2:budget:fallback+1",
           "t7:c2:budget:fallback+1,ship:18",
-          "t8:s3:budget:fallback+1"
+          "t8:s3:none+1"
         ],
         "netValue": 15
       }
@@ -1335,6 +1339,10 @@
           "type": "tick"
         },
         {
+          "type": "assign",
+          "model": "none"
+        },
+        {
           "type": "tick"
         },
         {
@@ -1367,10 +1375,10 @@
           "t2:c1:budget:fallback+1",
           "t3:c1:budget:fallback+1",
           "t4:c1:budget:fallback+1,ship:6,defect",
-          "t5:s2:budget:fallback+1",
-          "t6:s2:budget:fallback+1",
-          "t7:s2:budget:fallback+1",
-          "t8:s2:budget:fallback+1"
+          "t5:s2:none+1",
+          "t6:s2:none+1",
+          "t7:s2:none+1",
+          "t8:s2:none+1"
         ],
         "netValue": 5
       }

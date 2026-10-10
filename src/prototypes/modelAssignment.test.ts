@@ -55,6 +55,32 @@ describe('RI-189 モデルの使い分け', () => {
     expect(explicit.spent).toBe(0);
   });
 
+  it('次の仕事を買えない保留モデルは外し、未払いのレビュー負荷を付けない', () => {
+    let matched = createModelBoard('RI-189', 6, 9, ['complex', 'simple']);
+    let guard = 0;
+    while (matched.tick < matched.horizon) {
+      if (++guard > 20) throw new Error('match');
+      const action = chooseModelAction(matched, 'match');
+      const next = apply(matched, action);
+      expect(next).not.toBe(matched);
+      matched = next;
+    }
+    expect(matched.jobs[0]).toMatchObject({ model: 'precise', shipped: 18, defect: false });
+    expect(matched.jobs[1]).toMatchObject({ model: 'none', shipped: 10, defect: false });
+    expect(matched.reviewLoad).toBe(0);
+    expect(matched.spent).toBe(6);
+    expect(matched.inputs).toContainEqual({ type: 'assign', model: 'none' });
+    let direct = createModelBoard('RI-189', 6, 4, ['complex', 'simple']);
+    direct = apply(direct, { type: 'assign', model: 'precise' });
+    direct = apply(apply(apply(direct, { type: 'tick' }), { type: 'tick' }), { type: 'tick' });
+    expect(direct.jobs[0].shipped).toBe(18);
+    const cleared = apply(direct, { type: 'tick' });
+    expect(cleared.pendingModel).toBeNull();
+    expect(cleared.jobs[1]).toMatchObject({ model: 'none', progress: 1 });
+    expect(cleared.reviewLoad).toBe(0);
+    expect(cleared.resolutions[cleared.resolutions.length - 1]).toBe('t4:s2:budget:clear+1');
+  });
+
   it('閲覧と不正な割当は発火せず、着手済みのモデルは巻き戻さない', () => {
     const initial = create('RI-189', 'hard');
     const before = structuredClone(initial);

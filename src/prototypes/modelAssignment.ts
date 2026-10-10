@@ -151,10 +151,24 @@ function workTick(state: ModelState): ModelState {
     return next;
   }
   const lockedNow = job.model === null;
+  let clearedPending = false;
+  if (
+    lockedNow &&
+    next.pendingModel !== null &&
+    next.pendingModel !== 'none' &&
+    !canAffordModel(next, next.pendingModel)
+  ) {
+    next.pendingModel = null;
+    clearedPending = true;
+  }
   if (lockedNow) job.model = next.pendingModel ?? 'none';
   const model = job.model ?? 'none';
   let speed = HUMAN_SPEED;
-  let note = model === 'none' && lockedNow && next.pendingModel === null ? 'default-none' : model;
+  let note = clearedPending
+    ? 'budget:clear'
+    : model === 'none' && lockedNow && next.pendingModel === null
+      ? 'default-none'
+      : model;
   if (model === 'fast' || model === 'precise') {
     const stats = MODEL_STATS[model];
     if (next.budget - next.spent >= stats.cost) {
@@ -213,6 +227,14 @@ export function chooseModelAction(state: ModelState, strategy: ModelStrategy): M
     strategy === 'match' ? (job.kind === 'complex' ? 'precise' : 'fast') : strategy;
   if (job.model === null && state.pendingModel !== desired && canAffordModel(state, desired)) {
     return { type: 'assign', model: desired };
+  }
+  if (
+    job.model === null &&
+    state.pendingModel !== null &&
+    state.pendingModel !== 'none' &&
+    !canAffordModel(state, state.pendingModel)
+  ) {
+    return { type: 'assign', model: 'none' };
   }
   return { type: 'tick' };
 }

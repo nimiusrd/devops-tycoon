@@ -1,0 +1,46 @@
+{
+  "phase": 1,
+  "note": "R&D experiment for #648 / #729. Parameter definitions only. Do not treat missing results as computed outcomes.",
+  "seed": "RI-252",
+  "baseline": {
+    "scenario": "verification-bottleneck",
+    "config": {
+      "deadline": 12,
+      "implementation": 3,
+      "review": 3,
+      "verification": 1
+    }
+  },
+  "conditions": [
+    {
+      "scenario": "deadline-shortened",
+      "config": {
+        "deadline": 8,
+        "implementation": 3,
+        "review": 3,
+        "verification": 1
+      },
+      "rationale": "期限短縮は公開日だけを早める条件なので、検証不足の人員（実装3・レビュー3・最終検証1）は動かさない。基準の12tickを2/3の8tickにする。4tickは比較APIの下限、9tickは既存の凍結導出境界なので、どちらでもない短縮幅にする。自動凍結は期限-2の既存規則のまま検証窓2tickを残し、早期/遅延/自動は2/5/6で互いに異なる。"
+    },
+    {
+      "scenario": "review-shortage",
+      "config": {
+        "deadline": 12,
+        "implementation": 3,
+        "review": 1,
+        "verification": 1
+      },
+      "rationale": "レビュー不足はレビュー能力だけが足りない条件なので、期限12と実装3・最終検証1は基準のままにする。基準の検証不足が最終検証だけを1（他は3）にしているのと同じ形で、レビューだけを正の整数の最小値1にする。"
+    },
+    {
+      "scenario": "heavy-rework",
+      "config": {
+        "deadline": 12,
+        "implementation": 5,
+        "review": 3,
+        "verification": 1
+      },
+      "rationale": "手戻り規則は追加しない。既存モデルで実装済み案件の残りを増やす操作は、着手と実装の流入を増やす実装能力だけである。期限とレビュー・最終検証は基準のまま、実装だけを3から5へ上げる。+2は基準の不足幅（3対1）と同じ差で、別規模の編成にしない。"
+    }
+  ]
+}

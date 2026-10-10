@@ -35,6 +35,42 @@ export const RELEASE_CONFIG: ReleaseConfig = {
   verification: 1,
 };
 
+/** #648 再評価と #729 と同じ seed。条件定義のみで比較結果は持たない。 */
+export const RELEASE_REEVAL_SEED = 'RI-252';
+
+/** PR #729 の検証不足（3/3/1）条件。再評価の比較基準。 */
+export const RELEASE_REEVAL_BASELINE: ReleaseConfig = {
+  deadline: 12,
+  implementation: 3,
+  review: 3,
+  verification: 1,
+};
+
+/**
+ * #648 再評価 Phase 1 の3条件。値は条件の意味から決め、比較結果は見ない。
+ * 手戻り規則は追加せず、既存の期限・実装・レビュー・最終検証だけを1つずつ変える。
+ */
+export const RELEASE_REEVAL_CONDITIONS: {
+  scenario: 'deadline-shortened' | 'review-shortage' | 'heavy-rework';
+  config: ReleaseConfig;
+}[] = [
+  {
+    // 公開期限だけを12の2/3へ縮める。人員は検証不足のまま。
+    scenario: 'deadline-shortened',
+    config: { deadline: 8, implementation: 3, review: 3, verification: 1 },
+  },
+  {
+    // レビューだけを最小の1にする。期限と実装・最終検証は基準のまま。
+    scenario: 'review-shortage',
+    config: { deadline: 12, implementation: 3, review: 1, verification: 1 },
+  },
+  {
+    // 手戻り規則は増やさない。実装能力だけ+2し、実装済みの残件を増やす。
+    scenario: 'heavy-rework',
+    config: { deadline: 12, implementation: 5, review: 3, verification: 1 },
+  },
+];
+
 export function createReleasePrototype(
   seed: string | number,
   config: ReleaseConfig = RELEASE_CONFIG,

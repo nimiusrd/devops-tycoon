@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/release-comparison.json';
+import reeval from '../../docs/prototypes/release-reeval-conditions.json';
 import {
+  RELEASE_REEVAL_BASELINE,
+  RELEASE_REEVAL_CONDITIONS,
+  RELEASE_REEVAL_SEED,
   compareReleaseStrategies,
   createReleasePrototype,
   summarizeRelease,
@@ -93,5 +97,23 @@ describe('大型リリース段階戦の試作', () => {
         verification: 1,
       }),
     ).toThrow();
+  });
+
+  it('再評価Phase1の3条件は#729と同じseedと基準人員から、結果を見ずに定義する', () => {
+    const recorded = comparison.find((scenario) => scenario.scenario === 'verification-bottleneck');
+    expect(RELEASE_REEVAL_SEED).toBe('RI-252');
+    expect(reeval.seed).toBe(RELEASE_REEVAL_SEED);
+    expect(reeval.phase).toBe(1);
+    expect(RELEASE_REEVAL_BASELINE).toEqual(recorded?.config);
+    expect(reeval.baseline.config).toEqual(RELEASE_REEVAL_BASELINE);
+    expect(RELEASE_REEVAL_CONDITIONS.map(({ scenario, config }) => ({ scenario, config }))).toEqual(
+      reeval.conditions.map(({ scenario, config }) => ({ scenario, config })),
+    );
+    for (const condition of reeval.conditions) {
+      expect(condition.rationale.length).toBeGreaterThan(0);
+      expect(createReleasePrototype(RELEASE_REEVAL_SEED, condition.config).config).toEqual(
+        condition.config,
+      );
+    }
   });
 });

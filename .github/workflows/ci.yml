@@ -36,11 +36,14 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           RUN_ID: ${{ github.run_id }}
         run: node scripts/cancel-superseded-pr-runs.mjs
-      - uses: nimiusrd/should-run-checks@3a88e3c3376253ffd2c480b5050d14151155ccb6 # v0.3.0
+      - uses: nimiusrd/should-run-checks@d7138ff8549a9410601e972c41f0f1257514f390 # v1.0.0
         id: scope
         if: steps.supersede.outputs.superseded != 'true'
         with:
-          config-path: .github/ci-skip-rules.toml
+          skip-extensions: |
+            .md
+          skip-directories: |
+            mockups
 
   test:
     name: Lint & Unit (Vitest)

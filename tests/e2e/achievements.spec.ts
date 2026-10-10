@@ -87,7 +87,51 @@ for (const viewport of VIEWPORTS) {
       'data-achieved',
       'false',
     );
-    await expect(page.getByTestId('win-combo-row-hard')).toHaveAttribute('data-unlocked', 'false');
+    const hard = page.getByTestId('win-combo-row-hard');
+    await expect(hard).toHaveAttribute('data-unlocked', 'false');
+    const lockedContrast = await hard.evaluate((row) => {
+      const luminance = (color: string) => {
+        const channels = color
+          .match(/[\d.]+/g)!
+          .slice(0, 3)
+          .map(Number)
+          .map((value) => {
+            const channel = value / 255;
+            return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+          });
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+      };
+      const ratio = (foreground: string, background: string) => {
+        const a = luminance(foreground);
+        const b = luminance(background);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      };
+      const surfaceOf = (element: Element) => {
+        let current: Element | null = element;
+        while (current) {
+          const background = getComputedStyle(current).backgroundColor;
+          const alpha = background.match(/[\d.]+/g)?.[3];
+          if (/^rgb\(/.test(background) || (alpha !== undefined && Number(alpha) > 0)) {
+            return background;
+          }
+          current = current.parentElement;
+        }
+        return 'rgb(0, 0, 0)';
+      };
+      const readable = (selector: string) => {
+        const element = row.querySelector(selector);
+        if (!element) return 0;
+        return ratio(getComputedStyle(element).color, surfaceOf(element));
+      };
+      return {
+        opacity: getComputedStyle(row).opacity,
+        count: readable('.win-combo-row-count'),
+        hint: readable('.achievement-card-hint'),
+      };
+    });
+    expect(Number(lockedContrast.opacity)).toBe(1);
+    expect(lockedContrast.count).toBeGreaterThanOrEqual(4.5);
+    expect(lockedContrast.hint).toBeGreaterThanOrEqual(4.5);
 
     const overflow = await codex.evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);

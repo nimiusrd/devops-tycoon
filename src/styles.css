@@ -5906,6 +5906,14 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-size: 12px;
   font-weight: 700;
 }
+/* 解放条件は 12px の通常文字。実績カードの locked 透過を重ねると 4.5:1 を下回る（DS-08）。 */
+.win-combo-rows .achievement-card.locked {
+  opacity: 1;
+}
+.win-combo-rows .achievement-card.locked .win-combo-row-count,
+.win-combo-rows .achievement-card.locked .achievement-card-hint {
+  color: var(--cream);
+}
 .win-combo-cells {
   display: flex;
   flex-wrap: wrap;

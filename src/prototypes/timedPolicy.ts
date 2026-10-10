@@ -29,7 +29,7 @@ export interface TimedState {
 const DURATION = 3;
 const MULTIPLIER = 2;
 
-function reviewInflow(tick: number): number {
+export function reviewInflowAt(tick: number): number {
   if (tick <= 3) return 1;
   if (tick <= 6) return 4;
   return 1;
@@ -68,7 +68,7 @@ export function viewTimed(state: TimedState) {
     permanentAdd: state.permanentAdd,
     reviewThroughput: (state.baseThroughput + state.permanentAdd) * (active ? state.multiplier : 1),
     codingThroughput: state.baseThroughput,
-    affected: state.affected,
+    affected: state.affected.map((item) => ({ ...item })),
   };
 }
 export function applyTimedInput(state: TimedState, input: TimedInput): TimedState {
@@ -85,7 +85,7 @@ export function applyTimedInput(state: TimedState, input: TimedInput): TimedStat
     const boosted = next.activeRemaining > 0;
     const reviewThroughput =
       (next.baseThroughput + next.permanentAdd) * (boosted ? next.multiplier : 1);
-    next.reviewQueue += reviewInflow(next.tick);
+    next.reviewQueue += reviewInflowAt(next.tick);
     next.codingQueue += 1;
     const clearedReview = Math.min(next.reviewQueue, reviewThroughput);
     const clearedCoding = Math.min(next.codingQueue, next.baseThroughput);
@@ -138,6 +138,8 @@ export function compareTimedStrategies() {
       horizon,
       seed: 1,
       strategy,
+      reviewInflow: Array.from({ length: horizon }, (_, index) => reviewInflowAt(index + 1)),
+      codingInflowPerTick: 1,
       initial,
       inputs: state.inputs,
       result: summarizeTimed(state),

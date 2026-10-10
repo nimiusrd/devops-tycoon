@@ -37,6 +37,11 @@ describe('RI-181 時限施策', () => {
     expect(state.permanentAdd).toBe(1);
     expect(state.earnedCoding).toBe(4);
     expect(viewTimed(state).codingThroughput).toBe(1);
+    const viewed = viewTimed(state);
+    expect(viewed.affected).not.toBe(state.affected);
+    viewed.affected.push({ tick: 99, lane: 'review', throughput: 0 });
+    viewed.affected[0].throughput = 0;
+    expect(state.affected.map((item) => item.throughput)).toEqual([4, 4, 4]);
   });
   it('効果中の再発動は拒否し、終了後の再発動は同じ倍率を新しい期限で足す', () => {
     let state = apply(create(1, 8), { type: 'activate' });
@@ -73,6 +78,9 @@ describe('RI-181 時限施策', () => {
     expect(peak.result.affectedTicks).toEqual([4, 5, 6]);
     expect(peak.result.earnedCoding).toBe(8);
     expect(rows.every((row) => row.result.earnedCoding === row.horizon)).toBe(true);
+    expect(rows.find((row) => row.horizon === 8)!.reviewInflow).toEqual([1, 1, 1, 4, 4, 4, 1, 1]);
+    expect(rows.find((row) => row.horizon === 3)!.reviewInflow).toEqual([1, 1, 1]);
+    expect(rows.every((row) => row.codingInflowPerTick === 1)).toBe(true);
   });
   it('全入力の再生と毎入力JSON保存再開が一致し、元状態を変えない', () => {
     for (const row of compareTimedStrategies()) {

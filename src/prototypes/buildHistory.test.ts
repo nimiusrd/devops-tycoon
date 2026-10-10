@@ -14,6 +14,7 @@ import { CURRENT_RUN_RULESET } from '../state/runPersistence';
 import {
   addBuildHistory,
   BUILD_HISTORY_MAX,
+  BUILD_NAME_MAX,
   detachRemovedReplays,
   NOT_CARRIED,
   resolveContentStatus,
@@ -213,6 +214,14 @@ describe('RI-293 会社ビルドの履歴帳', () => {
     expect(sanitizeBuildName('  レビュー   重視  ', summary)).toBe('レビュー 重視');
     expect([...sanitizeBuildName('あ'.repeat(40), summary)]).toHaveLength(24);
     expect(sanitizeBuildName('   ', summary)).toBe(`g1 / ${summary.outcome.winType ?? 'lost'}`);
+    const noisySeed = {
+      ...summary,
+      seed: ` \n${'あ'.repeat(40)}\n`,
+    };
+    const fallback = sanitizeBuildName(' \n\t ', noisySeed);
+    expect([...fallback]).toHaveLength(BUILD_NAME_MAX);
+    expect(fallback).toBe('あ'.repeat(BUILD_NAME_MAX));
+    expect(fallback).not.toMatch(/\s/);
     const first = addBuildHistory([], replay, '一回目')!;
     const renamed = addBuildHistory(first, replay, '二回目')!;
     expect(renamed).toHaveLength(1);
@@ -279,5 +288,28 @@ describe('RI-293 会社ビルドの履歴帳', () => {
     const again = resolveContentStatus(renamed);
     expect(again.cards[0].status).toBe('changed');
     expect(again.cards.slice(1).every((card) => card.status === 'current')).toBe(true);
+  });
+
+  it('効果オブジェクトのキー順だけではカードもレリックも変更扱いにしない', () => {
+    const reordered = structuredClone(replay);
+    const end = reordered.keyframes[reordered.keyframes.length - 1].frame;
+    const snapshot = reordered.contentSnapshot!;
+    const card = snapshot.cards.find((def) => Object.keys(def.base).length > 1);
+    if (!card) throw new Error('複数キーの効果を持つカードが無い');
+    card.base = Object.fromEntries(Object.entries(card.base).reverse()) as typeof card.base;
+    const relic = structuredClone(getRelic('postmortem')!);
+    expect(Object.keys(relic.effects ?? {}).length).toBeGreaterThan(1);
+    if (!end.relics.includes(relic.id)) end.relics.push(relic.id);
+    snapshot.relics = snapshot.relics.filter((item) => item.id !== relic.id);
+    snapshot.relics.push({
+      ...relic,
+      effects: Object.fromEntries(Object.entries(relic.effects ?? {}).reverse()),
+      ...(relic.passives
+        ? { passives: Object.fromEntries(Object.entries(relic.passives).reverse()) }
+        : {}),
+    });
+    const summary = resolveContentStatus(summarizeBuild(reordered)!);
+    expect(summary.cards.find((item) => item.defId === card.id)!.status).toBe('current');
+    expect(summary.relics.find((item) => item.id === relic.id)!.status).toBe('current');
   });
 });

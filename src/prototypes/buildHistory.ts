@@ -111,12 +111,36 @@ export const NOT_CARRIED = [
   'budget',
 ] as const;
 
+/** オブジェクトのキー順だけでは差分にしない。配列の並びは意味があるので保つ。 */
+function normalizeForCompare(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => normalizeForCompare(item));
+  if (!value || typeof value !== 'object') return value;
+  return Object.keys(value)
+    .sort()
+    .reduce<Record<string, unknown>>((normalized, key) => {
+      const child = (value as Record<string, unknown>)[key];
+      if (child !== undefined) normalized[key] = normalizeForCompare(child);
+      return normalized;
+    }, {});
+}
+
+function stableStringify(value: unknown): string {
+  return JSON.stringify(normalizeForCompare(value));
+}
+
 function cardShape(def: RecordedCardDef | CardDef): string {
-  return JSON.stringify([def.name, def.cost, def.focusCost, def.base, def.rarity, def.description]);
+  return stableStringify([
+    def.name,
+    def.cost,
+    def.focusCost,
+    def.base,
+    def.rarity,
+    def.description,
+  ]);
 }
 
 function relicShape(def: RecordedRelicDef | RelicDef): string {
-  return JSON.stringify([def.name, def.effects ?? null, def.passives ?? null, def.description]);
+  return stableStringify([def.name, def.effects ?? null, def.passives ?? null, def.description]);
 }
 
 function recordedCard(def: CardDef): RecordedCardDef {
@@ -250,10 +274,14 @@ export function summarizeBuild(replay: ReplayBlob): BuildSummary | null {
   };
 }
 
+function limitBuildName(raw: string): string {
+  return [...raw.replace(/\s+/g, ' ').trim()].slice(0, BUILD_NAME_MAX).join('');
+}
+
 export function sanitizeBuildName(raw: string, summary: BuildSummary): string {
-  const name = [...raw.replace(/\s+/g, ' ').trim()].slice(0, BUILD_NAME_MAX).join('');
+  const name = limitBuildName(raw);
   if (name) return name;
-  return `${summary.seed} / ${summary.outcome.winType ?? summary.outcome.status}`;
+  return limitBuildName(`${summary.seed} / ${summary.outcome.winType ?? summary.outcome.status}`);
 }
 
 /** 同じリプレイは1件にまとめ、名前だけを更新する。上限を超えたら古いものから外す。 */

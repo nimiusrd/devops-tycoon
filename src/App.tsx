@@ -379,25 +379,38 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     const ticket = ++launchEpoch.current;
     const epoch = game.getRunEpoch();
     setRunLaunchPending(true);
-    const prepared = hypothesisNoteStore.getSnapshot().record;
-    const startId = newHypothesisStartId();
-    const beforeStart = prepared.draft
-      ? { text: prepared.draft.text.trim(), writtenAt: prepared.draft.writtenAt }
-      : null;
-    const draftRevision = prepared.draftRevision;
     return (async () => {
       let timeoutId = 0;
+      const timeout = new Promise<'timeout'>((resolve) => {
+        timeoutId = setTimeout(() => resolve('timeout'), HYPOTHESIS_START_SAVE_TIMEOUT_MS);
+      });
+      const readVisibleDraft = () => {
+        const record = hypothesisNoteStore.getSnapshot().record;
+        return {
+          beforeStart: record.draft
+            ? { text: record.draft.text.trim(), writtenAt: record.draft.writtenAt }
+            : null,
+          draftRevision: record.draftRevision,
+        };
+      };
+      // 初回の読み込み前は snapshot が空でも、端末の下書きはまだ届いていない。
+      // 同じ 1.5 秒の上限で読み込みを待ち、届いた下書きだけを今回の開始に付ける。
+      let visible = readVisibleDraft();
+      if (!visible.beforeStart) {
+        const loaded = await Promise.race([
+          hypothesisNoteStore.load().then(() => 'loaded' as const),
+          timeout,
+        ]);
+        if (loaded === 'loaded') visible = readVisibleDraft();
+      }
+      const { beforeStart, draftRevision } = visible;
+      const startId = newHypothesisStartId();
       const savePromise = beforeStart
         ? hypothesisNoteStore.applyCommitted((record) =>
             prepareHypothesis(record, runKey, startId, beforeStart),
           )
         : Promise.resolve('unchanged' as const);
-      const saved = await Promise.race([
-        savePromise,
-        new Promise<'timeout'>((resolve) => {
-          timeoutId = setTimeout(() => resolve('timeout'), HYPOTHESIS_START_SAVE_TIMEOUT_MS);
-        }),
-      ]);
+      const saved = beforeStart ? await Promise.race([savePromise, timeout]) : 'unchanged';
       clearTimeout(timeoutId);
       const superseded =
         launchEpoch.current !== ticket ||

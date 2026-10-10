@@ -146,6 +146,34 @@ describe('仮説メモ', () => {
     expect(stored.notes['start-2']?.beforeStart.text).toBe('別ラン');
   });
 
+  it('未変更のノートは、端末で消えていれば復活させない', () => {
+    const kept = {
+      runKey: 'run-b',
+      beforeStart: { text: '残す', writtenAt: 2 },
+      reflection: null,
+    };
+    const base = {
+      ...EMPTY_HYPOTHESIS_NOTE,
+      notes: {
+        'start-late': {
+          runKey: 'run-a',
+          beforeStart: { text: '狙い', writtenAt: 1 },
+          reflection: null,
+        },
+        'start-keep': kept,
+      },
+    };
+    const current = { ...base, notes: { 'start-keep': kept } };
+    const stored = commitHypothesisNote(base, editHypothesisDraft(base, '下書き', 3), current);
+    expect(stored.notes['start-late']).toBeUndefined();
+    expect(stored.notes['start-keep']).toEqual(kept);
+    expect(stored.draft?.text).toBe('下書き');
+    const edited = writeHypothesisReflection(base, 'run-a', 'start-late', '振り返り', 4);
+    expect(commitHypothesisNote(base, edited, current).notes['start-late']?.reflection?.text).toBe(
+      '振り返り',
+    );
+  });
+
   it('再現情報は選んだときだけメモを含め、開始レシピとラン進行は変えない', () => {
     const info = createRunDiagnosticInfo(
       {

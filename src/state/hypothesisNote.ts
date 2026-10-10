@@ -298,9 +298,10 @@ function mergeNotes(
     const ours = local.notes[id];
     const disk = current.notes[id];
     if (!ours || sameNote(previous, ours)) {
-      if (!ours && previous && (!disk || sameNote(previous, disk))) continue;
-      const kept = disk ?? ours ?? previous;
-      if (kept) notes[id] = kept;
+      // こちらが変えていないノートは、端末側の削除をそのまま残す。
+      if (!disk) continue;
+      if (!ours && previous && sameNote(previous, disk)) continue;
+      notes[id] = disk;
       continue;
     }
     if (!disk || sameNote(previous, disk)) {
@@ -357,7 +358,7 @@ export function removeUnadoptedHypothesis(
   return { ...record, notes };
 }
 
-/** 下書きは版番号、仮説は startId ごとにマージする。ノートは消さない。 */
+/** 下書きは版番号、仮説は startId ごとにマージする。未変更のノートは端末の削除を戻さない。 */
 export function commitHypothesisNote(
   base: HypothesisNoteRecord,
   local: HypothesisNoteRecord,

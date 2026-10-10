@@ -784,6 +784,79 @@ describe('App のタイトル操作', () => {
     }
   });
 
+  it('読み込み前の空表示でも、届いた下書きを今回の仮説にして始める', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    hypothesisNoteStore.update((record) =>
+      record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+    );
+    await hypothesisNoteStore.flush();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = vi.spyOn(hypothesisNoteStore, 'load').mockImplementation(async () => {
+      await gate;
+      hypothesisNoteStore.update((record) => editHypothesisDraft(record, '保存済み', 5));
+      await hypothesisNoteStore.flush();
+    });
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      release();
+      await starting;
+      screen.flush();
+      const startId = vi.mocked(screen.run.startRun).mock.calls[0]?.[4];
+      expect(startId).toEqual(expect.any(String));
+      expect(hypothesisNoteStore.getSnapshot().record.notes[startId]?.beforeStart.text).toBe(
+        '保存済み',
+      );
+    } finally {
+      spy.mockRestore();
+      hypothesisNoteStore.update((record) =>
+        record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+      );
+      await hypothesisNoteStore.flush();
+    }
+  });
+
+  it('読み込みが上限を超えた空表示の開始は、仮説なしで始める', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    hypothesisNoteStore.update((record) =>
+      record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+    );
+    await hypothesisNoteStore.flush();
+    vi.useFakeTimers();
+    const spy = vi.spyOn(hypothesisNoteStore, 'load').mockReturnValue(new Promise(() => undefined));
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      await vi.advanceTimersByTimeAsync(HYPOTHESIS_START_SAVE_TIMEOUT_MS);
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).toHaveBeenCalledOnce();
+      expect(vi.mocked(screen.run.startRun).mock.calls[0]?.[4]).toBeNull();
+      expect(screen.child('TitleScreen').hypothesisUnrecorded).toBe(false);
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('空の開始は、別タブが残した仮説の開始 ID を渡さない', async () => {
     const screen = mountApp();
     screen.phase('title');

@@ -93,7 +93,7 @@ export function viewAdoptionEval(state: EvalState) {
     tick: state.tick,
     horizon: state.horizon,
     mix: state.mix,
-    production: state.queue,
+    production: [...state.queue],
     generation: state.generation,
     adopted: state.adopted,
     observations: state.observations.map((item) => ({ ...item })),

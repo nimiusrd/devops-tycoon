@@ -41,6 +41,10 @@ describe('RI-197 導入前の評価セット', () => {
     expect(seen.tools[0]!.jobs.map((job) => job.rework)).toEqual([null, null, null]);
     expect(seen.tools[0]!.jobs.map((job) => job.ticks)).toEqual([1, 1, 1]);
     expect(seen.production).toEqual(['migration', 'incident', 'routine']);
+    seen.production.shift();
+    seen.production.sort();
+    expect(first.queue).toEqual(['migration', 'incident', 'routine']);
+    expect(viewAdoptionEval(first).production).toEqual(['migration', 'incident', 'routine']);
   });
   it('代表仕事の結果を種類別に残し、測定中は本番価値を出さない', () => {
     let state = apply(create(197, 20, 'balanced'), {

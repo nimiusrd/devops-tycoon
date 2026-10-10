@@ -592,6 +592,7 @@ describe('TitleScreen の途中セーブ共有', () => {
       resumableSummary: savedRun,
       onResume: vi.fn(),
       onStartDaily: vi.fn(),
+      onOpenReplays: vi.fn(),
       onImportRunSave,
     });
     screen.click('run-save-file-button');
@@ -603,6 +604,7 @@ describe('TitleScreen の途中セーブ共有', () => {
       'start-run',
       'start-daily-run',
       'resume-run',
+      'open-replays',
       'run-save-file-button',
       'run-save-file',
     ];

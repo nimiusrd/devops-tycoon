@@ -883,6 +883,30 @@ describe('App のタイトル操作', () => {
     expect(audio.unlock).toHaveBeenCalledTimes(2);
   });
 
+  it('取り込み中に始まった仮説は、取り込み完了の解除で消さない', async () => {
+    const screen = mountApp();
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(editHypothesisDraft(record, '前', 1), 'run-a', 'start-1'),
+    );
+    await hypothesisNoteStore.flush();
+    vi.mocked(screen.run.importRunSaveText).mockImplementation(async () => {
+      hypothesisNoteStore.update((record) =>
+        bindHypothesisToRun(editHypothesisDraft(record, '新しい', 2), 'run-b', 'start-2'),
+      );
+      await hypothesisNoteStore.flush();
+      return { ok: true, save: makeSharedRecords().save };
+    });
+    try {
+      expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toMatchObject({
+        ok: true,
+      });
+      expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-2');
+    } finally {
+      hypothesisNoteStore.update((record) => ({ ...record, draft: null, bound: null }));
+      await hypothesisNoteStore.flush();
+    }
+  });
+
   it('仮説の解除に失敗した単体取り込みは、置き換えた途中セーブを戻す', async () => {
     const screen = mountApp();
     vi.mocked(screen.run.importRunSaveText).mockResolvedValue({

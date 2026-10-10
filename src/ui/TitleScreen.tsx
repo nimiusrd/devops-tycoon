@@ -928,7 +928,7 @@ export function TitleScreen({
                 <button
                   type="button"
                   data-testid="open-replays"
-                  disabled={runLaunchPending}
+                  disabled={runLaunchPending || runSaveImporting}
                   onClick={onOpenReplays}
                 >
                   リプレイ

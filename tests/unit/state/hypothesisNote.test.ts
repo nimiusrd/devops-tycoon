@@ -1269,6 +1269,38 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.bound).toBeNull();
   });
 
+  it('初回読込中の確定のあとに書いた下書きは、保存失敗でも残る', async () => {
+    let release = () => {};
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '保存済み', writtenAt: 1 },
+      bound: null,
+      generation: 1,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: () =>
+        new Promise((resolve) => {
+          release = () => resolve(memory.value);
+        }),
+      commit: async () => {
+        throw new Error('quota');
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    const loading = store.load();
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    store.update((record) => editHypothesisDraft(record, '次回', 4));
+    release();
+    await loading;
+    expect(await saving).toBe('failed');
+    expect(store.getSnapshot().record.draft?.text).toBe('次回');
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('保存済み');
+  });
+
   it('解除の復元は、別タブの後発仮説を上書きしない', async () => {
     const oldBound = {
       runKey: 'run-old',

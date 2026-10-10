@@ -158,6 +158,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   const opWaiters = new Map<number, () => void>();
   const restoreBoundOps = new Set<number>();
   const recordBeforeOp = new Map<number, HypothesisNoteRecord>();
+  const changesAfterOp = new Map<
+    number,
+    Array<{ change: (record: HypothesisNoteRecord) => HypothesisNoteRecord; opId?: number }>
+  >();
 
   const finishOp = (id: number, status: 'saved' | 'failed' | 'unchanged') => {
     if (opState.get(id) !== 'pending') return;
@@ -285,13 +289,19 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           settleOps(ops, 'failed');
           // 失敗した確定操作だけを外す。それより前から残っている未保存の下書きは保持する。
           if (ops.length > 0) {
+            const failedOp = ops.find((id) => recordBeforeOp.has(id));
             const foundation =
-              ops.reduce<HypothesisNoteRecord | null>(
-                (found, id) => found ?? recordBeforeOp.get(id) ?? null,
-                null,
-              ) ?? local;
-            for (const id of ops) recordBeforeOp.delete(id);
-            const kept = ops.some((id) => restoreBoundOps.has(id)) ? local : foundation;
+              (failedOp === undefined ? null : recordBeforeOp.get(failedOp)) ?? local;
+            const afterFailed = (failedOp === undefined ? [] : (changesAfterOp.get(failedOp) ?? []))
+              .filter((item) => item.opId === undefined || !ops.includes(item.opId))
+              .map((item) => item.change);
+            for (const id of ops) {
+              recordBeforeOp.delete(id);
+              changesAfterOp.delete(id);
+            }
+            const kept = ops.some((id) => restoreBoundOps.has(id))
+              ? local
+              : applyQueued(foundation, afterFailed);
             publish({ record: applyQueued(kept, followChanges), saveFailed: true });
           }
           if (follow.length > 0) {
@@ -345,9 +355,13 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       }
       // 保存値へ重ねる直前を残す。commit が失敗しても、確定前の下書きへ戻せる。
       let applied = stored;
-      for (const item of queued) {
-        if (item.opId !== undefined) recordBeforeOp.set(item.opId, applied);
-        applied = item.change(applied);
+      for (let index = 0; index < queued.length; index += 1) {
+        const item = queued[index];
+        if (item && item.opId !== undefined) {
+          recordBeforeOp.set(item.opId, applied);
+          changesAfterOp.set(item.opId, queued.slice(index + 1));
+        }
+        if (item) applied = item.change(applied);
       }
       const record = applied;
       loaded = true;
@@ -437,6 +451,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       opWaiters.delete(opId);
       restoreBoundOps.delete(opId);
       recordBeforeOp.delete(opId);
+      changesAfterOp.delete(opId);
       return snapshot.saveFailed ? 'failed' : 'unchanged';
     }
     if (opState.get(opId) === 'pending') await settled;
@@ -445,6 +460,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     opWaiters.delete(opId);
     restoreBoundOps.delete(opId);
     recordBeforeOp.delete(opId);
+    changesAfterOp.delete(opId);
     if (status === 'saved') return 'saved';
     if (status === 'failed') return 'failed';
     return 'unchanged';

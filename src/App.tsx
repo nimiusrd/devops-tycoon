@@ -713,11 +713,15 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             runLaunchPending={runLaunchPending}
             onImportRunSave={async (raw) => {
               cancelPendingLaunch();
+              const hypothesisStartIdAtImport =
+                hypothesisNoteStore.getSnapshot().record.bound?.startId ?? null;
               const result = await run.importRunSaveText(raw);
               if (result.ok) {
                 const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
                 const detached = await hypothesisNoteStore.applyCommitted((record) =>
-                  detachHypothesisNote(record),
+                  (record.bound?.startId ?? null) === hypothesisStartIdAtImport
+                    ? detachHypothesisNote(record)
+                    : record,
                 );
                 if (detached === 'failed') {
                   await game.rollbackRunImport();

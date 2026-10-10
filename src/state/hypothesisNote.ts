@@ -127,7 +127,9 @@ export function undoAbandonedBind(
   before: HypothesisNoteRecord,
   intendedStartId: string,
 ): HypothesisNoteRecord {
-  const ours = record.bound?.startId === intendedStartId;
+  // 空メモの固定は bound を消すだけで startId が残らない。null のままなら、この開始の解除として戻す。
+  const ours =
+    record.bound?.startId === intendedStartId || (record.bound == null && before.bound != null);
   const bound = ours ? before.bound : record.bound;
   const draft = ours && record.draft == null ? before.draft : record.draft;
   if (bound === record.bound && draft === record.draft) return record;

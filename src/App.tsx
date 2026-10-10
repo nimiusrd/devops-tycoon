@@ -403,8 +403,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         } else {
           const settled = await savePromise;
           if (settled !== 'unchanged') {
-            await hypothesisNoteStore.applyCommitted((record) =>
-              undoAbandonedBind(record, before, intendedStartId),
+            const clearedEmptyStart =
+              hypothesisNoteStore.getSnapshot().record.bound == null && before.bound != null;
+            await hypothesisNoteStore.applyCommitted(
+              (record) => undoAbandonedBind(record, before, intendedStartId),
+              clearedEmptyStart ? { restoreBound: true } : undefined,
             );
           }
         }

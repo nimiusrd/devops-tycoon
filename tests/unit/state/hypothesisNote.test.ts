@@ -1385,6 +1385,50 @@ describe('仮説メモの保存', () => {
     expect(undone.bound).toBeNull();
   });
 
+  it('空メモの開始取消は、以前の仮説を戻す', async () => {
+    const previous = {
+      runKey: 'run-old',
+      startId: 'old',
+      beforeStart: { text: '前', writtenAt: 1 },
+      reflection: null,
+    };
+    const later = {
+      runKey: 'run-new',
+      startId: 'later',
+      beforeStart: { text: '後', writtenAt: 8 },
+      reflection: null,
+    };
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = { schemaVersion: 1, draft: null, bound: previous, generation: 1 };
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    const before = store.getSnapshot().record;
+    await store.applyCommitted((record) => bindHypothesisToRun(record, 'run-c', 'start-new'));
+    expect(store.getSnapshot().record.bound).toBeNull();
+    await store.applyCommitted((record) => undoAbandonedBind(record, before, 'start-new'), {
+      restoreBound: true,
+    });
+    expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('old');
+    expect(store.getSnapshot().record.bound?.startId).toBe('old');
+
+    const raced = new MemoryHypothesisNoteStorage();
+    raced.value = { schemaVersion: 1, draft: null, bound: previous, generation: 1 };
+    const other = createHypothesisNoteStore(raced);
+    await other.load();
+    const racedBefore = other.getSnapshot().record;
+    await other.applyCommitted((record) => bindHypothesisToRun(record, 'run-c', 'start-new'));
+    raced.value = {
+      schemaVersion: 1,
+      draft: null,
+      bound: later,
+      generation: normalizeHypothesisNote(raced.value).generation + 1,
+    };
+    await other.applyCommitted((record) => undoAbandonedBind(record, racedBefore, 'start-new'), {
+      restoreBound: true,
+    });
+    expect(normalizeHypothesisNote(raced.value).bound?.startId).toBe('later');
+  });
+
   it('確定の失敗は、それより前の未保存下書きを戻さない', async () => {
     const memory = new MemoryHypothesisNoteStorage();
     memory.value = {

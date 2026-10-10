@@ -109,7 +109,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   let baseRecord = EMPTY_HYPOTHESIS_NOTE;
   let loading: Promise<void> | null = null;
   let loaded = false;
-  let pending: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord> = [];
+  let pending: Array<{
+    change: (record: HypothesisNoteRecord) => HypothesisNoteRecord;
+    opId?: number;
+  }> = [];
   let writing: Promise<void> | null = null;
   let dirty = false;
   /** 書き込みの await 中に来た操作。返ったレコードへ重ね直す。 */
@@ -121,7 +124,6 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     change: (record: HypothesisNoteRecord) => HypothesisNoteRecord;
     opId?: number;
   }> = [];
-  let pendingOpIds: number[] = [];
   let persistSeq = 0;
   /** この番号までの開始保存は、成功しても画面と端末を戻す。 */
   let discardThroughSeq = -1;
@@ -251,11 +253,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       const stored = normalizeHypothesisNote(raw);
       baseRecord = stored;
       const queued = pending;
-      const queuedOps = pendingOpIds;
       pending = [];
-      pendingOpIds = [];
+      const queuedChanges = queued.map((item) => item.change);
+      const queuedOps = queued.flatMap((item) => (item.opId === undefined ? [] : [item.opId]));
       if (revertRecord) {
-        const record = queued.length > 0 ? applyQueued(revertRecord, queued) : revertRecord;
+        const record =
+          queuedChanges.length > 0 ? applyQueued(revertRecord, queuedChanges) : revertRecord;
         revertRecord = null;
         loaded = true;
         if (loading === attemptGate.current) loading = null;
@@ -264,7 +267,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         void persist();
         return;
       }
-      const record = applyQueued(stored, queued);
+      const record = applyQueued(stored, queuedChanges);
       loaded = true;
       if (loading === attemptGate.current) loading = null;
       publish({ ...snapshot, record });
@@ -291,8 +294,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     opId?: number,
   ) => {
     if (!loaded) {
-      pending.push(change);
-      if (opId !== undefined) pendingOpIds.push(opId);
+      pending.push({ change, opId });
       const next = change(snapshot.record);
       if (next !== snapshot.record) publish({ ...snapshot, record: next });
       if (!loading) void load();
@@ -327,7 +329,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     await flush();
     const status = opState.get(opId) ?? 'unchanged';
     opState.delete(opId);
-    if (!loaded) return snapshot.saveFailed ? 'failed' : 'unchanged';
+    if (!loaded) {
+      pending = pending.filter((item) => item.opId !== opId);
+      return snapshot.saveFailed ? 'failed' : 'unchanged';
+    }
     if (status === 'saved') return 'saved';
     if (status === 'failed') return 'failed';
     return 'unchanged';
@@ -358,7 +363,6 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       }
       queuedDuringWrite = queuedDuringWrite.filter((item) => !isAbandonedOp(item.opId));
       pending = [];
-      pendingOpIds = [];
       publish({ ...snapshot, record, saveFailed: true });
     },
   };

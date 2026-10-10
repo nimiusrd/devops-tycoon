@@ -56,6 +56,7 @@ import { serializePersistenceBackup } from './state/persistenceBackup';
 import {
   bindHypothesisToRun,
   detachHypothesisNote,
+  newHypothesisStartId,
   editHypothesisDraft,
   hypothesisForRun,
   hypothesisRunKey,
@@ -366,6 +367,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   };
   const launchAfterHypothesis = (
     bind: Parameters<typeof hypothesisNoteStore.applyCommitted>[0],
+    intendedStartId: string,
     start: (hypothesisStartId: string | null) => void,
   ) => {
     if (!canBeginRun) {
@@ -409,10 +411,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       } else {
         setHypothesisUnrecorded(false);
       }
+      const boundStartId = hypothesisNoteStore.getSnapshot().record.bound?.startId ?? null;
       const linked =
-        saved === 'timeout' || saved === 'failed'
+        saved === 'timeout' || saved === 'failed' || boundStartId !== intendedStartId
           ? null
-          : (hypothesisNoteStore.getSnapshot().record.bound?.startId ?? null);
+          : intendedStartId;
       start(linked);
     })();
   };
@@ -425,6 +428,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
+    const startId = newHypothesisStartId();
     return launchAfterHypothesis(
       (record) =>
         bindHypothesisToRun(
@@ -436,7 +440,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             trials,
             scenario: resolveScenarioId(scenario),
           }),
+          startId,
         ),
+      startId,
       (hypothesisStartId) => run.startRun(difficulty, trials, scenario, seed, hypothesisStartId),
     );
   };
@@ -445,6 +451,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     closeTitleModals();
     clearHudSnapshot();
     const day = utcDateStr();
+    const startId = newHypothesisStartId();
     return launchAfterHypothesis(
       (record) =>
         bindHypothesisToRun(
@@ -457,7 +464,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             trials: [...DAILY_RUN_TRIALS],
             scenario: DEFAULT_SCENARIO,
           }),
+          startId,
         ),
+      startId,
       (hypothesisStartId) => run.startDailyRun(day, hypothesisStartId),
     );
   };
@@ -685,9 +694,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onExportRunSave={run.exportRunSaveText}
             newRunBlocked={run.finishSaveBlocksNewRun}
             hypothesisDraft={hypothesisNote.record.draft?.text ?? ''}
-            onHypothesisDraftChange={(text) =>
-              hypothesisNoteStore.update((record) => editHypothesisDraft(record, text, Date.now()))
-            }
+            onHypothesisDraftChange={(text) => {
+              const writtenAt = Date.now();
+              hypothesisNoteStore.update((record) => editHypothesisDraft(record, text, writtenAt));
+            }}
             hypothesisSaveFailed={hypothesisNote.saveFailed}
             hypothesisUnrecorded={hypothesisUnrecorded}
             runLaunchPending={runLaunchPending}
@@ -808,11 +818,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   ? null
                   : hypothesisForRun(hypothesisNote.record, hypothesisKey, game.hypothesisStartId())
               }
-              onHypothesisReflectionChange={(text) =>
+              onHypothesisReflectionChange={(text) => {
+                const writtenAt = Date.now();
                 hypothesisNoteStore.update((record) =>
-                  writeHypothesisReflection(record, hypothesisKey, text, Date.now()),
-                )
-              }
+                  writeHypothesisReflection(record, hypothesisKey, text, writtenAt),
+                );
+              }}
               hypothesisSaveFailed={run.isReplayMode ? false : hypothesisNote.saveFailed}
             />
           </SceneScrollReset>

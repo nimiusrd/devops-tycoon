@@ -893,6 +893,54 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.bound?.beforeStart.text).toBe('保存済み');
   });
 
+  it('失敗として返した開始は、後の読み込みで下書きを消費しない', async () => {
+    let fail = true;
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '保存済み', writtenAt: 4 },
+      bound: null,
+      generation: 2,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: async () => {
+        if (fail) throw new Error('blocked');
+        return memory.load();
+      },
+      commit: async (local, base) => memory.commit(local, base),
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    expect(
+      await store.applyCommitted((record) => bindHypothesisToRun(record, 'late', 'ghost')),
+    ).toBe('failed');
+    fail = false;
+    await store.load();
+    await store.flush();
+    expect(store.getSnapshot().record.draft?.text).toBe('保存済み');
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('保存済み');
+    expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
+  });
+
+  it('保留した入力を保存値へ重ねても、渡した記入時刻を変えない', async () => {
+    let release = () => {};
+    const storage: HypothesisNoteStorage = {
+      load: () =>
+        new Promise((resolve) => {
+          release = () => resolve(undefined);
+        }),
+      commit: async (local) => local,
+    };
+    const store = createHypothesisNoteStore(storage);
+    const loading = store.load();
+    store.update((record) => editHypothesisDraft(record, '狙い', 1234));
+    release();
+    await loading;
+    await store.flush();
+    expect(store.getSnapshot().record.draft).toEqual({ text: '狙い', writtenAt: 1234 });
+  });
+
   it('保存中の追加入力は、別タブが先に書いた仮説を消さない', async () => {
     let release: () => void = () => {};
     let commits = 0;

@@ -725,6 +725,37 @@ describe('App のタイトル操作', () => {
     }
   });
 
+  it('空の開始は、別タブが残した仮説の開始 ID を渡さない', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    const foreign = {
+      runKey: 'run-other',
+      startId: 'foreign-start',
+      beforeStart: { text: '別', writtenAt: 1 },
+      reflection: null,
+    };
+    const spy = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockImplementation(async () => {
+      hypothesisNoteStore.update((record) => ({ ...record, bound: foreign }));
+      return 'saved';
+    });
+    try {
+      await screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      const args = vi.mocked(screen.run.startRun).mock.calls[0];
+      expect(args?.[4]).toBeNull();
+    } finally {
+      spy.mockRestore();
+      hypothesisNoteStore.update((record) => ({ ...record, bound: null }));
+      await hypothesisNoteStore.flush();
+    }
+  });
+
   it('仮説の保存が上限を超えたら、仮説なしでランを始める', async () => {
     const screen = mountApp();
     screen.phase('title');

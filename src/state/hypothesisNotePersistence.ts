@@ -98,12 +98,20 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   let pending: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord> = [];
   let writing: Promise<void> | null = null;
   let dirty = false;
+  /** 書き込みの await 中に来た操作。返ったレコードへ重ね直す。 */
+  let queuedDuringWrite: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord> = [];
+  let captureChanges = false;
   const listeners = new Set<() => void>();
 
   const publish = (next: HypothesisNoteSnapshot) => {
     snapshot = next;
     for (const listener of listeners) listener();
   };
+
+  const applyQueued = (
+    record: HypothesisNoteRecord,
+    queued: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord>,
+  ) => queued.reduce((current, change) => change(current), record);
 
   // 入力のたびに書き込みを積まず、書き込み中の変更は最新の1件だけを後から書く。
   const persist = (): Promise<void> => {
@@ -114,11 +122,22 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         dirty = false;
         const local = snapshot.record;
         const base = baseRecord;
+        captureChanges = true;
         try {
           const stored = await storage.commit(local, base);
+          const queued = queuedDuringWrite;
+          queuedDuringWrite = [];
+          captureChanges = false;
           baseRecord = stored;
-          if (!dirty) publish({ record: stored, saveFailed: false });
+          if (queued.length > 0) {
+            publish({ ...snapshot, record: applyQueued(stored, queued) });
+            dirty = true;
+          } else if (!dirty) {
+            publish({ record: stored, saveFailed: false });
+          }
         } catch {
+          captureChanges = false;
+          queuedDuringWrite = [];
           if (!snapshot.saveFailed) publish({ ...snapshot, saveFailed: true });
         }
       }
@@ -127,46 +146,51 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     return writing;
   };
 
+  const load = (): Promise<void> => {
+    if (loaded) return Promise.resolve();
+    if (loading) return loading;
+    const attempt = (async () => {
+      let raw: unknown;
+      try {
+        raw = await storage.load();
+      } catch {
+        if (loading === attempt) loading = null;
+        if (pending.length > 0) publish({ ...snapshot, saveFailed: true });
+        return;
+      }
+      const stored = normalizeHypothesisNote(raw);
+      baseRecord = stored;
+      const queued = pending;
+      pending = [];
+      const record = applyQueued(stored, queued);
+      loaded = true;
+      if (loading === attempt) loading = null;
+      publish({ ...snapshot, record });
+      if (record !== stored) void persist();
+    })();
+    loading = attempt;
+    return attempt;
+  };
+
   return {
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    load() {
-      loading ??= (async () => {
-        let raw: unknown;
-        try {
-          raw = await storage.load();
-        } catch {
-          loaded = true;
-          pending = [];
-          if (snapshot.record !== EMPTY_HYPOTHESIS_NOTE) {
-            publish({ ...snapshot, saveFailed: true });
-          }
-          return;
-        }
-        const stored = normalizeHypothesisNote(raw);
-        baseRecord = stored;
-        let record = stored;
-        while (pending.length > 0) {
-          const queued = pending;
-          pending = [];
-          for (const change of queued) record = change(record);
-        }
-        loaded = true;
-        const changed = record !== stored;
-        publish({ ...snapshot, record });
-        if (changed) void persist();
-      })();
-      return loading;
-    },
+    load,
     update(change) {
       const next = change(snapshot.record);
       if (next === snapshot.record) return;
-      if (!loaded) pending.push(change);
+      if (captureChanges) queuedDuringWrite.push(change);
+      if (!loaded) {
+        pending.push(change);
+        publish({ ...snapshot, record: next });
+        if (!loading) void load();
+        return;
+      }
       publish({ ...snapshot, record: next });
-      if (loaded) void persist();
+      void persist();
     },
     async flush() {
       await loading;

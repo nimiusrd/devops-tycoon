@@ -8,6 +8,7 @@ import {
   EMPTY_HYPOTHESIS_NOTE,
   HYPOTHESIS_NOTE_MAX_LENGTH,
   bindHypothesisToRun,
+  commitHypothesisNote,
   detachHypothesisNote,
   editHypothesisDraft,
   hypothesisForRun,
@@ -300,5 +301,75 @@ describe('仮説メモの保存', () => {
     const stored = normalizeHypothesisNote(memory.value);
     expect(stored.draft?.text).toBe('abcd');
     expect(stored.bound).toMatchObject({ runKey: 'run-a', beforeStart: { text: 'abc' } });
+  });
+
+  it('読み込み失敗後の開始は、再読込した下書きを仮説にし、失敗中は端末を上書きしない', async () => {
+    let fail = true;
+    let commits = 0;
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '保存済み', writtenAt: 4 },
+      bound: null,
+      generation: 2,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: async () => {
+        if (fail) throw new Error('blocked');
+        return memory.load();
+      },
+      commit: async (local, base) => {
+        commits += 1;
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    store.update((record) => bindHypothesisToRun(record, 'late'));
+    await store.flush();
+    expect(commits).toBe(0);
+    expect(store.getSnapshot().saveFailed).toBe(true);
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('保存済み');
+
+    fail = false;
+    await store.load();
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(false);
+    expect(store.getSnapshot().record.draft).toBeNull();
+    expect(store.getSnapshot().record.bound?.beforeStart.text).toBe('保存済み');
+  });
+
+  it('保存中の追加入力は、別タブが先に書いた仮説を消さない', async () => {
+    let release: () => void = () => {};
+    let commits = 0;
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = { ...editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, 'abc', 1), generation: 1 };
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        commits += 1;
+        if (commits === 1) {
+          const current = normalizeHypothesisNote(memory.value);
+          memory.value = commitHypothesisNote(
+            current,
+            bindHypothesisToRun(current, 'other'),
+            current,
+          );
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+        }
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    store.update((record) => editHypothesisDraft(record, 'abcd', 2));
+    store.update((record) => editHypothesisDraft(record, 'abcde', 3));
+    release();
+    await store.flush();
+    const stored = normalizeHypothesisNote(memory.value);
+    expect(stored.draft?.text).toBe('abcde');
+    expect(stored.bound).toMatchObject({ runKey: 'other', beforeStart: { text: 'abc' } });
   });
 });

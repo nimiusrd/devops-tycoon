@@ -272,10 +272,13 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const canBeginRun = !run.isReplayMode && !run.finishSaveBlocksNewRun;
   const beginGuard = useRef(false);
   const [hypothesisUnrecorded, setHypothesisUnrecorded] = useState(false);
+  const [trackedPhase, setTrackedPhase] = useState(phase);
+  if (trackedPhase !== phase) {
+    setTrackedPhase(phase);
+    if (phase === 'title') setHypothesisUnrecorded(false);
+  }
   useEffect(() => {
-    if (phase !== 'title') return;
-    beginGuard.current = false;
-    setHypothesisUnrecorded(false);
+    if (phase === 'title') beginGuard.current = false;
   }, [phase]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);

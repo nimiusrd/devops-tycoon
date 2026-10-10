@@ -24,6 +24,7 @@ describe('RI-185 使って育つ施策', () => {
       stage: 1,
       progress: 3,
       cardLevel: 0,
+      nextAt: null,
       throughput: 3,
       completed: 3,
     });

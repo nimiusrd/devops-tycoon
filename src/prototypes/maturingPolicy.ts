@@ -56,7 +56,7 @@ export function viewMature(state: MatureState) {
     cardLevel: state.cardLevel,
     stage: state.stage,
     progress: state.progress,
-    nextAt: state.card === 'growing' ? MATURE_AT : null,
+    nextAt: state.card === 'growing' && state.stage === 0 ? MATURE_AT : null,
     throughput: throughputFor(state),
     completed: state.completedIds.length,
     reworks: state.reworks,

@@ -1,0 +1,1074 @@
+{
+  "fixtures": [
+    {
+      "id": "g1-plain",
+      "seed": "g1",
+      "difficulty": "normal",
+      "trials": [],
+      "ruleset": {
+        "version": 7,
+        "fingerprint": "987930c4c0d919d88572ceeb84d46dae38cfedafc31174af3850ae4cc4a22ead"
+      },
+      "outcome": {
+        "status": "lost",
+        "loseReason": "seniorBurnout",
+        "diagnosis": "seniorSacrifice",
+        "score": 5990
+      },
+      "keyframes": [
+        {
+          "phase": "setup",
+          "frame": {
+            "sprintsPlayed": 0,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 100,
+              "morale": 70,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 0
+            },
+            "lastResult": null,
+            "extras": {
+              "allowedCards": [],
+              "allowedRelics": [],
+              "preferredCardIds": []
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 1,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 46.65999999999985,
+              "morale": 95,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 522
+            },
+            "lastResult": {
+              "delivered": 493,
+              "reviewQueueMax": 24
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 2,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 20.18999999999993,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 1207
+            },
+            "lastResult": {
+              "delivered": 650,
+              "reviewQueueMax": 29
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 3,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 18.794999999999984,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 1852
+            },
+            "lastResult": {
+              "delivered": 615,
+              "reviewQueueMax": 32
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 4,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 5.697500000000085,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 2630
+            },
+            "lastResult": {
+              "delivered": 750,
+              "reviewQueueMax": 25
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 5,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 23.828750000000063,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 3507
+            },
+            "lastResult": {
+              "delivered": 827,
+              "reviewQueueMax": 25
+            }
+          }
+        },
+        {
+          "phase": "quarterReview",
+          "frame": {
+            "sprintsPlayed": 6,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 14.454375000000091,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 4466
+            },
+            "lastResult": {
+              "delivered": 902,
+              "reviewQueueMax": 34
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 7,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 11.017187500000126,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 5291
+            },
+            "lastResult": {
+              "delivered": 798,
+              "reviewQueueMax": 15
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 8,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 6.8485937500003,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 5960
+            },
+            "lastResult": {
+              "delivered": 642,
+              "reviewQueueMax": 33
+            }
+          }
+        },
+        {
+          "phase": "lost",
+          "frame": {
+            "sprintsPlayed": 8,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "lost",
+            "org": {
+              "seniorHp": 0,
+              "morale": 85,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 5990
+            },
+            "lastResult": {
+              "delivered": 642,
+              "reviewQueueMax": 33
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "g1-skilled",
+      "seed": "g1",
+      "difficulty": "normal",
+      "trials": [],
+      "ruleset": {
+        "version": 7,
+        "fingerprint": "987930c4c0d919d88572ceeb84d46dae38cfedafc31174af3850ae4cc4a22ead"
+      },
+      "outcome": {
+        "status": "lost",
+        "loseReason": "seniorBurnout",
+        "diagnosis": "seniorSacrifice",
+        "score": 6189
+      },
+      "keyframes": [
+        {
+          "phase": "setup",
+          "frame": {
+            "sprintsPlayed": 0,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 100,
+              "morale": 70,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 0
+            },
+            "lastResult": null,
+            "extras": {
+              "allowedCards": [],
+              "allowedRelics": [],
+              "preferredCardIds": []
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 1,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 56.869999999999884,
+              "morale": 95,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 623
+            },
+            "lastResult": {
+              "delivered": 594,
+              "reviewQueueMax": 21
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 2,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 39.93500000000001,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 1373
+            },
+            "lastResult": {
+              "delivered": 715,
+              "reviewQueueMax": 23
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 3,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 32.57750000000006,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 2135
+            },
+            "lastResult": {
+              "delivered": 732,
+              "reviewQueueMax": 24
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 4,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 22.068750000000048,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 2812
+            },
+            "lastResult": {
+              "delivered": 649,
+              "reviewQueueMax": 28
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 5,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 15.914375000000064,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 3692
+            },
+            "lastResult": {
+              "delivered": 830,
+              "reviewQueueMax": 26
+            }
+          }
+        },
+        {
+          "phase": "quarterReview",
+          "frame": {
+            "sprintsPlayed": 6,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 10.607187500000151,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 4808
+            },
+            "lastResult": {
+              "delivered": 1059,
+              "reviewQueueMax": 22
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 7,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 12.243593750000148,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 5548
+            },
+            "lastResult": {
+              "delivered": 713,
+              "reviewQueueMax": 14
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 8,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 7.48,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 6159
+            },
+            "lastResult": {
+              "delivered": 584,
+              "reviewQueueMax": 32
+            }
+          }
+        },
+        {
+          "phase": "lost",
+          "frame": {
+            "sprintsPlayed": 8,
+            "budget": 37,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "lost",
+            "org": {
+              "seniorHp": 0,
+              "morale": 85,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 6189
+            },
+            "lastResult": {
+              "delivered": 584,
+              "reviewQueueMax": 32
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "g2-plain",
+      "seed": "g2",
+      "difficulty": "normal",
+      "trials": [],
+      "ruleset": {
+        "version": 7,
+        "fingerprint": "987930c4c0d919d88572ceeb84d46dae38cfedafc31174af3850ae4cc4a22ead"
+      },
+      "outcome": {
+        "status": "lost",
+        "loseReason": "budgetExhausted",
+        "diagnosis": "reviewHell",
+        "score": 13431
+      },
+      "keyframes": [
+        {
+          "phase": "setup",
+          "frame": {
+            "sprintsPlayed": 0,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 100,
+              "morale": 70,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 0
+            },
+            "lastResult": null,
+            "extras": {
+              "allowedCards": [],
+              "allowedRelics": [],
+              "preferredCardIds": []
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 1,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 50.07999999999986,
+              "morale": 95,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 617
+            },
+            "lastResult": {
+              "delivered": 592,
+              "reviewQueueMax": 22
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 2,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 43.34000000000007,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 1276
+            },
+            "lastResult": {
+              "delivered": 634,
+              "reviewQueueMax": 16
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 3,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 12.690000000000119,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 1991
+            },
+            "lastResult": {
+              "delivered": 689,
+              "reviewQueueMax": 18
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 4,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 14.355000000000075,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 2949
+            },
+            "lastResult": {
+              "delivered": 931,
+              "reviewQueueMax": 29
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 5,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 29.697500000000165,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 3884
+            },
+            "lastResult": {
+              "delivered": 909,
+              "reviewQueueMax": 19
+            }
+          }
+        },
+        {
+          "phase": "quarterReview",
+          "frame": {
+            "sprintsPlayed": 6,
+            "budget": 28,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 11.138750000000133,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 4693
+            },
+            "lastResult": {
+              "delivered": 783,
+              "reviewQueueMax": 27
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 7,
+            "budget": 28,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 72.18937500000034,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 5583
+            },
+            "lastResult": {
+              "delivered": 862,
+              "reviewQueueMax": 35
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 8,
+            "budget": 28,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 45.22468749999991,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 6187
+            },
+            "lastResult": {
+              "delivered": 568,
+              "reviewQueueMax": 30
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 9,
+            "budget": 28,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 30.30234374999988,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 6954
+            },
+            "lastResult": {
+              "delivered": 740,
+              "reviewQueueMax": 42
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 10,
+            "budget": 28,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 38.64117187500023,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 7698
+            },
+            "lastResult": {
+              "delivered": 717,
+              "reviewQueueMax": 37
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 11,
+            "budget": 28,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 53.92058593750016,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 8423
+            },
+            "lastResult": {
+              "delivered": 697,
+              "reviewQueueMax": 37
+            }
+          }
+        },
+        {
+          "phase": "quarterReview",
+          "frame": {
+            "sprintsPlayed": 12,
+            "budget": 21,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 72.83029296874983,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 9288
+            },
+            "lastResult": {
+              "delivered": 835,
+              "reviewQueueMax": 40
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 13,
+            "budget": 21,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 48.98514648437471,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 9969
+            },
+            "lastResult": {
+              "delivered": 655,
+              "reviewQueueMax": 35
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 14,
+            "budget": 21,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 35.37257324218739,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 10764
+            },
+            "lastResult": {
+              "delivered": 764,
+              "reviewQueueMax": 30
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 15,
+            "budget": 21,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 51.466286621093744,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 11504
+            },
+            "lastResult": {
+              "delivered": 714,
+              "reviewQueueMax": 33
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 16,
+            "budget": 11,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 63.53314331054702,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 12562
+            },
+            "lastResult": {
+              "delivered": 1030,
+              "reviewQueueMax": 29
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 17,
+            "budget": 11,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 71.08657165527373,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 13431
+            },
+            "lastResult": {
+              "delivered": 843,
+              "reviewQueueMax": 38
+            }
+          }
+        },
+        {
+          "phase": "lost",
+          "frame": {
+            "sprintsPlayed": 17,
+            "budget": 0,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "lost",
+            "org": {
+              "seniorHp": 85.54328582763686,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 13431
+            },
+            "lastResult": {
+              "delivered": 843,
+              "reviewQueueMax": 38
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "g2-skilled",
+      "seed": "g2",
+      "difficulty": "normal",
+      "trials": [],
+      "ruleset": {
+        "version": 7,
+        "fingerprint": "987930c4c0d919d88572ceeb84d46dae38cfedafc31174af3850ae4cc4a22ead"
+      },
+      "outcome": {
+        "status": "lost",
+        "loseReason": "seniorBurnout",
+        "diagnosis": "seniorSacrifice",
+        "score": 3051
+      },
+      "keyframes": [
+        {
+          "phase": "setup",
+          "frame": {
+            "sprintsPlayed": 0,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 100,
+              "morale": 70,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 0
+            },
+            "lastResult": null,
+            "extras": {
+              "allowedCards": [],
+              "allowedRelics": [],
+              "preferredCardIds": []
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 1,
+            "budget": 45,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 60.049999999999876,
+              "morale": 95,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 660
+            },
+            "lastResult": {
+              "delivered": 635,
+              "reviewQueueMax": 17
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 2,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 32.33500000000002,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 1390
+            },
+            "lastResult": {
+              "delivered": 705,
+              "reviewQueueMax": 15
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 3,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 37.40750000000014,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 2236
+            },
+            "lastResult": {
+              "delivered": 820,
+              "reviewQueueMax": 18
+            }
+          }
+        },
+        {
+          "phase": "result",
+          "frame": {
+            "sprintsPlayed": 4,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "playing",
+            "org": {
+              "seniorHp": 6.703750000000125,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 3051
+            },
+            "lastResult": {
+              "delivered": 788,
+              "reviewQueueMax": 22
+            }
+          }
+        },
+        {
+          "phase": "lost",
+          "frame": {
+            "sprintsPlayed": 4,
+            "budget": 35,
+            "scenario": "default",
+            "runKind": "normal",
+            "status": "lost",
+            "org": {
+              "seniorHp": 0.7037500000001247,
+              "morale": 100,
+              "techDebt": 0
+            },
+            "totals": {
+              "delivered": 3051
+            },
+            "lastResult": {
+              "delivered": 788,
+              "reviewQueueMax": 22
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

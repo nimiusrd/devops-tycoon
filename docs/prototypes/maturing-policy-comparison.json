@@ -1,0 +1,356 @@
+{
+  "results": [
+    {
+      "horizon": 4,
+      "seed": 1,
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 4,
+        "focus": 1,
+        "focusSpent": 0,
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "nextId": 1,
+        "completedIds": [],
+        "earnedValue": 0,
+        "reworks": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "completed": 4,
+        "reworks": 0,
+        "earnedValue": 4,
+        "focusSpent": 0,
+        "netValue": 4
+      }
+    },
+    {
+      "horizon": 4,
+      "seed": 1,
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 4,
+        "focus": 1,
+        "focusSpent": 0,
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "nextId": 1,
+        "completedIds": [],
+        "earnedValue": 0,
+        "reworks": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "card": "steady"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "card": "steady",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "completed": 8,
+        "reworks": 0,
+        "earnedValue": 8,
+        "focusSpent": 1,
+        "netValue": 7
+      }
+    },
+    {
+      "horizon": 4,
+      "seed": 1,
+      "strategy": "growing",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 4,
+        "focus": 1,
+        "focusSpent": 0,
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "nextId": 1,
+        "completedIds": [],
+        "earnedValue": 0,
+        "reworks": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "card": "growing"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "card": "growing",
+        "cardLevel": 0,
+        "stage": 1,
+        "progress": 3,
+        "completed": 6,
+        "reworks": 0,
+        "earnedValue": 6,
+        "focusSpent": 1,
+        "netValue": 5
+      }
+    },
+    {
+      "horizon": 10,
+      "seed": 1,
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 10,
+        "focus": 1,
+        "focusSpent": 0,
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "nextId": 1,
+        "completedIds": [],
+        "earnedValue": 0,
+        "reworks": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "completed": 10,
+        "reworks": 0,
+        "earnedValue": 10,
+        "focusSpent": 0,
+        "netValue": 10
+      }
+    },
+    {
+      "horizon": 10,
+      "seed": 1,
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 10,
+        "focus": 1,
+        "focusSpent": 0,
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "nextId": 1,
+        "completedIds": [],
+        "earnedValue": 0,
+        "reworks": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "card": "steady"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "card": "steady",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "completed": 20,
+        "reworks": 0,
+        "earnedValue": 20,
+        "focusSpent": 1,
+        "netValue": 19
+      }
+    },
+    {
+      "horizon": 10,
+      "seed": 1,
+      "strategy": "growing",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 10,
+        "focus": 1,
+        "focusSpent": 0,
+        "card": "none",
+        "cardLevel": 0,
+        "stage": 0,
+        "progress": 0,
+        "nextId": 1,
+        "completedIds": [],
+        "earnedValue": 0,
+        "reworks": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "card": "growing"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "card": "growing",
+        "cardLevel": 0,
+        "stage": 1,
+        "progress": 3,
+        "completed": 24,
+        "reworks": 0,
+        "earnedValue": 24,
+        "focusSpent": 1,
+        "netValue": 23
+      }
+    }
+  ]
+}

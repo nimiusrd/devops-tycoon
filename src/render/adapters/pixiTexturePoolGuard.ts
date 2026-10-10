@@ -5,23 +5,21 @@
  * どの renderer の `destroy()` でも `GlobalResourceRegistry.release()` を呼び、
  * 共有プールを全て `clear()` する。本アプリは画面ごとに Application を作る
  * （全社マップ / 部署ビュー / スプリント盤面。React StrictMode のゴースト
- * マウントも含む）ため、ある画面の破棄が生存中の別画面のプールを消して落ちる:
+ * マウントも含む）ため、ある画面の破棄が生存中の別画面のプールを消して落ちる。
  *
- * - `TexturePool`: 貸出中だった CanvasText テクスチャの `returnTexture()` が
- *   `_texturePool[key].push` の undefined 参照で落ちる（破棄時だけでなく
- *   `_updateGpuText` 経由の通常レンダリング中も起きる）。
- * - `batchPool`（Batcher）: プール配列は貸出中 Batch への参照も保持しており、
- *   clear がそれらを `destroy()`（textures=null 化）する。生存 renderer が
- *   返却→再取得すると `batch.textures.clear()` の null 参照で落ちる。
+ * `batchPool`（Batcher）はプール配列に貸出中 Batch への参照も保持しており、
+ * clear がそれらを `destroy()`（textures=null 化）する。生存 renderer が
+ * 返却→再取得すると `batch.textures.clear()` の null 参照で落ちる。
  *
- * 対策は二段:
- * 1. `retainPixiApp()` / `releasePixiApp()` で生存 Application を数え、
- *    生存中が残る間は `GlobalResourceRegistry.release()` を抑止する
- *    （共有プールの purge は最後の 1 枚が消えるときだけ）。
- * 2. `returnTexture` を包み、clear 済みで返却先が無いテクスチャは
- *    プールへ戻さず破棄する（孤児化によるリークも防ぐ）。
+ * `TexturePool` は Pixi 8.21 以降、clear 済みバケットへの `returnTexture()` を
+ * 自分で破棄して受け止める。8.19 までの `_texturePool` / `_poolKeyHash` を読む
+ * 包みは 8.22 でフィールドが消え、初期化中の返却が `undefined` 参照で落ちる。
+ *
+ * 対策は `retainPixiApp()` / `releasePixiApp()` で生存 Application を数え、
+ * 生存中が残る間は `GlobalResourceRegistry.release()` を抑止する
+ * （共有プールの purge は最後の 1 枚が消えるときだけ）。
  */
-import { GlobalResourceRegistry, TexturePool, type Texture } from 'pixi.js';
+import { GlobalResourceRegistry } from 'pixi.js';
 
 let installed = false;
 
@@ -52,20 +50,5 @@ export function ensureTexturePoolGuard(): void {
   registry.release = () => {
     if (liveApps > 0) return;
     originalRelease();
-  };
-
-  const pool = TexturePool as unknown as {
-    _texturePool: Record<string, unknown[] | undefined>;
-    _poolKeyHash: Record<number, string | undefined>;
-    returnTexture(texture: Texture, resetStyle?: boolean): void;
-  };
-  const originalReturn = pool.returnTexture.bind(TexturePool);
-  pool.returnTexture = (texture, resetStyle) => {
-    const key = pool._poolKeyHash[texture.uid];
-    if (key === undefined || pool._texturePool[key] === undefined) {
-      texture.destroy(true);
-      return;
-    }
-    originalReturn(texture, resetStyle);
   };
 }

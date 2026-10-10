@@ -4141,6 +4141,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   font-size: 12px;
   cursor: pointer;
 }
+.title-footer button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .title-daily button:focus-visible,
 .title-footer button:focus-visible,
 .title-resume-btn:focus-visible {

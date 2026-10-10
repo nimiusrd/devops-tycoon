@@ -330,11 +330,7 @@ export type StartFromBuild =
   | {
       ok: false;
       reason:
-        | 'no-start-frame'
-        | 'ruleset-mismatch'
-        | 'ruleset-unknown'
-        | 'invalid-start'
-        | 'locked';
+        'no-start-frame' | 'ruleset-mismatch' | 'ruleset-unknown' | 'invalid-start' | 'locked';
       notCarried: typeof NOT_CARRIED;
     };
 

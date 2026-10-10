@@ -483,6 +483,92 @@ describe('仮説メモの保存', () => {
     ).toBe(true);
   });
 
+  it('振り返りの競合後に保存した下書きは、開始で消費される', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'a',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 2,
+      bound: {
+        runKey: 'run-b',
+        startId: 'b',
+        beforeStart: { text: '別', writtenAt: 2 },
+        reflection: null,
+      },
+    };
+    store.update((record) => writeHypothesisReflection(record, 'run-a', '振り返り', 5));
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(true);
+    store.update((record) => editHypothesisDraft(record, '次回', 9));
+    await store.flush();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('次回');
+    expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('b');
+    store.update((record) => bindHypothesisToRun(record, 'run-c', 'start-c'));
+    await store.flush();
+    const stored = normalizeHypothesisNote(memory.value);
+    expect(stored.draft).toBeNull();
+    expect(stored.bound).toMatchObject({ startId: 'start-c', beforeStart: { text: '次回' } });
+    expect(store.getSnapshot().record.draft).toBeNull();
+  });
+
+  it('先行する保存の失敗は、待ち行列の解除を失敗にしない', async () => {
+    let release = () => {};
+    let gate = Promise.resolve();
+    const arm = () => {
+      gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    let failNext = false;
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '狙い', writtenAt: 1 },
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'a',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        await gate;
+        if (failNext) {
+          failNext = false;
+          throw new Error('quota');
+        }
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    arm();
+    failNext = true;
+    store.update((record) => editHypothesisDraft(record, '変更', 2));
+    const saving = store.applyCommitted((record) => detachHypothesisNote(record));
+    release();
+    expect(await saving).toBe('saved');
+    await store.flush();
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
+  });
+
   it('進行中の読み込みが失敗したあとの再呼び出しは、もう一度読む', async () => {
     let calls = 0;
     let release: () => void = () => {};

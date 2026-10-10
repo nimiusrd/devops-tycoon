@@ -177,12 +177,16 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             publish({ record: restored, saveFailed: true });
             dirty = true;
           } else if (hypothesisCommitDroppedSessionBound(base, local, stored)) {
+            const display = queuedChanges.length > 0 ? applyQueued(local, queuedChanges) : local;
+            publish({ record: display, saveFailed: true });
+            // 競合で残せなかった振り返りは失敗のままにする。保存できた下書きだけ基準を進め、
+            // 開始で消した下書きを未変更と見なして復活させない。
+            if (sameDraft(local.draft, stored.draft)) {
+              baseRecord = { ...base, draft: stored.draft };
+            }
             settleOps(ops, 'failed');
-            settleOps(followOps, 'failed');
-            publish({
-              record: queuedChanges.length > 0 ? applyQueued(local, queuedChanges) : local,
-              saveFailed: true,
-            });
+            if (queuedChanges.length > 0) dirty = true;
+            activeOpIds = [...followOps, ...activeOpIds];
           } else if (hypothesisCommitKeptForeignBound(base, local, stored)) {
             const display = queuedChanges.length > 0 ? applyQueued(local, queuedChanges) : local;
             publish({ record: display, saveFailed: false });
@@ -213,7 +217,11 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           );
           queuedDuringWrite = [];
           settleOps(ops, 'failed');
-          settleOps(followOps, 'failed');
+          // 先行する書き込みだけが失敗しても、待ち行列の操作は次の保存の結果で判定する。
+          if (followOps.length > 0) {
+            activeOpIds = [...followOps, ...activeOpIds];
+            dirty = true;
+          }
           if (revertRecord && seq <= discardThroughSeq) {
             publish({ ...snapshot, record: revertRecord, saveFailed: true });
             revertRecord = null;

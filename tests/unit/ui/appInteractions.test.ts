@@ -250,6 +250,8 @@ import { createRunDiagnosticInfo } from '../../../src/state/diagnosticInfo';
 import {
   HYPOTHESIS_NOTE_SAVE_FAILED,
   HYPOTHESIS_START_SAVE_TIMEOUT_MS,
+  bindHypothesisToRun,
+  editHypothesisDraft,
 } from '../../../src/state/hypothesisNote';
 import { hypothesisNoteStore } from '../../../src/state/hypothesisNotePersistence';
 import { defaultMeta } from '../../../src/state/meta';
@@ -796,15 +798,33 @@ describe('App のタイトル操作', () => {
       ok: true,
       save: makeSharedRecords().save,
     });
-    const detach = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(editHypothesisDraft(record, '狙い', 1), 'local-run', 'start-1'),
+    );
+    await hypothesisNoteStore.flush();
+    const original = hypothesisNoteStore.applyCommitted.bind(hypothesisNoteStore);
+    let calls = 0;
+    const detach = vi
+      .spyOn(hypothesisNoteStore, 'applyCommitted')
+      .mockImplementation(async (change) => {
+        calls += 1;
+        if (calls === 1) {
+          hypothesisNoteStore.update(change);
+          return 'failed';
+        }
+        return original(change);
+      });
     try {
       expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toEqual({
         ok: false,
         message: HYPOTHESIS_NOTE_SAVE_FAILED,
       });
       expect(screen.game.rollbackRunImport).toHaveBeenCalledOnce();
+      expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-1');
     } finally {
       detach.mockRestore();
+      hypothesisNoteStore.update((record) => ({ ...record, draft: null, bound: null }));
+      await hypothesisNoteStore.flush();
     }
   });
 

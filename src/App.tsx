@@ -695,11 +695,13 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               cancelPendingLaunch();
               const result = await run.importRunSaveText(raw);
               if (result.ok) {
+                const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
                 const detached = await hypothesisNoteStore.applyCommitted((record) =>
                   detachHypothesisNote(record),
                 );
                 if (detached === 'failed') {
                   await game.rollbackRunImport();
+                  await hypothesisNoteStore.applyCommitted(() => beforeHypothesis);
                   return { ok: false, message: HYPOTHESIS_NOTE_SAVE_FAILED };
                 }
               }

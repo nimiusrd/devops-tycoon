@@ -2537,6 +2537,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
           }
           if (backup.runSave) {
+            const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
             const detached = await hypothesisNoteStore.applyCommitted((record) =>
               detachHypothesisNote(record),
             );
@@ -2545,6 +2546,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               undoImportedRun = null;
               await undo?.();
               await restoreSnapshot();
+              await hypothesisNoteStore.applyCommitted(() => beforeHypothesis);
               return {
                 ok: false,
                 reason: 'corrupt',

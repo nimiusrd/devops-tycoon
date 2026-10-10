@@ -321,4 +321,30 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().saveFailed).toBe(true);
     expect(store.getSnapshot().record.draft?.text).toBe('このタブ');
   });
+
+  it('競合した下書きは、その後の仮説追加でも別タブの本文を消さない', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    store.update((record) => editHypothesisDraft(record, '元', 1));
+    await store.flush();
+    const stored = normalizeHypothesisNote(memory.value);
+    memory.value = commitHypothesisNote(stored, editHypothesisDraft(stored, '別タブ', 2), stored);
+    store.update((record) => editHypothesisDraft(record, 'このタブ', 3));
+    await store.flush();
+    expect(store.getSnapshot().record.draft?.text).toBe('このタブ');
+    const revision = store.getSnapshot().record.draftRevision;
+    await store.applyCommitted((record) =>
+      prepareHypothesis(record, 'run-a', 'start-9', { text: 'このタブ', writtenAt: 3 }),
+    );
+    await store.flush();
+    const disk = normalizeHypothesisNote(memory.value);
+    expect(disk.draft?.text).toBe('別タブ');
+    expect(disk.notes['start-9']?.beforeStart.text).toBe('このタブ');
+    expect(store.getSnapshot().record.draft?.text).toBe('このタブ');
+    await store.applyCommitted((record) => consumeDraftRevision(record, revision));
+    await store.flush();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('別タブ');
+    expect(store.getSnapshot().record.draft?.text).toBe('このタブ');
+  });
 });

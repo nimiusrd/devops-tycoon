@@ -114,6 +114,8 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   const recordBeforeOp = new Map<number, HypothesisNoteRecord>();
   const changesAfterOp = new Map<number, Array<{ change: NoteChange; opId?: number }>>();
   const listeners = new Set<() => void>();
+  let holdingUnsavedDraft = false;
+  let heldDraft: HypothesisNoteRecord['draft'] = null;
 
   const publish = (next: HypothesisNoteSnapshot) => {
     snapshot = next;
@@ -153,12 +155,15 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       record: {
         ...stored,
         draft: local.draft,
-        draftRevision: local.draftRevision,
+        draftRevision: stored.draftRevision + 1,
         notes,
       },
       saveFailed: true,
     };
   };
+
+  const draftMatchesBase = (record: HypothesisNoteRecord, base: HypothesisNoteRecord) =>
+    record.draftRevision === base.draftRevision + 1 && sameDraftEntry(record.draft, heldDraft);
 
   const persist = (): Promise<void> => {
     dirty = true;
@@ -172,19 +177,44 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         const ops = activeOpIds;
         activeOpIds = [];
         captureChanges = true;
+        const suppressUnsavedDraft =
+          holdingUnsavedDraft &&
+          (draftMatchesBase(local, base) ||
+            (local.draft == null && local.draftRevision > base.draftRevision));
+        const commitLocal = suppressUnsavedDraft
+          ? { ...local, draft: base.draft, draftRevision: base.draftRevision }
+          : local;
+        if (
+          holdingUnsavedDraft &&
+          !suppressUnsavedDraft &&
+          !sameDraftEntry(local.draft, heldDraft)
+        ) {
+          holdingUnsavedDraft = false;
+        }
         try {
-          const stored = await storage.commit(local, base);
+          const stored = await storage.commit(commitLocal, base);
           const queued = queuedDuringWrite;
           queuedDuringWrite = [];
           captureChanges = false;
           const display = displayAfterCommit(base, local, stored);
-          const record =
+          if (hypothesisDraftConflict(base, local, stored)) {
+            holdingUnsavedDraft = true;
+            heldDraft = local.draft;
+          }
+          let record =
             queued.length > 0
               ? applyQueued(
                   display.record,
                   queued.map((item) => item.change),
                 )
               : display.record;
+          if (suppressUnsavedDraft && holdingUnsavedDraft) {
+            record = { ...record, draft: heldDraft, draftRevision: stored.draftRevision + 1 };
+            display.saveFailed = true;
+          }
+          if (holdingUnsavedDraft && !sameDraftEntry(record.draft, heldDraft)) {
+            holdingUnsavedDraft = false;
+          }
           baseRecord = stored;
           settleOps(ops, 'saved');
           activeOpIds = [
@@ -353,6 +383,13 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       publish({ ...snapshot, saveFailed: true });
     },
   };
+}
+
+function sameDraftEntry(
+  a: HypothesisNoteRecord['draft'],
+  b: HypothesisNoteRecord['draft'],
+): boolean {
+  return a && b ? a.text === b.text && a.writtenAt === b.writtenAt : a === b;
 }
 
 function defaultStorage(): HypothesisNoteStorage {

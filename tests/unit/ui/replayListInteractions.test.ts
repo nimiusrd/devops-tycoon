@@ -356,6 +356,8 @@ describe('ReplayListScreen のファイル共有', () => {
     expect(screen.find('replay-file').props.disabled).toBe(true);
     expect(screen.find('replay-file-button').props.disabled).toBe(true);
     expect(screen.find('replay-list-close').props.disabled).toBe(true);
+    expect(screen.find('replay-list-close').props.className).toContain('btn');
+    expect(content(screen.find('replay-share-status'))).toBe('読み込み中…');
     screen.click('replay-file-button');
     expect(screen.fileInput.click).not.toHaveBeenCalled();
 
@@ -363,7 +365,7 @@ describe('ReplayListScreen のファイル共有', () => {
     await screen.settle();
     expect(onImportReplay).toHaveBeenCalledExactlyOnceWith('{"id":"imported"}');
     expect(screen.find('replay-file').props.disabled).toBe(true);
-    expect(screen.query('replay-share-status')).toBeUndefined();
+    expect(content(screen.find('replay-share-status'))).toBe('読み込み中…');
 
     imported.resolve({ ok: true, message: '内部向けの結果' });
     await screen.settle();

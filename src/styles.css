@@ -738,16 +738,20 @@ body {
   cursor: pointer;
   box-shadow: 0 4px 0 #1d1640;
 }
-.btn:hover {
+.btn:hover:not(:disabled) {
   filter: brightness(1.12);
 }
 .btn:focus-visible {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
-.btn:active {
+.btn:active:not(:disabled) {
   transform: translateY(2px);
   box-shadow: 0 2px 0 #1d1640;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .btn-primary {
   background: linear-gradient(135deg, #6a57ad, #4a3a86);
@@ -3652,21 +3656,20 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   gap: 8px;
 }
 .title-recipe-actions button {
+  margin-left: 0;
   padding: 7px 10px;
   border: 1px solid var(--tc-line);
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(16, 23, 43, 0.94), rgba(17, 38, 70, 0.78));
+  box-shadow: none;
   color: #ced8e9;
   font-size: 12px;
+  font-weight: 400;
   cursor: pointer;
 }
 .title-recipe-actions button:hover:not(:disabled) {
   border-color: #7edfff;
   background: #142944;
-}
-.title-recipe-actions button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 .title-recipe-status {
   margin: 0;
@@ -3719,7 +3722,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .title-launch-pending .title-recipe-text:disabled {
   animation: title-launch-dim-control 0.22s linear 150ms forwards;
 }
-.title-launch-pending .title-recipe-actions button:disabled {
+.title-launch-pending .is-launch-locked:disabled {
   opacity: 1;
   animation: title-launch-dim-control 0.22s linear 150ms forwards;
 }
@@ -3737,7 +3740,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   .title-launch-pending .difficulty-card:disabled:not(.is-locked),
   .title-launch-pending .trial-chip:disabled,
   .title-launch-pending .title-recipe-text:disabled,
-  .title-launch-pending .title-recipe-actions button:disabled {
+  .title-launch-pending .is-launch-locked:disabled {
     animation-duration: 0.01ms;
   }
 }

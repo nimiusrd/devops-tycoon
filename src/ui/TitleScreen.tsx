@@ -346,6 +346,7 @@ export function TitleScreen({
 
   const launchBlocked = newRunBlocked || runSaveImporting || runLaunchPending;
   const startConditionTitle = runLaunchPending ? '開始中は条件を変えられません' : undefined;
+  const launchLockedClass = runLaunchPending ? 'btn is-launch-locked' : 'btn';
   const launchDescribedBy = [
     newRunBlocked ? 'finish-save-block' : '',
     hypothesisUnrecorded ? 'hypothesis-start-unrecorded' : '',
@@ -685,6 +686,7 @@ export function TitleScreen({
                 <div className="title-recipe-actions">
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-export"
                     disabled={runLaunchPending}
                     title={startConditionTitle}
@@ -694,6 +696,7 @@ export function TitleScreen({
                   </button>
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-download"
                     disabled={runLaunchPending}
                     title={startConditionTitle}
@@ -703,6 +706,7 @@ export function TitleScreen({
                   </button>
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-apply"
                     disabled={runLaunchPending}
                     title={startConditionTitle}
@@ -712,6 +716,7 @@ export function TitleScreen({
                   </button>
                   <button
                     type="button"
+                    className={launchLockedClass}
                     data-testid="start-recipe-file-button"
                     disabled={runLaunchPending}
                     title={startConditionTitle}
@@ -755,6 +760,7 @@ export function TitleScreen({
                     {onExportRunSave ? (
                       <button
                         type="button"
+                        className="btn"
                         data-testid="run-save-download"
                         disabled={!resumableSummary || !!runSaveIssue}
                         onClick={downloadRunSave}
@@ -766,6 +772,9 @@ export function TitleScreen({
                       <>
                         <button
                           type="button"
+                          className={
+                            runLaunchPending && !runSaveImporting ? 'btn is-launch-locked' : 'btn'
+                          }
                           data-testid="run-save-file-button"
                           disabled={runSaveImporting || runLaunchPending}
                           onClick={() => runSaveFileRef.current?.click()}

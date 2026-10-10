@@ -540,6 +540,7 @@ describe('TitleScreen のラン開始条件', () => {
     }
     expect(screen.find('hypothesis-note-input').props.disabled).not.toBe(true);
     expect(screen.find('difficulty-normal').props.title).toBe('開始中は条件を変えられません');
+    expect(screen.find('start-recipe-apply').props.className).toBe('btn is-launch-locked');
     expect(screen.find('title').props.className).toContain('title-launch-pending');
     expect(screen.find('difficulty-hard').props.className).toContain('is-locked');
     expect(screen.find('title-launch-dock').props['aria-busy']).toBe(true);
@@ -549,6 +550,7 @@ describe('TitleScreen のラン開始条件', () => {
     expect(screen.find('start-run').props.disabled).toBe(false);
     expect(screen.find('difficulty-normal').props.disabled).toBe(false);
     expect(screen.find('start-recipe-apply').props.disabled).toBe(false);
+    expect(screen.find('start-recipe-apply').props.className).toBe('btn');
     expect(screen.find('resume-run').props.disabled).toBe(false);
     expect(screen.find('open-replays').props.disabled).toBe(false);
     expect(screen.find('title-launch-dock').props['aria-busy']).toBeUndefined();
@@ -574,6 +576,7 @@ describe('TitleScreen の途中セーブ共有', () => {
   it('途中セーブがなければ書き出しを無効にする', () => {
     const screen = mountTitle({ onExportRunSave: vi.fn() });
     expect(screen.find('run-save-download').props.disabled).toBe(true);
+    expect(screen.find('run-save-download').props.className).toBe('btn');
     expect(screen.props.onExportRunSave).not.toHaveBeenCalled();
   });
 

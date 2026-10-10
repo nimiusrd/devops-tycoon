@@ -283,14 +283,16 @@ export function ReplayListScreen({
                   </>
                 ) : null}
               </div>
-              {shareStatus.message ? (
+              {replayImporting || shareStatus.message ? (
                 <p
-                  className={`replay-share-status${shareStatus.kind === 'error' ? ' error' : ''}`}
+                  className={`replay-share-status${
+                    !replayImporting && shareStatus.kind === 'error' ? ' error' : ''
+                  }`}
                   data-testid="replay-share-status"
                   role="status"
                   aria-live="polite"
                 >
-                  {shareStatus.message}
+                  {replayImporting ? '読み込み中…' : shareStatus.message}
                 </p>
               ) : null}
             </div>

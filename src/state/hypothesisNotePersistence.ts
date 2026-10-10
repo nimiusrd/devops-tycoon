@@ -240,21 +240,31 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           )) {
             heldReflections.set(id, reflection);
           }
-          let record =
-            queued.length > 0
-              ? applyQueued(
-                  display.record,
-                  queued.map((item) => item.change),
-                )
-              : display.record;
-          if (suppressUnsavedDraft && holdingUnsavedDraft) {
-            record = { ...record, draft: heldDraft, draftRevision: stored.draftRevision + 1 };
-            display.saveFailed = true;
+          const retainHeld = (current: HypothesisNoteRecord): HypothesisNoteRecord => {
+            let next = current;
+            if (suppressUnsavedDraft && holdingUnsavedDraft) {
+              next = { ...next, draft: heldDraft, draftRevision: stored.draftRevision + 1 };
+              display.saveFailed = true;
+            }
+            if (heldReflections.size > 0) {
+              next = overlayHeldReflections(next);
+              display.saveFailed = true;
+            }
+            return next;
+          };
+          // 待ち行列の確定操作は、この保存が取り込む前の表示を基準にしている。
+          // 昇格前に保存結果へ載せ替えないと、失敗時の復元が別タブのノートを欠落に見せる。
+          let cursor = display.record;
+          for (let index = 0; index < queued.length; index += 1) {
+            const item = queued[index];
+            if (!item) continue;
+            if (item.opId !== undefined) {
+              recordBeforeOp.set(item.opId, retainHeld(cursor));
+              changesAfterOp.set(item.opId, queued.slice(index + 1));
+            }
+            cursor = item.change(cursor);
           }
-          if (heldReflections.size > 0) {
-            record = overlayHeldReflections(record);
-            display.saveFailed = true;
-          }
+          const record = retainHeld(cursor);
           if (holdingUnsavedDraft && !sameDraftEntry(record.draft, heldDraft)) {
             holdingUnsavedDraft = false;
           }

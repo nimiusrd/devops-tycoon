@@ -374,6 +374,62 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.notes['start-1']?.reflection?.text).toBe('このタブ');
   });
 
+  it('昇格した確定が失敗しても、先行保存が取り込んだ別タブのノートを消さない', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const memory = new MemoryHypothesisNoteStorage();
+    let commits = 0;
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        commits += 1;
+        if (commits === 1) {
+          await gate;
+          const disk = prepareHypothesis(
+            normalizeHypothesisNote(memory.value),
+            'run-b',
+            'start-other',
+            {
+              text: '別タブ',
+              writtenAt: 2,
+            },
+          );
+          const next = commitHypothesisNote(base, local, disk);
+          memory.value = next;
+          return next;
+        }
+        if (commits === 2) throw new Error('quota');
+        const next = commitHypothesisNote(base, local, normalizeHypothesisNote(memory.value));
+        memory.value = next;
+        return next;
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    store.update((record) => editHypothesisDraft(record, 'この下書き', 1));
+    const saving = store.applyCommitted((record) =>
+      prepareHypothesis(record, 'run-a', 'start-mine', { text: 'この下書き', writtenAt: 1 }),
+    );
+    release();
+    expect(await saving).toBe('failed');
+    await store.flush();
+    expect(store.getSnapshot().record.notes['start-other']?.beforeStart.text).toBe('別タブ');
+    expect(store.getSnapshot().record.notes['start-mine']).toBeUndefined();
+    expect(normalizeHypothesisNote(memory.value).notes['start-other']?.beforeStart.text).toBe(
+      '別タブ',
+    );
+    store.update((record) => editHypothesisDraft(record, 'この下書き 追記', 3));
+    await store.flush();
+    const disk = normalizeHypothesisNote(memory.value);
+    expect(disk.notes['start-other']?.beforeStart.text).toBe('別タブ');
+    expect(disk.notes['start-mine']).toBeUndefined();
+    expect(disk.draft?.text).toBe('この下書き 追記');
+    expect(store.getSnapshot().record.notes['start-other']?.beforeStart.text).toBe('別タブ');
+    expect(store.getSnapshot().record.draft?.text).toBe('この下書き 追記');
+  });
+
   it('採用しなかった準備は、遅れて保存されてもその開始IDを残さない', async () => {
     let release = () => {};
     const gate = new Promise<void>((resolve) => {

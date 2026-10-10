@@ -482,6 +482,78 @@ describe('TitleScreen のラン開始条件', () => {
     );
   });
 
+  it('開始クリックのあとへ届いたレシピファイルは、開始条件と研修方針を変えない', async () => {
+    let resolveText: (value: string) => void = () => {};
+    const text = new Promise<string>((resolve) => {
+      resolveText = resolve;
+    });
+    const onApplyPreferred = vi.fn();
+    const screen = mountTitle({ onApplyPreferred, onStartDaily: vi.fn() });
+    screen.chooseFile('start-recipe-file', { text: () => text });
+    screen.click('start-run');
+    expect(screen.props.onStart).toHaveBeenCalledExactlyOnceWith('easy', [], 'default', undefined);
+    resolveText(serializeStartRecipe(recipe));
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+    expect(screen.nodes.some((node) => node.props['data-testid'] === 'start-recipe-status')).toBe(
+      false,
+    );
+    expect(screen.find('difficulty-easy').props.className).toContain('selected');
+    expect(screen.find('trial-half-budget').props.className).not.toContain(' on');
+    expect(screen.find('scenario-copilot').props.className).not.toContain(' on');
+    screen.click('start-daily-run');
+    expect(screen.props.onStartDaily).toHaveBeenCalledOnce();
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+  });
+
+  it('確認後のデイリー開始でも、遅れて届いたレシピファイルは研修方針を変えない', async () => {
+    let resolveText: (value: string) => void = () => {};
+    const text = new Promise<string>((resolve) => {
+      resolveText = resolve;
+    });
+    const onApplyPreferred = vi.fn();
+    const screen = mountTitle({
+      onApplyPreferred,
+      onStartDaily: vi.fn(),
+      resumableSummary: savedRun,
+    });
+    screen.chooseFile('start-recipe-file', { text: () => text });
+    screen.click('start-daily-run');
+    expect(screen.props.onStartDaily).not.toHaveBeenCalled();
+    resolveText(serializeStartRecipe(recipe));
+    await screen.settle();
+    expect(onApplyPreferred).toHaveBeenCalledExactlyOnceWith(['docs']);
+    onApplyPreferred.mockClear();
+    let resolveLate: (value: string) => void = () => {};
+    const late = new Promise<string>((resolve) => {
+      resolveLate = resolve;
+    });
+    screen.chooseFile('start-recipe-file', { text: () => late });
+    (screen.dailyDialog().props.onDiscardAndStart as () => void)();
+    screen.flush();
+    expect(screen.props.onStartDaily).toHaveBeenCalledOnce();
+    resolveLate(serializeStartRecipe({ ...recipe, preferredCardIds: ['test'] }));
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+    expect(screen.find('difficulty-normal').props.className).toContain('selected');
+  });
+
+  it('開始の待ちが終わったあとは、レシピファイルを再び読み込める', async () => {
+    const onApplyPreferred = vi.fn();
+    const screen = mountTitle({ onApplyPreferred });
+    screen.click('start-run');
+    screen.chooseFile('start-recipe-file', { text: async () => serializeStartRecipe(recipe) });
+    await screen.settle();
+    expect(onApplyPreferred).not.toHaveBeenCalled();
+    screen.update({ runLaunchPending: true });
+    screen.update({ runLaunchPending: false });
+    screen.chooseFile('start-recipe-file', { text: async () => serializeStartRecipe(recipe) });
+    await screen.settle();
+    expect(onApplyPreferred).toHaveBeenCalledExactlyOnceWith(['docs']);
+    expect(content(screen.find('start-recipe-status'))).toBe('開始条件を読み込みました。');
+  });
+
   it.each([true, false])(
     'レシピ保存の成功=%s を表示し、未適用の編集ではなく現在の条件を保存する',
     (ok) => {

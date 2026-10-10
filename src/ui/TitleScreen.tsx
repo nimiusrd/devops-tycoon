@@ -185,6 +185,9 @@ export function TitleScreen({
     message: string;
   }>({ kind: 'idle', message: '' });
   const recipeFileRef = useRef<HTMLInputElement>(null);
+  /** 開始クリックで進め、読み込み中のレシピを無効にする。 */
+  const recipeFileToken = useRef(0);
+  const recipeFileBlocked = useRef(false);
   const runSaveFileRef = useRef<HTMLInputElement>(null);
   const runSaveImportGen = useRef(0);
   const [runSaveImporting, setRunSaveImporting] = useState(false);
@@ -253,8 +256,12 @@ export function TitleScreen({
   const onRecipeFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file) return;
+    if (!file || recipeFileBlocked.current) return;
+    const token = ++recipeFileToken.current;
     void file.text().then((raw) => {
+      // 開始は難易度・試練・シナリオをクリック時に確定する。遅れて届いたレシピが
+      // 研修方針だけを startRun の直前に変えないよう、開始後の適用は捨てる。
+      if (token !== recipeFileToken.current || recipeFileBlocked.current) return;
       setRecipeDraft(raw);
       applyRecipeText(raw);
     });
@@ -316,10 +323,15 @@ export function TitleScreen({
     : 'まだ今日の記録はありません';
 
   const closeDailyConfirm = useCallback(() => setDailyConfirmOpen(false), []);
+  const claimRunLaunch = useCallback(() => {
+    recipeFileBlocked.current = true;
+    recipeFileToken.current += 1;
+  }, []);
   const confirmStartDaily = useCallback(() => {
+    claimRunLaunch();
     setDailyConfirmOpen(false);
     onStartDaily?.();
-  }, [onStartDaily]);
+  }, [claimRunLaunch, onStartDaily]);
   const confirmResumeFromDaily = useCallback(() => {
     setDailyConfirmOpen(false);
     onResume?.();
@@ -330,8 +342,13 @@ export function TitleScreen({
       setDailyConfirmOpen(true);
       return;
     }
+    claimRunLaunch();
     onStartDaily?.();
   };
+
+  useEffect(() => {
+    if (!runLaunchPending) recipeFileBlocked.current = false;
+  }, [runLaunchPending]);
 
   useEffect(() => {
     if (dailyConfirmOpen) {
@@ -407,7 +424,10 @@ export function TitleScreen({
             data-testid="start-run"
             disabled={launchBlocked}
             aria-describedby={launchDescribedBy || undefined}
-            onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
+            onClick={() => {
+              claimRunLaunch();
+              onStart(difficulty, trials, scenario, recipeSeed ?? undefined);
+            }}
           >
             <span>
               <small>ラン開始</small>
@@ -424,7 +444,10 @@ export function TitleScreen({
             data-testid="start-run"
             disabled={launchBlocked}
             aria-describedby={launchDescribedBy || undefined}
-            onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
+            onClick={() => {
+              claimRunLaunch();
+              onStart(difficulty, trials, scenario, recipeSeed ?? undefined);
+            }}
           >
             {runLaunchPending ? '開始中…' : '四半期を始める →'}
           </button>

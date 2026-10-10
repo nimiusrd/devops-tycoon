@@ -51,6 +51,8 @@ export const VISUAL_TOKENS = {
     text: '#fdf6ec',
     textDim: '#b9add0',
     panel: '#2a2350',
+    /** パネルの上に載せる入力面。再現情報 JSON と仮説の振り返りで共有する。 */
+    fieldInset: '#080b1bcc',
     line: '#4a3d7a',
     cream: '#ffefd6',
     coral: '#ff7e8b',
@@ -595,6 +597,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-color-text': colors.text,
     '--visual-color-text-dim': colors.textDim,
     '--visual-color-panel': colors.panel,
+    '--visual-color-field-inset': colors.fieldInset,
     '--visual-color-line': colors.line,
     '--visual-color-cream': colors.cream,
     '--visual-color-coral': colors.coral,

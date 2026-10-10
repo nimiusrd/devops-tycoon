@@ -52,7 +52,6 @@ export function ReplayListScreen({
   onImportReplay,
 }: ReplayListScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
   const resolvedSelectedId = resolveSelectedReplayId(replays, selectedId);
   const selected = replays.find((r) => r.id === resolvedSelectedId) ?? null;
@@ -60,6 +59,10 @@ export function ReplayListScreen({
   const replayFileRef = useRef<HTMLInputElement>(null);
   const replayImportGen = useRef(0);
   const [replayImporting, setReplayImporting] = useState(false);
+  useDialogOverlayLock(overlayRef, {
+    restoreFocus: true,
+    onDismiss: replayImporting ? undefined : onClose,
+  });
   const [shareStatus, setShareStatus] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -212,6 +215,7 @@ export function ReplayListScreen({
                           type="button"
                           className="btn"
                           data-testid="replay-review-hell-open"
+                          disabled={replayImporting}
                           onClick={() => onOpen(selected.id, hellView.preferredKeyframeIndex)}
                         >
                           レビュー地獄を開く →
@@ -224,6 +228,7 @@ export function ReplayListScreen({
                           <button
                             type="button"
                             data-testid={`replay-keyframe-${index}`}
+                            disabled={replayImporting}
                             onClick={() => onOpen(selected.id, index)}
                           >
                             <b>{frame.phase}</b>
@@ -280,14 +285,16 @@ export function ReplayListScreen({
                   </>
                 ) : null}
               </div>
-              {shareStatus.message ? (
+              {replayImporting || shareStatus.message ? (
                 <p
-                  className={`replay-share-status${shareStatus.kind === 'error' ? ' error' : ''}`}
+                  className={`replay-share-status${
+                    !replayImporting && shareStatus.kind === 'error' ? ' error' : ''
+                  }`}
                   data-testid="replay-share-status"
                   role="status"
                   aria-live="polite"
                 >
-                  {shareStatus.message}
+                  {replayImporting ? '読み込み中…' : shareStatus.message}
                 </p>
               ) : null}
             </div>
@@ -298,6 +305,8 @@ export function ReplayListScreen({
           type="button"
           className="btn result-overlay-close"
           data-testid="replay-list-close"
+          disabled={replayImporting}
+          title={replayImporting ? '読み込み中は閉じられません' : undefined}
           onClick={onClose}
         >
           閉じる

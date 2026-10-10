@@ -247,6 +247,12 @@ import type { HudMetricSnapshot, RunMetricSnapshot } from '../../../src/render/s
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { createRunDiagnosticInfo } from '../../../src/state/diagnosticInfo';
+import {
+  HYPOTHESIS_START_SAVE_TIMEOUT_MS,
+  editHypothesisDraft,
+  prepareHypothesis,
+} from '../../../src/state/hypothesisNote';
+import { hypothesisNoteStore } from '../../../src/state/hypothesisNotePersistence';
 import { defaultMeta } from '../../../src/state/meta';
 import {
   REPLAY_SCHEMA_VERSION,
@@ -406,6 +412,12 @@ function makeGame() {
   let epoch = 0;
   let holds = 0;
   return {
+    phase: vi.fn(() => 'title' as const),
+    isReplayMode: vi.fn(() => false),
+    getRunEpoch: vi.fn(() => 1),
+    hypothesisStartId: vi.fn(() => null),
+    rollbackRunImport: vi.fn(async () => undefined),
+    finishSaveBlocksNewRun: vi.fn(() => false),
     isPaused: vi.fn(() => paused || holds > 0),
     getPauseEpoch: vi.fn(() => epoch),
     pause: vi.fn(() => {
@@ -617,7 +629,7 @@ describe('App のタイトル操作', () => {
 
   it.each(['onStart', 'onStartDaily', 'onResume'])(
     '%s は音声を解禁し、モーダルと前ランのメトリクスをクリアする',
-    (action) => {
+    async (action) => {
       const screen = mountApp();
       screen.phase('setup');
       const hud = {
@@ -645,14 +657,23 @@ describe('App のタイトル操作', () => {
       screen.phase('title');
       screen.invoke('TitleScreen', 'onOpenHelp');
       const args = action === 'onStart' ? ['hard', ['half-budget'], 'copilot', 'shared-seed'] : [];
-      screen.invoke('TitleScreen', action, ...args);
+      await screen.invoke('TitleScreen', action, ...args);
       const method =
         action === 'onStart'
           ? 'startRun'
           : action === 'onStartDaily'
             ? 'startDailyRun'
             : 'resumeRun';
-      expect(screen.run[method]).toHaveBeenCalledExactlyOnceWith(...args);
+      if (action === 'onStartDaily') {
+        expect(screen.run.startDailyRun).toHaveBeenCalledExactlyOnceWith(
+          expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          null,
+        );
+      } else if (action === 'onStart') {
+        expect(screen.run.startRun).toHaveBeenCalledExactlyOnceWith(...args, null);
+      } else {
+        expect(screen.run[method]).toHaveBeenCalledExactlyOnceWith(...args);
+      }
       expect(audio.unlock).toHaveBeenCalledOnce();
       expect(screen.has('HowToPlayScreen')).toBe(false);
       screen.phase('setup');
@@ -661,6 +682,253 @@ describe('App のタイトル操作', () => {
       expect(screen.invoke('RunBar', 'getInitialPreviousSnapshot')).toBeNull();
     },
   );
+
+  it('保存待ち中の続きからは、あとから届く新規ランで上書きしない', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    screen.invoke('TitleScreen', 'onHypothesisDraftChange', '残す仮説');
+    await hypothesisNoteStore.flush();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = hypothesisNoteStore.applyCommitted.bind(hypothesisNoteStore);
+    const spy = vi
+      .spyOn(hypothesisNoteStore, 'applyCommitted')
+      .mockImplementation(async (change) => {
+        await gate;
+        return original(change);
+      });
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      expect(screen.child('TitleScreen').runLaunchPending).toBe(true);
+      screen.invoke('TitleScreen', 'onResume');
+      release();
+      await starting;
+      screen.flush();
+      await hypothesisNoteStore.flush();
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      expect(screen.run.resumeRun).toHaveBeenCalledOnce();
+      expect(hypothesisNoteStore.getSnapshot().record.draft?.text).toBe('残す仮説');
+      expect(screen.child('TitleScreen').runLaunchPending).toBe(false);
+    } finally {
+      spy.mockRestore();
+      hypothesisNoteStore.update((record) => ({ ...record, draft: null }));
+      await hypothesisNoteStore.flush();
+    }
+  });
+
+  it('開始取消のタイムアウトは、保存の完了を待たない', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    vi.useFakeTimers();
+    const spy = vi
+      .spyOn(hypothesisNoteStore, 'applyCommitted')
+      .mockImplementation(() => new Promise(() => undefined));
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      vi.mocked(screen.game.finishSaveBlocksNewRun).mockReturnValue(true);
+      await vi.advanceTimersByTimeAsync(HYPOTHESIS_START_SAVE_TIMEOUT_MS);
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      expect(screen.child('TitleScreen').runLaunchPending).toBe(false);
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('完走保存が開始待ちのあいだに失敗したら、開始中のままにしない', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockImplementation(async () => {
+      await gate;
+      return 'saved';
+    });
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      vi.mocked(screen.game.finishSaveBlocksNewRun).mockReturnValue(true);
+      release();
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      expect(screen.child('TitleScreen').runLaunchPending).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('読み込み前の空表示でも、届いた下書きを今回の仮説にして始める', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    hypothesisNoteStore.update((record) =>
+      record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+    );
+    await hypothesisNoteStore.flush();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = vi.spyOn(hypothesisNoteStore, 'load').mockImplementation(async () => {
+      await gate;
+      hypothesisNoteStore.update((record) => editHypothesisDraft(record, '保存済み', 5));
+      await hypothesisNoteStore.flush();
+    });
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      release();
+      await starting;
+      screen.flush();
+      const startId = vi.mocked(screen.run.startRun).mock.calls[0]?.[4];
+      expect(startId).toEqual(expect.any(String));
+      expect(hypothesisNoteStore.getSnapshot().record.notes[startId]?.beforeStart.text).toBe(
+        '保存済み',
+      );
+    } finally {
+      spy.mockRestore();
+      hypothesisNoteStore.update((record) =>
+        record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+      );
+      await hypothesisNoteStore.flush();
+    }
+  });
+
+  it('読み込みが上限を超えた空表示の開始は、仮説なしで始める', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    hypothesisNoteStore.update((record) =>
+      record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+    );
+    await hypothesisNoteStore.flush();
+    vi.useFakeTimers();
+    const spy = vi.spyOn(hypothesisNoteStore, 'load').mockReturnValue(new Promise(() => undefined));
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      await vi.advanceTimersByTimeAsync(HYPOTHESIS_START_SAVE_TIMEOUT_MS);
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).toHaveBeenCalledOnce();
+      expect(vi.mocked(screen.run.startRun).mock.calls[0]?.[4]).toBeNull();
+      expect(screen.child('TitleScreen').hypothesisUnrecorded).toBe(false);
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('空の開始は、別タブが残した仮説の開始 ID を渡さない', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    hypothesisNoteStore.update((record) =>
+      record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+    );
+    await hypothesisNoteStore.flush();
+    try {
+      await screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      const args = vi.mocked(screen.run.startRun).mock.calls[0];
+      expect(args?.[4]).toBeNull();
+    } finally {
+      hypothesisNoteStore.update((record) =>
+        record.draft ? { ...record, draft: null, draftRevision: record.draftRevision + 1 } : record,
+      );
+      await hypothesisNoteStore.flush();
+    }
+  });
+
+  it('仮説の保存が上限を超えたら、仮説なしでランを始める', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    hypothesisNoteStore.update((record) => editHypothesisDraft(record, '狙い', 1));
+    await hypothesisNoteStore.flush();
+    vi.useFakeTimers();
+    const spy = vi
+      .spyOn(hypothesisNoteStore, 'applyCommitted')
+      .mockReturnValue(new Promise(() => undefined));
+    try {
+      const starting = screen.invoke(
+        'TitleScreen',
+        'onStart',
+        'hard',
+        ['half-budget'],
+        'copilot',
+        'shared-seed',
+      );
+      await vi.advanceTimersByTimeAsync(HYPOTHESIS_START_SAVE_TIMEOUT_MS - 1);
+      expect(screen.run.startRun).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await starting;
+      screen.flush();
+      expect(screen.run.startRun).toHaveBeenCalledOnce();
+      expect(screen.child('TitleScreen').hypothesisUnrecorded).toBe(true);
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('タイトルに留まったままの再開始は、ラン開始を一度だけ実行する', async () => {
+    const screen = mountApp();
+    screen.phase('title');
+    const first = screen.invoke(
+      'TitleScreen',
+      'onStart',
+      'hard',
+      ['half-budget'],
+      'copilot',
+      'shared-seed',
+    );
+    screen.invoke('TitleScreen', 'onStart', 'hard', ['half-budget'], 'copilot', 'shared-seed');
+    await first;
+    expect(screen.run.startRun).toHaveBeenCalledOnce();
+  });
 
   it('購入・研修方針・セーブ破棄・サウンド設定を対応するラン操作へ渡す', () => {
     const screen = mountApp();
@@ -682,6 +950,67 @@ describe('App のタイトル操作', () => {
     screen.invoke('TitleScreen', 'onToggleSoundMuted');
     expect(screen.run.setSoundMuted).toHaveBeenLastCalledWith(false);
     expect(audio.unlock).toHaveBeenCalledTimes(2);
+  });
+
+  it('取り込み中に始まった仮説は、取り込み完了の解除で消さない', async () => {
+    const screen = mountApp();
+    hypothesisNoteStore.update((record) =>
+      prepareHypothesis(editHypothesisDraft(record, '前', 1), 'run-a', 'start-1', {
+        text: '前',
+        writtenAt: 1,
+      }),
+    );
+    await hypothesisNoteStore.flush();
+    vi.mocked(screen.run.importRunSaveText).mockImplementation(async () => {
+      hypothesisNoteStore.update((record) =>
+        prepareHypothesis(editHypothesisDraft(record, '新しい', 2), 'run-b', 'start-2', {
+          text: '新しい',
+          writtenAt: 2,
+        }),
+      );
+      await hypothesisNoteStore.flush();
+      return { ok: true, save: makeSharedRecords().save };
+    });
+    try {
+      expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toMatchObject({
+        ok: true,
+      });
+      expect(hypothesisNoteStore.getSnapshot().record.notes['start-2']?.beforeStart.text).toBe(
+        '新しい',
+      );
+    } finally {
+      hypothesisNoteStore.update((record) => ({ ...record, draft: null, bound: null }));
+      await hypothesisNoteStore.flush();
+    }
+  });
+
+  it('単体取り込みは、仮説メモを消さずセーブを残す', async () => {
+    const screen = mountApp();
+    vi.mocked(screen.run.importRunSaveText).mockResolvedValue({
+      ok: true,
+      save: makeSharedRecords().save,
+    });
+    hypothesisNoteStore.update((record) =>
+      prepareHypothesis(editHypothesisDraft(record, '狙い', 1), 'local-run', 'keep-single', {
+        text: '狙い',
+        writtenAt: 1,
+      }),
+    );
+    await hypothesisNoteStore.flush();
+    const detach = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
+    try {
+      expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toMatchObject({
+        ok: true,
+      });
+      expect(screen.game.rollbackRunImport).not.toHaveBeenCalled();
+      expect(hypothesisNoteStore.getSnapshot().record.notes['keep-single']?.beforeStart.text).toBe(
+        '狙い',
+      );
+    } finally {
+      detach.mockRestore();
+      hypothesisNoteStore.update((record) => ({ ...record, draft: null, bound: null }));
+      await hypothesisNoteStore.flush();
+    }
   });
 
   it.each([true, false])(
@@ -743,6 +1072,24 @@ describe('App のフェーズとオーバーレイ', () => {
     expect(resetWindowScroll).toHaveBeenCalledTimes(2);
     expect(audio.setBgmOff).toHaveBeenCalledOnce();
     expect(audio.setBgmFromDiagnosis).toHaveBeenLastCalledWith(screen.run.state.diagnosis);
+  });
+
+  it('リプレイの決着では、端末メモの保存失敗を出さない', async () => {
+    const screen = mountApp({ isReplayMode: true });
+    hypothesisNoteStore.abandonUnpersistedStart();
+    screen.phase('lost');
+    expect(hypothesisNoteStore.getSnapshot().saveFailed).toBe(true);
+    expect(screen.child('RunResultScreen')).toMatchObject({
+      hypothesisNote: null,
+      hypothesisSaveFailed: false,
+    });
+    hypothesisNoteStore.update((record) => ({
+      ...record,
+      draft: { text: '戻す', writtenAt: 1 },
+    }));
+    await hypothesisNoteStore.flush();
+    hypothesisNoteStore.update((record) => ({ ...record, draft: null }));
+    await hypothesisNoteStore.flush();
   });
 
   it.each(['won', 'lost'] as const)('%s の結果から通常ランを終了してタイトルへ戻る', (phase) => {

@@ -4,6 +4,7 @@
  * ゲーム状態から表示・コピー可能な構造化情報を作る。ルールセットの
  * 指紋は省略せず、同じ入力条件を別ルールセットと混同しないようにする。
  */
+import type { HypothesisNoteExport } from './hypothesisNote';
 import type { RunRulesetIdentity } from './runPersistence';
 import type {
   DiagnosisType,
@@ -52,8 +53,14 @@ export function createRunDiagnosticInfo(
   };
 }
 
-/** 診断情報をキー順固定の、人が貼り付けやすい JSON へ変換する。 */
-export function serializeRunDiagnosticInfo(info: RunDiagnosticInfo): string {
+/**
+ * 診断情報をキー順固定の、人が貼り付けやすい JSON へ変換する。
+ * 仮説メモはプレイヤーが含めると選んだときだけ末尾に付け、再現条件とは混ぜない。
+ */
+export function serializeRunDiagnosticInfo(
+  info: RunDiagnosticInfo,
+  hypothesisNote?: HypothesisNoteExport,
+): string {
   return `${JSON.stringify(
     {
       schemaVersion: info.schemaVersion,
@@ -66,6 +73,7 @@ export function serializeRunDiagnosticInfo(info: RunDiagnosticInfo): string {
       phase: info.phase,
       status: info.status,
       diagnosis: info.diagnosis,
+      ...(hypothesisNote ? { hypothesisNote } : {}),
     },
     null,
     2,

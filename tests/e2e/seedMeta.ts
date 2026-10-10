@@ -10,6 +10,7 @@ import {
   GAME_DB_NAME,
   GAME_DB_VERSION,
   GENERATION_STORE_NAME,
+  HYPOTHESIS_NOTE_STORE_NAME,
   META_RECORD_KEY,
   META_STORE_NAME,
   REPLAYS_STORE_NAME,
@@ -65,7 +66,12 @@ export async function seedMeta(page: Page, meta: Partial<MetaState>): Promise<vo
       dbVersion: GAME_DB_VERSION,
       metaStore: META_STORE_NAME,
       metaKey: META_RECORD_KEY,
-      otherStores: [RUN_STORE_NAME, REPLAYS_STORE_NAME, GENERATION_STORE_NAME],
+      otherStores: [
+        RUN_STORE_NAME,
+        REPLAYS_STORE_NAME,
+        GENERATION_STORE_NAME,
+        HYPOTHESIS_NOTE_STORE_NAME,
+      ],
     } satisfies SeedArgs,
   );
 }

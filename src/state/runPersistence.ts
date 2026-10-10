@@ -87,6 +87,11 @@ export interface RunSave {
    * 旧セーブでは欠落しうる（その場合は空配列）。
    */
   replayKeyframes: ReplayKeyframe[];
+  /**
+   * この途中セーブを始めたときの仮説の開始 ID。
+   * 無いセーブへは、同じ開始条件の別ランの仮説を出さない。
+   */
+  hypothesisStartId?: string;
 }
 
 export interface RunStorage {
@@ -229,6 +234,10 @@ export function parseRunSave(raw: unknown): RunSave | null {
         };
 
   // セーブ時は sprint を落とす契約。残っていても復元側で無視する。
+  const hypothesisStartId =
+    typeof raw.hypothesisStartId === 'string' && raw.hypothesisStartId
+      ? raw.hypothesisStartId
+      : undefined;
   return {
     schemaVersion: RUN_SAVE_SCHEMA_VERSION,
     savedAt: raw.savedAt,
@@ -247,6 +256,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
     },
     state: preservedState,
     replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),
+    ...(hypothesisStartId ? { hypothesisStartId } : {}),
   };
 }
 
@@ -282,6 +292,7 @@ export function toRunSave(
   state: RunPersistState,
   savedAt: number = Date.now(),
   replayKeyframes: readonly ReplayKeyframe[] = [],
+  hypothesisStartId: string | null = null,
 ): RunSave {
   return {
     schemaVersion: RUN_SAVE_SCHEMA_VERSION,
@@ -301,6 +312,7 @@ export function toRunSave(
     },
     state: structuredClone(state),
     replayKeyframes: structuredClone(replayKeyframes) as ReplayKeyframe[],
+    ...(hypothesisStartId ? { hypothesisStartId } : {}),
   };
 }
 

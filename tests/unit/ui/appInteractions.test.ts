@@ -617,7 +617,7 @@ describe('App のタイトル操作', () => {
 
   it.each(['onStart', 'onStartDaily', 'onResume'])(
     '%s は音声を解禁し、モーダルと前ランのメトリクスをクリアする',
-    (action) => {
+    async (action) => {
       const screen = mountApp();
       screen.phase('setup');
       const hud = {
@@ -645,7 +645,7 @@ describe('App のタイトル操作', () => {
       screen.phase('title');
       screen.invoke('TitleScreen', 'onOpenHelp');
       const args = action === 'onStart' ? ['hard', ['half-budget'], 'copilot', 'shared-seed'] : [];
-      screen.invoke('TitleScreen', action, ...args);
+      await screen.invoke('TitleScreen', action, ...args);
       const method =
         action === 'onStart'
           ? 'startRun'
@@ -668,11 +668,19 @@ describe('App のタイトル操作', () => {
     },
   );
 
-  it('タイトルに留まったままの再開始は、ラン開始を一度だけ実行する', () => {
+  it('タイトルに留まったままの再開始は、ラン開始を一度だけ実行する', async () => {
     const screen = mountApp();
     screen.phase('title');
+    const first = screen.invoke(
+      'TitleScreen',
+      'onStart',
+      'hard',
+      ['half-budget'],
+      'copilot',
+      'shared-seed',
+    );
     screen.invoke('TitleScreen', 'onStart', 'hard', ['half-budget'], 'copilot', 'shared-seed');
-    screen.invoke('TitleScreen', 'onStart', 'hard', ['half-budget'], 'copilot', 'shared-seed');
+    await first;
     expect(screen.run.startRun).toHaveBeenCalledOnce();
   });
 

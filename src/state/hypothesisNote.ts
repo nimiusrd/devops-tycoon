@@ -228,7 +228,27 @@ export function hypothesisCommitDroppedSessionBound(
   local: HypothesisNoteRecord,
   stored: HypothesisNoteRecord,
 ): boolean {
-  return reflectionOnly(base.bound, local.bound) && stored.bound?.startId !== local.bound.startId;
+  const baseBound = base.bound;
+  const localBound = local.bound;
+  if (!baseBound || !reflectionOnly(baseBound, localBound)) return false;
+  return (
+    !sameEntry(baseBound.reflection, localBound.reflection) &&
+    stored.bound?.startId !== localBound.startId
+  );
+}
+
+/** 解除は競合する後発ランを端末に残し、このタブの表示は外したままにする。 */
+export function hypothesisCommitKeptForeignBound(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  stored: HypothesisNoteRecord,
+): boolean {
+  return (
+    local.bound === null &&
+    !!base.bound &&
+    !!stored.bound &&
+    stored.bound.startId !== base.bound.startId
+  );
 }
 
 function mergeBound(

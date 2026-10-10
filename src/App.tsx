@@ -361,19 +361,25 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     }
     if (beginGuard.current) return;
     beginGuard.current = true;
-    hypothesisNoteStore.update((record) =>
-      bindHypothesisToRun(
-        record,
-        hypothesisRunKey({
-          runKind: 'normal',
-          seed: seed ?? state.seed,
-          difficulty,
-          trials,
-          scenario: resolveScenarioId(scenario),
-        }),
-      ),
-    );
-    run.startRun(difficulty, trials, scenario, seed);
+    return (async () => {
+      const saved = await hypothesisNoteStore.applyCommitted((record) =>
+        bindHypothesisToRun(
+          record,
+          hypothesisRunKey({
+            runKind: 'normal',
+            seed: seed ?? state.seed,
+            difficulty,
+            trials,
+            scenario: resolveScenarioId(scenario),
+          }),
+        ),
+      );
+      if (saved === 'failed') {
+        beginGuard.current = false;
+        return;
+      }
+      run.startRun(difficulty, trials, scenario, seed);
+    })();
   };
   const startDailyRun = () => {
     audio.unlock();
@@ -386,20 +392,26 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     }
     if (beginGuard.current) return;
     beginGuard.current = true;
-    hypothesisNoteStore.update((record) =>
-      bindHypothesisToRun(
-        record,
-        hypothesisRunKey({
-          runKind: 'daily',
-          dailyDate: day,
-          seed: dailySeed(day),
-          difficulty: DAILY_RUN_DIFFICULTY,
-          trials: [...DAILY_RUN_TRIALS],
-          scenario: DEFAULT_SCENARIO,
-        }),
-      ),
-    );
-    run.startDailyRun(day);
+    return (async () => {
+      const saved = await hypothesisNoteStore.applyCommitted((record) =>
+        bindHypothesisToRun(
+          record,
+          hypothesisRunKey({
+            runKind: 'daily',
+            dailyDate: day,
+            seed: dailySeed(day),
+            difficulty: DAILY_RUN_DIFFICULTY,
+            trials: [...DAILY_RUN_TRIALS],
+            scenario: DEFAULT_SCENARIO,
+          }),
+        ),
+      );
+      if (saved === 'failed') {
+        beginGuard.current = false;
+        return;
+      }
+      run.startDailyRun(day);
+    })();
   };
   const resumeRun = () => {
     audio.unlock();
@@ -630,14 +642,17 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onImportRunSave={async (raw) => {
               const result = await run.importRunSaveText(raw);
               if (result.ok) {
-                hypothesisNoteStore.update((record) => detachHypothesisNote(record));
-                await hypothesisNoteStore.flush();
+                const detached = await hypothesisNoteStore.applyCommitted((record) =>
+                  detachHypothesisNote(record),
+                );
+                if (detached === 'failed') {
+                  return { ok: false, message: HYPOTHESIS_NOTE_SAVE_FAILED };
+                }
               }
-              const noteFailed = result.ok && hypothesisNoteStore.getSnapshot().saveFailed;
               return {
-                ok: result.ok && !noteFailed,
-                message: noteFailed ? HYPOTHESIS_NOTE_SAVE_FAILED : result.ok ? '' : result.message,
-                restored: result.ok && !noteFailed ? result.restored : undefined,
+                ok: result.ok,
+                message: result.ok ? '' : result.message,
+                restored: result.ok ? result.restored : undefined,
               };
             }}
           />

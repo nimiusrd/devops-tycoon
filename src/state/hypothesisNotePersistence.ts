@@ -14,6 +14,7 @@ import {
   commitHypothesisNote,
   EMPTY_HYPOTHESIS_NOTE,
   hypothesisCommitDroppedSessionBound,
+  hypothesisCommitKeptForeignBound,
   normalizeHypothesisNote,
   type HypothesisNoteRecord,
 } from './hypothesisNote';
@@ -89,6 +90,12 @@ export interface HypothesisNoteStore {
   update(change: (record: HypothesisNoteRecord) => HypothesisNoteRecord): void;
   /** 書き込み待ちが無くなるまで待つ（テスト用）。 */
   flush(): Promise<void>;
+  /**
+   * 変更を保存し終える。変化がなければ既存の失敗表示とは切り離して unchanged を返す。
+   */
+  applyCommitted(
+    change: (record: HypothesisNoteRecord) => HypothesisNoteRecord,
+  ): Promise<'unchanged' | 'saved' | 'failed'>;
 }
 
 export function createHypothesisNoteStore(storage: HypothesisNoteStorage): HypothesisNoteStore {
@@ -102,6 +109,9 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   /** 書き込みの await 中に来た操作。返ったレコードへ重ね直す。 */
   let queuedDuringWrite: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord> = [];
   let captureChanges = false;
+  let persistSeq = 0;
+  let lastPersistSeq = 0;
+  let lastPersistOk = true;
   const listeners = new Set<() => void>();
 
   const publish = (next: HypothesisNoteSnapshot) => {
@@ -123,19 +133,29 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         dirty = false;
         const local = snapshot.record;
         const base = baseRecord;
+        const seq = ++persistSeq;
         captureChanges = true;
         try {
           const stored = await storage.commit(local, base);
           const queued = queuedDuringWrite;
           queuedDuringWrite = [];
           captureChanges = false;
+          lastPersistSeq = seq;
           if (hypothesisCommitDroppedSessionBound(base, local, stored)) {
+            lastPersistOk = false;
             publish({
               record: queued.length > 0 ? applyQueued(local, queued) : local,
               saveFailed: true,
             });
+          } else if (hypothesisCommitKeptForeignBound(base, local, stored)) {
+            publish({
+              record: queued.length > 0 ? applyQueued(local, queued) : local,
+              saveFailed: false,
+            });
+            lastPersistOk = true;
           } else {
             baseRecord = stored;
+            lastPersistOk = true;
             if (queued.length > 0) {
               publish({ ...snapshot, record: applyQueued(stored, queued) });
               dirty = true;
@@ -146,6 +166,8 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         } catch {
           captureChanges = false;
           queuedDuringWrite = [];
+          lastPersistSeq = seq;
+          lastPersistOk = false;
           if (!snapshot.saveFailed) publish({ ...snapshot, saveFailed: true });
         }
       }
@@ -188,6 +210,38 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     return inflight.then(() => startLoad());
   };
 
+  const update = (change: (record: HypothesisNoteRecord) => HypothesisNoteRecord) => {
+    if (!loaded) {
+      pending.push(change);
+      const next = change(snapshot.record);
+      if (next !== snapshot.record) publish({ ...snapshot, record: next });
+      if (!loading) void load();
+      return;
+    }
+    const next = change(snapshot.record);
+    if (next === snapshot.record) return;
+    if (captureChanges) queuedDuringWrite.push(change);
+    publish({ ...snapshot, record: next });
+    void persist();
+  };
+
+  const flush = async () => {
+    await loading;
+    while (writing) await writing;
+  };
+
+  const applyCommitted = async (
+    change: (record: HypothesisNoteRecord) => HypothesisNoteRecord,
+  ): Promise<'unchanged' | 'saved' | 'failed'> => {
+    const seq = persistSeq;
+    update(change);
+    await load();
+    await flush();
+    if (!loaded) return snapshot.saveFailed ? 'failed' : 'unchanged';
+    if (lastPersistSeq <= seq) return 'unchanged';
+    return lastPersistOk ? 'saved' : 'failed';
+  };
+
   return {
     getSnapshot: () => snapshot,
     subscribe(listener) {
@@ -195,24 +249,9 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       return () => listeners.delete(listener);
     },
     load,
-    update(change) {
-      if (!loaded) {
-        pending.push(change);
-        const next = change(snapshot.record);
-        if (next !== snapshot.record) publish({ ...snapshot, record: next });
-        if (!loading) void load();
-        return;
-      }
-      const next = change(snapshot.record);
-      if (next === snapshot.record) return;
-      if (captureChanges) queuedDuringWrite.push(change);
-      publish({ ...snapshot, record: next });
-      void persist();
-    },
-    async flush() {
-      await loading;
-      while (writing) await writing;
-    },
+    update,
+    flush,
+    applyCommitted,
   };
 }
 

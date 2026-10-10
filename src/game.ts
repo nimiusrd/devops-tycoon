@@ -2518,11 +2518,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               };
             }
           }
-          undoImportedRun = null;
           if (backup.runSave) {
-            hypothesisNoteStore.update((record) => detachHypothesisNote(record));
-            await hypothesisNoteStore.flush();
-            if (hypothesisNoteStore.getSnapshot().saveFailed) {
+            const detached = await hypothesisNoteStore.applyCommitted((record) =>
+              detachHypothesisNote(record),
+            );
+            if (detached === 'failed') {
+              const undo = undoImportedRun;
+              undoImportedRun = null;
+              await undo?.();
+              await restoreSnapshot();
               return {
                 ok: false,
                 reason: 'corrupt',
@@ -2530,6 +2534,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               };
             }
           }
+          undoImportedRun = null;
           const matched = pendingReplays.filter((item) => {
             const row = listedById.get(item.id);
             return row !== undefined && replayContentKey(row) === replayContentKey(item);

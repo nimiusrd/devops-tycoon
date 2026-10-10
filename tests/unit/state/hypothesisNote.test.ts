@@ -505,6 +505,97 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.draft?.text).toBe('保存済み');
   });
 
+  it('下書きだけの保存は、後発ランを振り返りの消失にしない', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'a',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 2,
+      bound: {
+        runKey: 'run-b',
+        startId: 'b',
+        beforeStart: { text: '別', writtenAt: 2 },
+        reflection: null,
+      },
+    };
+    store.update((record) => editHypothesisDraft(record, '次回', 9));
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(false);
+    expect(store.getSnapshot().record.bound?.startId).toBe('b');
+    expect(store.getSnapshot().record.draft?.text).toBe('次回');
+  });
+
+  it('取り込み側は競合する後発仮説を表示しない', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'old',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 2,
+      bound: {
+        runKey: 'run-b',
+        startId: 'new',
+        beforeStart: { text: '後', writtenAt: 4 },
+        reflection: null,
+      },
+    };
+    const detached = await store.applyCommitted((record) => detachHypothesisNote(record));
+    expect(detached).toBe('saved');
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(store.getSnapshot().saveFailed).toBe(false);
+    expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('new');
+  });
+
+  it('仮説が無い解除は、以前の保存失敗で失敗にしない', async () => {
+    let fail = true;
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '下書き', writtenAt: 1 },
+      bound: null,
+      generation: 1,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        if (fail) throw new Error('quota');
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    store.update((record) => editHypothesisDraft(record, '変更', 2));
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(true);
+    fail = false;
+    expect(await store.applyCommitted((record) => detachHypothesisNote(record))).toBe('unchanged');
+  });
+
   it('別タブの下書き編集は、先に始まったランの仮説を消さない', async () => {
     const memory = new MemoryHypothesisNoteStorage();
     memory.value = { ...editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, 'abc', 1), generation: 1 };

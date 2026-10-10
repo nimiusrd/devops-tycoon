@@ -1,0 +1,1688 @@
+{
+  "seed": 197,
+  "results": [
+    {
+      "mix": "balanced",
+      "horizon": 8,
+      "strategy": "swift",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 0,
+        "completed": 3,
+        "shippedValue": 24,
+        "rework": 24,
+        "followUp": 5,
+        "unfinishedPenalty": 0,
+        "netValue": 5
+      }
+    },
+    {
+      "mix": "balanced",
+      "horizon": 8,
+      "strategy": "careful",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "careful"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "careful",
+        "observations": 0,
+        "completed": 2,
+        "shippedValue": 16,
+        "rework": 2,
+        "followUp": 0,
+        "unfinishedPenalty": 12,
+        "netValue": 2
+      }
+    },
+    {
+      "mix": "balanced",
+      "horizon": 8,
+      "strategy": "perKind",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 6,
+        "completed": 2,
+        "shippedValue": 16,
+        "rework": 24,
+        "followUp": 0,
+        "unfinishedPenalty": 12,
+        "netValue": -20
+      }
+    },
+    {
+      "mix": "balanced",
+      "horizon": 8,
+      "strategy": "pooled",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 6,
+        "completed": 2,
+        "shippedValue": 16,
+        "rework": 24,
+        "followUp": 0,
+        "unfinishedPenalty": 12,
+        "netValue": -20
+      }
+    },
+    {
+      "mix": "balanced",
+      "horizon": 20,
+      "strategy": "swift",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 0,
+        "completed": 3,
+        "shippedValue": 24,
+        "rework": 24,
+        "followUp": 17,
+        "unfinishedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "mix": "balanced",
+      "horizon": 20,
+      "strategy": "careful",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "careful"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "careful",
+        "observations": 0,
+        "completed": 3,
+        "shippedValue": 24,
+        "rework": 2,
+        "followUp": 11,
+        "unfinishedPenalty": 0,
+        "netValue": 33
+      }
+    },
+    {
+      "mix": "balanced",
+      "horizon": 20,
+      "strategy": "perKind",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "careful"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "careful",
+        "observations": 6,
+        "completed": 3,
+        "shippedValue": 24,
+        "rework": 2,
+        "followUp": 5,
+        "unfinishedPenalty": 0,
+        "netValue": 27
+      }
+    },
+    {
+      "mix": "balanced",
+      "horizon": 20,
+      "strategy": "pooled",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "balanced",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["migration", "incident", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "careful"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "careful",
+        "observations": 6,
+        "completed": 3,
+        "shippedValue": 24,
+        "rework": 2,
+        "followUp": 5,
+        "unfinishedPenalty": 0,
+        "netValue": 27
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 8,
+      "strategy": "swift",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 0,
+        "completed": 4,
+        "shippedValue": 32,
+        "rework": 0,
+        "followUp": 4,
+        "unfinishedPenalty": 0,
+        "netValue": 36
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 8,
+      "strategy": "careful",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "careful"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "careful",
+        "observations": 0,
+        "completed": 2,
+        "shippedValue": 16,
+        "rework": 0,
+        "followUp": 0,
+        "unfinishedPenalty": 24,
+        "netValue": -8
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 8,
+      "strategy": "perKind",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 6,
+        "completed": 2,
+        "shippedValue": 16,
+        "rework": 0,
+        "followUp": 0,
+        "unfinishedPenalty": 24,
+        "netValue": -8
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 8,
+      "strategy": "pooled",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 8,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 6,
+        "completed": 2,
+        "shippedValue": 16,
+        "rework": 0,
+        "followUp": 0,
+        "unfinishedPenalty": 24,
+        "netValue": -8
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 20,
+      "strategy": "swift",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 0,
+        "completed": 4,
+        "shippedValue": 32,
+        "rework": 0,
+        "followUp": 16,
+        "unfinishedPenalty": 0,
+        "netValue": 48
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 20,
+      "strategy": "careful",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "tool": "careful"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "careful",
+        "observations": 0,
+        "completed": 4,
+        "shippedValue": 32,
+        "rework": 0,
+        "followUp": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 40
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 20,
+      "strategy": "perKind",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "swift"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "swift",
+        "observations": 6,
+        "completed": 4,
+        "shippedValue": 32,
+        "rework": 0,
+        "followUp": 10,
+        "unfinishedPenalty": 0,
+        "netValue": 42
+      }
+    },
+    {
+      "mix": "routineHeavy",
+      "horizon": 20,
+      "strategy": "pooled",
+      "initial": {
+        "version": 1,
+        "seed": 197,
+        "tick": 0,
+        "horizon": 20,
+        "mix": "routineHeavy",
+        "generation": 1831566010,
+        "adopted": null,
+        "observations": [],
+        "benchmark": null,
+        "jobLeft": 0,
+        "queue": ["routine", "routine", "routine", "routine"],
+        "completed": 0,
+        "shippedValue": 0,
+        "rework": 0,
+        "followUp": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "swift",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "routine"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "migration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "benchmark",
+          "tool": "careful",
+          "kind": "incident"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "tool": "careful"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "adopted": "careful",
+        "observations": 6,
+        "completed": 4,
+        "shippedValue": 32,
+        "rework": 0,
+        "followUp": 2,
+        "unfinishedPenalty": 0,
+        "netValue": 34
+      }
+    }
+  ]
+}

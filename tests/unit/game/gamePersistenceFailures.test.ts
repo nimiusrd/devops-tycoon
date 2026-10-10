@@ -23,7 +23,6 @@ import {
   bindHypothesisToRun,
   editHypothesisDraft,
   EMPTY_HYPOTHESIS_NOTE,
-  HYPOTHESIS_NOTE_SAVE_FAILED,
 } from '../../../src/state/hypothesisNote';
 import { hypothesisNoteStore } from '../../../src/state/hypothesisNotePersistence';
 import { formatPersistenceClock } from '../../../src/state/persistenceStatus';
@@ -1563,36 +1562,7 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(game.getRunSaveSummary()?.seed).toBe('imported-run');
   });
 
-  it('まとめ取り込みの仮説復元が失敗したら、その失敗を結果にする', async () => {
-    const existing = makeRunSave('existing-save');
-    const runStorage = new MemoryRunStorage();
-    await runStorage.save(existing);
-    const replayStorage = new MemoryReplayStorage();
-    const game = createGame({
-      seed: 'backup-restore-hypothesis-fails',
-      runStorage,
-      initialRunSave: existing,
-    });
-    await game.attachReplay(replayStorage);
-    hypothesisNoteStore.update((record) =>
-      bindHypothesisToRun(editHypothesisDraft(record, '狙い', 1), 'local-run', 'start-1'),
-    );
-    await hypothesisNoteStore.flush();
-    vi.spyOn(replayStorage, 'save').mockRejectedValueOnce(new Error('quota'));
-    vi.spyOn(hypothesisNoteStore, 'restoreBoundIfDetached').mockResolvedValue('failed');
-    const raw = serializePersistenceBackup({
-      runSave: serializeRunSave(makeRunSave('backed-up')),
-      replays: [serializeReplay(makeReplay('replay-a'))],
-    });
-
-    expect(await game.importRunSaveText(raw)).toMatchObject({
-      ok: false,
-      message: HYPOTHESIS_NOTE_SAVE_FAILED,
-    });
-    expect(game.getRunSaveSummary()?.seed).toBe('existing-save');
-  });
-
-  it('まとめ取り込みのリプレイ失敗では、解除した仮説を戻す', async () => {
+  it('まとめ取り込みのリプレイ失敗でも、ローカルの仮説は残す', async () => {
     const existing = makeRunSave('existing-save');
     const runStorage = new MemoryRunStorage();
     await runStorage.save(existing);
@@ -1619,27 +1589,35 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect(await replayStorage.list()).toEqual([]);
   });
 
-  it('途中セーブ欄のまとめ取り込みで仮説解除に失敗したら、ランとリプレイを戻す', async () => {
+  it('メモの保存失敗では、まとめ取り込みを失敗にしない', async () => {
     const existing = makeRunSave('existing-save');
     const runStorage = new MemoryRunStorage();
     await runStorage.save(existing);
     const replayStorage = new MemoryReplayStorage();
     const game = createGame({
-      seed: 'backup-hypothesis-rollback',
+      seed: 'backup-hypothesis-independent',
       runStorage,
       initialRunSave: existing,
     });
     await game.attachReplay(replayStorage);
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(editHypothesisDraft(record, '狙い', 1), 'local-run', 'start-1'),
+    );
+    await hypothesisNoteStore.flush();
+    vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
     const raw = serializePersistenceBackup({
       runSave: serializeRunSave(makeRunSave('backed-up')),
       replays: [serializeReplay(makeReplay('replay-a'))],
     });
-    vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
 
-    expect((await game.importRunSaveText(raw)).ok).toBe(false);
-    expect(game.getRunSaveSummary()?.seed).toBe('existing-save');
-    expect((await runStorage.load())?.summary.seed).toBe('existing-save');
-    expect(await replayStorage.list()).toEqual([]);
+    expect(await game.importRunSaveText(raw)).toMatchObject({ ok: true, restored: 'both' });
+    expect(game.getRunSaveSummary()?.seed).toBe('backed-up');
+    expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-1');
+    hypothesisNoteStore.update((record) => ({
+      ...EMPTY_HYPOTHESIS_NOTE,
+      generation: record.generation,
+    }));
+    await hypothesisNoteStore.flush();
   });
 
   it('まとめファイルのリプレイ保存に失敗したら、途中セーブを取り込み前へ戻す', async () => {

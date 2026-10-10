@@ -43,7 +43,7 @@ import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
-import { HYPOTHESIS_NOTE_SAVE_FAILED, useHypothesisNote } from './ui/useHypothesisNote';
+import { useHypothesisNote } from './ui/useHypothesisNote';
 import {
   HYPOTHESIS_START_SAVE_TIMEOUT_MS,
   HYPOTHESIS_START_UNRECORDED,
@@ -55,7 +55,6 @@ import type { GameHandle } from './game';
 import { serializePersistenceBackup } from './state/persistenceBackup';
 import {
   bindHypothesisToRun,
-  detachHypothesisNote,
   newHypothesisStartId,
   undoAbandonedBind,
   editHypothesisDraft,
@@ -716,22 +715,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             runLaunchPending={runLaunchPending}
             onImportRunSave={async (raw) => {
               cancelPendingLaunch();
-              const hypothesisStartIdAtImport =
-                hypothesisNoteStore.getSnapshot().record.bound?.startId ?? null;
               const result = await run.importRunSaveText(raw);
-              if (result.ok) {
-                const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
-                const detached = await hypothesisNoteStore.applyCommitted((record) =>
-                  (record.bound?.startId ?? null) === hypothesisStartIdAtImport
-                    ? detachHypothesisNote(record)
-                    : record,
-                );
-                if (detached === 'failed') {
-                  await game.rollbackRunImport();
-                  await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
-                  return { ok: false, message: HYPOTHESIS_NOTE_SAVE_FAILED };
-                }
-              }
               return {
                 ok: result.ok,
                 message: result.ok ? '' : result.message,

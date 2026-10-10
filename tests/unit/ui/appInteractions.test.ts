@@ -248,7 +248,6 @@ import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { createRunDiagnosticInfo } from '../../../src/state/diagnosticInfo';
 import {
-  HYPOTHESIS_NOTE_SAVE_FAILED,
   HYPOTHESIS_START_SAVE_TIMEOUT_MS,
   bindHypothesisToRun,
   editHypothesisDraft,
@@ -907,7 +906,7 @@ describe('App のタイトル操作', () => {
     }
   });
 
-  it('仮説の解除に失敗した単体取り込みは、置き換えた途中セーブを戻す', async () => {
+  it('単体取り込みは、仮説メモを消さずセーブを残す', async () => {
     const screen = mountApp();
     vi.mocked(screen.run.importRunSaveText).mockResolvedValue({
       ok: true,
@@ -917,26 +916,12 @@ describe('App のタイトル操作', () => {
       bindHypothesisToRun(editHypothesisDraft(record, '狙い', 1), 'local-run', 'start-1'),
     );
     await hypothesisNoteStore.flush();
-    const original = hypothesisNoteStore.applyCommitted.bind(hypothesisNoteStore);
-    let calls = 0;
-    const detach = vi
-      .spyOn(hypothesisNoteStore, 'applyCommitted')
-      .mockImplementation(async (change) => {
-        calls += 1;
-        if (calls === 1) {
-          hypothesisNoteStore.update(change);
-          hypothesisNoteStore.update((record) => editHypothesisDraft(record, '入力中', 9));
-          return 'failed';
-        }
-        return original(change);
-      });
+    const detach = vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
     try {
-      expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toEqual({
-        ok: false,
-        message: HYPOTHESIS_NOTE_SAVE_FAILED,
+      expect(await screen.invoke('TitleScreen', 'onImportRunSave', 'save')).toMatchObject({
+        ok: true,
       });
-      expect(screen.game.rollbackRunImport).toHaveBeenCalledOnce();
-      expect(hypothesisNoteStore.getSnapshot().record.draft?.text).toBe('入力中');
+      expect(screen.game.rollbackRunImport).not.toHaveBeenCalled();
       expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-1');
     } finally {
       detach.mockRestore();

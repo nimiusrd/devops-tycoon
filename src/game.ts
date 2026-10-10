@@ -7,8 +7,6 @@
  * ラン決着時にはメタ進行を永続化する（第17章）。
  */
 import { getTrial } from './data/difficulties';
-import { detachHypothesisNote, HYPOTHESIS_NOTE_SAVE_FAILED } from './state/hypothesisNote';
-import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import type { ReplayFramePhase } from './sim/run/persist';
 import { resolveSeedFromLocation } from './sim/seed';
@@ -2335,31 +2333,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         return loaded;
       }
       if (backupHasReplays && backup) {
-        const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
-        const detached = await hypothesisNoteStore.applyCommitted((record) =>
-          detachHypothesisNote(record),
-        );
-        if (detached === 'failed') {
-          await restoreImportedRun();
-          undoImportedRun = null;
-          await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
-          return {
-            ok: false,
-            reason: 'corrupt',
-            message: HYPOTHESIS_NOTE_SAVE_FAILED,
-          };
-        }
         undoImportedRun = null;
         const replayResult = await this.importReplayText(
           serializePersistenceBackup({ runSave: null, replays: backup.replays }),
         );
         if (!replayResult.ok) {
           await restoreImportedRun();
-          const restored = await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
           return {
             ok: false,
             reason: 'corrupt',
-            message: restored === 'failed' ? HYPOTHESIS_NOTE_SAVE_FAILED : replayResult.message,
+            message: replayResult.message,
           };
         }
         noteRunDurable();
@@ -2416,8 +2399,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       const backup = readPersistenceBackup(raw);
       if (backup && !batch) {
-        const hypothesisStartIdAtImport =
-          hypothesisNoteStore.getSnapshot().record.bound?.startId ?? null;
         if (backup.replays.length === 0) {
           return {
             ok: false,
@@ -2555,26 +2536,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
                 ok: false,
                 reason: 'corrupt',
                 message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
-              };
-            }
-          }
-          if (backup.runSave) {
-            const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
-            const detached = await hypothesisNoteStore.applyCommitted((record) =>
-              (record.bound?.startId ?? null) === hypothesisStartIdAtImport
-                ? detachHypothesisNote(record)
-                : record,
-            );
-            if (detached === 'failed') {
-              const undo = undoImportedRun;
-              undoImportedRun = null;
-              await undo?.();
-              await restoreSnapshot();
-              await hypothesisNoteStore.restoreBoundIfDetached(beforeHypothesis.bound);
-              return {
-                ok: false,
-                reason: 'corrupt',
-                message: HYPOTHESIS_NOTE_SAVE_FAILED,
               };
             }
           }

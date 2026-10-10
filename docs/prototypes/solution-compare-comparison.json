@@ -1,0 +1,1213 @@
+{
+  "seed": 195,
+  "results": [
+    {
+      "posture": "launch",
+      "horizon": 6,
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": false,
+        "shippedValue": 8,
+        "followUp": 16,
+        "upkeep": 6,
+        "safetyLoss": 4,
+        "focusSpent": 0,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 14
+      }
+    },
+    {
+      "posture": "launch",
+      "horizon": 6,
+      "strategy": "compare-fast",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": true,
+        "shippedValue": 8,
+        "followUp": 8,
+        "upkeep": 6,
+        "safetyLoss": 4,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 5
+      }
+    },
+    {
+      "posture": "launch",
+      "horizon": 6,
+      "strategy": "compare-durable",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "durable"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "implementing",
+        "adopted": "durable",
+        "rejected": "fast",
+        "explored": true,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 12,
+        "netValue": -13
+      }
+    },
+    {
+      "posture": "launch",
+      "horizon": 6,
+      "strategy": "wait",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "ready",
+        "adopted": null,
+        "rejected": null,
+        "explored": false,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 0,
+        "withheldValue": 0,
+        "unfinishedPenalty": 12,
+        "netValue": -12
+      }
+    },
+    {
+      "posture": "launch",
+      "horizon": 14,
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": false,
+        "shippedValue": 8,
+        "followUp": 48,
+        "upkeep": 14,
+        "safetyLoss": 4,
+        "focusSpent": 0,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 38
+      }
+    },
+    {
+      "posture": "launch",
+      "horizon": 14,
+      "strategy": "compare-fast",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": true,
+        "shippedValue": 8,
+        "followUp": 40,
+        "upkeep": 14,
+        "safetyLoss": 4,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "posture": "launch",
+      "horizon": 14,
+      "strategy": "compare-durable",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "durable"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "durable",
+        "rejected": "fast",
+        "explored": true,
+        "shippedValue": 8,
+        "followUp": 28,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 35
+      }
+    },
+    {
+      "posture": "launch",
+      "horizon": 14,
+      "strategy": "wait",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "launch",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "ready",
+        "adopted": null,
+        "rejected": null,
+        "explored": false,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 0,
+        "withheldValue": 0,
+        "unfinishedPenalty": 12,
+        "netValue": -12
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 6,
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": false,
+        "shippedValue": 8,
+        "followUp": 16,
+        "upkeep": 18,
+        "safetyLoss": 4,
+        "focusSpent": 0,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 2
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 6,
+      "strategy": "compare-fast",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": true,
+        "shippedValue": 8,
+        "followUp": 8,
+        "upkeep": 18,
+        "safetyLoss": 4,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": -7
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 6,
+      "strategy": "compare-durable",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "durable"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "implementing",
+        "adopted": "durable",
+        "rejected": "fast",
+        "explored": true,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 12,
+        "netValue": -13
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 6,
+      "strategy": "wait",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 6,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "ready",
+        "adopted": null,
+        "rejected": null,
+        "explored": false,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 0,
+        "withheldValue": 0,
+        "unfinishedPenalty": 12,
+        "netValue": -12
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 14,
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": false,
+        "shippedValue": 8,
+        "followUp": 48,
+        "upkeep": 42,
+        "safetyLoss": 4,
+        "focusSpent": 0,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 10
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 14,
+      "strategy": "compare-fast",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "fast"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "fast",
+        "rejected": "durable",
+        "explored": true,
+        "shippedValue": 8,
+        "followUp": 40,
+        "upkeep": 42,
+        "safetyLoss": 4,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 1
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 14,
+      "strategy": "compare-durable",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explore"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "adopt",
+          "proposal": "durable"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "shipped",
+        "adopted": "durable",
+        "rejected": "fast",
+        "explored": true,
+        "shippedValue": 8,
+        "followUp": 28,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 1,
+        "withheldValue": 8,
+        "unfinishedPenalty": 0,
+        "netValue": 35
+      }
+    },
+    {
+      "posture": "maintain",
+      "horizon": 14,
+      "strategy": "wait",
+      "initial": {
+        "version": 1,
+        "seed": 195,
+        "tick": 0,
+        "horizon": 14,
+        "posture": "maintain",
+        "focus": 2,
+        "focusSpent": 0,
+        "explored": false,
+        "phase": "ready",
+        "workLeft": 0,
+        "adopted": null,
+        "rejected": null,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "generation": 1831566008,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "phase": "ready",
+        "adopted": null,
+        "rejected": null,
+        "explored": false,
+        "shippedValue": 0,
+        "followUp": 0,
+        "upkeep": 0,
+        "safetyLoss": 0,
+        "focusSpent": 0,
+        "withheldValue": 0,
+        "unfinishedPenalty": 12,
+        "netValue": -12
+      }
+    }
+  ]
+}

@@ -1,0 +1,361 @@
+{
+  "seed": "RI-218",
+  "results": [
+    {
+      "board": "due",
+      "strategy": "deadline",
+      "initial": {
+        "version": 1,
+        "seed": "RI-218",
+        "board": "due",
+        "tick": 0,
+        "horizon": 4,
+        "slots": 1,
+        "expert": null,
+        "requests": [
+          {
+            "id": "ship",
+            "team": "product",
+            "kind": "deadline",
+            "slots": 2,
+            "progress": 0,
+            "value": 9,
+            "deadline": 2,
+            "openRisk": 2,
+            "doneTick": null
+          },
+          {
+            "id": "risk",
+            "team": "incident",
+            "kind": "risk",
+            "slots": 2,
+            "progress": 0,
+            "value": 4,
+            "deadline": 6,
+            "openRisk": 3,
+            "doneTick": null
+          },
+          {
+            "id": "design",
+            "team": "platform",
+            "kind": "design",
+            "slots": 2,
+            "progress": 0,
+            "value": 2,
+            "deadline": 6,
+            "openRisk": 5,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ship"
+        },
+        {
+          "type": "assign",
+          "id": "ship"
+        },
+        {
+          "type": "assign",
+          "id": "risk"
+        },
+        {
+          "type": "assign",
+          "id": "risk"
+        }
+      ],
+      "result": {
+        "value": 13,
+        "risk": 5,
+        "score": 8,
+        "expert": "incident",
+        "pending": ["design"],
+        "delivered": [
+          {
+            "id": "ship",
+            "tick": 1,
+            "value": 9
+          },
+          {
+            "id": "risk",
+            "tick": 3,
+            "value": 4
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "due",
+      "strategy": "impact",
+      "initial": {
+        "version": 1,
+        "seed": "RI-218",
+        "board": "due",
+        "tick": 0,
+        "horizon": 4,
+        "slots": 1,
+        "expert": null,
+        "requests": [
+          {
+            "id": "ship",
+            "team": "product",
+            "kind": "deadline",
+            "slots": 2,
+            "progress": 0,
+            "value": 9,
+            "deadline": 2,
+            "openRisk": 2,
+            "doneTick": null
+          },
+          {
+            "id": "risk",
+            "team": "incident",
+            "kind": "risk",
+            "slots": 2,
+            "progress": 0,
+            "value": 4,
+            "deadline": 6,
+            "openRisk": 3,
+            "doneTick": null
+          },
+          {
+            "id": "design",
+            "team": "platform",
+            "kind": "design",
+            "slots": 2,
+            "progress": 0,
+            "value": 2,
+            "deadline": 6,
+            "openRisk": 5,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "design"
+        },
+        {
+          "type": "assign",
+          "id": "design"
+        },
+        {
+          "type": "assign",
+          "id": "risk"
+        },
+        {
+          "type": "assign",
+          "id": "risk"
+        }
+      ],
+      "result": {
+        "value": 6,
+        "risk": 2,
+        "score": 4,
+        "expert": "incident",
+        "pending": ["ship"],
+        "delivered": [
+          {
+            "id": "design",
+            "tick": 1,
+            "value": 2
+          },
+          {
+            "id": "risk",
+            "tick": 3,
+            "value": 4
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "exposure",
+      "strategy": "deadline",
+      "initial": {
+        "version": 1,
+        "seed": "RI-218",
+        "board": "exposure",
+        "tick": 0,
+        "horizon": 4,
+        "slots": 1,
+        "expert": null,
+        "requests": [
+          {
+            "id": "ship",
+            "team": "product",
+            "kind": "deadline",
+            "slots": 2,
+            "progress": 0,
+            "value": 8,
+            "deadline": 1,
+            "openRisk": 1,
+            "doneTick": null
+          },
+          {
+            "id": "risk",
+            "team": "incident",
+            "kind": "risk",
+            "slots": 2,
+            "progress": 0,
+            "value": 6,
+            "deadline": 2,
+            "openRisk": 14,
+            "doneTick": null
+          },
+          {
+            "id": "design",
+            "team": "platform",
+            "kind": "design",
+            "slots": 2,
+            "progress": 0,
+            "value": 2,
+            "deadline": 6,
+            "openRisk": 4,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ship"
+        },
+        {
+          "type": "assign",
+          "id": "ship"
+        },
+        {
+          "type": "assign",
+          "id": "risk"
+        },
+        {
+          "type": "assign",
+          "id": "risk"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "risk": 4,
+        "score": 4,
+        "expert": "incident",
+        "pending": ["design"],
+        "delivered": [
+          {
+            "id": "ship",
+            "tick": 1,
+            "value": 8
+          },
+          {
+            "id": "risk",
+            "tick": 3,
+            "value": 0
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "exposure",
+      "strategy": "impact",
+      "initial": {
+        "version": 1,
+        "seed": "RI-218",
+        "board": "exposure",
+        "tick": 0,
+        "horizon": 4,
+        "slots": 1,
+        "expert": null,
+        "requests": [
+          {
+            "id": "ship",
+            "team": "product",
+            "kind": "deadline",
+            "slots": 2,
+            "progress": 0,
+            "value": 8,
+            "deadline": 1,
+            "openRisk": 1,
+            "doneTick": null
+          },
+          {
+            "id": "risk",
+            "team": "incident",
+            "kind": "risk",
+            "slots": 2,
+            "progress": 0,
+            "value": 6,
+            "deadline": 2,
+            "openRisk": 14,
+            "doneTick": null
+          },
+          {
+            "id": "design",
+            "team": "platform",
+            "kind": "design",
+            "slots": 2,
+            "progress": 0,
+            "value": 2,
+            "deadline": 6,
+            "openRisk": 4,
+            "doneTick": null
+          }
+        ],
+        "delivered": [],
+        "viewed": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "risk"
+        },
+        {
+          "type": "assign",
+          "id": "risk"
+        },
+        {
+          "type": "assign",
+          "id": "design"
+        },
+        {
+          "type": "assign",
+          "id": "design"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "risk": 1,
+        "score": 7,
+        "expert": "platform",
+        "pending": ["ship"],
+        "delivered": [
+          {
+            "id": "risk",
+            "tick": 1,
+            "value": 6
+          },
+          {
+            "id": "design",
+            "tick": 3,
+            "value": 2
+          }
+        ],
+        "lost": false
+      }
+    }
+  ]
+}

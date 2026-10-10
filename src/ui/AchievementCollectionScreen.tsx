@@ -7,7 +7,12 @@
 import { useRef } from 'react';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { FAILURE_ENCYCLOPEDIA_DEFS } from '../sim/diagnosis';
-import { ACHIEVEMENT_DEFS, WIN_TITLE_DEFS, type MetaState } from '../state/meta';
+import {
+  ACHIEVEMENT_DEFS,
+  buildWinComboCodex,
+  WIN_TITLE_DEFS,
+  type MetaState,
+} from '../state/meta';
 import { ResultOverlay } from './ResultOverlay';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { VisualIcon } from './VisualIcon';
@@ -24,6 +29,7 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
   const earnedCount = ACHIEVEMENT_DEFS.filter((a) => earned.has(a.id)).length;
   const collectedTitles = new Set(meta.collectedWinTypes);
   const titleCount = WIN_TITLE_DEFS.filter((title) => collectedTitles.has(title.id)).length;
+  const combos = buildWinComboCodex(meta);
   const collectedDiagnoses = new Set(meta.collectedDiagnoses);
   const failureCount = FAILURE_ENCYCLOPEDIA_DEFS.filter((def) =>
     collectedDiagnoses.has(def.type),
@@ -99,6 +105,62 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                 );
               })}
             </div>
+          </section>
+          <section
+            className="title-collection-section"
+            aria-labelledby="win-combo-heading"
+            data-testid="win-combo-codex"
+          >
+            <p className="result-eyebrow">WIN COMBOS</p>
+            <h3 id="win-combo-heading" className="title-collection-heading">
+              難易度別の勝ち方{' '}
+              <b data-testid="win-combo-count">
+                {combos.achievedCount}/{combos.total}
+              </b>
+            </h3>
+            <p className="achievement-collection-lead">
+              どの難易度でどの勝ち方をしたかを記録します。記録を始める前の勝利は含みません。
+            </p>
+            <p className="win-combo-next" data-testid="win-combo-next">
+              {combos.nextGoal
+                ? `次の目標: ${combos.nextGoal.label} で未達の勝ち方 ${combos.nextGoal.remaining.length} 種`
+                : '解放済みの難易度で、すべての勝ち方を達成しました。'}
+            </p>
+            <ul className="win-combo-rows">
+              {combos.rows.map((row) => (
+                <li
+                  key={row.difficulty}
+                  className={`achievement-card${row.unlocked ? '' : ' locked'}`}
+                  data-testid={`win-combo-row-${row.difficulty}`}
+                  data-unlocked={row.unlocked ? 'true' : 'false'}
+                >
+                  <span className="achievement-card-label">
+                    {row.label}{' '}
+                    <span className="win-combo-row-count">
+                      {row.unlocked
+                        ? `${row.achievedCount}/${row.cells.length}`
+                        : '前の難易度でボスを突破すると解放'}
+                    </span>
+                  </span>
+                  {row.unlocked ? (
+                    <ul className="win-combo-cells" aria-label={`${row.label} の勝ち方`}>
+                      {row.cells.map((cell) => (
+                        <li
+                          key={cell.winType}
+                          className={`pill pill-compact${cell.achieved ? ' achievement' : ''}`}
+                          data-testid={`win-combo-${row.difficulty}-${cell.winType}`}
+                          data-achieved={cell.achieved ? 'true' : 'false'}
+                        >
+                          {cell.achieved ? `✓ ${cell.label}` : `未達 ${cell.label}`}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="achievement-card-hint">難易度未解放</p>
+                  )}
+                </li>
+              ))}
+            </ul>
           </section>
           <section
             className="title-collection-section"

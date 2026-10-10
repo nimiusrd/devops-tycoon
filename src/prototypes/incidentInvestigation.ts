@@ -4,9 +4,7 @@ import { createRng } from '../sim/rng';
 export type IncidentCause = 'configuration' | 'code';
 export type InvestigationMethod = IncidentCause | 'rollback';
 export type InvestigationInput =
-  | { type: 'investigate' }
-  | { type: 'recover'; method: InvestigationMethod }
-  | { type: 'tick' };
+  { type: 'investigate' } | { type: 'recover'; method: InvestigationMethod } | { type: 'tick' };
 export interface InvestigationState {
   version: 1;
   seed: number;

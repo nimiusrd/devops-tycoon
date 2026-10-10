@@ -12,12 +12,7 @@ import type { DiagnosisType, GoalKpiProgress, QuarterTrendSnapshot } from '../si
 import type { TeamHealth } from '../sim/orgscale/types';
 
 export type CompanyTrendSeriesKey =
-  | 'delivery'
-  | 'quality'
-  | 'techDebt'
-  | 'morale'
-  | 'incident'
-  | 'aiAdoption';
+  'delivery' | 'quality' | 'techDebt' | 'morale' | 'incident' | 'aiAdoption';
 export type DeptTrendSeriesKey = 'aiDependency' | 'techDebt' | 'morale';
 export type DeptTrendMetric = DeptTrendSeriesKey | 'health';
 export type DeptTrendMetricSelection = 'all' | DeptTrendMetric;

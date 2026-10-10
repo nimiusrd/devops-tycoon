@@ -18,9 +18,7 @@ export type DocId = keyof typeof DOCS;
 export type ContextScenario = 'feature' | 'migration';
 export type ContextStrategy = 'empty' | 'example' | 'specHistory' | 'exampleSpec';
 export type ContextInput =
-  | { type: 'inspect'; doc: string }
-  | { type: 'set'; docs: string[] }
-  | { type: 'tick' };
+  { type: 'inspect'; doc: string } | { type: 'set'; docs: string[] } | { type: 'tick' };
 export interface ContextJobSpec {
   id: string;
   kind: JobKind;

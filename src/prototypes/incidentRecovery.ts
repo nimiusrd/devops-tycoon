@@ -28,8 +28,7 @@ export function quoteRecovery(incident: RecoveryIncident, method: RecoveryMethod
   }
 }
 export type RecoveryInput =
-  | { type: 'recover'; id: string; method: RecoveryMethod }
-  | { type: 'tick' };
+  { type: 'recover'; id: string; method: RecoveryMethod } | { type: 'tick' };
 export interface RecoveryState {
   version: 1;
   seed: string;

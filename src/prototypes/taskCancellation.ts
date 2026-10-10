@@ -25,8 +25,7 @@ export interface CancellationState {
   inputs: CancellationInput[];
 }
 export type CancellationInput =
-  | { kind: 'work'; ids: string[] }
-  | { kind: 'cancel'; id: string; reason: string };
+  { kind: 'work'; ids: string[] } | { kind: 'cancel'; id: string; reason: string };
 
 export function createCancellationPrototype(
   seed: string | number,

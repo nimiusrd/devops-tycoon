@@ -50,15 +50,12 @@ describe('shouldShowLiveComboHint', () => {
   it('途切れが直近ウィンドウから落ちていれば出さない', () => {
     const events: SprintEvent[] = [
       breakEvent(1),
-      ...Array.from(
-        { length: 5 },
-        (_, i): SprintEvent => ({
-          tick: i + 2,
-          kind: 'ignite',
-          taskId: i,
-          source: 'review',
-        }),
-      ),
+      ...Array.from({ length: 5 }, (_, i): SprintEvent => ({
+        tick: i + 2,
+        kind: 'ignite',
+        taskId: i,
+        source: 'review',
+      })),
     ];
     expect(shouldShowLiveComboHint(12, events, 5)).toBe(false);
   });

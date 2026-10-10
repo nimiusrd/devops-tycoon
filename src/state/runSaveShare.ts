@@ -18,10 +18,7 @@ import {
 const ACCEPTED_RUN_SAVE_SCHEMA_VERSIONS = new Set([4, 5, 6, 7, RUN_SAVE_SCHEMA_VERSION]);
 
 export type RunSaveShareReason =
-  | 'corrupt'
-  | 'unsupported_version'
-  | 'ruleset_unknown'
-  | 'ruleset_mismatch';
+  'corrupt' | 'unsupported_version' | 'ruleset_unknown' | 'ruleset_mismatch';
 
 export const RUN_SAVE_SHARE_REASON_MESSAGE: Record<RunSaveShareReason, string> = {
   corrupt: '途中セーブが壊れているか、読み取れません。',

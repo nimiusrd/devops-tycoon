@@ -480,12 +480,10 @@ describe('ActionBar の武装と担当選択', () => {
   );
 
   it('HTML対象選択で差配を確定でき、取消で武装だけ解除する', () => {
-    const onAction = vi.fn(
-      (): InterventionOutcome => ({
-        ok: true,
-        effect: { actionId: 'assignTask', focusCost: 2, gaugeGain: 0.1 },
-      }),
-    );
+    const onAction = vi.fn((): InterventionOutcome => ({
+      ok: true,
+      effect: { actionId: 'assignTask', focusCost: 2, gaugeGain: 0.1 },
+    }));
     const onArm = vi.fn();
     const bar = mountActionBar({
       armedId: 'assignTask',
@@ -530,12 +528,10 @@ describe('ActionBar の武装と担当選択', () => {
     const tasks = Array.from({ length: 13 }, (_, index) =>
       makeTask(index, { lane: 'coding', split: index < 12 }),
     );
-    const onAction = vi.fn(
-      (): InterventionOutcome => ({
-        ok: true,
-        effect: { actionId: 'splitPr', focusCost: 2, gaugeGain: 0 },
-      }),
-    );
+    const onAction = vi.fn((): InterventionOutcome => ({
+      ok: true,
+      effect: { actionId: 'splitPr', focusCost: 2, gaugeGain: 0 },
+    }));
     const onArm = vi.fn();
     const bar = mountActionBar({ sprint: actionSprint({ tasks }), onAction, onArm });
 

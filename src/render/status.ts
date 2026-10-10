@@ -177,12 +177,7 @@ export function aiDependencyHudCopy(
 }
 
 export type HudMetricKey =
-  | 'deliveryScore'
-  | 'seniorHpPct'
-  | 'aiDependencyPct'
-  | 'techDebt'
-  | 'morale'
-  | 'securityLevel';
+  'deliveryScore' | 'seniorHpPct' | 'aiDependencyPct' | 'techDebt' | 'morale' | 'securityLevel';
 
 export type HudFeedbackTone = 'positive' | 'negative';
 

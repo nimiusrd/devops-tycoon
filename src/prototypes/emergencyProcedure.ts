@@ -2,9 +2,7 @@
 export type ProcedureScenario = 'calm' | 'crisis' | 'untargetable';
 export type ProcedureStrategy = 'react' | 'reserve' | 'refund';
 export type ProcedureInput =
-  | { type: 'reserve' }
-  | { type: 'cancel' }
-  | { type: 'tick'; manual?: 'ship' | 'firefight' };
+  { type: 'reserve' } | { type: 'cancel' } | { type: 'tick'; manual?: 'ship' | 'firefight' };
 export interface ProcedureState {
   version: 1;
   seed: string;

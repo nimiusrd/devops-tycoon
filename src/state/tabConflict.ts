@@ -17,8 +17,7 @@ export function isTabConflict(error: unknown): error is TabConflictError {
 
 /** 書けたら ok。別タブの記録なら current を返し、呼び出し側はそれを維持する。 */
 export type DurableWriteResult<T> =
-  | { ok: true; runGeneration?: number }
-  | { ok: false; current: T | null };
+  { ok: true; runGeneration?: number } | { ok: false; current: T | null };
 
 export function generationValue(stored: unknown): number {
   return typeof stored === 'number' && Number.isFinite(stored) && stored >= 0

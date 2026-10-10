@@ -11,14 +11,15 @@ import {
   commitHypothesisNote,
   consumeDraftRevision,
   editHypothesisDraft,
+  prepareHypothesis,
+  removeUnadoptedHypothesis,
+  writeHypothesisReflection,
   hypothesisDraftConflict,
   hypothesisForRun,
   hypothesisNoteForExport,
   hypothesisRunKey,
   normalizeHypothesisNote,
-  prepareHypothesis,
   sanitizeHypothesisText,
-  writeHypothesisReflection,
 } from '../../../src/state/hypothesisNote';
 import {
   IndexedDbHypothesisNoteStorage,
@@ -346,5 +347,65 @@ describe('仮説メモの保存', () => {
     await store.flush();
     expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('別タブ');
     expect(store.getSnapshot().record.draft?.text).toBe('このタブ');
+  });
+
+  it('同じ開始の振り返り競合は、入力を未保存のまま画面に残す', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    await store.applyCommitted((record) =>
+      prepareHypothesis(record, 'run-a', 'start-1', { text: '狙い', writtenAt: 1 }),
+    );
+    await store.flush();
+    const base = normalizeHypothesisNote(memory.value);
+    memory.value = commitHypothesisNote(
+      base,
+      writeHypothesisReflection(base, 'run-a', 'start-1', '別タブ', 2),
+      base,
+    );
+    store.update((record) => writeHypothesisReflection(record, 'run-a', 'start-1', 'このタブ', 3));
+    await store.flush();
+    expect(normalizeHypothesisNote(memory.value).notes['start-1']?.reflection?.text).toBe('別タブ');
+    expect(store.getSnapshot().record.notes['start-1']?.reflection?.text).toBe('このタブ');
+    expect(store.getSnapshot().saveFailed).toBe(true);
+    await store.applyCommitted((record) => editHypothesisDraft(record, '下書き', 4));
+    await store.flush();
+    expect(normalizeHypothesisNote(memory.value).notes['start-1']?.reflection?.text).toBe('別タブ');
+    expect(store.getSnapshot().record.notes['start-1']?.reflection?.text).toBe('このタブ');
+  });
+
+  it('採用しなかった準備は、遅れて保存されてもその開始IDを残さない', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const memory = new MemoryHypothesisNoteStorage();
+    let commits = 0;
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        commits += 1;
+        if (commits === 1) await gate;
+        const next = commitHypothesisNote(base, local, normalizeHypothesisNote(memory.value));
+        memory.value = next;
+        return next;
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    const beforeStart = { text: '狙い', writtenAt: 1 };
+    const saving = store.applyCommitted((record) =>
+      prepareHypothesis(record, 'run-a', 'start-late', beforeStart),
+    );
+    release();
+    expect(await saving).toBe('saved');
+    expect(normalizeHypothesisNote(memory.value).notes['start-late']?.beforeStart.text).toBe(
+      '狙い',
+    );
+    await store.applyCommitted((record) =>
+      removeUnadoptedHypothesis(record, 'start-late', beforeStart),
+    );
+    await store.flush();
+    expect(normalizeHypothesisNote(memory.value).notes['start-late']).toBeUndefined();
   });
 });

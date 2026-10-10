@@ -298,6 +298,7 @@ function mergeNotes(
     const ours = local.notes[id];
     const disk = current.notes[id];
     if (!ours || sameNote(previous, ours)) {
+      if (!ours && previous && (!disk || sameNote(previous, disk))) continue;
       const kept = disk ?? ours ?? previous;
       if (kept) notes[id] = kept;
       continue;
@@ -315,6 +316,45 @@ function mergeNotes(
     };
   }
   return notes;
+}
+
+/** 同じ開始 ID の振り返りを両方のタブが変えたとき、こちらの未保存本文。 */
+export function conflictingReflections(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  current: HypothesisNoteRecord,
+): Record<string, HypothesisNoteEntry | null> {
+  const held: Record<string, HypothesisNoteEntry | null> = {};
+  for (const id of Object.keys(local.notes)) {
+    const previous = base.notes[id];
+    const ours = local.notes[id];
+    const disk = current.notes[id];
+    if (!previous || !ours || !disk) continue;
+    if (sameEntry(previous.reflection, ours.reflection)) continue;
+    if (sameEntry(previous.reflection, disk.reflection)) continue;
+    if (sameEntry(ours.reflection, disk.reflection)) continue;
+    held[id] = ours.reflection;
+  }
+  return held;
+}
+
+/** 採用しなかった開始だけを外す。別の本文や振り返りが付いていれば残す。 */
+export function removeUnadoptedHypothesis(
+  record: HypothesisNoteRecord,
+  startId: string,
+  beforeStart: HypothesisNoteEntry,
+): HypothesisNoteRecord {
+  const note = record.notes[startId];
+  if (!note || note.reflection) return record;
+  if (
+    note.beforeStart.text !== beforeStart.text.trim() ||
+    note.beforeStart.writtenAt !== beforeStart.writtenAt
+  ) {
+    return record;
+  }
+  const notes = { ...record.notes };
+  delete notes[startId];
+  return { ...record, notes };
 }
 
 /** 下書きは版番号、仮説は startId ごとにマージする。ノートは消さない。 */

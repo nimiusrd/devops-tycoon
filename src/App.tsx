@@ -60,6 +60,7 @@ import {
   hypothesisRunKey,
   newHypothesisStartId,
   prepareHypothesis,
+  removeUnadoptedHypothesis,
   writeHypothesisReflection,
 } from './state/hypothesisNote';
 import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
@@ -408,12 +409,23 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         beginGuard.current = false;
         setRunLaunchPending(false);
       };
+      const dropUnadopted = () => {
+        if (!beforeStart) return;
+        void savePromise.then((status) => {
+          if (status !== 'saved') return;
+          return hypothesisNoteStore.applyCommitted((record) =>
+            removeUnadoptedHypothesis(record, startId, beforeStart),
+          );
+        });
+      };
       if (superseded) {
+        dropUnadopted();
         finishPending();
         return;
       }
       const adopted = Boolean(beforeStart) && saved !== 'timeout' && saved !== 'failed';
       if (!adopted) {
+        dropUnadopted();
         setHypothesisUnrecorded(Boolean(beforeStart));
         start(null);
         return;

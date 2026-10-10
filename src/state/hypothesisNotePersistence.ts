@@ -14,6 +14,7 @@ import {
 import {
   commitHypothesisNote,
   EMPTY_HYPOTHESIS_NOTE,
+  conflictingReflections,
   hypothesisDraftConflict,
   normalizeHypothesisNote,
   type HypothesisNoteRecord,
@@ -116,6 +117,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   const listeners = new Set<() => void>();
   let holdingUnsavedDraft = false;
   let heldDraft: HypothesisNoteRecord['draft'] = null;
+  const heldReflections = new Map<string, HypothesisNoteRecord['notes'][string]['reflection']>();
 
   const publish = (next: HypothesisNoteSnapshot) => {
     snapshot = next;
@@ -165,6 +167,35 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   const draftMatchesBase = (record: HypothesisNoteRecord, base: HypothesisNoteRecord) =>
     record.draftRevision === base.draftRevision + 1 && sameDraftEntry(record.draft, heldDraft);
 
+  const withoutHeldReflections = (
+    local: HypothesisNoteRecord,
+    base: HypothesisNoteRecord,
+  ): HypothesisNoteRecord => {
+    if (heldReflections.size === 0) return local;
+    const notes = { ...local.notes };
+    for (const [id, reflection] of heldReflections) {
+      const note = notes[id];
+      const baseNote = base.notes[id];
+      if (!note || !baseNote || !sameDraftEntry(note.reflection, reflection)) {
+        heldReflections.delete(id);
+        continue;
+      }
+      notes[id] = { ...note, reflection: baseNote.reflection };
+    }
+    return { ...local, notes };
+  };
+
+  const overlayHeldReflections = (record: HypothesisNoteRecord): HypothesisNoteRecord => {
+    if (heldReflections.size === 0) return record;
+    const notes = { ...record.notes };
+    for (const [id, reflection] of heldReflections) {
+      const note = notes[id];
+      if (!note) continue;
+      notes[id] = { ...note, reflection };
+    }
+    return { ...record, notes };
+  };
+
   const persist = (): Promise<void> => {
     dirty = true;
     if (writing) return writing;
@@ -181,9 +212,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           holdingUnsavedDraft &&
           (draftMatchesBase(local, base) ||
             (local.draft == null && local.draftRevision > base.draftRevision));
-        const commitLocal = suppressUnsavedDraft
-          ? { ...local, draft: base.draft, draftRevision: base.draftRevision }
-          : local;
+        const commitLocal = withoutHeldReflections(
+          suppressUnsavedDraft
+            ? { ...local, draft: base.draft, draftRevision: base.draftRevision }
+            : local,
+          base,
+        );
         if (
           holdingUnsavedDraft &&
           !suppressUnsavedDraft &&
@@ -201,6 +235,11 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
             holdingUnsavedDraft = true;
             heldDraft = local.draft;
           }
+          for (const [id, reflection] of Object.entries(
+            conflictingReflections(base, local, stored),
+          )) {
+            heldReflections.set(id, reflection);
+          }
           let record =
             queued.length > 0
               ? applyQueued(
@@ -210,6 +249,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
               : display.record;
           if (suppressUnsavedDraft && holdingUnsavedDraft) {
             record = { ...record, draft: heldDraft, draftRevision: stored.draftRevision + 1 };
+            display.saveFailed = true;
+          }
+          if (heldReflections.size > 0) {
+            record = overlayHeldReflections(record);
             display.saveFailed = true;
           }
           if (holdingUnsavedDraft && !sameDraftEntry(record.draft, heldDraft)) {

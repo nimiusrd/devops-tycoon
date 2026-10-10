@@ -194,6 +194,7 @@ function settle(state: QuotaState): void {
   state.forfeited += leftover + state.reserve;
   state.reserve = 0;
   for (const team of state.teams) {
+    team.allocation = team.used;
     if (team.deadline !== null && team.value < team.deadline) state.penalties += state.penalty;
   }
 }

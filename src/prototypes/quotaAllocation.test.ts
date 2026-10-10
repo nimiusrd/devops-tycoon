@@ -68,6 +68,20 @@ describe('RI-200 利用枠の配分', () => {
     expect(summarizeQuota(state).score).toBe(6);
   });
 
+  it('期末に使い切らなかった割当は remaining に残さず失効へ移す', () => {
+    let state = apply(create('RI-200', 'flagship'), {
+      type: 'allocate',
+      amounts: { core: 6, platform: 0, product: 0 },
+      reserve: 0,
+    });
+    for (let i = 0; i < 4; i++) state = apply(state, { type: 'tick' });
+    expect(state.teams.map((team) => team.allocation)).toEqual([4, 0, 0]);
+    expect(viewQuota(state).teams.map((team) => team.remaining)).toEqual([0, 0, 0]);
+    expect(state.forfeited).toBe(2);
+    expect(state.reserve).toBe(0);
+    expect(summarizeQuota(state).singleLedger).toBe(true);
+  });
+
   it('1tickの消費はチームあたり一度だけで、tick2の再配分は最大不足へ渡す', () => {
     let state = apply(create('RI-200', 'flagship'), {
       type: 'allocate',

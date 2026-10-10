@@ -1,0 +1,217 @@
+{
+  "phase": 2,
+  "command": "node scripts/compare-release-reeval.mjs",
+  "seed": "RI-252",
+  "criteria": {
+    "pass": false,
+    "fail": true,
+    "passConditions": [],
+    "met": "fail"
+  },
+  "scenarios": [
+    {
+      "scenario": "verification-bottleneck",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 12,
+        "implementation": 3,
+        "review": 3,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 9,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 9,
+          "implementationSpent": 10,
+          "validationSpent": 9,
+          "frozenAt": 3,
+          "automaticFreeze": false,
+          "consumption": 19,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "late",
+          "delivered": 25,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 4,
+          "implementationSpent": 25,
+          "validationSpent": 24,
+          "frozenAt": 8,
+          "automaticFreeze": false,
+          "consumption": 49,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "continue",
+          "delivered": 23,
+          "unverified": 3,
+          "unfinished": 0,
+          "deferred": 2,
+          "implementationSpent": 32,
+          "validationSpent": 26,
+          "frozenAt": 10,
+          "automaticFreeze": true,
+          "consumption": 58,
+          "deadlineMet": true
+        }
+      ]
+    },
+    {
+      "scenario": "deadline-shortened",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 8,
+        "implementation": 3,
+        "review": 3,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 6,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 10,
+          "implementationSpent": 7,
+          "validationSpent": 6,
+          "frozenAt": 2,
+          "automaticFreeze": false,
+          "consumption": 13,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "late",
+          "delivered": 16,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 7,
+          "implementationSpent": 15,
+          "validationSpent": 14,
+          "frozenAt": 5,
+          "automaticFreeze": false,
+          "consumption": 29,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "continue",
+          "delivered": 16,
+          "unverified": 1,
+          "unfinished": 0,
+          "deferred": 6,
+          "implementationSpent": 18,
+          "validationSpent": 15,
+          "frozenAt": 6,
+          "automaticFreeze": true,
+          "consumption": 33,
+          "deadlineMet": true
+        }
+      ]
+    },
+    {
+      "scenario": "review-shortage",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 12,
+        "implementation": 3,
+        "review": 1,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 9,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 9,
+          "implementationSpent": 10,
+          "validationSpent": 9,
+          "frozenAt": 3,
+          "automaticFreeze": false,
+          "consumption": 19,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "late",
+          "delivered": 20,
+          "unverified": 2,
+          "unfinished": 0,
+          "deferred": 4,
+          "implementationSpent": 25,
+          "validationSpent": 19,
+          "frozenAt": 8,
+          "automaticFreeze": false,
+          "consumption": 44,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "continue",
+          "delivered": 20,
+          "unverified": 4,
+          "unfinished": 0,
+          "deferred": 2,
+          "implementationSpent": 32,
+          "validationSpent": 19,
+          "frozenAt": 10,
+          "automaticFreeze": true,
+          "consumption": 51,
+          "deadlineMet": true
+        }
+      ]
+    },
+    {
+      "scenario": "heavy-rework",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 12,
+        "implementation": 5,
+        "review": 3,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 16,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 7,
+          "implementationSpent": 15,
+          "validationSpent": 14,
+          "frozenAt": 3,
+          "automaticFreeze": false,
+          "consumption": 29,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "late",
+          "delivered": 28,
+          "unverified": 3,
+          "unfinished": 0,
+          "deferred": 0,
+          "implementationSpent": 38,
+          "validationSpent": 33,
+          "frozenAt": 8,
+          "automaticFreeze": false,
+          "consumption": 71,
+          "deadlineMet": true
+        },
+        {
+          "strategy": "continue",
+          "delivered": 25,
+          "unverified": 4,
+          "unfinished": 0,
+          "deferred": 0,
+          "implementationSpent": 38,
+          "validationSpent": 31,
+          "frozenAt": 10,
+          "automaticFreeze": true,
+          "consumption": 69,
+          "deadlineMet": true
+        }
+      ]
+    }
+  ]
+}

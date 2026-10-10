@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/release-comparison.json';
 import reeval from '../../docs/prototypes/release-reeval-conditions.json';
+import reevalComparison from '../../docs/prototypes/release-reeval-comparison.json';
 import {
   RELEASE_REEVAL_BASELINE,
   RELEASE_REEVAL_CONDITIONS,
   RELEASE_REEVAL_SEED,
+  compareReleaseReeval,
   compareReleaseStrategies,
   createReleasePrototype,
+  evaluateReleaseReevalCriteria,
   summarizeRelease,
   tickReleasePrototype,
 } from './release';
@@ -115,5 +118,17 @@ describe('大型リリース段階戦の試作', () => {
         condition.config,
       );
     }
+  });
+
+  it('再評価Phase2は凍結済み4条件を同じseedで再生成し、ロック判定を照合する', () => {
+    expect(reeval.conditions.map(({ scenario, config }) => ({ scenario, config }))).toEqual(
+      RELEASE_REEVAL_CONDITIONS.map(({ scenario, config }) => ({ scenario, config })),
+    );
+    expect(compareReleaseReeval()).toEqual(reevalComparison.scenarios);
+    expect(evaluateReleaseReevalCriteria()).toEqual(reevalComparison.criteria);
+    expect(reevalComparison.scenarios.map((scenario) => scenario.config)).toEqual([
+      RELEASE_REEVAL_BASELINE,
+      ...RELEASE_REEVAL_CONDITIONS.map((condition) => condition.config),
+    ]);
   });
 });

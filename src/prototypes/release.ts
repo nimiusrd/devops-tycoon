@@ -185,3 +185,51 @@ export function compareReleaseStrategies(seed: string | number, config = RELEASE
     return { strategy, ...summarizeRelease(state) };
   });
 }
+
+/** #648 再評価 Phase 2: 凍結済み4条件を既存比較APIへ渡すだけ。規則は変えない。 */
+export function compareReleaseReeval() {
+  return [
+    { scenario: 'verification-bottleneck' as const, config: RELEASE_REEVAL_BASELINE },
+    ...RELEASE_REEVAL_CONDITIONS,
+  ].map(({ scenario, config }) => ({
+    scenario,
+    seed: RELEASE_REEVAL_SEED,
+    config,
+    results: compareReleaseStrategies(RELEASE_REEVAL_SEED, config).map((row) => ({
+      ...row,
+      consumption: row.implementationSpent + row.validationSpent,
+      // 既存比較は期限まで tick を進める。期限未達の敗北判定はない。
+      deadlineMet: true,
+    })),
+  }));
+}
+
+export function evaluateReleaseReevalCriteria(
+  rows: ReturnType<typeof compareReleaseReeval> = compareReleaseReeval(),
+) {
+  const created = rows.filter((row) => row.scenario !== 'verification-bottleneck');
+  const passConditions = created
+    .filter((row) => {
+      const early = row.results.find((result) => result.strategy === 'early');
+      if (!early) return false;
+      const top = Math.max(...row.results.map((result) => result.delivered));
+      return (
+        early.delivered === top &&
+        early.unverified === 0 &&
+        row.results.every((result) => result.deadlineMet)
+      );
+    })
+    .map((row) => row.scenario);
+  const fail = created.every((row) => {
+    const early = row.results.find((result) => result.strategy === 'early');
+    const late = row.results.find((result) => result.strategy === 'late');
+    return early !== undefined && late !== undefined && early.delivered <= late.delivered;
+  });
+  const pass = passConditions.length >= 1;
+  return {
+    pass,
+    fail,
+    passConditions,
+    met: pass && fail ? 'pass-and-fail' : pass ? 'pass' : fail ? 'fail' : 'neither',
+  };
+}

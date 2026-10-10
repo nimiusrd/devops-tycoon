@@ -1,0 +1,359 @@
+{
+  "seed": "RI-193",
+  "results": [
+    {
+      "scenario": "routine",
+      "strategy": "edit",
+      "initial": {
+        "version": 1,
+        "seed": "RI-193",
+        "scenario": "routine",
+        "tick": 0,
+        "horizon": 6,
+        "scope": null,
+        "shippedValue": 0,
+        "loss": 0,
+        "jobs": [
+          {
+            "id": "r1",
+            "domain": "routine",
+            "work": 4,
+            "progress": 0,
+            "value": 6,
+            "approvalLeft": 0,
+            "shipped": null,
+            "blast": 0
+          },
+          {
+            "id": "r2",
+            "domain": "routine",
+            "work": 4,
+            "progress": 0,
+            "value": 6,
+            "approvalLeft": 0,
+            "shipped": null,
+            "blast": 0
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "scope",
+          "scope": "edit"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "scope": "edit",
+        "shippedValue": 12,
+        "loss": 0,
+        "jobs": [
+          {
+            "id": "r1",
+            "status": "shipped",
+            "shipped": 6,
+            "blast": 0,
+            "approvalLeft": 0
+          },
+          {
+            "id": "r2",
+            "status": "shipped",
+            "shipped": 6,
+            "blast": 0,
+            "approvalLeft": 0
+          }
+        ],
+        "resolutions": [
+          "t1:r1,edit+2",
+          "t2:r1,edit+2,ship:6",
+          "t3:r2,edit+2",
+          "t4:r2,edit+2,ship:6",
+          "t5:idle",
+          "t6:idle"
+        ],
+        "netValue": 12
+      }
+    },
+    {
+      "scenario": "routine",
+      "strategy": "read",
+      "initial": {
+        "version": 1,
+        "seed": "RI-193",
+        "scenario": "routine",
+        "tick": 0,
+        "horizon": 6,
+        "scope": null,
+        "shippedValue": 0,
+        "loss": 0,
+        "jobs": [
+          {
+            "id": "r1",
+            "domain": "routine",
+            "work": 4,
+            "progress": 0,
+            "value": 6,
+            "approvalLeft": 0,
+            "shipped": null,
+            "blast": 0
+          },
+          {
+            "id": "r2",
+            "domain": "routine",
+            "work": 4,
+            "progress": 0,
+            "value": 6,
+            "approvalLeft": 0,
+            "shipped": null,
+            "blast": 0
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "scope",
+          "scope": "read"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "scope": "read",
+        "shippedValue": 6,
+        "loss": 0,
+        "jobs": [
+          {
+            "id": "r1",
+            "status": "shipped",
+            "shipped": 6,
+            "blast": 0,
+            "approvalLeft": 0
+          },
+          {
+            "id": "r2",
+            "status": "allowed",
+            "shipped": null,
+            "blast": 0,
+            "approvalLeft": 0
+          }
+        ],
+        "resolutions": [
+          "t1:r1,read+1",
+          "t2:r1,read+1",
+          "t3:r1,read+1",
+          "t4:r1,read+1,ship:6",
+          "t5:r2,read+1",
+          "t6:r2,read+1"
+        ],
+        "netValue": 6
+      }
+    },
+    {
+      "scenario": "critical",
+      "strategy": "read",
+      "initial": {
+        "version": 1,
+        "seed": "RI-193",
+        "scenario": "critical",
+        "tick": 0,
+        "horizon": 8,
+        "scope": null,
+        "shippedValue": 0,
+        "loss": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "domain": "critical",
+            "work": 4,
+            "progress": 0,
+            "value": 16,
+            "approvalLeft": 2,
+            "shipped": null,
+            "blast": 0
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "scope",
+          "scope": "read"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "scope": "read",
+        "shippedValue": 16,
+        "loss": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "status": "shipped",
+            "shipped": 16,
+            "blast": 0,
+            "approvalLeft": 0
+          }
+        ],
+        "resolutions": [
+          "t1:c1,approval",
+          "t2:c1,approval",
+          "t3:c1,read+1",
+          "t4:c1,read+1",
+          "t5:c1,read+1",
+          "t6:c1,read+1,ship:16",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": 16
+      }
+    },
+    {
+      "scenario": "critical",
+      "strategy": "edit",
+      "initial": {
+        "version": 1,
+        "seed": "RI-193",
+        "scenario": "critical",
+        "tick": 0,
+        "horizon": 8,
+        "scope": null,
+        "shippedValue": 0,
+        "loss": 0,
+        "jobs": [
+          {
+            "id": "c1",
+            "domain": "critical",
+            "work": 4,
+            "progress": 0,
+            "value": 16,
+            "approvalLeft": 2,
+            "shipped": null,
+            "blast": 0
+          }
+        ],
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "scope",
+          "scope": "edit"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "scope": "edit",
+        "shippedValue": 16,
+        "loss": 20,
+        "jobs": [
+          {
+            "id": "c1",
+            "status": "shipped",
+            "shipped": 16,
+            "blast": 20,
+            "approvalLeft": 2
+          }
+        ],
+        "resolutions": [
+          "t1:c1,edit+2",
+          "t2:c1,edit+2,ship:16,blast:20",
+          "t3:idle",
+          "t4:idle",
+          "t5:idle",
+          "t6:idle",
+          "t7:idle",
+          "t8:idle"
+        ],
+        "netValue": -4
+      }
+    }
+  ]
+}

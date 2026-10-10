@@ -1547,8 +1547,7 @@ function rememberCounterfactualFrame(
 ): void {
   const list = framesByReason.get(reason) ?? [];
   const last = list[list.length - 1] as
-    | (CounterfactualFrameSample & { lastSig?: string })
-    | undefined;
+    (CounterfactualFrameSample & { lastSig?: string }) | undefined;
   if (
     last &&
     last.sprintsPlayed === sample.sprintsPlayed &&
@@ -1922,8 +1921,7 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
     const s = e.snapshot();
     if (s.phase === 'shop') {
       type Candidate =
-        | { kind: 'card'; defId: string; score: number }
-        | { kind: 'relic'; score: number };
+        { kind: 'card'; defId: string; score: number } | { kind: 'relic'; score: number };
       const candidates: Candidate[] = [];
       for (const c of s.shop?.cards ?? []) {
         if (c.bought || s.budget - c.cost < reserve) continue;

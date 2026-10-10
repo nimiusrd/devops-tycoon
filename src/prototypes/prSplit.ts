@@ -10,9 +10,7 @@ export interface SplitTask {
   retired: boolean;
 }
 export type SplitInput =
-  | { type: 'split'; id: string }
-  | { type: 'work'; id: string }
-  | { type: 'wait' };
+  { type: 'split'; id: string } | { type: 'work'; id: string } | { type: 'wait' };
 export interface SplitState {
   version: 1;
   seed: string;

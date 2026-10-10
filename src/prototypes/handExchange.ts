@@ -64,13 +64,7 @@ export function createHandExchangePrototype(
 }
 
 export type HandExchangeFailure =
-  | 'paused'
-  | 'complete'
-  | 'limit'
-  | 'no-card'
-  | 'no-draw'
-  | 'invalid'
-  | 'no-focus';
+  'paused' | 'complete' | 'limit' | 'no-card' | 'no-draw' | 'invalid' | 'no-focus';
 
 /** 山札枯渇時に捨て札を再利用しない。失敗では全状態と乱数位置を維持する。 */
 export function exchangeHandCard(

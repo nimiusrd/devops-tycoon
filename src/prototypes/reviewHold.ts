@@ -10,9 +10,7 @@ export interface HoldJob {
   completedTick: number | null;
 }
 export type HoldInput =
-  | { type: 'hold' | 'resume'; id: string }
-  | { type: 'rush' }
-  | { type: 'tick' };
+  { type: 'hold' | 'resume'; id: string } | { type: 'rush' } | { type: 'tick' };
 export interface HoldState {
   version: 1;
   seed: string;

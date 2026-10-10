@@ -1,0 +1,209 @@
+{
+  "seed": "RI-220",
+  "results": [
+    {
+      "board": "deadline",
+      "strategy": "hold",
+      "initial": {
+        "version": 1,
+        "seed": "RI-220",
+        "board": "deadline",
+        "tick": 0,
+        "horizon": 4,
+        "charter": true,
+        "limit": 2,
+        "urgentValue": 12,
+        "urgentDeadline": 0,
+        "urgentDone": false,
+        "urgentExpired": false,
+        "ordinaryValue": 3,
+        "followUpCost": 4,
+        "followUpTick": 3,
+        "followUpApplied": false,
+        "exceptionUsed": false,
+        "exceptionTick": null,
+        "value": 0,
+        "trustCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "trustCost": 0,
+        "score": 12,
+        "exceptionUsed": false,
+        "exceptionTick": null,
+        "followUpApplied": false,
+        "urgentDone": false,
+        "urgentExpired": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "deadline",
+      "strategy": "except",
+      "initial": {
+        "version": 1,
+        "seed": "RI-220",
+        "board": "deadline",
+        "tick": 0,
+        "horizon": 4,
+        "charter": true,
+        "limit": 2,
+        "urgentValue": 12,
+        "urgentDeadline": 0,
+        "urgentDone": false,
+        "urgentExpired": false,
+        "ordinaryValue": 3,
+        "followUpCost": 4,
+        "followUpTick": 3,
+        "followUpApplied": false,
+        "exceptionUsed": false,
+        "exceptionTick": null,
+        "value": 0,
+        "trustCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "except"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "value": 21,
+        "trustCost": 4,
+        "score": 17,
+        "exceptionUsed": true,
+        "exceptionTick": 0,
+        "followUpApplied": true,
+        "urgentDone": true,
+        "urgentExpired": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "precedent",
+      "strategy": "hold",
+      "initial": {
+        "version": 1,
+        "seed": "RI-220",
+        "board": "precedent",
+        "tick": 0,
+        "horizon": 4,
+        "charter": true,
+        "limit": 2,
+        "urgentValue": 6,
+        "urgentDeadline": 0,
+        "urgentDone": false,
+        "urgentExpired": false,
+        "ordinaryValue": 3,
+        "followUpCost": 8,
+        "followUpTick": 3,
+        "followUpApplied": false,
+        "exceptionUsed": false,
+        "exceptionTick": null,
+        "value": 0,
+        "trustCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "trustCost": 0,
+        "score": 12,
+        "exceptionUsed": false,
+        "exceptionTick": null,
+        "followUpApplied": false,
+        "urgentDone": false,
+        "urgentExpired": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "precedent",
+      "strategy": "except",
+      "initial": {
+        "version": 1,
+        "seed": "RI-220",
+        "board": "precedent",
+        "tick": 0,
+        "horizon": 4,
+        "charter": true,
+        "limit": 2,
+        "urgentValue": 6,
+        "urgentDeadline": 0,
+        "urgentDone": false,
+        "urgentExpired": false,
+        "ordinaryValue": 3,
+        "followUpCost": 8,
+        "followUpTick": 3,
+        "followUpApplied": false,
+        "exceptionUsed": false,
+        "exceptionTick": null,
+        "value": 0,
+        "trustCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "except"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        }
+      ],
+      "result": {
+        "value": 15,
+        "trustCost": 8,
+        "score": 7,
+        "exceptionUsed": true,
+        "exceptionTick": 0,
+        "followUpApplied": true,
+        "urgentDone": true,
+        "urgentExpired": false,
+        "lost": false
+      }
+    }
+  ]
+}

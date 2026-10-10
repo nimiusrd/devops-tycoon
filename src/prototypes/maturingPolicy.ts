@@ -2,8 +2,7 @@
 export type MatureCard = 'none' | 'steady' | 'growing';
 export type MatureStrategy = MatureCard;
 export type MatureInput =
-  | { type: 'adopt'; card: 'steady' | 'growing' }
-  | { type: 'rework' | 'tick' };
+  { type: 'adopt'; card: 'steady' | 'growing' } | { type: 'rework' | 'tick' };
 export interface MatureState {
   version: 1;
   seed: number;

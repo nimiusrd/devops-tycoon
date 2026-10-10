@@ -89,13 +89,7 @@ export type RunStatus = 'playing' | 'won' | 'lost';
 
 /** 勝利の種別（SPEC 第14章）。 */
 export type WinType =
-  | 'normal'
-  | 'healthy'
-  | 'aiSuccess'
-  | 'management'
-  | 'happiness'
-  | 'chaos'
-  | 'noDamage';
+  'normal' | 'healthy' | 'aiSuccess' | 'management' | 'happiness' | 'chaos' | 'noDamage';
 
 /** 敗北の理由（SPEC 第15章）。 */
 export type LoseReason =
@@ -135,12 +129,7 @@ export interface StakeholderTrust {
 
 /** 四半期レビューの結果種別。 */
 export type QuarterOutcome =
-  | 'exceeded'
-  | 'met'
-  | 'missed_adjustable'
-  | 'missed_crisis'
-  | 'reorg_required'
-  | 'shutdown';
+  'exceeded' | 'met' | 'missed_adjustable' | 'missed_crisis' | 'reorg_required' | 'shutdown';
 
 /** 目標修正アクション ID。 */
 export type GoalAdjustmentId =

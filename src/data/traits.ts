@@ -8,12 +8,7 @@
 
 /** トレイトの識別子（SPEC 第12.1 の例）。 */
 export type TraitId =
-  | 'aiArtisan'
-  | 'megaPrMaker'
-  | 'reviewDemon'
-  | 'docMaster'
-  | 'juniorStar'
-  | 'burnoutProne';
+  'aiArtisan' | 'megaPrMaker' | 'reviewDemon' | 'docMaster' | 'juniorStar' | 'burnoutProne';
 
 /**
  * トレイトが個体へ与える補正。指定キーのみ既定値（無効果）から上書きする。

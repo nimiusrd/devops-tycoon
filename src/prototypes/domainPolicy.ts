@@ -15,8 +15,7 @@ export interface DomainJob {
   incident: number;
 }
 export type DomainInput =
-  | { type: 'configure'; policy: string; memberAi: boolean }
-  | { type: 'tick' };
+  { type: 'configure'; policy: string; memberAi: boolean } | { type: 'tick' };
 export interface DomainState {
   version: 1;
   seed: string;

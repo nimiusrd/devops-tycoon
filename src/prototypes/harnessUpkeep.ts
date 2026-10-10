@@ -4,9 +4,7 @@ import { createRng, getRngState } from '../sim/rng';
 export type HarnessKind = 'external' | 'inhouse';
 export type HarnessStrategy = 'external' | 'skip' | 'on-time' | 'early';
 export type HarnessInput =
-  | { type: 'choose'; kind: HarnessKind }
-  | { type: 'update' }
-  | { type: 'tick' };
+  { type: 'choose'; kind: HarnessKind } | { type: 'update' } | { type: 'tick' };
 export interface HarnessState {
   version: 1;
   seed: number;

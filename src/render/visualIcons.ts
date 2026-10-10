@@ -52,15 +52,7 @@ export type IconKey = (typeof ICON_KEYS)[number];
 
 /** 既存 VISUAL_TOKENS.colors の意味色。新しい色は増やさない。 */
 export type IconTone =
-  | 'fire'
-  | 'sun'
-  | 'mint'
-  | 'sky'
-  | 'lav'
-  | 'coral'
-  | 'cream'
-  | 'text'
-  | 'text-dim';
+  'fire' | 'sun' | 'mint' | 'sky' | 'lav' | 'coral' | 'cream' | 'text' | 'text-dim';
 
 export interface IconCatalogEntry {
   readonly file: string;

@@ -5,9 +5,7 @@ export type ProposalId = 'fast' | 'durable';
 export type CompanyPosture = 'launch' | 'maintain';
 export type SolutionStrategy = 'rush' | 'compare-fast' | 'compare-durable' | 'wait';
 export type SolutionInput =
-  | { type: 'explore' }
-  | { type: 'adopt'; proposal: ProposalId }
-  | { type: 'tick' };
+  { type: 'explore' } | { type: 'adopt'; proposal: ProposalId } | { type: 'tick' };
 export interface SolutionState {
   version: 1;
   seed: number;

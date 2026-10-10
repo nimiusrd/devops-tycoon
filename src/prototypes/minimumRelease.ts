@@ -13,9 +13,7 @@ export interface MinimumReleaseState {
   decisions: { kind: 'defer'; tick: number; workLeft: number }[];
 }
 export type MinimumReleaseInput =
-  | { kind: 'work'; id: string }
-  | { kind: 'wait' }
-  | { kind: 'defer' };
+  { kind: 'work'; id: string } | { kind: 'wait' } | { kind: 'defer' };
 
 export function createMinimumReleasePrototype(
   seed: string | number,

@@ -15,8 +15,7 @@ export interface GiantPrReservation {
 }
 
 type FollowUpBeat =
-  | { kind: 'normal'; eventId: string }
-  | { kind: 'follow-up'; eventId: 'giant-pr-follow-up' };
+  { kind: 'normal'; eventId: string } | { kind: 'follow-up'; eventId: 'giant-pr-follow-up' };
 
 /** RI-240: 巨大PR1件だけを覚える。四半期内番号で予約しない。 */
 export interface EventFollowUpState {

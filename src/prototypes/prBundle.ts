@@ -15,9 +15,7 @@ export interface BundleGroup {
   failed: boolean;
 }
 export type BundleInput =
-  | { type: 'bundle'; ids: string[] }
-  | { type: 'work'; id: string }
-  | { type: 'wait' };
+  { type: 'bundle'; ids: string[] } | { type: 'work'; id: string } | { type: 'wait' };
 export interface BundleState {
   version: 1;
   seed: string;

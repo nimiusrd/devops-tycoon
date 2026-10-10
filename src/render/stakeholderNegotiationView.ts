@@ -15,11 +15,7 @@ import type { GoalAdjustmentId, StakeholderTrust } from '../sim/run/types';
 export type NegotiationStance = 'hardline' | 'cautious' | 'cooperative';
 
 export type NegotiationTermKind =
-  | 'budget'
-  | 'nextGoal'
-  | 'orgState'
-  | 'nextBudgetCap'
-  | 'nextQuarterPhysics';
+  'budget' | 'nextGoal' | 'orgState' | 'nextBudgetCap' | 'nextQuarterPhysics';
 
 export const NEGOTIATOR_LABELS: Record<AdjustmentNegotiator, string> = {
   management: '経営',

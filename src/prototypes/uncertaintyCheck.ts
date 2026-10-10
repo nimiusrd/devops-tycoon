@@ -5,9 +5,7 @@ export type Signal = 'clear' | 'uncertain';
 export type Verifier = 'thin' | 'thick';
 export type UncertaintyPolicy = 'ship' | 'flagged' | 'all';
 export type UncertaintyInput =
-  | { type: 'check'; id: string }
-  | { type: 'ship'; id: string }
-  | { type: 'tick' };
+  { type: 'check'; id: string } | { type: 'ship'; id: string } | { type: 'tick' };
 export interface UncertaintyTask {
   id: string;
   signal: Signal;

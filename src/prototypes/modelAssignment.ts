@@ -225,17 +225,14 @@ export function chooseModelAction(state: ModelState, strategy: ModelStrategy): M
   if (!job) return { type: 'tick' };
   const desired: AssignedModel =
     strategy === 'match' ? (job.kind === 'complex' ? 'precise' : 'fast') : strategy;
-  if (job.model === null && state.pendingModel !== desired && canAffordModel(state, desired)) {
-    return { type: 'assign', model: desired };
+  if (job.model !== null) return { type: 'tick' };
+  if (!canAffordModel(state, desired)) {
+    if (state.pendingModel !== null && state.pendingModel !== 'none') {
+      return { type: 'assign', model: 'none' };
+    }
+    return { type: 'tick' };
   }
-  if (
-    job.model === null &&
-    state.pendingModel !== null &&
-    state.pendingModel !== 'none' &&
-    !canAffordModel(state, state.pendingModel)
-  ) {
-    return { type: 'assign', model: 'none' };
-  }
+  if (state.pendingModel !== desired) return { type: 'assign', model: desired };
   return { type: 'tick' };
 }
 

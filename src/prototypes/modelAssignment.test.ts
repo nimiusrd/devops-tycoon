@@ -79,6 +79,19 @@ describe('RI-189 モデルの使い分け', () => {
     expect(cleared.jobs[1]).toMatchObject({ model: 'none', progress: 1 });
     expect(cleared.reviewLoad).toBe(0);
     expect(cleared.resolutions[cleared.resolutions.length - 1]).toBe('t4:s2:budget:clear+1');
+    let switched = createModelBoard('RI-189', 3, 8, ['simple', 'complex']);
+    guard = 0;
+    while (switched.tick < switched.horizon) {
+      if (++guard > 20) throw new Error('switch');
+      const action = chooseModelAction(switched, 'match');
+      const next = apply(switched, action);
+      expect(next).not.toBe(switched);
+      switched = next;
+    }
+    expect(switched.jobs[0]).toMatchObject({ model: 'fast', shipped: 10, defect: false });
+    expect(switched.jobs[1]).toMatchObject({ model: 'none', shipped: 18, defect: false });
+    expect(switched.spent).toBe(2);
+    expect(switched.inputs).toContainEqual({ type: 'assign', model: 'none' });
   });
 
   it('閲覧と不正な割当は発火せず、着手済みのモデルは巻き戻さない', () => {

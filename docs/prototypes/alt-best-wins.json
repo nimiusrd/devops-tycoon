@@ -2,6 +2,7 @@
   "source": {
     "engine": "RunEngine",
     "difficulty": "easy",
+    "scenario": "default",
     "seeds": "m0..m119",
     "policies": ["plain", "skilled"],
     "runs": 240
@@ -13,6 +14,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -38,6 +40,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -65,6 +68,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -92,6 +96,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -119,6 +124,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -147,6 +153,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -178,6 +185,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -208,6 +216,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -233,6 +242,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -261,6 +271,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -288,6 +299,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -315,6 +327,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -345,6 +358,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -372,6 +386,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -400,6 +415,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -425,6 +441,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -450,6 +467,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -477,6 +495,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -502,6 +521,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,
@@ -527,6 +547,7 @@
         "status": "won",
         "runKind": "normal",
         "difficulty": "easy",
+        "scenario": "default",
         "trials": [],
         "ruleset": {
           "version": 7,

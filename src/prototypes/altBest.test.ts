@@ -18,6 +18,7 @@ function won(overrides: Partial<AltBestInput> = {}): AltBestInput {
     status: 'won',
     runKind: 'normal',
     difficulty: 'easy',
+    scenario: 'default',
     trials: [],
     ruleset: { version: 1, fingerprint: 'r1' },
     sprintsPlayed: 3,
@@ -30,22 +31,27 @@ function won(overrides: Partial<AltBestInput> = {}): AltBestInput {
 }
 
 describe('RI-292 複数種類の自己ベスト', () => {
-  it('指標・ラン種別・難易度・試練・rulesetを分けたキーで記録し、試練の順序は問わない', () => {
+  it('指標・ラン種別・難易度・シナリオ・試練・rulesetを分けたキーで記録し、試練の順序は問わない', () => {
     const ruleset = { version: 1, fingerprint: 'r1' };
     const key = altBestKey('seniorHpAtClear', won({ trials: ['b', 'a'] }), ruleset);
     expect(key).toBe(altBestKey('seniorHpAtClear', won({ trials: ['a', 'b'] }), ruleset));
+    expect(key).toContain(':default:');
     const others = [
       altBestKey('minSeniorHp', won(), ruleset),
       altBestKey('seniorHpAtClear', won({ runKind: 'daily' }), ruleset),
       altBestKey('seniorHpAtClear', won({ difficulty: 'normal' }), ruleset),
+      altBestKey('seniorHpAtClear', won({ scenario: 'copilot' }), ruleset),
+      altBestKey('seniorHpAtClear', won({ scenario: 'claude-code' }), ruleset),
+      altBestKey('seniorHpAtClear', won({ scenario: 'devin' }), ruleset),
       altBestKey('seniorHpAtClear', won(), ruleset),
       altBestKey('seniorHpAtClear', won(), { version: 2, fingerprint: 'r1' }),
       altBestKey('seniorHpAtClear', won(), { version: 1, fingerprint: 'r2' }),
     ];
-    expect(new Set([key, ...others]).size).toBe(7);
+    expect(new Set([key, ...others]).size).toBe(10);
     let book = recordAltBest({}, won(), 'seniorHpAtClear').book;
     book = recordAltBest(book, won({ difficulty: 'hard' }), 'seniorHpAtClear').book;
-    expect(Object.keys(book)).toHaveLength(2);
+    book = recordAltBest(book, won({ scenario: 'copilot' }), 'seniorHpAtClear').book;
+    expect(Object.keys(book)).toHaveLength(3);
   });
 
   it('敗北・開始直後・ruleset不明の旧保存は記録の対象外にする', () => {
@@ -121,10 +127,52 @@ describe('RI-292 複数種類の自己ベスト', () => {
     expect(Object.keys(book.book)).toHaveLength(1);
   });
 
+  it('ruleset不明や開始直後の勝利は、値が測れても標本・分布・上限到達・スプリント別平均に入れない', () => {
+    const eligible = won({
+      finalOrg: { morale: 100, seniorHp: 40 },
+      budget: 10,
+      boundarySeniorHp: [40, 40, 40],
+    });
+    const legacy = won({
+      ruleset: null,
+      sprintsPlayed: 1,
+      finalOrg: { morale: 10, seniorHp: 10 },
+      budget: 99,
+      boundarySeniorHp: [10],
+    });
+    const unstarted = won({
+      sprintsPlayed: 0,
+      finalOrg: { morale: 1, seniorHp: 1 },
+      budget: 1,
+      boundarySeniorHp: [],
+    });
+    const missing = won({ finalOrg: undefined, budget: undefined, boundarySeniorHp: undefined });
+    const rows = evaluateAltBests([legacy, eligible, unstarted, won({ status: 'lost' }), missing]);
+    for (const row of rows) {
+      expect(row.samples).toBe(1);
+      expect(row.updates['not-eligible']).toBe(3);
+      expect(row.updates.missing).toBe(1);
+      expect(row.distinct).toBe(1);
+    }
+    expect(rows.find((row) => row.metric === 'moraleAtClear')).toMatchObject({
+      min: 100,
+      max: 100,
+      ceilingHits: 1,
+      meanBySprints: { 3: 100 },
+    });
+    expect(rows.find((row) => row.metric === 'budgetAtClear')!.meanBySprints).toEqual({ 3: 10 });
+    expect(rows.find((row) => row.metric === 'minSeniorHp')).toMatchObject({
+      min: 40,
+      max: 40,
+      meanBySprints: { 3: 40 },
+    });
+  });
+
   it('現行バランスの勝利20件では士気が全件上限に張り付き、記録が初回から動かない', () => {
     const rows = evaluateAltBests(inputs);
     const row = (metric: string) => rows.find((item) => item.metric === metric)!;
     expect(inputs).toHaveLength(20);
+    expect(inputs.every((input) => input.scenario === 'default')).toBe(true);
     expect(row('moraleAtClear')).toMatchObject({
       samples: 20,
       distinct: 1,

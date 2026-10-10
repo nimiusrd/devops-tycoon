@@ -3,6 +3,7 @@
  * 既存の bestScore・メタ進行ポイント・デイリー記録には触れない。
  */
 import type { DifficultyId, RunKind, RunStatus, WinType } from '../sim/run/types';
+import type { ScenarioId } from '../sim/types';
 import type { RunRulesetIdentity } from '../state/runPersistence';
 
 export type AltBestMetric = 'moraleAtClear' | 'seniorHpAtClear' | 'minSeniorHp' | 'budgetAtClear';
@@ -26,6 +27,8 @@ export interface AltBestInput {
   status: RunStatus;
   runKind: RunKind;
   difficulty: DifficultyId;
+  /** ラン開始時のシナリオ。デイリーは default。異なるシナリオは別の記録枠。 */
+  scenario: ScenarioId;
   trials: string[];
   ruleset: RunRulesetIdentity | null;
   sprintsPlayed: number;
@@ -45,14 +48,14 @@ export interface AltBestRecord {
 export type AltBestBook = Record<string, AltBestRecord>;
 export type AltBestUpdate = 'new' | 'improved' | 'tie' | 'lower' | 'missing' | 'not-eligible';
 
-/** 指標・ラン種別・難易度・試練・ruleset を分けたキー。異なる条件は同じ枠に入らない。 */
+/** 指標・ラン種別・難易度・シナリオ・試練・ruleset を分けたキー。異なる条件は同じ枠に入らない。 */
 export function altBestKey(
   metric: AltBestMetric,
-  input: Pick<AltBestInput, 'runKind' | 'difficulty' | 'trials'>,
+  input: Pick<AltBestInput, 'runKind' | 'difficulty' | 'scenario' | 'trials'>,
   ruleset: RunRulesetIdentity,
 ): string {
   const trials = [...input.trials].sort().join('+') || '-';
-  return `${metric}:${input.runKind}:${input.difficulty}:${trials}:v${ruleset.version}:${ruleset.fingerprint}`;
+  return `${metric}:${input.runKind}:${input.difficulty}:${input.scenario}:${trials}:v${ruleset.version}:${ruleset.fingerprint}`;
 }
 
 function finite(value: number | undefined): number | null {
@@ -102,7 +105,7 @@ export function recordAltBest(
   };
 }
 
-/** 勝利ランを順に記録したとき、指標ごとに記録が動いた回数と上限への張り付きを数える。 */
+/** 勝利ランを順に記録したとき、指標ごとに記録が動いた回数と上限への張り付きを数える。記録対象外は標本に入れない。 */
 export function evaluateAltBests(inputs: readonly AltBestInput[]) {
   return ALT_BEST_METRICS.map((metric) => {
     let book: AltBestBook = {};
@@ -121,7 +124,8 @@ export function evaluateAltBests(inputs: readonly AltBestInput[]) {
       book = result.book;
       tally[result.update] += 1;
       const value = measureAltBest(input, metric);
-      if (input.status !== 'won' || value === null) continue;
+      // 勝利でも ruleset 不明・開始直後は記録しない。測定できても標本に混ぜない。
+      if (result.update === 'not-eligible' || value === null) continue;
       values.push(value);
       groups.set(input.sprintsPlayed, [...(groups.get(input.sprintsPlayed) ?? []), value]);
     }

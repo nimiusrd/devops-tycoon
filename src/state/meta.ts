@@ -6,7 +6,7 @@
  */
 import { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from '../data/achievements';
 import { INITIAL_UNLOCKED_DIFFICULTIES, META_BALANCE } from '../data/balance/meta';
-import { DIFFICULTY_ORDER } from '../data/difficulties';
+import { DIFFICULTY_DEFS, DIFFICULTY_ORDER } from '../data/difficulties';
 import type { BOSS_DEFS } from '../data/bosses';
 import { BOSS_DEFS as ALL_BOSSES } from '../data/bosses';
 import {
@@ -42,6 +42,11 @@ export interface MetaState {
   collectedWinTypes: WinType[];
   /** 収集済みの AI 導入失敗診断（失敗 4 種のみ、重複なし）。 */
   collectedDiagnoses: DiagnosisType[];
+  /**
+   * 難易度×勝利種別の達成記録（RI-294。`difficulty:winType`、重複なし）。
+   * 記録導入前の勝利は `collectedWinTypes` から推測せず、空のまま始める。
+   */
+  collectedWinCombos: WinComboKey[];
   /** 自己ベストスコア。 */
   bestScore: number;
   /** メタショップで購入済みのカード定義 ID。 */
@@ -65,6 +70,9 @@ export interface MetaState {
    */
   seenTutorialVersion: number;
 }
+
+/** 難易度と勝利種別の組（RI-294）。 */
+export type WinComboKey = `${DifficultyId}:${WinType}`;
 
 /** 研修方針で選べる優先施策の上限（RI-34⁗）。正本は `META_BALANCE`。 */
 export const MAX_PREFERRED_CARDS = META_BALANCE.preferredMaxCards.value;
@@ -115,6 +123,7 @@ export function defaultMeta(): MetaState {
     achievements: [],
     collectedWinTypes: [],
     collectedDiagnoses: [],
+    collectedWinCombos: [],
     bestScore: 0,
     unlockedCards: [],
     unlockedRelics: [],
@@ -166,11 +175,40 @@ export function normalizeMeta(value: unknown): MetaState {
   return {
     ...base,
     preferredCardIds: sanitizePreferredCardIds(rest.preferredCardIds, unlocked.cards),
+    collectedWinCombos: normalizeWinCombos(rest.collectedWinCombos),
     dailyRuns: normalizeDailyRuns(rest.dailyRuns),
     soundMuted: typeof rest.soundMuted === 'boolean' ? rest.soundMuted : true,
     seenTutorialVersion,
     seenTutorial: seenTutorialVersion >= TUTORIAL_CONTENT_VERSION || rest.seenTutorial === true,
   };
+}
+
+function isWinComboKey(value: unknown): value is WinComboKey {
+  if (typeof value !== 'string') return false;
+  const [difficulty, winType, ...rest] = value.split(':');
+  return (
+    rest.length === 0 &&
+    DIFFICULTY_ORDER.includes(difficulty as DifficultyId) &&
+    WIN_TYPE_ORDER.includes(winType as WinType)
+  );
+}
+
+/** 未知の難易度・勝利種別と重複を落とす。配列でなければ空にする。 */
+function normalizeWinCombos(value: unknown): WinComboKey[] {
+  if (!Array.isArray(value)) return [];
+  return uniq(value.filter(isWinComboKey)) as WinComboKey[];
+}
+
+export function winComboKey(difficulty: DifficultyId, winType: WinType): WinComboKey {
+  return `${difficulty}:${winType}`;
+}
+
+function mergeWinCombo(
+  current: readonly WinComboKey[],
+  input: Pick<RunRewardInput, 'won' | 'difficulty' | 'winType'>,
+): WinComboKey[] {
+  if (!input.won || !input.winType) return [...current];
+  return uniq([...current, winComboKey(input.difficulty, input.winType)]) as WinComboKey[];
 }
 
 function normalizeDailyRuns(value: unknown): Record<string, DailyRunRecord> {
@@ -410,6 +448,63 @@ export const WIN_TITLE_DEFS: readonly WinTitleDef[] = WIN_TYPE_ORDER.map((id) =>
   hint: WIN_TITLE_HINTS[id],
 }));
 
+export interface WinComboCell {
+  winType: WinType;
+  label: string;
+  achieved: boolean;
+}
+
+export interface WinComboRow {
+  difficulty: DifficultyId;
+  label: string;
+  /** 難易度が未解放なら false。未達と区別して表示する。 */
+  unlocked: boolean;
+  achievedCount: number;
+  cells: WinComboCell[];
+}
+
+export interface WinComboCodex {
+  rows: WinComboRow[];
+  achievedCount: number;
+  total: number;
+  /** 解放済みの最上位難易度で未達の勝ち方。全達成なら null。 */
+  nextGoal: { difficulty: DifficultyId; label: string; remaining: WinType[] } | null;
+}
+
+/** 難易度×勝利種別の図鑑（RI-294）。記録済みの組だけを達成とする。 */
+export function buildWinComboCodex(meta: MetaState): WinComboCodex {
+  const achieved = new Set(meta.collectedWinCombos);
+  const rows = DIFFICULTY_ORDER.map((difficulty) => {
+    const cells = WIN_TITLE_DEFS.map((def) => ({
+      winType: def.id,
+      label: def.label,
+      achieved: achieved.has(winComboKey(difficulty, def.id)),
+    }));
+    return {
+      difficulty,
+      label: DIFFICULTY_DEFS[difficulty].label,
+      unlocked: meta.unlockedDifficulties.includes(difficulty),
+      achievedCount: cells.filter((cell) => cell.achieved).length,
+      cells,
+    };
+  });
+  const goalRow = [...rows]
+    .reverse()
+    .find((row) => row.unlocked && row.achievedCount < row.cells.length);
+  return {
+    rows,
+    achievedCount: rows.reduce((sum, row) => sum + row.achievedCount, 0),
+    total: DIFFICULTY_ORDER.length * WIN_TITLE_DEFS.length,
+    nextGoal: goalRow
+      ? {
+          difficulty: goalRow.difficulty,
+          label: goalRow.label,
+          remaining: goalRow.cells.filter((cell) => !cell.achieved).map((cell) => cell.winType),
+        }
+      : null,
+  };
+}
+
 /** 実績 ID の表示名（後方互換。コレクション要素。第17章）。 */
 export const ACHIEVEMENT_LABEL: Record<string, string> = Object.fromEntries(
   ACHIEVEMENT_DEFS.map((a) => [a.id, a.label]),
@@ -428,6 +523,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     achievements: [...meta.achievements],
     collectedWinTypes: [...meta.collectedWinTypes],
     collectedDiagnoses: mergeCollectedDiagnoses(meta.collectedDiagnoses, input.diagnosis),
+    collectedWinCombos: mergeWinCombo(meta.collectedWinCombos, input),
     bestScore: Math.max(meta.bestScore, input.score),
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
@@ -517,6 +613,7 @@ export function applyDailyRunReward(
     bestScore: Math.max(meta.bestScore, input.score),
     collectedWinTypes,
     collectedDiagnoses: mergeCollectedDiagnoses(meta.collectedDiagnoses, input.diagnosis),
+    collectedWinCombos: mergeWinCombo(meta.collectedWinCombos, input),
     dailyRuns: {
       ...meta.dailyRuns,
       [entryKey]: { bestScore: dailyBest, rewardClaimed: true },

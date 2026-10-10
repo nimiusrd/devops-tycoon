@@ -1,0 +1,407 @@
+{
+  "seed": "RI-194",
+  "results": [
+    {
+      "scenario": "low",
+      "strategy": "same",
+      "initial": {
+        "version": 1,
+        "seed": "RI-194",
+        "scenario": "low",
+        "tick": 0,
+        "horizon": 5,
+        "implMethod": "script",
+        "implTicks": 3,
+        "verifyMethod": null,
+        "implLeft": 3,
+        "verifyLeft": 0,
+        "sharedPenalty": 4,
+        "otherPenalty": 0,
+        "caughtShared": false,
+        "shipped": null,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "verify",
+          "method": "script"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 5,
+        "verifyMethod": "script",
+        "implLeft": 0,
+        "verifyLeft": 0,
+        "caughtShared": false,
+        "shipped": 8,
+        "resolutions": [
+          "t1,implement:script",
+          "t2,implement:script",
+          "t3,implement:script",
+          "t4,verify:script,missed:assumption,ship:8",
+          "t5,idle"
+        ],
+        "netValue": 8
+      }
+    },
+    {
+      "scenario": "low",
+      "strategy": "independent",
+      "initial": {
+        "version": 1,
+        "seed": "RI-194",
+        "scenario": "low",
+        "tick": 0,
+        "horizon": 5,
+        "implMethod": "script",
+        "implTicks": 3,
+        "verifyMethod": null,
+        "implLeft": 3,
+        "verifyLeft": 0,
+        "sharedPenalty": 4,
+        "otherPenalty": 0,
+        "caughtShared": false,
+        "shipped": null,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "verify",
+          "method": "walkthrough"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 5,
+        "verifyMethod": "walkthrough",
+        "implLeft": 0,
+        "verifyLeft": 1,
+        "caughtShared": false,
+        "shipped": null,
+        "resolutions": [
+          "t1,implement:script",
+          "t2,implement:script",
+          "t3,implement:script",
+          "t4,verify:walkthrough",
+          "t5,verify:walkthrough"
+        ],
+        "netValue": 0
+      }
+    },
+    {
+      "scenario": "high",
+      "strategy": "independent",
+      "initial": {
+        "version": 1,
+        "seed": "RI-194",
+        "scenario": "high",
+        "tick": 0,
+        "horizon": 8,
+        "implMethod": "script",
+        "implTicks": 3,
+        "verifyMethod": null,
+        "implLeft": 3,
+        "verifyLeft": 0,
+        "sharedPenalty": 14,
+        "otherPenalty": 0,
+        "caughtShared": false,
+        "shipped": null,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "verify",
+          "method": "walkthrough"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "verifyMethod": "walkthrough",
+        "implLeft": 0,
+        "verifyLeft": 0,
+        "caughtShared": true,
+        "shipped": 12,
+        "resolutions": [
+          "t1,implement:script",
+          "t2,implement:script",
+          "t3,implement:script",
+          "t4,verify:walkthrough",
+          "t5,verify:walkthrough",
+          "t6,verify:walkthrough,caught:assumption,ship:12",
+          "t7,idle",
+          "t8,idle"
+        ],
+        "netValue": 12
+      }
+    },
+    {
+      "scenario": "high",
+      "strategy": "same",
+      "initial": {
+        "version": 1,
+        "seed": "RI-194",
+        "scenario": "high",
+        "tick": 0,
+        "horizon": 8,
+        "implMethod": "script",
+        "implTicks": 3,
+        "verifyMethod": null,
+        "implLeft": 3,
+        "verifyLeft": 0,
+        "sharedPenalty": 14,
+        "otherPenalty": 0,
+        "caughtShared": false,
+        "shipped": null,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "verify",
+          "method": "script"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "verifyMethod": "script",
+        "implLeft": 0,
+        "verifyLeft": 0,
+        "caughtShared": false,
+        "shipped": -2,
+        "resolutions": [
+          "t1,implement:script",
+          "t2,implement:script",
+          "t3,implement:script",
+          "t4,verify:script,missed:assumption,ship:-2",
+          "t5,idle",
+          "t6,idle",
+          "t7,idle",
+          "t8,idle"
+        ],
+        "netValue": -2
+      }
+    },
+    {
+      "scenario": "other",
+      "strategy": "independent",
+      "initial": {
+        "version": 1,
+        "seed": "RI-194",
+        "scenario": "other",
+        "tick": 0,
+        "horizon": 8,
+        "implMethod": "script",
+        "implTicks": 3,
+        "verifyMethod": null,
+        "implLeft": 3,
+        "verifyLeft": 0,
+        "sharedPenalty": 14,
+        "otherPenalty": 5,
+        "caughtShared": false,
+        "shipped": null,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "verify",
+          "method": "walkthrough"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "verifyMethod": "walkthrough",
+        "implLeft": 0,
+        "verifyLeft": 0,
+        "caughtShared": true,
+        "shipped": 7,
+        "resolutions": [
+          "t1,implement:script",
+          "t2,implement:script",
+          "t3,implement:script",
+          "t4,verify:walkthrough",
+          "t5,verify:walkthrough",
+          "t6,verify:walkthrough,caught:assumption,missed:load,ship:7",
+          "t7,idle",
+          "t8,idle"
+        ],
+        "netValue": 7
+      }
+    },
+    {
+      "scenario": "other",
+      "strategy": "same",
+      "initial": {
+        "version": 1,
+        "seed": "RI-194",
+        "scenario": "other",
+        "tick": 0,
+        "horizon": 8,
+        "implMethod": "script",
+        "implTicks": 3,
+        "verifyMethod": null,
+        "implLeft": 3,
+        "verifyLeft": 0,
+        "sharedPenalty": 14,
+        "otherPenalty": 5,
+        "caughtShared": false,
+        "shipped": null,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "verify",
+          "method": "script"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "verifyMethod": "script",
+        "implLeft": 0,
+        "verifyLeft": 0,
+        "caughtShared": false,
+        "shipped": -7,
+        "resolutions": [
+          "t1,implement:script",
+          "t2,implement:script",
+          "t3,implement:script",
+          "t4,verify:script,missed:assumption,missed:load,ship:-7",
+          "t5,idle",
+          "t6,idle",
+          "t7,idle",
+          "t8,idle"
+        ],
+        "netValue": -7
+      }
+    }
+  ]
+}

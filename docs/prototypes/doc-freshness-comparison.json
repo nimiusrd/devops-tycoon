@@ -1,0 +1,453 @@
+{
+  "seed": "RI-192",
+  "results": [
+    {
+      "scenario": "stable",
+      "strategy": "add",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "stable",
+        "tick": 0,
+        "horizon": 6,
+        "changeAt": 0,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "add"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "quantity": 1,
+        "freshness": "fresh",
+        "value": 25,
+        "resolutions": [
+          "t1:add,qty:1,freshness:fresh",
+          "t2:use,score:5,freshness:fresh",
+          "t3:use,score:5,freshness:fresh",
+          "t4:use,score:5,freshness:fresh",
+          "t5:use,score:5,freshness:fresh",
+          "t6:use,score:5,freshness:fresh"
+        ],
+        "netValue": 25
+      }
+    },
+    {
+      "scenario": "stable",
+      "strategy": "refresh",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "stable",
+        "tick": 0,
+        "horizon": 6,
+        "changeAt": 0,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "add"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "quantity": 1,
+        "freshness": "fresh",
+        "value": 25,
+        "resolutions": [
+          "t1:add,qty:1,freshness:fresh",
+          "t2:use,score:5,freshness:fresh",
+          "t3:use,score:5,freshness:fresh",
+          "t4:use,score:5,freshness:fresh",
+          "t5:use,score:5,freshness:fresh",
+          "t6:use,score:5,freshness:fresh"
+        ],
+        "netValue": 25
+      }
+    },
+    {
+      "scenario": "stable",
+      "strategy": "expand",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "stable",
+        "tick": 0,
+        "horizon": 6,
+        "changeAt": 0,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "add"
+        },
+        {
+          "type": "add"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "quantity": 2,
+        "freshness": "fresh",
+        "value": 20,
+        "resolutions": [
+          "t1:add,qty:1,freshness:fresh",
+          "t2:add,qty:2,freshness:fresh",
+          "t3:use,score:5,freshness:fresh",
+          "t4:use,score:5,freshness:fresh",
+          "t5:use,score:5,freshness:fresh",
+          "t6:use,score:5,freshness:fresh"
+        ],
+        "netValue": 20
+      }
+    },
+    {
+      "scenario": "stable",
+      "strategy": "ignore",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "stable",
+        "tick": 0,
+        "horizon": 6,
+        "changeAt": 0,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 12,
+        "resolutions": [
+          "t1:use,score:2,freshness:none",
+          "t2:use,score:2,freshness:none",
+          "t3:use,score:2,freshness:none",
+          "t4:use,score:2,freshness:none",
+          "t5:use,score:2,freshness:none",
+          "t6:use,score:2,freshness:none"
+        ],
+        "netValue": 12
+      }
+    },
+    {
+      "scenario": "changed",
+      "strategy": "refresh",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "changed",
+        "tick": 0,
+        "horizon": 8,
+        "changeAt": 3,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "add"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "refresh"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "quantity": 1,
+        "freshness": "fresh",
+        "value": 21,
+        "resolutions": [
+          "t1:add,qty:1,freshness:fresh",
+          "t2:use,score:5,freshness:fresh",
+          "t3:use,stale:spec-change,score:-4,freshness:stale",
+          "t4:refresh,qty:1,freshness:fresh",
+          "t5:use,score:5,freshness:fresh",
+          "t6:use,score:5,freshness:fresh",
+          "t7:use,score:5,freshness:fresh",
+          "t8:use,score:5,freshness:fresh"
+        ],
+        "netValue": 21
+      }
+    },
+    {
+      "scenario": "changed",
+      "strategy": "ignore",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "changed",
+        "tick": 0,
+        "horizon": 8,
+        "changeAt": 3,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 16,
+        "resolutions": [
+          "t1:use,score:2,freshness:none",
+          "t2:use,score:2,freshness:none",
+          "t3:use,change:no-doc,score:2,freshness:none",
+          "t4:use,score:2,freshness:none",
+          "t5:use,score:2,freshness:none",
+          "t6:use,score:2,freshness:none",
+          "t7:use,score:2,freshness:none",
+          "t8:use,score:2,freshness:none"
+        ],
+        "netValue": 16
+      }
+    },
+    {
+      "scenario": "changed",
+      "strategy": "add",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "changed",
+        "tick": 0,
+        "horizon": 8,
+        "changeAt": 3,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "add"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "quantity": 1,
+        "freshness": "stale",
+        "value": -19,
+        "resolutions": [
+          "t1:add,qty:1,freshness:fresh",
+          "t2:use,score:5,freshness:fresh",
+          "t3:use,stale:spec-change,score:-4,freshness:stale",
+          "t4:use,score:-4,freshness:stale",
+          "t5:use,score:-4,freshness:stale",
+          "t6:use,score:-4,freshness:stale",
+          "t7:use,score:-4,freshness:stale",
+          "t8:use,score:-4,freshness:stale"
+        ],
+        "netValue": -19
+      }
+    },
+    {
+      "scenario": "changed",
+      "strategy": "expand",
+      "initial": {
+        "version": 1,
+        "seed": "RI-192",
+        "scenario": "changed",
+        "tick": 0,
+        "horizon": 8,
+        "changeAt": 3,
+        "quantity": 0,
+        "freshness": "none",
+        "value": 0,
+        "resolutions": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "add"
+        },
+        {
+          "type": "add"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        },
+        {
+          "type": "use"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "quantity": 2,
+        "freshness": "stale",
+        "value": -24,
+        "resolutions": [
+          "t1:add,qty:1,freshness:fresh",
+          "t2:add,qty:2,freshness:fresh",
+          "t3:use,stale:spec-change,score:-4,freshness:stale",
+          "t4:use,score:-4,freshness:stale",
+          "t5:use,score:-4,freshness:stale",
+          "t6:use,score:-4,freshness:stale",
+          "t7:use,score:-4,freshness:stale",
+          "t8:use,score:-4,freshness:stale"
+        ],
+        "netValue": -24
+      }
+    }
+  ]
+}

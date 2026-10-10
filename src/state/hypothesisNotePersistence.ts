@@ -376,6 +376,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     opId?: number,
   ) => {
     if (!loaded) {
+      if (opId !== undefined) recordBeforeOp.set(opId, snapshot.record);
       pending.push({ change, opId });
       const next = change(snapshot.record);
       if (next !== snapshot.record) publish({ ...snapshot, record: next });
@@ -420,10 +421,22 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     update(change, opId);
     await load();
     if (!loaded) {
+      const before = recordBeforeOp.get(opId);
       pending = pending.filter((item) => item.opId !== opId);
+      if (before) {
+        publish({
+          ...snapshot,
+          record: applyQueued(
+            before,
+            pending.map((item) => item.change),
+          ),
+          saveFailed: true,
+        });
+      }
       opState.delete(opId);
       opWaiters.delete(opId);
       restoreBoundOps.delete(opId);
+      recordBeforeOp.delete(opId);
       return snapshot.saveFailed ? 'failed' : 'unchanged';
     }
     if (opState.get(opId) === 'pending') await settled;

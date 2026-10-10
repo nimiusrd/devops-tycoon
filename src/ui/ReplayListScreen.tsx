@@ -52,7 +52,6 @@ export function ReplayListScreen({
   onImportReplay,
 }: ReplayListScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
   const resolvedSelectedId = resolveSelectedReplayId(replays, selectedId);
   const selected = replays.find((r) => r.id === resolvedSelectedId) ?? null;
@@ -60,6 +59,10 @@ export function ReplayListScreen({
   const replayFileRef = useRef<HTMLInputElement>(null);
   const replayImportGen = useRef(0);
   const [replayImporting, setReplayImporting] = useState(false);
+  useDialogOverlayLock(overlayRef, {
+    restoreFocus: true,
+    onDismiss: replayImporting ? undefined : onClose,
+  });
   const [shareStatus, setShareStatus] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -298,6 +301,8 @@ export function ReplayListScreen({
           type="button"
           className="btn result-overlay-close"
           data-testid="replay-list-close"
+          disabled={replayImporting}
+          title={replayImporting ? '読み込み中は閉じられません' : undefined}
           onClick={onClose}
         >
           閉じる

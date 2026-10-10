@@ -355,6 +355,7 @@ describe('ReplayListScreen のファイル共有', () => {
     expect(onImportReplay).not.toHaveBeenCalled();
     expect(screen.find('replay-file').props.disabled).toBe(true);
     expect(screen.find('replay-file-button').props.disabled).toBe(true);
+    expect(screen.find('replay-list-close').props.disabled).toBe(true);
     screen.click('replay-file-button');
     expect(screen.fileInput.click).not.toHaveBeenCalled();
 
@@ -370,6 +371,7 @@ describe('ReplayListScreen のファイル共有', () => {
     expect(screen.find('replay-share-status').props.className).toBe('replay-share-status');
     expect(screen.find('replay-file').props.disabled).toBe(false);
     expect(screen.find('replay-file-button').props.disabled).toBe(false);
+    expect(screen.find('replay-list-close').props.disabled).toBe(false);
     screen.click('replay-file-button');
     expect(screen.fileInput.click).toHaveBeenCalledExactlyOnceWith();
   });

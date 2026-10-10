@@ -1511,6 +1511,47 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     ).toEqual(['replay-a', 'replay-b']);
   });
 
+  it('リプレイ取り込み中に始まった仮説は解除しない', async () => {
+    const runStorage = new MemoryRunStorage();
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'import-keeps-later-hypothesis', runStorage });
+    await game.attachReplay(replayStorage);
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(
+        editHypothesisDraft({ ...record, draft: null, bound: null }, '前', 1),
+        'run-a',
+        'start-1',
+      ),
+    );
+    await hypothesisNoteStore.flush();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const save = replayStorage.save.bind(replayStorage);
+    vi.spyOn(replayStorage, 'save').mockImplementation(async (blob) => {
+      await gate;
+      return save(blob);
+    });
+    const raw = serializePersistenceBackup({
+      runSave: serializeRunSave(makeRunSave('backed-up')),
+      replays: [serializeReplay(makeReplay('replay-a'))],
+    });
+    const importing = game.importReplayText(raw);
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(editHypothesisDraft(record, '新しい', 2), 'run-b', 'start-2'),
+    );
+    await hypothesisNoteStore.flush();
+    release();
+    expect(await importing).toMatchObject({ ok: true });
+    expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-2');
+    hypothesisNoteStore.update((record) => ({
+      ...EMPTY_HYPOTHESIS_NOTE,
+      generation: record.generation,
+    }));
+    await hypothesisNoteStore.flush();
+  });
+
   it('取り込んだ途中セーブからは、仮説の開始 ID を外す', async () => {
     const runStorage = new MemoryRunStorage();
     const game = createGame({ seed: 'import-strip-start', runStorage });

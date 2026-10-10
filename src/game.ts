@@ -2416,6 +2416,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       const backup = readPersistenceBackup(raw);
       if (backup && !batch) {
+        const hypothesisStartIdAtImport =
+          hypothesisNoteStore.getSnapshot().record.bound?.startId ?? null;
         if (backup.replays.length === 0) {
           return {
             ok: false,
@@ -2559,7 +2561,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           if (backup.runSave) {
             const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
             const detached = await hypothesisNoteStore.applyCommitted((record) =>
-              detachHypothesisNote(record),
+              (record.bound?.startId ?? null) === hypothesisStartIdAtImport
+                ? detachHypothesisNote(record)
+                : record,
             );
             if (detached === 'failed') {
               const undo = undoImportedRun;

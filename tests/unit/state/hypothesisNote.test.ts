@@ -1247,6 +1247,28 @@ describe('仮説メモの保存', () => {
     expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('保存済み');
   });
 
+  it('読み込み失敗の確定では、操作前の下書きを戻す', async () => {
+    const storage: HypothesisNoteStorage = {
+      load: async () => {
+        throw new Error('blocked');
+      },
+      commit: async () => {
+        throw new Error('quota');
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    const loading = store.load();
+    store.update((record) => editHypothesisDraft(record, '仮説 A', 2));
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    await loading;
+    expect(await saving).toBe('failed');
+    store.abandonUnpersistedStart();
+    expect(store.getSnapshot().record.draft?.text).toBe('仮説 A');
+    expect(store.getSnapshot().record.bound).toBeNull();
+  });
+
   it('解除の復元は、別タブの後発仮説を上書きしない', async () => {
     const oldBound = {
       runKey: 'run-old',

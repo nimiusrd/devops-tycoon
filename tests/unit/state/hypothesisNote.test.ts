@@ -1,0 +1,253 @@
+import 'fake-indexeddb/auto';
+import { describe, expect, it } from 'vitest';
+import {
+  createRunDiagnosticInfo,
+  serializeRunDiagnosticInfo,
+} from '../../../src/state/diagnosticInfo';
+import {
+  EMPTY_HYPOTHESIS_NOTE,
+  HYPOTHESIS_NOTE_MAX_LENGTH,
+  bindHypothesisToRun,
+  editHypothesisDraft,
+  hypothesisForRun,
+  hypothesisNoteForExport,
+  hypothesisRunKey,
+  normalizeHypothesisNote,
+  sanitizeHypothesisText,
+  writeHypothesisReflection,
+} from '../../../src/state/hypothesisNote';
+import {
+  IndexedDbHypothesisNoteStorage,
+  MemoryHypothesisNoteStorage,
+  createHypothesisNoteStore,
+  type HypothesisNoteStorage,
+} from '../../../src/state/hypothesisNotePersistence';
+import { serializeStartRecipe } from '../../../src/state/startRecipe';
+import { RunEngine } from '../../../src/sim/run/engine';
+import { playRun } from '../helpers/runFlow';
+
+const RUN = {
+  runKind: 'normal' as const,
+  dailyDate: undefined,
+  seed: 'note-seed',
+  difficulty: 'normal' as const,
+  trials: ['b', 'a'],
+};
+
+describe('開始前の仮説メモ（RI-295）', () => {
+  it('入力を1行・上限内に整え、制御文字を落とす', () => {
+    expect(sanitizeHypothesisText('育成\n優先\t<b>士気</b>\u0007')).toBe('育成 優先 <b>士気</b>');
+    const long = 'あ'.repeat(HYPOTHESIS_NOTE_MAX_LENGTH + 10);
+    expect(Array.from(sanitizeHypothesisText(long))).toHaveLength(HYPOTHESIS_NOTE_MAX_LENGTH);
+    expect(Array.from(sanitizeHypothesisText('😀'.repeat(200)))).toHaveLength(
+      HYPOTHESIS_NOTE_MAX_LENGTH,
+    );
+  });
+
+  it('開始時に下書きを仮説として固定し、開始後の振り返りは別欄に残す', () => {
+    const key = hypothesisRunKey(RUN);
+    expect(key).toBe(hypothesisRunKey({ ...RUN, trials: ['a', 'b'] }));
+    const drafted = editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, ' 採用より育成 ', 1000);
+    expect(drafted.draft).toEqual({ text: ' 採用より育成 ', writtenAt: 1000 });
+
+    const bound = bindHypothesisToRun(drafted, key);
+    expect(bound.draft).toBeNull();
+    expect(hypothesisForRun(bound, key)).toEqual({
+      runKey: key,
+      beforeStart: { text: '採用より育成', writtenAt: 1000 },
+      reflection: null,
+    });
+
+    const reflected = writeHypothesisReflection(
+      bound,
+      key,
+      '育成は効いた。次は難易度を上げる',
+      5000,
+    );
+    expect(reflected.bound?.beforeStart).toEqual(bound.bound?.beforeStart);
+    expect(reflected.bound?.reflection).toEqual({
+      text: '育成は効いた。次は難易度を上げる',
+      writtenAt: 5000,
+    });
+
+    const exported = hypothesisNoteForExport(reflected.bound!);
+    expect(exported.beforeStart).toEqual({
+      text: '採用より育成',
+      writtenAt: new Date(1000).toISOString(),
+    });
+    expect(exported.reflection?.writtenAt).toBe(new Date(5000).toISOString());
+  });
+
+  it('空欄で開始すると前回の仮説を外し、別ランには振り返りを書けない', () => {
+    const key = hypothesisRunKey(RUN);
+    const first = bindHypothesisToRun(editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, '狙い', 1), key);
+    expect(editHypothesisDraft(first, '   ', 2).draft).toBeNull();
+
+    const other = hypothesisRunKey({ ...RUN, seed: 'other' });
+    expect(hypothesisForRun(first, other)).toBeNull();
+    expect(writeHypothesisReflection(first, other, '別ラン', 3)).toBe(first);
+
+    const restarted = bindHypothesisToRun(first, key);
+    expect(restarted.bound).toBeNull();
+    expect(hypothesisForRun(restarted, key)).toBeNull();
+  });
+
+  it('読めない保存値は空のメモとして扱う', () => {
+    expect(normalizeHypothesisNote(null)).toEqual(EMPTY_HYPOTHESIS_NOTE);
+    expect(normalizeHypothesisNote({ schemaVersion: 2 })).toEqual(EMPTY_HYPOTHESIS_NOTE);
+    expect(
+      normalizeHypothesisNote({
+        schemaVersion: 1,
+        draft: { text: 'x'.repeat(500), writtenAt: 1 },
+        bound: { runKey: '', beforeStart: { text: 'a', writtenAt: 1 } },
+      }),
+    ).toEqual({
+      schemaVersion: 1,
+      draft: { text: 'x'.repeat(HYPOTHESIS_NOTE_MAX_LENGTH), writtenAt: 1 },
+      bound: null,
+    });
+    expect(
+      normalizeHypothesisNote({
+        schemaVersion: 1,
+        draft: { text: 'a', writtenAt: Number.NaN },
+        bound: {
+          runKey: 'k',
+          beforeStart: { text: ' 仮説 ', writtenAt: 2 },
+          reflection: { text: 3, writtenAt: 4 },
+        },
+      }),
+    ).toEqual({
+      schemaVersion: 1,
+      draft: null,
+      bound: { runKey: 'k', beforeStart: { text: '仮説', writtenAt: 2 }, reflection: null },
+    });
+  });
+
+  it('再現情報は選んだときだけメモを末尾に含め、開始レシピには含めない', () => {
+    const info = createRunDiagnosticInfo(
+      {
+        seed: RUN.seed,
+        runKind: 'normal',
+        dailyDate: undefined,
+        difficulty: 'normal',
+        trials: [],
+        phase: 'won',
+        status: 'won',
+        diagnosis: 'healthyAcceleration',
+      },
+      null,
+    );
+    const plain = serializeRunDiagnosticInfo(info);
+    expect(JSON.parse(plain)).not.toHaveProperty('hypothesisNote');
+    const key = hypothesisRunKey(RUN);
+    const note = bindHypothesisToRun(
+      editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, '狙い', 1),
+      key,
+    ).bound!;
+    const withNote = JSON.parse(serializeRunDiagnosticInfo(info, hypothesisNoteForExport(note)));
+    expect(withNote.hypothesisNote.beforeStart.text).toBe('狙い');
+    expect(Object.keys(withNote).at(-1)).toBe('hypothesisNote');
+
+    const recipe = serializeStartRecipe({
+      seed: RUN.seed,
+      difficulty: 'normal',
+      trials: [],
+      scenario: 'default',
+      preferredCardIds: [],
+    });
+    expect(recipe).not.toContain('狙い');
+  });
+
+  it('メモの読み書きは同じseedのランの進行を変えない', () => {
+    const play = () => {
+      const engine = new RunEngine({ seed: RUN.seed });
+      engine.startRun('easy', [], RUN.seed);
+      const end = playRun(engine);
+      expect(['won', 'lost']).toContain(end.status);
+      return JSON.stringify(end);
+    };
+    const before = play();
+    const key = hypothesisRunKey(RUN);
+    const record = writeHypothesisReflection(
+      bindHypothesisToRun(editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, '狙い', 1), key),
+      key,
+      '振り返り',
+      2,
+    );
+    expect(hypothesisForRun(record, key)).not.toBeNull();
+    expect(play()).toBe(before);
+  });
+});
+
+describe('仮説メモの保存', () => {
+  it('入力中の書き込みをまとめ、最新の値だけを最後に保存する', async () => {
+    const saved: string[] = [];
+    let release: () => void = () => {};
+    const storage: HypothesisNoteStorage = {
+      load: async () => undefined,
+      save: async (record) => {
+        saved.push(record.draft?.text ?? '');
+        if (saved.length === 1) await new Promise<void>((resolve) => (release = resolve));
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    store.update((r) => editHypothesisDraft(r, 'a', 1));
+    store.update((r) => editHypothesisDraft(r, 'ab', 2));
+    store.update((r) => editHypothesisDraft(r, 'abc', 3));
+    release();
+    await store.flush();
+    expect(saved).toEqual(['a', 'abc']);
+  });
+
+  it('保存失敗を伝え、次の保存成功で解除する。読み込み前の編集は上書きしない', async () => {
+    let fail = true;
+    const storage: HypothesisNoteStorage = {
+      load: async () => ({ schemaVersion: 1, draft: { text: '古い', writtenAt: 1 }, bound: null }),
+      save: async () => {
+        if (fail) throw new Error('quota');
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    let notified = 0;
+    store.subscribe(() => (notified += 1));
+    store.update((r) => editHypothesisDraft(r, '新しい', 2));
+    await store.load();
+    await store.flush();
+    expect(store.getSnapshot()).toMatchObject({
+      saveFailed: true,
+      record: { draft: { text: '新しい' } },
+    });
+    fail = false;
+    store.update((r) => editHypothesisDraft(r, '新しい!', 3));
+    await store.flush();
+    expect(store.getSnapshot().saveFailed).toBe(false);
+    expect(notified).toBeGreaterThan(0);
+  });
+
+  it('読み込み失敗でも空のメモで続ける', async () => {
+    const store = createHypothesisNoteStore({
+      load: async () => {
+        throw new Error('blocked');
+      },
+      save: async () => {},
+    });
+    await store.load();
+    expect(store.getSnapshot()).toEqual({ record: EMPTY_HYPOTHESIS_NOTE, saveFailed: false });
+  });
+
+  it('IndexedDB の専用ストアへ保存し、別の読み込みで復元できる', async () => {
+    const dbName = `hypothesis-note-${Math.random()}`;
+    const store = createHypothesisNoteStore(new IndexedDbHypothesisNoteStorage(dbName));
+    await store.load();
+    store.update((r) => editHypothesisDraft(r, '端末に残す', 10));
+    await store.flush();
+
+    const reloaded = createHypothesisNoteStore(new IndexedDbHypothesisNoteStorage(dbName));
+    await reloaded.load();
+    expect(reloaded.getSnapshot().record.draft).toEqual({ text: '端末に残す', writtenAt: 10 });
+
+    const memory = new MemoryHypothesisNoteStorage();
+    await memory.save(reloaded.getSnapshot().record);
+    expect(normalizeHypothesisNote(await memory.load())).toEqual(reloaded.getSnapshot().record);
+  });
+});

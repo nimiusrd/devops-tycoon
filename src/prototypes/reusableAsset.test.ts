@@ -91,6 +91,12 @@ describe('RI-180 再利用資産', () => {
     const during = apply(building, { type: 'tick' });
     expect(during.jobs.every((item) => item.progress === 0)).toBe(true);
     expect(during.buildTicksSpent).toBe(1);
+    const view = viewReusable(during);
+    expect(view.jobs.every((item) => item.speed === 0)).toBe(true);
+    expect(view.busy).toEqual({ kind: 'build', remaining: 3 });
+    expect(view.busy).not.toBe(during.busy);
+    view.busy!.remaining = 0;
+    expect(during.busy?.remaining).toBe(3);
   });
   it('整備の二重開始・資源不足・期末の操作は無消費で拒否する', () => {
     const built = apply(create(1, 'repeat'), { type: 'build' });
@@ -117,8 +123,10 @@ describe('RI-180 再利用資産', () => {
     expect(net('stale-many', 'continue')).toBe(33);
     expect(net('stale-many', 'retire')).toBe(29);
     expect(net('stale-few', 'retire')).toBe(17);
+    expect(net('stale-few', 'update')).toBe(16);
     expect(net('stale-few', 'continue')).toBe(13);
-    expect(net('stale-few', 'update')).toBe(10);
+    expect(rows.find((row) => row.scenario === 'stale-few')!.initial.horizon).toBe(24);
+    expect(rows.find((row) => row.scenario === 'stale-many')!.initial.horizon).toBe(24);
     const built = rows.find((row) => row.scenario === 'repeat' && row.strategy === 'build')!;
     expect(built.result.buildTicksSpent).toBe(4);
     expect(built.result.focusSpent).toBe(1);

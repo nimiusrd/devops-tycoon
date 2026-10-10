@@ -1030,7 +1030,7 @@
         "version": 1,
         "seed": 1,
         "tick": 0,
-        "horizon": 14,
+        "horizon": 24,
         "premiseVersion": 0,
         "premiseChangeAt": 8,
         "asset": "none",
@@ -1115,20 +1115,50 @@
         },
         {
           "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
         }
       ],
       "result": {
         "asset": "fresh",
         "stale": false,
         "premiseVersion": 1,
-        "earnedValue": 12,
+        "earnedValue": 18,
         "stalePenalty": 0,
         "focusSpent": 2,
         "buildTicksSpent": 4,
         "updateTicksSpent": 4,
-        "completed": 2,
-        "unfinished": 1,
-        "netValue": 10
+        "completed": 3,
+        "unfinished": 0,
+        "netValue": 16
       }
     },
     {
@@ -1139,7 +1169,7 @@
         "version": 1,
         "seed": 1,
         "tick": 0,
-        "horizon": 14,
+        "horizon": 24,
         "premiseVersion": 0,
         "premiseChangeAt": 8,
         "asset": "none",
@@ -1224,6 +1254,36 @@
         },
         {
           "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
         }
       ],
       "result": {
@@ -1248,7 +1308,7 @@
         "version": 1,
         "seed": 1,
         "tick": 0,
-        "horizon": 14,
+        "horizon": 24,
         "premiseVersion": 0,
         "premiseChangeAt": 8,
         "asset": "none",
@@ -1315,6 +1375,36 @@
         },
         {
           "type": "continue-stale"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
         },
         {
           "type": "tick"

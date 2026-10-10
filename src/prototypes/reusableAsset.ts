@@ -51,8 +51,7 @@ export function createReusablePrototype(seed: number, scenario: AssetScenario): 
     version: 1,
     seed,
     tick: 0,
-    horizon:
-      scenario === 'single' ? 10 : scenario === 'repeat' ? 20 : scenario === 'stale-many' ? 24 : 14,
+    horizon: scenario === 'single' ? 10 : scenario === 'repeat' ? 20 : 24,
     premiseVersion: 0,
     premiseChangeAt: scenario === 'stale-many' || scenario === 'stale-few' ? 8 : null,
     asset: 'none',
@@ -77,7 +76,7 @@ export function viewReusable(state: AssetState) {
     asset: state.asset,
     stale,
     assetPremise: state.assetPremise,
-    busy: state.busy,
+    busy: state.busy ? { ...state.busy } : null,
     focus: state.focus,
     buildTicksSpent: state.buildTicksSpent,
     updateTicksSpent: state.updateTicksSpent,
@@ -86,10 +85,9 @@ export function viewReusable(state: AssetState) {
       kind: item.kind,
       progress: item.progress,
       effort: item.effort,
-      speed:
-        !state.busy &&
-        item.kind === 'matching' &&
-        (state.asset === 'fresh' || state.asset === 'stale-used')
+      speed: state.busy
+        ? 0
+        : item.kind === 'matching' && (state.asset === 'fresh' || state.asset === 'stale-used')
           ? MATCHING_SPEED
           : 1,
     })),

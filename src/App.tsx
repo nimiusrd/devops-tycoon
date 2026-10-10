@@ -273,7 +273,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const beginGuard = useRef(false);
   const [hypothesisUnrecorded, setHypothesisUnrecorded] = useState(false);
   useEffect(() => {
-    if (phase === 'title') beginGuard.current = false;
+    if (phase !== 'title') return;
+    beginGuard.current = false;
+    setHypothesisUnrecorded(false);
   }, [phase]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
@@ -379,6 +381,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       if (saved === 'failed') {
         hypothesisNoteStore.abandonUnpersistedStart();
         setHypothesisUnrecorded(true);
+      } else {
+        setHypothesisUnrecorded(false);
       }
       run.startRun(difficulty, trials, scenario, seed);
     })();
@@ -411,6 +415,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       if (saved === 'failed') {
         hypothesisNoteStore.abandonUnpersistedStart();
         setHypothesisUnrecorded(true);
+      } else {
+        setHypothesisUnrecorded(false);
       }
       run.startDailyRun(day);
     })();

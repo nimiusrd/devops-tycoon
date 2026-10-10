@@ -150,33 +150,77 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-for (const [name, startId] of [
-  ['通常ラン', 'start-run'],
-  ['デイリーラン', 'start-daily-run'],
-] as const) {
-  test(`仮説メモを保存できなくても${name}を開始し、320幅で案内が見える`, async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 568 });
-    await page.addInitScript(() => {
-      const put = IDBObjectStore.prototype.put;
-      IDBObjectStore.prototype.put = function (this: IDBObjectStore, ...args) {
-        if (this.name === 'hypothesisNote') {
-          throw new DOMException('quota', 'QuotaExceededError');
-        }
-        return put.apply(this, args);
-      };
-    });
-    await page.goto('/?seed=hypothesis-save-fail&tutorial=off');
-    await expect(page.getByTestId('title')).toBeVisible();
-    await page.getByTestId('hypothesis-note-input').fill('保存できない仮説');
-    await page.getByTestId(startId).click();
-    const notice = page.getByTestId('hypothesis-start-unrecorded');
-    await expect(notice).toBeVisible();
-    await expect(notice).toHaveText('仮説メモを保存できなかったので、今回は記録しません');
-    await expect(page.getByTestId('title')).not.toBeVisible();
-    const box = await notice.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box!.y).toBeGreaterThanOrEqual(0);
-    expect(box!.y + box!.height).toBeLessThanOrEqual(568);
-    await expect(page.getByTestId('hypothesis-review')).toHaveCount(0);
+async function failHypothesisSave(page: Page, enabled: boolean) {
+  await page.addInitScript(() => {
+    const target = window as Window & { __failHypothesisNote?: boolean };
+    target.__failHypothesisNote = true;
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (this: IDBObjectStore, ...args) {
+      if (
+        this.name === 'hypothesisNote' &&
+        (window as Window & { __failHypothesisNote?: boolean }).__failHypothesisNote
+      ) {
+        throw new DOMException('quota', 'QuotaExceededError');
+      }
+      return put.apply(this, args);
+    };
   });
+  if (!enabled) return;
 }
+
+test('仮説メモを保存できなくても通常ランを開始し、次の成功とタイトル復帰で案内が消える', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await failHypothesisSave(page, true);
+  await page.goto('/?seed=hypothesis-save-fail&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+  await page.getByTestId('hypothesis-note-input').fill('保存できない仮説');
+  await page.getByTestId('start-run').click();
+  const notice = page.getByTestId('hypothesis-start-unrecorded');
+  await expect(notice).toBeVisible();
+  await expect(notice).toHaveText('仮説メモを保存できなかったので、今回は記録しません');
+  await expect(page.getByTestId('title')).not.toBeVisible();
+  await expect(page.getByTestId('hud')).toBeVisible();
+  const noticeBox = await notice.boundingBox();
+  const hudBox = await page.getByTestId('hud').boundingBox();
+  expect(noticeBox).not.toBeNull();
+  expect(hudBox).not.toBeNull();
+  expect(noticeBox!.y + noticeBox!.height).toBeLessThanOrEqual(hudBox!.y);
+  expect(noticeBox!.y).toBeGreaterThanOrEqual(0);
+  expect(noticeBox!.y + noticeBox!.height).toBeLessThanOrEqual(568);
+
+  await loseCurrentRun(page);
+  await expect(page.getByTestId('hypothesis-review')).toHaveCount(0);
+  await page.getByTestId('new-run').click();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(notice).toHaveCount(0);
+
+  await page.evaluate(() => {
+    (window as Window & { __failHypothesisNote?: boolean }).__failHypothesisNote = false;
+  });
+  await page.getByTestId('hypothesis-note-input').fill('保存できる仮説');
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('title')).not.toBeVisible();
+  await expect(notice).toHaveCount(0);
+  await loseCurrentRun(page);
+  await expect(page.getByTestId('hypothesis-before-start')).toHaveText('保存できる仮説');
+});
+
+test('仮説メモを保存できなくてもデイリーランを開始し、320幅で案内が見える', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await failHypothesisSave(page, true);
+  await page.goto('/?seed=hypothesis-save-fail-daily&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+  await page.getByTestId('hypothesis-note-input').fill('保存できない仮説');
+  await page.getByTestId('start-daily-run').click();
+  const notice = page.getByTestId('hypothesis-start-unrecorded');
+  await expect(notice).toBeVisible();
+  await expect(notice).toHaveText('仮説メモを保存できなかったので、今回は記録しません');
+  await expect(page.getByTestId('title')).not.toBeVisible();
+  const box = await notice.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(568);
+  await expect(page.getByTestId('hypothesis-review')).toHaveCount(0);
+});

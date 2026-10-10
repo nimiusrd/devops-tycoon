@@ -181,6 +181,33 @@ function sameBound(a: BoundHypothesisNote | null, b: BoundHypothesisNote | null)
  * 読み込み時の世代と端末上の世代がずれていたら、このタブが変えた欄だけを採用する。
  * 変えていない欄は、別タブが先に書いた内容を残す。
  */
+function reflectionOnly(
+  base: BoundHypothesisNote | null,
+  local: BoundHypothesisNote | null,
+): local is BoundHypothesisNote {
+  return (
+    !!local &&
+    !!base &&
+    local.runKey === base.runKey &&
+    sameEntry(local.beforeStart, base.beforeStart)
+  );
+}
+
+function mergeBound(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  current: HypothesisNoteRecord,
+  currentIsBase: boolean,
+): BoundHypothesisNote | null {
+  if (currentIsBase) return local.bound;
+  if (sameBound(base.bound, local.bound)) return current.bound;
+  if (reflectionOnly(base.bound, local.bound)) {
+    if (!current.bound || current.bound.runKey !== local.bound.runKey) return current.bound;
+    return { ...current.bound, reflection: local.bound.reflection };
+  }
+  return local.bound;
+}
+
 export function commitHypothesisNote(
   base: HypothesisNoteRecord,
   local: HypothesisNoteRecord,
@@ -190,7 +217,7 @@ export function commitHypothesisNote(
   return {
     schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION,
     draft: currentIsBase || !sameEntry(base.draft, local.draft) ? local.draft : current.draft,
-    bound: currentIsBase || !sameBound(base.bound, local.bound) ? local.bound : current.bound,
+    bound: mergeBound(base, local, current, currentIsBase),
     generation: (currentIsBase ? base.generation : current.generation) + 1,
   };
 }

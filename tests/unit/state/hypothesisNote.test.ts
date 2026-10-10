@@ -287,6 +287,70 @@ describe('仮説メモの保存', () => {
     expect(normalizeHypothesisNote(memory.value).generation).toBe(3);
   });
 
+  it('読み込み前の解除は、空の表示でも保存済みの仮説へ適用する', async () => {
+    let release: () => void = () => {};
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      bound: {
+        runKey: 'local',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+      generation: 2,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: async () => {
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return memory.load();
+      },
+      commit: (local, base) => memory.commit(local, base),
+    };
+    const store = createHypothesisNoteStore(storage);
+    const loading = store.load();
+    store.update((record) => detachHypothesisNote(record));
+    release();
+    await loading;
+    await store.flush();
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
+  });
+
+  it('別ランの振り返りは、後から始まったランの仮説を戻さない', () => {
+    const base = {
+      ...EMPTY_HYPOTHESIS_NOTE,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const reflected = {
+      ...base,
+      bound: {
+        ...base.bound,
+        reflection: { text: '振り返り', writtenAt: 5 },
+      },
+    };
+    const laterRun = {
+      ...EMPTY_HYPOTHESIS_NOTE,
+      generation: 2,
+      bound: {
+        runKey: 'run-b',
+        beforeStart: { text: '別の狙い', writtenAt: 3 },
+        reflection: null,
+      },
+    };
+    expect(commitHypothesisNote(base, reflected, laterRun).bound).toEqual(laterRun.bound);
+    expect(
+      commitHypothesisNote(base, reflected, { ...base, generation: 2 }).bound?.reflection,
+    ).toEqual({ text: '振り返り', writtenAt: 5 });
+  });
+
   it('別タブの下書き編集は、先に始まったランの仮説を消さない', async () => {
     const memory = new MemoryHypothesisNoteStorage();
     memory.value = { ...editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, 'abc', 1), generation: 1 };

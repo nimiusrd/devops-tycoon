@@ -180,15 +180,16 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     },
     load,
     update(change) {
-      const next = change(snapshot.record);
-      if (next === snapshot.record) return;
-      if (captureChanges) queuedDuringWrite.push(change);
       if (!loaded) {
         pending.push(change);
-        publish({ ...snapshot, record: next });
+        const next = change(snapshot.record);
+        if (next !== snapshot.record) publish({ ...snapshot, record: next });
         if (!loading) void load();
         return;
       }
+      const next = change(snapshot.record);
+      if (next === snapshot.record) return;
+      if (captureChanges) queuedDuringWrite.push(change);
       publish({ ...snapshot, record: next });
       void persist();
     },

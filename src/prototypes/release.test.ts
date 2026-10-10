@@ -2,14 +2,18 @@ import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/release-comparison.json';
 import reeval from '../../docs/prototypes/release-reeval-conditions.json';
 import reevalComparison from '../../docs/prototypes/release-reeval-comparison.json';
+import incidentComparison from '../../docs/prototypes/release-reeval-incident-comparison.json';
 import {
   RELEASE_REEVAL_BASELINE,
   RELEASE_REEVAL_CONDITIONS,
   RELEASE_REEVAL_SEED,
+  compareReleaseIncidentReeval,
   compareReleaseReeval,
   compareReleaseStrategies,
   createReleasePrototype,
+  evaluateReleaseIncidentCriteria,
   evaluateReleaseReevalCriteria,
+  scoreReleaseIncident,
   summarizeRelease,
   tickReleasePrototype,
 } from './release';
@@ -80,6 +84,14 @@ describe('大型リリース段階戦の試作', () => {
     expect(summarizeRelease(implemented).delivered).toBe(0);
     expect(summarizeRelease(reviewed).delivered).toBe(0);
     expect(summarizeRelease(tickReleasePrototype(reviewed)).delivered).toBe(5);
+    const incident = scoreReleaseIncident(reviewed);
+    expect(incident.shippedValue).toBe(0);
+    expect(incident.unverifiedFeatures).toEqual([{ id: 0, value: 5 }]);
+    expect(incident.unverifiedCost).toBe(
+      incident.unverifiedFeatures[0].value + incident.unverifiedFeatures[0].value,
+    );
+    expect(incident.netOutcome).toBe(incident.shippedValue - incident.unverifiedCost);
+    expect(incident.netOutcomeUnit).toBe('feature-value');
   });
 
   it('変更継続も自動凍結で終了し、早期凍結との機会費用を比較できる', () => {
@@ -130,5 +142,68 @@ describe('大型リリース段階戦の試作', () => {
       RELEASE_REEVAL_BASELINE,
       ...RELEASE_REEVAL_CONDITIONS.map((condition) => condition.config),
     ]);
+  });
+
+  it('未検証の後始末は案件価値とその同額であり、凍結4条件は変えない', () => {
+    expect(RELEASE_REEVAL_BASELINE).toEqual({
+      deadline: 12,
+      implementation: 3,
+      review: 3,
+      verification: 1,
+    });
+    expect(RELEASE_REEVAL_CONDITIONS.map(({ scenario, config }) => ({ scenario, config }))).toEqual(
+      [
+        {
+          scenario: 'deadline-shortened',
+          config: { deadline: 8, implementation: 3, review: 3, verification: 1 },
+        },
+        {
+          scenario: 'review-shortage',
+          config: { deadline: 12, implementation: 3, review: 1, verification: 1 },
+        },
+        {
+          scenario: 'heavy-rework',
+          config: { deadline: 12, implementation: 5, review: 3, verification: 1 },
+        },
+      ],
+    );
+    const state = createReleasePrototype(RELEASE_REEVAL_SEED, RELEASE_REEVAL_BASELINE);
+    state.features = [
+      {
+        id: 2,
+        value: 4,
+        implementationLeft: 0,
+        reviewLeft: 0,
+        verificationLeft: 0,
+        started: true,
+      },
+      {
+        id: 7,
+        value: 3,
+        implementationLeft: 0,
+        reviewLeft: 1,
+        verificationLeft: 1,
+        started: true,
+      },
+      {
+        id: 8,
+        value: 5,
+        implementationLeft: 2,
+        reviewLeft: 1,
+        verificationLeft: 1,
+        started: true,
+      },
+    ];
+    const incident = scoreReleaseIncident(state);
+    expect(incident.shippedValue).toBe(4);
+    expect(incident.unverifiedFeatures).toEqual([{ id: 7, value: 3 }]);
+    expect(incident.unverifiedCost).toBe(3 + 3);
+    expect(incident.netOutcome).toBe(4 - (3 + 3));
+    expect(compareReleaseIncidentReeval().map((row) => row.config)).toEqual([
+      RELEASE_REEVAL_BASELINE,
+      ...RELEASE_REEVAL_CONDITIONS.map((condition) => condition.config),
+    ]);
+    expect(compareReleaseIncidentReeval()).toEqual(incidentComparison.scenarios);
+    expect(evaluateReleaseIncidentCriteria()).toEqual(incidentComparison.criteria);
   });
 });

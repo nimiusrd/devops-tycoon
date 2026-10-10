@@ -150,14 +150,41 @@ export function tickReleasePrototype(state: ReleaseState, freeze = false): Relea
   return next;
 }
 
-export function summarizeRelease(state: ReleaseState) {
-  const complete = (feature: ReleaseFeature) =>
-    feature.implementationLeft + feature.reviewLeft + feature.verificationLeft === 0;
+function isCompleteFeature(feature: ReleaseFeature) {
+  return feature.implementationLeft + feature.reviewLeft + feature.verificationLeft === 0;
+}
+
+export function listUnverifiedFeatures(state: ReleaseState) {
+  return state.features
+    .filter((feature) => feature.implementationLeft === 0 && !isCompleteFeature(feature))
+    .map((feature) => ({ id: feature.id, value: feature.value }))
+    .sort((left, right) => left.id - right.id);
+}
+
+/** 未検証は後で事故になる。失う価値とその同額の後始末を足す。別定数は置かない。 */
+export function scoreReleaseIncident(state: ReleaseState) {
+  const shippedValue = state.features
+    .filter(isCompleteFeature)
+    .reduce((sum, feature) => sum + feature.value, 0);
+  const unverifiedFeatures = listUnverifiedFeatures(state);
+  const lostValue = unverifiedFeatures.reduce((sum, feature) => sum + feature.value, 0);
+  const cleanup = lostValue;
+  const unverifiedCost = lostValue + cleanup;
   return {
-    delivered: state.features.filter(complete).reduce((sum, feature) => sum + feature.value, 0),
-    unverified: state.features.filter(
-      (feature) => feature.implementationLeft === 0 && !complete(feature),
-    ).length,
+    shippedValue,
+    unverifiedFeatures,
+    unverifiedCost,
+    netOutcome: shippedValue - unverifiedCost,
+    netOutcomeUnit: 'feature-value' as const,
+  };
+}
+
+export function summarizeRelease(state: ReleaseState) {
+  return {
+    delivered: state.features
+      .filter(isCompleteFeature)
+      .reduce((sum, feature) => sum + feature.value, 0),
+    unverified: listUnverifiedFeatures(state).length,
     unfinished: state.features.filter(
       (feature) => feature.started && feature.implementationLeft > 0,
     ).length,
@@ -231,5 +258,51 @@ export function evaluateReleaseReevalCriteria(
     fail,
     passConditions,
     met: pass && fail ? 'pass-and-fail' : pass ? 'pass' : fail ? 'fail' : 'neither',
+  };
+}
+
+export function compareReleaseIncidentReeval() {
+  return [
+    { scenario: 'verification-bottleneck' as const, config: RELEASE_REEVAL_BASELINE },
+    ...RELEASE_REEVAL_CONDITIONS,
+  ].map(({ scenario, config }) => {
+    if (config.deadline < 4) throw new Error('三つの凍結時点を比較する期限は4tick以上');
+    const late = Math.min(Math.floor((config.deadline * 2) / 3), config.deadline - 3);
+    const early = Math.min(Math.floor(config.deadline / 4), late - 1);
+    return {
+      scenario,
+      seed: RELEASE_REEVAL_SEED,
+      config,
+      results: [
+        { strategy: 'early', freezeAt: early },
+        { strategy: 'late', freezeAt: late },
+        { strategy: 'continue', freezeAt: null },
+      ].map(({ strategy, freezeAt }) => {
+        let state = createReleasePrototype(RELEASE_REEVAL_SEED, config);
+        while (state.tick < config.deadline) {
+          state = tickReleasePrototype(state, state.tick === freezeAt);
+        }
+        return { strategy, ...summarizeRelease(state), ...scoreReleaseIncident(state) };
+      }),
+    };
+  });
+}
+
+export function evaluateReleaseIncidentCriteria(
+  rows: ReturnType<typeof compareReleaseIncidentReeval> = compareReleaseIncidentReeval(),
+) {
+  const earlyBeatsLate = (scenario: 'review-shortage' | 'heavy-rework') => {
+    const row = rows.find((entry) => entry.scenario === scenario);
+    const early = row?.results.find((result) => result.strategy === 'early');
+    const late = row?.results.find((result) => result.strategy === 'late');
+    return early !== undefined && late !== undefined && early.netOutcome > late.netOutcome;
+  };
+  const passConditions = (['review-shortage', 'heavy-rework'] as const).filter(earlyBeatsLate);
+  const pass = passConditions.length >= 1;
+  return {
+    pass,
+    fail: !pass,
+    passConditions,
+    met: pass ? 'pass' : 'fail',
   };
 }

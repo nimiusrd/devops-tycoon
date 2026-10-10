@@ -1,0 +1,329 @@
+{
+  "phase": "incident-cost",
+  "command": "node scripts/compare-release-incident.mjs",
+  "seed": "RI-252",
+  "netOutcomeUnit": "feature-value",
+  "note": "delivered / shippedValue は案件価値の合計。未検証コストは各未検証案件の価値+同額の後始末。",
+  "criteria": {
+    "pass": true,
+    "fail": false,
+    "passConditions": ["heavy-rework"],
+    "met": "pass"
+  },
+  "scenarios": [
+    {
+      "scenario": "verification-bottleneck",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 12,
+        "implementation": 3,
+        "review": 3,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 9,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 9,
+          "implementationSpent": 10,
+          "validationSpent": 9,
+          "frozenAt": 3,
+          "automaticFreeze": false,
+          "shippedValue": 9,
+          "unverifiedFeatures": [],
+          "unverifiedCost": 0,
+          "netOutcome": 9,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "late",
+          "delivered": 25,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 4,
+          "implementationSpent": 25,
+          "validationSpent": 24,
+          "frozenAt": 8,
+          "automaticFreeze": false,
+          "shippedValue": 25,
+          "unverifiedFeatures": [],
+          "unverifiedCost": 0,
+          "netOutcome": 25,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "continue",
+          "delivered": 23,
+          "unverified": 3,
+          "unfinished": 0,
+          "deferred": 2,
+          "implementationSpent": 32,
+          "validationSpent": 26,
+          "frozenAt": 10,
+          "automaticFreeze": true,
+          "shippedValue": 23,
+          "unverifiedFeatures": [
+            {
+              "id": 7,
+              "value": 2
+            },
+            {
+              "id": 8,
+              "value": 3
+            },
+            {
+              "id": 9,
+              "value": 4
+            }
+          ],
+          "unverifiedCost": 18,
+          "netOutcome": 5,
+          "netOutcomeUnit": "feature-value"
+        }
+      ]
+    },
+    {
+      "scenario": "deadline-shortened",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 8,
+        "implementation": 3,
+        "review": 3,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 6,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 10,
+          "implementationSpent": 7,
+          "validationSpent": 6,
+          "frozenAt": 2,
+          "automaticFreeze": false,
+          "shippedValue": 6,
+          "unverifiedFeatures": [],
+          "unverifiedCost": 0,
+          "netOutcome": 6,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "late",
+          "delivered": 16,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 7,
+          "implementationSpent": 15,
+          "validationSpent": 14,
+          "frozenAt": 5,
+          "automaticFreeze": false,
+          "shippedValue": 16,
+          "unverifiedFeatures": [],
+          "unverifiedCost": 0,
+          "netOutcome": 16,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "continue",
+          "delivered": 16,
+          "unverified": 1,
+          "unfinished": 0,
+          "deferred": 6,
+          "implementationSpent": 18,
+          "validationSpent": 15,
+          "frozenAt": 6,
+          "automaticFreeze": true,
+          "shippedValue": 16,
+          "unverifiedFeatures": [
+            {
+              "id": 5,
+              "value": 4
+            }
+          ],
+          "unverifiedCost": 8,
+          "netOutcome": 8,
+          "netOutcomeUnit": "feature-value"
+        }
+      ]
+    },
+    {
+      "scenario": "review-shortage",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 12,
+        "implementation": 3,
+        "review": 1,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 9,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 9,
+          "implementationSpent": 10,
+          "validationSpent": 9,
+          "frozenAt": 3,
+          "automaticFreeze": false,
+          "shippedValue": 9,
+          "unverifiedFeatures": [],
+          "unverifiedCost": 0,
+          "netOutcome": 9,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "late",
+          "delivered": 20,
+          "unverified": 2,
+          "unfinished": 0,
+          "deferred": 4,
+          "implementationSpent": 25,
+          "validationSpent": 19,
+          "frozenAt": 8,
+          "automaticFreeze": false,
+          "shippedValue": 20,
+          "unverifiedFeatures": [
+            {
+              "id": 6,
+              "value": 3
+            },
+            {
+              "id": 7,
+              "value": 2
+            }
+          ],
+          "unverifiedCost": 10,
+          "netOutcome": 10,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "continue",
+          "delivered": 20,
+          "unverified": 4,
+          "unfinished": 0,
+          "deferred": 2,
+          "implementationSpent": 32,
+          "validationSpent": 19,
+          "frozenAt": 10,
+          "automaticFreeze": true,
+          "shippedValue": 20,
+          "unverifiedFeatures": [
+            {
+              "id": 6,
+              "value": 3
+            },
+            {
+              "id": 7,
+              "value": 2
+            },
+            {
+              "id": 8,
+              "value": 3
+            },
+            {
+              "id": 9,
+              "value": 4
+            }
+          ],
+          "unverifiedCost": 24,
+          "netOutcome": -4,
+          "netOutcomeUnit": "feature-value"
+        }
+      ]
+    },
+    {
+      "scenario": "heavy-rework",
+      "seed": "RI-252",
+      "config": {
+        "deadline": 12,
+        "implementation": 5,
+        "review": 3,
+        "verification": 1
+      },
+      "results": [
+        {
+          "strategy": "early",
+          "delivered": 16,
+          "unverified": 0,
+          "unfinished": 0,
+          "deferred": 7,
+          "implementationSpent": 15,
+          "validationSpent": 14,
+          "frozenAt": 3,
+          "automaticFreeze": false,
+          "shippedValue": 16,
+          "unverifiedFeatures": [],
+          "unverifiedCost": 0,
+          "netOutcome": 16,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "late",
+          "delivered": 28,
+          "unverified": 3,
+          "unfinished": 0,
+          "deferred": 0,
+          "implementationSpent": 38,
+          "validationSpent": 33,
+          "frozenAt": 8,
+          "automaticFreeze": false,
+          "shippedValue": 28,
+          "unverifiedFeatures": [
+            {
+              "id": 9,
+              "value": 4
+            },
+            {
+              "id": 10,
+              "value": 2
+            },
+            {
+              "id": 11,
+              "value": 3
+            }
+          ],
+          "unverifiedCost": 18,
+          "netOutcome": 10,
+          "netOutcomeUnit": "feature-value"
+        },
+        {
+          "strategy": "continue",
+          "delivered": 25,
+          "unverified": 4,
+          "unfinished": 0,
+          "deferred": 0,
+          "implementationSpent": 38,
+          "validationSpent": 31,
+          "frozenAt": 10,
+          "automaticFreeze": true,
+          "shippedValue": 25,
+          "unverifiedFeatures": [
+            {
+              "id": 8,
+              "value": 3
+            },
+            {
+              "id": 9,
+              "value": 4
+            },
+            {
+              "id": 10,
+              "value": 2
+            },
+            {
+              "id": 11,
+              "value": 3
+            }
+          ],
+          "unverifiedCost": 24,
+          "netOutcome": 1,
+          "netOutcomeUnit": "feature-value"
+        }
+      ]
+    }
+  ]
+}

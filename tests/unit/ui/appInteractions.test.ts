@@ -841,6 +841,7 @@ describe('App のタイトル操作', () => {
         calls += 1;
         if (calls === 1) {
           hypothesisNoteStore.update(change);
+          hypothesisNoteStore.update((record) => editHypothesisDraft(record, '入力中', 9));
           return 'failed';
         }
         return original(change);
@@ -851,6 +852,7 @@ describe('App のタイトル操作', () => {
         message: HYPOTHESIS_NOTE_SAVE_FAILED,
       });
       expect(screen.game.rollbackRunImport).toHaveBeenCalledOnce();
+      expect(hypothesisNoteStore.getSnapshot().record.draft?.text).toBe('入力中');
       expect(hypothesisNoteStore.getSnapshot().record.bound?.startId).toBe('start-1');
     } finally {
       detach.mockRestore();

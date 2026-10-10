@@ -941,6 +941,79 @@ describe('仮説メモの保存', () => {
     expect(store.getSnapshot().record.draft).toEqual({ text: '狙い', writtenAt: 1234 });
   });
 
+  it('固定が確定したら、後続の下書き保存を待たずに結果を返す', async () => {
+    let releaseDraft = () => {};
+    const draftGate = new Promise<void>((resolve) => {
+      releaseDraft = resolve;
+    });
+    const memory = new MemoryHypothesisNoteStorage();
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        if (local.draft?.text === '次回') await draftGate;
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    store.update((record) => editHypothesisDraft(record, '狙い', 1));
+    await store.flush();
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    store.update((record) => editHypothesisDraft(record, '次回', 4));
+    const result = await Promise.race([
+      saving,
+      new Promise<string>((resolve) => {
+        setTimeout(() => resolve('still-waiting'), 50);
+      }),
+    ]);
+    expect(result).toBe('saved');
+    releaseDraft();
+    await store.flush();
+    expect(store.getSnapshot().record.bound?.startId).toBe('start-c');
+    expect(store.getSnapshot().record.draft?.text).toBe('次回');
+  });
+
+  it('開始保存のタイムアウトは、別タブの新しい下書きを戻さない', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '古い', writtenAt: 1 },
+      bound: null,
+      generation: 1,
+    };
+    const storage: HypothesisNoteStorage = {
+      load: () => memory.load(),
+      commit: async (local, base) => {
+        await gate;
+        return memory.commit(local, base);
+      },
+    };
+    const store = createHypothesisNoteStore(storage);
+    await store.load();
+    const before = store.getSnapshot().record;
+    const saving = store.applyCommitted((record) =>
+      bindHypothesisToRun(record, 'run-c', 'start-c'),
+    );
+    store.revertAbandonedStart(before);
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '新しい', writtenAt: 9 },
+      bound: null,
+      generation: 2,
+    };
+    release();
+    await saving;
+    await store.flush();
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('新しい');
+    expect(normalizeHypothesisNote(memory.value).bound).toBeNull();
+  });
+
   it('保存中の追加入力は、別タブが先に書いた仮説を消さない', async () => {
     let release: () => void = () => {};
     let commits = 0;

@@ -57,6 +57,7 @@ import {
   bindHypothesisToRun,
   detachHypothesisNote,
   newHypothesisStartId,
+  restoreHypothesisBound,
   editHypothesisDraft,
   hypothesisForRun,
   hypothesisRunKey,
@@ -711,7 +712,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                 );
                 if (detached === 'failed') {
                   await game.rollbackRunImport();
-                  await hypothesisNoteStore.applyCommitted(() => beforeHypothesis);
+                  await hypothesisNoteStore.applyCommitted((record) =>
+                    restoreHypothesisBound(record, beforeHypothesis.bound),
+                  );
                   return { ok: false, message: HYPOTHESIS_NOTE_SAVE_FAILED };
                 }
               }

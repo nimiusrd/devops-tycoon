@@ -140,10 +140,18 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     queued: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord>,
   ) => queued.reduce((current, change) => change(current), record);
 
+  const opWaiters = new Map<number, () => void>();
+
+  const finishOp = (id: number, status: 'saved' | 'failed' | 'unchanged') => {
+    if (opState.get(id) !== 'pending') return;
+    opState.set(id, status);
+    const wake = opWaiters.get(id);
+    opWaiters.delete(id);
+    wake?.();
+  };
+
   const settleOps = (ids: number[], status: 'saved' | 'failed' | 'unchanged') => {
-    for (const id of ids) {
-      if (opState.get(id) === 'pending') opState.set(id, status);
-    }
+    for (const id of ids) finishOp(id, status);
   };
 
   const isAbandonedOp = (opId: number | undefined) =>
@@ -170,8 +178,17 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
           queuedDuringWrite = [];
           captureChanges = false;
           if (revertRecord && seq <= discardThroughSeq) {
-            const restored =
-              queuedChanges.length > 0 ? applyQueued(revertRecord, queuedChanges) : revertRecord;
+            const reverted = revertRecord;
+            let restored =
+              queuedChanges.length > 0 ? applyQueued(reverted, queuedChanges) : reverted;
+            // 待ち時間に別タブが書いた下書きは、この開始が消そうとした下書きと違うなら残す。
+            if (
+              stored.draft &&
+              sameDraft(reverted.draft, restored.draft) &&
+              !sameDraft(reverted.draft, stored.draft)
+            ) {
+              restored = { ...restored, draft: stored.draft };
+            }
             revertRecord = null;
             baseRecord = stored;
             settleOps(ops, 'failed');
@@ -302,7 +319,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     }
     const next = change(snapshot.record);
     if (next === snapshot.record) {
-      if (opId !== undefined) opState.set(opId, 'unchanged');
+      if (opId !== undefined) finishOp(opId, 'unchanged');
       return;
     }
     if (captureChanges) {
@@ -324,15 +341,23 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
   ): Promise<'unchanged' | 'saved' | 'failed'> => {
     const opId = nextOpId++;
     opState.set(opId, 'pending');
+    let wake = () => {};
+    const settled = new Promise<void>((resolve) => {
+      wake = resolve;
+    });
+    opWaiters.set(opId, wake);
     update(change, opId);
     await load();
-    await flush();
-    const status = opState.get(opId) ?? 'unchanged';
-    opState.delete(opId);
     if (!loaded) {
       pending = pending.filter((item) => item.opId !== opId);
+      opState.delete(opId);
+      opWaiters.delete(opId);
       return snapshot.saveFailed ? 'failed' : 'unchanged';
     }
+    if (opState.get(opId) === 'pending') await settled;
+    const status = opState.get(opId) ?? 'unchanged';
+    opState.delete(opId);
+    opWaiters.delete(opId);
     if (status === 'saved') return 'saved';
     if (status === 'failed') return 'failed';
     return 'unchanged';
@@ -359,7 +384,7 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       discardThroughSeq = persistSeq;
       revertRecord = record;
       for (const [id, status] of opState) {
-        if (status === 'pending') opState.set(id, 'failed');
+        if (status === 'pending') finishOp(id, 'failed');
       }
       queuedDuringWrite = queuedDuringWrite.filter((item) => !isAbandonedOp(item.opId));
       pending = [];

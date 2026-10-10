@@ -7,7 +7,11 @@
  * ラン決着時にはメタ進行を永続化する（第17章）。
  */
 import { getTrial } from './data/difficulties';
-import { detachHypothesisNote, HYPOTHESIS_NOTE_SAVE_FAILED } from './state/hypothesisNote';
+import {
+  detachHypothesisNote,
+  HYPOTHESIS_NOTE_SAVE_FAILED,
+  restoreHypothesisBound,
+} from './state/hypothesisNote';
 import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import type { ReplayFramePhase } from './sim/run/persist';
@@ -2334,6 +2338,22 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         return loaded;
       }
       if (backupHasReplays && backup) {
+        const beforeHypothesis = hypothesisNoteStore.getSnapshot().record;
+        const detached = await hypothesisNoteStore.applyCommitted((record) =>
+          detachHypothesisNote(record),
+        );
+        if (detached === 'failed') {
+          await restoreImportedRun();
+          undoImportedRun = null;
+          await hypothesisNoteStore.applyCommitted((record) =>
+            restoreHypothesisBound(record, beforeHypothesis.bound),
+          );
+          return {
+            ok: false,
+            reason: 'corrupt',
+            message: HYPOTHESIS_NOTE_SAVE_FAILED,
+          };
+        }
         undoImportedRun = null;
         const replayResult = await this.importReplayText(
           serializePersistenceBackup({ runSave: null, replays: backup.replays }),
@@ -2546,7 +2566,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
               undoImportedRun = null;
               await undo?.();
               await restoreSnapshot();
-              await hypothesisNoteStore.applyCommitted(() => beforeHypothesis);
+              await hypothesisNoteStore.applyCommitted((record) =>
+                restoreHypothesisBound(record, beforeHypothesis.bound),
+              );
               return {
                 ok: false,
                 reason: 'corrupt',

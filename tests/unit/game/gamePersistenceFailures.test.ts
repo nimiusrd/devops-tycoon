@@ -1510,6 +1510,29 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     ).toEqual(['replay-a', 'replay-b']);
   });
 
+  it('途中セーブ欄のまとめ取り込みで仮説解除に失敗したら、ランとリプレイを戻す', async () => {
+    const existing = makeRunSave('existing-save');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({
+      seed: 'backup-hypothesis-rollback',
+      runStorage,
+      initialRunSave: existing,
+    });
+    await game.attachReplay(replayStorage);
+    const raw = serializePersistenceBackup({
+      runSave: serializeRunSave(makeRunSave('backed-up')),
+      replays: [serializeReplay(makeReplay('replay-a'))],
+    });
+    vi.spyOn(hypothesisNoteStore, 'applyCommitted').mockResolvedValue('failed');
+
+    expect((await game.importRunSaveText(raw)).ok).toBe(false);
+    expect(game.getRunSaveSummary()?.seed).toBe('existing-save');
+    expect((await runStorage.load())?.summary.seed).toBe('existing-save');
+    expect(await replayStorage.list()).toEqual([]);
+  });
+
   it('まとめファイルのリプレイ保存に失敗したら、途中セーブを取り込み前へ戻す', async () => {
     const existing = makeRunSave('existing-save');
     const runStorage = new MemoryRunStorage();

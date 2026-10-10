@@ -90,6 +90,14 @@ export function detachHypothesisNote(record: HypothesisNoteRecord): HypothesisNo
   return record.bound ? { ...record, bound: null } : record;
 }
 
+/** 解除に失敗したとき、その後の下書きは残して開始前の仮説だけ戻す。 */
+export function restoreHypothesisBound(
+  record: HypothesisNoteRecord,
+  bound: HypothesisNoteRecord['bound'],
+): HypothesisNoteRecord {
+  return record.bound === bound ? record : { ...record, bound };
+}
+
 export function editHypothesisDraft(
   record: HypothesisNoteRecord,
   text: string,

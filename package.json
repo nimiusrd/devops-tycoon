@@ -27,7 +27,10 @@
     "balance:check": "node scripts/check-balance.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "rd:735": "vite --open '/?rd=735&arm=none'",
+    "rd:735:reserve": "vite --open '/?rd=735&arm=reserve'",
+    "rd:735:check": "vitest run src/rd/resolveRdExperiment.test.ts src/rd/issue735/experiment.test.ts"
   },
   "dependencies": {
     "comlink": "^4.4.2",

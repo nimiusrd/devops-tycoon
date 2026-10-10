@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AudioProvider } from './audio/AudioProvider';
 import { installGame } from './game';
+import { resolveRdExperiment } from './rd/resolveRdExperiment';
 import { initializeMetaPersistence } from './state/metaPersistence';
 import { initializeReplayPersistence } from './state/replayPersistence';
 import { initializeRunPersistence } from './state/runPersistence';
@@ -12,31 +13,41 @@ import { applyVisualTokenCssVariables } from './render/visualTokens';
 // CSS と Pixi が同じ表示用トークンを参照するよう、DOM の描画開始前に custom property を注入する。
 applyVisualTokenCssVariables(document.documentElement);
 
-// E2E / デバッグ用の決定論フックは従来どおり同期的に公開する。
-const game = installGame({ metaReady: false });
-const [metaBoot, runBoot, replayBoot] = await Promise.all([
-  initializeMetaPersistence(),
-  initializeRunPersistence(),
-  initializeReplayPersistence(),
-]);
-game.attachMetaPersistence(metaBoot.meta, metaBoot.storage, {
-  sessionOnly: metaBoot.sessionOnly,
-  durableStorage: metaBoot.durableStorage,
-  loadedFromDevice: metaBoot.loadedFromDevice,
-});
-game.attachRunPersistence(runBoot.storage, runBoot.save, runBoot.issue, {
-  sessionOnly: runBoot.sessionOnly,
-  durableStorage: runBoot.durableStorage,
-});
-await game.attachReplay(replayBoot.storage, {
-  sessionOnly: replayBoot.sessionOnly,
-  durableStorage: replayBoot.durableStorage,
-});
+const rdExperiment = resolveRdExperiment(window.location.search);
+if (rdExperiment) {
+  const { renderRdExperiment } = await import('./rd/renderRdExperiment');
+  renderRdExperiment(rdExperiment);
+} else {
+  await bootProductionGame();
+}
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <AudioProvider>
-      <App game={game} />
-    </AudioProvider>
-  </React.StrictMode>,
-);
+async function bootProductionGame(): Promise<void> {
+  // E2E / デバッグ用の決定論フックは従来どおり同期的に公開する。
+  const game = installGame({ metaReady: false });
+  const [metaBoot, runBoot, replayBoot] = await Promise.all([
+    initializeMetaPersistence(),
+    initializeRunPersistence(),
+    initializeReplayPersistence(),
+  ]);
+  game.attachMetaPersistence(metaBoot.meta, metaBoot.storage, {
+    sessionOnly: metaBoot.sessionOnly,
+    durableStorage: metaBoot.durableStorage,
+    loadedFromDevice: metaBoot.loadedFromDevice,
+  });
+  game.attachRunPersistence(runBoot.storage, runBoot.save, runBoot.issue, {
+    sessionOnly: runBoot.sessionOnly,
+    durableStorage: runBoot.durableStorage,
+  });
+  await game.attachReplay(replayBoot.storage, {
+    sessionOnly: replayBoot.sessionOnly,
+    durableStorage: replayBoot.durableStorage,
+  });
+
+  ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+    <React.StrictMode>
+      <AudioProvider>
+        <App game={game} />
+      </AudioProvider>
+    </React.StrictMode>,
+  );
+}

@@ -31,12 +31,15 @@ export interface HypothesisNoteRecord {
   draft: HypothesisNoteEntry | null;
   /** 最後に始めたランへ付けた仮説。 */
   bound: BoundHypothesisNote | null;
+  /** 端末へ書いた回数。別タブの古い全体上書きを混ぜるときに使う。 */
+  generation: number;
 }
 
 export const EMPTY_HYPOTHESIS_NOTE: HypothesisNoteRecord = {
   schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION,
   draft: null,
   bound: null,
+  generation: 0,
 };
 
 const LINE_BREAKS = /[\r\n\t\u2028\u2029]+/g;
@@ -58,17 +61,26 @@ function entryFrom(text: string, now: number): HypothesisNoteEntry | null {
   return clean.trim() ? { text: clean, writtenAt: now } : null;
 }
 
-/** 同じ開始条件のランを指す鍵。開始のたびに上書きするため、再走で前回のメモは残らない。 */
+/**
+ * このタブで開始したランを指す鍵。シナリオまで含め、開始のたびに上書きする。
+ * 途中セーブの取り込みは別ランなので、鍵では同一視せず関連を外す。
+ */
 export function hypothesisRunKey(
-  state: Pick<RunState, 'runKind' | 'dailyDate' | 'seed' | 'difficulty' | 'trials'>,
+  state: Pick<RunState, 'runKind' | 'dailyDate' | 'seed' | 'difficulty' | 'trials' | 'scenario'>,
 ): string {
   return [
     state.runKind,
     state.dailyDate ?? '',
     state.seed,
     state.difficulty,
+    state.scenario,
     [...state.trials].sort().join(','),
   ].join('|');
+}
+
+/** 取り込んだセーブには、この端末で開始した仮説を載せない。 */
+export function detachHypothesisNote(record: HypothesisNoteRecord): HypothesisNoteRecord {
+  return record.bound ? { ...record, bound: null } : record;
 }
 
 export function editHypothesisDraft(
@@ -144,7 +156,43 @@ export function normalizeHypothesisNote(raw: unknown): HypothesisNoteRecord {
       };
     }
   }
-  return { schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION, draft, bound };
+  const generation =
+    typeof value.generation === 'number' &&
+    Number.isInteger(value.generation) &&
+    value.generation >= 0
+      ? value.generation
+      : 0;
+  return { schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION, draft, bound, generation };
+}
+
+function sameEntry(a: HypothesisNoteEntry | null, b: HypothesisNoteEntry | null): boolean {
+  return !!a && !!b ? a.text === b.text && a.writtenAt === b.writtenAt : a === b;
+}
+
+function sameBound(a: BoundHypothesisNote | null, b: BoundHypothesisNote | null): boolean {
+  return !!a && !!b
+    ? a.runKey === b.runKey &&
+        sameEntry(a.beforeStart, b.beforeStart) &&
+        sameEntry(a.reflection, b.reflection)
+    : a === b;
+}
+
+/**
+ * 読み込み時の世代と端末上の世代がずれていたら、このタブが変えた欄だけを採用する。
+ * 変えていない欄は、別タブが先に書いた内容を残す。
+ */
+export function commitHypothesisNote(
+  base: HypothesisNoteRecord,
+  local: HypothesisNoteRecord,
+  current: HypothesisNoteRecord,
+): HypothesisNoteRecord {
+  const currentIsBase = current.generation === base.generation;
+  return {
+    schemaVersion: HYPOTHESIS_NOTE_SCHEMA_VERSION,
+    draft: currentIsBase || !sameEntry(base.draft, local.draft) ? local.draft : current.draft,
+    bound: currentIsBase || !sameBound(base.bound, local.bound) ? local.bound : current.bound,
+    generation: (currentIsBase ? base.generation : current.generation) + 1,
+  };
 }
 
 export interface HypothesisNoteExport {

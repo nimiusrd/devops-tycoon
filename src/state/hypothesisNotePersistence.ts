@@ -11,6 +11,7 @@ import {
   openGameDb,
 } from './gameDb';
 import {
+  commitHypothesisNote,
   EMPTY_HYPOTHESIS_NOTE,
   normalizeHypothesisNote,
   type HypothesisNoteRecord,
@@ -18,7 +19,11 @@ import {
 
 export interface HypothesisNoteStorage {
   load(): Promise<unknown>;
-  save(record: HypothesisNoteRecord): Promise<void>;
+  /**
+   * 端末上の最新と、このタブが読み込んだ世代を突き合わせ、変えた欄だけを書く。
+   * 返り値は実際に残したレコード。
+   */
+  commit(local: HypothesisNoteRecord, base: HypothesisNoteRecord): Promise<HypothesisNoteRecord>;
 }
 
 export class IndexedDbHypothesisNoteStorage implements HypothesisNoteStorage {
@@ -33,10 +38,19 @@ export class IndexedDbHypothesisNoteStorage implements HypothesisNoteStorage {
     }
   }
 
-  async save(record: HypothesisNoteRecord): Promise<void> {
+  async commit(
+    local: HypothesisNoteRecord,
+    base: HypothesisNoteRecord,
+  ): Promise<HypothesisNoteRecord> {
     const db = await openGameDb(this.dbName);
     try {
-      await db.put(HYPOTHESIS_NOTE_STORE_NAME, record, HYPOTHESIS_NOTE_RECORD_KEY);
+      const tx = db.transaction(HYPOTHESIS_NOTE_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(HYPOTHESIS_NOTE_STORE_NAME);
+      const current = normalizeHypothesisNote(await store.get(HYPOTHESIS_NOTE_RECORD_KEY));
+      const next = commitHypothesisNote(base, local, current);
+      await store.put(next, HYPOTHESIS_NOTE_RECORD_KEY);
+      await tx.done;
+      return next;
     } finally {
       db.close();
     }
@@ -50,8 +64,13 @@ export class MemoryHypothesisNoteStorage implements HypothesisNoteStorage {
     return this.value;
   }
 
-  async save(record: HypothesisNoteRecord): Promise<void> {
-    this.value = record;
+  async commit(
+    local: HypothesisNoteRecord,
+    base: HypothesisNoteRecord,
+  ): Promise<HypothesisNoteRecord> {
+    const next = commitHypothesisNote(base, local, normalizeHypothesisNote(this.value));
+    this.value = next;
+    return next;
   }
 }
 
@@ -64,7 +83,7 @@ export interface HypothesisNoteSnapshot {
 export interface HypothesisNoteStore {
   getSnapshot(): HypothesisNoteSnapshot;
   subscribe(listener: () => void): () => void;
-  /** 初回だけ端末から読み込む。読み込み前に編集があれば、その編集を優先する。 */
+  /** 初回だけ端末から読み込む。読み込み前の操作は、読んだ内容の上に重ねる。 */
   load(): Promise<void>;
   update(change: (record: HypothesisNoteRecord) => HypothesisNoteRecord): void;
   /** 書き込み待ちが無くなるまで待つ（テスト用）。 */
@@ -73,8 +92,10 @@ export interface HypothesisNoteStore {
 
 export function createHypothesisNoteStore(storage: HypothesisNoteStorage): HypothesisNoteStore {
   let snapshot: HypothesisNoteSnapshot = { record: EMPTY_HYPOTHESIS_NOTE, saveFailed: false };
+  let baseRecord = EMPTY_HYPOTHESIS_NOTE;
   let loading: Promise<void> | null = null;
-  let editedBeforeLoad = false;
+  let loaded = false;
+  let pending: Array<(record: HypothesisNoteRecord) => HypothesisNoteRecord> = [];
   let writing: Promise<void> | null = null;
   let dirty = false;
   const listeners = new Set<() => void>();
@@ -91,10 +112,12 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
     writing = (async () => {
       while (dirty) {
         dirty = false;
-        const record = snapshot.record;
+        const local = snapshot.record;
+        const base = baseRecord;
         try {
-          await storage.save(record);
-          if (snapshot.saveFailed && !dirty) publish({ ...snapshot, saveFailed: false });
+          const stored = await storage.commit(local, base);
+          baseRecord = stored;
+          if (!dirty) publish({ record: stored, saveFailed: false });
         } catch {
           if (!snapshot.saveFailed) publish({ ...snapshot, saveFailed: true });
         }
@@ -116,19 +139,34 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
         try {
           raw = await storage.load();
         } catch {
+          loaded = true;
+          pending = [];
+          if (snapshot.record !== EMPTY_HYPOTHESIS_NOTE) {
+            publish({ ...snapshot, saveFailed: true });
+          }
           return;
         }
-        if (editedBeforeLoad) return;
-        publish({ ...snapshot, record: normalizeHypothesisNote(raw) });
+        const stored = normalizeHypothesisNote(raw);
+        baseRecord = stored;
+        let record = stored;
+        while (pending.length > 0) {
+          const queued = pending;
+          pending = [];
+          for (const change of queued) record = change(record);
+        }
+        loaded = true;
+        const changed = record !== stored;
+        publish({ ...snapshot, record });
+        if (changed) void persist();
       })();
       return loading;
     },
     update(change) {
       const next = change(snapshot.record);
       if (next === snapshot.record) return;
-      editedBeforeLoad = true;
+      if (!loaded) pending.push(change);
       publish({ ...snapshot, record: next });
-      void persist();
+      if (loaded) void persist();
     },
     async flush() {
       await loading;

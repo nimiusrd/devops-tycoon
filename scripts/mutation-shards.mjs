@@ -366,6 +366,11 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'メタの永続化（空のときだけ書く比較書き込みを含む）',
   },
   {
+    id: 'state-hypothesis-note',
+    mutate: ['src/state/hypothesisNote.ts', 'src/state/hypothesisNotePersistence.ts'].join(','),
+    note: '開始前の仮説メモ（RI-295）',
+  },
+  {
     id: 'state-rest',
     mutate: [
       'src/state/**/*.ts',
@@ -377,6 +382,8 @@ export const MUTATION_SHARDS = Object.freeze([
       '!src/state/metaPersistence.ts',
       '!src/state/resumeRisk.ts',
       '!src/state/persistenceStatus.ts',
+      '!src/state/hypothesisNote.ts',
+      '!src/state/hypothesisNotePersistence.ts',
       '!src/state/**/index.ts',
       '!src/state/**/types.ts',
     ].join(','),

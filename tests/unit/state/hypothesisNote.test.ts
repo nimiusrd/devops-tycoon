@@ -8,6 +8,7 @@ import {
   EMPTY_HYPOTHESIS_NOTE,
   HYPOTHESIS_NOTE_MAX_LENGTH,
   bindHypothesisToRun,
+  detachHypothesisNote,
   editHypothesisDraft,
   hypothesisForRun,
   hypothesisNoteForExport,
@@ -32,6 +33,7 @@ const RUN = {
   seed: 'note-seed',
   difficulty: 'normal' as const,
   trials: ['b', 'a'],
+  scenario: 'default' as const,
 };
 
 describe('開始前の仮説メモ（RI-295）', () => {
@@ -90,6 +92,9 @@ describe('開始前の仮説メモ（RI-295）', () => {
     const restarted = bindHypothesisToRun(first, key);
     expect(restarted.bound).toBeNull();
     expect(hypothesisForRun(restarted, key)).toBeNull();
+    expect(hypothesisForRun(first, hypothesisRunKey({ ...RUN, scenario: 'copilot' }))).toBeNull();
+    expect(detachHypothesisNote(first).bound).toBeNull();
+    expect(detachHypothesisNote(restarted)).toBe(restarted);
   });
 
   it('読めない保存値は空のメモとして扱う', () => {
@@ -105,6 +110,7 @@ describe('開始前の仮説メモ（RI-295）', () => {
       schemaVersion: 1,
       draft: { text: 'x'.repeat(HYPOTHESIS_NOTE_MAX_LENGTH), writtenAt: 1 },
       bound: null,
+      generation: 0,
     });
     expect(
       normalizeHypothesisNote({
@@ -120,6 +126,7 @@ describe('開始前の仮説メモ（RI-295）', () => {
       schemaVersion: 1,
       draft: null,
       bound: { runKey: 'k', beforeStart: { text: '仮説', writtenAt: 2 }, reflection: null },
+      generation: 0,
     });
   });
 
@@ -185,12 +192,14 @@ describe('仮説メモの保存', () => {
     let release: () => void = () => {};
     const storage: HypothesisNoteStorage = {
       load: async () => undefined,
-      save: async (record) => {
-        saved.push(record.draft?.text ?? '');
+      commit: async (local) => {
+        saved.push(local.draft?.text ?? '');
         if (saved.length === 1) await new Promise<void>((resolve) => (release = resolve));
+        return { ...local, generation: local.generation + 1 };
       },
     };
     const store = createHypothesisNoteStore(storage);
+    await store.load();
     store.update((r) => editHypothesisDraft(r, 'a', 1));
     store.update((r) => editHypothesisDraft(r, 'ab', 2));
     store.update((r) => editHypothesisDraft(r, 'abc', 3));
@@ -202,9 +211,19 @@ describe('仮説メモの保存', () => {
   it('保存失敗を伝え、次の保存成功で解除する。読み込み前の編集は上書きしない', async () => {
     let fail = true;
     const storage: HypothesisNoteStorage = {
-      load: async () => ({ schemaVersion: 1, draft: { text: '古い', writtenAt: 1 }, bound: null }),
-      save: async () => {
+      load: async () => ({
+        schemaVersion: 1,
+        draft: { text: '古い', writtenAt: 1 },
+        bound: {
+          runKey: 'kept',
+          beforeStart: { text: '残す', writtenAt: 1 },
+          reflection: null,
+        },
+        generation: 2,
+      }),
+      commit: async (local) => {
         if (fail) throw new Error('quota');
+        return { ...local, generation: local.generation + 1 };
       },
     };
     const store = createHypothesisNoteStore(storage);
@@ -215,7 +234,7 @@ describe('仮説メモの保存', () => {
     await store.flush();
     expect(store.getSnapshot()).toMatchObject({
       saveFailed: true,
-      record: { draft: { text: '新しい' } },
+      record: { draft: { text: '新しい' }, bound: { runKey: 'kept' } },
     });
     fail = false;
     store.update((r) => editHypothesisDraft(r, '新しい!', 3));
@@ -229,7 +248,7 @@ describe('仮説メモの保存', () => {
       load: async () => {
         throw new Error('blocked');
       },
-      save: async () => {},
+      commit: async (local) => local,
     });
     await store.load();
     expect(store.getSnapshot()).toEqual({ record: EMPTY_HYPOTHESIS_NOTE, saveFailed: false });
@@ -244,10 +263,42 @@ describe('仮説メモの保存', () => {
 
     const reloaded = createHypothesisNoteStore(new IndexedDbHypothesisNoteStorage(dbName));
     await reloaded.load();
-    expect(reloaded.getSnapshot().record.draft).toEqual({ text: '端末に残す', writtenAt: 10 });
+    expect(reloaded.getSnapshot().record).toMatchObject({
+      draft: { text: '端末に残す', writtenAt: 10 },
+      generation: 1,
+    });
+  });
 
+  it('読み込み完了前の開始は、保存済み下書きを仮説にする', async () => {
     const memory = new MemoryHypothesisNoteStorage();
-    await memory.save(reloaded.getSnapshot().record);
-    expect(normalizeHypothesisNote(await memory.load())).toEqual(reloaded.getSnapshot().record);
+    memory.value = {
+      schemaVersion: 1,
+      draft: { text: '保存済み', writtenAt: 4 },
+      bound: null,
+      generation: 2,
+    };
+    const store = createHypothesisNoteStore(memory);
+    store.update((record) => bindHypothesisToRun(record, 'late'));
+    await store.load();
+    await store.flush();
+    expect(store.getSnapshot().record.draft).toBeNull();
+    expect(store.getSnapshot().record.bound?.beforeStart.text).toBe('保存済み');
+    expect(normalizeHypothesisNote(memory.value).generation).toBe(3);
+  });
+
+  it('別タブの下書き編集は、先に始まったランの仮説を消さない', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = { ...editHypothesisDraft(EMPTY_HYPOTHESIS_NOTE, 'abc', 1), generation: 1 };
+    const first = createHypothesisNoteStore(memory);
+    const second = createHypothesisNoteStore(memory);
+    await first.load();
+    await second.load();
+    first.update((record) => bindHypothesisToRun(record, 'run-a'));
+    await first.flush();
+    second.update((record) => editHypothesisDraft(record, 'abcd', 2));
+    await second.flush();
+    const stored = normalizeHypothesisNote(memory.value);
+    expect(stored.draft?.text).toBe('abcd');
+    expect(stored.bound).toMatchObject({ runKey: 'run-a', beforeStart: { text: 'abc' } });
   });
 });

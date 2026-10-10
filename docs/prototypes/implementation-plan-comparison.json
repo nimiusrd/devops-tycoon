@@ -1,0 +1,534 @@
+{
+  "seed": "RI-190",
+  "results": [
+    {
+      "scenario": "simpleShort",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "scenario": "simpleShort",
+        "board": {
+          "version": 1,
+          "seed": "RI-190",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 6,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "s1",
+              "kind": "simple",
+              "work": 6,
+              "progress": 0,
+              "value": 10,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "planned": [],
+        "planningId": null,
+        "planningTicks": 0,
+        "findings": [],
+        "wandered": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "shippedValue": 10,
+        "spent": 0,
+        "planned": [],
+        "findings": [],
+        "wandered": [],
+        "resolutions": [
+          "t1:s1:default-none+1",
+          "t2:s1:none+1",
+          "t3:s1:none+1",
+          "t4:s1:none+1",
+          "t5:s1:none+1",
+          "t6:s1:none+1,ship:10"
+        ],
+        "netValue": 10
+      }
+    },
+    {
+      "scenario": "simpleShort",
+      "strategy": "plan",
+      "initial": {
+        "version": 1,
+        "scenario": "simpleShort",
+        "board": {
+          "version": 1,
+          "seed": "RI-190",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 6,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "s1",
+              "kind": "simple",
+              "work": 6,
+              "progress": 0,
+              "value": 10,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "planned": [],
+        "planningId": null,
+        "planningTicks": 0,
+        "findings": [],
+        "wandered": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan"
+        },
+        {
+          "type": "plan"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "shippedValue": 0,
+        "spent": 0,
+        "planned": ["s1"],
+        "findings": ["s1:no-hidden-scope"],
+        "wandered": [],
+        "resolutions": [
+          "t1:plan:s1",
+          "t2:plan:s1,s1:no-hidden-scope",
+          "t3:s1:default-none+1",
+          "t4:s1:none+1",
+          "t5:s1:none+1",
+          "t6:s1:none+1"
+        ],
+        "netValue": 0
+      }
+    },
+    {
+      "scenario": "complexTight",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "scenario": "complexTight",
+        "board": {
+          "version": 1,
+          "seed": "RI-190",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 8,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "c1",
+              "kind": "complex",
+              "work": 6,
+              "progress": 0,
+              "value": 18,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "planned": [],
+        "planningId": null,
+        "planningTicks": 0,
+        "findings": [],
+        "wandered": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "shippedValue": 0,
+        "spent": 0,
+        "planned": [],
+        "findings": [],
+        "wandered": ["c1"],
+        "resolutions": [
+          "wander:c1+3",
+          "t1:c1:default-none+1",
+          "t2:c1:none+1",
+          "t3:c1:none+1",
+          "t4:c1:none+1",
+          "t5:c1:none+1",
+          "t6:c1:none+1",
+          "t7:c1:none+1",
+          "t8:c1:none+1"
+        ],
+        "netValue": 0
+      }
+    },
+    {
+      "scenario": "complexTight",
+      "strategy": "plan",
+      "initial": {
+        "version": 1,
+        "scenario": "complexTight",
+        "board": {
+          "version": 1,
+          "seed": "RI-190",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 8,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "c1",
+              "kind": "complex",
+              "work": 6,
+              "progress": 0,
+              "value": 18,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "planned": [],
+        "planningId": null,
+        "planningTicks": 0,
+        "findings": [],
+        "wandered": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan"
+        },
+        {
+          "type": "plan"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 8,
+        "shippedValue": 18,
+        "spent": 0,
+        "planned": ["c1"],
+        "findings": ["c1:dependency:ledger-order"],
+        "wandered": [],
+        "resolutions": [
+          "t1:plan:c1",
+          "t2:plan:c1,c1:dependency:ledger-order",
+          "t3:c1:default-none+1",
+          "t4:c1:none+1",
+          "t5:c1:none+1",
+          "t6:c1:none+1",
+          "t7:c1:none+1",
+          "t8:c1:none+1,ship:18"
+        ],
+        "netValue": 18
+      }
+    },
+    {
+      "scenario": "complexLong",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "scenario": "complexLong",
+        "board": {
+          "version": 1,
+          "seed": "RI-190",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 12,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "c1",
+              "kind": "complex",
+              "work": 6,
+              "progress": 0,
+              "value": 18,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "planned": [],
+        "planningId": null,
+        "planningTicks": 0,
+        "findings": [],
+        "wandered": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 12,
+        "shippedValue": 12,
+        "spent": 0,
+        "planned": [],
+        "findings": [],
+        "wandered": ["c1"],
+        "resolutions": [
+          "wander:c1+3",
+          "t1:c1:default-none+1",
+          "t2:c1:none+1",
+          "t3:c1:none+1",
+          "t4:c1:none+1",
+          "t5:c1:none+1",
+          "t6:c1:none+1",
+          "t7:c1:none+1",
+          "t8:c1:none+1",
+          "t9:c1:none+1,ship:18",
+          "wander-penalty:c1-6",
+          "t10:idle",
+          "t11:idle",
+          "t12:idle"
+        ],
+        "netValue": 12
+      }
+    },
+    {
+      "scenario": "complexLong",
+      "strategy": "plan",
+      "initial": {
+        "version": 1,
+        "scenario": "complexLong",
+        "board": {
+          "version": 1,
+          "seed": "RI-190",
+          "scenario": "custom",
+          "tick": 0,
+          "horizon": 12,
+          "budget": 0,
+          "spent": 0,
+          "pendingModel": null,
+          "reviewLoad": 0,
+          "shippedValue": 0,
+          "jobs": [
+            {
+              "id": "c1",
+              "kind": "complex",
+              "work": 6,
+              "progress": 0,
+              "value": 18,
+              "model": null,
+              "shipped": null,
+              "defect": false
+            }
+          ],
+          "resolutions": [],
+          "inputs": []
+        },
+        "planned": [],
+        "planningId": null,
+        "planningTicks": 0,
+        "findings": [],
+        "wandered": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "plan"
+        },
+        {
+          "type": "plan"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "tick": 12,
+        "shippedValue": 18,
+        "spent": 0,
+        "planned": ["c1"],
+        "findings": ["c1:dependency:ledger-order"],
+        "wandered": [],
+        "resolutions": [
+          "t1:plan:c1",
+          "t2:plan:c1,c1:dependency:ledger-order",
+          "t3:c1:default-none+1",
+          "t4:c1:none+1",
+          "t5:c1:none+1",
+          "t6:c1:none+1",
+          "t7:c1:none+1",
+          "t8:c1:none+1,ship:18",
+          "t9:idle",
+          "t10:idle",
+          "t11:idle",
+          "t12:idle"
+        ],
+        "netValue": 18
+      }
+    }
+  ]
+}

@@ -55,6 +55,11 @@ jobs:
     name: E2E (Playwright)
     needs: ci_scope
     if: ${{ always() && needs.ci_scope.outputs.run_checks != 'false' }}
+    # 同一PRの連続 push では、実行中・待ちの古い E2E を打ち切って最新コミットだけを残す。
+    # main への push はコミット SHA ごとに分け、別コミットの E2E は止めない。
+    concurrency:
+      group: ci-e2e-${{ github.event.pull_request.number || github.sha }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     # ブラウザ準備・2並列の全E2E・本番チャンク復旧検証まで含めた実行枠。
     timeout-minutes: 25

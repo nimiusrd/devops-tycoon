@@ -43,11 +43,20 @@ import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
+import { useHypothesisNote } from './ui/useHypothesisNote';
 import { resetViewportScroll } from './ui/viewportScroll';
 import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { serializePersistenceBackup } from './state/persistenceBackup';
+import {
+  bindHypothesisToRun,
+  editHypothesisDraft,
+  hypothesisForRun,
+  hypothesisRunKey,
+  writeHypothesisReflection,
+} from './state/hypothesisNote';
+import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
 import {
   downloadTextFile,
@@ -254,6 +263,14 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     if (wasBlocking && !blocking) setExportMessage(null);
     previousPersistenceState.current = persistenceState;
   }, [persistenceState]);
+  const hypothesisNote = useHypothesisNote();
+  const hypothesisKey = hypothesisRunKey(state);
+  const boundEpoch = useRef(run.runEpoch);
+  useEffect(() => {
+    if (boundEpoch.current === run.runEpoch) return;
+    boundEpoch.current = run.runEpoch;
+    hypothesisNoteStore.update((record) => bindHypothesisToRun(record, hypothesisKey));
+  }, [run.runEpoch, hypothesisKey]);
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
   const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
@@ -564,6 +581,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onApplyPreferred={run.setPreferredCardIds}
             onExportRunSave={run.exportRunSaveText}
             newRunBlocked={run.finishSaveBlocksNewRun}
+            hypothesisDraft={hypothesisNote.record.draft?.text ?? ''}
+            onHypothesisDraftChange={(text) =>
+              hypothesisNoteStore.update((record) => editHypothesisDraft(record, text, Date.now()))
+            }
+            hypothesisSaveFailed={hypothesisNote.saveFailed}
             onImportRunSave={async (raw) => {
               const result = await run.importRunSaveText(raw);
               return {
@@ -664,6 +686,15 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               lastRunReward={lastRunReward}
               newRunBlocked={run.finishSaveBlocksNewRun}
               onNewRun={run.isReplayMode ? exitReplay : newRun}
+              hypothesisNote={
+                run.isReplayMode ? null : hypothesisForRun(hypothesisNote.record, hypothesisKey)
+              }
+              onHypothesisReflectionChange={(text) =>
+                hypothesisNoteStore.update((record) =>
+                  writeHypothesisReflection(record, hypothesisKey, text, Date.now()),
+                )
+              }
+              hypothesisSaveFailed={hypothesisNote.saveFailed}
             />
           </SceneScrollReset>
         </Suspense>

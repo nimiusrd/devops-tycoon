@@ -12,6 +12,7 @@ import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { PERSISTENCE_BACKUP_RESTORED_MESSAGE } from '../state/persistenceBackup';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
+import { HYPOTHESIS_NOTE_MAX_LENGTH, hypothesisTextLength } from '../state/hypothesisNote';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
 import type { ResumeRisk } from '../state/resumeRisk';
 import type { DifficultyId } from '../sim/run/types';
@@ -19,6 +20,7 @@ import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios'
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
 import { FINISH_SAVE_BLOCKS_NEW_RUN } from './finishSaveBlock';
+import { HYPOTHESIS_NOTE_SAVE_FAILED } from './useHypothesisNote';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
@@ -133,6 +135,10 @@ export interface TitleScreenProps {
   onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string; restored?: 'both' }>;
   /** 完了保存の失敗中。再試行まで新しいランを始められない。 */
   newRunBlocked?: boolean;
+  /** 次のランへ付ける開始前の仮説（RI-295）。未指定なら欄を出さない。 */
+  hypothesisDraft?: string;
+  onHypothesisDraftChange?: (text: string) => void;
+  hypothesisSaveFailed?: boolean;
 }
 
 export function TitleScreen({
@@ -156,6 +162,9 @@ export function TitleScreen({
   onExportRunSave,
   onImportRunSave,
   newRunBlocked = false,
+  hypothesisDraft,
+  onHypothesisDraftChange,
+  hypothesisSaveFailed = false,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -579,9 +588,53 @@ export function TitleScreen({
               </div>
             </section>
 
+            {onHypothesisDraftChange ? (
+              <section className="title-section title-recipe-section" data-testid="hypothesis-note">
+                <div className="title-section-copy">
+                  <span className="title-step">04</span>
+                  <p>
+                    <b>開始前の仮説（メモ）</b>
+                    <small>
+                      任意。今回の狙いを一行で残し、決着画面で見返す。開始レシピには含めず、seed・候補・判定は変わらない
+                    </small>
+                  </p>
+                </div>
+                <div className="title-recipe-body">
+                  <input
+                    type="text"
+                    className="title-recipe-text title-hypothesis-input"
+                    data-testid="hypothesis-note-input"
+                    aria-label="開始前の仮説"
+                    aria-describedby="hypothesis-note-count"
+                    value={hypothesisDraft ?? ''}
+                    placeholder="例: 採用より育成を優先して、士気を保ったまま突破する"
+                    onChange={(event) => onHypothesisDraftChange(event.target.value)}
+                  />
+                  <p
+                    id="hypothesis-note-count"
+                    className="title-recipe-status"
+                    data-testid="hypothesis-note-count"
+                  >
+                    {hypothesisTextLength(hypothesisDraft ?? '')}/{HYPOTHESIS_NOTE_MAX_LENGTH}
+                    文字・開始時点の内容を仮説として固定する
+                  </p>
+                  {hypothesisSaveFailed ? (
+                    <p
+                      className="title-recipe-status error"
+                      data-testid="hypothesis-note-save-failed"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      {HYPOTHESIS_NOTE_SAVE_FAILED}
+                    </p>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
             <section className="title-section title-recipe-section" data-testid="start-recipe">
               <div className="title-section-copy">
-                <span className="title-step">04</span>
+                <span className="title-step">{onHypothesisDraftChange ? '05' : '04'}</span>
                 <p>
                   <b>開始レシピ（共有）</b>
                   <small>難易度・試練・シナリオ・研修方針・seed をローカルで受け渡す</small>
@@ -651,7 +704,7 @@ export function TitleScreen({
             {onExportRunSave || onImportRunSave ? (
               <section className="title-section title-recipe-section" data-testid="run-save-share">
                 <div className="title-section-copy">
-                  <span className="title-step">05</span>
+                  <span className="title-step">{onHypothesisDraftChange ? '06' : '05'}</span>
                   <p>
                     <b>途中セーブ（共有）</b>
                     <small>中断中のランだけをローカル JSON で受け渡す。メタ進行は含まない</small>

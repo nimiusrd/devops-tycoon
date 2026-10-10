@@ -2,9 +2,9 @@ name: Codex review label
 
 on:
   issue_comment:
-    types: [created]
+    types: [created, edited, deleted]
   pull_request:
-    types: [synchronize, reopened]
+    types: [synchronize, reopened, edited]
   pull_request_review:
     types: [submitted]
   workflow_dispatch:
@@ -32,7 +32,8 @@ jobs:
        github.event.issue.pull_request &&
        github.event.comment.user.login == 'chatgpt-codex-connector[bot]') ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
-       (github.event_name == 'pull_request' ||
+       ((github.event_name == 'pull_request' &&
+         (github.event.action != 'edited' || github.event.changes.base)) ||
         github.event.review.user.login == 'chatgpt-codex-connector[bot]'))
     runs-on: ubuntu-latest
     permissions:
@@ -64,6 +65,7 @@ jobs:
           fi
           head_sha=$(jq -r .head.sha <<<"$pr")
           base_ref=$(jq -r .base.ref <<<"$pr")
+          head_repo=$(jq -r '.head.repo.full_name // ""' <<<"$pr")
           git fetch --no-tags --quiet origin \
             "+refs/heads/$base_ref:refs/remotes/origin/$base_ref" \
             "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/$PR_NUMBER"
@@ -84,22 +86,29 @@ jobs:
             done
           }
 
+          # ベース変更前の判定は、変更後のベースとの差分をレビューしていない。
+          base_changed_at=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/timeline?per_page=100" |
+            jq -rs '[ add // [] | .[] | select(.event == "base_ref_changed") | .created_at ] | max // ""')
+
+          candidates=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" |
+            jq -rs --arg bot "$bot" --arg prefix "$NO_FINDINGS_PREFIX" --arg since "$base_changed_at" '
+              [ add // [] | .[]
+                | select(.user.login == $bot and (.body | startswith($prefix)) and .created_at > $since)
+                | (.body | capture("Reviewed commit:\\*\\* `(?<sha>[0-9a-f]{7,40})`").sha) as $sha
+                | {at: .created_at, sha: $sha} ]
+              | sort_by(.at) | reverse | .[] | "\(.at) \(.sha)"')
+
           no_findings_at=""
           reviewed=""
           while read -r created_at short_sha; do
+            [ -n "$short_sha" ] || continue
             full_sha=$(git rev-parse --verify --quiet "$short_sha^{commit}") || continue
             if only_base_merges "$full_sha"; then
               no_findings_at=$created_at
               reviewed=$full_sha
               break
             fi
-          done < <(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" |
-            jq -rs --arg bot "$bot" --arg prefix "$NO_FINDINGS_PREFIX" '
-              [ add // [] | .[]
-                | select(.user.login == $bot and (.body | startswith($prefix)))
-                | (.body | capture("Reviewed commit:\\*\\* `(?<sha>[0-9a-f]{7,40})`").sha) as $sha
-                | {at: .created_at, sha: $sha} ]
-              | sort_by(.at) | reverse | .[] | "\(.at) \(.sha)"')
+          done <<<"$candidates"
 
           findings_at=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews?per_page=100" |
             jq -rs --arg bot "$bot" '
@@ -123,7 +132,9 @@ jobs:
                 | select((.isResolved | not) and .comments.nodes[0].author.login == $login) ]
               | length')
 
-          if [ -z "$no_findings_at" ]; then
+          if [ "$head_repo" != "$REPO" ]; then
+            reason="フォークのPRはpush時に再判定できないため対象外"
+          elif [ -z "$no_findings_at" ]; then
             reason="現在のhead ${head_sha:0:10} またはmainの取り込みだけを挟んだ祖先に、Codexの指摘なし判定がない"
           elif [[ -n "$findings_at" && "$findings_at" > "$no_findings_at" ]]; then
             reason="指摘なし判定より新しいCodexの指摘レビューがある"
@@ -133,8 +144,16 @@ jobs:
             reason=""
           fi
 
-          has_label=$(gh api "repos/$REPO/issues/$PR_NUMBER/labels" --jq '.[].name' |
-            grep -Fxc -- "$LABEL" || true)
+          labels=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/labels?per_page=100" --jq '.[].name')
+          has_label=$(grep -Fxc -- "$LABEL" <<<"$labels" || true)
+
+          # 判定中にpushやベース変更があれば、その変更で起動する実行に任せる。
+          latest=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '"\(.head.sha) \(.base.ref)"')
+          if [ "$latest" != "$head_sha $base_ref" ]; then
+            echo "PR #$PR_NUMBER: 判定中にheadまたはbaseが変わったため更新しない" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           if [ -z "$reason" ]; then
             echo "PR #$PR_NUMBER: 指摘なし (head ${head_sha:0:10}, 判定 ${reviewed:0:10})" | tee -a "$GITHUB_STEP_SUMMARY"
             if [ "$has_label" = 0 ]; then

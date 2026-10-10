@@ -1,0 +1,1394 @@
+{
+  "seed": "RI-173",
+  "results": [
+    {
+      "deadline": 6,
+      "recovery": 1,
+      "strategy": "fifo",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 12,
+        "energy": 4,
+        "energySpent": 4,
+        "focusSpent": 0,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 12,
+            "completedTick": 2
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 3
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 4
+          }
+        ],
+        "netValue": 8
+      }
+    },
+    {
+      "deadline": 6,
+      "recovery": 1,
+      "strategy": "hold-recover",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "resume",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 0,
+        "energy": 2,
+        "energySpent": 4,
+        "focusSpent": 2,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 4
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 2
+          }
+        ],
+        "netValue": 18
+      }
+    },
+    {
+      "deadline": 6,
+      "recovery": 1,
+      "strategy": "hold-forever",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "qualityCost": 0,
+        "energy": 4,
+        "energySpent": 0,
+        "focusSpent": 1,
+        "heldCount": 1,
+        "doneCount": 2,
+        "unfinishedValue": 16,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "held",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 2
+          }
+        ],
+        "netValue": 7
+      }
+    },
+    {
+      "deadline": 6,
+      "recovery": 1,
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rush"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 12,
+        "energy": 4,
+        "energySpent": 4,
+        "focusSpent": 3,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 12,
+            "completedTick": 0
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 0
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          }
+        ],
+        "netValue": 5
+      }
+    },
+    {
+      "deadline": 2,
+      "recovery": 1,
+      "strategy": "fifo",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 12,
+        "energy": 4,
+        "energySpent": 4,
+        "focusSpent": 0,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 12,
+            "completedTick": 2
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 3
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 4
+          }
+        ],
+        "netValue": 8
+      }
+    },
+    {
+      "deadline": 2,
+      "recovery": 1,
+      "strategy": "hold-recover",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "resume",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 10,
+        "qualityCost": 0,
+        "energy": 2,
+        "energySpent": 4,
+        "focusSpent": 2,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 4
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 2
+          }
+        ],
+        "netValue": 4
+      }
+    },
+    {
+      "deadline": 2,
+      "recovery": 1,
+      "strategy": "hold-forever",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "qualityCost": 0,
+        "energy": 4,
+        "energySpent": 0,
+        "focusSpent": 1,
+        "heldCount": 1,
+        "doneCount": 2,
+        "unfinishedValue": 16,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 2,
+            "stage": "held",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 2
+          }
+        ],
+        "netValue": 7
+      }
+    },
+    {
+      "deadline": 2,
+      "recovery": 1,
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 1,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rush"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 12,
+        "energy": 4,
+        "energySpent": 4,
+        "focusSpent": 3,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 2,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 12,
+            "completedTick": 0
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 0
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          }
+        ],
+        "netValue": 5
+      }
+    },
+    {
+      "deadline": 6,
+      "recovery": 0,
+      "strategy": "fifo",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 0,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 12,
+        "energy": 0,
+        "energySpent": 4,
+        "focusSpent": 0,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 12,
+            "completedTick": 2
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 3
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 4
+          }
+        ],
+        "netValue": 8
+      }
+    },
+    {
+      "deadline": 6,
+      "recovery": 0,
+      "strategy": "hold-recover",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 0,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "resume",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 12,
+        "energy": 0,
+        "energySpent": 4,
+        "focusSpent": 2,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 12,
+            "completedTick": 4
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 2
+          }
+        ],
+        "netValue": 6
+      }
+    },
+    {
+      "deadline": 6,
+      "recovery": 0,
+      "strategy": "hold-forever",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 0,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold",
+          "id": "hard"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "qualityCost": 0,
+        "energy": 2,
+        "energySpent": 0,
+        "focusSpent": 1,
+        "heldCount": 1,
+        "doneCount": 2,
+        "unfinishedValue": 16,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "held",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 2
+          }
+        ],
+        "netValue": 7
+      }
+    },
+    {
+      "deadline": 6,
+      "recovery": 0,
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-173",
+        "tick": 0,
+        "horizon": 6,
+        "recoveryPerTick": 0,
+        "energy": 2,
+        "energySpent": 0,
+        "focus": 6,
+        "focusSpent": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 2,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 1,
+            "stage": "review",
+            "qualityCost": null,
+            "completedTick": null
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rush"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "value": 24,
+        "qualityCost": 12,
+        "energy": 0,
+        "energySpent": 4,
+        "focusSpent": 3,
+        "heldCount": 0,
+        "doneCount": 3,
+        "unfinishedValue": 0,
+        "jobs": [
+          {
+            "id": "hard",
+            "difficult": true,
+            "value": 16,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 12,
+            "completedTick": 0
+          },
+          {
+            "id": "easy-a",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 0
+          },
+          {
+            "id": "easy-b",
+            "difficult": false,
+            "value": 4,
+            "deadline": 6,
+            "reviewLeft": 0,
+            "stage": "done",
+            "qualityCost": 0,
+            "completedTick": 1
+          }
+        ],
+        "netValue": 5
+      }
+    }
+  ]
+}

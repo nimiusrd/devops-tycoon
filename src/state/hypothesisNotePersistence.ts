@@ -150,10 +150,15 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
               saveFailed: true,
             });
           } else if (hypothesisCommitKeptForeignBound(base, local, stored)) {
-            publish({
-              record: queued.length > 0 ? applyQueued(local, queued) : local,
-              saveFailed: false,
-            });
+            const display = queued.length > 0 ? applyQueued(local, queued) : local;
+            publish({ record: display, saveFailed: false });
+            // 表示上の解除は残す。このタブが書いた下書きだけ基準を進め、
+            // 開始で消した下書きを「未変更」と見なして復活させない。
+            // 世代と bound は解除前のままにし、次の下書き保存が後発ランの解除にならないようにする。
+            if (sameDraft(local.draft, stored.draft)) {
+              baseRecord = { ...base, draft: stored.draft };
+            }
+            if (queued.length > 0) dirty = true;
             lastPersistOk = true;
           } else {
             baseRecord = stored;
@@ -262,6 +267,10 @@ export function createHypothesisNoteStore(storage: HypothesisNoteStorage): Hypot
       });
     },
   };
+}
+
+function sameDraft(a: HypothesisNoteRecord['draft'], b: HypothesisNoteRecord['draft']): boolean {
+  return a && b ? a.text === b.text && a.writtenAt === b.writtenAt : a === b;
 }
 
 function defaultStorage(): HypothesisNoteStorage {

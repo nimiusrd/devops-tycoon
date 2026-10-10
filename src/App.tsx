@@ -271,11 +271,16 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const hypothesisKey = hypothesisRunKey(state);
   const canBeginRun = !run.isReplayMode && !run.finishSaveBlocksNewRun;
   const beginGuard = useRef(false);
+  const launchEpoch = useRef(0);
   const [hypothesisUnrecorded, setHypothesisUnrecorded] = useState(false);
+  const [runLaunchPending, setRunLaunchPending] = useState(false);
   const [trackedPhase, setTrackedPhase] = useState(phase);
   if (trackedPhase !== phase) {
     setTrackedPhase(phase);
-    if (phase === 'title') setHypothesisUnrecorded(false);
+    if (phase === 'title') {
+      setHypothesisUnrecorded(false);
+      setRunLaunchPending(false);
+    }
   }
   useEffect(() => {
     if (phase === 'title') beginGuard.current = false;
@@ -353,6 +358,45 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     setHelpOpen(false);
     setReplayListOpen(false);
   };
+  const cancelPendingLaunch = () => {
+    launchEpoch.current += 1;
+  };
+  const launchAfterHypothesis = (
+    bind: Parameters<typeof hypothesisNoteStore.applyCommitted>[0],
+    start: () => void,
+  ) => {
+    if (!canBeginRun) {
+      start();
+      return;
+    }
+    if (beginGuard.current) return;
+    beginGuard.current = true;
+    const ticket = ++launchEpoch.current;
+    const epoch = game.getRunEpoch();
+    setRunLaunchPending(true);
+    const before = hypothesisNoteStore.getSnapshot().record;
+    return (async () => {
+      const saved = await hypothesisNoteStore.applyCommitted(bind);
+      const superseded =
+        launchEpoch.current !== ticket ||
+        game.phase() !== 'title' ||
+        game.isReplayMode() ||
+        game.getRunEpoch() !== epoch;
+      if (superseded) {
+        if (saved !== 'unchanged') await hypothesisNoteStore.applyCommitted(() => before);
+        beginGuard.current = false;
+        setRunLaunchPending(false);
+        return;
+      }
+      if (saved === 'failed') {
+        hypothesisNoteStore.abandonUnpersistedStart();
+        setHypothesisUnrecorded(true);
+      } else {
+        setHypothesisUnrecorded(false);
+      }
+      start();
+    })();
+  };
   const startRun = (
     difficulty: Parameters<typeof run.startRun>[0],
     trials: string[],
@@ -362,14 +406,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
-    if (!canBeginRun) {
-      run.startRun(difficulty, trials, scenario, seed);
-      return;
-    }
-    if (beginGuard.current) return;
-    beginGuard.current = true;
-    return (async () => {
-      const saved = await hypothesisNoteStore.applyCommitted((record) =>
+    return launchAfterHypothesis(
+      (record) =>
         bindHypothesisToRun(
           record,
           hypothesisRunKey({
@@ -380,29 +418,16 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             scenario: resolveScenarioId(scenario),
           }),
         ),
-      );
-      if (saved === 'failed') {
-        hypothesisNoteStore.abandonUnpersistedStart();
-        setHypothesisUnrecorded(true);
-      } else {
-        setHypothesisUnrecorded(false);
-      }
-      run.startRun(difficulty, trials, scenario, seed);
-    })();
+      () => run.startRun(difficulty, trials, scenario, seed),
+    );
   };
   const startDailyRun = () => {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
     const day = utcDateStr();
-    if (!canBeginRun) {
-      run.startDailyRun(day);
-      return;
-    }
-    if (beginGuard.current) return;
-    beginGuard.current = true;
-    return (async () => {
-      const saved = await hypothesisNoteStore.applyCommitted((record) =>
+    return launchAfterHypothesis(
+      (record) =>
         bindHypothesisToRun(
           record,
           hypothesisRunKey({
@@ -414,17 +439,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             scenario: DEFAULT_SCENARIO,
           }),
         ),
-      );
-      if (saved === 'failed') {
-        hypothesisNoteStore.abandonUnpersistedStart();
-        setHypothesisUnrecorded(true);
-      } else {
-        setHypothesisUnrecorded(false);
-      }
-      run.startDailyRun(day);
-    })();
+      () => run.startDailyRun(day),
+    );
   };
   const resumeRun = () => {
+    cancelPendingLaunch();
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
@@ -436,6 +455,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     run.clearRunSave();
   };
   const openReplay = (id: string, keyframeIndex: number) => {
+    cancelPendingLaunch();
     audio.unlock();
     if (!run.openReplay(id, keyframeIndex)) return;
     closeTitleModals();
@@ -651,7 +671,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             }
             hypothesisSaveFailed={hypothesisNote.saveFailed}
             hypothesisUnrecorded={hypothesisUnrecorded}
+            runLaunchPending={runLaunchPending}
             onImportRunSave={async (raw) => {
+              cancelPendingLaunch();
               const result = await run.importRunSaveText(raw);
               if (result.ok) {
                 const detached = await hypothesisNoteStore.applyCommitted((record) =>
@@ -767,7 +789,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   writeHypothesisReflection(record, hypothesisKey, text, Date.now()),
                 )
               }
-              hypothesisSaveFailed={hypothesisNote.saveFailed}
+              hypothesisSaveFailed={run.isReplayMode ? false : hypothesisNote.saveFailed}
             />
           </SceneScrollReset>
         </Suspense>

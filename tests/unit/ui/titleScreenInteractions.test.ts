@@ -510,6 +510,32 @@ describe('TitleScreen のラン開始条件', () => {
       );
     },
   );
+
+  it('仮説の保存待ちでは、開始と競合する操作を止める', () => {
+    const screen = mountTitle({
+      resumableSummary: savedRun,
+      onStartDaily: vi.fn(),
+      onResume: vi.fn(),
+      onOpenReplays: vi.fn(),
+      onImportRunSave: vi.fn(async () => ({ ok: true, message: '' })),
+      runLaunchPending: true,
+    });
+    for (const id of [
+      'start-run',
+      'start-daily-run',
+      'resume-run',
+      'open-replays',
+      'run-save-file-button',
+    ]) {
+      expect(screen.find(id).props.disabled).toBe(true);
+    }
+    expect(screen.find('title-launch-dock').props['aria-busy']).toBe(true);
+    screen.update({ runLaunchPending: false });
+    expect(screen.find('start-run').props.disabled).toBe(false);
+    expect(screen.find('resume-run').props.disabled).toBe(false);
+    expect(screen.find('open-replays').props.disabled).toBe(false);
+    expect(screen.find('title-launch-dock').props['aria-busy']).toBeUndefined();
+  });
 });
 
 describe('TitleScreen の途中セーブ共有', () => {

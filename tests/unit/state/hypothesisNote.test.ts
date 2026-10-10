@@ -571,6 +571,46 @@ describe('仮説メモの保存', () => {
     expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('new');
   });
 
+  it('競合する解除のあと、このタブが保存した下書きは開始で消費される', async () => {
+    const memory = new MemoryHypothesisNoteStorage();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 1,
+      bound: {
+        runKey: 'run-a',
+        startId: 'old',
+        beforeStart: { text: '狙い', writtenAt: 1 },
+        reflection: null,
+      },
+    };
+    const store = createHypothesisNoteStore(memory);
+    await store.load();
+    memory.value = {
+      schemaVersion: 1,
+      draft: null,
+      generation: 2,
+      bound: {
+        runKey: 'run-b',
+        startId: 'new',
+        beforeStart: { text: '後', writtenAt: 4 },
+        reflection: null,
+      },
+    };
+    expect(await store.applyCommitted((record) => detachHypothesisNote(record))).toBe('saved');
+    store.update((record) => editHypothesisDraft(record, '次回', 9));
+    await store.flush();
+    expect(store.getSnapshot().record.bound).toBeNull();
+    expect(normalizeHypothesisNote(memory.value).bound?.startId).toBe('new');
+    expect(normalizeHypothesisNote(memory.value).draft?.text).toBe('次回');
+    store.update((record) => bindHypothesisToRun(record, 'run-c', 'start-c'));
+    await store.flush();
+    const stored = normalizeHypothesisNote(memory.value);
+    expect(stored.draft).toBeNull();
+    expect(stored.bound).toMatchObject({ startId: 'start-c', beforeStart: { text: '次回' } });
+    expect(store.getSnapshot().record.draft).toBeNull();
+  });
+
   it('仮説が無い解除は、以前の保存失敗で失敗にしない', async () => {
     let fail = true;
     const memory = new MemoryHypothesisNoteStorage();

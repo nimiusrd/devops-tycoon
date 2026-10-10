@@ -142,6 +142,8 @@ export interface TitleScreenProps {
   hypothesisSaveFailed?: boolean;
   /** 開始時にメモを保存できず、仮説なしで始めた。 */
   hypothesisUnrecorded?: boolean;
+  /** 仮説の保存を待っている開始。続きから・取り込み・リプレイを止める。 */
+  runLaunchPending?: boolean;
 }
 
 export function TitleScreen({
@@ -169,6 +171,7 @@ export function TitleScreen({
   onHypothesisDraftChange,
   hypothesisSaveFailed = false,
   hypothesisUnrecorded = false,
+  runLaunchPending = false,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -322,7 +325,7 @@ export function TitleScreen({
     onResume?.();
   }, [onResume]);
   const requestStartDaily = () => {
-    if (runSaveImporting) return;
+    if (runSaveImporting || runLaunchPending) return;
     if (resumableSummary) {
       setDailyConfirmOpen(true);
       return;
@@ -341,7 +344,7 @@ export function TitleScreen({
     startDailyButtonRef.current?.focus();
   }, [dailyConfirmOpen]);
 
-  const launchBlocked = newRunBlocked || runSaveImporting;
+  const launchBlocked = newRunBlocked || runSaveImporting || runLaunchPending;
   const launchDescribedBy = [
     newRunBlocked ? 'finish-save-block' : '',
     hypothesisUnrecorded ? 'hypothesis-start-unrecorded' : '',
@@ -747,7 +750,7 @@ export function TitleScreen({
                         <button
                           type="button"
                           data-testid="run-save-file-button"
-                          disabled={runSaveImporting}
+                          disabled={runSaveImporting || runLaunchPending}
                           onClick={() => runSaveFileRef.current?.click()}
                         >
                           ファイルを開く
@@ -758,7 +761,7 @@ export function TitleScreen({
                           accept="application/json,.json"
                           hidden
                           data-testid="run-save-file"
-                          disabled={runSaveImporting}
+                          disabled={runSaveImporting || runLaunchPending}
                           onChange={onRunSaveFile}
                         />
                       </>
@@ -816,7 +819,7 @@ export function TitleScreen({
                   type="button"
                   className="title-resume-btn title-resume-discard"
                   data-testid="discard-run-save"
-                  disabled={runSaveImporting}
+                  disabled={runSaveImporting || runLaunchPending}
                   onClick={onDiscardRunSave}
                 >
                   このセーブを破棄
@@ -896,7 +899,12 @@ export function TitleScreen({
                 </button>
               )}
               {onOpenReplays && (
-                <button type="button" data-testid="open-replays" onClick={onOpenReplays}>
+                <button
+                  type="button"
+                  data-testid="open-replays"
+                  disabled={runLaunchPending}
+                  onClick={onOpenReplays}
+                >
                   リプレイ
                 </button>
               )}
@@ -935,6 +943,7 @@ export function TitleScreen({
         data-testid="title-launch-dock"
         role="region"
         aria-label="ラン開始"
+        aria-busy={runLaunchPending || undefined}
       >
         <div className="title-launch-dock-inner">{launchControls}</div>
       </div>
@@ -943,7 +952,7 @@ export function TitleScreen({
         ? createPortal(
             <StartDailyConfirmDialog
               summary={resumableSummary}
-              canResume={!runSaveIssue && !!onResume}
+              canResume={!runSaveIssue && !!onResume && !runLaunchPending}
               onCancel={closeDailyConfirm}
               onResume={confirmResumeFromDaily}
               onDiscardAndStart={confirmStartDaily}

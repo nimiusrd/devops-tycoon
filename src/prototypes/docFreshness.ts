@@ -47,7 +47,7 @@ export function viewDoc(state: DocState) {
     quantity: state.quantity,
     freshness: state.freshness,
     value: state.value,
-    scores: SCORE,
+    scores: { ...SCORE },
   };
 }
 

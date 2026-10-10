@@ -54,7 +54,12 @@ describe('RI-192 古いドキュメントの罠', () => {
     const before = structuredClone(initial);
     for (let count = 0; count < 30; count += 1) viewDoc(initial);
     expect(initial).toEqual(before);
-    expect(viewDoc(initial).scores).toEqual({ fresh: 5, none: 2, stale: -4 });
+    const viewed = viewDoc(initial);
+    expect(viewed.scores).toEqual({ fresh: 5, none: 2, stale: -4 });
+    viewed.scores.none = 99;
+    const used = apply(initial, { type: 'use' });
+    expect(used.value).toBe(2);
+    expect(used.resolutions[0]).toBe('t1:use,score:2,freshness:none');
     const ended = { ...initial, tick: initial.horizon };
     expect(apply(ended, { type: 'add' })).toBe(ended);
     expect(apply(ended, { type: 'use' })).toBe(ended);

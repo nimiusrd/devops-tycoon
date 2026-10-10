@@ -51,6 +51,7 @@ import type { GameHandle } from './game';
 import { serializePersistenceBackup } from './state/persistenceBackup';
 import {
   bindHypothesisToRun,
+  detachHypothesisNote,
   editHypothesisDraft,
   hypothesisForRun,
   hypothesisRunKey,
@@ -588,6 +589,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             hypothesisSaveFailed={hypothesisNote.saveFailed}
             onImportRunSave={async (raw) => {
               const result = await run.importRunSaveText(raw);
+              if (result.ok) {
+                hypothesisNoteStore.update((record) => detachHypothesisNote(record));
+              }
               return {
                 ok: result.ok,
                 message: result.ok ? '' : result.message,

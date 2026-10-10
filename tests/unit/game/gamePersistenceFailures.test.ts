@@ -19,6 +19,12 @@ import {
 } from '../../../src/state/runPersistence';
 import { RUN_SAVE_SHARE_REASON_MESSAGE, serializeRunSave } from '../../../src/state/runSaveShare';
 import { serializePersistenceBackup } from '../../../src/state/persistenceBackup';
+import {
+  bindHypothesisToRun,
+  editHypothesisDraft,
+  EMPTY_HYPOTHESIS_NOTE,
+} from '../../../src/state/hypothesisNote';
+import { hypothesisNoteStore } from '../../../src/state/hypothesisNotePersistence';
 import { formatPersistenceClock } from '../../../src/state/persistenceStatus';
 
 afterEach(() => {
@@ -1845,6 +1851,31 @@ describe('ゲームの途中セーブ保存失敗と取り込み競合', () => {
     expect((await originalLoad())?.summary.seed).toBe('foreign-tab');
     expect(game.getRunSaveSummary()?.seed).toBe('existing-save');
     expect(await replayStorage.list()).toEqual([]);
+  });
+
+  it('まとめ取り込みの途中失敗では、開始前の仮説を外さない', async () => {
+    const runStorage = new MemoryRunStorage();
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'hypothesis-rollback', runStorage });
+    await game.attachReplay(replayStorage);
+    hypothesisNoteStore.update((record) =>
+      bindHypothesisToRun(editHypothesisDraft(record, '採用より育成', 1), 'local-run'),
+    );
+    await hypothesisNoteStore.flush();
+    const bound = hypothesisNoteStore.getSnapshot().record.bound;
+    const originalList = replayStorage.list.bind(replayStorage);
+    vi.spyOn(replayStorage, 'list').mockImplementation(async () => {
+      if ((await runStorage.load()) !== null) throw new Error('list failed');
+      return originalList();
+    });
+    const raw = serializePersistenceBackup({
+      runSave: serializeRunSave(makeRunSave('imported-run')),
+      replays: [serializeReplay(makeReplay('replay-a'))],
+    });
+
+    expect((await game.importReplayText(raw)).ok).toBe(false);
+    expect(hypothesisNoteStore.getSnapshot().record.bound).toEqual(bound);
+    expect(hypothesisNoteStore.getSnapshot().record).not.toEqual(EMPTY_HYPOTHESIS_NOTE);
   });
 
   it('まとめ取り込みは、上書き直前の別内容を失敗時に残す', async () => {

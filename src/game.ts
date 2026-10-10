@@ -2325,11 +2325,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           return { ok: false, reason: 'corrupt', message: replayResult.message };
         }
         noteRunDurable();
-        hypothesisNoteStore.update((record) => detachHypothesisNote(record));
         return { ...loaded, restored: 'both' as const };
       }
       undoImportedRun = restoreImportedRun;
-      hypothesisNoteStore.update((record) => detachHypothesisNote(record));
       return loaded;
     },
     async attachReplay(storage, options) {
@@ -2521,6 +2519,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
             }
           }
           undoImportedRun = null;
+          if (backup.runSave) {
+            hypothesisNoteStore.update((record) => detachHypothesisNote(record));
+          }
           const matched = pendingReplays.filter((item) => {
             const row = listedById.get(item.id);
             return row !== undefined && replayContentKey(row) === replayContentKey(item);

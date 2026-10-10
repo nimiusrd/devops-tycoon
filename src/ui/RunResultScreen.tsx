@@ -224,7 +224,10 @@ export function RunResultScreen({
                   value={reflectionText}
                   rows={3}
                   placeholder="仮説を続ける・変えるなら、その理由"
-                  onChange={(event) => onHypothesisReflectionChange(event.target.value)}
+                  onChange={(event) => {
+                    setCopyStatus('idle');
+                    onHypothesisReflectionChange(event.target.value);
+                  }}
                 />
                 <p
                   id="hypothesis-reflection-meta"
@@ -330,7 +333,10 @@ export function RunResultScreen({
                 type="checkbox"
                 data-testid="diagnostic-include-note"
                 checked={includeNoteInDiagnostic}
-                onChange={(event) => setIncludeNoteInDiagnostic(event.target.checked)}
+                onChange={(event) => {
+                  setIncludeNoteInDiagnostic(event.target.checked);
+                  setCopyStatus('idle');
+                }}
               />
               仮説メモと振り返りを含める
             </label>

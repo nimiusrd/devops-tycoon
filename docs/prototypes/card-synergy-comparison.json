@@ -1,0 +1,460 @@
+{
+  "results": [
+    {
+      "board": "routine",
+      "seed": 1,
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "routine",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": false,
+        "ai": false,
+        "routineCleared": 6,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "focusSpent": 0,
+        "netValue": 6
+      }
+    },
+    {
+      "board": "routine",
+      "seed": 1,
+      "strategy": "test",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "routine",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "test"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": true,
+        "ai": false,
+        "routineCleared": 12,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "focusSpent": 1,
+        "netValue": 11
+      }
+    },
+    {
+      "board": "routine",
+      "seed": 1,
+      "strategy": "ai",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "routine",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "ai"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": false,
+        "ai": true,
+        "routineCleared": 12,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "focusSpent": 1,
+        "netValue": 11
+      }
+    },
+    {
+      "board": "routine",
+      "seed": 1,
+      "strategy": "both",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "routine",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "test"
+        },
+        {
+          "type": "activate",
+          "id": "ai"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": true,
+        "ai": true,
+        "routineCleared": 24,
+        "incidentCleared": 0,
+        "autoCleared": 6,
+        "focusSpent": 2,
+        "netValue": 22
+      }
+    },
+    {
+      "board": "incident",
+      "seed": 1,
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "incident",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": false,
+        "ai": false,
+        "routineCleared": 0,
+        "incidentCleared": 6,
+        "autoCleared": 0,
+        "focusSpent": 0,
+        "netValue": 6
+      }
+    },
+    {
+      "board": "incident",
+      "seed": 1,
+      "strategy": "test",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "incident",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "test"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": true,
+        "ai": false,
+        "routineCleared": 0,
+        "incidentCleared": 6,
+        "autoCleared": 0,
+        "focusSpent": 1,
+        "netValue": 5
+      }
+    },
+    {
+      "board": "incident",
+      "seed": 1,
+      "strategy": "ai",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "incident",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "ai"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": false,
+        "ai": true,
+        "routineCleared": 0,
+        "incidentCleared": 6,
+        "autoCleared": 0,
+        "focusSpent": 1,
+        "netValue": 5
+      }
+    },
+    {
+      "board": "incident",
+      "seed": 1,
+      "strategy": "both",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "incident",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "test"
+        },
+        {
+          "type": "activate",
+          "id": "ai"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": true,
+        "ai": true,
+        "routineCleared": 0,
+        "incidentCleared": 6,
+        "autoCleared": 0,
+        "focusSpent": 2,
+        "netValue": 4
+      }
+    }
+  ]
+}

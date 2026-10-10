@@ -44,21 +44,34 @@ describe('RI-291 前回の自分との並走', () => {
       'runKind',
       'ruleset',
       'unlockPool',
+      'preferredCards',
     ]);
     expect(identity.every((item) => item.status === 'match')).toBe(true);
     expect(comparePastRuns(setupBlob('ghost', 'a'), setupBlob('ghost', 'b')).rows).toEqual([]);
   });
 
-  it('seed以外の開始条件・ruleset・解放条件の違いや不足を比較不能にする', () => {
+  it('seed以外の開始条件・ruleset・解放条件・研修方針の違いや不足を比較不能にする', () => {
     const status = (b: ComparableReplay, field: string) =>
       checkIdentity(g1Plain, b).find((item) => item.field === field)!.status;
     const changed = structuredClone(g1Skilled);
     changed.trials = ['budget_cut'];
     changed.keyframes[0].frame.scenario = 'review_hell' as never;
     changed.keyframes[0].frame.extras!.allowedCards = ['pair_programming'];
+    changed.keyframes[0].frame.extras!.preferredCardIds = ['pair_programming'];
     expect(status(changed, 'trials')).toBe('mismatch');
     expect(status(changed, 'scenario')).toBe('mismatch');
     expect(status(changed, 'unlockPool')).toBe('mismatch');
+    expect(status(changed, 'preferredCards')).toBe('mismatch');
+    const reordered = structuredClone(g1Skilled);
+    reordered.keyframes[0].frame.extras!.preferredCardIds = ['review', 'split'];
+    const sameCards = structuredClone(reordered);
+    sameCards.keyframes[0].frame.extras!.preferredCardIds = ['split', 'review'];
+    expect(
+      checkIdentity(reordered, sameCards).find((item) => item.field === 'preferredCards')!.status,
+    ).toBe('match');
+    const legacyPreferred = structuredClone(g1Skilled);
+    delete legacyPreferred.keyframes[0].frame.extras!.preferredCardIds;
+    expect(status(legacyPreferred, 'preferredCards')).toBe('match');
     expect(status({ ...g1Skilled, difficulty: 'hard' }, 'difficulty')).toBe('mismatch');
     expect(status({ ...g1Skilled, seed: 'g2' }, 'seed')).toBe('mismatch');
     const legacy = { ...g1Skilled, ruleset: null };
@@ -66,7 +79,7 @@ describe('RI-291 前回の自分との並走', () => {
     const laterSetup = structuredClone(g1Skilled.keyframes[0]);
     laterSetup.frame.sprintsPlayed = 3;
     const noSetup = { ...g1Skilled, keyframes: [laterSetup, ...g1Skilled.keyframes.slice(1)] };
-    for (const field of ['scenario', 'runKind', 'unlockPool'])
+    for (const field of ['scenario', 'runKind', 'unlockPool', 'preferredCards'])
       expect(status(noSetup, field)).toBe('missing');
     for (const other of [changed, legacy, noSetup]) {
       const result = comparePastRuns(g1Plain, other);
@@ -106,17 +119,48 @@ describe('RI-291 前回の自分との並走', () => {
     expect(swapped.bands!.shipping.a).toEqual(result.bands!.shipping.b);
   });
 
-  it('出荷・滞留・消耗の得意な時間帯が別々に分かれる', () => {
+  it('出荷と滞留の得意な時間帯が別々に分かれる', () => {
     const g2 = comparePastRuns(g2Plain, g2Skilled);
     expect(g2.bands).toEqual({
       shipping: { a: [4], b: [1, 2, 3], tie: [] },
       backlog: { a: [], b: [1, 2, 4], tie: [3] },
-      wear: { a: [2, 4], b: [1, 3], tie: [] },
     });
     const g1 = comparePastRuns(g1Plain, g1Skilled);
     expect(g1.spans).toEqual({ common: [1, 2, 3, 4, 5, 6, 7, 8], onlyA: [], onlyB: [] });
     expect(g1.bands!.shipping).toEqual({ a: [4, 7, 8], b: [1, 2, 3, 5, 6], tie: [] });
-    expect(g1.bands!.wear).toEqual({ a: [5, 6], b: [1, 2, 3, 4, 7, 8], tie: [] });
+  });
+
+  it('結果画面で置き換わる org と budget は境界の優劣に使わない', () => {
+    const overwritten = structuredClone(g2Skilled);
+    const boundary = overwritten.keyframes.find(
+      (keyframe) => keyframe.phase === 'result' && keyframe.frame.sprintsPlayed === 1,
+    );
+    if (!boundary) throw new Error('missing boundary');
+    boundary.frame.org = { seniorHp: 1, morale: 1, techDebt: 99 };
+    boundary.frame.budget = 0;
+    const original = comparePastRuns(g2Plain, g2Skilled);
+    const changed = comparePastRuns(g2Plain, overwritten);
+    expect(changed.rows).toEqual(original.rows);
+    expect(changed.bands).toEqual(original.bands);
+    const row = changed.rows.find((item) => item.sprint === 1);
+    expect(row?.b && 'seniorHp' in row.b).toBe(false);
+    expect(row?.leads && 'budget' in row.leads).toBe(false);
+  });
+
+  it('スプリント結果が無い境界では出荷と滞留の優劣を付けない', () => {
+    const left = structuredClone(g1Plain);
+    const right = structuredClone(g1Skilled);
+    for (const replay of [left, right]) {
+      const boundary = replay.keyframes.find(
+        (keyframe) => keyframe.phase === 'result' && keyframe.frame.sprintsPlayed === 1,
+      );
+      if (!boundary) throw new Error('missing boundary');
+      boundary.frame.lastResult = null;
+    }
+    const row = comparePastRuns(left, right).rows.find((item) => item.sprint === 1);
+    expect(row?.leads?.deliveredSprint).toBeNull();
+    expect(row?.leads?.reviewQueueMax).toBeNull();
+    expect(row?.leads?.deliveredTotal).not.toBeNull();
   });
 
   it('ボス回は四半期レビューの境界で読み、ドラフトや途中敗北の終端を行に足さない', () => {
@@ -137,6 +181,10 @@ describe('RI-291 前回の自分との並走', () => {
     expect(copy.keyframes[0].frame.org.seniorHp).toBe(frame.org.seniorHp);
     expect(copy.keyframes[0].frame.extras!.allowedCards).toEqual(frame.extras.allowedCards);
     expect(copy.keyframes[0].frame.extras!.allowedCards).not.toBe(frame.extras.allowedCards);
+    expect(copy.keyframes[0].frame.extras!.preferredCardIds).toEqual(frame.extras.preferredCardIds);
+    expect(copy.keyframes[0].frame.extras!.preferredCardIds).not.toBe(
+      frame.extras.preferredCardIds,
+    );
   });
 
   it('比較JSONと一致する', () => {

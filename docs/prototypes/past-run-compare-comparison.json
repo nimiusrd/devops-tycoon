@@ -36,6 +36,10 @@
         {
           "field": "unlockPool",
           "status": "match"
+        },
+        {
+          "field": "preferredCards",
+          "status": "match"
         }
       ],
       "rows": [
@@ -46,30 +50,18 @@
             "phase": "result",
             "deliveredTotal": 522,
             "deliveredSprint": 493,
-            "reviewQueueMax": 24,
-            "seniorHp": 46.65999999999985,
-            "morale": 95,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 24
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 623,
             "deliveredSprint": 594,
-            "reviewQueueMax": 21,
-            "seniorHp": 56.869999999999884,
-            "morale": 95,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 21
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "b",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -79,30 +71,18 @@
             "phase": "result",
             "deliveredTotal": 1207,
             "deliveredSprint": 650,
-            "reviewQueueMax": 29,
-            "seniorHp": 20.18999999999993,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 29
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 1373,
             "deliveredSprint": 715,
-            "reviewQueueMax": 23,
-            "seniorHp": 39.93500000000001,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 23
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "b",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -112,30 +92,18 @@
             "phase": "result",
             "deliveredTotal": 1852,
             "deliveredSprint": 615,
-            "reviewQueueMax": 32,
-            "seniorHp": 18.794999999999984,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 32
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 2135,
             "deliveredSprint": 732,
-            "reviewQueueMax": 24,
-            "seniorHp": 32.57750000000006,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 24
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "b",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -145,30 +113,18 @@
             "phase": "result",
             "deliveredTotal": 2630,
             "deliveredSprint": 750,
-            "reviewQueueMax": 25,
-            "seniorHp": 5.697500000000085,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 25
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 2812,
             "deliveredSprint": 649,
-            "reviewQueueMax": 28,
-            "seniorHp": 22.068750000000048,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 28
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "a",
-            "reviewQueueMax": "a",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "a"
           }
         },
         {
@@ -178,30 +134,18 @@
             "phase": "result",
             "deliveredTotal": 3507,
             "deliveredSprint": 827,
-            "reviewQueueMax": 25,
-            "seniorHp": 23.828750000000063,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 25
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 3692,
             "deliveredSprint": 830,
-            "reviewQueueMax": 26,
-            "seniorHp": 15.914375000000064,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 26
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "a",
-            "seniorHp": "a",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "a"
           }
         },
         {
@@ -211,30 +155,18 @@
             "phase": "quarterReview",
             "deliveredTotal": 4466,
             "deliveredSprint": 902,
-            "reviewQueueMax": 34,
-            "seniorHp": 14.454375000000091,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 37
+            "reviewQueueMax": 34
           },
           "b": {
             "phase": "quarterReview",
             "deliveredTotal": 4808,
             "deliveredSprint": 1059,
-            "reviewQueueMax": 22,
-            "seniorHp": 10.607187500000151,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 37
+            "reviewQueueMax": 22
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "b",
-            "seniorHp": "a",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -244,30 +176,18 @@
             "phase": "result",
             "deliveredTotal": 5291,
             "deliveredSprint": 798,
-            "reviewQueueMax": 15,
-            "seniorHp": 11.017187500000126,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 37
+            "reviewQueueMax": 15
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 5548,
             "deliveredSprint": 713,
-            "reviewQueueMax": 14,
-            "seniorHp": 12.243593750000148,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 37
+            "reviewQueueMax": 14
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "a",
-            "reviewQueueMax": "b",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -277,30 +197,18 @@
             "phase": "result",
             "deliveredTotal": 5960,
             "deliveredSprint": 642,
-            "reviewQueueMax": 33,
-            "seniorHp": 6.8485937500003,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 37
+            "reviewQueueMax": 33
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 6159,
             "deliveredSprint": 584,
-            "reviewQueueMax": 32,
-            "seniorHp": 7.48,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 37
+            "reviewQueueMax": 32
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "a",
-            "reviewQueueMax": "b",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         }
       ],
@@ -318,11 +226,6 @@
         "backlog": {
           "a": [4, 5],
           "b": [1, 2, 3, 6, 7, 8],
-          "tie": []
-        },
-        "wear": {
-          "a": [5, 6],
-          "b": [1, 2, 3, 4, 7, 8],
           "tie": []
         }
       },
@@ -377,6 +280,10 @@
         {
           "field": "unlockPool",
           "status": "match"
+        },
+        {
+          "field": "preferredCards",
+          "status": "match"
         }
       ],
       "rows": [
@@ -387,30 +294,18 @@
             "phase": "result",
             "deliveredTotal": 617,
             "deliveredSprint": 592,
-            "reviewQueueMax": 22,
-            "seniorHp": 50.07999999999986,
-            "morale": 95,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 22
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 660,
             "deliveredSprint": 635,
-            "reviewQueueMax": 17,
-            "seniorHp": 60.049999999999876,
-            "morale": 95,
-            "techDebt": 0,
-            "budget": 45
+            "reviewQueueMax": 17
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "b",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -420,30 +315,18 @@
             "phase": "result",
             "deliveredTotal": 1276,
             "deliveredSprint": 634,
-            "reviewQueueMax": 16,
-            "seniorHp": 43.34000000000007,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 35
+            "reviewQueueMax": 16
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 1390,
             "deliveredSprint": 705,
-            "reviewQueueMax": 15,
-            "seniorHp": 32.33500000000002,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 35
+            "reviewQueueMax": 15
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "b",
-            "seniorHp": "a",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -453,30 +336,18 @@
             "phase": "result",
             "deliveredTotal": 1991,
             "deliveredSprint": 689,
-            "reviewQueueMax": 18,
-            "seniorHp": 12.690000000000119,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 35
+            "reviewQueueMax": 18
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 2236,
             "deliveredSprint": 820,
-            "reviewQueueMax": 18,
-            "seniorHp": 37.40750000000014,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 35
+            "reviewQueueMax": 18
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "b",
-            "reviewQueueMax": "tie",
-            "seniorHp": "b",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "tie"
           }
         },
         {
@@ -486,30 +357,18 @@
             "phase": "result",
             "deliveredTotal": 2949,
             "deliveredSprint": 931,
-            "reviewQueueMax": 29,
-            "seniorHp": 14.355000000000075,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 35
+            "reviewQueueMax": 29
           },
           "b": {
             "phase": "result",
             "deliveredTotal": 3051,
             "deliveredSprint": 788,
-            "reviewQueueMax": 22,
-            "seniorHp": 6.703750000000125,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 35
+            "reviewQueueMax": 22
           },
           "leads": {
             "deliveredTotal": "b",
             "deliveredSprint": "a",
-            "reviewQueueMax": "b",
-            "seniorHp": "a",
-            "morale": "tie",
-            "techDebt": "tie",
-            "budget": "tie"
+            "reviewQueueMax": "b"
           }
         },
         {
@@ -519,11 +378,7 @@
             "phase": "result",
             "deliveredTotal": 3884,
             "deliveredSprint": 909,
-            "reviewQueueMax": 19,
-            "seniorHp": 29.697500000000165,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 35
+            "reviewQueueMax": 19
           },
           "b": null,
           "leads": null
@@ -535,11 +390,7 @@
             "phase": "quarterReview",
             "deliveredTotal": 4693,
             "deliveredSprint": 783,
-            "reviewQueueMax": 27,
-            "seniorHp": 11.138750000000133,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 28
+            "reviewQueueMax": 27
           },
           "b": null,
           "leads": null
@@ -551,11 +402,7 @@
             "phase": "result",
             "deliveredTotal": 5583,
             "deliveredSprint": 862,
-            "reviewQueueMax": 35,
-            "seniorHp": 72.18937500000034,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 28
+            "reviewQueueMax": 35
           },
           "b": null,
           "leads": null
@@ -567,11 +414,7 @@
             "phase": "result",
             "deliveredTotal": 6187,
             "deliveredSprint": 568,
-            "reviewQueueMax": 30,
-            "seniorHp": 45.22468749999991,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 28
+            "reviewQueueMax": 30
           },
           "b": null,
           "leads": null
@@ -583,11 +426,7 @@
             "phase": "result",
             "deliveredTotal": 6954,
             "deliveredSprint": 740,
-            "reviewQueueMax": 42,
-            "seniorHp": 30.30234374999988,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 28
+            "reviewQueueMax": 42
           },
           "b": null,
           "leads": null
@@ -599,11 +438,7 @@
             "phase": "result",
             "deliveredTotal": 7698,
             "deliveredSprint": 717,
-            "reviewQueueMax": 37,
-            "seniorHp": 38.64117187500023,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 28
+            "reviewQueueMax": 37
           },
           "b": null,
           "leads": null
@@ -615,11 +450,7 @@
             "phase": "result",
             "deliveredTotal": 8423,
             "deliveredSprint": 697,
-            "reviewQueueMax": 37,
-            "seniorHp": 53.92058593750016,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 28
+            "reviewQueueMax": 37
           },
           "b": null,
           "leads": null
@@ -631,11 +462,7 @@
             "phase": "quarterReview",
             "deliveredTotal": 9288,
             "deliveredSprint": 835,
-            "reviewQueueMax": 40,
-            "seniorHp": 72.83029296874983,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 21
+            "reviewQueueMax": 40
           },
           "b": null,
           "leads": null
@@ -647,11 +474,7 @@
             "phase": "result",
             "deliveredTotal": 9969,
             "deliveredSprint": 655,
-            "reviewQueueMax": 35,
-            "seniorHp": 48.98514648437471,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 21
+            "reviewQueueMax": 35
           },
           "b": null,
           "leads": null
@@ -663,11 +486,7 @@
             "phase": "result",
             "deliveredTotal": 10764,
             "deliveredSprint": 764,
-            "reviewQueueMax": 30,
-            "seniorHp": 35.37257324218739,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 21
+            "reviewQueueMax": 30
           },
           "b": null,
           "leads": null
@@ -679,11 +498,7 @@
             "phase": "result",
             "deliveredTotal": 11504,
             "deliveredSprint": 714,
-            "reviewQueueMax": 33,
-            "seniorHp": 51.466286621093744,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 21
+            "reviewQueueMax": 33
           },
           "b": null,
           "leads": null
@@ -695,11 +510,7 @@
             "phase": "result",
             "deliveredTotal": 12562,
             "deliveredSprint": 1030,
-            "reviewQueueMax": 29,
-            "seniorHp": 63.53314331054702,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 11
+            "reviewQueueMax": 29
           },
           "b": null,
           "leads": null
@@ -711,11 +522,7 @@
             "phase": "result",
             "deliveredTotal": 13431,
             "deliveredSprint": 843,
-            "reviewQueueMax": 38,
-            "seniorHp": 71.08657165527373,
-            "morale": 100,
-            "techDebt": 0,
-            "budget": 11
+            "reviewQueueMax": 38
           },
           "b": null,
           "leads": null
@@ -736,11 +543,6 @@
           "a": [],
           "b": [1, 2, 4],
           "tie": [3]
-        },
-        "wear": {
-          "a": [2, 4],
-          "b": [1, 3],
-          "tie": []
         }
       },
       "ends": {

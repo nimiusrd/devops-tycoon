@@ -13,8 +13,11 @@ export interface ComparableFrame extends Pick<
   org: Pick<OrgState, 'seniorHp' | 'morale' | 'techDebt'>;
   totals: Pick<RunReplayFrame['totals'], 'delivered'>;
   lastResult: Pick<SprintResult, 'delivered' | 'reviewQueueMax'> | null;
-  /** 照合では setup の値だけを読む。比較用の写しでは他の境界から省く。 */
-  extras?: Pick<RunPersistExtras, 'allowedCards' | 'allowedRelics'>;
+  /**
+   * 照合では setup の値だけを読む。比較用の写しでは他の境界から省く。
+   * 研修方針の欠落は空配列として写す（旧記録の復元と同じ）。
+   */
+  extras?: Pick<RunPersistExtras, 'allowedCards' | 'allowedRelics' | 'preferredCardIds'>;
 }
 
 export interface ComparableReplay extends Pick<
@@ -31,7 +34,8 @@ export type IdentityField =
   | 'scenario'
   | 'runKind'
   | 'ruleset'
-  | 'unlockPool';
+  | 'unlockPool'
+  | 'preferredCards';
 export type IdentityStatus = 'match' | 'mismatch' | 'missing';
 export type Side = 'a' | 'b';
 export type Lead = Side | 'tie';
@@ -42,10 +46,6 @@ export interface BoundaryMetrics {
   deliveredTotal: number;
   deliveredSprint: number | null;
   reviewQueueMax: number | null;
-  seniorHp: number;
-  morale: number;
-  techDebt: number;
-  budget: number;
 }
 
 type MetricKey = Exclude<keyof BoundaryMetrics, 'phase'>;
@@ -55,17 +55,12 @@ export const METRIC_DIRECTION: Record<MetricKey, 'higher' | 'lower'> = {
   deliveredTotal: 'higher',
   deliveredSprint: 'higher',
   reviewQueueMax: 'lower',
-  seniorHp: 'higher',
-  morale: 'higher',
-  techDebt: 'lower',
-  budget: 'higher',
 };
 
-/** 時間帯の得手を見る3系統。出荷・滞留・消耗を別々に数える。 */
+/** 時間帯の得手を見る2系統。出荷と滞留を別々に数える。 */
 export const BAND_METRICS = {
   shipping: 'deliveredSprint',
   backlog: 'reviewQueueMax',
-  wear: 'seniorHp',
 } as const satisfies Record<string, MetricKey>;
 
 const BOUNDARY_PHASES: ReadonlySet<ReplayFramePhase> = new Set(['result', 'quarterReview']);
@@ -81,6 +76,12 @@ function setupFrame(replay: ComparableReplay): ComparableFrame | null {
 
 function sortedKey(values: readonly string[]): string {
   return JSON.stringify([...values].sort());
+}
+
+/** 旧記録で欠ける研修方針は、復元時と同じく空配列にする。順序は照合で無視する。 */
+function preferredCardIdsOf(frame: ComparableFrame): readonly string[] {
+  const ids = frame.extras?.preferredCardIds;
+  return Array.isArray(ids) ? ids : [];
 }
 
 function identityValue(replay: ComparableReplay, field: IdentityField): string | null {
@@ -105,6 +106,8 @@ function identityValue(replay: ComparableReplay, field: IdentityField): string |
             [...setup.extras.allowedRelics].sort(),
           ])
         : null;
+    case 'preferredCards':
+      return setup ? sortedKey(preferredCardIdsOf(setup)) : null;
   }
 }
 
@@ -116,6 +119,7 @@ const IDENTITY_FIELDS: readonly IdentityField[] = [
   'runKind',
   'ruleset',
   'unlockPool',
+  'preferredCards',
 ];
 
 export function checkIdentity(a: ComparableReplay, b: ComparableReplay) {
@@ -128,7 +132,11 @@ export function checkIdentity(a: ComparableReplay, b: ComparableReplay) {
   });
 }
 
-/** スプリント完了後の最初の境界だけを、その回の記録値として読む。 */
+/**
+ * スプリント結果に残り、同じ画面の後続操作では置き換わらない値だけを境界にする。
+ * 結果画面や四半期レビューでの組織レバー・チーム入り込みは、同じ phase の
+ * キーフレームを操作後の org と budget で置き換える。それらは最初の境界ではない。
+ */
 export function boundaryMetrics(replay: ComparableReplay): Map<number, BoundaryMetrics> {
   const rows = new Map<number, BoundaryMetrics>();
   for (const { phase, frame } of replay.keyframes) {
@@ -139,10 +147,6 @@ export function boundaryMetrics(replay: ComparableReplay): Map<number, BoundaryM
       deliveredTotal: frame.totals.delivered,
       deliveredSprint: frame.lastResult?.delivered ?? null,
       reviewQueueMax: frame.lastResult?.reviewQueueMax ?? null,
-      seniorHp: frame.org.seniorHp,
-      morale: frame.org.morale,
-      techDebt: frame.org.techDebt,
-      budget: frame.budget,
     });
   }
   return rows;
@@ -254,6 +258,7 @@ export function toComparableReplay(replay: ComparableReplay): ComparableReplay {
                 extras: {
                   allowedCards: [...frame.extras.allowedCards],
                   allowedRelics: [...frame.extras.allowedRelics],
+                  preferredCardIds: [...preferredCardIdsOf(frame)],
                 },
               }
             : {}),

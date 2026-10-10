@@ -35,7 +35,8 @@
             "lastResult": null,
             "extras": {
               "allowedCards": [],
-              "allowedRelics": []
+              "allowedRelics": [],
+              "preferredCardIds": []
             }
           }
         },
@@ -274,7 +275,8 @@
             "lastResult": null,
             "extras": {
               "allowedCards": [],
-              "allowedRelics": []
+              "allowedRelics": [],
+              "preferredCardIds": []
             }
           }
         },
@@ -513,7 +515,8 @@
             "lastResult": null,
             "extras": {
               "allowedCards": [],
-              "allowedRelics": []
+              "allowedRelics": [],
+              "preferredCardIds": []
             }
           }
         },
@@ -950,7 +953,8 @@
             "lastResult": null,
             "extras": {
               "allowedCards": [],
-              "allowedRelics": []
+              "allowedRelics": [],
+              "preferredCardIds": []
             }
           }
         },

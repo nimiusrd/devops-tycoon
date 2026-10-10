@@ -85,8 +85,9 @@ H3 の人間値は結果パネルの3値と `rd-735-timing-json` を使う。ス
 | interventionsUsed | 2 | 2 |
 | focusSpent | 4 | 4 |
 | morale | 59 | 59 |
-| 待ち時間（当時は停止含む1値） | 14.8s | 15.1s |
+| wallClockIncludingPauseMs | 14475 | 14518 |
+| pausedMs | 68 | 114 |
+| wallClockExcludingPauseMs | 14407 | 14404 |
 | 手の結果 | 手動 splitPr T0 success / pairReview success | 予約 splitPr T0 success@0 / pairReview success@1 |
-| 手応え | 4 | 4 |
 
-スクリプトと同じ sim 数字になった。待ち時間は壁時計（停止含む）。Adopt / Iterate / Kill は書かない。
+開始直後のライブ「待ち時間」は両腕とも `0.0s`（負にならない）。スクリプトと同じ sim 数字になった。Adopt / Iterate / Kill は書かない。

@@ -543,6 +543,39 @@ describe('commitCoversHead', () => {
     expect(commitCoversHead(cwd, head, head, 'main')).toBe(true);
   });
 
+  it('mainの上へ載せ直しただけで内容が同じなら、以前の判定を適用できる', () => {
+    const cwd = initRepo();
+    commitFile(cwd, 'base.txt', 'base');
+    git(cwd, ['checkout', '-b', 'feature']);
+    const feature = commitFile(cwd, 'feature.txt', 'feature');
+    git(cwd, ['checkout', 'main']);
+    commitFile(cwd, 'main.txt', 'main');
+    git(cwd, ['checkout', 'feature']);
+    git(cwd, ['rebase', 'main']);
+    const rebased = git(cwd, ['rev-parse', 'HEAD']);
+
+    expect(commitCoversHead(cwd, feature, rebased, 'main')).toBe(true);
+
+    commitFile(cwd, 'extra.txt', 'extra');
+    expect(commitCoversHead(cwd, feature, git(cwd, ['rev-parse', 'HEAD']), 'main')).toBe(false);
+  });
+
+  it('載せ直し後にmainが進んでも、PRの内容が変わっていなければ判定を維持する', () => {
+    const cwd = initRepo();
+    commitFile(cwd, 'base.txt', 'base');
+    git(cwd, ['checkout', '-b', 'feature']);
+    const feature = commitFile(cwd, 'feature.txt', 'feature');
+    git(cwd, ['checkout', 'main']);
+    commitFile(cwd, 'main.txt', 'main');
+    git(cwd, ['checkout', 'feature']);
+    git(cwd, ['rebase', 'main']);
+    const rebased = git(cwd, ['rev-parse', 'HEAD']);
+    git(cwd, ['checkout', 'main']);
+    commitFile(cwd, 'main-2.txt', 'main-2');
+
+    expect(commitCoversHead(cwd, feature, rebased, 'main')).toBe(true);
+  });
+
   it('レビュー後の通常コミット、別ブランチのマージ、衝突解決は適用できない', () => {
     const cwd = initRepo();
     commitFile(cwd, 'base.txt', 'base');

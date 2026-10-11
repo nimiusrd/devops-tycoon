@@ -1,0 +1,551 @@
+{
+  "seed": "RI-229",
+  "results": [
+    {
+      "mix": "pioneer",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-229",
+        "mix": "pioneer",
+        "pioneers": 3,
+        "keepers": 1,
+        "pioneerPerFeature": 10,
+        "pioneerIfNoFeature": -3,
+        "keeperPerSafe": 2,
+        "keeperPerIncident": -4,
+        "product": {
+          "version": 1,
+          "seed": "RI-229",
+          "board": "blocked",
+          "tick": 0,
+          "horizon": 3,
+          "capacity": 4,
+          "completeValue": 8,
+          "incidentIfIdle": 6,
+          "features": [
+            {
+              "id": "api",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "screen",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "billing",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            }
+          ],
+          "shippedWork": 0,
+          "completedValue": 0,
+          "incident": 0,
+          "periods": [],
+          "inputs": []
+        },
+        "pioneerScore": 0,
+        "keeperScore": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 4,
+            "screen": 0,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 3,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 2,
+            "billing": 2,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "pioneerScore": 60,
+        "keeperScore": -12,
+        "score": 48,
+        "shippedWork": 12,
+        "completed": ["api", "screen"],
+        "incident": 18,
+        "lost": false
+      }
+    },
+    {
+      "mix": "pioneer",
+      "strategy": "spread",
+      "initial": {
+        "version": 1,
+        "seed": "RI-229",
+        "mix": "pioneer",
+        "pioneers": 3,
+        "keepers": 1,
+        "pioneerPerFeature": 10,
+        "pioneerIfNoFeature": -3,
+        "keeperPerSafe": 2,
+        "keeperPerIncident": -4,
+        "product": {
+          "version": 1,
+          "seed": "RI-229",
+          "board": "blocked",
+          "tick": 0,
+          "horizon": 3,
+          "capacity": 4,
+          "completeValue": 8,
+          "incidentIfIdle": 6,
+          "features": [
+            {
+              "id": "api",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "screen",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "billing",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            }
+          ],
+          "shippedWork": 0,
+          "completedValue": 0,
+          "incident": 0,
+          "periods": [],
+          "inputs": []
+        },
+        "pioneerScore": 0,
+        "keeperScore": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 2,
+            "billing": 1,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "pioneerScore": 30,
+        "keeperScore": -12,
+        "score": 18,
+        "shippedWork": 12,
+        "completed": ["api"],
+        "incident": 18,
+        "lost": false
+      }
+    },
+    {
+      "mix": "pioneer",
+      "strategy": "ops",
+      "initial": {
+        "version": 1,
+        "seed": "RI-229",
+        "mix": "pioneer",
+        "pioneers": 3,
+        "keepers": 1,
+        "pioneerPerFeature": 10,
+        "pioneerIfNoFeature": -3,
+        "keeperPerSafe": 2,
+        "keeperPerIncident": -4,
+        "product": {
+          "version": 1,
+          "seed": "RI-229",
+          "board": "blocked",
+          "tick": 0,
+          "horizon": 3,
+          "capacity": 4,
+          "completeValue": 8,
+          "incidentIfIdle": 6,
+          "features": [
+            {
+              "id": "api",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "screen",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "billing",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            }
+          ],
+          "shippedWork": 0,
+          "completedValue": 0,
+          "incident": 0,
+          "periods": [],
+          "inputs": []
+        },
+        "pioneerScore": 0,
+        "keeperScore": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 3,
+            "screen": 0,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 3,
+            "billing": 0,
+            "ops": 1
+          }
+        }
+      ],
+      "result": {
+        "pioneerScore": 30,
+        "keeperScore": 6,
+        "score": 36,
+        "shippedWork": 9,
+        "completed": ["api"],
+        "incident": 0,
+        "lost": false
+      }
+    },
+    {
+      "mix": "keeper",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-229",
+        "mix": "keeper",
+        "pioneers": 1,
+        "keepers": 3,
+        "pioneerPerFeature": 10,
+        "pioneerIfNoFeature": -3,
+        "keeperPerSafe": 2,
+        "keeperPerIncident": -4,
+        "product": {
+          "version": 1,
+          "seed": "RI-229",
+          "board": "blocked",
+          "tick": 0,
+          "horizon": 3,
+          "capacity": 4,
+          "completeValue": 8,
+          "incidentIfIdle": 6,
+          "features": [
+            {
+              "id": "api",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "screen",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "billing",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            }
+          ],
+          "shippedWork": 0,
+          "completedValue": 0,
+          "incident": 0,
+          "periods": [],
+          "inputs": []
+        },
+        "pioneerScore": 0,
+        "keeperScore": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 4,
+            "screen": 0,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 3,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 2,
+            "billing": 2,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "pioneerScore": 20,
+        "keeperScore": -36,
+        "score": -16,
+        "shippedWork": 12,
+        "completed": ["api", "screen"],
+        "incident": 18,
+        "lost": false
+      }
+    },
+    {
+      "mix": "keeper",
+      "strategy": "spread",
+      "initial": {
+        "version": 1,
+        "seed": "RI-229",
+        "mix": "keeper",
+        "pioneers": 1,
+        "keepers": 3,
+        "pioneerPerFeature": 10,
+        "pioneerIfNoFeature": -3,
+        "keeperPerSafe": 2,
+        "keeperPerIncident": -4,
+        "product": {
+          "version": 1,
+          "seed": "RI-229",
+          "board": "blocked",
+          "tick": 0,
+          "horizon": 3,
+          "capacity": 4,
+          "completeValue": 8,
+          "incidentIfIdle": 6,
+          "features": [
+            {
+              "id": "api",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "screen",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "billing",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            }
+          ],
+          "shippedWork": 0,
+          "completedValue": 0,
+          "incident": 0,
+          "periods": [],
+          "inputs": []
+        },
+        "pioneerScore": 0,
+        "keeperScore": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 2,
+            "billing": 1,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "pioneerScore": 10,
+        "keeperScore": -36,
+        "score": -26,
+        "shippedWork": 12,
+        "completed": ["api"],
+        "incident": 18,
+        "lost": false
+      }
+    },
+    {
+      "mix": "keeper",
+      "strategy": "ops",
+      "initial": {
+        "version": 1,
+        "seed": "RI-229",
+        "mix": "keeper",
+        "pioneers": 1,
+        "keepers": 3,
+        "pioneerPerFeature": 10,
+        "pioneerIfNoFeature": -3,
+        "keeperPerSafe": 2,
+        "keeperPerIncident": -4,
+        "product": {
+          "version": 1,
+          "seed": "RI-229",
+          "board": "blocked",
+          "tick": 0,
+          "horizon": 3,
+          "capacity": 4,
+          "completeValue": 8,
+          "incidentIfIdle": 6,
+          "features": [
+            {
+              "id": "api",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "screen",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            },
+            {
+              "id": "billing",
+              "need": 5,
+              "done": 0,
+              "complete": false
+            }
+          ],
+          "shippedWork": 0,
+          "completedValue": 0,
+          "incident": 0,
+          "periods": [],
+          "inputs": []
+        },
+        "pioneerScore": 0,
+        "keeperScore": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 3,
+            "screen": 0,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 3,
+            "billing": 0,
+            "ops": 1
+          }
+        }
+      ],
+      "result": {
+        "pioneerScore": 10,
+        "keeperScore": 18,
+        "score": 28,
+        "shippedWork": 9,
+        "completed": ["api"],
+        "incident": 0,
+        "lost": false
+      }
+    }
+  ]
+}

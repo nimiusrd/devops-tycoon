@@ -151,19 +151,33 @@ export function summaryStatusToken(body) {
   return (body.match(/\*\*(?:Running|Queued|Completed|Failed)\*\*/g) ?? []).join(',');
 }
 
-export function extractCompletedRows(body) {
+export function extractSummaryRows(body) {
   const rows = [];
-  const summaryRow =
-    /\*\*(Running|Queued|Completed|Failed)\*\*(?: since)?([\s\S]*?)\|\s*`([0-9a-f]{7,40})`/gi;
-  for (const match of body.matchAll(summaryRow)) {
-    if (match[1].toLowerCase() !== 'completed') continue;
+  for (const line of body.split('\n')) {
+    const cells = line
+      .split('|')
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    if (cells.length < 3) continue;
+    const name = cells[0].match(/\*\*([^*]+)\*\*/)?.[1] ?? '';
+    const status = cells[1].match(/\*\*(Running|Queued|Completed|Failed)\*\*/i)?.[1] ?? '';
+    const sha = cells[2].match(/`([0-9a-f]{7,40})`/i)?.[1]?.toLowerCase() ?? '';
     const dated =
-      match[2].match(/datetime="([^"]+)"/) ??
-      match[2].match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)/);
-    if (!dated?.[1]) continue;
-    rows.push({ at: dated[1], sha: match[3].toLowerCase() });
+      cells[1].match(/datetime="([^"]+)"/) ??
+      cells[1].match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)/);
+    if (!name || !status || !sha) continue;
+    rows.push({ name, status: status.toLowerCase(), at: dated?.[1] ?? '', sha });
   }
   return rows;
+}
+
+export function extractCompletedRows(body) {
+  const rows = extractSummaryRows(body);
+  const codeReviews = rows.filter((row) => row.name === 'Code Review');
+  if (codeReviews.some((row) => row.status === 'failed')) return [];
+  return codeReviews
+    .filter((row) => row.status === 'completed' && row.at)
+    .map((row) => ({ at: row.at, sha: row.sha }));
 }
 
 export function isAfter(left, right) {
@@ -237,7 +251,10 @@ export function evaluateCodexReviewLabel({
   const summaryIsClean =
     summaryClean &&
     (!findings || (summaryClean.sha !== findings.sha && isAfter(summaryClean.at, findings.at)));
-  const clean = commentClean ?? (summaryIsClean ? summaryClean : null);
+  const clean =
+    summaryIsClean && (!commentClean || isAfter(summaryClean.at, commentClean.at))
+      ? summaryClean
+      : commentClean;
   const latestReviewAt = reviews.reduce((max, item) => (isAfter(item.at, max) ? item.at : max), '');
   const label = chooseCodexReviewLabel({
     fork,
@@ -366,6 +383,16 @@ function assertPattern(value, pattern, label) {
   if (!pattern.test(value)) throw new Error(`${label} が不正です: ${value}`);
 }
 
+export function isValidBaseRef(baseRef) {
+  if (typeof baseRef !== 'string' || baseRef.length === 0 || /[\0\r\n]/.test(baseRef)) return false;
+  try {
+    execFileSync('git', ['check-ref-format', `refs/heads/${baseRef}`], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function report(line) {
   console.log(line);
   const summaryPath = process.env.GITHUB_STEP_SUMMARY;
@@ -377,7 +404,7 @@ function loadSnapshot(repo, prNumber) {
   const headSha = String(pullRequest.head?.sha ?? '').toLowerCase();
   const baseRef = String(pullRequest.base?.ref ?? '');
   assertPattern(headSha, /^[0-9a-f]{40}$/, 'head sha');
-  assertPattern(baseRef, /^(?!\/)(?!.*\.\.)(?!.*\/\/)[A-Za-z0-9._/-]+$/, 'base ref');
+  if (!isValidBaseRef(baseRef)) throw new Error(`base ref が不正です: ${baseRef}`);
 
   const timeline = ghPages(`repos/${repo}/issues/${prNumber}/timeline?per_page=100`);
   const comments = ghPages(`repos/${repo}/issues/${prNumber}/comments?per_page=100`);

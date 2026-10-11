@@ -13,6 +13,7 @@ import {
   evaluateCodexReviewLabel,
   extractCompletedRows,
   extractNoFindings,
+  isValidBaseRef,
   extractReviews,
   formatDecisionLine,
   latestBaseChange,
@@ -267,6 +268,19 @@ describe('evaluateCodexReviewLabel', () => {
     expect(decision.label).toBe('clear');
   });
 
+  it('新しい完了サマリーを、同じheadを覆う古い指摘なしコメントより優先する', () => {
+    const decision = evaluateCodexReviewLabel({
+      ...baseInput,
+      noFindings: [{ at: '2026-10-11T02:00:00Z', sha: 'old-clean' }],
+      summaryCompleted: [{ at: '2026-10-11T05:00:00Z', sha: 'new-clean' }],
+      reviews: [review('findings', '2026-10-11T03:00:00Z')],
+      covers: covers('old-clean', 'findings', 'new-clean'),
+    });
+
+    expect(decision.label).toBe('clear');
+    expect(decision.clean?.sha).toBe('new-clean');
+  });
+
   it('古い指摘のあとに完了サマリーだけがheadへ届いたら指摘なし', () => {
     const decision = evaluateCodexReviewLabel({
       ...baseInput,
@@ -326,6 +340,20 @@ describe('Codexのコメントとレビューの読み取り', () => {
       { at: '2026-10-01T12:58:17.179862Z', sha: '30e6ca3' },
     ]);
     expect(summaryIsInProgress(html)).toBe(true);
+  });
+
+  it('Code Review が失敗しているサマリーは、別行の Completed を指摘なしにしない', () => {
+    const body = [
+      '| 📝 **Code Review** | ❌ **Failed** <relative-time datetime="2026-10-11T04:00:00Z">2026-10-11T04:00:00Z</relative-time> | `aaaaaaa` | PR opened |',
+      '| 📝 **Security Review** | ✅ **Completed** <relative-time datetime="2026-10-11T04:01:00Z">2026-10-11T04:01:00Z</relative-time> | `bbbbbbb` | PR opened |',
+    ].join('\n');
+
+    expect(extractCompletedRows(body)).toEqual([]);
+    expect(
+      extractCompletedRows(
+        '| 📝 **Security Review** | ✅ **Completed** 2026-10-11T04:00:00Z | `bbbbbbb` | Manual request |',
+      ),
+    ).toEqual([]);
   });
 
   it('いちばん新しいサマリーが Running または Queued のときだけ進行中', () => {
@@ -391,6 +419,8 @@ describe('ラベル定義', () => {
     const workflow = readFileSync('.github/workflows/codex-review-label.yml', 'utf8');
 
     expect(workflow).toContain('node scripts/codex-review-label.mjs');
+    expect(workflow).toContain('dismissed');
+    expect(workflow).toContain('github.sha');
     for (const spec of Object.values(CODEX_REVIEW_LABELS)) {
       expect(spec.description.length).toBeLessThanOrEqual(100);
       expect(spec.color).toMatch(/^[0-9A-F]{6}$/);
@@ -466,6 +496,20 @@ function commitFile(cwd: string, file: string, contents: string) {
   git(cwd, ['commit', '-m', file]);
   return git(cwd, ['rev-parse', 'HEAD']);
 }
+
+describe('isValidBaseRef', () => {
+  it('Gitが認めるブランチ名を通し、不正なrefを拒否する', () => {
+    expect(isValidBaseRef('main')).toBe(true);
+    expect(isValidBaseRef('release@next')).toBe(true);
+    expect(isValidBaseRef('release+hotfix')).toBe(true);
+    expect(isValidBaseRef('リリース')).toBe(true);
+    expect(isValidBaseRef('feature/topic')).toBe(true);
+    expect(isValidBaseRef('')).toBe(false);
+    expect(isValidBaseRef('has space')).toBe(false);
+    expect(isValidBaseRef('bad..name')).toBe(false);
+    expect(isValidBaseRef('lock.lock')).toBe(false);
+  });
+});
 
 describe('commitCoversHead', () => {
   it('headそのものと、baseの取り込みだけを挟んだ祖先を適用できるとみなす', () => {

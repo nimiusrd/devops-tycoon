@@ -1,0 +1,806 @@
+{
+  "seed": "RI-225",
+  "results": [
+    {
+      "board": "mature",
+      "strategy": "human",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "mature",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 3,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "human"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 26,
+        "reviewCost": 8,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "score": 18,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "mature",
+      "strategy": "delegate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "mature",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 3,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "delegate"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 26,
+        "reviewCost": 2,
+        "failure": 3,
+        "audit": 1,
+        "breach": 0,
+        "blocked": 0,
+        "score": 20,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "mature",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "mature",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 3,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "rush"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 26,
+        "reviewCost": 2,
+        "failure": 9,
+        "audit": 1,
+        "breach": 2,
+        "blocked": 1,
+        "score": 12,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "junior",
+      "strategy": "human",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "junior",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 1,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "human"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 26,
+        "reviewCost": 8,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "score": 18,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "junior",
+      "strategy": "delegate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "junior",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 1,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "delegate"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 26,
+        "reviewCost": 8,
+        "failure": 0,
+        "audit": 1,
+        "breach": 0,
+        "blocked": 0,
+        "score": 17,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "junior",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "junior",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 1,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "rush"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 26,
+        "reviewCost": 2,
+        "failure": 9,
+        "audit": 1,
+        "breach": 2,
+        "blocked": 1,
+        "score": 12,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "human",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 3,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i2",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i3",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i4",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "human"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 20,
+        "reviewCost": 8,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "score": 12,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "delegate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 3,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i2",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i3",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i4",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "delegate"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 20,
+        "reviewCost": 8,
+        "failure": 0,
+        "audit": 1,
+        "breach": 0,
+        "blocked": 0,
+        "score": 11,
+        "importantResidual": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-225",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 5,
+        "maturity": 3,
+        "maturityLine": 2,
+        "policy": null,
+        "index": 0,
+        "items": [
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i2",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i3",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          },
+          {
+            "id": "i4",
+            "risk": "important",
+            "value": 5,
+            "done": false,
+            "reviewed": false,
+            "residual": false,
+            "blocked": false
+          }
+        ],
+        "value": 0,
+        "reviewCost": 0,
+        "failure": 0,
+        "audit": 0,
+        "breach": 0,
+        "blocked": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt",
+          "policy": "rush"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        },
+        {
+          "type": "review"
+        }
+      ],
+      "result": {
+        "value": 20,
+        "reviewCost": 8,
+        "failure": 0,
+        "audit": 1,
+        "breach": 8,
+        "blocked": 4,
+        "score": 3,
+        "importantResidual": 0,
+        "lost": false
+      }
+    }
+  ]
+}

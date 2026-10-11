@@ -334,8 +334,16 @@ export function resolveCommit(cwd, sha) {
   }
 }
 
-// reviewed から head までが、base を取り込む2親マージだけで続いているか。
+// 判定コミットの内容が、base の取り込みだけで現在の head になっているか。
+// マージコミットの列に加え、main の上へ載せ直しただけのコミットも対象にする。
 export function commitCoversHead(cwd, reviewed, headSha, baseRef) {
+  if (coversByBaseMerges(cwd, reviewed, headSha, baseRef)) return true;
+  const merged = cleanMergeTree(cwd, reviewed, baseRef);
+  const tree = commitTree(cwd, headSha);
+  return merged !== '' && merged === tree;
+}
+
+function coversByBaseMerges(cwd, reviewed, headSha, baseRef) {
   if (!gitSucceeds(cwd, ['merge-base', '--is-ancestor', reviewed, headSha])) return false;
   let listed;
   try {
@@ -371,6 +379,22 @@ export function commitCoversHead(cwd, reviewed, headSha, baseRef) {
     expected = commit;
   }
   return true;
+}
+
+function cleanMergeTree(cwd, left, right) {
+  try {
+    return gitOutput(cwd, ['merge-tree', '--write-tree', left, right]);
+  } catch {
+    return '';
+  }
+}
+
+function commitTree(cwd, sha) {
+  try {
+    return gitOutput(cwd, ['rev-parse', `${sha}^{tree}`]);
+  } catch {
+    return '';
+  }
 }
 
 export function coveringCommit(cwd, sha, headSha, baseRef) {
@@ -467,8 +491,32 @@ function fetchPullRequestRefs(cwd, { baseRef, prNumber }) {
   );
 }
 
+function ensureReviewedCommit(cwd, repo, sha) {
+  if (!/^[0-9a-f]{7,40}$/.test(sha) || resolveCommit(cwd, sha)) return;
+  let full = /^[0-9a-f]{40}$/.test(sha) ? sha : '';
+  if (!full) {
+    try {
+      full = gh(['api', `repos/${repo}/commits/${sha}`, '--jq', '.sha'])
+        .trim()
+        .toLowerCase();
+    } catch {
+      return;
+    }
+  }
+  if (!/^[0-9a-f]{40}$/.test(full)) return;
+  try {
+    execFileSync('git', ['fetch', '--no-tags', '--quiet', 'origin', full], {
+      cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch {
+    // 取得できないコミットは判定に使わない。
+  }
+}
+
 function decide(snapshot, cwd, repo, prNumber) {
   fetchPullRequestRefs(cwd, { baseRef: snapshot.baseRef, prNumber });
+  const base = `refs/remotes/origin/${snapshot.baseRef}`;
   return evaluateCodexReviewLabel({
     fork: snapshot.headRepo !== repo,
     inProgress: snapshot.inProgress,
@@ -477,8 +525,10 @@ function decide(snapshot, cwd, repo, prNumber) {
     noFindings: snapshot.noFindings,
     summaryCompleted: snapshot.summaryCompleted,
     reviews: snapshot.reviews,
-    covers: (sha) =>
-      coveringCommit(cwd, sha, snapshot.headSha, `refs/remotes/origin/${snapshot.baseRef}`),
+    covers: (sha) => {
+      ensureReviewedCommit(cwd, repo, sha);
+      return coveringCommit(cwd, sha, snapshot.headSha, base);
+    },
   });
 }
 

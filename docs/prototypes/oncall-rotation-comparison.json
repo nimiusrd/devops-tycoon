@@ -1,0 +1,581 @@
+{
+  "seed": "RI-221",
+  "results": [
+    {
+      "board": "quiet",
+      "strategy": "ace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "quiet",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 0,
+        "incidentTotal": 0,
+        "penalty": 0,
+        "penaltyApplied": true,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ace"
+        },
+        {
+          "type": "assign",
+          "id": "ace"
+        }
+      ],
+      "result": {
+        "shipped": 4,
+        "fatigue": 4,
+        "unresolved": 0,
+        "score": 0,
+        "incidentLeft": 0,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 0
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "quiet",
+      "strategy": "junior",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "quiet",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 0,
+        "incidentTotal": 0,
+        "penalty": 0,
+        "penaltyApplied": true,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "jun"
+        },
+        {
+          "type": "assign",
+          "id": "jun"
+        }
+      ],
+      "result": {
+        "shipped": 8,
+        "fatigue": 2,
+        "unresolved": 0,
+        "score": 6,
+        "incidentLeft": 0,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 2
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "quiet",
+      "strategy": "rotate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "quiet",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 0,
+        "incidentTotal": 0,
+        "penalty": 0,
+        "penaltyApplied": true,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "jun"
+        },
+        {
+          "type": "assign",
+          "id": "ace"
+        }
+      ],
+      "result": {
+        "shipped": 6,
+        "fatigue": 3,
+        "unresolved": 0,
+        "score": 3,
+        "incidentLeft": 0,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 1
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "severe",
+      "strategy": "ace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "severe",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 5,
+        "incidentTotal": 5,
+        "penalty": 12,
+        "penaltyApplied": false,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ace"
+        },
+        {
+          "type": "assign",
+          "id": "ace"
+        }
+      ],
+      "result": {
+        "shipped": 4,
+        "fatigue": 4,
+        "unresolved": 0,
+        "score": 0,
+        "incidentLeft": 0,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 0
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "severe",
+      "strategy": "junior",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "severe",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 5,
+        "incidentTotal": 5,
+        "penalty": 12,
+        "penaltyApplied": false,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "jun"
+        },
+        {
+          "type": "assign",
+          "id": "jun"
+        }
+      ],
+      "result": {
+        "shipped": 8,
+        "fatigue": 2,
+        "unresolved": 12,
+        "score": -6,
+        "incidentLeft": 3,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 2
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "severe",
+      "strategy": "rotate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "severe",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 5,
+        "incidentTotal": 5,
+        "penalty": 12,
+        "penaltyApplied": false,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "jun"
+        },
+        {
+          "type": "assign",
+          "id": "ace"
+        }
+      ],
+      "result": {
+        "shipped": 6,
+        "fatigue": 3,
+        "unresolved": 12,
+        "score": -9,
+        "incidentLeft": 1,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 1
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "mixed",
+      "strategy": "ace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "mixed",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 4,
+        "incidentTotal": 4,
+        "penalty": 8,
+        "penaltyApplied": false,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "ace"
+        },
+        {
+          "type": "assign",
+          "id": "ace"
+        }
+      ],
+      "result": {
+        "shipped": 4,
+        "fatigue": 4,
+        "unresolved": 0,
+        "score": 0,
+        "incidentLeft": 0,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 0
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "mixed",
+      "strategy": "junior",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "mixed",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 4,
+        "incidentTotal": 4,
+        "penalty": 8,
+        "penaltyApplied": false,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "jun"
+        },
+        {
+          "type": "assign",
+          "id": "jun"
+        }
+      ],
+      "result": {
+        "shipped": 8,
+        "fatigue": 2,
+        "unresolved": 8,
+        "score": -2,
+        "incidentLeft": 2,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 2
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "mixed",
+      "strategy": "rotate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-221",
+        "board": "mixed",
+        "tick": 0,
+        "horizon": 2,
+        "onCall": null,
+        "incidentLeft": 4,
+        "incidentTotal": 4,
+        "penalty": 8,
+        "penaltyApplied": false,
+        "shipped": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2,
+            "fatigue": 0,
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1,
+            "fatigue": 0,
+            "experience": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "id": "jun"
+        },
+        {
+          "type": "assign",
+          "id": "ace"
+        }
+      ],
+      "result": {
+        "shipped": 6,
+        "fatigue": 3,
+        "unresolved": 0,
+        "score": 3,
+        "incidentLeft": 0,
+        "experience": [
+          {
+            "id": "ace",
+            "experience": 0
+          },
+          {
+            "id": "jun",
+            "experience": 1
+          }
+        ],
+        "lost": false
+      }
+    }
+  ]
+}

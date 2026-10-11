@@ -118,7 +118,7 @@ export function viewOnCallRotation(state: OnCallState) {
 
 export function summarizeOnCallRotation(state: OnCallState) {
   const fatigue = state.people.reduce((sum, candidate) => sum + candidate.fatigue, 0);
-  const unresolved = state.incidentLeft > 0 ? state.penalty : 0;
+  const unresolved = state.penaltyApplied && state.incidentLeft > 0 ? state.penalty : 0;
   return {
     shipped: state.shipped,
     fatigue,

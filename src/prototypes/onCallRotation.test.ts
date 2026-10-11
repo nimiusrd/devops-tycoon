@@ -46,6 +46,19 @@ describe('RI-221 当番の持ち回り', () => {
     expect(apply(twice, { type: 'view' })).toBe(twice);
   });
 
+  it('未解決の罰は期末に確定するまで集計しない', () => {
+    const initial = create('RI-221', 'severe');
+    expect(summarizeOnCallRotation(initial)).toMatchObject({
+      unresolved: 0,
+      score: 0,
+      lost: false,
+    });
+    const mid = apply(initial, { type: 'assign', id: 'jun' });
+    expect(mid.tick).toBeLessThan(mid.horizon);
+    expect(mid.penaltyApplied).toBe(false);
+    expect(summarizeOnCallRotation(mid)).toMatchObject({ unresolved: 0, incidentLeft: 4 });
+  });
+
   it('同じ人を当番に固定でき、未解決でも敗北にしない', () => {
     let ace = create('RI-221', 'severe');
     while (ace.tick < ace.horizon) ace = apply(ace, { type: 'assign', id: 'ace' });

@@ -17,8 +17,9 @@ export interface ExceptionState {
   board: ExceptionBoard;
   tick: number;
   horizon: number;
-  charter: true;
+  charter: boolean;
   limit: typeof SMALL_PR_LIMIT;
+  urgentSize: number;
   urgentValue: number;
   urgentDeadline: 0;
   urgentDone: boolean;
@@ -49,6 +50,7 @@ export function createCharterException(seed: string, board: ExceptionBoard): Exc
     horizon: 4,
     charter: true,
     limit: SMALL_PR_LIMIT,
+    urgentSize: 4,
     urgentValue: preset.urgent,
     urgentDeadline: 0,
     urgentDone: false,
@@ -81,6 +83,7 @@ export function applyCharterException(
   if (state.tick >= state.horizon) return state;
   if (input.type === 'except') {
     if (
+      !charterBlocks(state.charter, state.urgentSize) ||
       state.exceptionUsed ||
       state.urgentDone ||
       state.urgentExpired ||
@@ -99,7 +102,7 @@ export function applyCharterException(
     return next;
   }
   if (input.type === 'ship-large') {
-    if (charterBlocks(state.charter, 4)) return state;
+    if (charterBlocks(state.charter, state.urgentSize)) return state;
     const next = structuredClone(state);
     next.value += 20;
     next.tick += 1;
@@ -125,16 +128,19 @@ export function viewCharterException(state: ExceptionState) {
     brokenFor:
       state.exceptionTick === null ? null : 'tick ' + String(state.exceptionTick) + ' の1期間',
     urgent: {
+      size: state.urgentSize,
       done: state.urgentDone,
       expired: state.urgentExpired,
       deadline: state.urgentDeadline,
+      blocked: charterBlocks(state.charter, state.urgentSize),
     },
     followUp: {
       tick: state.followUpTick,
       applied: state.followUpApplied,
       trustCost: state.trustCost,
+      scheduledCost: state.followUpCost,
     },
-    blockedLarge: charterBlocks(state.charter, 4),
+    blockedLarge: charterBlocks(state.charter, state.urgentSize),
   };
 }
 
@@ -158,6 +164,7 @@ export function chooseExceptionAction(
 ): ExceptionInput {
   if (
     strategy === 'except' &&
+    charterBlocks(state.charter, state.urgentSize) &&
     !state.exceptionUsed &&
     !state.urgentDone &&
     !state.urgentExpired &&

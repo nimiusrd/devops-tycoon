@@ -22,10 +22,19 @@ describe('RI-220 憲章の例外', () => {
       limit: 2,
       brokenFor: null,
       blockedLarge: true,
-      followUp: { tick: 3, applied: false, trustCost: 0 },
+      urgent: { size: 4, blocked: true },
+      followUp: { tick: 3, applied: false, trustCost: 0, scheduledCost: 4 },
     });
+    expect(viewCharterException(create('RI-220', 'precedent')).followUp.scheduledCost).toBe(8);
     blank.followUp.trustCost = 99;
-    expect(viewCharterException(first).followUp.trustCost).toBe(0);
+    blank.followUp.scheduledCost = 1;
+    expect(viewCharterException(first).followUp).toMatchObject({ trustCost: 0, scheduledCost: 4 });
+    const allowed = { ...first, charter: false };
+    expect(apply(allowed, { type: 'except' })).toBe(allowed);
+    expect(allowed.exceptionUsed).toBe(false);
+    expect(chooseExceptionAction(allowed, 'except')).toEqual({ type: 'ship' });
+    const small = { ...first, urgentSize: 2 };
+    expect(apply(small, { type: 'except' })).toBe(small);
   });
 
   it('例外は1件だけで、その後も大きい出荷は禁止され、後日談は一度だけ引く', () => {

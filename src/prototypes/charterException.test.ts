@@ -61,7 +61,11 @@ describe('RI-220 憲章の例外', () => {
       urgentDone: true,
       tick: 1,
     });
-    expect(viewCharterException(state).brokenFor).toBe('tick 0 の1期間');
+    expect(viewCharterException(state)).toMatchObject({
+      brokenFor: 'tick 0 の1期間',
+      urgent: { done: true, expired: false, blocked: false },
+      blockedLarge: true,
+    });
     expect(apply(state, { type: 'except' })).toBe(state);
     expect(apply(state, { type: 'ship-large' })).toBe(state);
     while (state.tick < state.horizon) state = apply(state, { type: 'ship' });
@@ -87,6 +91,11 @@ describe('RI-220 憲章の例外', () => {
       lost: false,
     });
     expect(viewCharterException(held).followUp.scheduledCost).toBeNull();
+    expect(viewCharterException(held).urgent).toMatchObject({
+      expired: true,
+      done: false,
+      blocked: false,
+    });
     let idle = create('RI-220', 'deadline');
     while (idle.tick < idle.horizon) idle = apply(idle, { type: 'wait' });
     expect(summarizeCharterException(idle)).toMatchObject({ value: 0, trustCost: 0, lost: false });

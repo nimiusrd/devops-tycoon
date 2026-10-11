@@ -161,7 +161,8 @@ export function viewCharterException(state: ExceptionState) {
       done: state.urgentDone,
       expired: state.urgentExpired,
       deadline: state.urgentDeadline,
-      blocked: charterBlocks(state.charter, state.urgentSize),
+      blocked:
+        charterBlocks(state.charter, state.urgentSize) && !state.urgentDone && !state.urgentExpired,
     },
     followUp: {
       tick: state.followUpTick,

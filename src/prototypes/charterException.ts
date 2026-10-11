@@ -6,6 +6,7 @@ export type ExceptionBoard = 'deadline' | 'precedent';
 export type ExceptionStrategy = 'hold' | 'except';
 export type ExceptionInput =
   | { type: 'except' }
+  | { type: 'ship-urgent' }
   | { type: 'ship' }
   | { type: 'ship-large' }
   | { type: 'wait' }
@@ -101,6 +102,23 @@ export function applyCharterException(
     expireAndFollowUp(next);
     return next;
   }
+  if (input.type === 'ship-urgent') {
+    if (
+      charterBlocks(state.charter, state.urgentSize) ||
+      state.urgentDone ||
+      state.urgentExpired ||
+      state.tick > state.urgentDeadline
+    ) {
+      return state;
+    }
+    const next = structuredClone(state);
+    next.urgentDone = true;
+    next.value += next.urgentValue;
+    next.tick += 1;
+    next.inputs.push({ type: 'ship-urgent' });
+    expireAndFollowUp(next);
+    return next;
+  }
   if (input.type === 'ship-large') {
     if (charterBlocks(state.charter, state.urgentSize)) return state;
     const next = structuredClone(state);
@@ -119,12 +137,23 @@ export function applyCharterException(
   return next;
 }
 
+function scheduledFollowUp(state: ExceptionState): number | null {
+  if (state.followUpApplied) return null;
+  const stillPossible =
+    state.exceptionUsed ||
+    (charterBlocks(state.charter, state.urgentSize) &&
+      !state.urgentDone &&
+      !state.urgentExpired &&
+      state.tick <= state.urgentDeadline);
+  return stillPossible ? state.followUpCost : null;
+}
+
 export function viewCharterException(state: ExceptionState) {
   return {
     tick: state.tick,
     horizon: state.horizon,
     charter: state.charter,
-    limit: state.limit,
+    limit: state.charter ? state.limit : null,
     brokenFor:
       state.exceptionTick === null ? null : 'tick ' + String(state.exceptionTick) + ' の1期間',
     urgent: {
@@ -138,7 +167,7 @@ export function viewCharterException(state: ExceptionState) {
       tick: state.followUpTick,
       applied: state.followUpApplied,
       trustCost: state.trustCost,
-      scheduledCost: state.followUpCost,
+      scheduledCost: scheduledFollowUp(state),
     },
     blockedLarge: charterBlocks(state.charter, state.urgentSize),
   };
@@ -164,13 +193,14 @@ export function chooseExceptionAction(
 ): ExceptionInput {
   if (
     strategy === 'except' &&
-    charterBlocks(state.charter, state.urgentSize) &&
     !state.exceptionUsed &&
     !state.urgentDone &&
     !state.urgentExpired &&
     state.tick <= state.urgentDeadline
   ) {
-    return { type: 'except' };
+    return charterBlocks(state.charter, state.urgentSize)
+      ? { type: 'except' }
+      : { type: 'ship-urgent' };
   }
   return { type: 'ship' };
 }

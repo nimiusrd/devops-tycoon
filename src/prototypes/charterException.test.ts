@@ -30,11 +30,26 @@ describe('RI-220 憲章の例外', () => {
     blank.followUp.scheduledCost = 1;
     expect(viewCharterException(first).followUp).toMatchObject({ trustCost: 0, scheduledCost: 4 });
     const allowed = { ...first, charter: false };
+    expect(viewCharterException(allowed)).toMatchObject({
+      charter: false,
+      limit: null,
+      blockedLarge: false,
+      followUp: { scheduledCost: null },
+    });
     expect(apply(allowed, { type: 'except' })).toBe(allowed);
-    expect(allowed.exceptionUsed).toBe(false);
-    expect(chooseExceptionAction(allowed, 'except')).toEqual({ type: 'ship' });
+    expect(chooseExceptionAction(allowed, 'except')).toEqual({ type: 'ship-urgent' });
+    const shipped = apply(allowed, { type: 'ship-urgent' });
+    expect(shipped).toMatchObject({
+      urgentDone: true,
+      exceptionUsed: false,
+      exceptionTick: null,
+      value: 12,
+      trustCost: 0,
+    });
+    expect(viewCharterException(shipped).followUp.scheduledCost).toBeNull();
     const small = { ...first, urgentSize: 2 };
     expect(apply(small, { type: 'except' })).toBe(small);
+    expect(apply(first, { type: 'ship-urgent' })).toBe(first);
   });
 
   it('例外は1件だけで、その後も大きい出荷は禁止され、後日談は一度だけ引く', () => {
@@ -54,7 +69,11 @@ describe('RI-220 憲章の例外', () => {
     const once = summarizeCharterException(state);
     expect(apply(state, { type: 'view' })).toBe(state);
     expect(summarizeCharterException(state)).toEqual(once);
-    expect(viewCharterException(state).followUp.trustCost).toBe(4);
+    expect(viewCharterException(state).followUp).toMatchObject({
+      trustCost: 4,
+      applied: true,
+      scheduledCost: null,
+    });
   });
 
   it('維持しても例外でも成果と代償があり、全待ちは敗北にしない', () => {
@@ -67,6 +86,7 @@ describe('RI-220 憲章の例外', () => {
       exceptionUsed: false,
       lost: false,
     });
+    expect(viewCharterException(held).followUp.scheduledCost).toBeNull();
     let idle = create('RI-220', 'deadline');
     while (idle.tick < idle.horizon) idle = apply(idle, { type: 'wait' });
     expect(summarizeCharterException(idle)).toMatchObject({ value: 0, trustCost: 0, lost: false });

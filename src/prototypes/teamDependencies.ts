@@ -25,7 +25,10 @@ export interface DependencyEdge {
 }
 
 export type DependencyInput =
-  { type: 'support'; team: TeamId } | { type: 'view'; team: TeamId } | { type: 'wait' };
+  | { type: 'support'; team: TeamId }
+  | { type: 'support-batch'; teams: TeamId[] }
+  | { type: 'view'; team: TeamId }
+  | { type: 'wait' };
 
 export interface DependencyState {
   version: 1;
@@ -190,7 +193,11 @@ export function supportMany(state: DependencyState, teams: readonly TeamId[]): D
     next.delivered.push({ id: job.id, tick: next.tick, value: deliveryValue(job, next.tick) });
   }
   next.tick += 1;
-  teams.forEach((team) => next.inputs.push({ type: 'support', team }));
+  next.inputs.push(
+    teams.length === 1
+      ? { type: 'support', team: teams[0] }
+      : { type: 'support-batch', teams: [...teams] },
+  );
   return next;
 }
 
@@ -212,8 +219,9 @@ export function applyTeamDependency(
     next.inputs.push({ type: 'wait' });
     return next;
   }
-  if (input.type !== 'support') return state;
-  return supportMany(state, [input.team]);
+  if (input.type === 'support') return supportMany(state, [input.team]);
+  if (input.type === 'support-batch') return supportMany(state, input.teams);
+  return state;
 }
 
 export function viewTeamDependencies(state: DependencyState) {

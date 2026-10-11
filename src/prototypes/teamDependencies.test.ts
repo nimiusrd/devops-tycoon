@@ -47,6 +47,16 @@ describe('RI-216 チーム間の依存', () => {
     expect(jobEligible(forward, 'feature')).toBe(true);
     expect(jobEligible(forward, 'followup')).toBe(true);
     expect(forward.wasted).toBe(1);
+    expect(forward.inputs[forward.inputs.length - 1]).toEqual({
+      type: 'support-batch',
+      teams: ['platform', 'product'],
+    });
+    expect(forward.tick).toBe(opening.tick + 1);
+    const replayed = apply(JSON.parse(JSON.stringify(opening)), {
+      type: 'support-batch',
+      teams: ['platform', 'product'],
+    });
+    expect(replayed).toEqual(forward);
   });
 
   it('期限を過ぎた独立仕事は価値が落ち、閲覧の有無では結果が変わらない', () => {

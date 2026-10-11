@@ -1,0 +1,419 @@
+{
+  "seed": "RI-230",
+  "results": [
+    {
+      "board": "cash",
+      "strategy": "customFirst",
+      "initial": {
+        "version": 1,
+        "seed": "RI-230",
+        "board": "cash",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customDone": 0,
+        "sharedDone": 0,
+        "customComplete": false,
+        "sharedComplete": false,
+        "customPaid": false,
+        "sharedPaid": false,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "cash": 0,
+        "upkeep": 0,
+        "servedCustom": 0,
+        "servedShared": 0,
+        "bill": 10,
+        "missPenalty": 8,
+        "missedBill": false,
+        "slack": 1,
+        "upkeepWeight": 0,
+        "upkeepPenalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        }
+      ],
+      "result": {
+        "cash": 16,
+        "miss": 0,
+        "upkeepPenalty": 0,
+        "servedCustom": 1,
+        "servedShared": 4,
+        "score": 16,
+        "lost": false
+      }
+    },
+    {
+      "board": "cash",
+      "strategy": "sharedFirst",
+      "initial": {
+        "version": 1,
+        "seed": "RI-230",
+        "board": "cash",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customDone": 0,
+        "sharedDone": 0,
+        "customComplete": false,
+        "sharedComplete": false,
+        "customPaid": false,
+        "sharedPaid": false,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "cash": 0,
+        "upkeep": 0,
+        "servedCustom": 0,
+        "servedShared": 0,
+        "bill": 10,
+        "missPenalty": 8,
+        "missedBill": false,
+        "slack": 1,
+        "upkeepWeight": 0,
+        "upkeepPenalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        }
+      ],
+      "result": {
+        "cash": 16,
+        "miss": 8,
+        "upkeepPenalty": 0,
+        "servedCustom": 1,
+        "servedShared": 4,
+        "score": 8,
+        "lost": false
+      }
+    },
+    {
+      "board": "cash",
+      "strategy": "customOnly",
+      "initial": {
+        "version": 1,
+        "seed": "RI-230",
+        "board": "cash",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customDone": 0,
+        "sharedDone": 0,
+        "customComplete": false,
+        "sharedComplete": false,
+        "customPaid": false,
+        "sharedPaid": false,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "cash": 0,
+        "upkeep": 0,
+        "servedCustom": 0,
+        "servedShared": 0,
+        "bill": 10,
+        "missPenalty": 8,
+        "missedBill": false,
+        "slack": 1,
+        "upkeepWeight": 0,
+        "upkeepPenalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        }
+      ],
+      "result": {
+        "cash": 12,
+        "miss": 0,
+        "upkeepPenalty": 0,
+        "servedCustom": 1,
+        "servedShared": 0,
+        "score": 12,
+        "lost": false
+      }
+    },
+    {
+      "board": "upkeep",
+      "strategy": "customFirst",
+      "initial": {
+        "version": 1,
+        "seed": "RI-230",
+        "board": "upkeep",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customDone": 0,
+        "sharedDone": 0,
+        "customComplete": false,
+        "sharedComplete": false,
+        "customPaid": false,
+        "sharedPaid": false,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "cash": 0,
+        "upkeep": 0,
+        "servedCustom": 0,
+        "servedShared": 0,
+        "bill": 0,
+        "missPenalty": 8,
+        "missedBill": false,
+        "slack": 1,
+        "upkeepWeight": 4,
+        "upkeepPenalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        }
+      ],
+      "result": {
+        "cash": 16,
+        "miss": 0,
+        "upkeepPenalty": 28,
+        "servedCustom": 1,
+        "servedShared": 4,
+        "score": -12,
+        "lost": false
+      }
+    },
+    {
+      "board": "upkeep",
+      "strategy": "sharedFirst",
+      "initial": {
+        "version": 1,
+        "seed": "RI-230",
+        "board": "upkeep",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customDone": 0,
+        "sharedDone": 0,
+        "customComplete": false,
+        "sharedComplete": false,
+        "customPaid": false,
+        "sharedPaid": false,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "cash": 0,
+        "upkeep": 0,
+        "servedCustom": 0,
+        "servedShared": 0,
+        "bill": 0,
+        "missPenalty": 8,
+        "missedBill": false,
+        "slack": 1,
+        "upkeepWeight": 4,
+        "upkeepPenalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 0,
+            "shared": 4
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        }
+      ],
+      "result": {
+        "cash": 16,
+        "miss": 0,
+        "upkeepPenalty": 12,
+        "servedCustom": 1,
+        "servedShared": 4,
+        "score": 4,
+        "lost": false
+      }
+    },
+    {
+      "board": "upkeep",
+      "strategy": "customOnly",
+      "initial": {
+        "version": 1,
+        "seed": "RI-230",
+        "board": "upkeep",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customDone": 0,
+        "sharedDone": 0,
+        "customComplete": false,
+        "sharedComplete": false,
+        "customPaid": false,
+        "sharedPaid": false,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "cash": 0,
+        "upkeep": 0,
+        "servedCustom": 0,
+        "servedShared": 0,
+        "bill": 0,
+        "missPenalty": 8,
+        "missedBill": false,
+        "slack": 1,
+        "upkeepWeight": 4,
+        "upkeepPenalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "custom": 4,
+            "shared": 0
+          }
+        }
+      ],
+      "result": {
+        "cash": 12,
+        "miss": 0,
+        "upkeepPenalty": 24,
+        "servedCustom": 1,
+        "servedShared": 0,
+        "score": -12,
+        "lost": false
+      }
+    }
+  ]
+}

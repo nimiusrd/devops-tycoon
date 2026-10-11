@@ -1,0 +1,743 @@
+{
+  "seed": "RI-224",
+  "results": [
+    {
+      "board": "local",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "local",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 4,
+        "incidentLeft": 4,
+        "penaltyEach": 5,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 0,
+            "bravo": 0,
+            "spare": 0
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 48,
+        "recovered": 0,
+        "incidentLeft": 4,
+        "penalty": 20,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 28,
+        "lost": false
+      }
+    },
+    {
+      "board": "local",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "local",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 4,
+        "incidentLeft": 4,
+        "penaltyEach": 5,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 0,
+            "bravo": 0,
+            "spare": 4
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 40,
+        "recovered": 4,
+        "incidentLeft": 0,
+        "penalty": 0,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 40,
+        "lost": false
+      }
+    },
+    {
+      "board": "local",
+      "strategy": "spread",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "local",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 4,
+        "incidentLeft": 4,
+        "penaltyEach": 5,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 2,
+            "bravo": 2,
+            "spare": 2
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 36,
+        "recovered": 4,
+        "incidentLeft": 0,
+        "penalty": 0,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 36,
+        "lost": false
+      }
+    },
+    {
+      "board": "wide",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "wide",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 6,
+        "incidentLeft": 6,
+        "penaltyEach": 6,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 0,
+            "bravo": 0,
+            "spare": 0
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 48,
+        "recovered": 0,
+        "incidentLeft": 6,
+        "penalty": 36,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 12,
+        "lost": false
+      }
+    },
+    {
+      "board": "wide",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "wide",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 6,
+        "incidentLeft": 6,
+        "penaltyEach": 6,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 0,
+            "bravo": 0,
+            "spare": 4
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 40,
+        "recovered": 4,
+        "incidentLeft": 2,
+        "penalty": 12,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 28,
+        "lost": false
+      }
+    },
+    {
+      "board": "wide",
+      "strategy": "spread",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "wide",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 6,
+        "incidentLeft": 6,
+        "penaltyEach": 6,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 2,
+            "bravo": 2,
+            "spare": 2
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 36,
+        "recovered": 6,
+        "incidentLeft": 0,
+        "penalty": 0,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 36,
+        "lost": false
+      }
+    },
+    {
+      "board": "deadline",
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "deadline",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 4,
+        "incidentLeft": 4,
+        "penaltyEach": 3,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 6,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 0,
+            "bravo": 0,
+            "spare": 0
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 80,
+        "recovered": 0,
+        "incidentLeft": 4,
+        "penalty": 12,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 68,
+        "lost": false
+      }
+    },
+    {
+      "board": "deadline",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "deadline",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 4,
+        "incidentLeft": 4,
+        "penaltyEach": 3,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 6,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 0,
+            "bravo": 0,
+            "spare": 4
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 72,
+        "recovered": 4,
+        "incidentLeft": 0,
+        "penalty": 0,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 72,
+        "lost": false
+      }
+    },
+    {
+      "board": "deadline",
+      "strategy": "spread",
+      "initial": {
+        "version": 1,
+        "seed": "RI-224",
+        "board": "deadline",
+        "tick": 0,
+        "horizon": 3,
+        "duration": 1,
+        "phase": "plan",
+        "incident": 4,
+        "incidentLeft": 4,
+        "penaltyEach": 3,
+        "penalty": 0,
+        "penaltyApplied": false,
+        "recovered": 0,
+        "resolved": false,
+        "returned": false,
+        "shipped": 0,
+        "teams": [
+          {
+            "id": "alpha",
+            "capacity": 4,
+            "output": 6,
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "capacity": 4,
+            "output": 2,
+            "loaned": 0
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "dispatch",
+          "loans": {
+            "alpha": 2,
+            "bravo": 2,
+            "spare": 2
+          }
+        },
+        {
+          "type": "resolve"
+        },
+        {
+          "type": "return"
+        }
+      ],
+      "result": {
+        "shipped": 60,
+        "recovered": 4,
+        "incidentLeft": 0,
+        "penalty": 0,
+        "returned": true,
+        "loaned": [
+          {
+            "id": "alpha",
+            "loaned": 0
+          },
+          {
+            "id": "bravo",
+            "loaned": 0
+          },
+          {
+            "id": "spare",
+            "loaned": 0
+          }
+        ],
+        "score": 60,
+        "lost": false
+      }
+    }
+  ]
+}

@@ -199,7 +199,7 @@
         "missed": 2,
         "penalty": 10,
         "wastedReserve": 4,
-        "waitPeriods": 7,
+        "waitPeriods": 5,
         "score": 6,
         "queue": 0,
         "lost": false
@@ -250,7 +250,7 @@
         "missed": 1,
         "penalty": 5,
         "wastedReserve": 6,
-        "waitPeriods": 3,
+        "waitPeriods": 2,
         "score": 7,
         "queue": 0,
         "lost": false
@@ -301,7 +301,7 @@
         "missed": 4,
         "penalty": 20,
         "wastedReserve": 6,
-        "waitPeriods": 12,
+        "waitPeriods": 8,
         "score": -2,
         "queue": 0,
         "lost": false

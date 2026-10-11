@@ -92,7 +92,7 @@ export function allocateConsult(state: FocusState, reserve: number): FocusState 
   const kept: ConsultQuestion[] = [];
   for (const question of next.queue) {
     question.wait += 1;
-    next.waitPeriods += question.wait;
+    next.waitPeriods += 1;
     if (question.wait > next.slack) {
       next.missed += 1;
       next.penalty += next.penaltyEach;

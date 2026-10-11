@@ -74,6 +74,9 @@ describe('RI-222 集中時間と相談時間', () => {
     expect([score('steady', 'always'), score('steady', 'short'), score('steady', 'long')]).toEqual([
       -12, -16, -24,
     ]);
+    expect(
+      rows.find((row) => row.board === 'burst' && row.strategy === 'long')!.result.waitPeriods,
+    ).toBe(8);
     for (const row of rows) expect(row.result.lost).toBe(false);
   });
 

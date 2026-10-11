@@ -4,10 +4,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // オープンな同一リポジトリのPRに、Codexの状態を表すラベルを一つだけ付ける。
-// 指摘なしは、指摘なしコメントか、指摘レビューを伴わない完了サマリーが現在のheadに適用でき、
-// その後のレビューと未解決スレッドがないとき。
-// 未解決スレッドか、ベース変更後もheadへ適用できる指摘レビューがあれば指摘あり。
-// どちらでもなければ未レビュー・レビュー中。フォークはラベルを外し、閉じたPRは変えない。
+// 現在のheadへの指摘なし判定か指摘あり判定があればそのラベルを付け、
+// どちらの判定でもなければ未レビュー・レビュー中にする。
+// フォークはラベルを外し、閉じたPRは変えない。
 
 export const CODEX_LOGIN = 'chatgpt-codex-connector';
 export const CODEX_BOT_LOGIN = `${CODEX_LOGIN}[bot]`;
@@ -28,13 +27,13 @@ export const CODEX_REVIEW_LABELS = {
     name: 'codex/指摘あり',
     color: 'D93F0B',
     description:
-      'Codexの未解決スレッドがあるか、ベース変更後の指摘レビューが現在のheadに適用できる。詳細はActionsのCodex review label。',
+      'ベース変更後の指摘レビューが現在のheadに適用できる。詳細はActionsのCodex review label。',
   },
   pending: {
     name: 'codex/未レビュー・レビュー中',
     color: 'FBCA04',
     description:
-      '現在のheadに適用できるCodexの完了判定がなく、未解決スレッドもない。レビュー進行中も含む。詳細はActionsのCodex review label。',
+      '指摘なしにも指摘ありにも判定されていない。レビュー進行中も含む。詳細はActionsのCodex review label。',
   },
 };
 
@@ -203,9 +202,13 @@ export function chooseCodexReviewLabel({
   if (inProgress) return 'pending';
   const reviewAfterClean = cleanAt !== '' && isAfter(latestReviewAt, cleanAt);
   if (cleanAt !== '' && !reviewAfterClean && unresolved === 0) return 'clear';
-  if (unresolved > 0) return 'findings';
-  if (findingsCoverAt !== '' && (cleanAt === '' || isAfter(findingsCoverAt, cleanAt)))
+  // 未解決スレッドだけでは指摘ありにしない。headへ適用できる指摘レビューがあるときだけ指摘あり。
+  if (
+    findingsCoverAt !== '' &&
+    (cleanAt === '' || isAfter(findingsCoverAt, cleanAt) || unresolved > 0)
+  ) {
     return 'findings';
+  }
   return 'pending';
 }
 

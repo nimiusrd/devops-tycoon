@@ -97,7 +97,7 @@ describe('chooseCodexReviewLabel', () => {
     ).toBe('pending');
   });
 
-  it('未解決スレッドは指摘あり', () => {
+  it('未解決スレッドだけでは指摘ありにしない', () => {
     expect(
       chooseCodexReviewLabel({
         fork: false,
@@ -105,6 +105,19 @@ describe('chooseCodexReviewLabel', () => {
         cleanAt: '2026-10-11T04:00:00Z',
         latestReviewAt: '2026-10-11T03:00:00Z',
         findingsCoverAt: '',
+        unresolved: 1,
+      }),
+    ).toBe('pending');
+  });
+
+  it('headを覆う指摘レビューが残っていれば、未解決のあいだは指摘あり', () => {
+    expect(
+      chooseCodexReviewLabel({
+        fork: false,
+        inProgress: false,
+        cleanAt: '2026-10-11T04:00:00Z',
+        latestReviewAt: '2026-10-11T03:00:00Z',
+        findingsCoverAt: '2026-10-11T03:00:00Z',
         unresolved: 1,
       }),
     ).toBe('findings');
@@ -139,16 +152,28 @@ describe('evaluateCodexReviewLabel', () => {
     expect(decision.label).toBe('pending');
   });
 
-  it('ベース変更後も未解決なら指摘あり', () => {
+  it('ベース変更で判定が無効なら、未解決スレッドが残っていても未レビュー', () => {
     const decision = evaluateCodexReviewLabel({
       ...baseInput,
       unresolved: 2,
       baseChangedAt: '2026-10-11T03:00:00Z',
       noFindings: [{ at: '2026-10-11T02:00:00Z', sha: 'old' }],
+      reviews: [review('old', '2026-10-11T01:00:00Z')],
       covers: covers('old'),
     });
 
-    expect(decision.label).toBe('findings');
+    expect(decision.label).toBe('pending');
+  });
+
+  it('headを覆わない未解決だけでは指摘ありにしない', () => {
+    const decision = evaluateCodexReviewLabel({
+      ...baseInput,
+      unresolved: 3,
+      reviews: [review('stale', '2026-10-11T02:00:00Z')],
+      covers: covers(),
+    });
+
+    expect(decision.label).toBe('pending');
   });
 
   it('headに適用できる指摘レビューは指摘あり', () => {

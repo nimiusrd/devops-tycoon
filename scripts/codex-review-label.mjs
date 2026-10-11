@@ -338,7 +338,19 @@ export function resolveCommit(cwd, sha) {
 // マージコミットの列に加え、main の上へ載せ直しただけのコミットも対象にする。
 export function commitCoversHead(cwd, reviewed, headSha, baseRef) {
   if (coversByBaseMerges(cwd, reviewed, headSha, baseRef)) return true;
-  const merged = cleanMergeTree(cwd, reviewed, baseRef);
+  if (sameTreeAsCleanMerge(cwd, reviewed, headSha, baseRef)) return true;
+  // main が先へ進んでも、載せ直した時点の base 祖先との一致なら判定を維持する。
+  let fork;
+  try {
+    fork = gitOutput(cwd, ['merge-base', headSha, baseRef]);
+  } catch {
+    return false;
+  }
+  return fork !== '' && sameTreeAsCleanMerge(cwd, reviewed, headSha, fork);
+}
+
+function sameTreeAsCleanMerge(cwd, reviewed, headSha, baseCommit) {
+  const merged = cleanMergeTree(cwd, reviewed, baseCommit);
   const tree = commitTree(cwd, headSha);
   return merged !== '' && merged === tree;
 }

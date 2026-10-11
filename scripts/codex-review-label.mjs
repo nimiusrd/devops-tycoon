@@ -248,8 +248,19 @@ export function evaluateCodexReviewLabel({
   // 指摘コメントがない完了は、サマリーの Completed 行で表される。
   // 同じコミットの指摘レビューは、サマリー更新が数秒遅れても指摘ありのままにする。
   const summaryClean = newestCovering(summaryCompleted.filter(afterBaseChange), covers);
+  const summaryMatchesDismissedReview =
+    summaryClean &&
+    reviews.some(
+      (item) =>
+        item.state === 'DISMISSED' &&
+        item.sha &&
+        afterBaseChange(item) &&
+        covers(item.sha) === summaryClean.sha,
+    );
+  // dismiss 済みの指摘と同じコミットの完了サマリーは、指摘なしの代わりにしない。
   const summaryIsClean =
     summaryClean &&
+    !summaryMatchesDismissedReview &&
     (!findings || (summaryClean.sha !== findings.sha && isAfter(summaryClean.at, findings.at)));
   const clean =
     summaryIsClean && (!commentClean || isAfter(summaryClean.at, commentClean.at))

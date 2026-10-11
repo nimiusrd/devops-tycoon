@@ -49,13 +49,12 @@ jobs:
       group: codex-review-label-${{ github.event.issue.number || github.event.pull_request.number || inputs.pr_number }}
       cancel-in-progress: false
     steps:
-      # 判定スクリプトは、このワークフローを読み込んだコミットから実行する。
-      # pull_request_review の github.sha は PR のマージコミットなので、main だけを
-      # チェックアウトするとスクリプトがまだ main に無いあいだジョブが落ちる。
-      # pull_request_target の github.sha はベースブランチであり、フォークのコードは実行しない。
+      # pull_request_target のワークフローはデフォルトブランチから読まれる。
+      # その github.sha はPRのベース先端であり、release などではスクリプトが無いことがある。
+      # pull_request_review のワークフローはマージコミットから読まれるため、同じ github.sha を使う。
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.repository.default_branch || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Evaluate Codex review state and update label

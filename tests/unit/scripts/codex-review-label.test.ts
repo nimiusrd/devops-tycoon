@@ -246,6 +246,17 @@ describe('evaluateCodexReviewLabel', () => {
     expect(decision.label).toBe('findings');
   });
 
+  it('dismiss 済みの指摘と同じコミットの完了サマリーは指摘なしにしない', () => {
+    const decision = evaluateCodexReviewLabel({
+      ...baseInput,
+      summaryCompleted: [{ at: '2026-10-11T04:51:43.477530Z', sha: 'current' }],
+      reviews: [review('current', '2026-10-11T04:51:43.100000Z', 'DISMISSED')],
+      covers: covers('current'),
+    });
+
+    expect(decision.label).toBe('pending');
+  });
+
   it('同じコミットの完了サマリーは指摘レビューを打ち消さない', () => {
     const decision = evaluateCodexReviewLabel({
       ...baseInput,
@@ -421,6 +432,7 @@ describe('ラベル定義', () => {
     expect(workflow).toContain('node scripts/codex-review-label.mjs');
     expect(workflow).toContain('dismissed');
     expect(workflow).toContain('github.sha');
+    expect(workflow).toContain('github.event.repository.default_branch');
     for (const spec of Object.values(CODEX_REVIEW_LABELS)) {
       expect(spec.description.length).toBeLessThanOrEqual(100);
       expect(spec.color).toMatch(/^[0-9A-F]{6}$/);

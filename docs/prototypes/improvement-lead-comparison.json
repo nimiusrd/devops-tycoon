@@ -1,0 +1,467 @@
+{
+  "seed": "RI-223",
+  "results": [
+    {
+      "board": "near",
+      "strategy": "finish",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "near",
+        "tick": 0,
+        "horizon": 2,
+        "assignee": "lead",
+        "progress": 3,
+        "need": 4,
+        "value": 18,
+        "crisisTick": null,
+        "crisisPenalty": 0,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        }
+      ],
+      "result": {
+        "shipped": 4,
+        "improvement": 18,
+        "penalty": 0,
+        "periods": 1,
+        "progress": 4,
+        "completed": true,
+        "restartPending": false,
+        "score": 22,
+        "lost": false
+      }
+    },
+    {
+      "board": "near",
+      "strategy": "pause",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "near",
+        "tick": 0,
+        "horizon": 2,
+        "assignee": "lead",
+        "progress": 3,
+        "need": 4,
+        "value": 18,
+        "crisisTick": null,
+        "crisisPenalty": 0,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        }
+      ],
+      "result": {
+        "shipped": 4,
+        "improvement": 0,
+        "penalty": 0,
+        "periods": 1,
+        "progress": 3,
+        "completed": false,
+        "restartPending": false,
+        "score": 4,
+        "lost": false
+      }
+    },
+    {
+      "board": "near",
+      "strategy": "field",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "near",
+        "tick": 0,
+        "horizon": 2,
+        "assignee": "lead",
+        "progress": 3,
+        "need": 4,
+        "value": 18,
+        "crisisTick": null,
+        "crisisPenalty": 0,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        }
+      ],
+      "result": {
+        "shipped": 8,
+        "improvement": 0,
+        "penalty": 0,
+        "periods": 0,
+        "progress": 3,
+        "completed": false,
+        "restartPending": true,
+        "score": 8,
+        "lost": false
+      }
+    },
+    {
+      "board": "urgent",
+      "strategy": "finish",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "urgent",
+        "tick": 0,
+        "horizon": 4,
+        "assignee": "lead",
+        "progress": 2,
+        "need": 4,
+        "value": 18,
+        "crisisTick": 0,
+        "crisisPenalty": 16,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        }
+      ],
+      "result": {
+        "shipped": 8,
+        "improvement": 18,
+        "penalty": 16,
+        "periods": 2,
+        "progress": 4,
+        "completed": true,
+        "restartPending": false,
+        "score": 10,
+        "lost": false
+      }
+    },
+    {
+      "board": "urgent",
+      "strategy": "pause",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "urgent",
+        "tick": 0,
+        "horizon": 4,
+        "assignee": "lead",
+        "progress": 2,
+        "need": 4,
+        "value": 18,
+        "crisisTick": 0,
+        "crisisPenalty": 16,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        }
+      ],
+      "result": {
+        "shipped": 4,
+        "improvement": 18,
+        "penalty": 0,
+        "periods": 3,
+        "progress": 4,
+        "completed": true,
+        "restartPending": false,
+        "score": 22,
+        "lost": false
+      }
+    },
+    {
+      "board": "urgent",
+      "strategy": "field",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "urgent",
+        "tick": 0,
+        "horizon": 4,
+        "assignee": "lead",
+        "progress": 2,
+        "need": 4,
+        "value": 18,
+        "crisisTick": 0,
+        "crisisPenalty": 16,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        }
+      ],
+      "result": {
+        "shipped": 16,
+        "improvement": 0,
+        "penalty": 0,
+        "periods": 0,
+        "progress": 2,
+        "completed": false,
+        "restartPending": true,
+        "score": 16,
+        "lost": false
+      }
+    },
+    {
+      "board": "calm",
+      "strategy": "finish",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "calm",
+        "tick": 0,
+        "horizon": 4,
+        "assignee": "lead",
+        "progress": 0,
+        "need": 4,
+        "value": 10,
+        "crisisTick": null,
+        "crisisPenalty": 0,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        }
+      ],
+      "result": {
+        "shipped": 0,
+        "improvement": 10,
+        "penalty": 0,
+        "periods": 4,
+        "progress": 4,
+        "completed": true,
+        "restartPending": false,
+        "score": 10,
+        "lost": false
+      }
+    },
+    {
+      "board": "calm",
+      "strategy": "pause",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "calm",
+        "tick": 0,
+        "horizon": 4,
+        "assignee": "lead",
+        "progress": 0,
+        "need": 4,
+        "value": 10,
+        "crisisTick": null,
+        "crisisPenalty": 0,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        },
+        {
+          "type": "assign",
+          "mode": "improve"
+        }
+      ],
+      "result": {
+        "shipped": 4,
+        "improvement": 0,
+        "penalty": 0,
+        "periods": 3,
+        "progress": 3,
+        "completed": false,
+        "restartPending": false,
+        "score": 4,
+        "lost": false
+      }
+    },
+    {
+      "board": "calm",
+      "strategy": "field",
+      "initial": {
+        "version": 1,
+        "seed": "RI-223",
+        "board": "calm",
+        "tick": 0,
+        "horizon": 4,
+        "assignee": "lead",
+        "progress": 0,
+        "need": 4,
+        "value": 10,
+        "crisisTick": null,
+        "crisisPenalty": 0,
+        "shipRate": 4,
+        "restartPending": false,
+        "periodsOnImprovement": 0,
+        "completed": false,
+        "shipped": 0,
+        "improvementValue": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        },
+        {
+          "type": "assign",
+          "mode": "field"
+        }
+      ],
+      "result": {
+        "shipped": 16,
+        "improvement": 0,
+        "penalty": 0,
+        "periods": 0,
+        "progress": 0,
+        "completed": false,
+        "restartPending": false,
+        "score": 16,
+        "lost": false
+      }
+    }
+  ]
+}

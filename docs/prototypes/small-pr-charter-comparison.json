@@ -1,0 +1,221 @@
+{
+  "seed": "RI-219",
+  "results": [
+    {
+      "board": "safe",
+      "strategy": "free",
+      "initial": {
+        "version": 1,
+        "seed": "RI-219",
+        "board": "safe",
+        "tick": 0,
+        "horizon": 3,
+        "riskWeight": 0,
+        "charter": false,
+        "adoptedAt": null,
+        "jobs": [
+          {
+            "id": "small",
+            "size": 2,
+            "value": 4,
+            "risk": 0,
+            "done": false
+          },
+          {
+            "id": "large",
+            "size": 4,
+            "value": 10,
+            "risk": 6,
+            "done": false
+          }
+        ],
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship",
+          "id": "large"
+        },
+        {
+          "type": "ship",
+          "id": "small"
+        },
+        {
+          "type": "wait"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "score": 14,
+        "charter": false,
+        "pending": [],
+        "lost": false
+      }
+    },
+    {
+      "board": "safe",
+      "strategy": "charter",
+      "initial": {
+        "version": 1,
+        "seed": "RI-219",
+        "board": "safe",
+        "tick": 0,
+        "horizon": 3,
+        "riskWeight": 0,
+        "charter": false,
+        "adoptedAt": null,
+        "jobs": [
+          {
+            "id": "small",
+            "size": 2,
+            "value": 4,
+            "risk": 0,
+            "done": false
+          },
+          {
+            "id": "large",
+            "size": 4,
+            "value": 10,
+            "risk": 6,
+            "done": false
+          }
+        ],
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt"
+        },
+        {
+          "type": "split",
+          "id": "large"
+        },
+        {
+          "type": "ship",
+          "id": "large-a"
+        },
+        {
+          "type": "ship",
+          "id": "large-b"
+        }
+      ],
+      "result": {
+        "value": 10,
+        "score": 10,
+        "charter": true,
+        "pending": ["small"],
+        "lost": false
+      }
+    },
+    {
+      "board": "risky",
+      "strategy": "free",
+      "initial": {
+        "version": 1,
+        "seed": "RI-219",
+        "board": "risky",
+        "tick": 0,
+        "horizon": 3,
+        "riskWeight": 1,
+        "charter": false,
+        "adoptedAt": null,
+        "jobs": [
+          {
+            "id": "small",
+            "size": 2,
+            "value": 4,
+            "risk": 0,
+            "done": false
+          },
+          {
+            "id": "large",
+            "size": 4,
+            "value": 10,
+            "risk": 6,
+            "done": false
+          }
+        ],
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship",
+          "id": "large"
+        },
+        {
+          "type": "ship",
+          "id": "small"
+        },
+        {
+          "type": "wait"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "score": 8,
+        "charter": false,
+        "pending": [],
+        "lost": false
+      }
+    },
+    {
+      "board": "risky",
+      "strategy": "charter",
+      "initial": {
+        "version": 1,
+        "seed": "RI-219",
+        "board": "risky",
+        "tick": 0,
+        "horizon": 3,
+        "riskWeight": 1,
+        "charter": false,
+        "adoptedAt": null,
+        "jobs": [
+          {
+            "id": "small",
+            "size": 2,
+            "value": 4,
+            "risk": 0,
+            "done": false
+          },
+          {
+            "id": "large",
+            "size": 4,
+            "value": 10,
+            "risk": 6,
+            "done": false
+          }
+        ],
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "adopt"
+        },
+        {
+          "type": "split",
+          "id": "large"
+        },
+        {
+          "type": "ship",
+          "id": "large-a"
+        },
+        {
+          "type": "ship",
+          "id": "large-b"
+        }
+      ],
+      "result": {
+        "value": 10,
+        "score": 10,
+        "charter": true,
+        "pending": ["small"],
+        "lost": false
+      }
+    }
+  ]
+}

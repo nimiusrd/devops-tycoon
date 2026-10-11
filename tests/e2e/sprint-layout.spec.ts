@@ -328,27 +328,42 @@ async function assertLayoutContract(
 
   const boardWrap = page.locator('.board-wrap');
   const wrapBox = await boardWrap.boundingBox();
-  const stageBox = await page.locator('.board-stage').boundingBox();
-  const aspectStageBox = await page.getByTestId('aspect-stage-content').boundingBox();
-  if (!wrapBox || !stageBox || !aspectStageBox) {
+  // 盤面と実ステージは同じフレームで測る。別々に読むと、幅モード切替で
+  // 出来事ティッカーが status へ移る途中の座標を混ぜてしまう。
+  const stageFrame = await page.evaluate(() => {
+    const read = (selector: string) => {
+      const box = document.querySelector(selector)?.getBoundingClientRect();
+      if (!box) return null;
+      return { x: box.x, y: box.y, width: box.width, height: box.height };
+    };
+    return {
+      board: read('[data-testid="board"]'),
+      stage: read('.board-stage'),
+      aspect: read('[data-testid="aspect-stage-content"]'),
+    };
+  });
+  const stageBox = stageFrame.stage;
+  const aspectStageBox = stageFrame.aspect;
+  const alignedBoard = stageFrame.board;
+  if (!wrapBox || !stageBox || !aspectStageBox || !alignedBoard) {
     throw new Error('board-wrap / board-stage / aspect-stage の bounding box が取得できない');
   }
   const aspectRatioError = Math.abs(aspectStageBox.width / aspectStageBox.height / BOARD_RATIO - 1);
   expect(aspectRatioError, 'AspectStageの1404:573比率が崩れている').toBeLessThanOrEqual(0.01);
   expect(
-    Math.abs(boardBox.x - aspectStageBox.x),
+    Math.abs(alignedBoard.x - aspectStageBox.x),
     '盤面と実ステージのX座標がずれている',
   ).toBeLessThanOrEqual(1);
   expect(
-    Math.abs(boardBox.y - aspectStageBox.y),
+    Math.abs(alignedBoard.y - aspectStageBox.y),
     '盤面と実ステージのY座標がずれている',
   ).toBeLessThanOrEqual(1);
   expect(
-    Math.abs(boardBox.width - aspectStageBox.width),
+    Math.abs(alignedBoard.width - aspectStageBox.width),
     '盤面と実ステージの幅がずれている',
   ).toBeLessThanOrEqual(1);
   expect(
-    Math.abs(boardBox.height - aspectStageBox.height),
+    Math.abs(alignedBoard.height - aspectStageBox.height),
     '盤面と実ステージの高さがずれている',
   ).toBeLessThanOrEqual(1);
   expect(
@@ -369,16 +384,16 @@ async function assertLayoutContract(
   ).toBeLessThanOrEqual(stageBox.y + stageBox.height + 1);
   // board-stage が contain の実効スロット。横長盤面は幅、縦に制約される場合は高さを
   // 使い切るため、どちらかの軸で 75% 以上を占めることを契約にする。
-  const widthFill = boardBox.width / stageBox.width;
-  const heightFill = boardBox.height / stageBox.height;
+  const widthFill = alignedBoard.width / stageBox.width;
+  const heightFill = alignedBoard.height / stageBox.height;
   expect(
     Math.max(widthFill, heightFill),
     `盤面が board-wrap の contain スロットを十分に使用していない（${viewport.width}x${viewport.height}）`,
   ).toBeGreaterThan(0.75);
-  expect(boardBox.width, '盤面が contain スロットの幅を超えている').toBeLessThanOrEqual(
+  expect(alignedBoard.width, '盤面が contain スロットの幅を超えている').toBeLessThanOrEqual(
     stageBox.width + 1,
   );
-  expect(boardBox.height, '盤面が contain スロットの高さを超えている').toBeLessThanOrEqual(
+  expect(alignedBoard.height, '盤面が contain スロットの高さを超えている').toBeLessThanOrEqual(
     stageBox.height + 1,
   );
 
@@ -616,6 +631,11 @@ async function assertAcrossViewports(
 ): Promise<void> {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const widthMode = viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth ? 'narrow' : 'wide';
+    await expect(page.getByTestId('sprint-layout')).toHaveAttribute(
+      'data-responsive-width',
+      widthMode,
+    );
     await waitForLayoutFrame(page);
     await assertLayoutContract(page, viewport, options);
   }
@@ -2060,6 +2080,11 @@ test.describe('延焼文言の DOM レイアウト', () => {
 
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      const widthMode = viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth ? 'narrow' : 'wide';
+      await expect(page.getByTestId('sprint-layout')).toHaveAttribute(
+        'data-responsive-width',
+        widthMode,
+      );
       await waitForLayoutFrame(page);
       await expandEventTicker(page);
       await assertLayoutContract(page, viewport, { glanceCopy: true });

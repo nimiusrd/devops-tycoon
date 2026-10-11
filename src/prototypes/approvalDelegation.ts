@@ -114,10 +114,11 @@ export function approvalRoute(
   risk: ChangeRisk,
   policy: ApprovalPolicy,
   maturity: number,
+  maturityLine: number,
 ): 'human' | 'auto' | 'blocked' {
   if (risk === 'important') return policy === 'rush' ? 'blocked' : 'human';
   if (policy === 'human') return 'human';
-  if (policy === 'delegate' && maturity < MATURITY_LINE) return 'human';
+  if (policy === 'delegate' && maturity < maturityLine) return 'human';
   return 'auto';
 }
 
@@ -142,7 +143,7 @@ export function reviewNext(state: ApprovalState): ApprovalState {
   const next = structuredClone(state);
   const item = next.items[next.index];
   if (!item) return state;
-  const route = approvalRoute(item.risk, policy, next.maturity);
+  const route = approvalRoute(item.risk, policy, next.maturity, next.maturityLine);
   item.done = true;
   next.value += item.value;
   if (route === 'auto') {
@@ -184,7 +185,10 @@ export function viewApprovalDelegation(state: ApprovalState) {
       value: item.value,
       done: item.done,
       routes: Object.fromEntries(
-        policies.map((policy) => [policy, approvalRoute(item.risk, policy, state.maturity)]),
+        policies.map((policy) => [
+          policy,
+          approvalRoute(item.risk, policy, state.maturity, state.maturityLine),
+        ]),
       ),
     })),
   };

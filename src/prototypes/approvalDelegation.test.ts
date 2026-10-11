@@ -26,6 +26,22 @@ describe('RI-225 権限委譲', () => {
     expect(junior.items.find((item) => item.id === 'l1')!.routes.delegate).toBe('human');
   });
 
+  it('保存した成熟線が1なら、成熟1の低リスクも委譲できる', () => {
+    const state = create('RI-225', 'junior');
+    state.maturityLine = 1;
+    const viewed = viewApprovalDelegation(state);
+    expect(viewed.maturityLine).toBe(1);
+    expect(viewed.items.find((item) => item.id === 'l1')!.routes.delegate).toBe('auto');
+    let live = state;
+    live = apply(live, { type: 'adopt', policy: 'delegate' });
+    while (live.index < live.items.length) live = apply(live, { type: 'review' });
+    expect(summarizeApprovalDelegation(live)).toMatchObject({
+      reviewCost: 2,
+      failure: 3,
+      importantResidual: 0,
+    });
+  });
+
   it('重要変更は自動承認にならず、委譲だけでは報酬を足さない', () => {
     const fresh = create('RI-225', 'heavy');
     expect(apply(fresh, { type: 'review' })).toBe(fresh);

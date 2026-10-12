@@ -1,0 +1,281 @@
+{
+  "seed": "RI-236",
+  "results": [
+    {
+      "board": "calm",
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": "RI-236",
+        "board": "calm",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "segment": "keeper",
+        "reserve": 2,
+        "reward": 4,
+        "penalty": 1,
+        "featureValue": 12,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "budget": 0,
+        "rewards": 0,
+        "breaches": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 2
+        },
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 2
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 2
+        }
+      ],
+      "result": {
+        "budget": 24,
+        "completed": ["api"],
+        "rewards": 3,
+        "breaches": 0,
+        "path": [4, 20, 24],
+        "score": 24,
+        "lost": false
+      }
+    },
+    {
+      "board": "calm",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-236",
+        "board": "calm",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "segment": "keeper",
+        "reserve": 2,
+        "reward": 4,
+        "penalty": 1,
+        "featureValue": 12,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "budget": 0,
+        "rewards": 0,
+        "breaches": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "billing",
+          "maintain": 0
+        }
+      ],
+      "result": {
+        "budget": 33,
+        "completed": ["api", "screen", "billing"],
+        "rewards": 0,
+        "breaches": 3,
+        "path": [11, 22, 33],
+        "score": 33,
+        "lost": false
+      }
+    },
+    {
+      "board": "strict",
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": "RI-236",
+        "board": "strict",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "segment": "keeper",
+        "reserve": 2,
+        "reward": 4,
+        "penalty": 10,
+        "featureValue": 12,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "budget": 0,
+        "rewards": 0,
+        "breaches": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 2
+        },
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 2
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 2
+        }
+      ],
+      "result": {
+        "budget": 24,
+        "completed": ["api"],
+        "rewards": 3,
+        "breaches": 0,
+        "path": [4, 20, 24],
+        "score": 24,
+        "lost": false
+      }
+    },
+    {
+      "board": "strict",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-236",
+        "board": "strict",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "segment": "keeper",
+        "reserve": 2,
+        "reward": 4,
+        "penalty": 10,
+        "featureValue": 12,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "budget": 0,
+        "rewards": 0,
+        "breaches": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "billing",
+          "maintain": 0
+        }
+      ],
+      "result": {
+        "budget": 6,
+        "completed": ["api", "screen", "billing"],
+        "rewards": 0,
+        "breaches": 3,
+        "path": [2, 4, 6],
+        "score": 6,
+        "lost": false
+      }
+    }
+  ]
+}

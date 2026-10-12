@@ -1,0 +1,253 @@
+{
+  "seed": "RI-239",
+  "results": [
+    {
+      "board": "preempt",
+      "strategy": "follow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-239",
+        "board": "preempt",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "rival": {
+          "feature": "match",
+          "releaseTick": 1,
+          "segment": "pioneer",
+          "respondents": 4,
+          "before": {
+            "match": 8,
+            "own": 8
+          },
+          "after": {
+            "match": 3,
+            "own": 10
+          }
+        },
+        "parts": [
+          {
+            "id": "match",
+            "need": 4,
+            "done": 0
+          },
+          {
+            "id": "own",
+            "need": 4,
+            "done": 0
+          }
+        ],
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "feature": "match"
+        },
+        {
+          "type": "work",
+          "feature": "own"
+        }
+      ],
+      "result": {
+        "value": 18,
+        "completed": ["match", "own"],
+        "path": [8, 18],
+        "after": {
+          "match": 3,
+          "own": 10
+        },
+        "score": 18,
+        "lost": false
+      }
+    },
+    {
+      "board": "preempt",
+      "strategy": "differentiate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-239",
+        "board": "preempt",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "rival": {
+          "feature": "match",
+          "releaseTick": 1,
+          "segment": "pioneer",
+          "respondents": 4,
+          "before": {
+            "match": 8,
+            "own": 8
+          },
+          "after": {
+            "match": 3,
+            "own": 10
+          }
+        },
+        "parts": [
+          {
+            "id": "match",
+            "need": 4,
+            "done": 0
+          },
+          {
+            "id": "own",
+            "need": 4,
+            "done": 0
+          }
+        ],
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "feature": "own"
+        },
+        {
+          "type": "work",
+          "feature": "match"
+        }
+      ],
+      "result": {
+        "value": 11,
+        "completed": ["match", "own"],
+        "path": [8, 11],
+        "after": {
+          "match": 3,
+          "own": 10
+        },
+        "score": 11,
+        "lost": false
+      }
+    },
+    {
+      "board": "proof",
+      "strategy": "follow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-239",
+        "board": "proof",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "rival": {
+          "feature": "match",
+          "releaseTick": 1,
+          "segment": "pioneer",
+          "respondents": 4,
+          "before": {
+            "match": 8,
+            "own": 8
+          },
+          "after": {
+            "match": 14,
+            "own": 6
+          }
+        },
+        "parts": [
+          {
+            "id": "match",
+            "need": 4,
+            "done": 0
+          },
+          {
+            "id": "own",
+            "need": 4,
+            "done": 0
+          }
+        ],
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "feature": "match"
+        },
+        {
+          "type": "work",
+          "feature": "own"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "completed": ["match", "own"],
+        "path": [8, 14],
+        "after": {
+          "match": 14,
+          "own": 6
+        },
+        "score": 14,
+        "lost": false
+      }
+    },
+    {
+      "board": "proof",
+      "strategy": "differentiate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-239",
+        "board": "proof",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "rival": {
+          "feature": "match",
+          "releaseTick": 1,
+          "segment": "pioneer",
+          "respondents": 4,
+          "before": {
+            "match": 8,
+            "own": 8
+          },
+          "after": {
+            "match": 14,
+            "own": 6
+          }
+        },
+        "parts": [
+          {
+            "id": "match",
+            "need": 4,
+            "done": 0
+          },
+          {
+            "id": "own",
+            "need": 4,
+            "done": 0
+          }
+        ],
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "work",
+          "feature": "own"
+        },
+        {
+          "type": "work",
+          "feature": "match"
+        }
+      ],
+      "result": {
+        "value": 22,
+        "completed": ["match", "own"],
+        "path": [8, 22],
+        "after": {
+          "match": 14,
+          "own": 6
+        },
+        "score": 22,
+        "lost": false
+      }
+    }
+  ]
+}

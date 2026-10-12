@@ -1,0 +1,365 @@
+{
+  "seed": "RI-227",
+  "results": [
+    {
+      "board": "same",
+      "strategy": "standardize",
+      "initial": {
+        "version": 1,
+        "seed": "RI-227",
+        "board": "same",
+        "tick": 0,
+        "horizon": 3,
+        "migrationFee": 5,
+        "blocker": 5,
+        "supportSame": 1,
+        "supportDiff": 4,
+        "fitShip": 6,
+        "missShip": 3,
+        "teams": [
+          {
+            "id": "alpha",
+            "procedure": "kit",
+            "work": "batch"
+          },
+          {
+            "id": "beta",
+            "procedure": "local",
+            "work": "batch"
+          }
+        ],
+        "shipped": 0,
+        "alphaShip": 0,
+        "betaShip": 0,
+        "supportPaid": 0,
+        "migrationPaid": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "act",
+          "action": "migrate"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        }
+      ],
+      "result": {
+        "shipped": 36,
+        "support": 2,
+        "migration": 5,
+        "penalty": 5,
+        "alphaShip": 18,
+        "betaShip": 18,
+        "score": 24,
+        "lost": false
+      }
+    },
+    {
+      "board": "same",
+      "strategy": "experiment",
+      "initial": {
+        "version": 1,
+        "seed": "RI-227",
+        "board": "same",
+        "tick": 0,
+        "horizon": 3,
+        "migrationFee": 5,
+        "blocker": 5,
+        "supportSame": 1,
+        "supportDiff": 4,
+        "fitShip": 6,
+        "missShip": 3,
+        "teams": [
+          {
+            "id": "alpha",
+            "procedure": "kit",
+            "work": "batch"
+          },
+          {
+            "id": "beta",
+            "procedure": "local",
+            "work": "batch"
+          }
+        ],
+        "shipped": 0,
+        "alphaShip": 0,
+        "betaShip": 0,
+        "supportPaid": 0,
+        "migrationPaid": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "act",
+          "action": "support"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        }
+      ],
+      "result": {
+        "shipped": 27,
+        "support": 12,
+        "migration": 0,
+        "penalty": 0,
+        "alphaShip": 18,
+        "betaShip": 9,
+        "score": 15,
+        "lost": false
+      }
+    },
+    {
+      "board": "same",
+      "strategy": "hold",
+      "initial": {
+        "version": 1,
+        "seed": "RI-227",
+        "board": "same",
+        "tick": 0,
+        "horizon": 3,
+        "migrationFee": 5,
+        "blocker": 5,
+        "supportSame": 1,
+        "supportDiff": 4,
+        "fitShip": 6,
+        "missShip": 3,
+        "teams": [
+          {
+            "id": "alpha",
+            "procedure": "kit",
+            "work": "batch"
+          },
+          {
+            "id": "beta",
+            "procedure": "local",
+            "work": "batch"
+          }
+        ],
+        "shipped": 0,
+        "alphaShip": 0,
+        "betaShip": 0,
+        "supportPaid": 0,
+        "migrationPaid": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "act",
+          "action": "hold"
+        },
+        {
+          "type": "act",
+          "action": "hold"
+        },
+        {
+          "type": "act",
+          "action": "hold"
+        }
+      ],
+      "result": {
+        "shipped": 27,
+        "support": 0,
+        "migration": 0,
+        "penalty": 15,
+        "alphaShip": 18,
+        "betaShip": 9,
+        "score": 12,
+        "lost": false
+      }
+    },
+    {
+      "board": "different",
+      "strategy": "standardize",
+      "initial": {
+        "version": 1,
+        "seed": "RI-227",
+        "board": "different",
+        "tick": 0,
+        "horizon": 3,
+        "migrationFee": 5,
+        "blocker": 5,
+        "supportSame": 1,
+        "supportDiff": 4,
+        "fitShip": 6,
+        "missShip": 3,
+        "teams": [
+          {
+            "id": "alpha",
+            "procedure": "kit",
+            "work": "batch"
+          },
+          {
+            "id": "beta",
+            "procedure": "local",
+            "work": "custom"
+          }
+        ],
+        "shipped": 0,
+        "alphaShip": 0,
+        "betaShip": 0,
+        "supportPaid": 0,
+        "migrationPaid": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "act",
+          "action": "migrate"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        }
+      ],
+      "result": {
+        "shipped": 27,
+        "support": 2,
+        "migration": 5,
+        "penalty": 5,
+        "alphaShip": 18,
+        "betaShip": 9,
+        "score": 15,
+        "lost": false
+      }
+    },
+    {
+      "board": "different",
+      "strategy": "experiment",
+      "initial": {
+        "version": 1,
+        "seed": "RI-227",
+        "board": "different",
+        "tick": 0,
+        "horizon": 3,
+        "migrationFee": 5,
+        "blocker": 5,
+        "supportSame": 1,
+        "supportDiff": 4,
+        "fitShip": 6,
+        "missShip": 3,
+        "teams": [
+          {
+            "id": "alpha",
+            "procedure": "kit",
+            "work": "batch"
+          },
+          {
+            "id": "beta",
+            "procedure": "local",
+            "work": "custom"
+          }
+        ],
+        "shipped": 0,
+        "alphaShip": 0,
+        "betaShip": 0,
+        "supportPaid": 0,
+        "migrationPaid": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "act",
+          "action": "support"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        },
+        {
+          "type": "act",
+          "action": "support"
+        }
+      ],
+      "result": {
+        "shipped": 36,
+        "support": 12,
+        "migration": 0,
+        "penalty": 0,
+        "alphaShip": 18,
+        "betaShip": 18,
+        "score": 24,
+        "lost": false
+      }
+    },
+    {
+      "board": "different",
+      "strategy": "hold",
+      "initial": {
+        "version": 1,
+        "seed": "RI-227",
+        "board": "different",
+        "tick": 0,
+        "horizon": 3,
+        "migrationFee": 5,
+        "blocker": 5,
+        "supportSame": 1,
+        "supportDiff": 4,
+        "fitShip": 6,
+        "missShip": 3,
+        "teams": [
+          {
+            "id": "alpha",
+            "procedure": "kit",
+            "work": "batch"
+          },
+          {
+            "id": "beta",
+            "procedure": "local",
+            "work": "custom"
+          }
+        ],
+        "shipped": 0,
+        "alphaShip": 0,
+        "betaShip": 0,
+        "supportPaid": 0,
+        "migrationPaid": 0,
+        "penalty": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "act",
+          "action": "hold"
+        },
+        {
+          "type": "act",
+          "action": "hold"
+        },
+        {
+          "type": "act",
+          "action": "hold"
+        }
+      ],
+      "result": {
+        "shipped": 36,
+        "support": 0,
+        "migration": 0,
+        "penalty": 15,
+        "alphaShip": 18,
+        "betaShip": 18,
+        "score": 21,
+        "lost": false
+      }
+    }
+  ]
+}

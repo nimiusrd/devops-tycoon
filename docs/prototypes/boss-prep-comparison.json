@@ -1,0 +1,407 @@
+{
+  "seed": "RI-242",
+  "results": [
+    {
+      "board": "small",
+      "strategy": "conserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-242",
+        "board": "small",
+        "tick": 0,
+        "horizon": 2,
+        "bossId": "big-release",
+        "bossName": "大型リリース",
+        "prepQueue": 20,
+        "bossQueue": 8,
+        "prepValuePer": 2,
+        "bossValuePer": 5,
+        "opened": false,
+        "skipped": false,
+        "prep": null,
+        "consumed": false,
+        "budget": 0,
+        "members": [
+          {
+            "id": "steady",
+            "present": true,
+            "output": 8,
+            "drain": 12,
+            "stamina": 40
+          },
+          {
+            "id": "ace",
+            "present": true,
+            "output": 16,
+            "drain": 24,
+            "stamina": 30
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "meet"
+        },
+        {
+          "type": "choose",
+          "prep": "conserve"
+        },
+        {
+          "type": "resolve"
+        }
+      ],
+      "result": {
+        "value": 56,
+        "spent": 36,
+        "budget": 0,
+        "score": 20,
+        "path": [4, 20],
+        "assigned": ["steady", "ace"],
+        "prep": "conserve",
+        "skipped": false,
+        "consumed": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "small",
+      "strategy": "advance",
+      "initial": {
+        "version": 1,
+        "seed": "RI-242",
+        "board": "small",
+        "tick": 0,
+        "horizon": 2,
+        "bossId": "big-release",
+        "bossName": "大型リリース",
+        "prepQueue": 20,
+        "bossQueue": 8,
+        "prepValuePer": 2,
+        "bossValuePer": 5,
+        "opened": false,
+        "skipped": false,
+        "prep": null,
+        "consumed": false,
+        "budget": 0,
+        "members": [
+          {
+            "id": "steady",
+            "present": true,
+            "output": 8,
+            "drain": 12,
+            "stamina": 40
+          },
+          {
+            "id": "ace",
+            "present": true,
+            "output": 16,
+            "drain": 24,
+            "stamina": 30
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "meet"
+        },
+        {
+          "type": "choose",
+          "prep": "advance"
+        },
+        {
+          "type": "resolve"
+        }
+      ],
+      "result": {
+        "value": 72,
+        "spent": 36,
+        "budget": 6,
+        "score": 30,
+        "path": [2, 30],
+        "assigned": ["ace", "steady"],
+        "prep": "advance",
+        "skipped": false,
+        "consumed": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "large",
+      "strategy": "conserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-242",
+        "board": "large",
+        "tick": 0,
+        "horizon": 2,
+        "bossId": "big-release",
+        "bossName": "大型リリース",
+        "prepQueue": 20,
+        "bossQueue": 16,
+        "prepValuePer": 2,
+        "bossValuePer": 5,
+        "opened": false,
+        "skipped": false,
+        "prep": null,
+        "consumed": false,
+        "budget": 0,
+        "members": [
+          {
+            "id": "steady",
+            "present": true,
+            "output": 8,
+            "drain": 12,
+            "stamina": 40
+          },
+          {
+            "id": "ace",
+            "present": true,
+            "output": 16,
+            "drain": 24,
+            "stamina": 30
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "meet"
+        },
+        {
+          "type": "choose",
+          "prep": "conserve"
+        },
+        {
+          "type": "resolve"
+        }
+      ],
+      "result": {
+        "value": 96,
+        "spent": 36,
+        "budget": 0,
+        "score": 60,
+        "path": [4, 60],
+        "assigned": ["steady", "ace"],
+        "prep": "conserve",
+        "skipped": false,
+        "consumed": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "large",
+      "strategy": "advance",
+      "initial": {
+        "version": 1,
+        "seed": "RI-242",
+        "board": "large",
+        "tick": 0,
+        "horizon": 2,
+        "bossId": "big-release",
+        "bossName": "大型リリース",
+        "prepQueue": 20,
+        "bossQueue": 16,
+        "prepValuePer": 2,
+        "bossValuePer": 5,
+        "opened": false,
+        "skipped": false,
+        "prep": null,
+        "consumed": false,
+        "budget": 0,
+        "members": [
+          {
+            "id": "steady",
+            "present": true,
+            "output": 8,
+            "drain": 12,
+            "stamina": 40
+          },
+          {
+            "id": "ace",
+            "present": true,
+            "output": 16,
+            "drain": 24,
+            "stamina": 30
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "meet"
+        },
+        {
+          "type": "choose",
+          "prep": "advance"
+        },
+        {
+          "type": "resolve"
+        }
+      ],
+      "result": {
+        "value": 72,
+        "spent": 36,
+        "budget": 6,
+        "score": 30,
+        "path": [2, 30],
+        "assigned": ["ace", "steady"],
+        "prep": "advance",
+        "skipped": false,
+        "consumed": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "absent",
+      "strategy": "conserve",
+      "initial": {
+        "version": 1,
+        "seed": "RI-242",
+        "board": "absent",
+        "tick": 0,
+        "horizon": 2,
+        "bossId": "big-release",
+        "bossName": "大型リリース",
+        "prepQueue": 20,
+        "bossQueue": 16,
+        "prepValuePer": 2,
+        "bossValuePer": 5,
+        "opened": false,
+        "skipped": false,
+        "prep": null,
+        "consumed": false,
+        "budget": 0,
+        "members": [
+          {
+            "id": "steady",
+            "present": true,
+            "output": 8,
+            "drain": 12,
+            "stamina": 40
+          },
+          {
+            "id": "ace",
+            "present": false,
+            "output": 16,
+            "drain": 24,
+            "stamina": 30
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "meet"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "choose",
+          "prep": "cover"
+        },
+        {
+          "type": "resolve"
+        }
+      ],
+      "result": {
+        "value": 56,
+        "spent": 24,
+        "budget": 0,
+        "score": 32,
+        "path": [4, 32],
+        "assigned": ["steady", "steady"],
+        "prep": "cover",
+        "skipped": true,
+        "consumed": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "absent",
+      "strategy": "advance",
+      "initial": {
+        "version": 1,
+        "seed": "RI-242",
+        "board": "absent",
+        "tick": 0,
+        "horizon": 2,
+        "bossId": "big-release",
+        "bossName": "大型リリース",
+        "prepQueue": 20,
+        "bossQueue": 16,
+        "prepValuePer": 2,
+        "bossValuePer": 5,
+        "opened": false,
+        "skipped": false,
+        "prep": null,
+        "consumed": false,
+        "budget": 0,
+        "members": [
+          {
+            "id": "steady",
+            "present": true,
+            "output": 8,
+            "drain": 12,
+            "stamina": 40
+          },
+          {
+            "id": "ace",
+            "present": false,
+            "output": 16,
+            "drain": 24,
+            "stamina": 30
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "meet"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "choose",
+          "prep": "cover"
+        },
+        {
+          "type": "resolve"
+        }
+      ],
+      "result": {
+        "value": 56,
+        "spent": 24,
+        "budget": 0,
+        "score": 32,
+        "path": [4, 32],
+        "assigned": ["steady", "steady"],
+        "prep": "cover",
+        "skipped": true,
+        "consumed": true,
+        "lost": false
+      }
+    }
+  ]
+}

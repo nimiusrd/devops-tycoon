@@ -1,0 +1,1013 @@
+{
+  "seed": "RI-232",
+  "results": [
+    {
+      "situation": "confident",
+      "strategy": "shipNow",
+      "rumorWeight": 4,
+      "otherWeight": 1,
+      "expected": 62,
+      "opportunity": 8,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "confident",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 4,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "confident",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 4,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 6,
+            "probeValue": 0,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 6,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "confident",
+      "strategy": "probeThen",
+      "rumorWeight": 4,
+      "otherWeight": 1,
+      "expected": 40,
+      "opportunity": 40,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "confident",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 4,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "probe",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "probeValue": 2,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 8,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "confident",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 4,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "probe",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "probeValue": 2,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 8,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "confident",
+      "strategy": "shipOther",
+      "rumorWeight": 4,
+      "otherWeight": 1,
+      "expected": 38,
+      "opportunity": 32,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "confident",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 4,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 6,
+            "probeValue": 0,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 6,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "confident",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 4,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "unsure",
+      "strategy": "shipNow",
+      "rumorWeight": 1,
+      "otherWeight": 1,
+      "expected": 20,
+      "opportunity": 8,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "unsure",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "unsure",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 6,
+            "probeValue": 0,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 6,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "unsure",
+      "strategy": "probeThen",
+      "rumorWeight": 1,
+      "otherWeight": 1,
+      "expected": 16,
+      "opportunity": 16,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "unsure",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "probe",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "probeValue": 2,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 8,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "unsure",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "probe",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "probeValue": 2,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 8,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "unsure",
+      "strategy": "shipOther",
+      "rumorWeight": 1,
+      "otherWeight": 1,
+      "expected": 20,
+      "opportunity": 8,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "unsure",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 6,
+            "probeValue": 0,
+            "opportunityLoss": 8,
+            "delivered": true,
+            "score": 6,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "unsure",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": true,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "open",
+      "strategy": "shipNow",
+      "rumorWeight": 1,
+      "otherWeight": 1,
+      "expected": 28,
+      "opportunity": 0,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "open",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": false,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "open",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": false,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "open",
+      "strategy": "probeThen",
+      "rumorWeight": 1,
+      "otherWeight": 1,
+      "expected": 32,
+      "opportunity": 0,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "open",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": false,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "probe",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "probeValue": 2,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 16,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "open",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": false,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "probe",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "probeValue": 2,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 16,
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "situation": "open",
+      "strategy": "shipOther",
+      "rumorWeight": 1,
+      "otherWeight": 1,
+      "expected": 28,
+      "opportunity": 0,
+      "worlds": [
+        {
+          "demand": "api",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "open",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "api",
+            "rumor": "api",
+            "fades": false,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "api"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        },
+        {
+          "demand": "screen",
+          "initial": {
+            "version": 1,
+            "seed": "RI-232",
+            "situation": "open",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "respondents": 4,
+            "demand": "screen",
+            "rumor": "api",
+            "fades": false,
+            "rumorWeight": 1,
+            "otherWeight": 1,
+            "fullReward": 14,
+            "lateReward": 6,
+            "probeReward": 2,
+            "probed": false,
+            "probedFeature": null,
+            "reaction": null,
+            "shipped": false,
+            "delivered": false,
+            "value": 0,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            },
+            {
+              "type": "ship",
+              "feature": "screen"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "probeValue": 0,
+            "opportunityLoss": 0,
+            "delivered": true,
+            "score": 14,
+            "lost": false
+          }
+        }
+      ]
+    }
+  ]
+}

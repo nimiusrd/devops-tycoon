@@ -26,7 +26,7 @@ describe('RI-241 欠点のある人の見せ場', () => {
       trait: 'reviewDemon',
       reason: 'review-backlog',
       helpsWhen: 'queue-exceeds-steady',
-      hindersWhen: 'queue-below-output',
+      hindersWhen: 'queue-at-or-below-steady',
       choices: ['steady', 'demon'],
       demon: { present: true, active: true, output: 13, drain: 27, stamina: 80 },
     });
@@ -56,6 +56,7 @@ describe('RI-241 欠点のある人の見せ場', () => {
     expect(used.spent).toBe(54);
     expect(used.members[1].stamina).toBe(26);
     expect(viewTraitSpotlight(used).choices).toEqual([]);
+    expect(apply(used, { type: 'note' })).toBe(used);
     expect(apply(used, { type: 'assign', member: 'demon' })).toBe(used);
     const noted = apply(create('RI-241', 'absent'), { type: 'note' });
     expect(noted.skipped).toBe(true);
@@ -81,6 +82,11 @@ describe('RI-241 欠点のある人の見せ場', () => {
       path: [5, 10],
       assigned: ['demon', 'demon'],
     });
+    expect(row('even', 'steady').result).toMatchObject({ score: 40, path: [20, 40] });
+    expect(row('even', 'spotlight').result).toMatchObject({ score: 26, spent: 54, path: [13, 26] });
+    expect(row('even', 'steady').result.score).toBeGreaterThan(
+      row('even', 'spotlight').result.score,
+    );
     expect(row('crisis', 'spotlight').result).toMatchObject({
       score: 50,
       value: 104,

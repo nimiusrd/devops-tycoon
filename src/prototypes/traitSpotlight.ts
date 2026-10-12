@@ -2,7 +2,7 @@
 
 import { getTrait } from '../data/traits';
 
-export type SpotlightBoard = 'calm' | 'crisis' | 'absent';
+export type SpotlightBoard = 'calm' | 'even' | 'crisis' | 'absent';
 export type SpotlightStrategy = 'steady' | 'spotlight';
 export type SpotlightMemberId = 'steady' | 'demon';
 export type SpotlightInput =
@@ -50,7 +50,7 @@ const BASE_OUTPUT = 10;
 const BASE_DRAIN = 20;
 const STAMINA = 80;
 const VALUE_PER = 4;
-const INFLOW: Record<SpotlightBoard, number> = { calm: 8, crisis: 40, absent: 40 };
+const INFLOW: Record<SpotlightBoard, number> = { calm: 8, even: 10, crisis: 40, absent: 40 };
 
 function traitRates() {
   const trait = getTrait('reviewDemon');
@@ -116,6 +116,7 @@ export function createTraitSpotlight(seed: string, board: SpotlightBoard): Spotl
 /** 不在や余力不足のレビュー鬼は割り当てできない。速度は待ちの範囲までしか積まない。 */
 export function applyTraitSpotlight(state: SpotlightState, input: SpotlightInput): SpotlightState {
   if (input.type === 'view') return state;
+  if (state.tick >= state.horizon) return state;
   if (input.type === 'note') {
     if (state.skipped || available(member(state, 'demon'))) return state;
     const next = structuredClone(state);
@@ -162,7 +163,7 @@ export function viewTraitSpotlight(state: SpotlightState) {
     trait: state.trait,
     reason: state.reason,
     helpsWhen: 'queue-exceeds-steady',
-    hindersWhen: 'queue-below-output',
+    hindersWhen: 'queue-at-or-below-steady',
     choices:
       state.tick < state.horizon ? state.members.filter(available).map((item) => item.id) : [],
     demon: {
@@ -191,6 +192,7 @@ export function chooseSpotlightAction(
   state: SpotlightState,
   strategy: SpotlightStrategy,
 ): SpotlightInput {
+  if (state.tick >= state.horizon) return { type: 'view' };
   const demon = member(state, 'demon');
   if (strategy === 'spotlight' && !available(demon) && !state.skipped) return { type: 'note' };
   if (strategy === 'spotlight' && available(demon)) return { type: 'assign', member: 'demon' };
@@ -212,7 +214,7 @@ function runSpotlight(seed: string, board: SpotlightBoard, strategy: SpotlightSt
 }
 
 export function compareTraitSpotlights(seed = 'RI-241') {
-  return (['calm', 'crisis', 'absent'] as const).flatMap((board) =>
+  return (['calm', 'even', 'crisis', 'absent'] as const).flatMap((board) =>
     (['steady', 'spotlight'] as const).map((strategy) => ({
       board,
       strategy,

@@ -118,6 +118,122 @@
       }
     },
     {
+      "board": "even",
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "even",
+        "tick": 0,
+        "horizon": 2,
+        "inflow": 10,
+        "queue": 10,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": true,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "member": "steady"
+        },
+        {
+          "type": "assign",
+          "member": "steady"
+        }
+      ],
+      "result": {
+        "value": 80,
+        "spent": 40,
+        "score": 40,
+        "path": [20, 40],
+        "assigned": ["steady", "steady"],
+        "skipped": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "even",
+      "strategy": "spotlight",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "even",
+        "tick": 0,
+        "horizon": 2,
+        "inflow": 10,
+        "queue": 10,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": true,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "member": "demon"
+        },
+        {
+          "type": "assign",
+          "member": "demon"
+        }
+      ],
+      "result": {
+        "value": 80,
+        "spent": 54,
+        "score": 26,
+        "path": [13, 26],
+        "assigned": ["demon", "demon"],
+        "skipped": false,
+        "lost": false
+      }
+    },
+    {
       "board": "crisis",
       "strategy": "steady",
       "initial": {

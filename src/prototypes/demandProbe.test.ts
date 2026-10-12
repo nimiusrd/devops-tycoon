@@ -78,17 +78,24 @@ describe('RI-232 試作品で需要確認', () => {
       expected('confident', 'shipNow'),
       expected('confident', 'probeThen'),
       expected('confident', 'shipOther'),
-    ]).toEqual([56, 40, 14]);
+    ]).toEqual([62, 40, 38]);
     expect([
-      expected('unsure', 'probeThen'),
       expected('unsure', 'shipNow'),
       expected('unsure', 'shipOther'),
-    ]).toEqual([16, 14, 14]);
+      expected('unsure', 'probeThen'),
+    ]).toEqual([20, 20, 16]);
     expect([
       expected('open', 'probeThen'),
       expected('open', 'shipNow'),
       expected('open', 'shipOther'),
-    ]).toEqual([32, 14, 14]);
+    ]).toEqual([32, 28, 28]);
+    const missed = rows.find((row) => row.situation === 'unsure' && row.strategy === 'shipNow')!;
+    const screen = missed.worlds.find((world) => world.demand === 'screen')!;
+    expect(screen.inputs.slice(0, 2)).toEqual([
+      { type: 'ship', feature: 'api' },
+      { type: 'ship', feature: 'screen' },
+    ]);
+    expect(screen.result.score).toBe(6);
     const confident = rows.find(
       (row) => row.situation === 'confident' && row.strategy === 'shipNow',
     )!;

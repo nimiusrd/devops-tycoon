@@ -160,9 +160,15 @@ export function summarizeDemandProbe(state: ProbeState) {
   };
 }
 
+/** 先に選んだ候補を出荷し、未完成なら次の期間でもう一方を出荷する。 */
+function shipInOrder(state: ProbeState, first: ProbeFeature): ProbeInput {
+  if (!state.shipped || state.delivered) return { type: 'ship', feature: first };
+  return { type: 'ship', feature: other(first) };
+}
+
 export function chooseDemandAction(state: ProbeState, strategy: ProbeStrategy): ProbeInput {
-  if (strategy === 'shipNow') return { type: 'ship', feature: state.rumor };
-  if (strategy === 'shipOther') return { type: 'ship', feature: other(state.rumor) };
+  if (strategy === 'shipNow') return shipInOrder(state, state.rumor);
+  if (strategy === 'shipOther') return shipInOrder(state, other(state.rumor));
   if (!state.probed || state.probedFeature === null || state.reaction === null) {
     return { type: 'probe', feature: state.rumor };
   }

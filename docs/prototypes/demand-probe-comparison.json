@@ -6,7 +6,7 @@
       "strategy": "shipNow",
       "rumorWeight": 4,
       "otherWeight": 1,
-      "expected": 56,
+      "expected": 62,
       "opportunity": 8,
       "worlds": [
         {
@@ -95,7 +95,7 @@
             },
             {
               "type": "ship",
-              "feature": "api"
+              "feature": "screen"
             },
             {
               "type": "ship",
@@ -103,11 +103,11 @@
             }
           ],
           "result": {
-            "value": 0,
+            "value": 6,
             "probeValue": 0,
             "opportunityLoss": 8,
-            "delivered": false,
-            "score": 0,
+            "delivered": true,
+            "score": 6,
             "lost": false
           }
         }
@@ -230,7 +230,7 @@
       "strategy": "shipOther",
       "rumorWeight": 4,
       "otherWeight": 1,
-      "expected": 14,
+      "expected": 38,
       "opportunity": 32,
       "worlds": [
         {
@@ -268,7 +268,7 @@
             },
             {
               "type": "ship",
-              "feature": "screen"
+              "feature": "api"
             },
             {
               "type": "ship",
@@ -276,11 +276,11 @@
             }
           ],
           "result": {
-            "value": 0,
+            "value": 6,
             "probeValue": 0,
             "opportunityLoss": 8,
-            "delivered": false,
-            "score": 0,
+            "delivered": true,
+            "score": 6,
             "lost": false
           }
         },
@@ -342,7 +342,7 @@
       "strategy": "shipNow",
       "rumorWeight": 1,
       "otherWeight": 1,
-      "expected": 14,
+      "expected": 20,
       "opportunity": 8,
       "worlds": [
         {
@@ -431,7 +431,7 @@
             },
             {
               "type": "ship",
-              "feature": "api"
+              "feature": "screen"
             },
             {
               "type": "ship",
@@ -439,11 +439,11 @@
             }
           ],
           "result": {
-            "value": 0,
+            "value": 6,
             "probeValue": 0,
             "opportunityLoss": 8,
-            "delivered": false,
-            "score": 0,
+            "delivered": true,
+            "score": 6,
             "lost": false
           }
         }
@@ -566,7 +566,7 @@
       "strategy": "shipOther",
       "rumorWeight": 1,
       "otherWeight": 1,
-      "expected": 14,
+      "expected": 20,
       "opportunity": 8,
       "worlds": [
         {
@@ -604,7 +604,7 @@
             },
             {
               "type": "ship",
-              "feature": "screen"
+              "feature": "api"
             },
             {
               "type": "ship",
@@ -612,11 +612,11 @@
             }
           ],
           "result": {
-            "value": 0,
+            "value": 6,
             "probeValue": 0,
             "opportunityLoss": 8,
-            "delivered": false,
-            "score": 0,
+            "delivered": true,
+            "score": 6,
             "lost": false
           }
         },
@@ -678,7 +678,7 @@
       "strategy": "shipNow",
       "rumorWeight": 1,
       "otherWeight": 1,
-      "expected": 14,
+      "expected": 28,
       "opportunity": 0,
       "worlds": [
         {
@@ -767,7 +767,7 @@
             },
             {
               "type": "ship",
-              "feature": "api"
+              "feature": "screen"
             },
             {
               "type": "ship",
@@ -775,11 +775,11 @@
             }
           ],
           "result": {
-            "value": 0,
+            "value": 14,
             "probeValue": 0,
             "opportunityLoss": 0,
-            "delivered": false,
-            "score": 0,
+            "delivered": true,
+            "score": 14,
             "lost": false
           }
         }
@@ -902,7 +902,7 @@
       "strategy": "shipOther",
       "rumorWeight": 1,
       "otherWeight": 1,
-      "expected": 14,
+      "expected": 28,
       "opportunity": 0,
       "worlds": [
         {
@@ -940,7 +940,7 @@
             },
             {
               "type": "ship",
-              "feature": "screen"
+              "feature": "api"
             },
             {
               "type": "ship",
@@ -948,11 +948,11 @@
             }
           ],
           "result": {
-            "value": 0,
+            "value": 14,
             "probeValue": 0,
             "opportunityLoss": 0,
-            "delivered": false,
-            "score": 0,
+            "delivered": true,
+            "score": 14,
             "lost": false
           }
         },

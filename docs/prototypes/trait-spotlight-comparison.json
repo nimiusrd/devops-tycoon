@@ -1,0 +1,350 @@
+{
+  "seed": "RI-241",
+  "results": [
+    {
+      "board": "calm",
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "calm",
+        "tick": 0,
+        "horizon": 2,
+        "queue": 8,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": true,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "member": "steady"
+        },
+        {
+          "type": "assign",
+          "member": "steady"
+        }
+      ],
+      "result": {
+        "value": 64,
+        "spent": 40,
+        "score": 24,
+        "path": [12, 24],
+        "assigned": ["steady", "steady"],
+        "skipped": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "calm",
+      "strategy": "spotlight",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "calm",
+        "tick": 0,
+        "horizon": 2,
+        "queue": 8,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": true,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "member": "demon"
+        },
+        {
+          "type": "assign",
+          "member": "demon"
+        }
+      ],
+      "result": {
+        "value": 64,
+        "spent": 54,
+        "score": 10,
+        "path": [5, 10],
+        "assigned": ["demon", "demon"],
+        "skipped": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "crisis",
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "crisis",
+        "tick": 0,
+        "horizon": 2,
+        "queue": 40,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": true,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "member": "steady"
+        },
+        {
+          "type": "assign",
+          "member": "steady"
+        }
+      ],
+      "result": {
+        "value": 80,
+        "spent": 40,
+        "score": 40,
+        "path": [20, 40],
+        "assigned": ["steady", "steady"],
+        "skipped": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "crisis",
+      "strategy": "spotlight",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "crisis",
+        "tick": 0,
+        "horizon": 2,
+        "queue": 40,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": true,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "member": "demon"
+        },
+        {
+          "type": "assign",
+          "member": "demon"
+        }
+      ],
+      "result": {
+        "value": 104,
+        "spent": 54,
+        "score": 50,
+        "path": [25, 50],
+        "assigned": ["demon", "demon"],
+        "skipped": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "absent",
+      "strategy": "steady",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "absent",
+        "tick": 0,
+        "horizon": 2,
+        "queue": 40,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": false,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "member": "steady"
+        },
+        {
+          "type": "assign",
+          "member": "steady"
+        }
+      ],
+      "result": {
+        "value": 80,
+        "spent": 40,
+        "score": 40,
+        "path": [20, 40],
+        "assigned": ["steady", "steady"],
+        "skipped": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "absent",
+      "strategy": "spotlight",
+      "initial": {
+        "version": 1,
+        "seed": "RI-241",
+        "board": "absent",
+        "tick": 0,
+        "horizon": 2,
+        "queue": 40,
+        "valuePer": 4,
+        "reason": "review-backlog",
+        "trait": "reviewDemon",
+        "skipped": false,
+        "members": [
+          {
+            "id": "steady",
+            "trait": null,
+            "present": true,
+            "output": 10,
+            "drain": 20,
+            "stamina": 80
+          },
+          {
+            "id": "demon",
+            "trait": "reviewDemon",
+            "present": false,
+            "output": 13,
+            "drain": 27,
+            "stamina": 80
+          }
+        ],
+        "value": 0,
+        "spent": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "note"
+        },
+        {
+          "type": "assign",
+          "member": "steady"
+        },
+        {
+          "type": "assign",
+          "member": "steady"
+        }
+      ],
+      "result": {
+        "value": 80,
+        "spent": 40,
+        "score": 40,
+        "path": [20, 40],
+        "assigned": ["steady", "steady"],
+        "skipped": true,
+        "lost": false
+      }
+    }
+  ]
+}

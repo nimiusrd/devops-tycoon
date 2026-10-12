@@ -4,7 +4,7 @@ import { rosterHeadcount } from './customerSegments';
 import { PRODUCT_CAPACITY } from './productGrowth';
 
 export type ProbeFeature = 'api' | 'screen';
-export type ProbeBoard = 'fadeHit' | 'fadeMiss' | 'stayHit' | 'stayMiss';
+export type ProbeSituation = 'confident' | 'unsure' | 'open';
 export type ProbeStrategy = 'shipNow' | 'probeThen' | 'shipOther';
 export type ProbeReaction = 'yes' | 'no';
 export type ProbeInput =
@@ -15,7 +15,7 @@ export type ProbeInput =
 export interface ProbeState {
   version: 1;
   seed: string;
-  board: ProbeBoard;
+  situation: ProbeSituation;
   tick: number;
   horizon: number;
   capacity: number;
@@ -23,12 +23,15 @@ export interface ProbeState {
   demand: ProbeFeature;
   rumor: ProbeFeature;
   fades: boolean;
+  rumorWeight: number;
+  otherWeight: number;
   fullReward: number;
   lateReward: number;
   probeReward: number;
   probed: boolean;
   probedFeature: ProbeFeature | null;
   reaction: ProbeReaction | null;
+  shipped: boolean;
   delivered: boolean;
   value: number;
   probeValue: number;
@@ -36,36 +39,45 @@ export interface ProbeState {
   inputs: ProbeInput[];
 }
 
-const BOARDS: Record<ProbeBoard, { demand: ProbeFeature; fades: boolean }> = {
-  fadeHit: { demand: 'api', fades: true },
-  fadeMiss: { demand: 'screen', fades: true },
-  stayHit: { demand: 'api', fades: false },
-  stayMiss: { demand: 'screen', fades: false },
+const SITUATIONS: Record<
+  ProbeSituation,
+  { fades: boolean; rumorWeight: number; otherWeight: number }
+> = {
+  confident: { fades: true, rumorWeight: 4, otherWeight: 1 },
+  unsure: { fades: true, rumorWeight: 1, otherWeight: 1 },
+  open: { fades: false, rumorWeight: 1, otherWeight: 1 },
 };
 
 function isFeature(value: string): value is ProbeFeature {
   return value === 'api' || value === 'screen';
 }
 
-export function createDemandProbe(seed: string, board: ProbeBoard): ProbeState {
-  const preset = BOARDS[board];
+export function createDemandProbe(
+  seed: string,
+  situation: ProbeSituation,
+  demand: ProbeFeature,
+): ProbeState {
+  const preset = SITUATIONS[situation];
   return {
     version: 1,
     seed,
-    board,
+    situation,
     tick: 0,
     horizon: 3,
     capacity: PRODUCT_CAPACITY,
     respondents: rosterHeadcount('pioneer'),
-    demand: preset.demand,
+    demand,
     rumor: 'api',
     fades: preset.fades,
+    rumorWeight: preset.rumorWeight,
+    otherWeight: preset.otherWeight,
     fullReward: 14,
     lateReward: 6,
     probeReward: 2,
     probed: false,
     probedFeature: null,
     reaction: null,
+    shipped: false,
     delivered: false,
     value: 0,
     probeValue: 0,
@@ -78,7 +90,7 @@ function other(feature: ProbeFeature): ProbeFeature {
   return feature === 'api' ? 'screen' : 'api';
 }
 
-/** 消失する盤面は、最初の期間に全額を取れなければ機会損失を一度だけ記録する。 */
+/** 消失する観測では、最初の期間に全額を取れなければ機会損失を一度だけ記録する。 */
 function closeFirstPeriod(next: ProbeState) {
   const opened = next.tick;
   if (opened === 0 && next.fades && !(next.delivered && next.value >= next.fullReward)) {
@@ -87,11 +99,11 @@ function closeFirstPeriod(next: ProbeState) {
   next.tick = opened + 1;
 }
 
-/** 試作品の反応は盤面で決まり、二度目と出荷後は状態を変えない。完成報酬は出荷の一度だけ。 */
+/** 試作品の反応は需要で決まり、二度目と、一度でも出荷したあとは状態を変えない。 */
 export function applyDemandProbe(state: ProbeState, input: ProbeInput): ProbeState {
   if (input.type === 'view' || state.tick >= state.horizon) return state;
   if (input.type === 'probe') {
-    if (state.probed || state.delivered || !isFeature(input.feature)) return state;
+    if (state.probed || state.shipped || !isFeature(input.feature)) return state;
     const next = structuredClone(state);
     next.probed = true;
     next.probedFeature = input.feature;
@@ -104,6 +116,7 @@ export function applyDemandProbe(state: ProbeState, input: ProbeInput): ProbeSta
   }
   if (input.type !== 'ship' || !isFeature(input.feature)) return state;
   const next = structuredClone(state);
+  next.shipped = true;
   if (!next.delivered && input.feature === next.demand) {
     next.delivered = true;
     const faded = next.fades && next.tick > 0;
@@ -122,9 +135,13 @@ export function viewDemandProbe(state: ProbeState) {
     respondents: state.respondents,
     candidates: ['api', 'screen'] as const,
     rumor: state.rumor,
+    situation: state.situation,
+    rumorWeight: state.rumorWeight,
+    otherWeight: state.otherWeight,
     probed: state.probed,
     probedFeature: state.probedFeature,
     reaction: state.reaction,
+    shipped: state.shipped,
     fullReward: state.fullReward,
     lateReward: state.fades ? state.lateReward : state.fullReward,
     probeReward: state.probeReward,
@@ -146,30 +163,48 @@ export function summarizeDemandProbe(state: ProbeState) {
 export function chooseDemandAction(state: ProbeState, strategy: ProbeStrategy): ProbeInput {
   if (strategy === 'shipNow') return { type: 'ship', feature: state.rumor };
   if (strategy === 'shipOther') return { type: 'ship', feature: other(state.rumor) };
-  if (!state.probed) return { type: 'probe', feature: state.rumor };
-  const feature = state.reaction === 'yes' ? state.rumor : other(state.rumor);
+  if (!state.probed || state.probedFeature === null || state.reaction === null) {
+    return { type: 'probe', feature: state.rumor };
+  }
+  const feature = state.reaction === 'yes' ? state.probedFeature : other(state.probedFeature);
   return { type: 'ship', feature };
 }
 
+function runWorld(
+  seed: string,
+  situation: ProbeSituation,
+  demand: ProbeFeature,
+  strategy: ProbeStrategy,
+) {
+  const initial = createDemandProbe(seed, situation, demand);
+  let state = initial;
+  let guard = 0;
+  while (state.tick < state.horizon) {
+    if (++guard > 10) throw new Error(`${situation}:${demand}:${strategy}`);
+    const input = chooseDemandAction(state, strategy);
+    const next = applyDemandProbe(state, input);
+    if (next === state) throw new Error(`${situation}:${demand}:${strategy}@${state.tick}`);
+    state = next;
+  }
+  return { demand, initial, inputs: state.inputs, result: summarizeDemandProbe(state) };
+}
+
 export function compareDemandProbes(seed = 'RI-232') {
-  return (['fadeHit', 'fadeMiss', 'stayHit', 'stayMiss'] as const).flatMap((board) =>
+  return (['confident', 'unsure', 'open'] as const).flatMap((situation) =>
     (['shipNow', 'probeThen', 'shipOther'] as const).map((strategy) => {
-      const initial = createDemandProbe(seed, board);
-      let state = initial;
-      let guard = 0;
-      while (state.tick < state.horizon) {
-        if (++guard > 10) throw new Error(`${board}:${strategy}`);
-        const input = chooseDemandAction(state, strategy);
-        const next = applyDemandProbe(state, input);
-        if (next === state) throw new Error(`${board}:${strategy}@${state.tick}`);
-        state = next;
-      }
+      const rumorWorld = runWorld(seed, situation, 'api', strategy);
+      const otherWorld = runWorld(seed, situation, 'screen', strategy);
+      const { rumorWeight, otherWeight } = rumorWorld.initial;
       return {
-        board,
+        situation,
         strategy,
-        initial,
-        inputs: state.inputs,
-        result: summarizeDemandProbe(state),
+        rumorWeight,
+        otherWeight,
+        expected: rumorWeight * rumorWorld.result.score + otherWeight * otherWorld.result.score,
+        opportunity:
+          rumorWeight * rumorWorld.result.opportunityLoss +
+          otherWeight * otherWorld.result.opportunityLoss,
+        worlds: [rumorWorld, otherWorld],
       };
     }),
   );

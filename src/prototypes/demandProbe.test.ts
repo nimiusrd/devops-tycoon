@@ -12,9 +12,9 @@ import {
 import comparison from '../../docs/prototypes/demand-probe-comparison.json';
 
 describe('RI-232 試作品で需要確認', () => {
-  it('試作品の報酬と、出荷の報酬、機会の縮小を操作前に分ける', () => {
-    const first = create('RI-232', 'fadeHit');
-    expect(create('RI-232', 'fadeHit')).toEqual(first);
+  it('操作前に、噂の重みと機会の消失を示し、真の需要は出さない', () => {
+    const first = create('RI-232', 'confident', 'api');
+    expect(create('RI-232', 'confident', 'api')).toEqual(first);
     expect(first.capacity).toBe(PRODUCT_CAPACITY);
     expect(first.respondents).toBe(rosterHeadcount('pioneer'));
     const before = structuredClone(first);
@@ -28,98 +28,94 @@ describe('RI-232 試作品で需要確認', () => {
       respondents: 4,
       candidates: ['api', 'screen'],
       rumor: 'api',
+      situation: 'confident',
+      rumorWeight: 4,
+      otherWeight: 1,
       probed: false,
       probedFeature: null,
       reaction: null,
+      shipped: false,
       fullReward: 14,
       lateReward: 6,
       probeReward: 2,
       fades: true,
     });
     expect(blank).not.toHaveProperty('demand');
-    expect(viewDemandProbe(create('RI-232', 'stayMiss'))).toMatchObject({
+    expect(viewDemandProbe(create('RI-232', 'open', 'screen'))).toMatchObject({
       fades: false,
       lateReward: 14,
+      rumorWeight: 1,
+      otherWeight: 1,
     });
-    expect(viewDemandProbe(create('RI-232', 'fadeMiss')).fades).toBe(true);
-    expect(create('RI-232', 'fadeMiss').demand).toBe('screen');
-    expect(create('RI-232', 'stayHit').demand).toBe('api');
   });
 
-  it('出荷後の試作品は拒否し、機会の消失は正解の出荷を待たない', () => {
-    const fade = create('RI-232', 'fadeHit');
-    const shipped = apply(fade, { type: 'ship', feature: 'api' });
-    expect(shipped.value).toBe(14);
-    expect(shipped.opportunityLoss).toBe(0);
-    expect(apply(shipped, { type: 'probe', feature: 'api' })).toBe(shipped);
-    const probed = apply(fade, { type: 'probe', feature: 'api' });
-    expect(probed.reaction).toBe('yes');
-    expect(probed.value).toBe(2);
-    expect(probed.delivered).toBe(false);
-    expect(probed.opportunityLoss).toBe(8);
-    expect(apply(probed, { type: 'probe', feature: 'screen' })).toBe(probed);
-    const late = apply(probed, { type: 'ship', feature: 'api' });
-    expect(late.value).toBe(8);
-    expect(late.opportunityLoss).toBe(8);
-    const missed = apply(create('RI-232', 'fadeMiss'), { type: 'ship', feature: 'api' });
-    expect(missed.value).toBe(0);
-    expect(missed.opportunityLoss).toBe(8);
-    const decoy = apply(create('RI-232', 'stayMiss'), { type: 'probe', feature: 'api' });
-    expect(decoy.reaction).toBe('no');
-    expect(decoy.opportunityLoss).toBe(0);
-    expect(apply(decoy, { type: 'view' })).toBe(decoy);
-    expect(viewDemandProbe(decoy)).not.toHaveProperty('demand');
+  it('出荷後は正解でなくても試作品を拒否し、反応は試した候補に従う', () => {
+    const open = create('RI-232', 'open', 'screen');
+    const wrong = apply(open, { type: 'ship', feature: 'api' });
+    expect(wrong.delivered).toBe(false);
+    expect(wrong.shipped).toBe(true);
+    expect(apply(wrong, { type: 'probe', feature: 'api' })).toBe(wrong);
+    const probedScreen = apply(open, { type: 'probe', feature: 'screen' });
+    expect(probedScreen.reaction).toBe('yes');
+    expect(chooseDemandAction(probedScreen, 'probeThen')).toEqual({
+      type: 'ship',
+      feature: 'screen',
+    });
+    const probedMiss = apply(create('RI-232', 'open', 'api'), { type: 'probe', feature: 'screen' });
+    expect(probedMiss.reaction).toBe('no');
+    expect(chooseDemandAction(probedMiss, 'probeThen')).toEqual({ type: 'ship', feature: 'api' });
+    const faded = apply(create('RI-232', 'confident', 'api'), { type: 'probe', feature: 'api' });
+    expect(faded.opportunityLoss).toBe(8);
+    expect(apply(faded, { type: 'view' })).toBe(faded);
   });
 
-  it('消失と需要の組み合わせで、即出荷と試作品の優劣が入れ替わる', () => {
+  it('観測できる重みで、確信度が高いときだけ即出荷が試作品を上回る', () => {
     const rows = compareDemandProbes(comparison.seed);
     expect(rows).toEqual(comparison.results);
-    const score = (board: string, strategy: string) =>
-      rows.find((row) => row.board === board && row.strategy === strategy)!.result.score;
-    const loss = (board: string, strategy: string) =>
-      rows.find((row) => row.board === board && row.strategy === strategy)!.result.opportunityLoss;
+    const expected = (situation: string, strategy: string) =>
+      rows.find((row) => row.situation === situation && row.strategy === strategy)!.expected;
     expect([
-      score('fadeHit', 'shipNow'),
-      score('fadeHit', 'probeThen'),
-      score('fadeHit', 'shipOther'),
-    ]).toEqual([14, 8, 0]);
+      expected('confident', 'shipNow'),
+      expected('confident', 'probeThen'),
+      expected('confident', 'shipOther'),
+    ]).toEqual([56, 40, 14]);
     expect([
-      score('fadeMiss', 'shipOther'),
-      score('fadeMiss', 'probeThen'),
-      score('fadeMiss', 'shipNow'),
-    ]).toEqual([14, 8, 0]);
+      expected('unsure', 'probeThen'),
+      expected('unsure', 'shipNow'),
+      expected('unsure', 'shipOther'),
+    ]).toEqual([16, 14, 14]);
     expect([
-      score('stayHit', 'probeThen'),
-      score('stayHit', 'shipNow'),
-      score('stayHit', 'shipOther'),
-    ]).toEqual([16, 14, 0]);
-    expect([
-      score('stayMiss', 'probeThen'),
-      score('stayMiss', 'shipOther'),
-      score('stayMiss', 'shipNow'),
-    ]).toEqual([16, 14, 0]);
-    expect(loss('fadeHit', 'probeThen')).toBe(8);
-    expect(loss('fadeHit', 'shipOther')).toBe(8);
-    expect(loss('fadeHit', 'shipNow')).toBe(0);
-    expect(loss('fadeMiss', 'shipNow')).toBe(8);
-    expect(loss('stayMiss', 'probeThen')).toBe(0);
-    for (const row of rows) expect(row.result.lost).toBe(false);
+      expected('open', 'probeThen'),
+      expected('open', 'shipNow'),
+      expected('open', 'shipOther'),
+    ]).toEqual([32, 14, 14]);
+    const confident = rows.find(
+      (row) => row.situation === 'confident' && row.strategy === 'shipNow',
+    )!;
+    expect(confident.opportunity).toBe(8);
+    const unsure = rows.find((row) => row.situation === 'unsure' && row.strategy === 'probeThen')!;
+    expect(unsure.opportunity).toBe(16);
+    for (const row of rows) {
+      for (const world of row.worlds) expect(world.result.lost).toBe(false);
+    }
   });
 
   it('全入力の再生と毎入力JSON保存再開が一致し、元状態は変わらない', () => {
     for (const row of compareDemandProbes(comparison.seed)) {
-      let live = row.initial;
-      let saved = structuredClone(live);
-      for (const input of row.inputs) {
-        const previous = live;
-        const before = structuredClone(live);
-        expect(chooseDemandAction(previous, row.strategy)).toEqual(input);
-        live = apply(live, input);
-        saved = apply(JSON.parse(JSON.stringify(saved)), input);
-        expect(previous).toEqual(before);
-        expect(saved).toEqual(live);
+      for (const world of row.worlds) {
+        let live = world.initial;
+        let saved = structuredClone(live);
+        for (const input of world.inputs) {
+          const previous = live;
+          const before = structuredClone(live);
+          expect(chooseDemandAction(previous, row.strategy)).toEqual(input);
+          live = apply(live, input);
+          saved = apply(JSON.parse(JSON.stringify(saved)), input);
+          expect(previous).toEqual(before);
+          expect(saved).toEqual(live);
+        }
+        expect(summarizeDemandProbe(live)).toEqual(world.result);
       }
-      expect(summarizeDemandProbe(live)).toEqual(row.result);
     }
   });
 });

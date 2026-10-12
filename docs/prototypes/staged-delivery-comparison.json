@@ -1,0 +1,235 @@
+{
+  "seed": "RI-238",
+  "results": [
+    {
+      "board": "tight",
+      "mode": "lump",
+      "initial": {
+        "version": 1,
+        "seed": "RI-238",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "reviewCost": 3,
+        "mode": null,
+        "parts": [
+          {
+            "id": "core",
+            "need": 4,
+            "done": 0,
+            "value": 12,
+            "delivered": false
+          },
+          {
+            "id": "extra",
+            "need": 4,
+            "done": 0,
+            "value": 8,
+            "delivered": false
+          }
+        ],
+        "value": 0,
+        "reviews": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "mode": "lump"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "deliver"
+        }
+      ],
+      "result": {
+        "value": 17,
+        "reviews": 1,
+        "reviewSpend": 3,
+        "carry": 0,
+        "coreDelivered": true,
+        "extraDelivered": true,
+        "score": 17,
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "mode": "staged",
+      "initial": {
+        "version": 1,
+        "seed": "RI-238",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "reviewCost": 3,
+        "mode": null,
+        "parts": [
+          {
+            "id": "core",
+            "need": 4,
+            "done": 0,
+            "value": 12,
+            "delivered": false
+          },
+          {
+            "id": "extra",
+            "need": 4,
+            "done": 0,
+            "value": 8,
+            "delivered": false
+          }
+        ],
+        "value": 0,
+        "reviews": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "mode": "staged"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "deliver"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "deliver"
+        }
+      ],
+      "result": {
+        "value": 14,
+        "reviews": 2,
+        "reviewSpend": 6,
+        "carry": 0,
+        "coreDelivered": true,
+        "extraDelivered": true,
+        "score": 14,
+        "lost": false
+      }
+    },
+    {
+      "board": "short",
+      "mode": "lump",
+      "initial": {
+        "version": 1,
+        "seed": "RI-238",
+        "board": "short",
+        "tick": 0,
+        "horizon": 1,
+        "capacity": 4,
+        "reviewCost": 3,
+        "mode": null,
+        "parts": [
+          {
+            "id": "core",
+            "need": 4,
+            "done": 0,
+            "value": 12,
+            "delivered": false
+          },
+          {
+            "id": "extra",
+            "need": 4,
+            "done": 0,
+            "value": 8,
+            "delivered": false
+          }
+        ],
+        "value": 0,
+        "reviews": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "mode": "lump"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 0,
+        "reviews": 0,
+        "reviewSpend": 0,
+        "carry": 4,
+        "coreDelivered": false,
+        "extraDelivered": false,
+        "score": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "short",
+      "mode": "staged",
+      "initial": {
+        "version": 1,
+        "seed": "RI-238",
+        "board": "short",
+        "tick": 0,
+        "horizon": 1,
+        "capacity": 4,
+        "reviewCost": 3,
+        "mode": null,
+        "parts": [
+          {
+            "id": "core",
+            "need": 4,
+            "done": 0,
+            "value": 12,
+            "delivered": false
+          },
+          {
+            "id": "extra",
+            "need": 4,
+            "done": 0,
+            "value": 8,
+            "delivered": false
+          }
+        ],
+        "value": 0,
+        "reviews": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "mode": "staged"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "deliver"
+        }
+      ],
+      "result": {
+        "value": 9,
+        "reviews": 1,
+        "reviewSpend": 3,
+        "carry": 4,
+        "coreDelivered": true,
+        "extraDelivered": false,
+        "score": 9,
+        "lost": false
+      }
+    }
+  ]
+}

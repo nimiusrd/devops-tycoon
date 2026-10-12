@@ -2,7 +2,7 @@
 
 import { getTrait } from '../data/traits';
 
-export type SpotlightBoard = 'calm' | 'even' | 'crisis' | 'absent';
+export type SpotlightBoard = 'calm' | 'even' | 'over' | 'flip' | 'crisis' | 'absent';
 export type SpotlightStrategy = 'steady' | 'spotlight';
 export type SpotlightMemberId = 'steady' | 'demon';
 export type SpotlightInput =
@@ -50,7 +50,14 @@ const BASE_OUTPUT = 10;
 const BASE_DRAIN = 20;
 const STAMINA = 80;
 const VALUE_PER = 4;
-const INFLOW: Record<SpotlightBoard, number> = { calm: 8, even: 10, crisis: 40, absent: 40 };
+const INFLOW: Record<SpotlightBoard, number> = {
+  calm: 8,
+  even: 10,
+  over: 11,
+  flip: 12,
+  crisis: 40,
+  absent: 40,
+};
 
 function traitRates() {
   const trait = getTrait('reviewDemon');
@@ -162,8 +169,8 @@ export function viewTraitSpotlight(state: SpotlightState) {
     valuePer: state.valuePer,
     trait: state.trait,
     reason: state.reason,
-    helpsWhen: 'queue-exceeds-steady',
-    hindersWhen: 'queue-at-or-below-steady',
+    helpsWhen: 'inflow-at-least-12',
+    hindersWhen: 'inflow-at-most-11',
     choices:
       state.tick < state.horizon ? state.members.filter(available).map((item) => item.id) : [],
     demon: {
@@ -214,7 +221,7 @@ function runSpotlight(seed: string, board: SpotlightBoard, strategy: SpotlightSt
 }
 
 export function compareTraitSpotlights(seed = 'RI-241') {
-  return (['calm', 'even', 'crisis', 'absent'] as const).flatMap((board) =>
+  return (['calm', 'even', 'over', 'flip', 'crisis', 'absent'] as const).flatMap((board) =>
     (['steady', 'spotlight'] as const).map((strategy) => ({
       board,
       strategy,

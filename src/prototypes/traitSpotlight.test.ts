@@ -25,8 +25,8 @@ describe('RI-241 欠点のある人の見せ場', () => {
       queue: 8,
       trait: 'reviewDemon',
       reason: 'review-backlog',
-      helpsWhen: 'queue-exceeds-steady',
-      hindersWhen: 'queue-at-or-below-steady',
+      helpsWhen: 'inflow-at-least-12',
+      hindersWhen: 'inflow-at-most-11',
       choices: ['steady', 'demon'],
       demon: { present: true, active: true, output: 13, drain: 27, stamina: 80 },
     });
@@ -86,6 +86,21 @@ describe('RI-241 欠点のある人の見せ場', () => {
     expect(row('even', 'spotlight').result).toMatchObject({ score: 26, spent: 54, path: [13, 26] });
     expect(row('even', 'steady').result.score).toBeGreaterThan(
       row('even', 'spotlight').result.score,
+    );
+    expect(row('over', 'steady').result).toMatchObject({ score: 40, path: [20, 40] });
+    expect(row('over', 'spotlight').result).toMatchObject({
+      value: 88,
+      spent: 54,
+      score: 34,
+      path: [17, 34],
+    });
+    expect(row('flip', 'spotlight').result).toMatchObject({ value: 96, spent: 54, score: 42 });
+    expect(row('flip', 'steady').result.score).toBe(40);
+    expect(row('over', 'steady').result.score).toBeGreaterThan(
+      row('over', 'spotlight').result.score,
+    );
+    expect(row('flip', 'spotlight').result.score).toBeGreaterThan(
+      row('flip', 'steady').result.score,
     );
     expect(row('crisis', 'spotlight').result).toMatchObject({
       score: 50,

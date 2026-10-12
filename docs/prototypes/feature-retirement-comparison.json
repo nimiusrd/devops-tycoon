@@ -1,0 +1,281 @@
+{
+  "seed": "RI-235",
+  "results": [
+    {
+      "board": "unused",
+      "strategy": "now",
+      "initial": {
+        "version": 1,
+        "seed": "RI-235",
+        "board": "unused",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "feature": "billing",
+        "users": 1,
+        "important": 0,
+        "maintenance": 3,
+        "userCost": 2,
+        "importantCost": 6,
+        "migrationCostRate": 3,
+        "recoverPer": 4,
+        "phase": "live",
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "remove"
+        },
+        {
+          "type": "hold"
+        },
+        {
+          "type": "hold"
+        }
+      ],
+      "result": {
+        "recovered": 12,
+        "customerLoss": 2,
+        "migrationCost": 0,
+        "activeMaintenance": 0,
+        "nextSlack": 4,
+        "score": 10,
+        "lost": false
+      }
+    },
+    {
+      "board": "unused",
+      "strategy": "staged",
+      "initial": {
+        "version": 1,
+        "seed": "RI-235",
+        "board": "unused",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "feature": "billing",
+        "users": 1,
+        "important": 0,
+        "maintenance": 3,
+        "userCost": 2,
+        "importantCost": 6,
+        "migrationCostRate": 3,
+        "recoverPer": 4,
+        "phase": "live",
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "announce"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "remove"
+        }
+      ],
+      "result": {
+        "recovered": 12,
+        "customerLoss": 0,
+        "migrationCost": 3,
+        "activeMaintenance": 0,
+        "nextSlack": 4,
+        "score": 9,
+        "lost": false
+      }
+    },
+    {
+      "board": "unused",
+      "strategy": "keep",
+      "initial": {
+        "version": 1,
+        "seed": "RI-235",
+        "board": "unused",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "feature": "billing",
+        "users": 1,
+        "important": 0,
+        "maintenance": 3,
+        "userCost": 2,
+        "importantCost": 6,
+        "migrationCostRate": 3,
+        "recoverPer": 4,
+        "phase": "live",
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold"
+        },
+        {
+          "type": "hold"
+        },
+        {
+          "type": "hold"
+        }
+      ],
+      "result": {
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "activeMaintenance": 3,
+        "nextSlack": 1,
+        "score": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "relied",
+      "strategy": "now",
+      "initial": {
+        "version": 1,
+        "seed": "RI-235",
+        "board": "relied",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "feature": "billing",
+        "users": 1,
+        "important": 2,
+        "maintenance": 3,
+        "userCost": 2,
+        "importantCost": 6,
+        "migrationCostRate": 3,
+        "recoverPer": 4,
+        "phase": "live",
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "remove"
+        },
+        {
+          "type": "hold"
+        },
+        {
+          "type": "hold"
+        }
+      ],
+      "result": {
+        "recovered": 12,
+        "customerLoss": 14,
+        "migrationCost": 0,
+        "activeMaintenance": 0,
+        "nextSlack": 4,
+        "score": -2,
+        "lost": false
+      }
+    },
+    {
+      "board": "relied",
+      "strategy": "staged",
+      "initial": {
+        "version": 1,
+        "seed": "RI-235",
+        "board": "relied",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "feature": "billing",
+        "users": 1,
+        "important": 2,
+        "maintenance": 3,
+        "userCost": 2,
+        "importantCost": 6,
+        "migrationCostRate": 3,
+        "recoverPer": 4,
+        "phase": "live",
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "announce"
+        },
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "remove"
+        }
+      ],
+      "result": {
+        "recovered": 12,
+        "customerLoss": 0,
+        "migrationCost": 3,
+        "activeMaintenance": 0,
+        "nextSlack": 4,
+        "score": 9,
+        "lost": false
+      }
+    },
+    {
+      "board": "relied",
+      "strategy": "keep",
+      "initial": {
+        "version": 1,
+        "seed": "RI-235",
+        "board": "relied",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "respondents": 4,
+        "feature": "billing",
+        "users": 1,
+        "important": 2,
+        "maintenance": 3,
+        "userCost": 2,
+        "importantCost": 6,
+        "migrationCostRate": 3,
+        "recoverPer": 4,
+        "phase": "live",
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "hold"
+        },
+        {
+          "type": "hold"
+        },
+        {
+          "type": "hold"
+        }
+      ],
+      "result": {
+        "recovered": 0,
+        "customerLoss": 0,
+        "migrationCost": 0,
+        "activeMaintenance": 3,
+        "nextSlack": 1,
+        "score": 0,
+        "lost": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,509 @@
+{
+  "seed": "RI-233",
+  "results": [
+    {
+      "situation": "star",
+      "strategy": "skipRead",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "star",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 4,
+          "screen": 1,
+          "billing": 1
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "shipVolume": 15,
+        "observed": false,
+        "repaired": null,
+        "score": 12,
+        "lost": false
+      }
+    },
+    {
+      "situation": "star",
+      "strategy": "extend",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "star",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 4,
+          "screen": 1,
+          "billing": 1
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "observe"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "shipVolume": 15,
+        "observed": true,
+        "repaired": null,
+        "score": 8,
+        "lost": false
+      }
+    },
+    {
+      "situation": "star",
+      "strategy": "repair",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "star",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 4,
+          "screen": 1,
+          "billing": 1
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "observe"
+        },
+        {
+          "type": "repair",
+          "feature": "screen"
+        },
+        {
+          "type": "collect"
+        }
+      ],
+      "result": {
+        "value": 2,
+        "shipVolume": 15,
+        "observed": true,
+        "repaired": "screen",
+        "score": 2,
+        "lost": false
+      }
+    },
+    {
+      "situation": "sleeper",
+      "strategy": "skipRead",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "sleeper",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 1,
+          "screen": 2,
+          "billing": 4
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        }
+      ],
+      "result": {
+        "value": 3,
+        "shipVolume": 15,
+        "observed": false,
+        "repaired": null,
+        "score": 3,
+        "lost": false
+      }
+    },
+    {
+      "situation": "sleeper",
+      "strategy": "extend",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "sleeper",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 1,
+          "screen": 2,
+          "billing": 4
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "observe"
+        },
+        {
+          "type": "extend",
+          "feature": "billing"
+        },
+        {
+          "type": "extend",
+          "feature": "billing"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "shipVolume": 15,
+        "observed": true,
+        "repaired": null,
+        "score": 8,
+        "lost": false
+      }
+    },
+    {
+      "situation": "sleeper",
+      "strategy": "repair",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "sleeper",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 1,
+          "screen": 2,
+          "billing": 4
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "observe"
+        },
+        {
+          "type": "repair",
+          "feature": "api"
+        },
+        {
+          "type": "collect"
+        }
+      ],
+      "result": {
+        "value": 2,
+        "shipVolume": 15,
+        "observed": true,
+        "repaired": "api",
+        "score": 2,
+        "lost": false
+      }
+    },
+    {
+      "situation": "blocked",
+      "strategy": "skipRead",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "blocked",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 1,
+          "screen": 3,
+          "billing": 0
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        },
+        {
+          "type": "extend",
+          "feature": "api"
+        }
+      ],
+      "result": {
+        "value": 3,
+        "shipVolume": 15,
+        "observed": false,
+        "repaired": null,
+        "score": 3,
+        "lost": false
+      }
+    },
+    {
+      "situation": "blocked",
+      "strategy": "extend",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "blocked",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 1,
+          "screen": 3,
+          "billing": 0
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "observe"
+        },
+        {
+          "type": "extend",
+          "feature": "screen"
+        },
+        {
+          "type": "extend",
+          "feature": "screen"
+        }
+      ],
+      "result": {
+        "value": 6,
+        "shipVolume": 15,
+        "observed": true,
+        "repaired": null,
+        "score": 6,
+        "lost": false
+      }
+    },
+    {
+      "situation": "blocked",
+      "strategy": "repair",
+      "initial": {
+        "version": 1,
+        "seed": "RI-233",
+        "situation": "blocked",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "respondents": 4,
+        "shipVolume": 15,
+        "forecast": {
+          "api": 3,
+          "screen": 3,
+          "billing": 3
+        },
+        "actual": {
+          "api": 1,
+          "screen": 3,
+          "billing": 0
+        },
+        "retireValue": 8,
+        "polishBonus": 1,
+        "shipped": false,
+        "observed": false,
+        "repaired": null,
+        "collected": false,
+        "value": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "observe"
+        },
+        {
+          "type": "repair",
+          "feature": "billing"
+        },
+        {
+          "type": "collect"
+        }
+      ],
+      "result": {
+        "value": 8,
+        "shipVolume": 15,
+        "observed": true,
+        "repaired": "billing",
+        "score": 8,
+        "lost": false
+      }
+    }
+  ]
+}

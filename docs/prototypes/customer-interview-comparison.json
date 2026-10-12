@@ -13,6 +13,8 @@
         "capacity": 4,
         "deadline": 1,
         "needed": "api",
+        "clueLikely": "api",
+        "clueOther": "billing",
         "rumor": "api",
         "speaker": {
           "pioneers": 3,
@@ -67,6 +69,8 @@
         "capacity": 4,
         "deadline": 1,
         "needed": "api",
+        "clueLikely": "api",
+        "clueOther": "billing",
         "rumor": "api",
         "speaker": {
           "pioneers": 3,
@@ -120,6 +124,8 @@
         "capacity": 4,
         "deadline": 1,
         "needed": "api",
+        "clueLikely": "api",
+        "clueOther": "billing",
         "rumor": "api",
         "speaker": {
           "pioneers": 3,
@@ -173,6 +179,8 @@
         "capacity": 4,
         "deadline": 3,
         "needed": "screen",
+        "clueLikely": "screen",
+        "clueOther": "billing",
         "rumor": "api",
         "speaker": {
           "pioneers": 1,
@@ -227,6 +235,8 @@
         "capacity": 4,
         "deadline": 3,
         "needed": "screen",
+        "clueLikely": "screen",
+        "clueOther": "billing",
         "rumor": "api",
         "speaker": {
           "pioneers": 1,
@@ -280,6 +290,8 @@
         "capacity": 4,
         "deadline": 3,
         "needed": "screen",
+        "clueLikely": "screen",
+        "clueOther": "billing",
         "rumor": "api",
         "speaker": {
           "pioneers": 1,
@@ -318,6 +330,172 @@
         "listenCost": 4,
         "delivered": false,
         "score": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "mislead",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-231",
+        "board": "mislead",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "deadline": 3,
+        "needed": "billing",
+        "clueLikely": "screen",
+        "clueOther": "billing",
+        "rumor": "api",
+        "speaker": {
+          "pioneers": 1,
+          "keepers": 3
+        },
+        "asked": false,
+        "likely": null,
+        "unconfirmed": null,
+        "progress": {
+          "api": 0,
+          "screen": 0,
+          "billing": 0
+        },
+        "delivered": false,
+        "value": 0,
+        "late": 0,
+        "listenCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "build",
+          "feature": "api"
+        },
+        {
+          "type": "build",
+          "feature": "api"
+        },
+        {
+          "type": "build",
+          "feature": "api"
+        }
+      ],
+      "result": {
+        "value": 0,
+        "late": 0,
+        "listenCost": 0,
+        "delivered": false,
+        "score": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "mislead",
+      "strategy": "ask",
+      "initial": {
+        "version": 1,
+        "seed": "RI-231",
+        "board": "mislead",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "deadline": 3,
+        "needed": "billing",
+        "clueLikely": "screen",
+        "clueOther": "billing",
+        "rumor": "api",
+        "speaker": {
+          "pioneers": 1,
+          "keepers": 3
+        },
+        "asked": false,
+        "likely": null,
+        "unconfirmed": null,
+        "progress": {
+          "api": 0,
+          "screen": 0,
+          "billing": 0
+        },
+        "delivered": false,
+        "value": 0,
+        "late": 0,
+        "listenCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ask"
+        },
+        {
+          "type": "build",
+          "feature": "screen"
+        },
+        {
+          "type": "build",
+          "feature": "screen"
+        }
+      ],
+      "result": {
+        "value": 0,
+        "late": 0,
+        "listenCost": 4,
+        "delivered": false,
+        "score": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "mislead",
+      "strategy": "askMiss",
+      "initial": {
+        "version": 1,
+        "seed": "RI-231",
+        "board": "mislead",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "deadline": 3,
+        "needed": "billing",
+        "clueLikely": "screen",
+        "clueOther": "billing",
+        "rumor": "api",
+        "speaker": {
+          "pioneers": 1,
+          "keepers": 3
+        },
+        "asked": false,
+        "likely": null,
+        "unconfirmed": null,
+        "progress": {
+          "api": 0,
+          "screen": 0,
+          "billing": 0
+        },
+        "delivered": false,
+        "value": 0,
+        "late": 0,
+        "listenCost": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ask"
+        },
+        {
+          "type": "build",
+          "feature": "billing"
+        },
+        {
+          "type": "build",
+          "feature": "billing"
+        }
+      ],
+      "result": {
+        "value": 12,
+        "late": 0,
+        "listenCost": 4,
+        "delivered": true,
+        "score": 12,
         "lost": false
       }
     }

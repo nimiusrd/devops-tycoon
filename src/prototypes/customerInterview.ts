@@ -4,7 +4,7 @@ import { rosterOf, type CustomerRoster } from './customerSegments';
 import { applyFeatureWork, PRODUCT_CAPACITY } from './productGrowth';
 
 export type InterviewFeature = 'api' | 'screen' | 'billing';
-export type InterviewBoard = 'urgent' | 'uncertain';
+export type InterviewBoard = 'urgent' | 'uncertain' | 'mislead';
 export type InterviewStrategy = 'rush' | 'ask' | 'askMiss';
 export type InterviewInput =
   { type: 'ask' } | { type: 'build'; feature: InterviewFeature } | { type: 'view' };
@@ -18,6 +18,8 @@ export interface InterviewState {
   capacity: number;
   deadline: number;
   needed: InterviewFeature;
+  clueLikely: InterviewFeature;
+  clueOther: InterviewFeature;
   rumor: InterviewFeature;
   speaker: CustomerRoster;
   asked: boolean;
@@ -38,10 +40,35 @@ const FEATURES: readonly InterviewFeature[] = ['api', 'screen', 'billing'];
 
 const BOARDS: Record<
   InterviewBoard,
-  { needed: InterviewFeature; deadline: number; speaker: 'pioneer' | 'keeper' }
+  {
+    needed: InterviewFeature;
+    clueLikely: InterviewFeature;
+    clueOther: InterviewFeature;
+    deadline: number;
+    speaker: 'pioneer' | 'keeper';
+  }
 > = {
-  urgent: { needed: 'api', deadline: 1, speaker: 'pioneer' },
-  uncertain: { needed: 'screen', deadline: 3, speaker: 'keeper' },
+  urgent: {
+    needed: 'api',
+    clueLikely: 'api',
+    clueOther: 'billing',
+    deadline: 1,
+    speaker: 'pioneer',
+  },
+  uncertain: {
+    needed: 'screen',
+    clueLikely: 'screen',
+    clueOther: 'billing',
+    deadline: 3,
+    speaker: 'keeper',
+  },
+  mislead: {
+    needed: 'billing',
+    clueLikely: 'screen',
+    clueOther: 'billing',
+    deadline: 3,
+    speaker: 'keeper',
+  },
 };
 
 function isFeature(value: string): value is InterviewFeature {
@@ -59,6 +86,8 @@ export function createCustomerInterview(seed: string, board: InterviewBoard): In
     capacity: PRODUCT_CAPACITY,
     deadline: preset.deadline,
     needed: preset.needed,
+    clueLikely: preset.clueLikely,
+    clueOther: preset.clueOther,
     rumor: 'api',
     speaker: rosterOf(preset.speaker),
     asked: false,
@@ -83,8 +112,8 @@ export function applyCustomerInterview(
     if (state.asked) return state;
     const next = structuredClone(state);
     next.asked = true;
-    next.likely = next.needed;
-    next.unconfirmed = 'billing';
+    next.likely = next.clueLikely;
+    next.unconfirmed = next.clueOther;
     next.listenCost += next.capacity;
     next.tick += 1;
     next.inputs.push({ type: 'ask' });
@@ -137,12 +166,12 @@ export function chooseInterviewAction(
   strategy: InterviewStrategy,
 ): InterviewInput {
   if (strategy === 'rush') return { type: 'build', feature: state.rumor };
-  if (!state.asked || state.likely === null) return { type: 'ask' };
-  return { type: 'build', feature: strategy === 'ask' ? state.likely : 'billing' };
+  if (!state.asked || state.likely === null || state.unconfirmed === null) return { type: 'ask' };
+  return { type: 'build', feature: strategy === 'ask' ? state.likely : state.unconfirmed };
 }
 
 export function compareCustomerInterviews(seed = 'RI-231') {
-  return (['urgent', 'uncertain'] as const).flatMap((board) =>
+  return (['urgent', 'uncertain', 'mislead'] as const).flatMap((board) =>
     (['rush', 'ask', 'askMiss'] as const).map((strategy) => {
       const initial = createCustomerInterview(seed, board);
       let state = initial;

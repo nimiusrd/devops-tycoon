@@ -36,6 +36,7 @@ describe('RI-231 顧客への聞き取り', () => {
       latePenalty: 10,
     });
     expect(blank).not.toHaveProperty('needed');
+    expect(blank).not.toHaveProperty('clueLikely');
     const asked = apply(first, { type: 'ask' });
     expect(viewCustomerInterview(asked)).toMatchObject({
       asked: true,
@@ -44,6 +45,10 @@ describe('RI-231 顧客への聞き取り', () => {
       unknowns: ['unconfirmed-feature'],
     });
     expect(viewCustomerInterview(asked)).not.toHaveProperty('needed');
+    const misled = apply(create('RI-231', 'mislead'), { type: 'ask' });
+    expect(misled.likely).toBe('screen');
+    expect(misled.needed).toBe('billing');
+    expect(misled.likely).not.toBe(misled.needed);
     expect(asked.listenCost).toBe(4);
     expect(apply(asked, { type: 'ask' })).toBe(asked);
   });
@@ -75,6 +80,11 @@ describe('RI-231 顧客への聞き取り', () => {
       score('uncertain', 'ask'),
       score('uncertain', 'rush'),
       score('uncertain', 'askMiss'),
+    ]).toEqual([12, 0, 0]);
+    expect([
+      score('mislead', 'askMiss'),
+      score('mislead', 'ask'),
+      score('mislead', 'rush'),
     ]).toEqual([12, 0, 0]);
     const asked = rows.find((row) => row.board === 'uncertain' && row.strategy === 'askMiss')!;
     expect(asked.result.delivered).toBe(false);

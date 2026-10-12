@@ -1,0 +1,461 @@
+{
+  "seed": "RI-237",
+  "results": [
+    {
+      "board": "early",
+      "method": "advance",
+      "initial": {
+        "version": 1,
+        "seed": "RI-237",
+        "board": "early",
+        "tick": 0,
+        "horizon": 4,
+        "startCash": 3,
+        "completionValue": 10,
+        "costs": [8, 1, 1, 1],
+        "offers": [
+          {
+            "method": "advance",
+            "total": 8,
+            "schedule": [8, 0, 0, 0],
+            "condition": "none",
+            "repayment": 0
+          },
+          {
+            "method": "staged",
+            "total": 12,
+            "schedule": [3, 3, 3, 3],
+            "condition": "previous-paid",
+            "repayment": 0
+          },
+          {
+            "method": "conditional",
+            "total": 16,
+            "schedule": [0, 0, 16, 0],
+            "condition": "first-two-paid",
+            "repayment": 0
+          }
+        ],
+        "method": null,
+        "cash": 3,
+        "received": 0,
+        "unpaid": 0,
+        "repayment": 0,
+        "shortfall": 0,
+        "paid": [false, false, false, false],
+        "complete": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "method": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "result": {
+        "cash": 0,
+        "received": 8,
+        "unpaid": 0,
+        "repayment": 0,
+        "complete": true,
+        "shortfall": 0,
+        "path": [3, 2, 1, 0],
+        "score": 10,
+        "lost": false
+      }
+    },
+    {
+      "board": "early",
+      "method": "staged",
+      "initial": {
+        "version": 1,
+        "seed": "RI-237",
+        "board": "early",
+        "tick": 0,
+        "horizon": 4,
+        "startCash": 3,
+        "completionValue": 10,
+        "costs": [8, 1, 1, 1],
+        "offers": [
+          {
+            "method": "advance",
+            "total": 8,
+            "schedule": [8, 0, 0, 0],
+            "condition": "none",
+            "repayment": 0
+          },
+          {
+            "method": "staged",
+            "total": 12,
+            "schedule": [3, 3, 3, 3],
+            "condition": "previous-paid",
+            "repayment": 0
+          },
+          {
+            "method": "conditional",
+            "total": 16,
+            "schedule": [0, 0, 16, 0],
+            "condition": "first-two-paid",
+            "repayment": 0
+          }
+        ],
+        "method": null,
+        "cash": 3,
+        "received": 0,
+        "unpaid": 0,
+        "repayment": 0,
+        "shortfall": 0,
+        "paid": [false, false, false, false],
+        "complete": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "method": "staged"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "result": {
+        "cash": 3,
+        "received": 3,
+        "unpaid": 9,
+        "repayment": 0,
+        "complete": false,
+        "shortfall": 2,
+        "path": [6, 5, 4, 3],
+        "score": 3,
+        "lost": false
+      }
+    },
+    {
+      "board": "early",
+      "method": "conditional",
+      "initial": {
+        "version": 1,
+        "seed": "RI-237",
+        "board": "early",
+        "tick": 0,
+        "horizon": 4,
+        "startCash": 3,
+        "completionValue": 10,
+        "costs": [8, 1, 1, 1],
+        "offers": [
+          {
+            "method": "advance",
+            "total": 8,
+            "schedule": [8, 0, 0, 0],
+            "condition": "none",
+            "repayment": 0
+          },
+          {
+            "method": "staged",
+            "total": 12,
+            "schedule": [3, 3, 3, 3],
+            "condition": "previous-paid",
+            "repayment": 0
+          },
+          {
+            "method": "conditional",
+            "total": 16,
+            "schedule": [0, 0, 16, 0],
+            "condition": "first-two-paid",
+            "repayment": 0
+          }
+        ],
+        "method": null,
+        "cash": 3,
+        "received": 0,
+        "unpaid": 0,
+        "repayment": 0,
+        "shortfall": 0,
+        "paid": [false, false, false, false],
+        "complete": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "method": "conditional"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "result": {
+        "cash": 0,
+        "received": 0,
+        "unpaid": 16,
+        "repayment": 0,
+        "complete": false,
+        "shortfall": 5,
+        "path": [3, 2, 1, 0],
+        "score": 0,
+        "lost": false
+      }
+    },
+    {
+      "board": "late",
+      "method": "advance",
+      "initial": {
+        "version": 1,
+        "seed": "RI-237",
+        "board": "late",
+        "tick": 0,
+        "horizon": 4,
+        "startCash": 3,
+        "completionValue": 10,
+        "costs": [1, 1, 1, 12],
+        "offers": [
+          {
+            "method": "advance",
+            "total": 8,
+            "schedule": [8, 0, 0, 0],
+            "condition": "none",
+            "repayment": 0
+          },
+          {
+            "method": "staged",
+            "total": 12,
+            "schedule": [3, 3, 3, 3],
+            "condition": "previous-paid",
+            "repayment": 0
+          },
+          {
+            "method": "conditional",
+            "total": 16,
+            "schedule": [0, 0, 16, 0],
+            "condition": "first-two-paid",
+            "repayment": 0
+          }
+        ],
+        "method": null,
+        "cash": 3,
+        "received": 0,
+        "unpaid": 0,
+        "repayment": 0,
+        "shortfall": 0,
+        "paid": [false, false, false, false],
+        "complete": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "method": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "result": {
+        "cash": 8,
+        "received": 8,
+        "unpaid": 0,
+        "repayment": 0,
+        "complete": false,
+        "shortfall": 4,
+        "path": [10, 9, 8, 8],
+        "score": 8,
+        "lost": false
+      }
+    },
+    {
+      "board": "late",
+      "method": "staged",
+      "initial": {
+        "version": 1,
+        "seed": "RI-237",
+        "board": "late",
+        "tick": 0,
+        "horizon": 4,
+        "startCash": 3,
+        "completionValue": 10,
+        "costs": [1, 1, 1, 12],
+        "offers": [
+          {
+            "method": "advance",
+            "total": 8,
+            "schedule": [8, 0, 0, 0],
+            "condition": "none",
+            "repayment": 0
+          },
+          {
+            "method": "staged",
+            "total": 12,
+            "schedule": [3, 3, 3, 3],
+            "condition": "previous-paid",
+            "repayment": 0
+          },
+          {
+            "method": "conditional",
+            "total": 16,
+            "schedule": [0, 0, 16, 0],
+            "condition": "first-two-paid",
+            "repayment": 0
+          }
+        ],
+        "method": null,
+        "cash": 3,
+        "received": 0,
+        "unpaid": 0,
+        "repayment": 0,
+        "shortfall": 0,
+        "paid": [false, false, false, false],
+        "complete": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "method": "staged"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "result": {
+        "cash": 0,
+        "received": 12,
+        "unpaid": 0,
+        "repayment": 0,
+        "complete": true,
+        "shortfall": 0,
+        "path": [5, 7, 9, 0],
+        "score": 10,
+        "lost": false
+      }
+    },
+    {
+      "board": "late",
+      "method": "conditional",
+      "initial": {
+        "version": 1,
+        "seed": "RI-237",
+        "board": "late",
+        "tick": 0,
+        "horizon": 4,
+        "startCash": 3,
+        "completionValue": 10,
+        "costs": [1, 1, 1, 12],
+        "offers": [
+          {
+            "method": "advance",
+            "total": 8,
+            "schedule": [8, 0, 0, 0],
+            "condition": "none",
+            "repayment": 0
+          },
+          {
+            "method": "staged",
+            "total": 12,
+            "schedule": [3, 3, 3, 3],
+            "condition": "previous-paid",
+            "repayment": 0
+          },
+          {
+            "method": "conditional",
+            "total": 16,
+            "schedule": [0, 0, 16, 0],
+            "condition": "first-two-paid",
+            "repayment": 0
+          }
+        ],
+        "method": null,
+        "cash": 3,
+        "received": 0,
+        "unpaid": 0,
+        "repayment": 0,
+        "shortfall": 0,
+        "paid": [false, false, false, false],
+        "complete": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "choose",
+          "method": "conditional"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        },
+        {
+          "type": "advance"
+        }
+      ],
+      "result": {
+        "cash": 4,
+        "received": 16,
+        "unpaid": 0,
+        "repayment": 0,
+        "complete": true,
+        "shortfall": 0,
+        "path": [2, 1, 16, 4],
+        "score": 14,
+        "lost": false
+      }
+    }
+  ]
+}

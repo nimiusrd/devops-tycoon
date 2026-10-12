@@ -69,7 +69,7 @@ export function createCustomerSegments(seed: string, mix: CustomerMix): Customer
   };
 }
 
-/** 新機能層は完成機能、安定層は事故の有無で満足が変わる。未完了の進捗は完成に数えない。 */
+/** 新機能層は完成機能、安定層は事故の有無で満足が変わる。未投入は割当合計が0の期間だけ。 */
 export function applyCustomerSegments(state: CustomerState, input: ProductInput): CustomerState {
   if (input.type === 'view') return state;
   const product = applyProductGrowth(state.product, input);
@@ -79,9 +79,11 @@ export function applyCustomerSegments(state: CustomerState, input: ProductInput)
   const next = structuredClone(state);
   next.product = product;
   next.inputs = product.inputs;
+  const assigned =
+    input.type === 'spend' ? input.spend.api + input.spend.screen + input.spend.billing : 0;
   const pioneerEach =
     period.completed.length * next.pioneerPerFeature +
-    (period.featureWork === 0 ? next.pioneerIfNoFeature : 0);
+    (assigned === 0 ? next.pioneerIfNoFeature : 0);
   const keeperEach = period.incident > 0 ? next.keeperPerIncident : next.keeperPerSafe;
   next.pioneerScore += pioneerEach * next.pioneers;
   next.keeperScore += keeperEach * next.keepers;

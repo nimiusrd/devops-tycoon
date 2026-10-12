@@ -66,6 +66,12 @@ describe('RI-229 顧客層', () => {
     });
     expect(repeated.pioneerScore).toBe(30);
     expect(repeated.product.completedValue).toBe(8);
+    const wasted = apply(done, {
+      type: 'spend',
+      spend: { api: 4, screen: 0, billing: 0, ops: 0 },
+    });
+    expect(wasted.pioneerScore).toBe(30);
+    expect(wasted.product.shippedWork).toBe(done.product.shippedWork);
     expect(apply(repeated, { type: 'view' })).toBe(repeated);
   });
 

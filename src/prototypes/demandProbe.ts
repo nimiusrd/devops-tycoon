@@ -4,7 +4,7 @@ import { rosterHeadcount } from './customerSegments';
 import { PRODUCT_CAPACITY } from './productGrowth';
 
 export type ProbeFeature = 'api' | 'screen';
-export type ProbeBoard = 'fade' | 'decoy';
+export type ProbeBoard = 'fadeHit' | 'fadeMiss' | 'stayHit' | 'stayMiss';
 export type ProbeStrategy = 'shipNow' | 'probeThen' | 'shipOther';
 export type ProbeReaction = 'yes' | 'no';
 export type ProbeInput =
@@ -36,9 +36,11 @@ export interface ProbeState {
   inputs: ProbeInput[];
 }
 
-const BOARDS: Record<ProbeBoard, { demand: ProbeFeature; fades: boolean; lateReward: number }> = {
-  fade: { demand: 'api', fades: true, lateReward: 6 },
-  decoy: { demand: 'screen', fades: false, lateReward: 14 },
+const BOARDS: Record<ProbeBoard, { demand: ProbeFeature; fades: boolean }> = {
+  fadeHit: { demand: 'api', fades: true },
+  fadeMiss: { demand: 'screen', fades: true },
+  stayHit: { demand: 'api', fades: false },
+  stayMiss: { demand: 'screen', fades: false },
 };
 
 function isFeature(value: string): value is ProbeFeature {
@@ -59,7 +61,7 @@ export function createDemandProbe(seed: string, board: ProbeBoard): ProbeState {
     rumor: 'api',
     fades: preset.fades,
     fullReward: 14,
-    lateReward: preset.lateReward,
+    lateReward: 6,
     probeReward: 2,
     probed: false,
     probedFeature: null,
@@ -76,18 +78,27 @@ function other(feature: ProbeFeature): ProbeFeature {
   return feature === 'api' ? 'screen' : 'api';
 }
 
-/** 試作品の反応は盤面で決まり、二度目は状態を変えない。完成報酬は出荷の一度だけ。 */
+/** 消失する盤面は、最初の期間に全額を取れなければ機会損失を一度だけ記録する。 */
+function closeFirstPeriod(next: ProbeState) {
+  const opened = next.tick;
+  if (opened === 0 && next.fades && !(next.delivered && next.value >= next.fullReward)) {
+    next.opportunityLoss = next.fullReward - next.lateReward;
+  }
+  next.tick = opened + 1;
+}
+
+/** 試作品の反応は盤面で決まり、二度目と出荷後は状態を変えない。完成報酬は出荷の一度だけ。 */
 export function applyDemandProbe(state: ProbeState, input: ProbeInput): ProbeState {
   if (input.type === 'view' || state.tick >= state.horizon) return state;
   if (input.type === 'probe') {
-    if (state.probed || !isFeature(input.feature)) return state;
+    if (state.probed || state.delivered || !isFeature(input.feature)) return state;
     const next = structuredClone(state);
     next.probed = true;
     next.probedFeature = input.feature;
     next.reaction = input.feature === next.demand ? 'yes' : 'no';
     next.probeValue += next.probeReward;
     next.value += next.probeReward;
-    next.tick += 1;
+    closeFirstPeriod(next);
     next.inputs.push({ type: 'probe', feature: input.feature });
     return next;
   }
@@ -97,9 +108,8 @@ export function applyDemandProbe(state: ProbeState, input: ProbeInput): ProbeSta
     next.delivered = true;
     const faded = next.fades && next.tick > 0;
     next.value += faded ? next.lateReward : next.fullReward;
-    if (faded) next.opportunityLoss += next.fullReward - next.lateReward;
   }
-  next.tick += 1;
+  closeFirstPeriod(next);
   next.inputs.push({ type: 'ship', feature: input.feature });
   return next;
 }
@@ -142,7 +152,7 @@ export function chooseDemandAction(state: ProbeState, strategy: ProbeStrategy): 
 }
 
 export function compareDemandProbes(seed = 'RI-232') {
-  return (['fade', 'decoy'] as const).flatMap((board) =>
+  return (['fadeHit', 'fadeMiss', 'stayHit', 'stayMiss'] as const).flatMap((board) =>
     (['shipNow', 'probeThen', 'shipOther'] as const).map((strategy) => {
       const initial = createDemandProbe(seed, board);
       let state = initial;

@@ -103,7 +103,10 @@ export function applyCustomerInterrupt(
     if (state.accepted !== null || state.tick !== 0) return state;
     const next = structuredClone(state);
     next.accepted = input.type === 'accept';
-    if (!next.accepted) next.trust += next.trustCost;
+    if (!next.accepted) {
+      next.trust += next.trustCost;
+      next.interruptLeft = 0;
+    }
     pushPeriod(next, input.type, 0, 0);
     next.inputs.push({ type: input.type });
     return next;

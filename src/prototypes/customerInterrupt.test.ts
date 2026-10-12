@@ -49,7 +49,8 @@ describe('RI-246 重要顧客の割り込み', () => {
     const worked = apply(accepted, { type: 'work' });
     expect(worked).toMatchObject({ value: 12, interruptDone: 4, plannedDone: 0 });
     const declined = apply(first, { type: 'decline' });
-    expect(declined).toMatchObject({ value: 0, trust: 6, accepted: false });
+    expect(declined).toMatchObject({ value: 0, trust: 6, accepted: false, interruptLeft: 0 });
+    expect(viewCustomerInterrupt(declined).interrupt).toMatchObject({ left: 0, total: 4 });
     expect(summarizeCustomerInterrupt(declined).lost).toBe(false);
     expect(
       viewCustomerInterrupt(create('RI-246', 'cramped')).forecasts.map((item) => item.score),

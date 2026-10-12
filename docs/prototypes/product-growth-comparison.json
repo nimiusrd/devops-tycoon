@@ -1,0 +1,461 @@
+{
+  "seed": "RI-228",
+  "results": [
+    {
+      "board": "open",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-228",
+        "board": "open",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "completeValue": 8,
+        "incidentIfIdle": 0,
+        "features": [
+          {
+            "id": "api",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "shippedWork": 0,
+        "completedValue": 0,
+        "incident": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 4,
+            "screen": 0,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 3,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 2,
+            "billing": 2,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "shippedWork": 12,
+        "completed": ["api", "screen"],
+        "completedValue": 16,
+        "incident": 0,
+        "score": 16,
+        "lost": false
+      }
+    },
+    {
+      "board": "open",
+      "strategy": "spread",
+      "initial": {
+        "version": 1,
+        "seed": "RI-228",
+        "board": "open",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "completeValue": 8,
+        "incidentIfIdle": 0,
+        "features": [
+          {
+            "id": "api",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "shippedWork": 0,
+        "completedValue": 0,
+        "incident": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 2,
+            "billing": 1,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "shippedWork": 12,
+        "completed": ["api"],
+        "completedValue": 8,
+        "incident": 0,
+        "score": 8,
+        "lost": false
+      }
+    },
+    {
+      "board": "open",
+      "strategy": "ops",
+      "initial": {
+        "version": 1,
+        "seed": "RI-228",
+        "board": "open",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "completeValue": 8,
+        "incidentIfIdle": 0,
+        "features": [
+          {
+            "id": "api",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "shippedWork": 0,
+        "completedValue": 0,
+        "incident": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 3,
+            "screen": 0,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 3,
+            "billing": 0,
+            "ops": 1
+          }
+        }
+      ],
+      "result": {
+        "shippedWork": 9,
+        "completed": ["api"],
+        "completedValue": 8,
+        "incident": 0,
+        "score": 8,
+        "lost": false
+      }
+    },
+    {
+      "board": "blocked",
+      "strategy": "focus",
+      "initial": {
+        "version": 1,
+        "seed": "RI-228",
+        "board": "blocked",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "completeValue": 8,
+        "incidentIfIdle": 6,
+        "features": [
+          {
+            "id": "api",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "shippedWork": 0,
+        "completedValue": 0,
+        "incident": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 4,
+            "screen": 0,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 3,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 2,
+            "billing": 2,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "shippedWork": 12,
+        "completed": ["api", "screen"],
+        "completedValue": 16,
+        "incident": 18,
+        "score": -2,
+        "lost": false
+      }
+    },
+    {
+      "board": "blocked",
+      "strategy": "spread",
+      "initial": {
+        "version": 1,
+        "seed": "RI-228",
+        "board": "blocked",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "completeValue": 8,
+        "incidentIfIdle": 6,
+        "features": [
+          {
+            "id": "api",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "shippedWork": 0,
+        "completedValue": 0,
+        "incident": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 2,
+            "billing": 1,
+            "ops": 0
+          }
+        }
+      ],
+      "result": {
+        "shippedWork": 12,
+        "completed": ["api"],
+        "completedValue": 8,
+        "incident": 18,
+        "score": -10,
+        "lost": false
+      }
+    },
+    {
+      "board": "blocked",
+      "strategy": "ops",
+      "initial": {
+        "version": 1,
+        "seed": "RI-228",
+        "board": "blocked",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "completeValue": 8,
+        "incidentIfIdle": 6,
+        "features": [
+          {
+            "id": "api",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "screen",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          },
+          {
+            "id": "billing",
+            "need": 5,
+            "done": 0,
+            "complete": false
+          }
+        ],
+        "shippedWork": 0,
+        "completedValue": 0,
+        "incident": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 3,
+            "screen": 0,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 3,
+            "billing": 0,
+            "ops": 1
+          }
+        }
+      ],
+      "result": {
+        "shippedWork": 9,
+        "completed": ["api"],
+        "completedValue": 8,
+        "incident": 0,
+        "score": 8,
+        "lost": false
+      }
+    }
+  ]
+}

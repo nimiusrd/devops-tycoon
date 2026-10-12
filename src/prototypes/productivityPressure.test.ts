@@ -57,7 +57,13 @@ describe('RI-245 見かけの生産性への圧力', () => {
     });
     expect(apply(split, { type: 'comply' })).toBe(split);
     expect(apply(split, { type: 'explain' })).toBe(split);
-    expect(viewProductivityPressure(split).choices).toEqual([]);
+    const after = viewProductivityPressure(split);
+    expect(after.choices).toEqual([]);
+    expect(after).toMatchObject({ rework: 4, explanation: 0, score: 0, met: true });
+    expect(after.forecasts.map((item) => [item.strategy, item.prCount, item.score])).toEqual([
+      ['comply', 4, 0],
+      ['explain', 2, 11],
+    ]);
     const explained = apply(first, { type: 'explain' });
     expect(summarizeProductivityPressure(explained)).toMatchObject({
       met: false,

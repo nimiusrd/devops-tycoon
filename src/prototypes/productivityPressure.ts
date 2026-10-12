@@ -144,12 +144,13 @@ export function viewProductivityPressure(state: PressureState) {
     apparent: 'pr-count',
     real: 'delivery-minus-burden',
     met: summary.met,
+    rework: state.rework,
+    explanation: state.explanation,
+    score: summary.score,
     reason: 'visible-pr-count',
     helpsWhen: 'independent-fixes',
     hindersWhen: 'coupled-flow',
     choices: state.choice ? [] : (['comply', 'explain'] as const),
-    forecasts: state.choice
-      ? []
-      : (['comply', 'explain'] as const).map((strategy) => forecast(state.board, strategy)),
+    forecasts: (['comply', 'explain'] as const).map((strategy) => forecast(state.board, strategy)),
   };
 }

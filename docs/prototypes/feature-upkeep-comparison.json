@@ -1,0 +1,277 @@
+{
+  "seed": "RI-234",
+  "results": [
+    {
+      "board": "light",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-234",
+        "board": "light",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "upkeepRate": 1,
+        "shortfallPenalty": 1,
+        "featureValue": 6,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          }
+        ],
+        "completedValue": 0,
+        "shortfall": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "billing",
+          "maintain": 0
+        }
+      ],
+      "result": {
+        "completedValue": 18,
+        "completed": ["api", "screen", "billing"],
+        "maintenance": 3,
+        "shortfall": 3,
+        "nextSlack": 1,
+        "score": 15,
+        "lost": false
+      }
+    },
+    {
+      "board": "light",
+      "strategy": "staff",
+      "initial": {
+        "version": 1,
+        "seed": "RI-234",
+        "board": "light",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "upkeepRate": 1,
+        "shortfallPenalty": 1,
+        "featureValue": 6,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          }
+        ],
+        "completedValue": 0,
+        "shortfall": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 1
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 1
+        }
+      ],
+      "result": {
+        "completedValue": 12,
+        "completed": ["api", "screen"],
+        "maintenance": 2,
+        "shortfall": 0,
+        "nextSlack": 2,
+        "score": 12,
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "rush",
+      "initial": {
+        "version": 1,
+        "seed": "RI-234",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "upkeepRate": 2,
+        "shortfallPenalty": 4,
+        "featureValue": 6,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          }
+        ],
+        "completedValue": 0,
+        "shortfall": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "billing",
+          "maintain": 0
+        }
+      ],
+      "result": {
+        "completedValue": 18,
+        "completed": ["api", "screen", "billing"],
+        "maintenance": 6,
+        "shortfall": 6,
+        "nextSlack": -2,
+        "score": -6,
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "staff",
+      "initial": {
+        "version": 1,
+        "seed": "RI-234",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "upkeepRate": 2,
+        "shortfallPenalty": 4,
+        "featureValue": 6,
+        "features": [
+          {
+            "id": "api",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "screen",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          },
+          {
+            "id": "billing",
+            "need": 4,
+            "done": 0,
+            "complete": false,
+            "online": false
+          }
+        ],
+        "completedValue": 0,
+        "shortfall": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "assign",
+          "feature": "api",
+          "maintain": 0
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 2
+        },
+        {
+          "type": "assign",
+          "feature": "screen",
+          "maintain": 2
+        }
+      ],
+      "result": {
+        "completedValue": 12,
+        "completed": ["api", "screen"],
+        "maintenance": 4,
+        "shortfall": 0,
+        "nextSlack": 0,
+        "score": 12,
+        "lost": false
+      }
+    }
+  ]
+}

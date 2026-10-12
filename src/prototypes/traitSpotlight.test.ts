@@ -38,19 +38,24 @@ describe('RI-241 欠点のある人の見せ場', () => {
     tired.members[1].stamina = 0;
     expect(viewTraitSpotlight(tired).choices).toEqual(['steady']);
     expect(apply(tired, { type: 'assign', member: 'demon' })).toBe(tired);
+    expect(apply(tired, { type: 'note' }).skipped).toBe(true);
   });
 
   it('待ちが少ないときは速度を捨て、消費の欠点はそのまま残す', () => {
     const open = create('RI-241', 'calm');
     expect(open.members[0].output).toBe(10);
     expect(open.members[1].output).toBe(13);
-    const used = apply(apply(open, { type: 'assign', member: 'demon' }), {
-      type: 'assign',
-      member: 'demon',
-    });
+    expect(apply(open, { type: 'note' })).toBe(open);
+    const once = apply(open, { type: 'assign', member: 'demon' });
+    expect(once.periods[0]).toMatchObject({ cleared: 8, remaining: 0, arrived: 8 });
+    expect(once.queue).toBe(8);
+    const used = apply(once, { type: 'assign', member: 'demon' });
+    expect(used.periods[1]).toMatchObject({ cleared: 8, remaining: 0, arrived: 0 });
+    expect(used.queue).toBe(0);
     expect(used.value).toBe(64);
     expect(used.spent).toBe(54);
     expect(used.members[1].stamina).toBe(26);
+    expect(viewTraitSpotlight(used).choices).toEqual([]);
     expect(apply(used, { type: 'assign', member: 'demon' })).toBe(used);
     const noted = apply(create('RI-241', 'absent'), { type: 'note' });
     expect(noted.skipped).toBe(true);

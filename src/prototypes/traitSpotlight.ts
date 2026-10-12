@@ -21,6 +21,8 @@ export interface SpotlightPeriod {
   tick: number;
   member: SpotlightMemberId;
   cleared: number;
+  remaining: number;
+  arrived: number;
   drain: number;
   value: number;
 }
@@ -31,6 +33,7 @@ export interface SpotlightState {
   board: SpotlightBoard;
   tick: number;
   horizon: number;
+  inflow: number;
   queue: number;
   valuePer: number;
   reason: 'review-backlog';
@@ -47,7 +50,7 @@ const BASE_OUTPUT = 10;
 const BASE_DRAIN = 20;
 const STAMINA = 80;
 const VALUE_PER = 4;
-const QUEUE: Record<SpotlightBoard, number> = { calm: 8, crisis: 40, absent: 40 };
+const INFLOW: Record<SpotlightBoard, number> = { calm: 8, crisis: 40, absent: 40 };
 
 function traitRates() {
   const trait = getTrait('reviewDemon');
@@ -79,7 +82,8 @@ export function createTraitSpotlight(seed: string, board: SpotlightBoard): Spotl
     board,
     tick: 0,
     horizon: 2,
-    queue: QUEUE[board],
+    inflow: INFLOW[board],
+    queue: INFLOW[board],
     valuePer: VALUE_PER,
     reason: 'review-backlog',
     trait: 'reviewDemon',
@@ -113,7 +117,7 @@ export function createTraitSpotlight(seed: string, board: SpotlightBoard): Spotl
 export function applyTraitSpotlight(state: SpotlightState, input: SpotlightInput): SpotlightState {
   if (input.type === 'view') return state;
   if (input.type === 'note') {
-    if (state.skipped) return state;
+    if (state.skipped || available(member(state, 'demon'))) return state;
     const next = structuredClone(state);
     next.skipped = true;
     next.inputs.push({ type: 'note' });
@@ -126,6 +130,10 @@ export function applyTraitSpotlight(state: SpotlightState, input: SpotlightInput
   const next = structuredClone(state);
   const target = member(next, input.member);
   const cleared = Math.min(target.output, next.queue);
+  next.queue -= cleared;
+  const remaining = next.queue;
+  const arrived = next.tick + 1 < next.horizon ? next.inflow : 0;
+  next.queue += arrived;
   target.stamina -= target.drain;
   next.value += cleared * next.valuePer;
   next.spent += target.drain;
@@ -133,6 +141,8 @@ export function applyTraitSpotlight(state: SpotlightState, input: SpotlightInput
     tick: next.tick,
     member: input.member,
     cleared,
+    remaining,
+    arrived,
     drain: target.drain,
     value: next.value - next.spent,
   });
@@ -146,13 +156,15 @@ export function viewTraitSpotlight(state: SpotlightState) {
   return {
     tick: state.tick,
     horizon: state.horizon,
+    inflow: state.inflow,
     queue: state.queue,
     valuePer: state.valuePer,
     trait: state.trait,
     reason: state.reason,
     helpsWhen: 'queue-exceeds-steady',
     hindersWhen: 'queue-below-output',
-    choices: state.members.filter(available).map((item) => item.id),
+    choices:
+      state.tick < state.horizon ? state.members.filter(available).map((item) => item.id) : [],
     demon: {
       present: demon.present,
       active: available(demon),

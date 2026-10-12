@@ -213,6 +213,10 @@ export function applyBossPrep(state: BossPrepState, input: BossPrepInput): BossP
     next.budget += PREP_BUDGET[input.prep];
     next.prep = input.prep;
     pushPeriod(next, 'prep', id, cleared, next.prepQueue, who.drain);
+    if (input.prep === 'cover' && !next.skipped) {
+      next.skipped = true;
+      next.inputs.push({ type: 'note' });
+    }
     next.inputs.push({ type: 'choose', prep: input.prep });
     return next;
   }

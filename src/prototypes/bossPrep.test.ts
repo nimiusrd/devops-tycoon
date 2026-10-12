@@ -48,6 +48,13 @@ describe('RI-242 ボス前の作戦会議', () => {
     const absentMet = apply(absent, { type: 'meet' });
     expect(apply(absentMet, { type: 'choose', prep: 'conserve' })).toBe(absentMet);
     expect(apply(absentMet, { type: 'choose', prep: 'advance' })).toBe(absentMet);
+    const covered = apply(absentMet, { type: 'choose', prep: 'cover' });
+    expect(covered.skipped).toBe(true);
+    expect(covered.inputs).toEqual([
+      { type: 'meet' },
+      { type: 'note' },
+      { type: 'choose', prep: 'cover' },
+    ]);
     expect(apply(absent, { type: 'note' })).toBe(absent);
   });
 

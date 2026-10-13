@@ -129,12 +129,22 @@ function writeFullResults(comparison) {
   );
 
   const winnerRows = [];
+  const tieRows = [];
   for (const conditionId of ['A', 'B']) {
     for (const seed of comparison.seeds) {
-      winnerRows.push([conditionId, seed, comparison.winners[conditionId].bySeed[seed].join(',')]);
+      const winners = comparison.winners[conditionId].bySeed[seed];
+      const note = winners.length > 1 ? `${winners.join(',')} (tie)` : winners.join(',');
+      winnerRows.push([conditionId, seed, note]);
+    }
+    for (const tie of comparison.winners[conditionId].ties) {
+      tieRows.push([conditionId, tie.seed, tie.policies.join(','), tie.netOutcome]);
     }
   }
   const winnerTable = markdownTable(['condition', 'seed', 'winner'], winnerRows);
+  const tieTable =
+    tieRows.length === 0
+      ? 'ties: none'
+      : markdownTable(['condition', 'seed', 'policies', 'netOutcome'], tieRows);
 
   const countRows = [];
   for (const conditionId of ['A', 'B']) {
@@ -157,6 +167,10 @@ function writeFullResults(comparison) {
     '## winner by netOutcome per seed',
     '',
     winnerTable,
+    '',
+    '## ties',
+    '',
+    tieTable,
     '',
     '## win counts',
     '',

@@ -175,21 +175,25 @@ export function toResultRow(result) {
 function winnersForCondition(rows, conditionId) {
   const bySeed = {};
   const winCounts = { 'all-on-recovery': 0, split: 0, 'investigation-first': 0 };
+  const ties = [];
   for (const seed of COMPARISON_SEEDS) {
     const group = rows.filter((row) => row.seed === seed && row.condition === conditionId);
     const maxNet = Math.max(...group.map((row) => row.netOutcome));
     const winners = group.filter((row) => row.netOutcome === maxNet).map((row) => row.policy);
     bySeed[seed] = winners;
     for (const policy of winners) winCounts[policy] += 1;
+    if (winners.length > 1) {
+      ties.push({ seed, policies: winners, netOutcome: maxNet });
+    }
   }
-  return { bySeed, winCounts };
+  return { bySeed, winCounts, ties };
 }
 
 export function compareAll(params = PARAMS) {
   const rows = [];
   for (const seed of COMPARISON_SEEDS) {
-    const u = uniform01(seed);
     for (const condition of Object.values(CONDITIONS)) {
+      const u = uniform01(`${seed}:${condition.id}`);
       for (const policy of Object.values(POLICIES)) {
         rows.push(toResultRow(simulate({ ...params, seed }, condition, policy, u)));
       }

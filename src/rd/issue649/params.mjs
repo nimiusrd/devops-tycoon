@@ -74,7 +74,7 @@ export const PARAMS = Object.freeze({
   decisionMetric: DECISION_METRIC,
 });
 
-/** 本比較の seed。1 seed につき u を 1 回だけ引く。 */
+/** 本比較の seed。1 seed × 1 条件につき u を 1 回だけ引き、3 方針で共有する。 */
 export const COMPARISON_SEEDS = Object.freeze([
   'RI-649-a',
   'RI-649-b',

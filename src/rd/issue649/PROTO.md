@@ -1,7 +1,7 @@
 # Issue #649 Phase 1: 大規模障害の役割分担（隔離 R&D）
 
 対象: [#649](https://github.com/nimiusrd/devops-tycoon/issues/649) / 親 #548 / 元案 101。
-範囲: 凍結候補値はそのまま。再発だけ seed 由来の一様乱数 `u` に変更し、`--full` で比較する。
+範囲: 凍結候補値はそのまま。再発だけ seed×条件由来の一様乱数 `u` に変更し、`--full` で比較する。
 本番コード・通常ラン・`RunEngine`・勝敗・保存・ruleset へは接続しない。
 
 ## 隔離
@@ -35,7 +35,7 @@ shippedAfterTrust = rawShipped * (1 - effectiveTrustDrop)
 - 復旧: 割当人数 × `recoveryPower` で 1 件の残工数を減らす。0 人でも `baselineRecoveryRate = 1` の通常対応が残る。
 - 調査: 再発率を人数 × `0.45` 下げる。調査工数 `4` を割り切った tick で完了し、残った調査担当は未配置になって通常成果を出す。
 - 説明: 1 件あたりの信頼低下を人数 × `0.15` 下げる。停止中はずっと枠を占める。
-- 再発: seed ごとに `u ~ Uniform[0, 1)` を 1 回だけ引く（FNV-1a + mulberry32 の複製。ライブ RNG は import しない）。同一 seed・同一条件の 3 方針は同じ `u` を共有し、`u < recurrenceChance` なら 2 件目が発生する。2 件目は、その時点の復旧人数で同じ工数をもう一度足す。
+- 再発: seed と条件ごとに `u ~ Uniform[0, 1)` を 1 回だけ引く（FNV-1a + mulberry32 の複製。ライブ RNG は import しない）。同一 seed・同一条件の 3 方針は同じ `u` を共有し、`u < recurrenceChance` なら 2 件目が発生する。2 件目は、その時点の復旧人数で同じ工数をもう一度足す。
 - 信頼: 件数が増えると低下が加算され、障害後の出荷（既出荷 + 残 horizon の通常成果 + 未配置成果）を減らす。
 - 交代費用: 初期割当は無料。investigation-first の 1 回だけ `switchCost = 2`。
 - 未配置: 通常成果 `2` / 人 / tick（試作の別仕事を複製）。
@@ -99,7 +99,7 @@ investigation-first のみ:
   交代 1 回。未配置 1 人が残停止 tick で通常成果。
 
 p = clamp(baseRecurrence - 0.45 * investigationCount, 0, 1)
-u = uniform01(seed)  // seed につき 1 回。方針間で共有
+u = uniform01(seed + ':' + condition)  // seed×条件につき 1 回。3 方針で共有
 recurred = u < p
 downtime = T + (recurred ? T_after_switch : 0)
 trust = min(1, max(0, 0.35 - 0.15 * communicationCount) * incidents)

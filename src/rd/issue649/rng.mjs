@@ -1,6 +1,6 @@
 /**
  * ライブ `src/sim/rng.ts` の FNV-1a + mulberry32 を複製しただけ。import しない。
- * 1 seed につき 1 回だけ [0, 1) を返す。
+ * 与えた seed から [0, 1) を 1 回返す。
  */
 
 export function hashSeed(seed) {

@@ -1,7 +1,7 @@
 # Issue #602 Phase 1: 師弟の安定／危機 8期間（隔離 R&D）
 
 対象: [#602](https://github.com/nimiusrd/devops-tycoon/issues/602) / 親 #548 / 元案 054 / 最小試作 [#731](https://github.com/nimiusrd/devops-tycoon/pull/731) / 会社期間文脈 [#538](https://github.com/nimiusrd/devops-tycoon/issues/538)。
-範囲: Phase 1 のみ。`PROTO.md` と凍結 params、smoke。比較結果は出さない。
+範囲: Phase 1 で盤面を凍結し、Phase 2 は凍結値を変えずに比較する。
 本番コード・通常ラン・`RunEngine`・得点・保存・ruleset・描画へは接続しない。
 
 ## 隔離
@@ -16,7 +16,7 @@
 
 8期間で、安定条件では育成が勝ち、危機条件では集中が勝つか。
 
-Lead 決定の合格線: **安定で育成が 5 本中 4 勝以上、かつ危機で集中が 5 本中 4 勝以上。** それ以外は Kill。Phase 1 では比較を回さず、盤面だけを凍結する。
+Lead 決定の合格線: **安定で育成が 5 本中 4 勝以上、かつ危機で集中が 5 本中 4 勝以上。** それ以外は Kill。引き分けは勝ちに数えない。Phase 2 は凍結値を動かさず比較する。
 
 ## 単一決定指標
 
@@ -127,9 +127,10 @@ P(授業2回) = P(静穏 ≥ 2)
 
 ```
 node scripts/compare-602.mjs
+node scripts/compare-602.mjs --full
 ```
 
-引数なしは smoke。`--full` は Phase 1 では比較結果を書かず、範囲外と表示する。
+引数なしは smoke。`--full` は凍結値のまま 5 seed × 2 条件を回し、抽選列を方針の前に生成して assert する。表と JSON は `src/rd/issue602/results/` に書く。
 
 ## 現行実装との境界
 

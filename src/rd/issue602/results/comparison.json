@@ -1,0 +1,213 @@
+{
+  "frozen": {
+    "periods": 8,
+    "demandPerPeriod": 12,
+    "mentorReview": 64,
+    "apprenticeReview": 32,
+    "stableIncidentRate": 0.25,
+    "crisisIncidentRate": 0.5,
+    "crisisIncidentMultiplier": 2,
+    "seeds": ["RI-602-a", "RI-602-b", "RI-602-c", "RI-602-d", "RI-602-e"],
+    "decisionMetric": "delivered",
+    "passLine": {
+      "stableMentorWins": 4,
+      "crisisConcentrateWins": 4,
+      "seeds": 5,
+      "otherwise": "Kill"
+    }
+  },
+  "rows": [
+    {
+      "seed": "RI-602-a",
+      "conditionId": "stable",
+      "incidentRate": 0.25,
+      "draws": [
+        0.4099612236022949, 0.8155632799025625, 0.9627163803670555, 0.6963705855887383,
+        0.32973500061780214, 0.6795209315605462, 0.49022302008233964, 0.8540702091995627
+      ],
+      "incidents": [false, false, false, false, false, false, false, false],
+      "incidentPeriods": [],
+      "lessonPeriods": [1, 2],
+      "concentrateDelivered": 72,
+      "mentorDelivered": 77,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 13,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-a",
+      "conditionId": "crisis",
+      "incidentRate": 0.5,
+      "draws": [
+        0.4099612236022949, 0.8155632799025625, 0.9627163803670555, 0.6963705855887383,
+        0.32973500061780214, 0.6795209315605462, 0.49022302008233964, 0.8540702091995627
+      ],
+      "incidents": [true, false, false, false, true, false, true, false],
+      "incidentPeriods": [1, 5, 7],
+      "lessonPeriods": [2, 3],
+      "concentrateDelivered": 63,
+      "mentorDelivered": 66,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 11,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-b",
+      "conditionId": "stable",
+      "incidentRate": 0.25,
+      "draws": [
+        0.8293076434638351, 0.9293781088199466, 0.2579361661337316, 0.06734713749028742,
+        0.2571903367061168, 0.33510371344164014, 0.8782298918813467, 0.6582885948009789
+      ],
+      "incidents": [false, false, false, true, false, false, false, false],
+      "incidentPeriods": [4],
+      "lessonPeriods": [1, 2],
+      "concentrateDelivered": 69,
+      "mentorDelivered": 74,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 13,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-b",
+      "conditionId": "crisis",
+      "incidentRate": 0.5,
+      "draws": [
+        0.8293076434638351, 0.9293781088199466, 0.2579361661337316, 0.06734713749028742,
+        0.2571903367061168, 0.33510371344164014, 0.8782298918813467, 0.6582885948009789
+      ],
+      "incidents": [false, false, true, true, true, true, false, false],
+      "incidentPeriods": [3, 4, 5, 6],
+      "lessonPeriods": [1, 2],
+      "concentrateDelivered": 60,
+      "mentorDelivered": 65,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 13,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-c",
+      "conditionId": "stable",
+      "incidentRate": 0.25,
+      "draws": [
+        0.3727330712135881, 0.023972198134288192, 0.7509289791341871, 0.45041121263056993,
+        0.7765270380768925, 0.4103015854489058, 0.5769493407569826, 0.5962944673374295
+      ],
+      "incidents": [false, true, false, false, false, false, false, false],
+      "incidentPeriods": [2],
+      "lessonPeriods": [1, 3],
+      "concentrateDelivered": 69,
+      "mentorDelivered": 73,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 12,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-c",
+      "conditionId": "crisis",
+      "incidentRate": 0.5,
+      "draws": [
+        0.3727330712135881, 0.023972198134288192, 0.7509289791341871, 0.45041121263056993,
+        0.7765270380768925, 0.4103015854489058, 0.5769493407569826, 0.5962944673374295
+      ],
+      "incidents": [true, true, false, true, false, true, false, false],
+      "incidentPeriods": [1, 2, 4, 6],
+      "lessonPeriods": [3, 5],
+      "concentrateDelivered": 60,
+      "mentorDelivered": 60,
+      "winner": "tie",
+      "apprenticeGrowthWork": 8,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-d",
+      "conditionId": "stable",
+      "incidentRate": 0.25,
+      "draws": [
+        0.5148923678789288, 0.4280669481959194, 0.5356233783531934, 0.11517498060129583,
+        0.6648170258849859, 0.7925318230409175, 0.5603205806110054, 0.49738272395916283
+      ],
+      "incidents": [false, false, false, true, false, false, false, false],
+      "incidentPeriods": [4],
+      "lessonPeriods": [1, 2],
+      "concentrateDelivered": 69,
+      "mentorDelivered": 74,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 13,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-d",
+      "conditionId": "crisis",
+      "incidentRate": 0.5,
+      "draws": [
+        0.5148923678789288, 0.4280669481959194, 0.5356233783531934, 0.11517498060129583,
+        0.6648170258849859, 0.7925318230409175, 0.5603205806110054, 0.49738272395916283
+      ],
+      "incidents": [false, true, false, true, false, false, false, true],
+      "incidentPeriods": [2, 4, 8],
+      "lessonPeriods": [1, 3],
+      "concentrateDelivered": 63,
+      "mentorDelivered": 67,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 12,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-e",
+      "conditionId": "stable",
+      "incidentRate": 0.25,
+      "draws": [
+        0.9800016731023788, 0.8641925572883338, 0.6339567813556641, 0.37227556901052594,
+        0.14051944110542536, 0.6154250768013299, 0.40044807828962803, 0.5856952981557697
+      ],
+      "incidents": [false, false, false, false, true, false, false, false],
+      "incidentPeriods": [5],
+      "lessonPeriods": [1, 2],
+      "concentrateDelivered": 69,
+      "mentorDelivered": 74,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 13,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    },
+    {
+      "seed": "RI-602-e",
+      "conditionId": "crisis",
+      "incidentRate": 0.5,
+      "draws": [
+        0.9800016731023788, 0.8641925572883338, 0.6339567813556641, 0.37227556901052594,
+        0.14051944110542536, 0.6154250768013299, 0.40044807828962803, 0.5856952981557697
+      ],
+      "incidents": [false, false, false, true, true, false, true, false],
+      "incidentPeriods": [4, 5, 7],
+      "lessonPeriods": [1, 2],
+      "concentrateDelivered": 63,
+      "mentorDelivered": 68,
+      "winner": "mentor",
+      "apprenticeGrowthWork": 13,
+      "concentrateGrowthWork": 0,
+      "lessons": 2
+    }
+  ],
+  "scores": {
+    "stableMentorWins": 5,
+    "crisisConcentrateWins": 0,
+    "stableTies": 0,
+    "crisisTies": 1,
+    "seedCount": 5,
+    "stableRequired": 4,
+    "crisisRequired": 4,
+    "stablePassed": true,
+    "crisisPassed": false
+  },
+  "verdict": "Kill"
+}

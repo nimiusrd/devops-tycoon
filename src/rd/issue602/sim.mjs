@@ -3,7 +3,7 @@
  * 本番へは接続しない。
  */
 
-import { CONDITIONS, PARAMS, POLICIES } from './params.mjs';
+import { COMPARISON_SEEDS, CONDITIONS, PARAMS, POLICIES } from './params.mjs';
 import { createRng } from './rng.mjs';
 
 function capacityFromReview(review) {
@@ -139,4 +139,97 @@ export function winnerOf(concentrateDelivered, mentorDelivered) {
   if (mentorDelivered > concentrateDelivered) return 'mentor';
   if (concentrateDelivered > mentorDelivered) return 'concentrate';
   return 'tie';
+}
+
+export function assertSameIncidents(expected, actual, label) {
+  const left = expected.map((flag) => Number(flag)).join(',');
+  const right = actual.map((flag) => Number(flag)).join(',');
+  if (left !== right) {
+    throw new Error(`${label}: incident sequence mismatch: ${left} vs ${right}`);
+  }
+}
+
+function periodNumbers(flags) {
+  return flags.map((flag, index) => (flag ? index + 1 : null)).filter((period) => period !== null);
+}
+
+/**
+ * 抽選列を方針の前に作り、同じ列で両方針を走らせる。
+ * 生成列と両方針の history が一致することを assert する。
+ */
+export function compareCell(seed, conditionId, periods = PARAMS.periods) {
+  const condition = CONDITIONS[conditionId];
+  const draws = drawPeriodUniforms(seed, periods);
+  const incidents = incidentsFromDraws(draws, condition.incidentRate);
+  const concentrate = runIncidents(incidents, POLICIES.concentrate);
+  const mentor = runIncidents(incidents, POLICIES.mentor);
+  assertSameIncidents(incidents, concentrate.incidents, `${seed}/${conditionId}/concentrate`);
+  assertSameIncidents(incidents, mentor.incidents, `${seed}/${conditionId}/mentor`);
+  assertSameIncidents(
+    concentrate.incidents,
+    mentor.incidents,
+    `${seed}/${conditionId}/shared-policies`,
+  );
+  const concentrateHistory = concentrate.history.map((entry) => Number(entry.incident)).join(',');
+  const mentorHistory = mentor.history.map((entry) => Number(entry.incident)).join(',');
+  const expectedHistory = incidents.map((flag) => Number(flag)).join(',');
+  if (concentrateHistory !== expectedHistory || mentorHistory !== expectedHistory) {
+    throw new Error(`${seed}/${conditionId}: history incidents diverged from pre-drawn sequence`);
+  }
+  return {
+    seed,
+    conditionId,
+    incidentRate: condition.incidentRate,
+    draws,
+    incidents,
+    incidentPeriods: periodNumbers(incidents),
+    lessonPeriods: periodNumbers(mentor.history.map((entry) => entry.taught)),
+    concentrateDelivered: concentrate.delivered,
+    mentorDelivered: mentor.delivered,
+    winner: winnerOf(concentrate.delivered, mentor.delivered),
+    apprenticeGrowthWork: mentor.apprenticeGrowthWork,
+    concentrateGrowthWork: concentrate.apprenticeGrowthWork,
+    lessons: mentor.lessons,
+  };
+}
+
+export function compareAll() {
+  const rows = COMPARISON_SEEDS.flatMap((seed) =>
+    Object.keys(CONDITIONS).map((conditionId) => compareCell(seed, conditionId)),
+  );
+  const stableRows = rows.filter((row) => row.conditionId === 'stable');
+  const crisisRows = rows.filter((row) => row.conditionId === 'crisis');
+  const stableMentorWins = stableRows.filter((row) => row.winner === 'mentor').length;
+  const crisisConcentrateWins = crisisRows.filter((row) => row.winner === 'concentrate').length;
+  const stableTies = stableRows.filter((row) => row.winner === 'tie').length;
+  const crisisTies = crisisRows.filter((row) => row.winner === 'tie').length;
+  const stablePassed = stableMentorWins >= PARAMS.passLine.stableMentorWins;
+  const crisisPassed = crisisConcentrateWins >= PARAMS.passLine.crisisConcentrateWins;
+  return {
+    frozen: {
+      periods: PARAMS.periods,
+      demandPerPeriod: PARAMS.demandPerPeriod,
+      mentorReview: PARAMS.mentorReview,
+      apprenticeReview: PARAMS.apprenticeReview,
+      stableIncidentRate: PARAMS.stableIncidentRate,
+      crisisIncidentRate: PARAMS.crisisIncidentRate,
+      crisisIncidentMultiplier: PARAMS.crisisIncidentMultiplier,
+      seeds: COMPARISON_SEEDS,
+      decisionMetric: PARAMS.decisionMetric,
+      passLine: PARAMS.passLine,
+    },
+    rows,
+    scores: {
+      stableMentorWins,
+      crisisConcentrateWins,
+      stableTies,
+      crisisTies,
+      seedCount: PARAMS.passLine.seeds,
+      stableRequired: PARAMS.passLine.stableMentorWins,
+      crisisRequired: PARAMS.passLine.crisisConcentrateWins,
+      stablePassed,
+      crisisPassed,
+    },
+    verdict: stablePassed && crisisPassed ? 'Pass' : 'Kill',
+  };
 }

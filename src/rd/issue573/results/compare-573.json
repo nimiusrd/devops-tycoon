@@ -1,0 +1,529 @@
+{
+  "frozen": {
+    "version": 1,
+    "issue": 573,
+    "basedOnIssue": 730,
+    "basedOnPrototype": "src/prototypes/reviewBot.ts",
+    "seeds": ["RI-177", "RI-573-a", "RI-573-b", "RI-573-c", "RI-573-d"],
+    "compositions": ["routine-heavy", "complex-heavy", "half-half"],
+    "arms": ["coefficient", "dedicated"],
+    "itemCount": 20,
+    "deadline": 12,
+    "staffSlots": 3,
+    "coefficient": 1.2,
+    "humanEffortPerTickHumanOnly": 3,
+    "humanEffortPerTickDedicated": 2,
+    "botEffortPerTickDedicated": 2,
+    "verificationPerTick": 2,
+    "dedicatedSetupHumanEffort": 2,
+    "falsePositiveRates": {
+      "default": 0.25,
+      "double": 0.5
+    },
+    "rework": {
+      "triageEffort": 1,
+      "reviewEffort": 3
+    },
+    "job": {
+      "routine": {
+        "value": 2,
+        "humanLeft": 3,
+        "botLeft": 1
+      },
+      "complex": {
+        "value": 5,
+        "humanLeft": 6,
+        "botLeft": 1
+      }
+    },
+    "botEligibleKind": "routine",
+    "halfHalfPattern": "alternate-routine-first",
+    "metrics": {
+      "primary": "shippedCount",
+      "secondary": "medianReviewWaitTicks"
+    }
+  },
+  "cellCount": 60,
+  "results": [
+    {
+      "seed": "RI-177",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-177",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 19,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-177",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-177",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 18,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-177",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-177",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-177",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-177",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-177",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-177",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 2
+    },
+    {
+      "seed": "RI-177",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-177",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 12,
+      "medianReviewWaitTicks": 2
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 18,
+      "medianReviewWaitTicks": 4.5
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 10,
+      "medianReviewWaitTicks": 2
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-a",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 7,
+      "medianReviewWaitTicks": 2
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 19,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 17,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 10,
+      "medianReviewWaitTicks": 2.5
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-b",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 10,
+      "medianReviewWaitTicks": 2.5
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 20,
+      "medianReviewWaitTicks": 4.5
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 15,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 2
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-c",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 3
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "routine-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 18,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 13,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "routine-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 16,
+      "medianReviewWaitTicks": 3.5
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "complex-heavy",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 6,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "complex-heavy",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 3,
+      "medianReviewWaitTicks": 4
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "half-half",
+      "fpRate": 0.25,
+      "arm": "dedicated",
+      "shippedCount": 11,
+      "medianReviewWaitTicks": 2
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "coefficient",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 5
+    },
+    {
+      "seed": "RI-573-d",
+      "composition": "half-half",
+      "fpRate": 0.5,
+      "arm": "dedicated",
+      "shippedCount": 9,
+      "medianReviewWaitTicks": 2
+    }
+  ]
+}

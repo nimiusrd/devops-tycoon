@@ -1,7 +1,7 @@
 # Issue #649 Phase 1: 大規模障害の役割分担（隔離 R&D）
 
 対象: [#649](https://github.com/nimiusrd/devops-tycoon/issues/649) / 親 #548 / 元案 101。
-範囲: **Phase 1 のみ**。凍結候補値と手計算予測。比較スクリプトの本実験実行は禁止。
+範囲: 凍結候補値はそのまま。再発だけ seed 由来の一様乱数 `u` に変更し、`--full` で比較する。
 本番コード・通常ラン・`RunEngine`・勝敗・保存・ruleset へは接続しない。
 
 ## 隔離
@@ -25,7 +25,7 @@ shippedAfterTrust = rawShipped * (1 - effectiveTrustDrop)
 
 ## 盤面
 
-- 決定論。seed `649`。職員は starter 3 名の ID を複製し、能力は同一。
+- 決定論。比較 seed は `RI-649-a` .. `RI-649-e`。職員は starter 3 名の ID を複製し、能力は同一。
 - 条件は 2 つだけ: A 低再発 (`baseRecurrence = 0.20`)、B 高再発 (`0.90`)。
 - 役割枠は復旧・調査・説明の 3 つ。同一人物の二重割当は禁止し、後勝ちせず違反件数に加算して無視する。
 - 方針は 3 つ: all-on-recovery（3/0/0）、1/1/1 split（1/1/1）、investigation-first（開始 1/2/0、調査完了後に調査 1 人を復旧へ交代）。
@@ -35,12 +35,12 @@ shippedAfterTrust = rawShipped * (1 - effectiveTrustDrop)
 - 復旧: 割当人数 × `recoveryPower` で 1 件の残工数を減らす。0 人でも `baselineRecoveryRate = 1` の通常対応が残る。
 - 調査: 再発率を人数 × `0.45` 下げる。調査工数 `4` を割り切った tick で完了し、残った調査担当は未配置になって通常成果を出す。
 - 説明: 1 件あたりの信頼低下を人数 × `0.15` 下げる。停止中はずっと枠を占める。
-- 再発: `recurrenceChance >= 0.5` なら 2 件目が発生し、その時点の復旧人数で同じ工数をもう一度足す。
+- 再発: seed ごとに `u ~ Uniform[0, 1)` を 1 回だけ引く（FNV-1a + mulberry32 の複製。ライブ RNG は import しない）。同一 seed・同一条件の 3 方針は同じ `u` を共有し、`u < recurrenceChance` なら 2 件目が発生する。2 件目は、その時点の復旧人数で同じ工数をもう一度足す。
 - 信頼: 件数が増えると低下が加算され、障害後の出荷（既出荷 + 残 horizon の通常成果 + 未配置成果）を減らす。
 - 交代費用: 初期割当は無料。investigation-first の 1 回だけ `switchCost = 2`。
 - 未配置: 通常成果 `2` / 人 / tick（試作の別仕事を複製）。
 
-再発判定は seed 抽選ではなく閾値比較にする。同じ入力なら同じ結果になる。
+`recurrenceThreshold = 0.5` は提案値として残すが、判定には使わない。
 
 ## 凍結候補値
 
@@ -67,7 +67,7 @@ shippedAfterTrust = rawShipped * (1 - effectiveTrustDrop)
 
 | 名前 | 値 |
 | --- | --- |
-| seed | 649 |
+| seed（提案値。比較は `RI-649-a`..`e`） | 649 |
 | staffIds | 上記 3 ID（能力同一） |
 | horizonTicks | 24 |
 | baseRecoveryWork | 12 |
@@ -85,7 +85,7 @@ shippedAfterTrust = rawShipped * (1 - effectiveTrustDrop)
 | condition A / B baseRecurrence | 0.20 / 0.90 |
 | decisionMetric | `netOutcome` |
 
-## 手計算予測（Phase 1 の結論。sim の本実験は走らせていない）
+## 手計算予測（閾値判定だった Phase 1 時点。比較結果は `results/`）
 
 閉じた式:
 
@@ -99,7 +99,8 @@ investigation-first のみ:
   交代 1 回。未配置 1 人が残停止 tick で通常成果。
 
 p = clamp(baseRecurrence - 0.45 * investigationCount, 0, 1)
-recurred = p >= 0.5
+u = uniform01(seed)  // seed につき 1 回。方針間で共有
+recurred = u < p
 downtime = T + (recurred ? T_after_switch : 0)
 trust = min(1, max(0, 0.35 - 0.15 * communicationCount) * incidents)
 raw = 40 + 3 * 2 * (24 - downtime) + unassignedValue
@@ -127,9 +128,12 @@ B の内訳: 復旧全振りは 2 件目が起き、停止 8 + 信頼 0.70 で �
 
 ```
 node scripts/compare-649.mjs
+node scripts/compare-649.mjs --full
 ```
 
-自明な 1 人・再発なしケースと、二重割当の違反カウントだけを検証する。`--full` は Phase 1 では拒否する。2 条件 × 3 方針の結果は出さない。
+引数なしは自明ケースと二重割当検査。`--full` は 5 seed × 2 条件 × 3 方針を `src/rd/issue649/results/` に書く。
+
+本比較の表と JSON は `src/rd/issue649/results/`。
 
 ## 現行ボス判定との接続メモ
 

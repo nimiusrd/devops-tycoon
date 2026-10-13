@@ -1,9 +1,9 @@
 /**
  * Issue #649 の隔離決定論 sim。本番の RunEngine / firefight には接続しない。
- * Phase 1 は式の実装と smoke 用の自明ケースだけを公開する。
  */
 
-import { PARAMS, POLICIES, ROLES } from './params.mjs';
+import { COMPARISON_SEEDS, CONDITIONS, PARAMS, POLICIES, ROLES } from './params.mjs';
+import { uniform01 } from './rng.mjs';
 
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -76,7 +76,7 @@ export function trustDropPerIncident(communicationCount, params) {
  * 残り調査担当は役割完了で未配置になり、通常成果だけを出す。
  * 説明担当は停止中ずっと枠を占め、信頼低下だけを抑える。
  */
-export function simulate(params, condition, policy) {
+export function simulate(params, condition, policy, u) {
   const lists = roleListsForPolicy(params.staffIds, policy);
   const assignment = assignRoles(params.staffIds, lists);
   const recoveryCount = assignment.roles.recovery.length;
@@ -84,7 +84,10 @@ export function simulate(params, condition, policy) {
   const communicationCount = assignment.roles.communication.length;
 
   const chance = recurrenceChance(condition.baseRecurrence, investigationCount, params);
-  const recurred = chance >= params.recurrenceThreshold;
+  if (typeof u !== 'number' || !(u >= 0) || !(u < 1)) {
+    throw new Error('u must be in [0, 1)');
+  }
+  const recurred = u < chance;
   const incidentCount = 1 + (recurred ? 1 : 0);
   const dropPerIncident = trustDropPerIncident(communicationCount, params);
   const effectiveTrustDrop = Math.min(1, dropPerIncident * incidentCount);
@@ -128,6 +131,7 @@ export function simulate(params, condition, policy) {
     seed: params.seed,
     conditionId: condition.id,
     policyId: policy.id,
+    u,
     assignment,
     violations: assignment.violations,
     recoveryTime: firstRecoveryTime,
@@ -148,6 +152,56 @@ export function simulate(params, condition, policy) {
   };
 }
 
-export function simulatePolicy(condition, policyId, params = PARAMS) {
-  return simulate(params, condition, POLICIES[policyId]);
+export function simulatePolicy(condition, policyId, u, params = PARAMS) {
+  return simulate(params, condition, POLICIES[policyId], u);
+}
+
+export function toResultRow(result) {
+  return {
+    seed: result.seed,
+    condition: result.conditionId,
+    policy: result.policyId,
+    u: result.u,
+    recurrenceChance: result.recurrenceChance,
+    recurred: result.recurred,
+    recoveryTime: result.recoveryTime,
+    totalDowntime: result.totalDowntime,
+    trustDrop: result.effectiveTrustDrop,
+    netOutcome: result.netOutcome,
+    violations: result.violations,
+  };
+}
+
+function winnersForCondition(rows, conditionId) {
+  const bySeed = {};
+  const winCounts = { 'all-on-recovery': 0, split: 0, 'investigation-first': 0 };
+  for (const seed of COMPARISON_SEEDS) {
+    const group = rows.filter((row) => row.seed === seed && row.condition === conditionId);
+    const maxNet = Math.max(...group.map((row) => row.netOutcome));
+    const winners = group.filter((row) => row.netOutcome === maxNet).map((row) => row.policy);
+    bySeed[seed] = winners;
+    for (const policy of winners) winCounts[policy] += 1;
+  }
+  return { bySeed, winCounts };
+}
+
+export function compareAll(params = PARAMS) {
+  const rows = [];
+  for (const seed of COMPARISON_SEEDS) {
+    const u = uniform01(seed);
+    for (const condition of Object.values(CONDITIONS)) {
+      for (const policy of Object.values(POLICIES)) {
+        rows.push(toResultRow(simulate({ ...params, seed }, condition, policy, u)));
+      }
+    }
+  }
+  return {
+    seeds: [...COMPARISON_SEEDS],
+    decisionMetric: params.decisionMetric,
+    rows,
+    winners: {
+      A: winnersForCondition(rows, 'A'),
+      B: winnersForCondition(rows, 'B'),
+    },
+  };
 }

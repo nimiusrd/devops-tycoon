@@ -74,6 +74,15 @@ export const PARAMS = Object.freeze({
   decisionMetric: DECISION_METRIC,
 });
 
+/** 本比較の seed。1 seed につき u を 1 回だけ引く。 */
+export const COMPARISON_SEEDS = Object.freeze([
+  'RI-649-a',
+  'RI-649-b',
+  'RI-649-c',
+  'RI-649-d',
+  'RI-649-e',
+]);
+
 export const CONDITIONS = Object.freeze({
   A: Object.freeze({
     id: 'A',

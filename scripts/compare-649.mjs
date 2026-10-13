@@ -1,9 +1,12 @@
 /**
- * Issue #649 Phase 1: 隔離実験の smoke だけを走らせる。
- * 本実験（条件 A/B × 3 方針）は実行しない。
+ * Issue #649: 隔離実験。引数なしは smoke。`--full` で 5 seed × 2 条件 × 3 方針を書く。
  */
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SMOKE_CASE, SMOKE_DOUBLE_ASSIGN } from '../src/rd/issue649/params.mjs';
-import { assignRoles, simulate } from '../src/rd/issue649/sim.mjs';
+import { assignRoles, compareAll, simulate } from '../src/rd/issue649/sim.mjs';
+import { uniform01 } from '../src/rd/issue649/rng.mjs';
 
 function fail(message) {
   console.error(message);
@@ -18,67 +21,157 @@ function same(actual, expected, label) {
   return true;
 }
 
-const args = process.argv.slice(2);
-if (args.includes('--full') || args.includes('--compare')) {
-  console.error('Phase 1 は smoke のみ。本実験の比較実行は拒否する。');
-  process.exit(2);
+function runSmoke() {
+  const smokeParams = {
+    ...SMOKE_CASE,
+    staffIds: [...SMOKE_CASE.staffIds],
+    decisionMetric: 'netOutcome',
+  };
+  const u = uniform01(SMOKE_CASE.seed);
+  const smoke = simulate(smokeParams, SMOKE_CASE.condition, SMOKE_CASE.policy, u);
+  const expected = SMOKE_CASE.expected;
+
+  console.log('issue649 smoke');
+  console.log(
+    JSON.stringify(
+      {
+        id: SMOKE_CASE.id,
+        u,
+        violations: smoke.violations,
+        recoveryTime: smoke.recoveryTime,
+        totalDowntime: smoke.totalDowntime,
+        recurred: smoke.recurred,
+        shippedAfterTrust: smoke.shippedAfterTrust,
+        netOutcome: smoke.netOutcome,
+      },
+      null,
+      2,
+    ),
+  );
+
+  same(smoke.violations, expected.violations, 'smoke.violations');
+  same(smoke.recoveryTime, expected.recoveryTime, 'smoke.recoveryTime');
+  same(smoke.totalDowntime, expected.totalDowntime, 'smoke.totalDowntime');
+  same(smoke.recurred, expected.recurred, 'smoke.recurred');
+  same(smoke.incidentCount, expected.incidentCount, 'smoke.incidentCount');
+  same(smoke.effectiveTrustDrop, expected.effectiveTrustDrop, 'smoke.effectiveTrustDrop');
+  same(smoke.shippedAfterTrust, expected.shippedAfterTrust, 'smoke.shippedAfterTrust');
+  same(smoke.netOutcome, expected.netOutcome, 'smoke.netOutcome');
+
+  const overlapping = assignRoles(
+    [...SMOKE_DOUBLE_ASSIGN.staffIds],
+    SMOKE_DOUBLE_ASSIGN.overlappingLists,
+  );
+  console.log(
+    JSON.stringify(
+      {
+        id: SMOKE_DOUBLE_ASSIGN.id,
+        violations: overlapping.violations,
+        recovery: overlapping.roles.recovery,
+        investigation: overlapping.roles.investigation,
+      },
+      null,
+      2,
+    ),
+  );
+  same(overlapping.violations, SMOKE_DOUBLE_ASSIGN.expectedViolations, 'double-assign.violations');
+  same(overlapping.roles.recovery.length, 1, 'double-assign.recovery-kept');
+  same(overlapping.roles.investigation.length, 0, 'double-assign.investigation-rejected');
+
+  if (!process.exitCode) console.log('smoke ok');
 }
 
-const smokeParams = {
-  ...SMOKE_CASE,
-  staffIds: [...SMOKE_CASE.staffIds],
-  decisionMetric: 'netOutcome',
-};
+function formatNumber(value) {
+  return typeof value === 'number' ? String(value) : String(value);
+}
 
-const smoke = simulate(smokeParams, SMOKE_CASE.condition, SMOKE_CASE.policy);
-const expected = SMOKE_CASE.expected;
+function markdownTable(headers, rows) {
+  const head = `| ${headers.join(' | ')} |`;
+  const sep = `| ${headers.map(() => '---').join(' | ')} |`;
+  const body = rows.map((row) => `| ${row.map(formatNumber).join(' | ')} |`);
+  return [head, sep, ...body].join('\n');
+}
 
-console.log('issue649 smoke');
-console.log(
-  JSON.stringify(
-    {
-      id: SMOKE_CASE.id,
-      violations: smoke.violations,
-      recoveryTime: smoke.recoveryTime,
-      totalDowntime: smoke.totalDowntime,
-      recurred: smoke.recurred,
-      shippedAfterTrust: smoke.shippedAfterTrust,
-      netOutcome: smoke.netOutcome,
-    },
-    null,
-    2,
-  ),
-);
+function writeFullResults(comparison) {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const outDir = join(root, 'src/rd/issue649/results');
+  mkdirSync(outDir, { recursive: true });
 
-same(smoke.violations, expected.violations, 'smoke.violations');
-same(smoke.recoveryTime, expected.recoveryTime, 'smoke.recoveryTime');
-same(smoke.totalDowntime, expected.totalDowntime, 'smoke.totalDowntime');
-same(smoke.recurred, expected.recurred, 'smoke.recurred');
-same(smoke.incidentCount, expected.incidentCount, 'smoke.incidentCount');
-same(smoke.effectiveTrustDrop, expected.effectiveTrustDrop, 'smoke.effectiveTrustDrop');
-same(smoke.shippedAfterTrust, expected.shippedAfterTrust, 'smoke.shippedAfterTrust');
-same(smoke.netOutcome, expected.netOutcome, 'smoke.netOutcome');
+  const jsonPath = join(outDir, 'comparison.json');
+  const mdPath = join(outDir, 'comparison.md');
+  writeFileSync(jsonPath, `${JSON.stringify(comparison, null, 2)}\n`);
 
-const overlapping = assignRoles(
-  [...SMOKE_DOUBLE_ASSIGN.staffIds],
-  SMOKE_DOUBLE_ASSIGN.overlappingLists,
-);
-console.log(
-  JSON.stringify(
-    {
-      id: SMOKE_DOUBLE_ASSIGN.id,
-      violations: overlapping.violations,
-      recovery: overlapping.roles.recovery,
-      investigation: overlapping.roles.investigation,
-    },
-    null,
-    2,
-  ),
-);
-same(overlapping.violations, SMOKE_DOUBLE_ASSIGN.expectedViolations, 'double-assign.violations');
-same(overlapping.roles.recovery.length, 1, 'double-assign.recovery-kept');
-same(overlapping.roles.investigation.length, 0, 'double-assign.investigation-rejected');
+  const resultTable = markdownTable(
+    [
+      'seed',
+      'condition',
+      'policy',
+      'u',
+      'recurred',
+      'recoveryTime',
+      'totalDowntime',
+      'trustDrop',
+      'netOutcome',
+      'violations',
+    ],
+    comparison.rows.map((row) => [
+      row.seed,
+      row.condition,
+      row.policy,
+      row.u,
+      row.recurred,
+      row.recoveryTime,
+      row.totalDowntime,
+      row.trustDrop,
+      row.netOutcome,
+      row.violations,
+    ]),
+  );
 
-if (!process.exitCode) {
-  console.log('smoke ok');
+  const winnerRows = [];
+  for (const conditionId of ['A', 'B']) {
+    for (const seed of comparison.seeds) {
+      winnerRows.push([conditionId, seed, comparison.winners[conditionId].bySeed[seed].join(',')]);
+    }
+  }
+  const winnerTable = markdownTable(['condition', 'seed', 'winner'], winnerRows);
+
+  const countRows = [];
+  for (const conditionId of ['A', 'B']) {
+    const counts = comparison.winners[conditionId].winCounts;
+    for (const policy of ['all-on-recovery', 'split', 'investigation-first']) {
+      countRows.push([conditionId, policy, counts[policy]]);
+    }
+  }
+  const countTable = markdownTable(['condition', 'policy', 'wins'], countRows);
+
+  const markdown = [
+    '# Issue #649 comparison',
+    '',
+    'Generated by `node scripts/compare-649.mjs --full`.',
+    '',
+    '## seed × condition × policy',
+    '',
+    resultTable,
+    '',
+    '## winner by netOutcome per seed',
+    '',
+    winnerTable,
+    '',
+    '## win counts',
+    '',
+    countTable,
+    '',
+  ].join('\n');
+  writeFileSync(mdPath, markdown);
+  return { jsonPath, mdPath };
+}
+
+const args = process.argv.slice(2);
+if (args.includes('--full') || args.includes('--compare')) {
+  const comparison = compareAll();
+  const paths = writeFullResults(comparison);
+  console.log(JSON.stringify({ wrote: paths, comparison }, null, 2));
+} else {
+  runSmoke();
 }

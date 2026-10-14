@@ -86,7 +86,12 @@ export function simulateAgentDatPipeline(input: AgentDatCapacity): AgentDatPipel
       input.approvalPolicy,
     );
     while (state.stage === 'ready' || state.stage === 'coding') {
-      const next = applyWithinBudget(state, input.authorBudgetMinutes, authorMinutesSpent, 'authorDat');
+      const next = applyWithinBudget(
+        state,
+        input.authorBudgetMinutes,
+        authorMinutesSpent,
+        'authorDat',
+      );
       if (next === null) break;
       authorMinutesSpent += next.authorDat - state.authorDat;
       state = next;

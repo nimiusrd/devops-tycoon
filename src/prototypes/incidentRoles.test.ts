@@ -190,6 +190,25 @@ describe('RI-253 障害の役割分担', () => {
     expect(splitRestored.previous).toEqual({ recovery: 1, investigation: 1, explanation: 1 });
     expect(splitRestored.explanation).toBe(2);
     expect(splitRestored.switchIntent).toBeNull();
+    const planted = apply(splitOpened, {
+      type: 'assign',
+      recovery: 2,
+      investigation: 0,
+      explanation: 0,
+      intent: { recovery: 1, investigation: 1, explanation: 1 },
+    });
+    expect(planted.switchIntent).toBeNull();
+    expect(planted.reassignmentCost).toBe(0);
+    expect(apply(planted, { type: 'work' })).toBe(planted);
+    const mixed = apply(splitOpened, {
+      type: 'assign',
+      recovery: 2,
+      investigation: 1,
+      explanation: 0,
+    });
+    const paid = apply(mixed, chooseIncidentAction(mixed, 'split'));
+    expect(paid.reassignmentCost).toBe(1);
+    expect(paid.switchIntent).toEqual({ recovery: 1, investigation: 1, explanation: 1 });
     const forged = apply(apply(create('RI-253', 'brief'), { type: 'recovery' }), {
       type: 'assign',
       recovery: 3,

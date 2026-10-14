@@ -187,15 +187,19 @@ function applyAssignment(
   }
   const honorsIntent =
     state.switchIntent !== null && roleKey(assignment) === roleKey(state.switchIntent);
-  const switching =
-    !honorsIntent && state.previous !== null && roleKey(state.previous) !== roleKey(assignment);
+  const assignmentChanges =
+    state.previous !== null && roleKey(state.previous) !== roleKey(assignment);
+  const intentChanges =
+    intent !== undefined && state.previous !== null && roleKey(intent) !== roleKey(state.previous);
+  const switching = !honorsIntent && (assignmentChanges || intentChanges);
   const slots = switching ? state.slots - state.reassignmentSlotCost : state.slots;
   if (assignmentSum(assignment) > slots) return state;
 
   const next = structuredClone(state);
   if (switching) next.reassignmentCost += next.reassignmentSlotCost;
-  if (intent && roleKey(intent) !== roleKey(assignment)) next.switchIntent = { ...intent };
-  else if (honorsIntent) next.switchIntent = null;
+  if (switching && intent && isReducedIntent(assignment, intent, slots)) {
+    next.switchIntent = { ...intent };
+  } else if (honorsIntent) next.switchIntent = null;
   next.recovery += next.baselineRecovery + assignment.recovery * next.progressPerPerson;
   next.investigation += assignment.investigation * next.progressPerPerson;
   next.explanation += assignment.explanation * next.progressPerPerson;
@@ -283,6 +287,20 @@ export function summarizeIncidentRoles(state: IncidentState) {
     spreadCapConnected: false,
     shipFloorConnected: false,
   };
+}
+
+function isReducedIntent(
+  assignment: RoleAssignment,
+  intent: RoleAssignment,
+  slots: number,
+): boolean {
+  if (roleKey(intent) === roleKey(assignment)) return false;
+  const fitted = fitSwitch(intent, slots);
+  return (
+    fitted.recovery === assignment.recovery &&
+    fitted.investigation === assignment.investigation &&
+    fitted.explanation === assignment.explanation
+  );
 }
 
 function fitSwitch(plan: RoleAssignment, slots: number): RoleAssignment {

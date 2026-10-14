@@ -94,11 +94,48 @@ describe('RI-256 データ移行', () => {
   it('未移行分は確認できず、切替後の修復は後処理を重ねない', () => {
     const fresh = create('RI-256', 'trusted');
     expect(apply(fresh, { type: 'assign', migrate: 2, verify: 1 })).toBe(fresh);
-    const stalled = apply(fresh, { type: 'assign', migrate: 0, verify: 2 });
-    expect(stalled).toMatchObject({ migrated: 0, verified: 0, postProcess: 0, switched: false });
-    const moved = apply(fresh, { type: 'assign', migrate: 1, verify: 0 });
+    expect(apply(fresh, { type: 'assign', migrate: 0, verify: 2 })).toBe(fresh);
+    const started = apply(fresh, { type: 'prepare' });
+    const stalled = apply(started, { type: 'assign', migrate: 0, verify: 2 });
+    expect(stalled).toMatchObject({
+      migrated: 0,
+      verified: 0,
+      postProcess: 0,
+      switched: false,
+      dualSpent: 6,
+    });
+    const moved = apply(started, { type: 'assign', migrate: 1, verify: 0 });
     const capped = apply(moved, { type: 'assign', migrate: 0, verify: 2 });
-    expect(capped).toMatchObject({ migrated: 1, verified: 1, postProcess: 0, switched: false });
+    expect(capped).toMatchObject({
+      migrated: 1,
+      verified: 1,
+      postProcess: 0,
+      switched: false,
+      dualSpent: 12,
+    });
+    let assigned = apply(fresh, { type: 'early' });
+    assigned = apply(assigned, { type: 'assign', migrate: 2, verify: 0 });
+    assigned = apply(assigned, { type: 'assign', migrate: 2, verify: 0 });
+    expect(assigned).toMatchObject({
+      switched: true,
+      postProcess: 1,
+      migrated: 4,
+      verified: 0,
+      dualSpent: 12,
+      risk: 4,
+      appliedId: 'migrated-batch',
+    });
+    expect(apply(assigned, { type: 'assign', migrate: 2, verify: 0 })).toBe(assigned);
+    let prepared = apply(fresh, { type: 'prepare' });
+    for (let i = 0; i < 4; i++)
+      prepared = apply(prepared, { type: 'assign', migrate: 1, verify: 1 });
+    expect(prepared).toMatchObject({
+      switched: true,
+      verified: 4,
+      dualSpent: 24,
+      ship: 20,
+      postProcess: 1,
+    });
 
     let early = apply(apply(fresh, { type: 'early' }), { type: 'work' });
     early = apply(early, { type: 'work' });

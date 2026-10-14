@@ -159,8 +159,15 @@ export function applyDataMigration(state: MigrationState, input: MigrationInput)
   if (input.type === 'assign') {
     if (!isSlotCount(input.migrate) || !isSlotCount(input.verify)) return state;
     if (input.migrate + input.verify > state.slots) return state;
+    if (state.strategy === null || state.tick >= state.horizon || state.switched) return state;
     const next = structuredClone(state);
     advance(next, input.migrate, input.verify);
+    next.dualSpent += next.dualRate;
+    const ready =
+      next.strategy === 'early'
+        ? next.migrated >= next.total
+        : next.migrated >= next.total && next.verified >= next.total;
+    if (ready) cutover(next);
     pushPeriod(next, 'assign');
     next.inputs.push({ type: 'assign', migrate: input.migrate, verify: input.verify });
     return next;

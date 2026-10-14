@@ -210,8 +210,7 @@ export function summarizeAgentWorkflow(state: AgentWorkflowState) {
     reworkRounds: state.reworkRounds,
     // 待機・並列化・AI利用料金は除いた、1タスク当たりの理論的な人時効率。
     // 未完了またはDATゼロでは率を算定できない（ゼロ能力と取り違えない）。
-    tasksPerHumanHour:
-      done && totalHumanDat > 0 ? Number((60 / totalHumanDat).toFixed(2)) : null,
+    tasksPerHumanHour: done && totalHumanDat > 0 ? Number((60 / totalHumanDat).toFixed(2)) : null,
   };
 }
 

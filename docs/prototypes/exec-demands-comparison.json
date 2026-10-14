@@ -1,0 +1,253 @@
+{
+  "seed": "RI-255",
+  "results": [
+    {
+      "board": "compatible",
+      "strategy": "follow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-255",
+        "board": "compatible",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 3,
+        "aiNeed": 6,
+        "aiDeadline": 2,
+        "aiValue": 12,
+        "statedCap": 1,
+        "reviewCap": 1,
+        "relaxedCap": 6,
+        "reviewDeadline": 3,
+        "reviewValue": 12,
+        "trustCost": 8,
+        "reviewPerAi": 0,
+        "strategy": null,
+        "negotiated": false,
+        "ai": 0,
+        "queue": 0,
+        "aiAward": 0,
+        "reviewAward": 0,
+        "trustSpent": 0,
+        "nextPromise": 0,
+        "existingReviewCharged": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "follow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 24,
+        "aiAward": 12,
+        "reviewAward": 12,
+        "trustSpent": 0,
+        "nextPromise": 0,
+        "ai": 6,
+        "queue": 0,
+        "outcome": "both",
+        "negotiated": false,
+        "existingReviewCharged": false,
+        "path": [0, 0, 12, 24],
+        "lost": false,
+        "continued": true
+      }
+    },
+    {
+      "board": "compatible",
+      "strategy": "negotiate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-255",
+        "board": "compatible",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 3,
+        "aiNeed": 6,
+        "aiDeadline": 2,
+        "aiValue": 12,
+        "statedCap": 1,
+        "reviewCap": 1,
+        "relaxedCap": 6,
+        "reviewDeadline": 3,
+        "reviewValue": 12,
+        "trustCost": 8,
+        "reviewPerAi": 0,
+        "strategy": null,
+        "negotiated": false,
+        "ai": 0,
+        "queue": 0,
+        "aiAward": 0,
+        "reviewAward": 0,
+        "trustSpent": 0,
+        "nextPromise": 0,
+        "existingReviewCharged": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "negotiate"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 16,
+        "aiAward": 12,
+        "reviewAward": 12,
+        "trustSpent": 8,
+        "nextPromise": 0,
+        "ai": 6,
+        "queue": 0,
+        "outcome": "both",
+        "negotiated": true,
+        "existingReviewCharged": false,
+        "path": [-8, -8, 4, 16],
+        "lost": false,
+        "continued": true
+      }
+    },
+    {
+      "board": "contradict",
+      "strategy": "follow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-255",
+        "board": "contradict",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 3,
+        "aiNeed": 6,
+        "aiDeadline": 2,
+        "aiValue": 12,
+        "statedCap": 1,
+        "reviewCap": 1,
+        "relaxedCap": 6,
+        "reviewDeadline": 3,
+        "reviewValue": 12,
+        "trustCost": 8,
+        "reviewPerAi": 1,
+        "strategy": null,
+        "negotiated": false,
+        "ai": 0,
+        "queue": 0,
+        "aiAward": 0,
+        "reviewAward": 0,
+        "trustSpent": 0,
+        "nextPromise": 0,
+        "existingReviewCharged": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "follow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 12,
+        "aiAward": 12,
+        "reviewAward": 0,
+        "trustSpent": 0,
+        "nextPromise": 0,
+        "ai": 6,
+        "queue": 3,
+        "outcome": "ai-only",
+        "negotiated": false,
+        "existingReviewCharged": false,
+        "path": [0, 0, 12, 12],
+        "lost": false,
+        "continued": true
+      }
+    },
+    {
+      "board": "contradict",
+      "strategy": "negotiate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-255",
+        "board": "contradict",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 3,
+        "aiNeed": 6,
+        "aiDeadline": 2,
+        "aiValue": 12,
+        "statedCap": 1,
+        "reviewCap": 1,
+        "relaxedCap": 6,
+        "reviewDeadline": 3,
+        "reviewValue": 12,
+        "trustCost": 8,
+        "reviewPerAi": 1,
+        "strategy": null,
+        "negotiated": false,
+        "ai": 0,
+        "queue": 0,
+        "aiAward": 0,
+        "reviewAward": 0,
+        "trustSpent": 0,
+        "nextPromise": 0,
+        "existingReviewCharged": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "negotiate"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 16,
+        "aiAward": 12,
+        "reviewAward": 12,
+        "trustSpent": 8,
+        "nextPromise": 3,
+        "ai": 6,
+        "queue": 3,
+        "outcome": "both",
+        "negotiated": true,
+        "existingReviewCharged": false,
+        "path": [-8, -8, 4, 16],
+        "lost": false,
+        "continued": true
+      }
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import {
   type Workload,
 } from '../prototypes/agentWorkflowDat';
 import styles from './AgentWorkflowDatLab.module.css';
+import { AgentDatCapacityPreview } from './AgentDatCapacityPreview';
 
 const SEED = 'DAT-lab';
 const WORKLOAD_OPTIONS: ReadonlyArray<{ value: Workload; label: string }> = [
@@ -335,6 +336,11 @@ export function AgentWorkflowDatLab() {
           これは比較用の仮定であり、非同期型の必然的な失敗を意味しません。
         </p>
       </section>
+      <AgentDatCapacityPreview
+        workload={workload}
+        mode={mode}
+        approvalPolicy={approvalPolicy}
+      />
     </main>
   );
 }

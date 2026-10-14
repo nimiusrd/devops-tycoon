@@ -1,0 +1,241 @@
+{
+  "seed": "RI-256",
+  "results": [
+    {
+      "board": "trusted",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-256",
+        "board": "trusted",
+        "tick": 0,
+        "horizon": 5,
+        "total": 4,
+        "slots": 2,
+        "dualRate": 6,
+        "riskRate": 1,
+        "shipValue": 20,
+        "strategy": null,
+        "migrated": 0,
+        "verified": 0,
+        "switched": false,
+        "dualSpent": 0,
+        "risk": 0,
+        "ship": 0,
+        "postProcess": 0,
+        "appliedId": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "early"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 4,
+        "ship": 20,
+        "dualSpent": 12,
+        "risk": 4,
+        "migrated": 4,
+        "verified": 0,
+        "switched": true,
+        "postProcess": 1,
+        "appliedId": "migrated-batch",
+        "path": [0, -6, 4, 4, 4],
+        "lost": false,
+        "rosterChanged": false,
+        "existingBossWeights": "unchanged"
+      }
+    },
+    {
+      "board": "trusted",
+      "strategy": "prepare",
+      "initial": {
+        "version": 1,
+        "seed": "RI-256",
+        "board": "trusted",
+        "tick": 0,
+        "horizon": 5,
+        "total": 4,
+        "slots": 2,
+        "dualRate": 6,
+        "riskRate": 1,
+        "shipValue": 20,
+        "strategy": null,
+        "migrated": 0,
+        "verified": 0,
+        "switched": false,
+        "dualSpent": 0,
+        "risk": 0,
+        "ship": 0,
+        "postProcess": 0,
+        "appliedId": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "prepare"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": -4,
+        "ship": 20,
+        "dualSpent": 24,
+        "risk": 0,
+        "migrated": 4,
+        "verified": 4,
+        "switched": true,
+        "postProcess": 1,
+        "appliedId": "migrated-batch",
+        "path": [0, -6, -12, -18, -4],
+        "lost": false,
+        "rosterChanged": false,
+        "existingBossWeights": "unchanged"
+      }
+    },
+    {
+      "board": "sensitive",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-256",
+        "board": "sensitive",
+        "tick": 0,
+        "horizon": 5,
+        "total": 4,
+        "slots": 2,
+        "dualRate": 2,
+        "riskRate": 8,
+        "shipValue": 20,
+        "strategy": null,
+        "migrated": 0,
+        "verified": 0,
+        "switched": false,
+        "dualSpent": 0,
+        "risk": 0,
+        "ship": 0,
+        "postProcess": 0,
+        "appliedId": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "early"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": -16,
+        "ship": 20,
+        "dualSpent": 4,
+        "risk": 32,
+        "migrated": 4,
+        "verified": 0,
+        "switched": true,
+        "postProcess": 1,
+        "appliedId": "migrated-batch",
+        "path": [0, -2, -16, -16, -16],
+        "lost": false,
+        "rosterChanged": false,
+        "existingBossWeights": "unchanged"
+      }
+    },
+    {
+      "board": "sensitive",
+      "strategy": "prepare",
+      "initial": {
+        "version": 1,
+        "seed": "RI-256",
+        "board": "sensitive",
+        "tick": 0,
+        "horizon": 5,
+        "total": 4,
+        "slots": 2,
+        "dualRate": 2,
+        "riskRate": 8,
+        "shipValue": 20,
+        "strategy": null,
+        "migrated": 0,
+        "verified": 0,
+        "switched": false,
+        "dualSpent": 0,
+        "risk": 0,
+        "ship": 0,
+        "postProcess": 0,
+        "appliedId": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "prepare"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 12,
+        "ship": 20,
+        "dualSpent": 8,
+        "risk": 0,
+        "migrated": 4,
+        "verified": 4,
+        "switched": true,
+        "postProcess": 1,
+        "appliedId": "migrated-batch",
+        "path": [0, -2, -4, -6, 12],
+        "lost": false,
+        "rosterChanged": false,
+        "existingBossWeights": "unchanged"
+      }
+    }
+  ]
+}

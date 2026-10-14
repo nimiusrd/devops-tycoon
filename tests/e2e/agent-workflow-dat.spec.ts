@@ -1,9 +1,7 @@
 import { expect, test } from './fixtures';
 
 test.describe('非同期エージェント DAT R&D 画面', () => {
-  test('通常ゲームを起動せず、非同期の1ターンPR作成とレビュー負荷を確認する', async ({
-    page,
-  }) => {
+  test('通常ゲームを起動せず、非同期の1ターンPR作成とレビュー負荷を確認する', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     await expect(page.getByTestId('agent-dat-lab')).toBeVisible();
     expect(await page.evaluate(() => 'game' in window)).toBe(false);
@@ -30,9 +28,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-events').getByText(/レビュー承認/)).toBeVisible();
   });
 
-  test('伴走型の承認は各工程で必要、変更・再実行で状態がリセットされる', async ({
-    page,
-  }) => {
+  test('伴走型の承認は各工程で必要、変更・再実行で状態がリセットされる', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     await expect(page.getByTestId('dat-stage')).toHaveText('未着手');
     await page.getByTestId('dat-advance').click();

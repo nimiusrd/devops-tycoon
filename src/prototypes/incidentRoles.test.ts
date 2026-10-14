@@ -100,9 +100,13 @@ describe('RI-253 障害の役割分担', () => {
 
   it('担当なしでも復旧は進み、同じ枠を二つの役割に使えない', () => {
     const fresh = create('RI-253', 'brief');
-    const idle = apply(fresh, { type: 'assign', recovery: 0, investigation: 0, explanation: 0 });
+    expect(apply(fresh, { type: 'assign', recovery: 0, investigation: 0, explanation: 0 })).toBe(
+      fresh,
+    );
+    const opened = apply(fresh, { type: 'recovery' });
+    const idle = apply(opened, { type: 'assign', recovery: 0, investigation: 0, explanation: 0 });
     expect(idle).toMatchObject({ recovery: 1, investigation: 0, explanation: 0 });
-    const investigation = apply(fresh, {
+    const investigation = apply(opened, {
       type: 'assign',
       recovery: 0,
       investigation: 3,
@@ -149,9 +153,15 @@ describe('RI-253 障害の役割分担', () => {
       explanation: 3,
     });
     expect(restored).toMatchObject({ explanation: 10, reassignmentCost: 1, recovery: 9 });
-    expect(viewIncidentRoles(idle).choices).toEqual([]);
-    expect(viewIncidentRoles(idle).forecasts).toEqual([]);
-    expect(apply(idle, { type: 'recovery' })).toBe(idle);
+    const skipped = structuredClone(fresh);
+    skipped.tick = 1;
+    expect(chooseIncidentAction(skipped, 'recovery')).toEqual({ type: 'view' });
+    expect(viewIncidentRoles(skipped).choices).toEqual([]);
+    expect(viewIncidentRoles(skipped).forecasts).toEqual([]);
+    expect(apply(skipped, { type: 'recovery' })).toBe(skipped);
+    expect(apply(skipped, { type: 'assign', recovery: 3, investigation: 0, explanation: 0 })).toBe(
+      skipped,
+    );
     const chosen = apply(create('RI-253', 'brief'), { type: 'recovery' });
     const saved = chosen.periods[0];
     if (saved) saved.assignment.recovery = 9;

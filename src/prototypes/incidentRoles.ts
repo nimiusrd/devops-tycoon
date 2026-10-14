@@ -231,7 +231,7 @@ export function applyIncidentRoles(state: IncidentState, input: IncidentInput): 
       'work',
     );
   }
-  if (input.type !== 'assign') return state;
+  if (input.type !== 'assign' || state.strategy === null || state.tick === 0) return state;
   return applyAssignment(
     state,
     {
@@ -265,7 +265,9 @@ export function chooseIncidentAction(
   state: IncidentState,
   strategy: IncidentStrategy,
 ): IncidentInput {
-  if (state.tick >= state.horizon) return { type: 'view' };
+  if (state.tick >= state.horizon || (state.strategy === null && state.tick !== 0)) {
+    return { type: 'view' };
+  }
   if (state.strategy === null) return { type: strategy };
   return { type: 'work' };
 }

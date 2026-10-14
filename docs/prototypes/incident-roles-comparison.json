@@ -1,0 +1,259 @@
+{
+  "seed": "RI-253",
+  "results": [
+    {
+      "board": "brief",
+      "strategy": "recovery",
+      "initial": {
+        "version": 1,
+        "seed": "RI-253",
+        "board": "brief",
+        "tick": 0,
+        "horizon": 3,
+        "slots": 3,
+        "progressPerPerson": 2,
+        "baselineRecovery": 1,
+        "reassignmentSlotCost": 1,
+        "recoveryNeed": 6,
+        "investigationNeed": 4,
+        "explanationNeed": 4,
+        "earlyShipTick": 1,
+        "earlyShip": 16,
+        "lateShip": 4,
+        "incompleteRate": 1,
+        "strategy": null,
+        "recovery": 0,
+        "investigation": 0,
+        "explanation": 0,
+        "recoveryTime": null,
+        "ship": 0,
+        "penalty": 0,
+        "recurrencePenalty": 0,
+        "trustPenalty": 0,
+        "reassignmentCost": 0,
+        "previous": null,
+        "switchIntent": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recovery"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 12,
+        "ship": 16,
+        "penalty": 4,
+        "recoveryTime": 1,
+        "recurrence": 4,
+        "trustGap": 4,
+        "recurrencePenalty": 2,
+        "trustPenalty": 2,
+        "reassignmentCost": 0,
+        "path": [0, 14, 12],
+        "lost": false,
+        "spreadCapConnected": false,
+        "shipFloorConnected": false
+      }
+    },
+    {
+      "board": "brief",
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-253",
+        "board": "brief",
+        "tick": 0,
+        "horizon": 3,
+        "slots": 3,
+        "progressPerPerson": 2,
+        "baselineRecovery": 1,
+        "reassignmentSlotCost": 1,
+        "recoveryNeed": 6,
+        "investigationNeed": 4,
+        "explanationNeed": 4,
+        "earlyShipTick": 1,
+        "earlyShip": 16,
+        "lateShip": 4,
+        "incompleteRate": 1,
+        "strategy": null,
+        "recovery": 0,
+        "investigation": 0,
+        "explanation": 0,
+        "recoveryTime": null,
+        "ship": 0,
+        "penalty": 0,
+        "recurrencePenalty": 0,
+        "trustPenalty": 0,
+        "reassignmentCost": 0,
+        "previous": null,
+        "switchIntent": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 2,
+        "ship": 4,
+        "penalty": 2,
+        "recoveryTime": 2,
+        "recurrence": 0,
+        "trustGap": 0,
+        "recurrencePenalty": 1,
+        "trustPenalty": 1,
+        "reassignmentCost": 0,
+        "path": [0, -2, 2],
+        "lost": false,
+        "spreadCapConnected": false,
+        "shipFloorConnected": false
+      }
+    },
+    {
+      "board": "lasting",
+      "strategy": "recovery",
+      "initial": {
+        "version": 1,
+        "seed": "RI-253",
+        "board": "lasting",
+        "tick": 0,
+        "horizon": 4,
+        "slots": 3,
+        "progressPerPerson": 2,
+        "baselineRecovery": 1,
+        "reassignmentSlotCost": 1,
+        "recoveryNeed": 6,
+        "investigationNeed": 4,
+        "explanationNeed": 4,
+        "earlyShipTick": 3,
+        "earlyShip": 12,
+        "lateShip": 12,
+        "incompleteRate": 5,
+        "strategy": null,
+        "recovery": 0,
+        "investigation": 0,
+        "explanation": 0,
+        "recoveryTime": null,
+        "ship": 0,
+        "penalty": 0,
+        "recurrencePenalty": 0,
+        "trustPenalty": 0,
+        "reassignmentCost": 0,
+        "previous": null,
+        "switchIntent": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "recovery"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": -18,
+        "ship": 12,
+        "penalty": 30,
+        "recoveryTime": 1,
+        "recurrence": 4,
+        "trustGap": 4,
+        "recurrencePenalty": 15,
+        "trustPenalty": 15,
+        "reassignmentCost": 0,
+        "path": [0, 2, -8, -18],
+        "lost": false,
+        "spreadCapConnected": false,
+        "shipFloorConnected": false
+      }
+    },
+    {
+      "board": "lasting",
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-253",
+        "board": "lasting",
+        "tick": 0,
+        "horizon": 4,
+        "slots": 3,
+        "progressPerPerson": 2,
+        "baselineRecovery": 1,
+        "reassignmentSlotCost": 1,
+        "recoveryNeed": 6,
+        "investigationNeed": 4,
+        "explanationNeed": 4,
+        "earlyShipTick": 3,
+        "earlyShip": 12,
+        "lateShip": 12,
+        "incompleteRate": 5,
+        "strategy": null,
+        "recovery": 0,
+        "investigation": 0,
+        "explanation": 0,
+        "recoveryTime": null,
+        "ship": 0,
+        "penalty": 0,
+        "recurrencePenalty": 0,
+        "trustPenalty": 0,
+        "reassignmentCost": 0,
+        "previous": null,
+        "switchIntent": null,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "split"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 2,
+        "ship": 12,
+        "penalty": 10,
+        "recoveryTime": 2,
+        "recurrence": 0,
+        "trustGap": 0,
+        "recurrencePenalty": 5,
+        "trustPenalty": 5,
+        "reassignmentCost": 0,
+        "path": [0, -10, 2, 2],
+        "lost": false,
+        "spreadCapConnected": false,
+        "shipFloorConnected": false
+      }
+    }
+  ]
+}

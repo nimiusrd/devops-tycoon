@@ -140,6 +140,41 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(notice).toBeVisible();
   });
 
+  test('投入タスクを減らすと密結合の再レビューが通り、AIレビューの負の差を確認できる', async ({
+    page,
+  }) => {
+    await page.goto('/?rd=agent-dat');
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+    await page.getByRole('radio', { name: 'AI事前トリアージ' }).check();
+
+    const count = page.getByTestId('dat-task-count');
+    await count.focus();
+    await count.press('Home');
+    await expect(page.getByTestId('dat-task-count-value')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-caption')).toContainText('1タスクの比較');
+
+    const reviewer = page.getByTestId('dat-reviewer-budget');
+    await reviewer.focus();
+    await reviewer.press('ArrowLeft');
+    await expect(page.getByTestId('dat-reviewer-budget-value')).toHaveText('48分');
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('人間のみより−1件');
+
+    await page.getByRole('radio', { name: '人間レビューのみ' }).check();
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
+
+    await count.focus();
+    await count.press('End');
+    await expect(page.getByTestId('dat-task-count-value')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-capacity-bottleneck-hint')).toBeVisible();
+  });
+
   for (const viewport of [
     { name: 'phone-se', width: 320, height: 568 },
     { name: 'phone', width: 390, height: 844 },

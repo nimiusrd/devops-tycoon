@@ -32,6 +32,7 @@
         "trustPenalty": 0,
         "reassignmentCost": 0,
         "previous": null,
+        "switchIntent": null,
         "periods": [],
         "inputs": []
       },
@@ -93,6 +94,7 @@
         "trustPenalty": 0,
         "reassignmentCost": 0,
         "previous": null,
+        "switchIntent": null,
         "periods": [],
         "inputs": []
       },
@@ -154,6 +156,7 @@
         "trustPenalty": 0,
         "reassignmentCost": 0,
         "previous": null,
+        "switchIntent": null,
         "periods": [],
         "inputs": []
       },
@@ -218,6 +221,7 @@
         "trustPenalty": 0,
         "reassignmentCost": 0,
         "previous": null,
+        "switchIntent": null,
         "periods": [],
         "inputs": []
       },

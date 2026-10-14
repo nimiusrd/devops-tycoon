@@ -168,6 +168,28 @@ describe('RI-253 障害の役割分担', () => {
     const continued = apply(manual, chooseIncidentAction(manual, 'recovery'));
     expect(continued.tick).toBe(manual.tick + 1);
     expect(continued.reassignmentCost).toBe(manual.reassignmentCost + 1);
+    const splitOpened = apply(create('RI-253', 'lasting'), { type: 'split' });
+    const narrowed = apply(splitOpened, {
+      type: 'assign',
+      recovery: 2,
+      investigation: 0,
+      explanation: 0,
+    });
+    expect(chooseIncidentAction(narrowed, 'split')).toEqual({
+      type: 'assign',
+      recovery: 1,
+      investigation: 1,
+      explanation: 0,
+      intent: { recovery: 1, investigation: 1, explanation: 1 },
+    });
+    const partial = apply(narrowed, chooseIncidentAction(narrowed, 'split'));
+    expect(partial.switchIntent).toEqual({ recovery: 1, investigation: 1, explanation: 1 });
+    expect(partial.explanation).toBe(0);
+    expect(chooseIncidentAction(partial, 'split')).toEqual({ type: 'work' });
+    const splitRestored = apply(partial, { type: 'work' });
+    expect(splitRestored.previous).toEqual({ recovery: 1, investigation: 1, explanation: 1 });
+    expect(splitRestored.explanation).toBe(2);
+    expect(splitRestored.switchIntent).toBeNull();
     const skipped = structuredClone(fresh);
     skipped.tick = 1;
     expect(chooseIncidentAction(skipped, 'recovery')).toEqual({ type: 'view' });

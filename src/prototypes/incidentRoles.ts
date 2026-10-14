@@ -8,7 +8,13 @@ export type IncidentInput =
   | { type: 'recovery' }
   | { type: 'split' }
   | { type: 'work' }
-  | { type: 'assign'; recovery: number; investigation: number; explanation: number };
+  | {
+      type: 'assign';
+      recovery: number;
+      investigation: number;
+      explanation: number;
+      intent?: RoleAssignment;
+    };
 
 export interface RoleAssignment {
   recovery: number;
@@ -56,6 +62,7 @@ export interface IncidentState {
   trustPenalty: number;
   reassignmentCost: number;
   previous: RoleAssignment | null;
+  switchIntent: RoleAssignment | null;
   periods: IncidentPeriod[];
   inputs: IncidentInput[];
 }
@@ -151,6 +158,7 @@ export function createIncidentRoles(seed: string, board: IncidentBoard): Inciden
     trustPenalty: 0,
     reassignmentCost: 0,
     previous: null,
+    switchIntent: null,
     periods: [],
     inputs: [],
   };
@@ -168,6 +176,7 @@ function applyAssignment(
   state: IncidentState,
   assignment: RoleAssignment,
   action: 'work' | 'assign',
+  intent?: RoleAssignment,
 ): IncidentState {
   if (
     !isSlotCount(assignment.recovery) ||
@@ -176,12 +185,17 @@ function applyAssignment(
   ) {
     return state;
   }
-  const switching = state.previous !== null && roleKey(state.previous) !== roleKey(assignment);
+  const honorsIntent =
+    state.switchIntent !== null && roleKey(assignment) === roleKey(state.switchIntent);
+  const switching =
+    !honorsIntent && state.previous !== null && roleKey(state.previous) !== roleKey(assignment);
   const slots = switching ? state.slots - state.reassignmentSlotCost : state.slots;
   if (assignmentSum(assignment) > slots) return state;
 
   const next = structuredClone(state);
   if (switching) next.reassignmentCost += next.reassignmentSlotCost;
+  if (intent && roleKey(intent) !== roleKey(assignment)) next.switchIntent = { ...intent };
+  else if (honorsIntent) next.switchIntent = null;
   next.recovery += next.baselineRecovery + assignment.recovery * next.progressPerPerson;
   next.investigation += assignment.investigation * next.progressPerPerson;
   next.explanation += assignment.explanation * next.progressPerPerson;
@@ -207,6 +221,7 @@ function applyAssignment(
           recovery: assignment.recovery,
           investigation: assignment.investigation,
           explanation: assignment.explanation,
+          ...(intent ? { intent } : {}),
         },
   );
   return next;
@@ -240,6 +255,7 @@ export function applyIncidentRoles(state: IncidentState, input: IncidentInput): 
       explanation: input.explanation,
     },
     'assign',
+    input.intent,
   );
 }
 
@@ -286,9 +302,13 @@ export function chooseIncidentAction(
   }
   if (state.strategy === null) return { type: strategy };
   const plan = state.strategy === 'recovery' ? recoveryPlan() : splitPlan();
+  if (state.switchIntent !== null && roleKey(state.switchIntent) === roleKey(plan)) {
+    return { type: 'work' };
+  }
   if (state.previous !== null && roleKey(state.previous) !== roleKey(plan)) {
     const fitted = fitSwitch(plan, state.slots - state.reassignmentSlotCost);
-    return { type: 'assign', ...fitted };
+    if (roleKey(fitted) === roleKey(plan)) return { type: 'assign', ...fitted };
+    return { type: 'assign', ...fitted, intent: plan };
   }
   return { type: 'work' };
 }

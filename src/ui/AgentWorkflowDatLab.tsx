@@ -318,6 +318,7 @@ export function AgentWorkflowDatLab() {
                 >
                   <th scope="row">
                     {MODE_OPTIONS.find((option) => option.value === row.mode)?.label}
+                    {row.mode === mode && row.approvalPolicy === approvalPolicy ? '（選択中）' : ''}
                   </th>
                   <td>
                     {APPROVAL_OPTIONS.find((option) => option.value === row.approvalPolicy)?.label}

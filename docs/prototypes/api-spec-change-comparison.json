@@ -1,0 +1,509 @@
+{
+  "seed": "RI-247",
+  "results": [
+    {
+      "board": "narrow-long",
+      "strategy": "follow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "narrow-long",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 4,
+        "replaceWork": 8,
+        "followResidual": 2,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "follow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 38,
+        "unrelatedDone": 6,
+        "unrelatedLeft": 0,
+        "unrelatedValue": 4,
+        "featurePaid": true,
+        "residual": 2,
+        "migrationLeft": 0,
+        "strategy": "follow",
+        "path": [0, 14, 30, 38],
+        "lost": false
+      }
+    },
+    {
+      "board": "narrow-long",
+      "strategy": "replace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "narrow-long",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 4,
+        "replaceWork": 8,
+        "followResidual": 2,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "replace"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 32,
+        "unrelatedDone": 4,
+        "unrelatedLeft": 2,
+        "unrelatedValue": 4,
+        "featurePaid": true,
+        "residual": 0,
+        "migrationLeft": 0,
+        "strategy": "replace",
+        "path": [0, 0, 16, 32],
+        "lost": false
+      }
+    },
+    {
+      "board": "narrow-long",
+      "strategy": "stop",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "narrow-long",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 4,
+        "replaceWork": 8,
+        "followResidual": 2,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "stop"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 24,
+        "unrelatedDone": 6,
+        "unrelatedLeft": 0,
+        "unrelatedValue": 4,
+        "featurePaid": false,
+        "residual": 0,
+        "migrationLeft": 0,
+        "strategy": "stop",
+        "path": [0, 16, 24, 24],
+        "lost": false
+      }
+    },
+    {
+      "board": "wide-long",
+      "strategy": "follow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "wide-long",
+        "tick": 0,
+        "horizon": 5,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 8,
+        "replaceWork": 12,
+        "followResidual": 14,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "follow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 26,
+        "unrelatedDone": 6,
+        "unrelatedLeft": 0,
+        "unrelatedValue": 4,
+        "featurePaid": true,
+        "residual": 14,
+        "migrationLeft": 0,
+        "strategy": "follow",
+        "path": [0, 0, 2, 18, 26],
+        "lost": false
+      }
+    },
+    {
+      "board": "wide-long",
+      "strategy": "replace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "wide-long",
+        "tick": 0,
+        "horizon": 5,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 8,
+        "replaceWork": 12,
+        "followResidual": 14,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "replace"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 32,
+        "unrelatedDone": 4,
+        "unrelatedLeft": 2,
+        "unrelatedValue": 4,
+        "featurePaid": true,
+        "residual": 0,
+        "migrationLeft": 0,
+        "strategy": "replace",
+        "path": [0, 0, 0, 16, 32],
+        "lost": false
+      }
+    },
+    {
+      "board": "wide-long",
+      "strategy": "stop",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "wide-long",
+        "tick": 0,
+        "horizon": 5,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 8,
+        "replaceWork": 12,
+        "followResidual": 14,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "stop"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 24,
+        "unrelatedDone": 6,
+        "unrelatedLeft": 0,
+        "unrelatedValue": 4,
+        "featurePaid": false,
+        "residual": 0,
+        "migrationLeft": 0,
+        "strategy": "stop",
+        "path": [0, 16, 24, 24, 24],
+        "lost": false
+      }
+    },
+    {
+      "board": "wide-short",
+      "strategy": "follow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "wide-short",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 8,
+        "replaceWork": 12,
+        "followResidual": 14,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "follow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 2,
+        "unrelatedDone": 0,
+        "unrelatedLeft": 6,
+        "unrelatedValue": 4,
+        "featurePaid": true,
+        "residual": 14,
+        "migrationLeft": 0,
+        "strategy": "follow",
+        "path": [0, 0, 2],
+        "lost": false
+      }
+    },
+    {
+      "board": "wide-short",
+      "strategy": "replace",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "wide-short",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 8,
+        "replaceWork": 12,
+        "followResidual": 14,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "replace"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": -8,
+        "unrelatedDone": 0,
+        "unrelatedLeft": 6,
+        "unrelatedValue": 4,
+        "featurePaid": false,
+        "residual": 8,
+        "migrationLeft": 4,
+        "strategy": "replace",
+        "path": [0, 0, -8],
+        "lost": false
+      }
+    },
+    {
+      "board": "wide-short",
+      "strategy": "stop",
+      "initial": {
+        "version": 1,
+        "seed": "RI-247",
+        "board": "wide-short",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "domain": "billing",
+        "unrelatedDomain": "other",
+        "followWork": 8,
+        "replaceWork": 12,
+        "followResidual": 14,
+        "featureValue": 16,
+        "brokenResidual": 8,
+        "strategy": null,
+        "migrationLeft": 0,
+        "migrationDone": 0,
+        "featurePaid": false,
+        "residual": 0,
+        "unrelatedTotal": 6,
+        "unrelatedLeft": 6,
+        "unrelatedDone": 0,
+        "unrelatedValue": 4,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "stop"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 24,
+        "unrelatedDone": 6,
+        "unrelatedLeft": 0,
+        "unrelatedValue": 4,
+        "featurePaid": false,
+        "residual": 0,
+        "migrationLeft": 0,
+        "strategy": "stop",
+        "path": [0, 16, 24],
+        "lost": false
+      }
+    }
+  ]
+}

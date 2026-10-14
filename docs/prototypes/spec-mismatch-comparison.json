@@ -1,0 +1,749 @@
+{
+  "seed": "RI-248",
+  "results": [
+    {
+      "board": "open",
+      "strategy": "check",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "open",
+        "tick": 0,
+        "horizon": 9,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 18,
+        "delivered": 18,
+        "scope": "full",
+        "checked": true,
+        "mismatchFound": false,
+        "agreement": false,
+        "sunk": 0,
+        "remaining": 0,
+        "path": [0, 0, 0, 0, 0, 0, 0, 0, 18],
+        "lost": false
+      }
+    },
+    {
+      "board": "open",
+      "strategy": "rebuild",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "open",
+        "tick": 0,
+        "horizon": 9,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rebuild"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "delivered": 0,
+        "scope": null,
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": false,
+        "sunk": 4,
+        "remaining": 2,
+        "path": [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "open",
+      "strategy": "explain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "open",
+        "tick": 0,
+        "horizon": 9,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explain"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 12,
+        "delivered": 12,
+        "scope": "negotiated",
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": true,
+        "sunk": 4,
+        "remaining": 0,
+        "path": [0, 0, 0, 0, 0, 0, 12, 12, 12],
+        "lost": false
+      }
+    },
+    {
+      "board": "open",
+      "strategy": "narrow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "open",
+        "tick": 0,
+        "horizon": 9,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "narrow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 7,
+        "delivered": 7,
+        "scope": "narrow",
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": false,
+        "sunk": 4,
+        "remaining": 0,
+        "path": [0, 0, 0, 0, 0, 7, 7, 7, 7],
+        "lost": false
+      }
+    },
+    {
+      "board": "mid",
+      "strategy": "check",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "mid",
+        "tick": 0,
+        "horizon": 7,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "delivered": 0,
+        "scope": null,
+        "checked": true,
+        "mismatchFound": false,
+        "agreement": false,
+        "sunk": 0,
+        "remaining": 2,
+        "path": [0, 0, 0, 0, 0, 0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "mid",
+      "strategy": "rebuild",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "mid",
+        "tick": 0,
+        "horizon": 7,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rebuild"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "delivered": 0,
+        "scope": null,
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": false,
+        "sunk": 4,
+        "remaining": 4,
+        "path": [0, 0, 0, 0, 0, 0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "mid",
+      "strategy": "explain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "mid",
+        "tick": 0,
+        "horizon": 7,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explain"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 12,
+        "delivered": 12,
+        "scope": "negotiated",
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": true,
+        "sunk": 4,
+        "remaining": 0,
+        "path": [0, 0, 0, 0, 0, 0, 12],
+        "lost": false
+      }
+    },
+    {
+      "board": "mid",
+      "strategy": "narrow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "mid",
+        "tick": 0,
+        "horizon": 7,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "narrow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 7,
+        "delivered": 7,
+        "scope": "narrow",
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": false,
+        "sunk": 4,
+        "remaining": 0,
+        "path": [0, 0, 0, 0, 0, 7, 7],
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "strategy": "check",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "check"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "delivered": 0,
+        "scope": null,
+        "checked": true,
+        "mismatchFound": false,
+        "agreement": false,
+        "sunk": 0,
+        "remaining": 3,
+        "path": [0, 0, 0, 0, 0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "strategy": "rebuild",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "rebuild"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "delivered": 0,
+        "scope": null,
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": false,
+        "sunk": 4,
+        "remaining": 5,
+        "path": [0, 0, 0, 0, 0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "strategy": "explain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explain"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "delivered": 0,
+        "scope": null,
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": false,
+        "sunk": 4,
+        "remaining": 1,
+        "path": [0, 0, 0, 0, 0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "strategy": "narrow",
+      "initial": {
+        "version": 1,
+        "seed": "RI-248",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 6,
+        "capacity": 1,
+        "target": "checkout-flow",
+        "sign": "unconfirmed-assumption",
+        "strategy": null,
+        "steps": [],
+        "stepIndex": 0,
+        "stepLeft": 0,
+        "checked": false,
+        "mismatchFound": false,
+        "agreement": false,
+        "scope": null,
+        "sunk": 0,
+        "delivered": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "narrow"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 7,
+        "delivered": 7,
+        "scope": "narrow",
+        "checked": false,
+        "mismatchFound": true,
+        "agreement": false,
+        "sunk": 4,
+        "remaining": 0,
+        "path": [0, 0, 0, 0, 0, 7],
+        "lost": false
+      }
+    }
+  ]
+}

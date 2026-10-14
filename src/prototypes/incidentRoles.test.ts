@@ -153,6 +153,21 @@ describe('RI-253 障害の役割分担', () => {
       explanation: 3,
     });
     expect(restored).toMatchObject({ explanation: 10, reassignmentCost: 1, recovery: 9 });
+    const manual = apply(lasting, {
+      type: 'assign',
+      recovery: 0,
+      investigation: 0,
+      explanation: 2,
+    });
+    expect(chooseIncidentAction(manual, 'recovery')).toEqual({
+      type: 'assign',
+      recovery: 2,
+      investigation: 0,
+      explanation: 0,
+    });
+    const continued = apply(manual, chooseIncidentAction(manual, 'recovery'));
+    expect(continued.tick).toBe(manual.tick + 1);
+    expect(continued.reassignmentCost).toBe(manual.reassignmentCost + 1);
     const skipped = structuredClone(fresh);
     skipped.tick = 1;
     expect(chooseIncidentAction(skipped, 'recovery')).toEqual({ type: 'view' });

@@ -261,6 +261,22 @@ export function summarizeIncidentRoles(state: IncidentState) {
   };
 }
 
+function fitSwitch(plan: RoleAssignment, slots: number): RoleAssignment {
+  if (assignmentSum(plan) <= slots) return { ...plan };
+  if (plan.recovery > 0 && plan.investigation === 0 && plan.explanation === 0) {
+    return { recovery: slots, investigation: 0, explanation: 0 };
+  }
+  const fitted: RoleAssignment = { recovery: 0, investigation: 0, explanation: 0 };
+  let left = slots;
+  for (const role of ['recovery', 'investigation', 'explanation'] as const) {
+    if (plan[role] > 0 && left > 0) {
+      fitted[role] = 1;
+      left -= 1;
+    }
+  }
+  return fitted;
+}
+
 export function chooseIncidentAction(
   state: IncidentState,
   strategy: IncidentStrategy,
@@ -269,6 +285,11 @@ export function chooseIncidentAction(
     return { type: 'view' };
   }
   if (state.strategy === null) return { type: strategy };
+  const plan = state.strategy === 'recovery' ? recoveryPlan() : splitPlan();
+  if (state.previous !== null && roleKey(state.previous) !== roleKey(plan)) {
+    const fitted = fitSwitch(plan, state.slots - state.reassignmentSlotCost);
+    return { type: 'assign', ...fitted };
+  }
   return { type: 'work' };
 }
 

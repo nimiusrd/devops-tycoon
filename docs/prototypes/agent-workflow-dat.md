@@ -15,7 +15,7 @@
 - **Total Human DAT**：Author DAT + Reviewer DAT。承認とレビューは異なる工程に割当て、二重計上しない。
 - **Human touches before PR**：初回指示、承認、工程継続の人間介入回数。PR作成数やタスクの完成数ではない。
 - **Agent runtime**：AIが3工程を処理する仮想所要時間（各6分、計18分）。待機時間およびAI処理時間は DAT に足さない。
-- **Tasks per human hour**：タスク完了時の60 / Total Human DAT。並行実行や暦時間、レビュー待ち、金銭コスト、品質要件の制約を含まない参考値。
+- **Tasks per human hour**：タスク完了かつTotal Human DAT > 0の場合のみ60 / Total Human DATを算出。未完了またはDATゼロではJSON-safeな`null`（未算定）とし、処理能力0と混同しない。並行実行や暦時間、レビュー待ち、金銭コスト、品質要件の制約を含まない参考値。
 
 ## 固定係数と比較
 

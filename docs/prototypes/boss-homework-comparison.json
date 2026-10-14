@@ -1,0 +1,217 @@
+{
+  "seed": "RI-251",
+  "results": [
+    {
+      "board": "lasting",
+      "strategy": "homework",
+      "initial": {
+        "version": 1,
+        "seed": "RI-251",
+        "board": "lasting",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "reason": "evidence-short",
+        "continuable": true,
+        "strategy": null,
+        "worked": 0,
+        "goalWindow": 3,
+        "penaltyRate": 5,
+        "homeworkTotal": 4,
+        "homeworkLeft": 4,
+        "goalTotal": 4,
+        "goalLeft": 4,
+        "goalValue": 14,
+        "delivered": 0,
+        "penalty": 0,
+        "resolved": false,
+        "goalMissed": false,
+        "sourceFailures": 1,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "homework"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 14,
+        "delivered": 14,
+        "penalty": 0,
+        "residual": 0,
+        "homeworkLeft": 0,
+        "resolved": true,
+        "goalMissed": false,
+        "sourceFailures": 1,
+        "path": [0, 0, 14, 14],
+        "lost": false
+      }
+    },
+    {
+      "board": "lasting",
+      "strategy": "goal",
+      "initial": {
+        "version": 1,
+        "seed": "RI-251",
+        "board": "lasting",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "reason": "evidence-short",
+        "continuable": true,
+        "strategy": null,
+        "worked": 0,
+        "goalWindow": 3,
+        "penaltyRate": 5,
+        "homeworkTotal": 4,
+        "homeworkLeft": 4,
+        "goalTotal": 4,
+        "goalLeft": 4,
+        "goalValue": 14,
+        "delivered": 0,
+        "penalty": 0,
+        "resolved": false,
+        "goalMissed": false,
+        "sourceFailures": 1,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "goal"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 9,
+        "delivered": 14,
+        "penalty": 5,
+        "residual": 0,
+        "homeworkLeft": 0,
+        "resolved": true,
+        "goalMissed": false,
+        "sourceFailures": 1,
+        "path": [0, 9, 9, 9],
+        "lost": false
+      }
+    },
+    {
+      "board": "exposed",
+      "strategy": "homework",
+      "initial": {
+        "version": 1,
+        "seed": "RI-251",
+        "board": "exposed",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "reason": "evidence-short",
+        "continuable": true,
+        "strategy": null,
+        "worked": 0,
+        "goalWindow": 1,
+        "penaltyRate": 3,
+        "homeworkTotal": 4,
+        "homeworkLeft": 4,
+        "goalTotal": 4,
+        "goalLeft": 4,
+        "goalValue": 14,
+        "delivered": 0,
+        "penalty": 0,
+        "resolved": false,
+        "goalMissed": false,
+        "sourceFailures": 1,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "homework"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "delivered": 0,
+        "penalty": 0,
+        "residual": 0,
+        "homeworkLeft": 0,
+        "resolved": true,
+        "goalMissed": true,
+        "sourceFailures": 1,
+        "path": [0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "exposed",
+      "strategy": "goal",
+      "initial": {
+        "version": 1,
+        "seed": "RI-251",
+        "board": "exposed",
+        "tick": 0,
+        "horizon": 2,
+        "capacity": 4,
+        "reason": "evidence-short",
+        "continuable": true,
+        "strategy": null,
+        "worked": 0,
+        "goalWindow": 1,
+        "penaltyRate": 3,
+        "homeworkTotal": 4,
+        "homeworkLeft": 4,
+        "goalTotal": 4,
+        "goalLeft": 4,
+        "goalValue": 14,
+        "delivered": 0,
+        "penalty": 0,
+        "resolved": false,
+        "goalMissed": false,
+        "sourceFailures": 1,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "goal"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 11,
+        "delivered": 14,
+        "penalty": 3,
+        "residual": 12,
+        "homeworkLeft": 4,
+        "resolved": false,
+        "goalMissed": false,
+        "sourceFailures": 1,
+        "path": [0, 11],
+        "lost": false
+      }
+    }
+  ]
+}

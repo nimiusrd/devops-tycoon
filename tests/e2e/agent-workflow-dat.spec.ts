@@ -87,9 +87,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
   });
 
-  test('作業途中の条件変更で破棄したDATを通知し、未着手の変更は通知しない', async ({
-    page,
-  }) => {
+  test('作業途中の条件変更で破棄したDATを通知し、未着手の変更は通知しない', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     await page.getByRole('radio', { name: '非同期型' }).check();
     await expect(page.getByTestId('dat-reset-notice')).toHaveCount(0);

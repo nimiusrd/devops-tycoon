@@ -64,6 +64,28 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-task-completed')).toHaveText('タスク完了');
   });
 
+  test('作業途中の条件変更で破棄したDATを通知し、未着手の変更は通知しない', async ({
+    page,
+  }) => {
+    await page.goto('/?rd=agent-dat');
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await expect(page.getByTestId('dat-reset-notice')).toHaveCount(0);
+    await page.getByRole('radio', { name: '伴走型' }).check();
+    await page.getByTestId('dat-advance').click();
+    await page.getByTestId('dat-advance').click();
+    await expect(page.getByTestId('dat-author')).toHaveText('10分');
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    const notice = page.getByTestId('dat-reset-notice');
+    await expect(notice).toHaveAttribute('role', 'status');
+    await expect(notice).toContainText('完了工程 1/3');
+    await expect(notice).toContainText('Author DAT 10分・Reviewer DAT 0分 → 0分');
+    await expect(page.getByTestId('dat-author')).toHaveText('0分');
+    await expect(page.getByTestId('dat-stage')).toHaveText('未着手');
+    await expect(notice).toBeVisible();
+    await page.getByTestId('dat-advance').click();
+    await expect(notice).toBeVisible();
+  });
+
   for (const viewport of [
     { name: 'phone-se', width: 320, height: 568 },
     { name: 'phone', width: 390, height: 844 },

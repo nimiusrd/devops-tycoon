@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  simulateAgentDatPipeline,
-  type AgentDatCapacity,
-} from './agentDatPipeline';
+import { simulateAgentDatPipeline, type AgentDatCapacity } from './agentDatPipeline';
 
 const ROUTINE: AgentDatCapacity = {
   workload: 'routine',

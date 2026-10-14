@@ -66,6 +66,17 @@
   line-height: 1.6;
 }
 
+.resetNotice {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 2px solid var(--mint);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mint) 12%, var(--panel));
+  color: var(--cream);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
 .panel {
   min-width: 0;
   padding: clamp(14px, 3vw, 22px);

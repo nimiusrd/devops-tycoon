@@ -155,9 +155,7 @@ export function AgentDatCapacityPreview({
         <div>
           <dt>AIレビュー準備（DAT内）</dt>
           <dd data-testid="dat-triage-setup">
-            {reviewAssistance === 'human'
-              ? '―（対象外）'
-              : `${selected.reviewSetupMinutesSpent}分`}
+            {reviewAssistance === 'human' ? '―（対象外）' : `${selected.reviewSetupMinutesSpent}分`}
           </dd>
         </div>
         <div>
@@ -169,9 +167,7 @@ export function AgentDatCapacityPreview({
         <div>
           <dt>誤検知の人間確認</dt>
           <dd data-testid="dat-triage-false-positive">
-            {reviewAssistance === 'human'
-              ? '―（対象外）'
-              : `${selected.aiFalsePositiveChecks}件`}
+            {reviewAssistance === 'human' ? '―（対象外）' : `${selected.aiFalsePositiveChecks}件`}
           </dd>
         </div>
       </dl>

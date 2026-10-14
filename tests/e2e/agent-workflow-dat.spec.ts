@@ -87,9 +87,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
   });
 
-  test('AIレビューは定型PRのReview渋滞を改善するが最終確認と誤検知対応を残す', async ({
-    page,
-  }) => {
+  test('AIレビューは定型PRのReview渋滞を改善するが最終確認と誤検知対応を残す', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     await page.getByRole('radio', { name: '非同期型' }).check();
     await page.getByRole('radio', { name: '事前許可' }).check();

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createAgentWorkflow } from './agentWorkflowDat';
-import {
-  AI_TRIAGE_SETUP_MINUTES,
-  configureReviewTriage,
-} from './agentReviewTriage';
+import { AI_TRIAGE_SETUP_MINUTES, configureReviewTriage } from './agentReviewTriage';
 
 describe('AIレビュー事前トリアージ（人間最終確認を維持）', () => {
   it('humanでは元の係数・状態を維持する', () => {

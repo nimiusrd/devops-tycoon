@@ -48,8 +48,8 @@ export function AgentDatCapacityPreview({
     <section className={styles.panel} aria-labelledby="dat-capacity-title">
       <h2 id="dat-capacity-title">4. 12タスクのレビュー渋滞を比較</h2>
       <p className={styles.muted}>
-        人間の作業予算を揃え、PR作成とレビュー完了を別々に数えます。
-        Author DATが小さくても、Reviewの処理能力を超えるとPRが滞留します。
+        人間の作業予算を揃え、PR作成とレビュー完了を別々に数えます。 Author
+        DATが小さくても、Reviewの処理能力を超えるとPRが滞留します。
       </p>
       <div className={styles.budgetControls}>
         <div className={styles.budgetControl}>

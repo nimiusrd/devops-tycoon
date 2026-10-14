@@ -8,7 +8,9 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
 
     await page.getByRole('radio', { name: '非同期型' }).check();
     await page.getByRole('radio', { name: '事前許可' }).check();
-    await expect(page.getByTestId('dat-compare').locator('tbody tr[data-selected="true"] th')).toContainText('（選択中）');
+    await expect(
+      page.getByTestId('dat-compare').locator('tbody tr[data-selected="true"] th'),
+    ).toContainText('（選択中）');
     await expect(page.getByTestId('dat-touches')).toHaveText('0回');
     await page.getByTestId('dat-advance').click();
 
@@ -64,7 +66,9 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
 
   test('PR作成数が増えてもReview予算不足なら完了が増えず、予算増で解消する', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
-    await expect(page.getByTestId('dat-capacity-table').locator('tbody tr[data-selected="true"] th')).toContainText('（選択中）');
+    await expect(
+      page.getByTestId('dat-capacity-table').locator('tbody tr[data-selected="true"] th'),
+    ).toContainText('（選択中）');
     await expect(page.getByTestId('dat-capacity-created')).toHaveText('6件');
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('5件');
     await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('1件');

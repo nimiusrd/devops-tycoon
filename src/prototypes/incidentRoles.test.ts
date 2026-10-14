@@ -133,6 +133,30 @@ describe('RI-253 障害の役割分担', () => {
       investigation: 0,
       explanation: 2,
     });
+    const lasting = apply(apply(create('RI-253', 'lasting'), { type: 'recovery' }), {
+      type: 'work',
+    });
+    const lastingSwitched = apply(lasting, {
+      type: 'assign',
+      recovery: 0,
+      investigation: 0,
+      explanation: 2,
+    });
+    const restored = apply(lastingSwitched, {
+      type: 'assign',
+      recovery: 0,
+      investigation: 0,
+      explanation: 3,
+    });
+    expect(restored).toMatchObject({ explanation: 10, reassignmentCost: 1, recovery: 9 });
+    expect(viewIncidentRoles(idle).choices).toEqual([]);
+    expect(viewIncidentRoles(idle).forecasts).toEqual([]);
+    expect(apply(idle, { type: 'recovery' })).toBe(idle);
+    const chosen = apply(create('RI-253', 'brief'), { type: 'recovery' });
+    const saved = chosen.periods[0];
+    if (saved) saved.assignment.recovery = 9;
+    const another = apply(create('RI-253', 'brief'), { type: 'recovery' });
+    expect(another.periods[0]?.assignment.recovery).toBe(0);
   });
 
   it('全入力の再生と毎入力JSON保存再開が一致し、元状態は変わらない', () => {

@@ -86,12 +86,8 @@ function scoreOf(state: IncidentState): number {
   return state.ship - state.penalty;
 }
 
-function sameAssignment(left: RoleAssignment, right: RoleAssignment): boolean {
-  return (
-    left.recovery === right.recovery &&
-    left.investigation === right.investigation &&
-    left.explanation === right.explanation
-  );
+function roleKey(assignment: RoleAssignment): string {
+  return `${assignment.recovery > 0 ? 'r' : ''}${assignment.investigation > 0 ? 'i' : ''}${assignment.explanation > 0 ? 'e' : ''}`;
 }
 
 function assignmentSum(assignment: RoleAssignment): number {
@@ -113,7 +109,11 @@ function pushPeriod(
     recovery: state.recovery,
     investigation: state.investigation,
     explanation: state.explanation,
-    assignment,
+    assignment: {
+      recovery: assignment.recovery,
+      investigation: assignment.investigation,
+      explanation: assignment.explanation,
+    },
     ship: state.ship,
     penalty: state.penalty,
     score: scoreOf(state),
@@ -176,7 +176,7 @@ function applyAssignment(
   ) {
     return state;
   }
-  const switching = state.previous !== null && !sameAssignment(state.previous, assignment);
+  const switching = state.previous !== null && roleKey(state.previous) !== roleKey(assignment);
   const slots = switching ? state.slots - state.reassignmentSlotCost : state.slots;
   if (assignmentSum(assignment) > slots) return state;
 
@@ -331,7 +331,7 @@ export function viewIncidentRoles(state: IncidentState) {
     lateShip: state.lateShip,
     incompleteRate: state.incompleteRate,
     strategy: state.strategy,
-    choices: state.strategy === null ? (['recovery', 'split'] as const) : [],
+    choices: state.strategy === null && state.tick === 0 ? (['recovery', 'split'] as const) : [],
     recovery: state.recovery,
     investigation: state.investigation,
     explanation: state.explanation,
@@ -339,7 +339,7 @@ export function viewIncidentRoles(state: IncidentState) {
     shipFloorConnected: false,
     integration: 'keep-spread-cap-and-ship-floor',
     forecasts:
-      state.strategy === null
+      state.strategy === null && state.tick === 0
         ? (['recovery', 'split'] as const).map((strategy) => preview(state, strategy))
         : [],
   };

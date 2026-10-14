@@ -101,43 +101,38 @@ export function simulateAgentDatPipeline(input: AgentDatCapacity): AgentDatPipel
     if (state.stage === 'coding') break;
   }
 
-  // PR作成数ではなく、レビューに使える残りの人間時間で完了件数を決める。
-  for (let i = 0; i < jobs.length; i += 1) {
-    let state = jobs[i]!;
-    if (state.stage !== 'review') continue;
+  // 全PRを初回レビュー待ちとしてFIFO登録する。
+  // 修正後の再レビューは末尾に追加し、後続PRの初回レビューを追い越さない。
+  const reviewQueue = jobs.flatMap((job, index) => (job.stage === 'review' ? [index] : []));
+  while (reviewQueue.length > 0) {
+    const index = reviewQueue.shift()!;
+    const state = jobs[index]!;
     const reviewed = applyWithinBudget(
       state,
       input.reviewerBudgetMinutes,
       reviewerMinutesSpent,
       'reviewerDat',
     );
-    if (!reviewed) break; // FIFO:先頭レビュー待ちの案件を飛ばさない。
+    if (!reviewed) break; // 先頭が予算不足なら後続へ割り込まない。
     reviewerMinutesSpent += reviewed.reviewerDat - state.reviewerDat;
-    state = reviewed;
 
-    if (state.stage === 'rework') {
+    if (reviewed.stage === 'rework') {
       const fixed = applyWithinBudget(
-        state,
+        reviewed,
         input.authorBudgetMinutes,
         authorMinutesSpent,
         'authorDat',
       );
       if (fixed) {
-        authorMinutesSpent += fixed.authorDat - state.authorDat;
-        state = fixed;
-        const rereviewed = applyWithinBudget(
-          state,
-          input.reviewerBudgetMinutes,
-          reviewerMinutesSpent,
-          'reviewerDat',
-        );
-        if (rereviewed) {
-          reviewerMinutesSpent += rereviewed.reviewerDat - state.reviewerDat;
-          state = rereviewed;
-        }
+        authorMinutesSpent += fixed.authorDat - reviewed.authorDat;
+        jobs[index] = fixed;
+        reviewQueue.push(index); // re-reviewは既存のレビュー待ちの後。
+      } else {
+        jobs[index] = reviewed;
       }
+    } else {
+      jobs[index] = reviewed;
     }
-    jobs[i] = state;
   }
 
   const createdPrs = jobs.filter((job) => job.stepIndex === 3).length;

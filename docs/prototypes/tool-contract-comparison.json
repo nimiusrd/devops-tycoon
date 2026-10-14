@@ -1,0 +1,779 @@
+{
+  "seed": "RI-249",
+  "results": [
+    {
+      "board": "steady",
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "steady",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 9,
+        "continueFee": 2,
+        "transferAutomation": 4,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "continue"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 29,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 15, 22, 29],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "continued",
+            "automation": 9,
+            "fee": 2
+          },
+          {
+            "tool": "continued",
+            "automation": 9,
+            "fee": 2
+          },
+          {
+            "tool": "continued",
+            "automation": 9,
+            "fee": 2
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "steady",
+      "strategy": "migrate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "steady",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 9,
+        "continueFee": 2,
+        "transferAutomation": 4,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 12,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 8, 10, 12],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "migrating",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "transferred",
+            "automation": 4,
+            "fee": 2
+          },
+          {
+            "tool": "transferred",
+            "automation": 4,
+            "fee": 2
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "steady",
+      "strategy": "shrink",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "steady",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 9,
+        "continueFee": 2,
+        "transferAutomation": 4,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "shrink"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 14,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 10, 12, 14],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 9,
+        "continueFee": 6,
+        "transferAutomation": 8,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "continue"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 17,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 11, 14, 17],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "continued",
+            "automation": 9,
+            "fee": 6
+          },
+          {
+            "tool": "continued",
+            "automation": 9,
+            "fee": 6
+          },
+          {
+            "tool": "continued",
+            "automation": 9,
+            "fee": 6
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "migrate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 9,
+        "continueFee": 6,
+        "transferAutomation": 8,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 20,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 8, 14, 20],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "migrating",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "transferred",
+            "automation": 8,
+            "fee": 2
+          },
+          {
+            "tool": "transferred",
+            "automation": 8,
+            "fee": 2
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "heavy",
+      "strategy": "shrink",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "heavy",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 9,
+        "continueFee": 6,
+        "transferAutomation": 8,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "shrink"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 14,
+        "asset": 9,
+        "budget": 12,
+        "slack": true,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 10, 12, 14],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "light",
+      "strategy": "continue",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "light",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 4,
+        "budget": 4,
+        "slack": false,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 4,
+        "continueFee": 6,
+        "transferAutomation": 2,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "continue"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 2,
+        "asset": 4,
+        "budget": 4,
+        "slack": false,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 6, 4, 2],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "continued",
+            "automation": 4,
+            "fee": 6
+          },
+          {
+            "tool": "continued",
+            "automation": 4,
+            "fee": 6
+          },
+          {
+            "tool": "continued",
+            "automation": 4,
+            "fee": 6
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "light",
+      "strategy": "migrate",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "light",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 4,
+        "budget": 4,
+        "slack": false,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 4,
+        "continueFee": 6,
+        "transferAutomation": 2,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "migrate"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 8,
+        "asset": 4,
+        "budget": 4,
+        "slack": false,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 8, 8, 8],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "migrating",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "transferred",
+            "automation": 2,
+            "fee": 2
+          },
+          {
+            "tool": "transferred",
+            "automation": 2,
+            "fee": 2
+          }
+        ],
+        "lost": false
+      }
+    },
+    {
+      "board": "light",
+      "strategy": "shrink",
+      "initial": {
+        "version": 1,
+        "seed": "RI-249",
+        "board": "light",
+        "tick": 0,
+        "horizon": 6,
+        "asset": 4,
+        "budget": 4,
+        "slack": false,
+        "strategy": null,
+        "worked": 0,
+        "migrationLeft": 0,
+        "migrationWork": 1,
+        "net": 0,
+        "continueAutomation": 4,
+        "continueFee": 6,
+        "transferAutomation": 2,
+        "transferFee": 2,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "shrink"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "score": 14,
+        "asset": 4,
+        "budget": 4,
+        "slack": false,
+        "migrationLeft": 0,
+        "path": [0, 4, 8, 10, 12, 14],
+        "billing": [
+          {
+            "tool": "none",
+            "automation": 0,
+            "fee": 0
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "old",
+            "automation": 5,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          },
+          {
+            "tool": "shrunk",
+            "automation": 3,
+            "fee": 1
+          }
+        ],
+        "lost": false
+      }
+    }
+  ]
+}

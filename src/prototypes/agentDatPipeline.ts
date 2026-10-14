@@ -54,9 +54,11 @@ export interface AgentDatPipelineResult {
 
 /** 上限は1期間の比較が軽量かつ有限になるためのR&D専用制約。 */
 function validateCapacity(input: AgentDatCapacity): void {
-  if (input.reviewAssistance !== undefined &&
+  if (
+    input.reviewAssistance !== undefined &&
     input.reviewAssistance !== 'human' &&
-    input.reviewAssistance !== 'ai-precheck') {
+    input.reviewAssistance !== 'ai-precheck'
+  ) {
     throw new Error('Unknown review assistance');
   }
   if (!Number.isInteger(input.taskCount) || input.taskCount < 0 || input.taskCount > 500) {

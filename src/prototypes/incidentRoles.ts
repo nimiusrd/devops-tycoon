@@ -221,7 +221,7 @@ function applyAssignment(
           recovery: assignment.recovery,
           investigation: assignment.investigation,
           explanation: assignment.explanation,
-          ...(intent ? { intent } : {}),
+          ...(intent ? { intent: { ...intent } } : {}),
         },
   );
   return next;
@@ -247,6 +247,14 @@ export function applyIncidentRoles(state: IncidentState, input: IncidentInput): 
     );
   }
   if (input.type !== 'assign' || state.strategy === null || state.tick === 0) return state;
+  const plan = state.strategy === 'recovery' ? recoveryPlan() : splitPlan();
+  const intent =
+    input.intent &&
+    input.intent.recovery === plan.recovery &&
+    input.intent.investigation === plan.investigation &&
+    input.intent.explanation === plan.explanation
+      ? input.intent
+      : undefined;
   return applyAssignment(
     state,
     {
@@ -255,7 +263,7 @@ export function applyIncidentRoles(state: IncidentState, input: IncidentInput): 
       explanation: input.explanation,
     },
     'assign',
-    input.intent,
+    intent,
   );
 }
 

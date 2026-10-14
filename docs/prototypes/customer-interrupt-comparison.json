@@ -1,0 +1,219 @@
+{
+  "seed": "RI-246",
+  "results": [
+    {
+      "board": "slack",
+      "strategy": "accept",
+      "initial": {
+        "version": 1,
+        "seed": "RI-246",
+        "board": "slack",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "plannedTotal": 6,
+        "plannedLeft": 6,
+        "plannedDone": 0,
+        "plannedValue": 5,
+        "interruptTotal": 4,
+        "interruptLeft": 4,
+        "interruptDone": 0,
+        "interruptValue": 3,
+        "bonus": 14,
+        "bonusPaid": false,
+        "trustCost": 6,
+        "trust": 0,
+        "accepted": null,
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "accept"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 56,
+        "trust": 0,
+        "score": 56,
+        "plannedDone": 6,
+        "plannedLeft": 0,
+        "interruptDone": 4,
+        "bonusPaid": true,
+        "accepted": true,
+        "path": [0, 12, 32, 56],
+        "cleared": [0, 4, 4, 2],
+        "lost": false
+      }
+    },
+    {
+      "board": "slack",
+      "strategy": "decline",
+      "initial": {
+        "version": 1,
+        "seed": "RI-246",
+        "board": "slack",
+        "tick": 0,
+        "horizon": 4,
+        "capacity": 4,
+        "plannedTotal": 6,
+        "plannedLeft": 6,
+        "plannedDone": 0,
+        "plannedValue": 5,
+        "interruptTotal": 4,
+        "interruptLeft": 4,
+        "interruptDone": 0,
+        "interruptValue": 3,
+        "bonus": 14,
+        "bonusPaid": false,
+        "trustCost": 6,
+        "trust": 0,
+        "accepted": null,
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "decline"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 44,
+        "trust": 6,
+        "score": 38,
+        "plannedDone": 6,
+        "plannedLeft": 0,
+        "interruptDone": 0,
+        "bonusPaid": true,
+        "accepted": false,
+        "path": [-6, 14, 38, 38],
+        "cleared": [0, 4, 2, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "cramped",
+      "strategy": "accept",
+      "initial": {
+        "version": 1,
+        "seed": "RI-246",
+        "board": "cramped",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "plannedTotal": 6,
+        "plannedLeft": 6,
+        "plannedDone": 0,
+        "plannedValue": 5,
+        "interruptTotal": 4,
+        "interruptLeft": 4,
+        "interruptDone": 0,
+        "interruptValue": 3,
+        "bonus": 14,
+        "bonusPaid": false,
+        "trustCost": 6,
+        "trust": 0,
+        "accepted": null,
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "accept"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 32,
+        "trust": 0,
+        "score": 32,
+        "plannedDone": 4,
+        "plannedLeft": 2,
+        "interruptDone": 4,
+        "bonusPaid": false,
+        "accepted": true,
+        "path": [0, 12, 32],
+        "cleared": [0, 4, 4],
+        "lost": false
+      }
+    },
+    {
+      "board": "cramped",
+      "strategy": "decline",
+      "initial": {
+        "version": 1,
+        "seed": "RI-246",
+        "board": "cramped",
+        "tick": 0,
+        "horizon": 3,
+        "capacity": 4,
+        "plannedTotal": 6,
+        "plannedLeft": 6,
+        "plannedDone": 0,
+        "plannedValue": 5,
+        "interruptTotal": 4,
+        "interruptLeft": 4,
+        "interruptDone": 0,
+        "interruptValue": 3,
+        "bonus": 14,
+        "bonusPaid": false,
+        "trustCost": 6,
+        "trust": 0,
+        "accepted": null,
+        "value": 0,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "decline"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        }
+      ],
+      "result": {
+        "value": 44,
+        "trust": 6,
+        "score": 38,
+        "plannedDone": 6,
+        "plannedLeft": 0,
+        "interruptDone": 0,
+        "bonusPaid": true,
+        "accepted": false,
+        "path": [-6, 14, 38],
+        "cleared": [0, 4, 2],
+        "lost": false
+      }
+    }
+  ]
+}

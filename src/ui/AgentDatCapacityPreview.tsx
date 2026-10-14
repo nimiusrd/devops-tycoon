@@ -46,6 +46,9 @@ export function AgentDatCapacityPreview({
   const selected = rows.find(
     (row) => row.mode === mode && row.approvalPolicy === approvalPolicy,
   )!.result;
+  const modeLabel = MODES.find((item) => item.value === mode)?.label;
+  const approvalLabel = POLICIES.find((item) => item.value === approvalPolicy)?.label;
+  const reviewLabel = reviewAssistance === 'human' ? '人間レビューのみ' : 'AI事前トリアージ';
   const humanBaseline = simulateAgentDatPipeline({
     workload,
     mode,
@@ -55,6 +58,9 @@ export function AgentDatCapacityPreview({
     reviewerBudgetMinutes: reviewerBudget,
     reviewAssistance: 'human',
   });
+
+  const completedDelta = selected.completedTasks - humanBaseline.completedTasks;
+  const completedDeltaLabel = completedDelta >= 0 ? `+${completedDelta}` : `−${-completedDelta}`;
 
   return (
     <section className={styles.panel} aria-labelledby="dat-capacity-title">
@@ -87,11 +93,11 @@ export function AgentDatCapacityPreview({
             AI事前トリアージ
           </label>
         </div>
-        <p className={styles.muted}>
-          AI事前トリアージは期間ごとに人間の準備6分が必要です。
-          定型PRはレビューを軽減しますが、4件に1件の誤検知確認を仮定します。
-          密結合タスクでは効果がなく、かえって確認工数が増えます。
-        </p>
+        <ul className={styles.assumptionList}>
+          <li>AI事前トリアージは期間ごとに人間の準備6分が必要です。</li>
+          <li>定型PRはレビューを軽減しますが、4件に1件の誤検知確認を仮定します。</li>
+          <li>密結合タスクでは効果がなく、かえって確認工数が増えます。</li>
+        </ul>
       </fieldset>
       <div className={styles.budgetControls}>
         <div className={styles.budgetControl}>
@@ -143,31 +149,43 @@ export function AgentDatCapacityPreview({
           <dd data-testid="dat-capacity-rework">{selected.waitingRework}件</dd>
         </div>
         <div>
-          <dt>Review使用時間</dt>
+          <dt>Reviewer DAT使用量</dt>
           <dd data-testid="dat-triage-review-minutes">{selected.reviewerMinutesSpent}分</dd>
         </div>
         <div>
           <dt>AIレビュー準備（DAT内）</dt>
-          <dd data-testid="dat-triage-setup">{selected.reviewSetupMinutesSpent}分</dd>
+          <dd data-testid="dat-triage-setup">
+            {reviewAssistance === 'human'
+              ? '―（対象外）'
+              : `${selected.reviewSetupMinutesSpent}分`}
+          </dd>
         </div>
         <div>
           <dt>AIで事前確認したPR</dt>
-          <dd data-testid="dat-triage-screened">{selected.aiReviewedPrs}件</dd>
+          <dd data-testid="dat-triage-screened">
+            {reviewAssistance === 'human' ? '―（対象外）' : `${selected.aiReviewedPrs}件`}
+          </dd>
         </div>
         <div>
           <dt>誤検知の人間確認</dt>
-          <dd data-testid="dat-triage-false-positive">{selected.aiFalsePositiveChecks}件</dd>
+          <dd data-testid="dat-triage-false-positive">
+            {reviewAssistance === 'human'
+              ? '―（対象外）'
+              : `${selected.aiFalsePositiveChecks}件`}
+          </dd>
         </div>
       </dl>
       {reviewAssistance === 'ai-precheck' ? (
         <p className={styles.muted} data-testid="dat-triage-difference">
-          同条件の人間レビューのみ: 完了{humanBaseline.completedTasks}件 / AIトリアージ利用: 完了
-          {selected.completedTasks}件。差は
-          {selected.completedTasks - humanBaseline.completedTasks}件です。
+          人間レビューのみ: 完了{humanBaseline.completedTasks}件 / AI事前トリアージ: 完了
+          {selected.completedTasks}件（人間のみより{completedDeltaLabel}件）。
         </p>
       ) : null}
       <div className={styles.tableScroll}>
         <table className={styles.compareTable} data-testid="dat-capacity-table">
+          <caption className={styles.tableCaption} data-testid="dat-capacity-caption">
+            12タスクの比較：選択中は {modeLabel}・{approvalLabel}・{reviewLabel}
+          </caption>
           <thead>
             <tr>
               <th scope="col">AI</th>

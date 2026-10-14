@@ -61,9 +61,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-task-completed')).toHaveText('タスク完了');
   });
 
-  test('PR作成数が増えてもReview予算不足なら完了が増えず、予算増で解消する', async ({
-    page,
-  }) => {
+  test('PR作成数が増えてもReview予算不足なら完了が増えず、予算増で解消する', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     await expect(page.getByTestId('dat-capacity-created')).toHaveText('6件');
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('5件');

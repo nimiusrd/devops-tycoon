@@ -246,7 +246,7 @@ export function AgentWorkflowDatLab() {
 
         <section className={styles.panel} aria-labelledby="dat-metrics-title">
           <h2 id="dat-metrics-title">3. 人間の負荷を見る</h2>
-          <div className={styles.metrics} aria-live="polite">
+          <dl className={styles.metrics} aria-live="polite">
             <div>
               <dt>Author DAT</dt>
               <dd data-testid="dat-author">{summary.authorDat}分</dd>
@@ -283,7 +283,7 @@ export function AgentWorkflowDatLab() {
                   : `${summary.tasksPerHumanHour}件`}
               </dd>
             </div>
-          </div>
+          </dl>
           <p className={styles.muted}>
             承認判断はAuthor側、PRレビューはReviewer側にのみ加算します。
             PR作成だけでは完了件数を増やしません。

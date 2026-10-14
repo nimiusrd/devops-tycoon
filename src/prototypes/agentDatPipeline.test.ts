@@ -111,6 +111,36 @@ describe('DATとレビュー処理能力の期間試作', () => {
     });
   });
 
+  it('再レビューはキュー末尾に戻し、後続PRの初回レビューを追い越さない', () => {
+    const coupled = {
+      ...ROUTINE,
+      workload: 'coupled' as const,
+      mode: 'asynchronous' as const,
+      approvalPolicy: 'preauthorized' as const,
+      taskCount: 2,
+      authorBudgetMinutes: 82,
+      reviewerBudgetMinutes: 64,
+    };
+    const result = simulateAgentDatPipeline(coupled);
+    expect(result).toMatchObject({
+      createdPrs: 2,
+      completedTasks: 0,
+      waitingReview: 2,
+      waitingRework: 0,
+      authorMinutesSpent: 82,
+      reviewerMinutesSpent: 64,
+    });
+    // 双方の初回レビューを先に処理し、余った14分で先着の再レビューのみ通す。
+    const extra = simulateAgentDatPipeline({ ...coupled, reviewerBudgetMinutes: 78 });
+    expect(extra).toMatchObject({
+      createdPrs: 2,
+      completedTasks: 1,
+      waitingReview: 1,
+      reviewerMinutesSpent: 78,
+    });
+    expect(simulateAgentDatPipeline(coupled)).toEqual(result);
+  });
+
   it('未完成案件は完了に計上せず、PR数とレビュー/手戻りが保存則を満たす', () => {
     for (const workload of ['routine', 'coupled'] as const) {
       for (const mode of ['companion', 'asynchronous'] as const) {

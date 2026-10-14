@@ -2,7 +2,7 @@
  * 非同期エージェントの承認・DAT仮説を操作で検証する隔離R&D画面。
  * 通常ランには接続しない。選択はランやブラウザ保存データを変更しない。
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   applyAgentWorkflow,
   chooseAgentWorkflowInput,
@@ -113,6 +113,7 @@ export function AgentWorkflowDatLab() {
   const [workload, setWorkload] = useState<Workload>('routine');
   const [mode, setMode] = useState<AgentMode>('companion');
   const [approvalPolicy, setApprovalPolicy] = useState<ApprovalPolicy>('each-step');
+  const [resetNotice, setResetNotice] = useState<string | null>(null);
   const [state, setState] = useState(() =>
     createAgentWorkflow(SEED, 'routine', 'companion', 'each-step'),
   );
@@ -121,24 +122,46 @@ export function AgentWorkflowDatLab() {
   const input = chooseAgentWorkflowInput(state);
   const compareRows = compareAgentWorkflows(SEED).filter((row) => row.workload === workload);
 
+  // 破棄した実験の作業量を明示し、条件変更による値のゼロ戻りを誤認させない。
+  const restartForChoice = (
+    nextWorkload: Workload,
+    nextMode: AgentMode,
+    nextApproval: ApprovalPolicy,
+  ) => {
+    setResetNotice(
+      state.inputs.length > 0
+        ? `条件変更で進行をリセットしました（完了工程 ${state.stepIndex}/3、Author DAT ${summary.authorDat}分・Reviewer DAT ${summary.reviewerDat}分 → 0分）。`
+        : null,
+    );
+    setState(createAgentWorkflow(SEED, nextWorkload, nextMode, nextApproval));
+  };
   const selectWorkload = (choice: Workload) => {
+    if (choice === workload) return;
     setWorkload(choice);
-    setState(createAgentWorkflow(SEED, choice, mode, approvalPolicy));
+    restartForChoice(choice, mode, approvalPolicy);
   };
   const selectMode = (choice: AgentMode) => {
+    if (choice === mode) return;
     setMode(choice);
-    setState(createAgentWorkflow(SEED, workload, choice, approvalPolicy));
+    restartForChoice(workload, choice, approvalPolicy);
   };
   const selectApproval = (choice: ApprovalPolicy) => {
+    if (choice === approvalPolicy) return;
     setApprovalPolicy(choice);
-    setState(createAgentWorkflow(SEED, workload, mode, choice));
+    restartForChoice(workload, mode, choice);
   };
   const reset = () => {
+    setResetNotice(null);
     setState(createAgentWorkflow(SEED, workload, mode, approvalPolicy));
   };
   const advance = () => {
     setState((previous) => applyAgentWorkflow(previous, chooseAgentWorkflowInput(previous)));
   };
+  useEffect(() => {
+    if (!resetNotice) return;
+    const timeout = window.setTimeout(() => setResetNotice(null), 8000);
+    return () => window.clearTimeout(timeout);
+  }, [resetNotice]);
 
   return (
     <main className={`app ${styles.lab}`} data-testid="agent-dat-lab">
@@ -186,6 +209,11 @@ export function AgentWorkflowDatLab() {
             onChoose={selectApproval}
           />
         </div>
+        {resetNotice ? (
+          <p className={styles.resetNotice} role="status" data-testid="dat-reset-notice">
+            {resetNotice}
+          </p>
+        ) : null}
       </section>
 
       <div className={styles.columns}>

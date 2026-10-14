@@ -13,7 +13,7 @@ const POLICIES = [
   { value: 'each-step', label: '逐次承認' },
   { value: 'preauthorized', label: '事前許可' },
 ] as const;
-const TASK_COUNT = 12;
+const MAX_TASK_COUNT = 12;
 
 export function AgentDatCapacityPreview({
   workload,
@@ -24,6 +24,7 @@ export function AgentDatCapacityPreview({
   mode: AgentMode;
   approvalPolicy: ApprovalPolicy;
 }) {
+  const [taskCount, setTaskCount] = useState(MAX_TASK_COUNT);
   const [authorBudget, setAuthorBudget] = useState(120);
   const [reviewerBudget, setReviewerBudget] = useState(60);
   const [reviewAssistance, setReviewAssistance] = useState<ReviewAssistance>('human');
@@ -36,7 +37,7 @@ export function AgentDatCapacityPreview({
         workload,
         mode: option.value,
         approvalPolicy: policy.value,
-        taskCount: TASK_COUNT,
+        taskCount,
         authorBudgetMinutes: authorBudget,
         reviewerBudgetMinutes: reviewerBudget,
         reviewAssistance,
@@ -53,7 +54,7 @@ export function AgentDatCapacityPreview({
     workload,
     mode,
     approvalPolicy,
-    taskCount: TASK_COUNT,
+    taskCount,
     authorBudgetMinutes: authorBudget,
     reviewerBudgetMinutes: reviewerBudget,
     reviewAssistance: 'human',
@@ -64,7 +65,7 @@ export function AgentDatCapacityPreview({
 
   return (
     <section className={styles.panel} aria-labelledby="dat-capacity-title">
-      <h2 id="dat-capacity-title">4. 12タスクのレビュー渋滞を比較</h2>
+      <h2 id="dat-capacity-title">4. {taskCount}タスクのレビュー渋滞を比較</h2>
       <p className={styles.muted}>
         人間の作業予算を揃え、PR作成とレビュー完了を別々に数えます。 Author
         DATが小さくても、Reviewの処理能力を超えるとPRが滞留します。
@@ -100,6 +101,21 @@ export function AgentDatCapacityPreview({
         </ul>
       </fieldset>
       <div className={styles.budgetControls}>
+        <div className={styles.budgetControl}>
+          <label htmlFor="dat-task-count">
+            投入タスク数 <b data-testid="dat-task-count-value">{taskCount}件</b>
+          </label>
+          <input
+            type="range"
+            id="dat-task-count"
+            data-testid="dat-task-count"
+            min={1}
+            max={MAX_TASK_COUNT}
+            step={1}
+            value={taskCount}
+            onChange={(event) => setTaskCount(Number(event.target.value))}
+          />
+        </div>
         <div className={styles.budgetControl}>
           <label htmlFor="dat-author-budget">
             Author作業予算 <b data-testid="dat-author-budget-value">{authorBudget}分</b>
@@ -177,10 +193,16 @@ export function AgentDatCapacityPreview({
           {selected.completedTasks}件（人間のみより{completedDeltaLabel}件）。
         </p>
       ) : null}
+      {selected.createdPrs > 0 && selected.completedTasks === 0 ? (
+        <p className={styles.muted} data-testid="dat-capacity-bottleneck-hint">
+          PRを{selected.createdPrs}件作成しましたが、完了は0件です。
+          投入タスク数かReviewer作業予算を変えて、待ち行列への影響を比較してください。
+        </p>
+      ) : null}
       <div className={styles.tableScroll}>
         <table className={styles.compareTable} data-testid="dat-capacity-table">
           <caption className={styles.tableCaption} data-testid="dat-capacity-caption">
-            12タスクの比較：選択中は {modeLabel}・{approvalLabel}・{reviewLabel}
+            {taskCount}タスクの比較：選択中は {modeLabel}・{approvalLabel}・{reviewLabel}
           </caption>
           <thead>
             <tr>

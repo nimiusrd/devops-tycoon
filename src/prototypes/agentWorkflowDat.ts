@@ -97,7 +97,7 @@ export function createAgentWorkflow(
 
 function completeSteps(state: AgentWorkflowState, count: number): void {
   for (let i = 0; i < count && state.stepIndex < STEPS.length; i += 1) {
-    state.events.push(\`\${STEPS[state.stepIndex]}:complete\`);
+    state.events.push(`${STEPS[state.stepIndex]}:complete`);
     state.stepIndex += 1;
     state.agentRuntimeMinutes += state.coefficients.agentMinutesPerStep;
   }
@@ -236,7 +236,7 @@ export function compareAgentWorkflows(seed = 'DAT-probe') {
         let state = initial;
         let guard = 0;
         while (state.stage !== 'done') {
-          if (++guard > 12) throw new Error(\`\${workload}:\${mode}:\${approvalPolicy}\`);
+          if (++guard > 12) throw new Error(`${workload}:${mode}:${approvalPolicy}`);
           const next = applyAgentWorkflow(state, chooseAgentWorkflowInput(state));
           if (next === state) throw new Error('Workflow did not progress');
           state = next;

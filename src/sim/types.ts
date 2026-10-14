@@ -49,7 +49,7 @@ export interface SprintCardPiles {
   drawOrder: number[];
   /** 今スプリントの手札（`deck` インデックス）。 */
   hand: number[];
-  /** 発動済み / 未使用で捨てたカード。 */
+  /** 発動済み / 手札交換で捨てたカード。 */
   discard: number[];
   /** このスプリントで発動し `cardEffects` に入ったもの。 */
   played: number[];
@@ -63,6 +63,18 @@ export interface CardPlayOutcome {
   focusCost?: number;
   /** 発動したデッキ位置。 */
   deckIndex?: number;
+}
+
+/** 手札1枚を山札先頭と交換した結果（RI-186）。 */
+export interface CardExchangeOutcome {
+  ok: boolean;
+  reason?: 'no-focus' | 'no-card' | 'no-draw' | 'limit' | 'complete' | 'invalid' | 'paused';
+  /** 成功時に消費した集中力。 */
+  focusCost?: number;
+  /** 捨てたカードのデッキ位置。 */
+  deckIndex?: number;
+  /** 引いたカードのデッキ位置。 */
+  drawnDeckIndex?: number;
 }
 
 /**
@@ -412,6 +424,8 @@ export interface SprintMetrics {
   interventionsUsed: number;
   /** 消費した集中力の累計。 */
   focusSpent: number;
+  /** 手札交換した回数。旧保存データでは省略。 */
+  handExchanges?: number;
   /** アクション種別ごとの発動回数（リザルトの介入内訳・称号判定用。第4.6）。 */
   actionCounts: Partial<Record<ActionId, number>>;
   /**
@@ -537,6 +551,8 @@ export interface SprintResult {
   seniorHpDelta: number;
   /** アクション種別ごとの発動回数（介入内訳の表示用。第4.6）。 */
   actionCounts: Partial<Record<ActionId, number>>;
+  /** 手札交換した回数。旧保存・リプレイでは省略。 */
+  handExchanges?: number;
   /** 評価（S/A/B/C/D）。 */
   grade: string;
   /**

@@ -158,6 +158,15 @@
   flex-shrink: 0;
 }
 
+.root :global(.deckbar-actions) {
+  gap: 5px;
+}
+
+.root :global(.deckbar-exchange-toggle) {
+  flex-shrink: 0;
+  padding: 4px 6px;
+}
+
 .root :global(.actionbar) {
   flex-shrink: 0;
   gap: 8px;

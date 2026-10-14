@@ -5,8 +5,8 @@
 
 ## ルールセット
 
-- 版: `7`
-- 指紋: `987930c4c0d919d88572ceeb84d46dae38cfedafc31174af3850ae4cc4a22ead`
+- 版: `8`
+- 指紋: `32621d87c3b68dfcc770569634055ce83aa505b694fe97caa3c512e2eb1ab11f`
 - 指紋方式: `1`
 
 版は手動更新する単調増加整数である。結果へ影響する変更では直前の版から 1 増やす。
@@ -15,6 +15,7 @@
 
 - ゲームが参照する値、式、分岐、丸め位置、乱数消費順を変える
 - 結果へ影響するコンテンツのID、値、重み、抽選・評価に使う配列順を変える
+- カードの手札交換ルールを追加する
 - 指紋の射影または算出方式を変える
 
 ### 版を増やさない条件
@@ -101,6 +102,8 @@
 | `card.effect.multiplier.minimum` | 乗算系カード効果の下限 | `0.3` | `multiplier` | `0.1〜1` | `card.effect.multiplier.minimum` ≤ `card.effect.multiplier.maximum` | 速度・効率など乗算フィールドをclampする下限。 | card, effect, boundary | いいえ |
 | `card.effect.reworkRateAdd.maximum` | Rework率加算の上限 | `0.5` | `multiplier` | `0〜1` | `card.effect.reworkRateAdd.minimum` ≤ `card.effect.reworkRateAdd.maximum` | カード効果の Rework 率加算をclampする上限。 | card, effect, rework, boundary | いいえ |
 | `card.effect.reworkRateAdd.minimum` | Rework率加算の下限 | `-0.5` | `multiplier` | `-1〜0` | `card.effect.reworkRateAdd.minimum` ≤ `card.effect.reworkRateAdd.maximum` | カード効果の Rework 率加算をclampする下限。 | card, effect, rework, boundary | いいえ |
+| `card.exchange.focusCost` | 手札交換の集中力コスト | `2` | `points` | `1〜10（整数）` | — | スプリント中に手札1枚を山札の次のカードと交換するときの集中力コスト。 | card, exchange, focus | いいえ |
+| `card.exchange.maxPerSprint` | スプリント中の手札交換上限 | `2` | `count` | `0〜10（整数）` | — | 1スプリントに実行できる手札交換の最大回数。 | card, exchange | いいえ |
 | `card.hand.size` | スプリント開始時の手札枚数 | `3` | `count` | `1〜10（整数）` | — | スプリント開始時にデッキから配る手札の枚数。 | card, hand | いいえ |
 | `card.play.focusCostMinimum` | 手札発動の集中力コスト下限 | `1` | `points` | `1〜10（整数）` | — | 丸め後および強化による減少後の、手札発動コストの下限。 | card, play, focus | いいえ |
 | `card.upgrade.levelMultiplier` | 強化レベルごとの効果増分 | `0.5` | `multiplier` | `0〜2` | — | 強化レベルが1を超えるごとに効果へ加える係数。k = 1 + この値 × max(0, level - 1)。 | card, upgrade | いいえ |

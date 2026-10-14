@@ -87,6 +87,31 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
   });
 
+  test('AIレビューは定型PRのReview渋滞を改善するが最終確認と誤検知対応を残す', async ({
+    page,
+  }) => {
+    await page.goto('/?rd=agent-dat');
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('3件');
+
+    await page.getByRole('radio', { name: 'AI事前トリアージ' }).check();
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('5件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('7件');
+    await expect(page.getByTestId('dat-triage-review-minutes')).toHaveText('54分');
+    await expect(page.getByTestId('dat-triage-setup')).toHaveText('6分');
+    await expect(page.getByTestId('dat-triage-screened')).toHaveText('5件');
+    await expect(page.getByTestId('dat-triage-false-positive')).toHaveText('1件');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('差は2件');
+
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('1件');
+    await expect(page.getByTestId('dat-triage-review-minutes')).toHaveText('56分');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('差は0件');
+  });
+
   for (const viewport of [
     { name: 'phone-se', width: 320, height: 568 },
     { name: 'phone', width: 390, height: 844 },

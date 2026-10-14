@@ -134,48 +134,43 @@ export function simulateAgentDatPipeline(input: AgentDatCapacity): AgentDatPipel
     }
   }
 
-  // PR作成数ではなく、レビューに使える残りの人間時間で完了件数を決める。
-  for (let i = 0; i < jobs.length; i += 1) {
+  // 最初に到着した全PRをFIFO登録し、修正後の再レビューは末尾へ送る。
+  const reviewQueue = jobs.flatMap((job, index) => (job.stage === 'review' ? [index] : []));
+  while (reviewQueue.length > 0) {
     if (reviewAssistance === 'ai-precheck' && reviewSetupMinutesSpent === 0) break;
-    let state = jobs[i]!;
-    if (state.stage !== 'review') continue;
+    const index = reviewQueue.shift()!;
+    const state = jobs[index]!;
     const reviewed = applyWithinBudget(
       state,
       input.reviewerBudgetMinutes,
       reviewerMinutesSpent,
       'reviewerDat',
     );
-    if (!reviewed) break; // FIFO:先頭レビュー待ちの案件を飛ばさない。
+    if (!reviewed) break; // 先頭の予算が足りなければ後続案件も追い越さない。
     reviewerMinutesSpent += reviewed.reviewerDat - state.reviewerDat;
-    if (reviewAssistance === 'ai-precheck') {
+    if (reviewAssistance === 'ai-precheck' && state.stage === 'review') {
+      // AI事前トリアージは最初のレビューに一度だけ適用する。
       aiReviewedPrs += 1;
-      if (input.workload === 'routine' && i % 4 === 3) aiFalsePositiveChecks += 1;
+      if (input.workload === 'routine' && index % 4 === 3) aiFalsePositiveChecks += 1;
     }
-    state = reviewed;
 
-    if (state.stage === 'rework') {
+    if (reviewed.stage === 'rework') {
       const fixed = applyWithinBudget(
-        state,
+        reviewed,
         input.authorBudgetMinutes,
         authorMinutesSpent,
         'authorDat',
       );
       if (fixed) {
-        authorMinutesSpent += fixed.authorDat - state.authorDat;
-        state = fixed;
-        const rereviewed = applyWithinBudget(
-          state,
-          input.reviewerBudgetMinutes,
-          reviewerMinutesSpent,
-          'reviewerDat',
-        );
-        if (rereviewed) {
-          reviewerMinutesSpent += rereviewed.reviewerDat - state.reviewerDat;
-          state = rereviewed;
-        }
+        authorMinutesSpent += fixed.authorDat - reviewed.authorDat;
+        jobs[index] = fixed;
+        reviewQueue.push(index); // 差戻し後の再レビューは後続PRの後。
+      } else {
+        jobs[index] = reviewed;
       }
+    } else {
+      jobs[index] = reviewed;
     }
-    jobs[i] = state;
   }
 
   const createdPrs = jobs.filter((job) => job.stepIndex === 3).length;

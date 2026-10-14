@@ -1,0 +1,338 @@
+{
+  "seed": "RI-243",
+  "results": [
+    {
+      "board": "loose",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-243",
+        "board": "loose",
+        "tick": 0,
+        "horizon": 3,
+        "debt": 6,
+        "delivery": 0,
+        "trust": 0,
+        "nextTarget": 8,
+        "nextCapacity": 8,
+        "relief": 4,
+        "trustCost": 2,
+        "penaltyPer": 3,
+        "shipValue": 4,
+        "repayValue": 1,
+        "repayAmount": 3,
+        "entries": [],
+        "negotiated": false,
+        "closed": false,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "pass"
+        }
+      ],
+      "result": {
+        "delivery": 8,
+        "trust": 0,
+        "debt": 6,
+        "nextTarget": 8,
+        "unmet": 0,
+        "recorded": 0,
+        "score": 8,
+        "path": [4, 8, 8],
+        "actions": ["ship", "ship", "pass"],
+        "negotiated": false,
+        "skippedRepay": false,
+        "skippedOffer": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "loose",
+      "strategy": "bargain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-243",
+        "board": "loose",
+        "tick": 0,
+        "horizon": 3,
+        "debt": 6,
+        "delivery": 0,
+        "trust": 0,
+        "nextTarget": 8,
+        "nextCapacity": 8,
+        "relief": 4,
+        "trustCost": 2,
+        "penaltyPer": 3,
+        "shipValue": 4,
+        "repayValue": 1,
+        "repayAmount": 3,
+        "entries": [],
+        "negotiated": false,
+        "closed": false,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "repay"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "negotiate"
+        }
+      ],
+      "result": {
+        "delivery": 5,
+        "trust": 2,
+        "debt": 3,
+        "nextTarget": 4,
+        "unmet": 0,
+        "recorded": 3,
+        "score": 3,
+        "path": [1, 5, 3],
+        "actions": ["repay", "ship", "negotiate"],
+        "negotiated": true,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-243",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 3,
+        "debt": 6,
+        "delivery": 0,
+        "trust": 0,
+        "nextTarget": 14,
+        "nextCapacity": 8,
+        "relief": 4,
+        "trustCost": 2,
+        "penaltyPer": 3,
+        "shipValue": 4,
+        "repayValue": 1,
+        "repayAmount": 3,
+        "entries": [],
+        "negotiated": false,
+        "closed": false,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "pass"
+        }
+      ],
+      "result": {
+        "delivery": 8,
+        "trust": 0,
+        "debt": 6,
+        "nextTarget": 14,
+        "unmet": 6,
+        "recorded": 0,
+        "score": -10,
+        "path": [-14, -10, -10],
+        "actions": ["ship", "ship", "pass"],
+        "negotiated": false,
+        "skippedRepay": false,
+        "skippedOffer": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "tight",
+      "strategy": "bargain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-243",
+        "board": "tight",
+        "tick": 0,
+        "horizon": 3,
+        "debt": 6,
+        "delivery": 0,
+        "trust": 0,
+        "nextTarget": 14,
+        "nextCapacity": 8,
+        "relief": 4,
+        "trustCost": 2,
+        "penaltyPer": 3,
+        "shipValue": 4,
+        "repayValue": 1,
+        "repayAmount": 3,
+        "entries": [],
+        "negotiated": false,
+        "closed": false,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "repay"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "negotiate"
+        }
+      ],
+      "result": {
+        "delivery": 5,
+        "trust": 2,
+        "debt": 3,
+        "nextTarget": 10,
+        "unmet": 2,
+        "recorded": 3,
+        "score": -3,
+        "path": [-17, -13, -3],
+        "actions": ["repay", "ship", "negotiate"],
+        "negotiated": true,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "lost": false
+      }
+    },
+    {
+      "board": "healthy",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-243",
+        "board": "healthy",
+        "tick": 0,
+        "horizon": 3,
+        "debt": 0,
+        "delivery": 0,
+        "trust": 0,
+        "nextTarget": 14,
+        "nextCapacity": 8,
+        "relief": 4,
+        "trustCost": 2,
+        "penaltyPer": 3,
+        "shipValue": 4,
+        "repayValue": 1,
+        "repayAmount": 3,
+        "entries": [],
+        "negotiated": false,
+        "closed": false,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "pass"
+        }
+      ],
+      "result": {
+        "delivery": 8,
+        "trust": 0,
+        "debt": 0,
+        "nextTarget": 14,
+        "unmet": 6,
+        "recorded": 0,
+        "score": -10,
+        "path": [-14, -10, -10],
+        "actions": ["ship", "ship", "pass"],
+        "negotiated": false,
+        "skippedRepay": false,
+        "skippedOffer": true,
+        "lost": false
+      }
+    },
+    {
+      "board": "healthy",
+      "strategy": "bargain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-243",
+        "board": "healthy",
+        "tick": 0,
+        "horizon": 3,
+        "debt": 0,
+        "delivery": 0,
+        "trust": 0,
+        "nextTarget": 14,
+        "nextCapacity": 8,
+        "relief": 4,
+        "trustCost": 2,
+        "penaltyPer": 3,
+        "shipValue": 4,
+        "repayValue": 1,
+        "repayAmount": 3,
+        "entries": [],
+        "negotiated": false,
+        "closed": false,
+        "skippedRepay": false,
+        "skippedOffer": false,
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "note"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "ship"
+        },
+        {
+          "type": "pass"
+        }
+      ],
+      "result": {
+        "delivery": 8,
+        "trust": 0,
+        "debt": 0,
+        "nextTarget": 14,
+        "unmet": 6,
+        "recorded": 0,
+        "score": -10,
+        "path": [-14, -10, -10],
+        "actions": ["ship", "ship", "pass"],
+        "negotiated": false,
+        "skippedRepay": true,
+        "skippedOffer": true,
+        "lost": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,233 @@
+{
+  "seed": "RI-254",
+  "results": [
+    {
+      "board": "forecast",
+      "strategy": "record",
+      "initial": {
+        "version": 1,
+        "seed": "RI-254",
+        "board": "forecast",
+        "tick": 0,
+        "horizon": 5,
+        "peaceTicks": 3,
+        "capacity": 2,
+        "shipPerCapacity": 4,
+        "rushCost": 9,
+        "requiredReview": 1,
+        "requiredPrevention": 1,
+        "strategy": null,
+        "shipped": 0,
+        "rushSpent": 0,
+        "evidence": [],
+        "submitted": [],
+        "acceptedReview": 0,
+        "acceptedPrevention": 0,
+        "nextSerial": 1,
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "record"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "audit"
+        }
+      ],
+      "result": {
+        "score": 16,
+        "shipped": 16,
+        "rushSpent": 0,
+        "review": 1,
+        "prevention": 1,
+        "acceptedReview": 1,
+        "acceptedPrevention": 1,
+        "missing": [],
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "path": [0, 0, 8, 16, 16],
+        "lost": false
+      }
+    },
+    {
+      "board": "forecast",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-254",
+        "board": "forecast",
+        "tick": 0,
+        "horizon": 5,
+        "peaceTicks": 3,
+        "capacity": 2,
+        "shipPerCapacity": 4,
+        "rushCost": 9,
+        "requiredReview": 1,
+        "requiredPrevention": 1,
+        "strategy": null,
+        "shipped": 0,
+        "rushSpent": 0,
+        "evidence": [],
+        "submitted": [],
+        "acceptedReview": 0,
+        "acceptedPrevention": 0,
+        "nextSerial": 1,
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "audit"
+        }
+      ],
+      "result": {
+        "score": 6,
+        "shipped": 24,
+        "rushSpent": 18,
+        "review": 1,
+        "prevention": 1,
+        "acceptedReview": 1,
+        "acceptedPrevention": 1,
+        "missing": [],
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "path": [0, 8, 16, 24, 6],
+        "lost": false
+      }
+    },
+    {
+      "board": "crunch",
+      "strategy": "record",
+      "initial": {
+        "version": 1,
+        "seed": "RI-254",
+        "board": "crunch",
+        "tick": 0,
+        "horizon": 3,
+        "peaceTicks": 1,
+        "capacity": 2,
+        "shipPerCapacity": 9,
+        "rushCost": 4,
+        "requiredReview": 1,
+        "requiredPrevention": 1,
+        "strategy": null,
+        "shipped": 0,
+        "rushSpent": 0,
+        "evidence": [],
+        "submitted": [],
+        "acceptedReview": 0,
+        "acceptedPrevention": 0,
+        "nextSerial": 1,
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "record"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "audit"
+        }
+      ],
+      "result": {
+        "score": 0,
+        "shipped": 0,
+        "rushSpent": 0,
+        "review": 1,
+        "prevention": 1,
+        "acceptedReview": 1,
+        "acceptedPrevention": 1,
+        "missing": [],
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "path": [0, 0, 0],
+        "lost": false
+      }
+    },
+    {
+      "board": "crunch",
+      "strategy": "ship",
+      "initial": {
+        "version": 1,
+        "seed": "RI-254",
+        "board": "crunch",
+        "tick": 0,
+        "horizon": 3,
+        "peaceTicks": 1,
+        "capacity": 2,
+        "shipPerCapacity": 9,
+        "rushCost": 4,
+        "requiredReview": 1,
+        "requiredPrevention": 1,
+        "strategy": null,
+        "shipped": 0,
+        "rushSpent": 0,
+        "evidence": [],
+        "submitted": [],
+        "acceptedReview": 0,
+        "acceptedPrevention": 0,
+        "nextSerial": 1,
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "periods": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "ship"
+        },
+        {
+          "type": "work"
+        },
+        {
+          "type": "audit"
+        }
+      ],
+      "result": {
+        "score": 10,
+        "shipped": 18,
+        "rushSpent": 8,
+        "review": 1,
+        "prevention": 1,
+        "acceptedReview": 1,
+        "acceptedPrevention": 1,
+        "missing": [],
+        "qualityUsed": false,
+        "debtQualityGate": "kept",
+        "path": [0, 18, 10],
+        "lost": false
+      }
+    }
+  ]
+}

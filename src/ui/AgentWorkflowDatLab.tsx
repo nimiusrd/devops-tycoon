@@ -315,8 +315,12 @@ export function AgentWorkflowDatLab() {
                   key={`${row.mode}:${row.approvalPolicy}`}
                   data-selected={row.mode === mode && row.approvalPolicy === approvalPolicy}
                 >
-                  <th scope="row">{MODE_OPTIONS.find((option) => option.value === row.mode)?.label}</th>
-                  <td>{APPROVAL_OPTIONS.find((option) => option.value === row.approvalPolicy)?.label}</td>
+                  <th scope="row">
+                    {MODE_OPTIONS.find((option) => option.value === row.mode)?.label}
+                  </th>
+                  <td>
+                    {APPROVAL_OPTIONS.find((option) => option.value === row.approvalPolicy)?.label}
+                  </td>
                   <td>{row.result.humanTouchesBeforePr}回</td>
                   <td>{row.result.authorDat}分</td>
                   <td>{row.result.reviewerDat}分</td>

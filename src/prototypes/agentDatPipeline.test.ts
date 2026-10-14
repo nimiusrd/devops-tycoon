@@ -169,6 +169,42 @@ describe('DATとレビュー処理能力の期間試作', () => {
     }
   });
 
+  it('投入件数が少ない密結合タスクではAI事前レビューの導入が逆効果になる', () => {
+    const scenario = {
+      ...ROUTINE,
+      workload: 'coupled' as const,
+      mode: 'asynchronous' as const,
+      approvalPolicy: 'preauthorized' as const,
+      taskCount: 1,
+      authorBudgetMinutes: 120,
+      reviewerBudgetMinutes: 48,
+    };
+    const human = simulateAgentDatPipeline({ ...scenario, reviewAssistance: 'human' });
+    const ai = simulateAgentDatPipeline({ ...scenario, reviewAssistance: 'ai-precheck' });
+    expect(human).toMatchObject({
+      createdPrs: 1,
+      completedTasks: 1,
+      reviewerMinutesSpent: 46,
+    });
+    expect(ai).toMatchObject({
+      createdPrs: 1,
+      completedTasks: 0,
+      waitingReview: 1,
+      reviewerMinutesSpent: 42,
+      reviewSetupMinutesSpent: 6,
+    });
+    const crowded = {
+      ...scenario,
+      taskCount: 12,
+    };
+    expect(simulateAgentDatPipeline({ ...crowded, reviewAssistance: 'human' }).completedTasks).toBe(
+      0,
+    );
+    expect(simulateAgentDatPipeline({ ...crowded, reviewAssistance: 'ai-precheck' }).completedTasks).toBe(
+      0,
+    );
+  });
+
   it('無効な予算/件数を拒否し、ゼロ件・ゼロ予算も安全に扱う', () => {
     const empty = simulateAgentDatPipeline({ ...ROUTINE, taskCount: 0 });
     expect(empty).toMatchObject({

@@ -1,0 +1,141 @@
+{
+  "seed": "RI-245",
+  "results": [
+    {
+      "board": "fragmented",
+      "strategy": "comply",
+      "initial": {
+        "version": 1,
+        "seed": "RI-245",
+        "board": "fragmented",
+        "tick": 0,
+        "horizon": 1,
+        "required": 4,
+        "prCount": 0,
+        "delivery": 0,
+        "rework": 0,
+        "explanation": 0,
+        "choice": null,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "comply"
+        }
+      ],
+      "result": {
+        "prCount": 4,
+        "required": 4,
+        "met": true,
+        "delivery": 12,
+        "rework": 0,
+        "explanation": 0,
+        "score": 12,
+        "choice": "comply",
+        "lost": false
+      }
+    },
+    {
+      "board": "fragmented",
+      "strategy": "explain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-245",
+        "board": "fragmented",
+        "tick": 0,
+        "horizon": 1,
+        "required": 4,
+        "prCount": 0,
+        "delivery": 0,
+        "rework": 0,
+        "explanation": 0,
+        "choice": null,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explain"
+        }
+      ],
+      "result": {
+        "prCount": 2,
+        "required": 4,
+        "met": false,
+        "delivery": 6,
+        "rework": 0,
+        "explanation": 3,
+        "score": 3,
+        "choice": "explain",
+        "lost": false
+      }
+    },
+    {
+      "board": "coupled",
+      "strategy": "comply",
+      "initial": {
+        "version": 1,
+        "seed": "RI-245",
+        "board": "coupled",
+        "tick": 0,
+        "horizon": 1,
+        "required": 4,
+        "prCount": 0,
+        "delivery": 0,
+        "rework": 0,
+        "explanation": 0,
+        "choice": null,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "comply"
+        }
+      ],
+      "result": {
+        "prCount": 4,
+        "required": 4,
+        "met": true,
+        "delivery": 4,
+        "rework": 4,
+        "explanation": 0,
+        "score": 0,
+        "choice": "comply",
+        "lost": false
+      }
+    },
+    {
+      "board": "coupled",
+      "strategy": "explain",
+      "initial": {
+        "version": 1,
+        "seed": "RI-245",
+        "board": "coupled",
+        "tick": 0,
+        "horizon": 1,
+        "required": 4,
+        "prCount": 0,
+        "delivery": 0,
+        "rework": 0,
+        "explanation": 0,
+        "choice": null,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "explain"
+        }
+      ],
+      "result": {
+        "prCount": 2,
+        "required": 4,
+        "met": false,
+        "delivery": 14,
+        "rework": 0,
+        "explanation": 3,
+        "score": 11,
+        "choice": "explain",
+        "lost": false
+      }
+    }
+  ]
+}

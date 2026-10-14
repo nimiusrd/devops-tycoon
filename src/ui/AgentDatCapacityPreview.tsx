@@ -161,8 +161,8 @@ export function AgentDatCapacityPreview({
       </dl>
       {reviewAssistance === 'ai-precheck' ? (
         <p className={styles.muted} data-testid="dat-triage-difference">
-          同条件の人間レビューのみ: 完了{humanBaseline.completedTasks}件 / AIトリアージ利用:
-          完了{selected.completedTasks}件。差は
+          同条件の人間レビューのみ: 完了{humanBaseline.completedTasks}件 / AIトリアージ利用: 完了
+          {selected.completedTasks}件。差は
           {selected.completedTasks - humanBaseline.completedTasks}件です。
         </p>
       ) : null}

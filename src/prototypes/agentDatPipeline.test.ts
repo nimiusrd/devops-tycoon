@@ -197,12 +197,10 @@ describe('DATとレビュー処理能力の期間試作', () => {
       ...scenario,
       taskCount: 12,
     };
-    expect(simulateAgentDatPipeline({ ...crowded, reviewAssistance: 'human' }).completedTasks).toBe(
-      0,
-    );
-    expect(simulateAgentDatPipeline({ ...crowded, reviewAssistance: 'ai-precheck' }).completedTasks).toBe(
-      0,
-    );
+    const crowdedHuman = simulateAgentDatPipeline({ ...crowded, reviewAssistance: 'human' });
+    const crowdedAi = simulateAgentDatPipeline({ ...crowded, reviewAssistance: 'ai-precheck' });
+    expect(crowdedHuman.completedTasks).toBe(0);
+    expect(crowdedAi.completedTasks).toBe(0);
   });
 
   it('無効な予算/件数を拒否し、ゼロ件・ゼロ予算も安全に扱う', () => {

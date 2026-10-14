@@ -1,16 +1,28 @@
 /**
- * Issue #660: 隔離実験。Phase 1 は smoke のみ。全順序×全盤面の集計は書かない。
+ * Issue #660: 隔離実験。引数なしは smoke。`--full` で凍結値のまま全順序×3盤面を書く。
  */
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   BOARD_ORDER_MATRIX,
   BOARDS,
   COPIED_FROM_732,
+  DELTAS,
   PARAMS,
   REPRESENTATIVE_ORDERS,
   RESCUE_RULE,
   SMOKE_EXPECTED,
+  UNATTENDED,
 } from '../src/rd/issue660/params.mjs';
-import { layoutOf, representativeResult, sharedDrawsFor } from '../src/rd/issue660/sim.mjs';
+import {
+  compareAll,
+  enumerateOrders,
+  layoutOf,
+  representativeResult,
+  sharedDrawsFor,
+  summarizeComparison,
+} from '../src/rd/issue660/sim.mjs';
 
 function fail(message) {
   console.error(message);
@@ -37,6 +49,30 @@ function checkRow(actual, expected, prefix) {
   same(actual.seniorHp, expected.seniorHp, `${prefix}.seniorHp`);
 }
 
+function assertFrozen() {
+  same(PARAMS.seniorHp, 60, 'frozen.seniorHp');
+  same(PARAMS.limitTicks, 120, 'frozen.limitTicks');
+  same(PARAMS.focusMax, 9, 'frozen.focusMax');
+  same(PARAMS.maxSuccessfulInterventions, 3, 'frozen.maxInterventions');
+  same(PARAMS.taskCount, 20, 'frozen.taskCount');
+  same(PARAMS.seed, 'RI-264-review-crisis-1', 'frozen.seed');
+  same(COPIED_FROM_732.recordedUnattended.delivered, 176, 'copied.unattended.delivered');
+  same(UNATTENDED.baseline.delivered, 176, 'frozen.unattended.baseline.delivered');
+  same(UNATTENDED['review-stall-x2'].delivered, 164, 'frozen.unattended.stall.delivered');
+  same(UNATTENDED['inflow-x2'].delivered, 160, 'frozen.unattended.inflow.delivered');
+  same(UNATTENDED.baseline.seniorHp, 7.6, 'frozen.unattended.baseline.hp');
+  same(DELTAS.fireDelivered, 12, 'frozen.delta.fire');
+  same(DELTAS.reviewDelivered, 16, 'frozen.delta.review');
+  same(DELTAS.reviewDeliveredStall, 24, 'frozen.delta.reviewStall');
+  same(DELTAS.andonThinDelivered, -8, 'frozen.delta.andonThin');
+  same(DELTAS.andonCongestedDelivered, 8, 'frozen.delta.andonCongested');
+  same(DELTAS.andonInflowRescueDelivered, 24, 'frozen.delta.inflowRescue');
+  same(RESCUE_RULE.deliveredMin, 180, 'rescue.deliveredMin');
+  same(RESCUE_RULE.spreadMax, 2, 'rescue.spreadMax');
+  same(RESCUE_RULE.seniorHpMin, 10, 'rescue.seniorHpMin');
+  same(RESCUE_RULE.burningMax, 0, 'rescue.burningMax');
+}
+
 function runSmoke() {
   console.log('issue660 smoke');
   console.log(
@@ -56,13 +92,7 @@ function runSmoke() {
     ),
   );
 
-  same(PARAMS.seniorHp, 60, 'frozen.seniorHp');
-  same(PARAMS.limitTicks, 120, 'frozen.limitTicks');
-  same(PARAMS.focusMax, 9, 'frozen.focusMax');
-  same(PARAMS.maxSuccessfulInterventions, 3, 'frozen.maxInterventions');
-  same(PARAMS.taskCount, 20, 'frozen.taskCount');
-  same(COPIED_FROM_732.recordedUnattended.delivered, 176, 'copied.unattended.delivered');
-  same(RESCUE_RULE.deliveredMin, 180, 'rescue.deliveredMin');
+  assertFrozen();
 
   const baselineLayout = layoutOf('baseline');
   same(baselineLayout.reviewWaiting, 6, 'layout.baseline.review');
@@ -125,9 +155,141 @@ function runSmoke() {
   if (!process.exitCode) console.log('smoke ok');
 }
 
+function boardLabel(boardId) {
+  return BOARDS[boardId].label;
+}
+
+function metricCell(board) {
+  return `${board.rescued ? '達成' : '未達'} ${board.delivered} / ${board.spread} / ${board.burning} / ${board.seniorHp}`;
+}
+
+function renderMarkdown(report) {
+  const lines = [];
+  lines.push('# Issue #660 Phase 2 比較結果');
+  lines.push('');
+  lines.push('凍結値は Phase 1 のまま。再現: `node scripts/compare-660.mjs --full`。');
+  lines.push('');
+  lines.push(
+    `機械的判定: **${report.verdict}**。3 盤面すべてを救う順序が 1 つもなければ Pass、1 つ以上あれば Kill。`,
+  );
+  lines.push('');
+  lines.push('## 盤面ごとの救えた数');
+  lines.push('');
+  lines.push('| 盤面 | 救えた順序 | 全順序 |');
+  lines.push('| --- | ---: | ---: |');
+  for (const boardId of Object.keys(BOARDS)) {
+    const row = report.perBoard[boardId];
+    lines.push(`| ${boardLabel(boardId)} | ${row.saved} | ${row.total} |`);
+  }
+  lines.push('');
+  lines.push('## 停止10→レビュー20→鎮火40 は基準を救えるか');
+  lines.push('');
+  lines.push(
+    report.spotlight.baselineRescued
+      ? '**救える。** 基準は出荷 196 / 延焼 0 / 炎上 0 / 余力 10 で `rescued`。'
+      : '**救えない。**',
+  );
+  lines.push('');
+  lines.push('| 盤面 | 救済 | 出荷 | 延焼 | 炎上 | 余力 |');
+  lines.push('| --- | --- | ---: | ---: | ---: | ---: |');
+  for (const boardId of Object.keys(BOARDS)) {
+    const board = report.spotlight.boards[boardId];
+    lines.push(
+      `| ${boardLabel(boardId)} | ${board.rescued ? '達成' : '未達'} | ${board.delivered} | ${board.spread} | ${board.burning} | ${board.seniorHp} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## 3 盤面すべてを救う順序');
+  lines.push('');
+  lines.push(`${report.universalCount} 件。`);
+  lines.push('');
+  lines.push('| 順序 | 基準 | レビュー滞留×2 | 流入×2 |');
+  lines.push('| --- | --- | --- | --- |');
+  for (const order of report.universal) {
+    lines.push(
+      `| ${order.label} | ${metricCell(order.boards.baseline)} | ${metricCell(order.boards['review-stall-x2'])} | ${metricCell(order.boards['inflow-x2'])} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## ちょうど 2 盤面を救う順序');
+  lines.push('');
+  lines.push('| 救う 2 盤面 | 未達の盤面 | 順序数 |');
+  lines.push('| --- | --- | ---: |');
+  for (const pair of report.pairs) {
+    lines.push(
+      `| ${boardLabel(pair.boards[0])} + ${boardLabel(pair.boards[1])} | ${boardLabel(pair.excluded)} | ${pair.count} |`,
+    );
+  }
+  lines.push('');
+  for (const pair of report.pairs) {
+    lines.push(`### ${boardLabel(pair.boards[0])} + ${boardLabel(pair.boards[1])}`);
+    lines.push('');
+    if (pair.count === 0) {
+      lines.push('なし。');
+      lines.push('');
+      continue;
+    }
+    lines.push('| 順序 | 基準 | レビュー滞留×2 | 流入×2 |');
+    lines.push('| --- | --- | --- | --- |');
+    for (const order of pair.orders) {
+      lines.push(
+        `| ${order.label} | ${metricCell(order.boards.baseline)} | ${metricCell(order.boards['review-stall-x2'])} | ${metricCell(order.boards['inflow-x2'])} |`,
+      );
+    }
+    lines.push('');
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+function runFull() {
+  assertFrozen();
+  same(enumerateOrders().length, 376, 'full.orderCount');
+  const comparison = compareAll();
+  const report = summarizeComparison(comparison);
+  same(report.orderCount, 376, 'report.orderCount');
+  same(report.spotlight.id, 'A10-R20-F40', 'spotlight.id');
+  same(report.spotlight.baselineRescued, true, 'spotlight.baselineRescued');
+  same(report.verdict, report.universalCount === 0 ? 'Pass' : 'Kill', 'verdict.rule');
+
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const outDir = join(root, 'src/rd/issue660/results');
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(
+    join(outDir, 'compare-660.json'),
+    `${JSON.stringify({ report, comparison }, null, 2)}\n`,
+  );
+  writeFileSync(join(outDir, 'compare-660.md'), renderMarkdown(report));
+
+  console.log(
+    JSON.stringify(
+      {
+        verdict: report.verdict,
+        orderCount: report.orderCount,
+        perBoard: report.perBoard,
+        universalCount: report.universalCount,
+        spotlight: {
+          label: report.spotlight.label,
+          baselineRescued: report.spotlight.baselineRescued,
+        },
+        pairs: report.pairs.map((pair) => ({
+          boards: pair.boards,
+          count: pair.count,
+        })),
+        wrote: [
+          'src/rd/issue660/results/compare-660.json',
+          'src/rd/issue660/results/compare-660.md',
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+  if (!process.exitCode) console.log('full ok');
+}
+
 const args = process.argv.slice(2);
 if (args.includes('--full') || args.includes('--compare')) {
-  console.log('Phase 1: comparison results are out of scope. Run without flags for smoke.');
+  runFull();
 } else {
   runSmoke();
 }

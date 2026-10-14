@@ -1,7 +1,7 @@
-# Issue #660 Phase 1: 万能の介入順序はあるか（隔離 R&D）
+# Issue #660 Phase 1–2: 万能の介入順序はあるか（隔離 R&D）
 
 対象: [#660](https://github.com/nimiusrd/devops-tycoon/issues/660) / 親 #548 / 先行試作 [#732](https://github.com/nimiusrd/devops-tycoon/pull/732)。
-範囲: Phase 1 のみ。`PROTO.md` と凍結 params、smoke。比較結果は出さない。全順序×全盤面の集計表は出さない。
+範囲: Phase 1 で PROTO と凍結 params と smoke。Phase 2 は凍結値を変えずに全順序×3 盤面を回し、`src/rd/issue660/results/` に書く。
 本番コード・通常ラン・`RunEngine`・得点・保存・ruleset・描画へは接続しない。
 
 ## 隔離
@@ -18,7 +18,7 @@
 - 合格: 3 盤面すべてを救う順序が 1 つもない。
 - Kill: 3 盤面すべてを救う順序が 1 つある。
 
-Phase 1 は盤面を凍結し、盤面ごとに「救える順序」と「救えない順序」が両方あることだけを示す。万能順序の有無は Phase 2 の全列挙で判定する。
+Phase 1 は盤面を凍結し、盤面ごとに「救える順序」と「救えない順序」が両方あることだけを示す。Phase 2 は凍結値を動かさず、5 tick × 最大 3 回の全 376 順序を 3 盤面へ適用して機械的判定する。
 
 ## 単一決定指標（救えたの定義）
 
@@ -138,9 +138,26 @@ seed を `RI-264-review-crisis-1` に固定する。各盤面は同じ seed か�
 
 ```
 node scripts/compare-660.mjs
+node scripts/compare-660.mjs --full
 ```
 
-引数なしは smoke。`--full` は Phase 1 では比較結果を書かず、範囲外と表示する。
+引数なしは smoke。`--full` は凍結値のまま全順序×3 盤面を回し、`src/rd/issue660/results/compare-660.md` と `compare-660.json` を書く。
+
+## Phase 2 比較結果
+
+再現: `node scripts/compare-660.mjs --full`。凍結値は未変更。
+
+| 盤面 | 救えた順序 | 全順序 |
+| --- | ---: | ---: |
+| 基準 | 186 | 376 |
+| レビュー滞留×2 | 195 | 376 |
+| 流入×2 | 63 | 376 |
+
+停止10→レビュー20→鎮火40 は基準を**救える**（出荷 196 / 延焼 0 / 炎上 0 / 余力 10）。滞留と流入も救うので、万能順序の 1 つ。
+
+3 盤面すべてを救う順序は 51 件。ちょうど 2 盤面だけを救う順序は、基準+滞留 118、基準+流入 0、滞留+流入 12。
+
+機械的判定: **Kill**。3 盤面すべてを救う順序が 1 つ以上ある。詳細は `src/rd/issue660/results/compare-660.md`。
 
 ## 現行実装との境界
 

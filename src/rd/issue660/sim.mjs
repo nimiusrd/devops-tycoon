@@ -9,6 +9,7 @@ import {
   BOARDS,
   COPIED_FROM_732,
   DELTAS,
+  INTERVENTION_SLOTS,
   PARAMS,
   REPRESENTATIVE_ORDERS,
   RESCUE_RULE,
@@ -260,6 +261,172 @@ export function runOrder(boardId, inputs, seed = PARAMS.seed) {
 
 export function representativeResult(boardId, orderId, seed = PARAMS.seed) {
   return runOrder(boardId, REPRESENTATIVE_ORDERS[orderId], seed);
+}
+
+const ACTION_CODE = Object.freeze({
+  interruptReview: 'R',
+  andon: 'A',
+  firefight: 'F',
+});
+
+const ACTION_LABEL = Object.freeze({
+  interruptReview: 'レビュー',
+  andon: '停止',
+  firefight: '鎮火',
+});
+
+function combinations(items, size) {
+  const out = [];
+  const walk = (start, acc) => {
+    if (acc.length === size) {
+      out.push(acc.slice());
+      return;
+    }
+    for (let i = start; i < items.length; i += 1) {
+      acc.push(items[i]);
+      walk(i + 1, acc);
+      acc.pop();
+    }
+  };
+  walk(0, []);
+  return out;
+}
+
+function actionProducts(count) {
+  let rows = [[]];
+  for (let i = 0; i < count; i += 1) {
+    const next = [];
+    for (const prefix of rows) {
+      for (const action of ACTIONS) next.push([...prefix, action]);
+    }
+    rows = next;
+  }
+  return rows;
+}
+
+export function orderIdOf(inputs) {
+  if (inputs.length === 0) return 'unattended';
+  return inputs.map((input) => `${ACTION_CODE[input.action]}${input.tick}`).join('-');
+}
+
+export function orderLabelOf(inputs) {
+  if (inputs.length === 0) return '無介入';
+  return inputs.map((input) => `${ACTION_LABEL[input.action]}${input.tick}`).join('→');
+}
+
+/** 5 tick × 最大 3 回。空を含む全順序。 */
+export function enumerateOrders() {
+  const orders = [{ id: 'unattended', label: '無介入', inputs: [] }];
+  for (let count = 1; count <= PARAMS.maxSuccessfulInterventions; count += 1) {
+    for (const slots of combinations(INTERVENTION_SLOTS, count)) {
+      for (const actions of actionProducts(count)) {
+        const inputs = slots.map((tick, index) => ({ tick, action: actions[index] }));
+        orders.push({ id: orderIdOf(inputs), label: orderLabelOf(inputs), inputs });
+      }
+    }
+  }
+  return orders;
+}
+
+function drawsFingerprint(draws) {
+  return draws.map((draw) => `${draw.incident ? 'I' : '-'}${draw.rework ? 'R' : '-'}`).join('');
+}
+
+export function compareAll(seed = PARAMS.seed) {
+  const orders = enumerateOrders();
+  const boardIds = Object.keys(BOARDS);
+  const shared = Object.fromEntries(
+    boardIds.map((boardId) => [boardId, drawsFingerprint(sharedDrawsFor(boardId, seed))]),
+  );
+  const rows = [];
+  for (const order of orders) {
+    const byBoard = {};
+    for (const boardId of boardIds) {
+      const result = runOrder(boardId, order.inputs, seed);
+      if (result.drawsFingerprint !== shared[boardId]) {
+        throw new Error(`${boardId}.${order.id}: draw sequence diverged`);
+      }
+      byBoard[boardId] = {
+        rescued: result.rescued,
+        delivered: result.delivered,
+        spread: result.spread,
+        burning: result.burning,
+        seniorHp: result.seniorHp,
+        interventions: result.interventions,
+        focusSpent: result.focusSpent,
+      };
+    }
+    rows.push({
+      id: order.id,
+      label: order.label,
+      inputs: order.inputs,
+      boards: byBoard,
+      rescuedCount: boardIds.filter((boardId) => byBoard[boardId].rescued).length,
+    });
+  }
+  return { seed, orderCount: orders.length, sharedDraws: shared, orders: rows };
+}
+
+const PAIR_KEYS = Object.freeze([
+  Object.freeze(['baseline', 'review-stall-x2']),
+  Object.freeze(['baseline', 'inflow-x2']),
+  Object.freeze(['review-stall-x2', 'inflow-x2']),
+]);
+
+export function summarizeComparison(comparison) {
+  const boardIds = Object.keys(BOARDS);
+  const perBoard = {};
+  for (const boardId of boardIds) {
+    const saved = comparison.orders.filter((row) => row.boards[boardId].rescued).length;
+    perBoard[boardId] = {
+      saved,
+      total: comparison.orderCount,
+    };
+  }
+  const universal = comparison.orders.filter((row) => row.rescuedCount === 3);
+  const pairs = PAIR_KEYS.map(([left, right]) => {
+    const other = boardIds.find((boardId) => boardId !== left && boardId !== right);
+    const rows = comparison.orders.filter(
+      (row) => row.boards[left].rescued && row.boards[right].rescued && !row.boards[other].rescued,
+    );
+    return {
+      boards: [left, right],
+      excluded: other,
+      count: rows.length,
+      orders: rows.map((row) => ({
+        id: row.id,
+        label: row.label,
+        boards: row.boards,
+      })),
+    };
+  });
+  const spotlightId = 'A10-R20-F40';
+  const spotlight = comparison.orders.find((row) => row.id === spotlightId);
+  return {
+    seed: comparison.seed,
+    orderCount: comparison.orderCount,
+    perBoard,
+    verdict: universal.length === 0 ? 'Pass' : 'Kill',
+    universalCount: universal.length,
+    universal: universal.map((row) => ({
+      id: row.id,
+      label: row.label,
+      boards: row.boards,
+    })),
+    pairs,
+    spotlight: {
+      id: spotlightId,
+      label: '停止10→レビュー20→鎮火40',
+      baselineRescued: spotlight?.boards.baseline.rescued ?? false,
+      boards: spotlight?.boards,
+    },
+    rescuedCountDistribution: Object.fromEntries(
+      [0, 1, 2, 3].map((count) => [
+        count,
+        comparison.orders.filter((row) => row.rescuedCount === count).length,
+      ]),
+    ),
+  };
 }
 
 export function sharedDrawsFor(boardId, seed = PARAMS.seed) {

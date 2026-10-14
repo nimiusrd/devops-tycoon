@@ -47,3 +47,16 @@ coupledの非同期・事前許可は87で、伴走・逐次の42を上回る。
 `src/prototypes/agentWorkflowDat.test.ts` で次を検証する。1ターンPR作成、工程ごとの承認待ち、Author/Reviewer DATの分離、レビュー前の未完了、手戻りと再レビュー、入力無効時の無消費、状態の不変性、JSON保存再開と入力リプレイの一致、8方式の固定比較。係数は任意の非負有限数で調整でき、結果をあらかじめ「非同期優位」に固定していない。
 
 推奨チェック: `npm test -- src/prototypes/agentWorkflowDat.test.ts --maxWorkers=1`、`npm run lint`、`npm run format:check`、`npm run build`。UI/Pixiを触らないためE2E/galleryは対象外。
+
+## 操作できる実験画面（stacked PR）
+
+ローカル開発サーバまたはGitHub PagesのURLに `?rd=agent-dat` を付ける。
+
+- ローカル: `http://localhost:5174/?rd=agent-dat`
+- Pages: `https://nimiusrd.github.io/devops-tycoon/?rd=agent-dat`（該当ブランチがmainへ取り込まれてから）
+
+このURLだけ通常ゲームの初期化・ラン保存・リプレイ読み込みを行わず、固定係数のR&D画面を表示する。実験の開始・承認/次工程指示・レビュー・修正・再レビューが各1入力で進む。実行形態、承認ポリシー、タスク構造を変更すると比較条件を新規作成し、既存の状態は破棄する。同じ条件でのリセットも可能。
+
+「状態 → 次のアクション → Human DATの内訳 → 固定比較」の順で表示する。レビューを通過するまで完了タスクとして数えず、AIの実行時間は参考として分離する。手戻りが起きたときは修正・再レビューを経て完了する。固定比較表は選択したタスク構造の4条件を常に提示する。実験画面の状態はデバイスへ永続化しない。
+
+E2E: `npm run test:e2e -- tests/e2e/agent-workflow-dat.spec.ts --workers=1`。320×568、390×844、768×1024、1024×768、1440×900での主要操作と横あふれ、通常ランの非起動を確認する。UIの見た目はデザインシステムの既存トークン・`.btn`・`.pill`を使用する。WebGL盤面は作らず、独立したHTMLのR&D選択画面として扱う。

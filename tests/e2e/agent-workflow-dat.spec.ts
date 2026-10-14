@@ -61,6 +61,28 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-task-completed')).toHaveText('タスク完了');
   });
 
+  test('PR作成数が増えてもReview予算不足なら完了が増えず、予算増で解消する', async ({
+    page,
+  }) => {
+    await page.goto('/?rd=agent-dat');
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('6件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('5件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('1件');
+
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('3件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('9件');
+
+    const reviewBudget = page.getByTestId('dat-reviewer-budget');
+    await reviewBudget.focus();
+    await reviewBudget.press('End');
+    await expect(page.getByTestId('dat-reviewer-budget-value')).toHaveText('240分');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
+  });
+
   for (const viewport of [
     { name: 'phone-se', width: 320, height: 568 },
     { name: 'phone', width: 390, height: 844 },

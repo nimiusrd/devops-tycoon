@@ -196,6 +196,7 @@ export function viewDelayedHire(state: HireState) {
     reason: 'delayed-hire',
     fee: HIRE_COST,
     tacticFee: TACTIC_COST,
+    feePaidAt: 'decision' as const,
     joinAfterTicks: JOIN_AFTER,
     hirePower: HIRE_POWER,
     tacticPower: TACTIC_POWER,

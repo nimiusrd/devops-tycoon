@@ -22,6 +22,8 @@ describe('RI-250 入社まで待ちがある採用', () => {
     expect(blank).toMatchObject({
       reason: 'delayed-hire',
       fee: 6,
+      tacticFee: 6,
+      feePaidAt: 'decision',
       joinAfterTicks: 2,
       slots: 0,
       waiting: 0,

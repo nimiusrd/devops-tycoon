@@ -94,6 +94,13 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('3件');
 
+    await expect(page.getByTestId('dat-triage-setup')).toHaveText('―（対象外）');
+    await expect(page.getByTestId('dat-triage-screened')).toHaveText('―（対象外）');
+    await expect(page.getByTestId('dat-triage-false-positive')).toHaveText('―（対象外）');
+    await expect(page.getByTestId('dat-capacity-caption')).toContainText(
+      '非同期型・事前許可・人間レビューのみ',
+    );
+
     await page.getByRole('radio', { name: 'AI事前トリアージ' }).check();
     await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('5件');
@@ -102,12 +109,15 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-triage-setup')).toHaveText('6分');
     await expect(page.getByTestId('dat-triage-screened')).toHaveText('5件');
     await expect(page.getByTestId('dat-triage-false-positive')).toHaveText('1件');
-    await expect(page.getByTestId('dat-triage-difference')).toContainText('差は2件');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('人間のみより+2件');
+    await expect(page.getByTestId('dat-capacity-caption')).toContainText(
+      '非同期型・事前許可・AI事前トリアージ',
+    );
 
     await page.getByRole('radio', { name: '密結合タスク' }).check();
-    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('1件');
-    await expect(page.getByTestId('dat-triage-review-minutes')).toHaveText('56分');
-    await expect(page.getByTestId('dat-triage-difference')).toContainText('差は0件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-triage-review-minutes')).toHaveText('42分');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('人間のみより+0件');
   });
 
   test('作業途中の条件変更で破棄したDATを通知し、未着手の変更は通知しない', async ({

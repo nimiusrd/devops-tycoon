@@ -38,7 +38,7 @@ coupledの非同期・事前許可は87で、伴走・逐次の42を上回る。
 
 ## 本番採用の境界
 
-この試作では通常ゲームのRunEngine、カード、SPEC、ruleset、固定トラック、保存、画面は変更しない。UI・Pixi変更はない。実際のGitHub権限やAIツールは触らない。PR作成とタスク完了を明確に区別し、レビュー通過時だけタスク完了を計上する。
+本番ゲームのRunEngine、カード、SPEC、ruleset、固定トラック、保存、既存の通常画面とPixi描画は変更しない。後続stackでは隔離された専用R&D画面（HTML UI）を追加し、そのE2Eを検証する。実際のGitHub権限やAIツールは触らない。PR作成とタスク完了を明確に区別し、レビュー通過時だけタスク完了を計上する。
 
 本番に取り込むなら、(1) 承認・監督・レビュー・手戻り時間を別々に計測、(2) 同じ難易度の仕事と承認設定で実行形態だけを比較、(3) タスク単位の品質と完了率を検証、(4) 並行性・待ち時間・暦時間はDAT外で別計測、(5) 保存/リプレイとUI、バランスを別Issueで設計する。
 
@@ -46,7 +46,7 @@ coupledの非同期・事前許可は87で、伴走・逐次の42を上回る。
 
 `src/prototypes/agentWorkflowDat.test.ts` で次を検証する。1ターンPR作成、工程ごとの承認待ち、Author/Reviewer DATの分離、レビュー前の未完了、手戻りと再レビュー、入力無効時の無消費、状態の不変性、JSON保存再開と入力リプレイの一致、8方式の固定比較。係数は任意の非負有限数で調整でき、結果をあらかじめ「非同期優位」に固定していない。
 
-推奨チェック: `npm test -- src/prototypes/agentWorkflowDat.test.ts --maxWorkers=1`、`npm run lint`、`npm run format:check`、`npm run build`。UI/Pixiを触らないためE2E/galleryは対象外。
+推奨チェック: `npm test -- src/prototypes/agentWorkflowDat.test.ts --maxWorkers=1`、`npm run lint`、`npm run format:check`、`npm run build`。純TS試作のみの初期PRはE2E対象外。後続stackで追加したR&D画面は `npm run test:e2e -- tests/e2e/agent-workflow-dat.spec.ts --workers=1` を実行する。既存の通常画面とPixi描画は変更しないため、通常ランの視覚gallery更新は対象外。
 
 ## 操作できる実験画面（stacked PR）
 

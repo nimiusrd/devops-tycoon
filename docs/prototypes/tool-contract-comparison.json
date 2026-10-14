@@ -18,7 +18,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 9,
+        "continueAutomation": 5,
         "continueFee": 2,
         "transferAutomation": 4,
         "transferFee": 2,
@@ -46,12 +46,12 @@
         }
       ],
       "result": {
-        "score": 29,
+        "score": 17,
         "asset": 9,
         "budget": 12,
         "slack": true,
         "migrationLeft": 0,
-        "path": [0, 4, 8, 15, 22, 29],
+        "path": [0, 4, 8, 11, 14, 17],
         "billing": [
           {
             "tool": "none",
@@ -70,17 +70,17 @@
           },
           {
             "tool": "continued",
-            "automation": 9,
+            "automation": 5,
             "fee": 2
           },
           {
             "tool": "continued",
-            "automation": 9,
+            "automation": 5,
             "fee": 2
           },
           {
             "tool": "continued",
-            "automation": 9,
+            "automation": 5,
             "fee": 2
           }
         ],
@@ -104,7 +104,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 9,
+        "continueAutomation": 5,
         "continueFee": 2,
         "transferAutomation": 4,
         "transferFee": 2,
@@ -190,7 +190,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 9,
+        "continueAutomation": 5,
         "continueFee": 2,
         "transferAutomation": 4,
         "transferFee": 2,
@@ -276,7 +276,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 9,
+        "continueAutomation": 5,
         "continueFee": 6,
         "transferAutomation": 8,
         "transferFee": 2,
@@ -304,12 +304,12 @@
         }
       ],
       "result": {
-        "score": 17,
+        "score": 5,
         "asset": 9,
         "budget": 12,
         "slack": true,
         "migrationLeft": 0,
-        "path": [0, 4, 8, 11, 14, 17],
+        "path": [0, 4, 8, 7, 6, 5],
         "billing": [
           {
             "tool": "none",
@@ -328,17 +328,17 @@
           },
           {
             "tool": "continued",
-            "automation": 9,
+            "automation": 5,
             "fee": 6
           },
           {
             "tool": "continued",
-            "automation": 9,
+            "automation": 5,
             "fee": 6
           },
           {
             "tool": "continued",
-            "automation": 9,
+            "automation": 5,
             "fee": 6
           }
         ],
@@ -362,7 +362,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 9,
+        "continueAutomation": 5,
         "continueFee": 6,
         "transferAutomation": 8,
         "transferFee": 2,
@@ -448,7 +448,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 9,
+        "continueAutomation": 5,
         "continueFee": 6,
         "transferAutomation": 8,
         "transferFee": 2,
@@ -534,7 +534,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 4,
+        "continueAutomation": 5,
         "continueFee": 6,
         "transferAutomation": 2,
         "transferFee": 2,
@@ -562,12 +562,12 @@
         }
       ],
       "result": {
-        "score": 2,
+        "score": 5,
         "asset": 4,
         "budget": 4,
         "slack": false,
         "migrationLeft": 0,
-        "path": [0, 4, 8, 6, 4, 2],
+        "path": [0, 4, 8, 7, 6, 5],
         "billing": [
           {
             "tool": "none",
@@ -586,17 +586,17 @@
           },
           {
             "tool": "continued",
-            "automation": 4,
+            "automation": 5,
             "fee": 6
           },
           {
             "tool": "continued",
-            "automation": 4,
+            "automation": 5,
             "fee": 6
           },
           {
             "tool": "continued",
-            "automation": 4,
+            "automation": 5,
             "fee": 6
           }
         ],
@@ -620,7 +620,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 4,
+        "continueAutomation": 5,
         "continueFee": 6,
         "transferAutomation": 2,
         "transferFee": 2,
@@ -706,7 +706,7 @@
         "migrationLeft": 0,
         "migrationWork": 1,
         "net": 0,
-        "continueAutomation": 4,
+        "continueAutomation": 5,
         "continueFee": 6,
         "transferAutomation": 2,
         "transferFee": 2,

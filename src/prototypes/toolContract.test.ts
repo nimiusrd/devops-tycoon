@@ -27,7 +27,7 @@ describe('RI-249 ツール契約の更新', () => {
       budget: 12,
       slack: true,
       old: { automation: 5, fee: 1 },
-      continued: { automation: 9, fee: 2 },
+      continued: { automation: 5, fee: 2 },
       transferred: { automation: 4, fee: 2 },
       shrink: { automation: 3, fee: 1 },
       migrationWork: 1,
@@ -35,7 +35,7 @@ describe('RI-249 ツール契約の更新', () => {
       choices: ['continue', 'migrate', 'shrink'],
     });
     expect(blank.forecasts.map((item) => [item.strategy, item.score])).toEqual([
-      ['continue', 29],
+      ['continue', 17],
       ['migrate', 12],
       ['shrink', 14],
     ]);
@@ -53,9 +53,15 @@ describe('RI-249 ツール契約の更新', () => {
     const row = (board: string, strategy: string) =>
       rows.find((item) => item.board === board && item.strategy === strategy)!;
     expect(row('steady', 'continue').result).toMatchObject({
-      score: 29,
-      path: [0, 4, 8, 15, 22, 29],
+      score: 17,
+      path: [0, 4, 8, 11, 14, 17],
     });
+    for (const board of ['steady', 'heavy', 'light'] as const) {
+      const continued = row(board, 'continue').result.billing.filter(
+        (entry) => entry.tool === 'continued',
+      );
+      expect(continued.map((entry) => entry.automation)).toEqual([5, 5, 5]);
+    }
     expect(row('heavy', 'migrate').result).toMatchObject({
       score: 20,
       migrationLeft: 0,

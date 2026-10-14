@@ -55,7 +55,6 @@ const BOARDS: Record<
     asset: number;
     budget: number;
     slack: boolean;
-    continueAutomation: number;
     continueFee: number;
     transferAutomation: number;
     transferFee: number;
@@ -65,7 +64,6 @@ const BOARDS: Record<
     asset: 9,
     budget: 12,
     slack: true,
-    continueAutomation: 9,
     continueFee: 2,
     transferAutomation: 4,
     transferFee: 2,
@@ -74,7 +72,6 @@ const BOARDS: Record<
     asset: 9,
     budget: 12,
     slack: true,
-    continueAutomation: 9,
     continueFee: 6,
     transferAutomation: 8,
     transferFee: 2,
@@ -83,7 +80,6 @@ const BOARDS: Record<
     asset: 4,
     budget: 4,
     slack: false,
-    continueAutomation: 4,
     continueFee: 6,
     transferAutomation: 2,
     transferFee: 2,
@@ -95,7 +91,7 @@ function quote(state: ContractState): { tool: ContractTool; automation: number; 
     return { tool: 'old', automation: PRE_AUTOMATION, fee: PRE_FEE };
   }
   if (state.strategy === 'continue') {
-    return { tool: 'continued', automation: state.continueAutomation, fee: state.continueFee };
+    return { tool: 'continued', automation: PRE_AUTOMATION, fee: state.continueFee };
   }
   if (state.strategy === 'shrink') {
     return { tool: 'shrunk', automation: SHRINK_AUTOMATION, fee: SHRINK_FEE };
@@ -138,7 +134,7 @@ export function createToolContract(seed: string, board: ContractBoard): Contract
     migrationLeft: 0,
     migrationWork: MIGRATION_WORK,
     net: 0,
-    continueAutomation: spec.continueAutomation,
+    continueAutomation: PRE_AUTOMATION,
     continueFee: spec.continueFee,
     transferAutomation: spec.transferAutomation,
     transferFee: spec.transferFee,

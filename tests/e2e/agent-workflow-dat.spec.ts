@@ -8,6 +8,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
 
     await page.getByRole('radio', { name: '非同期型' }).check();
     await page.getByRole('radio', { name: '事前許可' }).check();
+    await expect(page.getByTestId('dat-compare').locator('tbody tr[data-selected="true"] th')).toContainText('（選択中）');
     await expect(page.getByTestId('dat-touches')).toHaveText('0回');
     await page.getByTestId('dat-advance').click();
 

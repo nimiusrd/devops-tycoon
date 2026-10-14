@@ -8,7 +8,11 @@ import {
 } from './agentWorkflowDat';
 
 const rows = compareAgentWorkflows('DAT-probe');
-function result(workload: 'routine' | 'coupled', mode: 'companion' | 'asynchronous', approvalPolicy: 'each-step' | 'preauthorized') {
+function result(
+  workload: 'routine' | 'coupled',
+  mode: 'companion' | 'asynchronous',
+  approvalPolicy: 'each-step' | 'preauthorized',
+) {
   return rows.find(
     (row) =>
       row.workload === workload && row.mode === mode && row.approvalPolicy === approvalPolicy,

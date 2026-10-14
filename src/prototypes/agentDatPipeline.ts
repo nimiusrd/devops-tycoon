@@ -14,6 +14,11 @@ import {
   type ApprovalPolicy,
   type Workload,
 } from './agentWorkflowDat';
+import {
+  AI_TRIAGE_SETUP_MINUTES,
+  configureReviewTriage,
+  type ReviewAssistance,
+} from './agentReviewTriage';
 
 export interface AgentDatCapacity {
   workload: Workload;
@@ -22,6 +27,8 @@ export interface AgentDatCapacity {
   taskCount: number;
   authorBudgetMinutes: number;
   reviewerBudgetMinutes: number;
+  /** AIは事前判定のみ。最終確認は常に人間が行う。省略時はhuman。 */
+  reviewAssistance?: ReviewAssistance;
   seed?: string;
 }
 
@@ -40,10 +47,18 @@ export interface AgentDatPipelineResult {
   agentRuntimeMinutes: number;
   approvalCount: number;
   humanTouchesBeforePr: number;
+  reviewSetupMinutesSpent: number;
+  aiReviewedPrs: number;
+  aiFalsePositiveChecks: number;
 }
 
 /** 上限は1期間の比較が軽量かつ有限になるためのR&D専用制約。 */
 function validateCapacity(input: AgentDatCapacity): void {
+  if (input.reviewAssistance !== undefined &&
+    input.reviewAssistance !== 'human' &&
+    input.reviewAssistance !== 'ai-precheck') {
+    throw new Error('Unknown review assistance');
+  }
   if (!Number.isInteger(input.taskCount) || input.taskCount < 0 || input.taskCount > 500) {
     throw new Error('taskCount must be an integer from 0 through 500');
   }
@@ -76,15 +91,23 @@ export function simulateAgentDatPipeline(input: AgentDatCapacity): AgentDatPipel
   const jobs: AgentWorkflowState[] = [];
   let authorMinutesSpent = 0;
   let reviewerMinutesSpent = 0;
+  let reviewSetupMinutesSpent = 0;
+  let aiReviewedPrs = 0;
+  let aiFalsePositiveChecks = 0;
+  const reviewAssistance = input.reviewAssistance ?? 'human';
 
   // 指示からPR完成までの作業。途中で予算切れなら1件を作業中に留める。
   for (let i = 0; i < input.taskCount; i += 1) {
-    let state = createAgentWorkflow(
-      `${input.seed ?? 'DAT-pipeline'}:${i}`,
-      input.workload,
-      input.mode,
-      input.approvalPolicy,
-    );
+    let state = configureReviewTriage(
+      createAgentWorkflow(
+        `${input.seed ?? 'DAT-pipeline'}:${i}`,
+        input.workload,
+        input.mode,
+        input.approvalPolicy,
+      ),
+      reviewAssistance,
+      i,
+    ).job;
     while (state.stage === 'ready' || state.stage === 'coding') {
       const next = applyWithinBudget(
         state,
@@ -101,8 +124,17 @@ export function simulateAgentDatPipeline(input: AgentDatCapacity): AgentDatPipel
     if (state.stage === 'coding') break;
   }
 
+  // AI事前トリアージは人間のセットアップ工数を先に消費する。予算不足ならレビューできない。
+  if (reviewAssistance === 'ai-precheck' && jobs.some((job) => job.stage === 'review')) {
+    if (input.reviewerBudgetMinutes >= AI_TRIAGE_SETUP_MINUTES) {
+      reviewSetupMinutesSpent = AI_TRIAGE_SETUP_MINUTES;
+      reviewerMinutesSpent += reviewSetupMinutesSpent;
+    }
+  }
+
   // PR作成数ではなく、レビューに使える残りの人間時間で完了件数を決める。
   for (let i = 0; i < jobs.length; i += 1) {
+    if (reviewAssistance === 'ai-precheck' && reviewSetupMinutesSpent === 0) break;
     let state = jobs[i]!;
     if (state.stage !== 'review') continue;
     const reviewed = applyWithinBudget(
@@ -113,6 +145,10 @@ export function simulateAgentDatPipeline(input: AgentDatCapacity): AgentDatPipel
     );
     if (!reviewed) break; // FIFO:先頭レビュー待ちの案件を飛ばさない。
     reviewerMinutesSpent += reviewed.reviewerDat - state.reviewerDat;
+    if (reviewAssistance === 'ai-precheck') {
+      aiReviewedPrs += 1;
+      if (input.workload === 'routine' && i % 4 === 3) aiFalsePositiveChecks += 1;
+    }
     state = reviewed;
 
     if (state.stage === 'rework') {
@@ -163,5 +199,8 @@ export function simulateAgentDatPipeline(input: AgentDatCapacity): AgentDatPipel
     agentRuntimeMinutes: jobs.reduce((sum, job) => sum + job.agentRuntimeMinutes, 0),
     approvalCount: jobs.reduce((sum, job) => sum + job.approvalCount, 0),
     humanTouchesBeforePr: jobs.reduce((sum, job) => sum + job.humanTouchesBeforePr, 0),
+    reviewSetupMinutesSpent,
+    aiReviewedPrs,
+    aiFalsePositiveChecks,
   };
 }

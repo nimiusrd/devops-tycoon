@@ -27,7 +27,7 @@
     "balance:check": "node scripts/check-balance.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --write src/ui/AgentDatCapacityPreview.tsx && git --no-pager diff -- src/ui/AgentDatCapacityPreview.tsx && prettier --check ."
   },
   "dependencies": {
     "comlink": "^4.4.2",

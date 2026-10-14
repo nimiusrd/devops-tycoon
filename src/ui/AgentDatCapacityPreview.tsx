@@ -119,7 +119,10 @@ export function AgentDatCapacityPreview({
                 key={`${row.mode}:${row.approvalPolicy}`}
                 data-selected={row.mode === mode && row.approvalPolicy === approvalPolicy}
               >
-                <th scope="row">{MODES.find((item) => item.value === row.mode)?.label}</th>
+                <th scope="row">
+                  {MODES.find((item) => item.value === row.mode)?.label}
+                  {row.mode === mode && row.approvalPolicy === approvalPolicy ? '（選択中）' : ''}
+                </th>
                 <td>{POLICIES.find((item) => item.value === row.approvalPolicy)?.label}</td>
                 <td>{row.result.createdPrs}</td>
                 <td>{row.result.completedTasks}</td>

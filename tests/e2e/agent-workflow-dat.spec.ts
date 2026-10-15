@@ -149,6 +149,41 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-author')).toHaveText('0分');
   });
 
+  test('投入タスクを減らすと密結合の再レビューが通り、AIレビューの負の差を確認できる', async ({
+    page,
+  }) => {
+    await page.goto('/?rd=agent-dat');
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+    await page.getByRole('radio', { name: 'AI事前トリアージ' }).check();
+
+    const count = page.getByTestId('dat-task-count');
+    await count.focus();
+    await count.press('Home');
+    await expect(page.getByTestId('dat-task-count-value')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-caption')).toContainText('1タスクの比較');
+
+    const reviewer = page.getByTestId('dat-reviewer-budget');
+    await reviewer.focus();
+    await reviewer.press('ArrowLeft');
+    await expect(page.getByTestId('dat-reviewer-budget-value')).toHaveText('48分');
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('人間のみより−1件');
+
+    await page.getByRole('radio', { name: '人間レビューのみ' }).check();
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
+
+    await count.focus();
+    await count.press('End');
+    await expect(page.getByTestId('dat-task-count-value')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-capacity-bottleneck-hint')).toBeVisible();
+  });
+
   test('Coding途中を表示し、Reviewer増強で密結合12件も完了へ進められる', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     const authorBudget = page.getByTestId('dat-author-budget');
@@ -179,6 +214,48 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('4件');
   });
 
+  test('手戻り待ちならAuthor、レビュー待ちならReviewer予算を読み上げて案内する', async ({
+    page,
+  }) => {
+    await page.goto('/?rd=agent-dat');
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+
+    const count = page.getByTestId('dat-task-count');
+    await count.focus();
+    await count.press('Home');
+    const author = page.getByTestId('dat-author-budget');
+    await author.focus();
+    await author.press('Home');
+    await author.press('ArrowRight');
+
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-capacity-rework')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
+
+    const hint = page.getByTestId('dat-capacity-bottleneck-hint');
+    await expect(hint).toContainText('Author作業予算を増やしてください');
+    await expect(hint).not.toContainText('Reviewer作業予算');
+    await expect(hint.locator('xpath=..')).toHaveAttribute('role', 'status');
+    await expect(hint.locator('xpath=..')).toHaveAttribute('aria-live', 'polite');
+
+    await author.press('End');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('1件');
+    await expect(hint).toHaveCount(0);
+
+    await author.press('Home');
+    await author.press('ArrowRight');
+    const reviewer = page.getByTestId('dat-reviewer-budget');
+    await reviewer.focus();
+    await reviewer.press('Home');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-rework')).toHaveText('0件');
+    await expect(hint).toContainText('Reviewer作業予算');
+    await expect(hint).not.toContainText('Author作業予算');
+  });
+
   test('390/320幅で選択中のレビュー方式を省略せず表示し、表の名前にも使う', async ({ page }) => {
     for (const viewport of [
       { width: 390, height: 844 },
@@ -189,7 +266,6 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
       await page.getByRole('radio', { name: '非同期型' }).check();
       await page.getByRole('radio', { name: '事前許可' }).check();
       await page.getByRole('radio', { name: 'AI事前トリアージ' }).check();
-
       const caption = page.getByTestId('dat-capacity-caption');
       await caption.scrollIntoViewIfNeeded();
       await expect(caption).toContainText('非同期型・事前許可・AI事前トリアージ');

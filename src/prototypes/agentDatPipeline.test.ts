@@ -218,4 +218,117 @@ describe('DATとレビュー処理能力の期間試作', () => {
       expect(() => simulateAgentDatPipeline({ ...ROUTINE, ...override })).toThrow();
     }
   });
+
+  it('AIレビューでroutineのReviewer DATが減り、Review渋滞が縮む', () => {
+    const fixed = {
+      ...ROUTINE,
+      mode: 'asynchronous' as const,
+      approvalPolicy: 'preauthorized' as const,
+    };
+    const human = simulateAgentDatPipeline({ ...fixed, reviewAssistance: 'human' });
+    const assisted = simulateAgentDatPipeline({ ...fixed, reviewAssistance: 'ai-precheck' });
+    expect(human).toMatchObject({
+      createdPrs: 12,
+      completedTasks: 3,
+      waitingReview: 9,
+      reviewerMinutesSpent: 48,
+      aiReviewedPrs: 0,
+      reviewSetupMinutesSpent: 0,
+    });
+    expect(assisted).toMatchObject({
+      createdPrs: 12,
+      completedTasks: 5,
+      waitingReview: 7,
+      authorMinutesSpent: 72,
+      reviewerMinutesSpent: 54,
+      reviewSetupMinutesSpent: 6,
+      aiReviewedPrs: 5,
+      aiFalsePositiveChecks: 1,
+    });
+    expect(assisted.completedTasks).toBeGreaterThan(human.completedTasks);
+    expect(assisted.createdPrs).toBe(human.createdPrs);
+    expect(simulateAgentDatPipeline({ ...fixed, reviewAssistance: 'ai-precheck' })).toEqual(
+      assisted,
+    );
+  });
+
+  it('Review容量が十分なら全12件を通し、誤検知3件と初期工数を計上する', () => {
+    const assisted = simulateAgentDatPipeline({
+      ...ROUTINE,
+      mode: 'asynchronous',
+      approvalPolicy: 'preauthorized',
+      reviewAssistance: 'ai-precheck',
+      reviewerBudgetMinutes: 240,
+    });
+    expect(assisted).toMatchObject({
+      createdPrs: 12,
+      completedTasks: 12,
+      waitingReview: 0,
+      reviewerMinutesSpent: 126,
+      reviewSetupMinutesSpent: 6,
+      aiReviewedPrs: 12,
+      aiFalsePositiveChecks: 3,
+    });
+  });
+
+  it('密結合仕事ではAIレビュー導入で追加負荷が生じ、逆に完了を阻害しうる', () => {
+    const scenario = {
+      ...ROUTINE,
+      workload: 'coupled' as const,
+      mode: 'asynchronous' as const,
+      approvalPolicy: 'preauthorized' as const,
+      taskCount: 1,
+      authorBudgetMinutes: 41,
+      reviewerBudgetMinutes: 48,
+    };
+    expect(simulateAgentDatPipeline({ ...scenario, reviewAssistance: 'human' })).toMatchObject({
+      createdPrs: 1,
+      completedTasks: 1,
+      reviewerMinutesSpent: 46,
+      reviewSetupMinutesSpent: 0,
+    });
+    expect(
+      simulateAgentDatPipeline({ ...scenario, reviewAssistance: 'ai-precheck' }),
+    ).toMatchObject({
+      createdPrs: 1,
+      completedTasks: 0,
+      waitingReview: 1,
+      authorMinutesSpent: 41,
+      reviewerMinutesSpent: 42,
+      reviewSetupMinutesSpent: 6,
+      aiReviewedPrs: 1,
+      aiFalsePositiveChecks: 0,
+    });
+  });
+
+  it('PRがなければ準備工数は発生せず、準備の予算不足を無料扱いにしない', () => {
+    expect(
+      simulateAgentDatPipeline({
+        ...ROUTINE,
+        taskCount: 0,
+        reviewAssistance: 'ai-precheck',
+      }),
+    ).toMatchObject({
+      completedTasks: 0,
+      createdPrs: 0,
+      reviewSetupMinutesSpent: 0,
+      aiReviewedPrs: 0,
+    });
+    expect(
+      simulateAgentDatPipeline({
+        ...ROUTINE,
+        mode: 'asynchronous',
+        approvalPolicy: 'preauthorized',
+        reviewerBudgetMinutes: 0,
+        reviewAssistance: 'ai-precheck',
+      }),
+    ).toMatchObject({
+      createdPrs: 12,
+      completedTasks: 0,
+      waitingReview: 12,
+      reviewerMinutesSpent: 0,
+      reviewSetupMinutesSpent: 0,
+      aiReviewedPrs: 0,
+    });
+  });
 });

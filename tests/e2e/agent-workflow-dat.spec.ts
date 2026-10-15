@@ -87,6 +87,39 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
   });
 
+  test('AIレビューは定型PRのReview渋滞を改善するが最終確認と誤検知対応を残す', async ({ page }) => {
+    await page.goto('/?rd=agent-dat');
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('3件');
+
+    await expect(page.getByTestId('dat-triage-setup')).toHaveText('―（対象外）');
+    await expect(page.getByTestId('dat-triage-screened')).toHaveText('―（対象外）');
+    await expect(page.getByTestId('dat-triage-false-positive')).toHaveText('―（対象外）');
+    await expect(page.getByTestId('dat-capacity-caption')).toContainText(
+      '非同期型・事前許可・人間レビューのみ',
+    );
+
+    await page.getByRole('radio', { name: 'AI事前トリアージ' }).check();
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('5件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('7件');
+    await expect(page.getByTestId('dat-triage-review-minutes')).toHaveText('54分');
+    await expect(page.getByTestId('dat-triage-setup')).toHaveText('6分');
+    await expect(page.getByTestId('dat-triage-screened')).toHaveText('5件');
+    await expect(page.getByTestId('dat-triage-false-positive')).toHaveText('1件');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('人間のみより+2件');
+    await expect(page.getByTestId('dat-capacity-caption')).toContainText(
+      '非同期型・事前許可・AI事前トリアージ',
+    );
+
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-triage-review-minutes')).toHaveText('42分');
+    await expect(page.getByTestId('dat-triage-difference')).toContainText('人間のみと同じ');
+  });
+
   test('作業途中の条件変更で破棄したDATを通知し、未着手の変更は通知しない', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     await page.getByRole('radio', { name: '非同期型' }).check();
@@ -144,6 +177,39 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-reviewer-budget-value')).toHaveText('480分');
     await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('4件');
+  });
+
+  test('390/320幅で選択中のレビュー方式を省略せず表示し、表の名前にも使う', async ({ page }) => {
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 320, height: 568 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?rd=agent-dat');
+      await page.getByRole('radio', { name: '非同期型' }).check();
+      await page.getByRole('radio', { name: '事前許可' }).check();
+      await page.getByRole('radio', { name: 'AI事前トリアージ' }).check();
+
+      const caption = page.getByTestId('dat-capacity-caption');
+      await caption.scrollIntoViewIfNeeded();
+      await expect(caption).toContainText('非同期型・事前許可・AI事前トリアージ');
+      await expect(page.getByTestId('dat-capacity-table')).toHaveAttribute(
+        'aria-labelledby',
+        'dat-capacity-comparison-label',
+      );
+      const layout = await caption.evaluate((element) => ({
+        width: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        whiteSpace: getComputedStyle(element).whiteSpace,
+      }));
+      expect(layout.whiteSpace).toBe('normal');
+      expect(layout.scrollWidth).toBeLessThanOrEqual(layout.width + 1);
+      const captionBox = await caption.boundingBox();
+      expect(captionBox).not.toBeNull();
+      expect(captionBox!.x).toBeGreaterThanOrEqual(-1);
+      expect(captionBox!.x + captionBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(await page.getByTestId('dat-capacity-table').locator('caption').count()).toBe(0);
+    }
   });
 
   for (const viewport of [

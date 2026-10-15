@@ -214,7 +214,9 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('4件');
   });
 
-  test('手戻り待ちならAuthor、レビュー待ちならReviewer予算を読み上げて案内する', async ({ page }) => {
+  test('手戻り待ちならAuthor、レビュー待ちならReviewer予算を読み上げて案内する', async ({
+    page,
+  }) => {
     await page.goto('/?rd=agent-dat');
     await page.getByRole('radio', { name: '密結合タスク' }).check();
     await page.getByRole('radio', { name: '非同期型' }).check();

@@ -128,7 +128,9 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-author-budget-value')).toHaveText('6分');
     await expect(page.getByTestId('dat-capacity-coding')).toHaveText('1件');
     await expect(page.getByTestId('dat-capacity-unstarted')).toHaveText('11件');
-    const selectedRow = page.getByTestId('dat-capacity-table').locator('tbody tr[data-selected="true"]');
+    const selectedRow = page
+      .getByTestId('dat-capacity-table')
+      .locator('tbody tr[data-selected="true"]');
     await expect(selectedRow.locator('td').nth(5)).toHaveText('1');
     await expect(selectedRow.locator('td').nth(6)).toHaveText('11');
 

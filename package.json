@@ -25,6 +25,7 @@
     "audio:generate": "node scripts/generate-audio-assets.mjs",
     "balance:docs": "node scripts/generate-balance-docs.mjs",
     "balance:check": "node scripts/check-balance.mjs",
+    "prototype:ri186": "node scripts/ri186-hand-exchange-evaluation.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

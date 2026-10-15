@@ -213,6 +213,46 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('4件');
   });
 
+  test('手戻り待ちならAuthor、レビュー待ちならReviewer予算を読み上げて案内する', async ({ page }) => {
+    await page.goto('/?rd=agent-dat');
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+
+    const count = page.getByTestId('dat-task-count');
+    await count.focus();
+    await count.press('Home');
+    const author = page.getByTestId('dat-author-budget');
+    await author.focus();
+    await author.press('Home');
+    await author.press('ArrowRight');
+
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('0件');
+    await expect(page.getByTestId('dat-capacity-rework')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
+
+    const hint = page.getByTestId('dat-capacity-bottleneck-hint');
+    await expect(hint).toContainText('Author作業予算を増やしてください');
+    await expect(hint).not.toContainText('Reviewer作業予算');
+    await expect(hint.locator('xpath=..')).toHaveAttribute('role', 'status');
+    await expect(hint.locator('xpath=..')).toHaveAttribute('aria-live', 'polite');
+
+    await author.press('End');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('1件');
+    await expect(hint).toHaveCount(0);
+
+    await author.press('Home');
+    await author.press('ArrowRight');
+    const reviewer = page.getByTestId('dat-reviewer-budget');
+    await reviewer.focus();
+    await reviewer.press('Home');
+    await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-rework')).toHaveText('0件');
+    await expect(hint).toContainText('Reviewer作業予算');
+    await expect(hint).not.toContainText('Author作業予算');
+  });
+
   for (const viewport of [
       { width: 390, height: 844 },
       { width: 320, height: 568 },

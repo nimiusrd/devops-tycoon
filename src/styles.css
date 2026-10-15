@@ -2376,6 +2376,22 @@ body:has(.overlay-contained) {
   font-size: 11px;
   color: var(--text-dim);
 }
+.deckbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.deckbar-actions .deckbar-meta {
+  margin-left: 0;
+  white-space: nowrap;
+}
+.deckbar-exchange-toggle {
+  min-height: 32px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
 .action.nofocus:not(.ready) {
   border-color: color-mix(in srgb, var(--coral) 60%, var(--line));
 }

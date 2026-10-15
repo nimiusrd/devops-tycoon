@@ -49,6 +49,9 @@ function buildDetailRows(result: SprintResult): Row[] {
     { label: 'レビュー待ち最大', value: `${result.reviewQueueMax}件` },
     { label: '手戻り', value: `${result.rework}件` },
     { label: '鎮火 / 延焼', value: `${result.contained} / ${result.spread}` },
+    ...(result.handExchanges && result.handExchanges > 0
+      ? [{ label: '手札交換', value: `${result.handExchanges}回` }]
+      : []),
     { label: '介入', value: interventionSummary(result) },
   ];
 }

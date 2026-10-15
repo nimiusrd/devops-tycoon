@@ -20,6 +20,8 @@ export interface CardViewProps {
   onPick?: () => void;
   /** 手札発動ボタンにする場合のハンドラ（RI-30）。 */
   onPlay?: () => void;
+  /** 手札ボタンの操作名。交換選択時は「交換」を使う。 */
+  actionLabel?: string;
   /** 発動時の集中力コスト。手札では主表示、選択画面ではショップ価格と併記する。 */
   playCost?: number;
   /** 発動不可（集中力不足等）。閲覧用の読み取り専用とは別で、全体を減光する。 */
@@ -45,8 +47,9 @@ function handCardTitle(
   level: number,
   playCostValue: number | undefined,
   disabledReason?: string,
+  actionLabel = '発動',
 ): string {
-  const tooltip = `${formatCardTooltip(def, level)} / 発動 集中力 ${playCostValue ?? '?'}`;
+  const tooltip = `${formatCardTooltip(def, level)} / ${actionLabel} 集中力 ${playCostValue ?? '?'}`;
   return disabledReason ? `${tooltip} / ${disabledReason}` : tooltip;
 }
 
@@ -55,6 +58,7 @@ export function CardView({
   level = 1,
   onPick,
   onPlay,
+  actionLabel = '発動',
   playCost: playCostValue,
   disabled = false,
   disabledReason,
@@ -150,7 +154,8 @@ export function CardView({
         onClick={onPlay}
         disabled={disabled}
         data-testid={`hand-card-${def.id}`}
-        title={handCardTitle(def, level, playCostValue, disabledReason)}
+        title={handCardTitle(def, level, playCostValue, disabledReason, actionLabel)}
+        aria-label={`${def.name}を${actionLabel}（集中力 ${playCostValue ?? '?'}）`}
       >
         {inner}
       </button>

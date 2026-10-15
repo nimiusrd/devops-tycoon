@@ -8,7 +8,7 @@ import { canonicalizeJson, compareCanonicalStrings, sha256Hex } from './canonica
 import type { BalanceDefinition, BalanceEntry, ProbabilityDistribution } from './types';
 
 /** ルールセット版。結果へ影響する変更で直前の値から 1 増やす。 */
-export const BALANCE_RULESET_VERSION = 7;
+export const BALANCE_RULESET_VERSION = 8;
 
 /** 指紋の射影・算出方式の版。方式を変えるときは指紋が変わり、手動版も 1 増やす。 */
 export const BALANCE_RULESET_FINGERPRINT_SCHEME = 1;
@@ -24,6 +24,7 @@ export const BALANCE_RULESET_VERSION_POLICY = {
   bump: [
     'ゲームが参照する値、式、分岐、丸め位置、乱数消費順を変える',
     '結果へ影響するコンテンツのID、値、重み、抽選・評価に使う配列順を変える',
+    'カードの手札交換ルールを追加する',
     '指紋の射影または算出方式を変える',
   ],
   noBump: [

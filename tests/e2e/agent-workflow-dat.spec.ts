@@ -103,8 +103,17 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-author')).toHaveText('0分');
     await expect(page.getByTestId('dat-stage')).toHaveText('未着手');
     await expect(notice).toBeVisible();
+    // 新しい実験が未着手なら複数の条件を選んでも、破棄したDATの通知は残る。
+    await page.getByRole('radio', { name: '事前許可' }).check();
+    await expect(notice).toContainText('Author DAT 10分');
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await expect(notice).toContainText('Author DAT 10分');
+    // 改めて進行した後は新たな破棄内容へ更新する。
     await page.getByTestId('dat-advance').click();
-    await expect(notice).toBeVisible();
+    await expect(page.getByTestId('dat-author')).toHaveText('6分');
+    await page.getByRole('radio', { name: '伴走型' }).check();
+    await expect(notice).toContainText('Author DAT 6分');
+    await expect(page.getByTestId('dat-author')).toHaveText('0分');
   });
 
   for (const viewport of [

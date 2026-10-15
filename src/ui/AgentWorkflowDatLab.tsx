@@ -113,7 +113,9 @@ export function AgentWorkflowDatLab() {
   const [workload, setWorkload] = useState<Workload>('routine');
   const [mode, setMode] = useState<AgentMode>('companion');
   const [approvalPolicy, setApprovalPolicy] = useState<ApprovalPolicy>('each-step');
-  const [resetNotice, setResetNotice] = useState<{ message: string; revision: number } | null>(null);
+  const [resetNotice, setResetNotice] = useState<{ message: string; revision: number } | null>(
+    null,
+  );
   const [state, setState] = useState(() =>
     createAgentWorkflow(SEED, 'routine', 'companion', 'each-step'),
   );

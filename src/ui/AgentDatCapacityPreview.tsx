@@ -13,6 +13,7 @@ const POLICIES = [
   { value: 'preauthorized', label: '事前許可' },
 ] as const;
 const TASK_COUNT = 12;
+const MAX_REVIEW_BUDGET_MINUTES = 480;
 
 export function AgentDatCapacityPreview({
   workload,
@@ -76,7 +77,7 @@ export function AgentDatCapacityPreview({
             id="dat-reviewer-budget"
             data-testid="dat-reviewer-budget"
             min={0}
-            max={240}
+            max={MAX_REVIEW_BUDGET_MINUTES}
             step={12}
             value={reviewerBudget}
             onChange={(event) => setReviewerBudget(Number(event.target.value))}
@@ -100,6 +101,14 @@ export function AgentDatCapacityPreview({
           <dt>手戻り修正待ち</dt>
           <dd data-testid="dat-capacity-rework">{selected.waitingRework}件</dd>
         </div>
+        <div>
+          <dt>Coding途中</dt>
+          <dd data-testid="dat-capacity-coding">{selected.codingInProgress}件</dd>
+        </div>
+        <div>
+          <dt>未着手</dt>
+          <dd data-testid="dat-capacity-unstarted">{selected.unstartedTasks}件</dd>
+        </div>
       </dl>
       <div className={styles.tableScroll}>
         <table className={styles.compareTable} data-testid="dat-capacity-table">
@@ -111,6 +120,8 @@ export function AgentDatCapacityPreview({
               <th scope="col">完了</th>
               <th scope="col">Review待ち</th>
               <th scope="col">Rework待ち</th>
+              <th scope="col">Coding途中</th>
+              <th scope="col">未着手</th>
             </tr>
           </thead>
           <tbody>
@@ -128,6 +139,8 @@ export function AgentDatCapacityPreview({
                 <td>{row.result.completedTasks}</td>
                 <td>{row.result.waitingReview}</td>
                 <td>{row.result.waitingRework}</td>
+                <td>{row.result.codingInProgress}</td>
+                <td>{row.result.unstartedTasks}</td>
               </tr>
             ))}
           </tbody>

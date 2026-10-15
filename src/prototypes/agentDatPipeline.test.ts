@@ -141,6 +141,30 @@ describe('DATとレビュー処理能力の期間試作', () => {
     expect(simulateAgentDatPipeline(coupled)).toEqual(result);
   });
 
+  it('密結合12件はReviewer 396分では未完了、408分なら再レビューに到達する', () => {
+    const workload = {
+      ...ROUTINE,
+      workload: 'coupled' as const,
+      mode: 'asynchronous' as const,
+      approvalPolicy: 'preauthorized' as const,
+      authorBudgetMinutes: 120,
+      taskCount: 12,
+    };
+    const blocked = simulateAgentDatPipeline({ ...workload, reviewerBudgetMinutes: 396 });
+    expect(blocked).toMatchObject({
+      createdPrs: 12,
+      completedTasks: 0,
+      reviewerMinutesSpent: 384,
+    });
+    const released = simulateAgentDatPipeline({ ...workload, reviewerBudgetMinutes: 408 });
+    expect(released).toMatchObject({
+      createdPrs: 12,
+      completedTasks: 1,
+      reviewerMinutesSpent: 398,
+    });
+    expect(released.completedTasks).toBeGreaterThan(blocked.completedTasks);
+  });
+
   it('未完成案件は完了に計上せず、PR数とレビュー/手戻りが保存則を満たす', () => {
     for (const workload of ['routine', 'coupled'] as const) {
       for (const mode of ['companion', 'asynchronous'] as const) {

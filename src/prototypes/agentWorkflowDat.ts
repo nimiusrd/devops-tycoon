@@ -108,7 +108,8 @@ function completeSteps(state: AgentWorkflowState, count: number): void {
 }
 
 function record(state: AgentWorkflowState, input: WorkflowInput): AgentWorkflowState {
-  state.inputs.push(input);
+  // 呼び出し側のオブジェクト変更で保存済み入力ログが書き換わらないよう複製する。
+  state.inputs.push({ ...input });
   return state;
 }
 
@@ -208,7 +209,8 @@ export function summarizeAgentWorkflow(state: AgentWorkflowState) {
     agentRuntimeMinutes: state.agentRuntimeMinutes,
     reworkRounds: state.reworkRounds,
     // 待機・並列化・AI利用料金は除いた、1タスク当たりの理論的な人時効率。
-    tasksPerHumanHour: done && totalHumanDat > 0 ? Number((60 / totalHumanDat).toFixed(2)) : 0,
+    // 未完了またはDATゼロでは率を算定できない（ゼロ能力と取り違えない）。
+    tasksPerHumanHour: done && totalHumanDat > 0 ? Number((60 / totalHumanDat).toFixed(2)) : null,
   };
 }
 

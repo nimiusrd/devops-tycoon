@@ -175,4 +175,42 @@ describe('非同期/伴走型エージェントのAuthor/Reviewer DAT', () => {
       expect(state.events.filter((event) => event === 'review:accepted')).toHaveLength(1);
     }
   });
+
+  it('ログは入力オブジェクトをコピーし、呼び出し元の変更でリプレイが壊れない', () => {
+    const input: { type: 'start' | 'review' } = { type: 'start' };
+    const first = createAgentWorkflow('log-snapshot', 'routine', 'asynchronous', 'preauthorized');
+    const started = applyAgentWorkflow(first, input);
+    input.type = 'review';
+    expect(started.inputs).toEqual([{ type: 'start' }]);
+    expect(first.inputs).toEqual([]);
+    const replayed = applyAgentWorkflow(first, started.inputs[0]!);
+    expect(replayed).toEqual(started);
+  });
+
+  it('DATゼロの完了は、処理能力0と区別できるJSON-safeな未定義値を返す', () => {
+    const zero = createAgentWorkflow('zero-dat', 'routine', 'asynchronous', 'preauthorized', {
+      instructionMinutes: 0,
+      supervisionMinutesPerStep: 0,
+      approvalMinutesPerStep: 0,
+      agentMinutesPerStep: 0,
+      baseReviewMinutes: 0,
+      asynchronousReviewContextMinutes: 0,
+      asynchronousReworkAuthorMinutes: 0,
+      asynchronousReworkReviewMinutes: 0,
+    });
+    expect(summarizeAgentWorkflow(zero).tasksPerHumanHour).toBeNull();
+    const created = applyAgentWorkflow(zero, { type: 'start' });
+    expect(summarizeAgentWorkflow(created)).toMatchObject({
+      prCreated: true,
+      completedTasks: 0,
+      tasksPerHumanHour: null,
+    });
+    const done = applyAgentWorkflow(created, { type: 'review' });
+    expect(summarizeAgentWorkflow(done)).toMatchObject({
+      completedTasks: 1,
+      totalHumanDat: 0,
+      tasksPerHumanHour: null,
+    });
+    expect(JSON.parse(JSON.stringify(summarizeAgentWorkflow(done))).tasksPerHumanHour).toBeNull();
+  });
 });

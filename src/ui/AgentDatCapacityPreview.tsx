@@ -60,7 +60,10 @@ export function AgentDatCapacityPreview({
   });
 
   const completedDelta = selected.completedTasks - humanBaseline.completedTasks;
-  const completedDeltaLabel = completedDelta >= 0 ? `+${completedDelta}` : `−${-completedDelta}`;
+  const comparisonText =
+    completedDelta === 0
+      ? '人間のみと同じ'
+      : `人間のみより${completedDelta > 0 ? `+${completedDelta}` : `−${-completedDelta}`}件`;
 
   return (
     <section className={styles.panel} aria-labelledby="dat-capacity-title">
@@ -174,14 +177,22 @@ export function AgentDatCapacityPreview({
       {reviewAssistance === 'ai-precheck' ? (
         <p className={styles.muted} data-testid="dat-triage-difference">
           人間レビューのみ: 完了{humanBaseline.completedTasks}件 / AI事前トリアージ: 完了
-          {selected.completedTasks}件（人間のみより{completedDeltaLabel}件）。
+          {selected.completedTasks}件（{comparisonText}）。
         </p>
       ) : null}
+      <p
+        id="dat-capacity-comparison-label"
+        className={styles.muted}
+        data-testid="dat-capacity-caption"
+      >
+        12タスクの比較：選択中は {modeLabel}・{approvalLabel}・{reviewLabel}
+      </p>
       <div className={styles.tableScroll}>
-        <table className={styles.compareTable} data-testid="dat-capacity-table">
-          <caption className={styles.tableCaption} data-testid="dat-capacity-caption">
-            12タスクの比較：選択中は {modeLabel}・{approvalLabel}・{reviewLabel}
-          </caption>
+        <table
+          className={styles.compareTable}
+          data-testid="dat-capacity-table"
+          aria-labelledby="dat-capacity-comparison-label"
+        >
           <thead>
             <tr>
               <th scope="col">AI</th>

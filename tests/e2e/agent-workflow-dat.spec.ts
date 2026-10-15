@@ -82,7 +82,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     const reviewBudget = page.getByTestId('dat-reviewer-budget');
     await reviewBudget.focus();
     await reviewBudget.press('End');
-    await expect(page.getByTestId('dat-reviewer-budget-value')).toHaveText('240分');
+    await expect(page.getByTestId('dat-reviewer-budget-value')).toHaveText('480分');
     await expect(page.getByTestId('dat-capacity-completed')).toHaveText('12件');
     await expect(page.getByTestId('dat-capacity-waiting')).toHaveText('0件');
   });
@@ -150,7 +150,35 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
   });
 
   test('390/320幅で選択中のレビュー方式を省略せず表示し、表の名前にも使う', async ({ page }) => {
-    for (const viewport of [
+    test('Coding途中を表示し、Reviewer増強で密結合12件も完了へ進められる', async ({ page }) => {
+    await page.goto('/?rd=agent-dat');
+    const authorBudget = page.getByTestId('dat-author-budget');
+    await authorBudget.focus();
+    await authorBudget.press('Home');
+    await expect(page.getByTestId('dat-capacity-coding')).toHaveText('0件');
+    await expect(page.getByTestId('dat-capacity-unstarted')).toHaveText('12件');
+
+    await authorBudget.press('ArrowRight');
+    await expect(page.getByTestId('dat-author-budget-value')).toHaveText('6分');
+    await expect(page.getByTestId('dat-capacity-coding')).toHaveText('1件');
+    await expect(page.getByTestId('dat-capacity-unstarted')).toHaveText('11件');
+    const selectedRow = page.getByTestId('dat-capacity-table').locator('tbody tr[data-selected="true"]');
+    await expect(selectedRow.locator('td').nth(5)).toHaveText('1');
+    await expect(selectedRow.locator('td').nth(6)).toHaveText('11');
+
+    await authorBudget.press('End');
+    await page.getByRole('radio', { name: '密結合タスク' }).check();
+    await page.getByRole('radio', { name: '非同期型' }).check();
+    await page.getByRole('radio', { name: '事前許可' }).check();
+    const reviewerBudget = page.getByTestId('dat-reviewer-budget');
+    await reviewerBudget.focus();
+    await reviewerBudget.press('End');
+    await expect(page.getByTestId('dat-reviewer-budget-value')).toHaveText('480分');
+    await expect(page.getByTestId('dat-capacity-created')).toHaveText('12件');
+    await expect(page.getByTestId('dat-capacity-completed')).toHaveText('4件');
+  });
+
+  for (const viewport of [
       { width: 390, height: 844 },
       { width: 320, height: 568 },
     ]) {

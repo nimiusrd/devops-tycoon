@@ -27,7 +27,7 @@
     "balance:check": "node scripts/check-balance.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --write tests/e2e/agent-workflow-dat.spec.ts && git --no-pager diff -- tests/e2e/agent-workflow-dat.spec.ts && exit 1"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "comlink": "^4.4.2",

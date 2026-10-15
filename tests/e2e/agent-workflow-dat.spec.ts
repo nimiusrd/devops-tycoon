@@ -184,8 +184,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(page.getByTestId('dat-capacity-bottleneck-hint')).toBeVisible();
   });
 
-  test('390/320幅で選択中のレビュー方式を省略せず表示し、表の名前にも使う', async ({ page }) => {
-    test('Coding途中を表示し、Reviewer増強で密結合12件も完了へ進められる', async ({ page }) => {
+  test('Coding途中を表示し、Reviewer増強で密結合12件も完了へ進められる', async ({ page }) => {
     await page.goto('/?rd=agent-dat');
     const authorBudget = page.getByTestId('dat-author-budget');
     await authorBudget.focus();
@@ -255,7 +254,8 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(hint).not.toContainText('Author作業予算');
   });
 
-  for (const viewport of [
+  test('390/320幅で選択中のレビュー方式を省略せず表示し、表の名前にも使う', async ({ page }) => {
+      for (const viewport of [
       { width: 390, height: 844 },
       { width: 320, height: 568 },
     ]) {

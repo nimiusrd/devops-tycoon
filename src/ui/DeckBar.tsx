@@ -67,7 +67,7 @@ export function DeckBar({
   if (isHandMode) {
     return (
       <div
-        className="deckbar"
+        className={onExchange ? 'deckbar deckbar-with-exchange' : 'deckbar'}
         data-testid="deck"
         data-mode="hand"
         data-paused={paused ? 'true' : 'false'}

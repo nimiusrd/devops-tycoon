@@ -140,9 +140,7 @@ test.describe('非同期エージェント DAT R&D 画面', () => {
     await expect(notice).toBeVisible();
   });
 
-  test('390/320幅で選択中のレビュー方式を省略せず表示し、表の名前にも使う', async ({
-    page,
-  }) => {
+  test('390/320幅で選択中のレビュー方式を省略せず表示し、表の名前にも使う', async ({ page }) => {
     for (const viewport of [
       { width: 390, height: 844 },
       { width: 320, height: 568 },

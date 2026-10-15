@@ -67,6 +67,17 @@ export function AgentDatCapacityPreview({
       ? '人間のみと同じ'
       : `人間のみより${completedDelta > 0 ? `+${completedDelta}` : `−${-completedDelta}`}件`;
 
+  const capacityHint =
+    selected.createdPrs === 0 || selected.completedTasks > 0
+      ? null
+      : selected.waitingRework > 0 && selected.waitingReview > 0
+        ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。Review待ち${selected.waitingReview}件と手戻り修正待ち${selected.waitingRework}件があるため、Reviewer作業予算とAuthor作業予算の両方を確認してください。`
+        : selected.waitingRework > 0
+          ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。手戻り修正待ち${selected.waitingRework}件を進めるにはAuthor作業予算を増やしてください。`
+          : selected.waitingReview > 0
+            ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。Review待ち${selected.waitingReview}件を減らすにはReviewer作業予算または投入タスク数を調整してください。`
+            : null;
+
   return (
     <section className={styles.panel} aria-labelledby="dat-capacity-title">
       <h2 id="dat-capacity-title">4. {taskCount}タスクのレビュー渋滞を比較</h2>
@@ -205,12 +216,13 @@ export function AgentDatCapacityPreview({
           {selected.completedTasks}件（{comparisonText}）。
         </p>
       ) : null}
-      {selected.createdPrs > 0 && selected.completedTasks === 0 ? (
-        <p className={styles.muted} data-testid="dat-capacity-bottleneck-hint">
-          PRを{selected.createdPrs}件作成しましたが、完了は0件です。
-          投入タスク数かReviewer作業予算を変えて、待ち行列への影響を比較してください。
-        </p>
-      ) : null}
+      <div role="status" aria-live="polite" aria-atomic="true">
+        {capacityHint ? (
+          <p className={styles.muted} data-testid="dat-capacity-bottleneck-hint">
+            {capacityHint}
+          </p>
+        ) : null}
+      </div>
       <p
         id="dat-capacity-comparison-label"
         className={styles.muted}

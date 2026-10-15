@@ -237,15 +237,6 @@
   margin-top: 4px;
 }
 
-.tableCaption {
-  caption-side: top;
-  padding: 0 0 12px;
-  color: var(--cream);
-  text-align: left;
-  white-space: normal;
-  font-weight: 800;
-}
-
 .tableScroll {
   max-width: 100%;
   overflow-x: auto;

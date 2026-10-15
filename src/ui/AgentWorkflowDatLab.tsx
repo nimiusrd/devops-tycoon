@@ -112,7 +112,7 @@ export function AgentWorkflowDatLab() {
   const [workload, setWorkload] = useState<Workload>('routine');
   const [mode, setMode] = useState<AgentMode>('companion');
   const [approvalPolicy, setApprovalPolicy] = useState<ApprovalPolicy>('each-step');
-  const [resetNotice, setResetNotice] = useState<string | null>(null);
+  const [resetNotice, setResetNotice] = useState<{ message: string; revision: number } | null>(null);
   const [state, setState] = useState(() =>
     createAgentWorkflow(SEED, 'routine', 'companion', 'each-step'),
   );
@@ -127,11 +127,14 @@ export function AgentWorkflowDatLab() {
     nextMode: AgentMode,
     nextApproval: ApprovalPolicy,
   ) => {
-    setResetNotice(
-      state.inputs.length > 0
-        ? `条件変更で進行をリセットしました（完了工程 ${state.stepIndex}/3、Author DAT ${summary.authorDat}分・Reviewer DAT ${summary.reviewerDat}分 → 0分）。`
-        : null,
-    );
+    if (state.inputs.length > 0) {
+      // 未着手状態で追加の条件を選んでも直前の通知は消さず、
+      // 新しい作業を再度破棄したときだけ同じ文面でもタイマーを再起動する。
+      setResetNotice((previous) => ({
+        message: `条件変更で進行をリセットしました（完了工程 ${state.stepIndex}/3、Author DAT ${summary.authorDat}分・Reviewer DAT ${summary.reviewerDat}分 → 0分）。`,
+        revision: (previous?.revision ?? 0) + 1,
+      }));
+    }
     setState(createAgentWorkflow(SEED, nextWorkload, nextMode, nextApproval));
   };
   const selectWorkload = (choice: Workload) => {
@@ -210,7 +213,7 @@ export function AgentWorkflowDatLab() {
         </div>
         {resetNotice ? (
           <p className={styles.resetNotice} role="status" data-testid="dat-reset-notice">
-            {resetNotice}
+            {resetNotice.message}
           </p>
         ) : null}
       </section>

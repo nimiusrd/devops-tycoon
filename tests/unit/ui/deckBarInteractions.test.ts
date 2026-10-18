@@ -146,4 +146,50 @@ describe('DeckBar の閲覧と手札発動', () => {
     });
     expect(screen.find('hand-card-docs').props.disabled).toBe(true);
   });
+
+  it('交換モードはカードに交換ラベルを表示し、選択を交換ハンドラへ渡す', () => {
+    const onExchange = vi.fn(() => ({ ok: true }));
+    const screen = mountDeck({
+      deck: [{ defId: 'docs', level: 1 }],
+      hand: [0],
+      focus: 2,
+      drawCount: 1,
+      playable: true,
+      onPlay: vi.fn(() => ({ ok: true })),
+      onExchange,
+      exchangeMode: true,
+    });
+    const card = screen.find('hand-card-docs');
+
+    expect(card.props['aria-label']).toBe('ドキュメント整備を交換（集中力 2）');
+    expect(content(card)).toContain('交換');
+    expect(card.props.className).toContain('card-playable');
+    expect(content(screen.find('hand-exchange-status'))).toBe('交換するカードを選択');
+    expect(screen.find('hand-exchange-status').props.role).toBe('status');
+
+    screen.click('hand-card-docs');
+    expect(onExchange).toHaveBeenCalledWith(0);
+  });
+
+  it('交換できない理由をボタン付近の status として表示し、開始を無効にする', () => {
+    const onExchangeModeChange = vi.fn();
+    const screen = mountDeck({
+      deck: [{ defId: 'docs', level: 1 }],
+      hand: [0],
+      focus: 3,
+      drawCount: 0,
+      playable: true,
+      onPlay: vi.fn(() => ({ ok: true })),
+      onExchange: vi.fn(() => ({ ok: true })),
+      onExchangeModeChange,
+    });
+
+    expect(content(screen.find('hand-exchange-status'))).toBe(
+      '交換不可: 山札に交換できるカードがありません',
+    );
+    expect(screen.find('hand-exchange-status').props.role).toBe('status');
+    expect(screen.find('hand-exchange-toggle').props.disabled).toBe(true);
+    screen.click('hand-exchange-toggle');
+    expect(onExchangeModeChange).not.toHaveBeenCalled();
+  });
 });

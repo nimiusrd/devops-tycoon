@@ -86,12 +86,17 @@ export function CardView({
         <div className="card-head">
           <span className={`card-rarity rarity-${def.rarity}`}>{RARITY_LABEL[def.rarity]}</span>
           <span className="card-costs">
-            <span className="card-cost">
+            <span className={actionLabel === '交換' ? 'card-cost card-cost-exchange' : 'card-cost'}>
               {onPlay && playCostValue !== undefined ? (
-                <VisualIconText name="focus" size="card">
-                  <span className="visually-hidden">集中力 </span>
-                  {playCostValue}
-                </VisualIconText>
+                <>
+                  {actionLabel !== '発動' && (
+                    <span className="card-action-mode">{actionLabel}</span>
+                  )}
+                  <VisualIconText name="focus" size="card">
+                    <span className="visually-hidden">集中力 </span>
+                    {playCostValue}
+                  </VisualIconText>
+                </>
               ) : (
                 def.cost
               )}

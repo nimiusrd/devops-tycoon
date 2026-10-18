@@ -2387,6 +2387,12 @@ body:has(.overlay-contained) {
   margin-left: 0;
   white-space: nowrap;
 }
+.deckbar-exchange-status {
+  min-width: 0;
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.2;
+}
 .deckbar-exchange-toggle {
   min-height: 32px;
   padding: 4px 8px;
@@ -2874,6 +2880,24 @@ body:has(.overlay-contained) {
   font-size: 13px;
   font-weight: 900;
   color: var(--sun);
+}
+.card-action-mode {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--mint);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.card-cost-exchange {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+.card-cost-exchange .visual-icon-tone-sun {
+  color: var(--text-dim);
 }
 .card-focus-cost {
   display: inline-flex;

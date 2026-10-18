@@ -63,6 +63,11 @@ export function DeckBar({
             : focus < exchangeCost
               ? `集中力不足（${exchangeCost}必要）`
               : undefined);
+  const exchangeStatus = isExchangeMode
+    ? '交換するカードを選択'
+    : exchangeDisabledReason
+      ? `交換不可: ${exchangeDisabledReason}`
+      : undefined;
 
   if (isHandMode) {
     return (
@@ -73,40 +78,42 @@ export function DeckBar({
         data-paused={paused ? 'true' : 'false'}
         data-exchange-mode={isExchangeMode ? 'true' : 'false'}
       >
-        <span className="deckbar-label">{isExchangeMode ? '交換するカードを選択' : '手札'}</span>
-        {hand.length === 0 ? (
-          <span className="deckbar-empty">手札がありません</span>
-        ) : (
-          <div className="deckbar-cards">
-            {hand.map((deckIndex) => {
-              const inst = deck[deckIndex];
-              if (!inst) return null;
-              const def = resolveCard(inst.defId);
-              const cost = isExchangeMode ? exchangeCost : playCost(def.focusCost, inst.level);
-              const canAct = isExchangeMode ? !exchangeDisabledReason : !paused && focus >= cost;
-              const disabledReason = isExchangeMode
-                ? exchangeDisabledReason
-                : paused
-                  ? ACTION_BLOCK_MESSAGES.paused
-                  : focus < cost
-                    ? ACTION_BLOCK_MESSAGES['no-focus']
-                    : undefined;
-              return (
-                <CardView
-                  key={`hand-${deckIndex}`}
-                  def={def}
-                  level={inst.level}
-                  compact
-                  playCost={cost}
-                  actionLabel={isExchangeMode ? '交換' : '発動'}
-                  disabled={!canAct}
-                  disabledReason={disabledReason}
-                  onPlay={() => (isExchangeMode ? onExchange?.(deckIndex) : onPlay(deckIndex))}
-                />
-              );
-            })}
-          </div>
-        )}
+        <div className="deckbar-hand">
+          <span className="deckbar-label">{isExchangeMode ? '交換するカードを選択' : '手札'}</span>
+          {hand.length === 0 ? (
+            <span className="deckbar-empty">手札がありません</span>
+          ) : (
+            <div className="deckbar-cards">
+              {hand.map((deckIndex) => {
+                const inst = deck[deckIndex];
+                if (!inst) return null;
+                const def = resolveCard(inst.defId);
+                const cost = isExchangeMode ? exchangeCost : playCost(def.focusCost, inst.level);
+                const canAct = isExchangeMode ? !exchangeDisabledReason : !paused && focus >= cost;
+                const disabledReason = isExchangeMode
+                  ? exchangeDisabledReason
+                  : paused
+                    ? ACTION_BLOCK_MESSAGES.paused
+                    : focus < cost
+                      ? ACTION_BLOCK_MESSAGES['no-focus']
+                      : undefined;
+                return (
+                  <CardView
+                    key={`hand-${deckIndex}`}
+                    def={def}
+                    level={inst.level}
+                    compact
+                    playCost={cost}
+                    actionLabel={isExchangeMode ? '交換' : '発動'}
+                    disabled={!canAct}
+                    disabledReason={disabledReason}
+                    onPlay={() => (isExchangeMode ? onExchange?.(deckIndex) : onPlay(deckIndex))}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
         <div className="deckbar-actions">
           <span className="deckbar-meta" data-testid="deck-size">
             デッキ {deck.length}
@@ -117,6 +124,15 @@ export function DeckBar({
           <span className="deckbar-meta" data-testid="hand-exchange-count">
             交換 {exchangesUsed}/{maxExchanges}
           </span>
+          {onExchange && exchangeStatus && (
+            <span
+              className="deckbar-exchange-status"
+              data-testid="hand-exchange-status"
+              role="status"
+            >
+              {exchangeStatus}
+            </span>
+          )}
           {onExchange && (
             <button
               type="button"

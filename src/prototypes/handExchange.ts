@@ -1,7 +1,8 @@
-import { applyAction } from '../sim/actions';
+import { activeIncidents, applyAction, isFirefightUrgent, tasksInLane } from '../sim/actions';
 import { dealHand, playCardFromHand } from '../sim/cards';
 import { createOrgState } from '../sim/org';
 import { createRng, createRngFromState, getRngState } from '../sim/rng';
+import { SPRINT_MIN_COMPLETE_TICK } from '../sim/run/sprintBaselineBuild';
 import {
   createSprint,
   isAwaitingMinCompleteTick,
@@ -24,7 +25,12 @@ export interface HandExchangeState {
   exchanges: number;
 }
 
-export const HAND_EXCHANGE_POLICY = { focusCost: 2, maxExchanges: 2 } as const;
+export interface HandExchangePolicy {
+  focusCost: number;
+  maxExchanges: number;
+}
+
+export const HAND_EXCHANGE_POLICY: HandExchangePolicy = { focusCost: 2, maxExchanges: 2 };
 
 export function createHandExchangePrototype(
   seed: string | number,
@@ -70,6 +76,7 @@ export type HandExchangeFailure =
 export function exchangeHandCard(
   state: HandExchangeState,
   deckIndex: number,
+  policy: HandExchangePolicy = HAND_EXCHANGE_POLICY,
 ):
   | { ok: true; state: HandExchangeState; drawnIndex: number }
   | { ok: false; state: HandExchangeState; reason: HandExchangeFailure } {
@@ -81,7 +88,7 @@ export function exchangeHandCard(
   const expected = state.sprintDeckIndices ?? state.deck.map((_, index) => index);
   if (state.paused) reason = 'paused';
   else if (sprint.complete || isAwaitingMinCompleteTick(sprint)) reason = 'complete';
-  else if (state.exchanges >= HAND_EXCHANGE_POLICY.maxExchanges) reason = 'limit';
+  else if (state.exchanges >= policy.maxExchanges) reason = 'limit';
   else if (handIndex < 0) reason = 'no-card';
   else if (drawnIndex === undefined) reason = 'no-draw';
   else if (
@@ -92,15 +99,15 @@ export function exchangeHandCard(
     allCards.some((index) => !Number.isInteger(index) || !expected.includes(index))
   )
     reason = 'invalid';
-  else if (sprint.focus < HAND_EXCHANGE_POLICY.focusCost) reason = 'no-focus';
+  else if (sprint.focus < policy.focusCost) reason = 'no-focus';
   if (reason) return { ok: false, state, reason };
 
   const next = structuredClone(state);
   next.sprint.cardPiles.hand.splice(handIndex, 1, drawnIndex!);
   next.sprint.cardPiles.drawOrder.shift();
   next.sprint.cardPiles.discard.push(deckIndex);
-  next.sprint.focus -= HAND_EXCHANGE_POLICY.focusCost;
-  next.sprint.metrics.focusSpent += HAND_EXCHANGE_POLICY.focusCost;
+  next.sprint.focus -= policy.focusCost;
+  next.sprint.metrics.focusSpent += policy.focusCost;
   next.exchanges += 1;
   return { ok: true, state: next, drawnIndex: drawnIndex! };
 }
@@ -154,6 +161,96 @@ export function compareHandExchangeStrategies(
       focusSpent: state.sprint.metrics.focusSpent,
       focusRemaining: state.sprint.focus,
       interventions: state.sprint.metrics.interventionsUsed,
+      seniorHp: state.org.seniorHp,
+      techDebt: state.org.techDebt,
+    };
+  });
+}
+
+/** RI-186追加評価: 通常のタスク構成・WIP流入を通す標準スプリント盤面。 */
+export function createHandExchangeFlowPrototype(seed: string | number): HandExchangeState {
+  const org = createOrgState('default', true);
+  const deck = ['copilot', 'feature-flags', 'docs', 'review-bot', 'auto-test', 'pr-size-limit'].map(
+    (defId) => ({ defId, level: 1 }),
+  );
+  const rng = createRng(`${seed}:sprint`);
+  const sprint = createSprint(
+    resolveSprintConfig('default', { minCompleteTick: SPRINT_MIN_COMPLETE_TICK }),
+    org,
+    rng,
+  );
+  sprint.cardPiles = dealHand(deck.length, createRng(`${seed}:hand`));
+  return {
+    version: 1,
+    deck,
+    org,
+    sprint,
+    tick: 0,
+    rngState: getRngState(rng),
+    paused: false,
+    exchanges: 0,
+  };
+}
+
+/**
+ * 標準のWIP流入に対し、同じ簡易介入方針を適用する。
+ * 緊急な炎上があれば鎮火し、それ以外はReviewが4件以上のとき割り込みレビューを試す。
+ */
+function tickHandExchangeFlowPrototype(state: HandExchangeState): HandExchangeState {
+  if (state.paused || state.sprint.complete) return state;
+  const next = structuredClone(state);
+  const rng = createRngFromState(state.rngState);
+  next.tick += 1;
+  const burning = activeIncidents(next.sprint);
+  if (burning.length > 0 && isFirefightUrgent(next.sprint)) {
+    applyAction('firefight', next.sprint, next.org, rng, next.tick);
+  } else if (tasksInLane(next.sprint, 'review').length >= 4) {
+    applyAction('interruptReview', next.sprint, next.org, rng, next.tick);
+  }
+  stepSprint(next.sprint, next.org, rng, next.tick);
+  next.rngState = getRngState(rng);
+  return next;
+}
+
+/**
+ * 通常スプリントで手札交換0/1/2回を同seed比較する。
+ * 固定方針: 先頭枠を指定回数交換し、先頭カードを一度だけ発動する。
+ */
+export function compareHandExchangeFlowStrategies(
+  seed: string | number,
+  focusCost = HAND_EXCHANGE_POLICY.focusCost,
+) {
+  return ([0, 1, 2] as const).map((attempts) => {
+    let state = createHandExchangeFlowPrototype(seed);
+    const policy = { ...HAND_EXCHANGE_POLICY, focusCost };
+    const initialHand = state.sprint.cardPiles.hand.map((index) => state.deck[index].defId);
+    for (let i = 0; i < attempts; i += 1) {
+      const result = exchangeHandCard(state, state.sprint.cardPiles.hand[0], policy);
+      if (!result.ok) break;
+      state = result.state;
+    }
+    const selected = state.sprint.cardPiles.hand[0];
+    state = playHandExchangeCard(state, selected);
+    while (!state.sprint.complete) state = tickHandExchangeFlowPrototype(state);
+    const { metrics } = state.sprint;
+    return {
+      attempts,
+      initialHand,
+      selected: state.deck[selected].defId,
+      exchanges: state.exchanges,
+      ticks: state.tick,
+      delivered: metrics.delivered,
+      completed: metrics.completedCount,
+      timedOut: metrics.timedOut ?? false,
+      aiAssistedCompleted: metrics.aiAssistedCompleted,
+      incidents: metrics.incidentCount,
+      autoContained: metrics.autoContainCount,
+      spread: metrics.spread,
+      focusSpent: metrics.focusSpent,
+      focusRemaining: state.sprint.focus,
+      interventions: metrics.interventionsUsed,
+      firefights: metrics.actionCounts.firefight ?? 0,
+      interruptReviews: metrics.actionCounts.interruptReview ?? 0,
       seniorHp: state.org.seniorHp,
       techDebt: state.org.techDebt,
     };

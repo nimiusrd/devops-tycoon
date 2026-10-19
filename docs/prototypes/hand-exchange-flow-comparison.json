@@ -1,0 +1,779 @@
+{
+  "title": "RI-186 hand exchange follow-up evaluation",
+  "generatedBy": "npm run prototype:ri186",
+  "seeds": 64,
+  "scenario": {
+    "taskCount": 28,
+    "codingSlots": 6,
+    "minCompleteTick": 77,
+    "maxTicks": 1500,
+    "focusMax": 12,
+    "aiEnabled": true,
+    "taskMix": "default seeded distribution",
+    "intake": "default backlog-to-coding WIP flow"
+  },
+  "policy": {
+    "exchange": "replace the first hand slot with the next draw before the first card play",
+    "cardPlay": "play the first card in hand once",
+    "interventions": "firefight when urgent; otherwise interrupt review at queue length 4 or more",
+    "note": "Fixed policy comparison; it does not model an adaptive or optimal player."
+  },
+  "metricNames": [
+    "delivered",
+    "completed",
+    "timedOut",
+    "aiAssistedCompleted",
+    "incidents",
+    "autoContained",
+    "spread",
+    "focusSpent",
+    "focusRemaining",
+    "interventions",
+    "firefights",
+    "seniorHp"
+  ],
+  "resultColumns": [
+    "attempts",
+    "selected",
+    "delivered",
+    "incidents",
+    "focusRemaining",
+    "firefights",
+    "seniorHp"
+  ],
+  "summary": [
+    {
+      "attempts": 0,
+      "metrics": {
+        "delivered": { "mean": 373.578, "min": 286, "max": 508 },
+        "completed": { "mean": 28, "min": 28, "max": 28 },
+        "timedOut": { "mean": 0, "min": 0, "max": 0 },
+        "aiAssistedCompleted": { "mean": 23.938, "min": 19, "max": 28 },
+        "incidents": { "mean": 2.781, "min": 0, "max": 9 },
+        "autoContained": { "mean": 1.266, "min": 0, "max": 5 },
+        "spread": { "mean": 0, "min": 0, "max": 0 },
+        "focusSpent": { "mean": 6.953, "min": 6, "max": 10 },
+        "focusRemaining": { "mean": 6.406, "min": 5, "max": 8 },
+        "interventions": { "mean": 2.516, "min": 1, "max": 5 },
+        "firefights": { "mean": 1.516, "min": 0, "max": 4 },
+        "seniorHp": { "mean": 55.03, "min": 7.200000000000023, "max": 75.80000000000015 }
+      },
+      "vsKeepHand": {
+        "delivered": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "completed": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "timedOut": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "aiAssistedCompleted": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "incidents": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "autoContained": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "spread": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "focusSpent": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "focusRemaining": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "interventions": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "firefights": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "seniorHp": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 }
+      }
+    },
+    {
+      "attempts": 1,
+      "metrics": {
+        "delivered": { "mean": 364.578, "min": 265, "max": 478 },
+        "completed": { "mean": 28, "min": 28, "max": 28 },
+        "timedOut": { "mean": 0, "min": 0, "max": 0 },
+        "aiAssistedCompleted": { "mean": 23.609, "min": 15, "max": 28 },
+        "incidents": { "mean": 2.938, "min": 0, "max": 7 },
+        "autoContained": { "mean": 1.344, "min": 0, "max": 5 },
+        "spread": { "mean": 0, "min": 0, "max": 0 },
+        "focusSpent": { "mean": 8.922, "min": 7, "max": 10 },
+        "focusRemaining": { "mean": 4.766, "min": 3, "max": 6 },
+        "interventions": { "mean": 2.594, "min": 1, "max": 4 },
+        "firefights": { "mean": 1.594, "min": 0, "max": 3 },
+        "seniorHp": { "mean": 52.487, "min": 7.950000000000009, "max": 73.30000000000025 }
+      },
+      "vsKeepHand": {
+        "delivered": { "higher": 24, "tied": 1, "lower": 39, "meanDelta": -9 },
+        "completed": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "timedOut": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "aiAssistedCompleted": { "higher": 19, "tied": 18, "lower": 27, "meanDelta": -0.328 },
+        "incidents": { "higher": 23, "tied": 22, "lower": 19, "meanDelta": 0.156 },
+        "autoContained": { "higher": 21, "tied": 26, "lower": 17, "meanDelta": 0.078 },
+        "spread": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "focusSpent": { "higher": 60, "tied": 3, "lower": 1, "meanDelta": 1.969 },
+        "focusRemaining": { "higher": 5, "tied": 10, "lower": 49, "meanDelta": -1.641 },
+        "interventions": { "higher": 16, "tied": 34, "lower": 14, "meanDelta": 0.078 },
+        "firefights": { "higher": 16, "tied": 34, "lower": 14, "meanDelta": 0.078 },
+        "seniorHp": { "higher": 29, "tied": 0, "lower": 35, "meanDelta": -2.543 }
+      }
+    },
+    {
+      "attempts": 2,
+      "metrics": {
+        "delivered": { "mean": 366.813, "min": 280, "max": 510 },
+        "completed": { "mean": 28, "min": 28, "max": 28 },
+        "timedOut": { "mean": 0, "min": 0, "max": 0 },
+        "aiAssistedCompleted": { "mean": 23.953, "min": 20, "max": 27 },
+        "incidents": { "mean": 2.859, "min": 0, "max": 10 },
+        "autoContained": { "mean": 1.219, "min": 0, "max": 6 },
+        "spread": { "mean": 0, "min": 0, "max": 0 },
+        "focusSpent": { "mean": 10.953, "min": 9, "max": 13 },
+        "focusRemaining": { "mean": 2.734, "min": 1, "max": 4 },
+        "interventions": { "mean": 2.641, "min": 1, "max": 5 },
+        "firefights": { "mean": 1.641, "min": 0, "max": 4 },
+        "seniorHp": { "mean": 54.978, "min": 1.1999999999999995, "max": 75.70000000000029 }
+      },
+      "vsKeepHand": {
+        "delivered": { "higher": 27, "tied": 0, "lower": 37, "meanDelta": -6.766 },
+        "completed": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "timedOut": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "aiAssistedCompleted": { "higher": 23, "tied": 16, "lower": 25, "meanDelta": 0.016 },
+        "incidents": { "higher": 21, "tied": 26, "lower": 17, "meanDelta": 0.078 },
+        "autoContained": { "higher": 16, "tied": 33, "lower": 15, "meanDelta": -0.047 },
+        "spread": { "higher": 0, "tied": 64, "lower": 0, "meanDelta": 0 },
+        "focusSpent": { "higher": 64, "tied": 0, "lower": 0, "meanDelta": 4 },
+        "focusRemaining": { "higher": 0, "tied": 0, "lower": 64, "meanDelta": -3.672 },
+        "interventions": { "higher": 16, "tied": 36, "lower": 12, "meanDelta": 0.125 },
+        "firefights": { "higher": 16, "tied": 36, "lower": 12, "meanDelta": 0.125 },
+        "seniorHp": { "higher": 34, "tied": 0, "lower": 30, "meanDelta": -0.052 }
+      }
+    }
+  ],
+  "completionSummary": { "totalRuns": 192, "fullyCompleted": 192, "timedOut": 0 },
+  "incidentScenario": {
+    "definition": "Seeds where the no-exchange baseline experienced at least one incident.",
+    "seedCount": 62,
+    "summary": [
+      {
+        "attempts": 0,
+        "metrics": {
+          "delivered": 373.952,
+          "incidents": 2.871,
+          "firefights": 1.565,
+          "focusRemaining": 6.419,
+          "seniorHp": 54.521
+        }
+      },
+      {
+        "attempts": 1,
+        "metrics": {
+          "delivered": 365.935,
+          "incidents": 2.968,
+          "firefights": 1.613,
+          "focusRemaining": 4.742,
+          "seniorHp": 52.259
+        }
+      },
+      {
+        "attempts": 2,
+        "metrics": {
+          "delivered": 367.661,
+          "incidents": 2.855,
+          "firefights": 1.629,
+          "focusRemaining": 2.694,
+          "seniorHp": 54.844
+        }
+      }
+    ]
+  },
+  "costSensitivity": [
+    {
+      "focusCost": 1,
+      "summary": [
+        {
+          "attempts": 1,
+          "metrics": {
+            "delivered": 364.578,
+            "incidents": 2.938,
+            "focusSpent": 7.922,
+            "focusRemaining": 5.766,
+            "firefights": 1.594,
+            "seniorHp": 52.487
+          },
+          "deliveredVsKeepHand": { "higher": 24, "tied": 1, "lower": 39, "meanDelta": -9 }
+        },
+        {
+          "attempts": 2,
+          "metrics": {
+            "delivered": 366.813,
+            "incidents": 2.859,
+            "focusSpent": 8.953,
+            "focusRemaining": 4.734,
+            "firefights": 1.641,
+            "seniorHp": 54.978
+          },
+          "deliveredVsKeepHand": { "higher": 27, "tied": 0, "lower": 37, "meanDelta": -6.766 }
+        }
+      ]
+    },
+    {
+      "focusCost": 2,
+      "summary": [
+        {
+          "attempts": 1,
+          "metrics": {
+            "delivered": 364.578,
+            "incidents": 2.938,
+            "focusSpent": 8.922,
+            "focusRemaining": 4.766,
+            "firefights": 1.594,
+            "seniorHp": 52.487
+          },
+          "deliveredVsKeepHand": { "higher": 24, "tied": 1, "lower": 39, "meanDelta": -9 }
+        },
+        {
+          "attempts": 2,
+          "metrics": {
+            "delivered": 366.813,
+            "incidents": 2.859,
+            "focusSpent": 10.953,
+            "focusRemaining": 2.734,
+            "firefights": 1.641,
+            "seniorHp": 54.978
+          },
+          "deliveredVsKeepHand": { "higher": 27, "tied": 0, "lower": 37, "meanDelta": -6.766 }
+        }
+      ]
+    },
+    {
+      "focusCost": 3,
+      "summary": [
+        {
+          "attempts": 1,
+          "metrics": {
+            "delivered": 364.578,
+            "incidents": 2.938,
+            "focusSpent": 9.922,
+            "focusRemaining": 3.766,
+            "firefights": 1.594,
+            "seniorHp": 52.487
+          },
+          "deliveredVsKeepHand": { "higher": 24, "tied": 1, "lower": 39, "meanDelta": -9 }
+        },
+        {
+          "attempts": 2,
+          "metrics": {
+            "delivered": 364.031,
+            "incidents": 2.797,
+            "focusSpent": 11.953,
+            "focusRemaining": 0.047,
+            "firefights": 0.641,
+            "seniorHp": 48.692
+          },
+          "deliveredVsKeepHand": { "higher": 24, "tied": 0, "lower": 40, "meanDelta": -9.547 }
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "seed": "RI-186-flow-01",
+      "strategies": [
+        [0, "docs", 297, 2, 6, 1, 69],
+        [1, "pr-size-limit", 283, 5, 5, 3, 48.35],
+        [2, "copilot", 303, 2, 2, 1, 69.35]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-02",
+      "strategies": [
+        [0, "copilot", 334, 3, 6, 1, 43.5],
+        [1, "feature-flags", 381, 1, 4, 1, 67.2],
+        [2, "docs", 403, 0, 3, 0, 72.4]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-03",
+      "strategies": [
+        [0, "docs", 313, 4, 8, 2, 38.9],
+        [1, "copilot", 343, 2, 4, 1, 59],
+        [2, "feature-flags", 353, 2, 2, 1, 59.7]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-04",
+      "strategies": [
+        [0, "auto-test", 360, 1, 5, 1, 68.8],
+        [1, "review-bot", 353, 1, 3, 1, 63.7],
+        [2, "copilot", 348, 1, 2, 1, 68.9]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-05",
+      "strategies": [
+        [0, "auto-test", 339, 6, 7, 2, 22.8],
+        [1, "copilot", 334, 6, 6, 2, 21.2],
+        [2, "docs", 325, 2, 2, 1, 61.1]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-06",
+      "strategies": [
+        [0, "feature-flags", 347, 1, 6, 1, 65.2],
+        [1, "copilot", 401, 3, 6, 2, 50.55],
+        [2, "review-bot", 418, 3, 3, 2, 49.35]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-07",
+      "strategies": [
+        [0, "copilot", 354, 1, 6, 1, 68.1],
+        [1, "pr-size-limit", 336, 3, 6, 2, 48.85],
+        [2, "docs", 348, 1, 2, 1, 67.5]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-08",
+      "strategies": [
+        [0, "pr-size-limit", 390, 2, 6, 1, 55],
+        [1, "copilot", 399, 4, 6, 2, 46.65],
+        [2, "docs", 415, 2, 2, 1, 56.75]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-09",
+      "strategies": [
+        [0, "pr-size-limit", 351, 2, 6, 1, 57.75],
+        [1, "docs", 385, 2, 6, 2, 68.4],
+        [2, "auto-test", 379, 2, 1, 1, 68.7]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-10",
+      "strategies": [
+        [0, "auto-test", 430, 1, 5, 1, 70.4],
+        [1, "docs", 429, 1, 4, 1, 70.2],
+        [2, "pr-size-limit", 390, 2, 2, 1, 67.4]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-11",
+      "strategies": [
+        [0, "review-bot", 406, 1, 5, 1, 63.5],
+        [1, "copilot", 397, 1, 4, 1, 67],
+        [2, "feature-flags", 394, 1, 2, 1, 67]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-12",
+      "strategies": [
+        [0, "auto-test", 322, 2, 5, 1, 68.7],
+        [1, "review-bot", 279, 4, 5, 2, 44.5],
+        [2, "docs", 280, 4, 4, 2, 43.4]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-13",
+      "strategies": [
+        [0, "pr-size-limit", 399, 5, 8, 2, 36.9],
+        [1, "auto-test", 376, 2, 3, 1, 61.35],
+        [2, "docs", 384, 3, 4, 2, 54.8]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-14",
+      "strategies": [
+        [0, "feature-flags", 312, 1, 6, 1, 68.1],
+        [1, "review-bot", 335, 1, 3, 1, 64.4],
+        [2, "auto-test", 330, 1, 1, 1, 69]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-15",
+      "strategies": [
+        [0, "auto-test", 346, 1, 5, 1, 71.1],
+        [1, "feature-flags", 309, 1, 4, 1, 66.3],
+        [2, "review-bot", 285, 1, 1, 1, 65]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-16",
+      "strategies": [
+        [0, "copilot", 356, 7, 7, 3, 12.4],
+        [1, "feature-flags", 344, 3, 6, 2, 56.65],
+        [2, "docs", 353, 3, 4, 2, 60.5]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-17",
+      "strategies": [
+        [0, "copilot", 384, 2, 8, 2, 66.95],
+        [1, "review-bot", 341, 4, 5, 2, 39.4],
+        [2, "auto-test", 428, 2, 3, 2, 71.05]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-18",
+      "strategies": [
+        [0, "auto-test", 508, 2, 5, 1, 73.6],
+        [1, "review-bot", 446, 1, 3, 1, 62.8],
+        [2, "copilot", 510, 2, 2, 1, 69.2]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-19",
+      "strategies": [
+        [0, "docs", 373, 1, 6, 1, 65.5],
+        [1, "auto-test", 345, 3, 3, 1, 42.1],
+        [2, "pr-size-limit", 320, 8, 3, 3, 6]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-20",
+      "strategies": [
+        [0, "copilot", 409, 1, 6, 1, 75.8],
+        [1, "pr-size-limit", 383, 1, 4, 1, 66.5],
+        [2, "review-bot", 384, 1, 1, 1, 65.8]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-21",
+      "strategies": [
+        [0, "docs", 365, 3, 8, 2, 64.1],
+        [1, "review-bot", 352, 7, 5, 2, 7.95],
+        [2, "copilot", 338, 5, 3, 3, 40.5]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-22",
+      "strategies": [
+        [0, "auto-test", 332, 4, 7, 2, 58.35],
+        [1, "feature-flags", 265, 6, 5, 3, 24.75],
+        [2, "copilot", 285, 4, 4, 2, 45.85]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-23",
+      "strategies": [
+        [0, "auto-test", 373, 3, 5, 1, 53.15],
+        [1, "copilot", 333, 4, 6, 2, 46],
+        [2, "feature-flags", 321, 4, 4, 2, 46]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-24",
+      "strategies": [
+        [0, "auto-test", 411, 0, 6, 0, 73.3],
+        [1, "feature-flags", 340, 4, 6, 2, 49.2],
+        [2, "copilot", 340, 4, 4, 2, 49.2]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-25",
+      "strategies": [
+        [0, "feature-flags", 364, 3, 8, 2, 54.65],
+        [1, "docs", 307, 4, 6, 2, 54.5],
+        [2, "pr-size-limit", 382, 3, 4, 2, 55.55]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-26",
+      "strategies": [
+        [0, "docs", 365, 2, 6, 1, 55.15],
+        [1, "auto-test", 421, 2, 3, 1, 59.6],
+        [2, "copilot", 427, 0, 3, 0, 75.7]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-27",
+      "strategies": [
+        [0, "review-bot", 305, 1, 5, 1, 64.4],
+        [1, "auto-test", 349, 1, 3, 1, 70.2],
+        [2, "pr-size-limit", 298, 1, 2, 1, 66.7]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-28",
+      "strategies": [
+        [0, "auto-test", 406, 2, 5, 1, 55.75],
+        [1, "pr-size-limit", 351, 6, 5, 3, 30.05],
+        [2, "feature-flags", 383, 4, 4, 2, 40.5]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-29",
+      "strategies": [
+        [0, "feature-flags", 398, 3, 8, 2, 60.95],
+        [1, "copilot", 290, 4, 6, 2, 42.85],
+        [2, "pr-size-limit", 313, 4, 4, 2, 43.4]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-30",
+      "strategies": [
+        [0, "auto-test", 417, 2, 5, 1, 66.8],
+        [1, "docs", 367, 4, 6, 2, 47],
+        [2, "feature-flags", 403, 4, 4, 2, 47.9]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-31",
+      "strategies": [
+        [0, "feature-flags", 294, 5, 8, 2, 27.75],
+        [1, "docs", 296, 5, 6, 2, 27.4],
+        [2, "review-bot", 338, 7, 3, 2, 3.75]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-32",
+      "strategies": [
+        [0, "copilot", 375, 3, 8, 2, 52.85],
+        [1, "docs", 424, 2, 4, 1, 61.85],
+        [2, "review-bot", 343, 3, 3, 2, 49.45]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-33",
+      "strategies": [
+        [0, "feature-flags", 358, 3, 8, 2, 54.4],
+        [1, "pr-size-limit", 384, 3, 6, 2, 56.9],
+        [2, "review-bot", 390, 3, 3, 2, 56.55]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-34",
+      "strategies": [
+        [0, "copilot", 424, 1, 6, 1, 67.7],
+        [1, "auto-test", 427, 0, 4, 0, 73.3],
+        [2, "pr-size-limit", 383, 1, 2, 1, 65.1]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-35",
+      "strategies": [
+        [0, "feature-flags", 413, 2, 8, 2, 67.05],
+        [1, "review-bot", 426, 2, 5, 2, 65.15],
+        [2, "auto-test", 453, 2, 3, 2, 73.45]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-36",
+      "strategies": [
+        [0, "auto-test", 438, 1, 5, 1, 68.8],
+        [1, "docs", 420, 3, 4, 1, 43],
+        [2, "review-bot", 419, 1, 1, 1, 65.1]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-37",
+      "strategies": [
+        [0, "copilot", 286, 1, 6, 1, 66.8],
+        [1, "feature-flags", 312, 1, 4, 1, 69.8],
+        [2, "docs", 310, 1, 2, 1, 74.4]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-38",
+      "strategies": [
+        [0, "review-bot", 484, 9, 5, 4, 26.05],
+        [1, "docs", 439, 5, 6, 2, 37.7],
+        [2, "pr-size-limit", 462, 10, 2, 4, 1.2]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-39",
+      "strategies": [
+        [0, "copilot", 412, 7, 7, 3, 19.2],
+        [1, "auto-test", 478, 6, 5, 2, 23.85],
+        [2, "feature-flags", 420, 7, 3, 3, 19.9]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-40",
+      "strategies": [
+        [0, "copilot", 390, 3, 8, 2, 67.85],
+        [1, "review-bot", 381, 4, 5, 2, 45.55],
+        [2, "auto-test", 398, 0, 2, 0, 73.3]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-41",
+      "strategies": [
+        [0, "auto-test", 328, 7, 6, 3, 17.85],
+        [1, "copilot", 348, 5, 6, 2, 43.7],
+        [2, "review-bot", 342, 5, 3, 2, 41.05]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-42",
+      "strategies": [
+        [0, "auto-test", 414, 3, 5, 1, 53],
+        [1, "docs", 346, 1, 4, 1, 67.7],
+        [2, "copilot", 331, 6, 3, 3, 29.1]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-43",
+      "strategies": [
+        [0, "review-bot", 313, 0, 6, 0, 68.3],
+        [1, "pr-size-limit", 305, 0, 5, 0, 69.9],
+        [2, "copilot", 341, 2, 4, 2, 69.05]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-44",
+      "strategies": [
+        [0, "auto-test", 420, 2, 5, 1, 67.3],
+        [1, "feature-flags", 392, 2, 4, 1, 63.4],
+        [2, "docs", 410, 2, 2, 1, 66.95]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-45",
+      "strategies": [
+        [0, "review-bot", 466, 3, 7, 2, 46.75],
+        [1, "docs", 435, 1, 4, 1, 68.6],
+        [2, "auto-test", 430, 1, 1, 1, 68.6]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-46",
+      "strategies": [
+        [0, "pr-size-limit", 419, 5, 8, 2, 34.95],
+        [1, "docs", 371, 3, 6, 2, 51.6],
+        [2, "copilot", 374, 3, 4, 2, 57.4]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-47",
+      "strategies": [
+        [0, "auto-test", 363, 2, 7, 2, 69.05],
+        [1, "review-bot", 341, 4, 5, 2, 32.95],
+        [2, "docs", 366, 2, 4, 2, 65.6]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-48",
+      "strategies": [
+        [0, "pr-size-limit", 360, 3, 8, 2, 54.4],
+        [1, "docs", 362, 3, 6, 2, 56.15],
+        [2, "feature-flags", 348, 1, 2, 1, 67.2]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-49",
+      "strategies": [
+        [0, "feature-flags", 289, 3, 8, 2, 56.65],
+        [1, "docs", 293, 3, 6, 2, 55.95],
+        [2, "auto-test", 365, 2, 1, 1, 65.7]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-50",
+      "strategies": [
+        [0, "review-bot", 390, 5, 7, 2, 36.85],
+        [1, "copilot", 366, 7, 5, 3, 19.05],
+        [2, "pr-size-limit", 381, 6, 3, 3, 38.95]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-51",
+      "strategies": [
+        [0, "copilot", 345, 3, 8, 2, 50.05],
+        [1, "auto-test", 399, 1, 3, 1, 68.3],
+        [2, "review-bot", 358, 1, 1, 1, 67]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-52",
+      "strategies": [
+        [0, "copilot", 349, 2, 6, 1, 52.5],
+        [1, "feature-flags", 366, 2, 6, 2, 63.45],
+        [2, "docs", 390, 2, 2, 1, 52.7]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-53",
+      "strategies": [
+        [0, "review-bot", 379, 3, 5, 1, 39.5],
+        [1, "feature-flags", 403, 5, 5, 3, 41.95],
+        [2, "auto-test", 398, 5, 2, 3, 41.95]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-54",
+      "strategies": [
+        [0, "feature-flags", 367, 1, 6, 1, 66.8],
+        [1, "review-bot", 364, 1, 3, 1, 63.3],
+        [2, "docs", 370, 3, 4, 2, 50.6]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-55",
+      "strategies": [
+        [0, "review-bot", 398, 7, 7, 2, 7.2],
+        [1, "auto-test", 432, 5, 5, 2, 45.15],
+        [2, "docs", 382, 3, 4, 2, 58.65]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-56",
+      "strategies": [
+        [0, "auto-test", 408, 2, 7, 2, 73.5],
+        [1, "copilot", 414, 4, 6, 2, 49.1],
+        [2, "feature-flags", 363, 3, 4, 2, 58.25]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-57",
+      "strategies": [
+        [0, "docs", 391, 1, 6, 1, 67.9],
+        [1, "review-bot", 384, 1, 3, 1, 64.9],
+        [2, "pr-size-limit", 337, 1, 2, 1, 63.6]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-58",
+      "strategies": [
+        [0, "auto-test", 373, 4, 7, 2, 50],
+        [1, "pr-size-limit", 360, 2, 4, 1, 66.6],
+        [2, "review-bot", 357, 4, 3, 2, 44.2]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-59",
+      "strategies": [
+        [0, "docs", 386, 8, 7, 3, 12.35],
+        [1, "review-bot", 340, 4, 5, 2, 43.75],
+        [2, "copilot", 350, 5, 3, 3, 49.55]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-60",
+      "strategies": [
+        [0, "pr-size-limit", 395, 1, 6, 1, 65.3],
+        [1, "auto-test", 402, 0, 4, 0, 73.3],
+        [2, "feature-flags", 403, 0, 3, 0, 72.4]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-61",
+      "strategies": [
+        [0, "auto-test", 420, 1, 5, 1, 71.1],
+        [1, "pr-size-limit", 369, 3, 6, 2, 45.8],
+        [2, "copilot", 373, 3, 4, 2, 49.85]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-62",
+      "strategies": [
+        [0, "feature-flags", 353, 4, 8, 2, 55],
+        [1, "pr-size-limit", 339, 1, 4, 1, 70],
+        [2, "auto-test", 366, 3, 3, 2, 57.1]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-63",
+      "strategies": [
+        [0, "copilot", 354, 2, 6, 1, 55.35],
+        [1, "docs", 354, 2, 4, 1, 58.35],
+        [2, "review-bot", 300, 3, 3, 2, 54.55]
+      ]
+    },
+    {
+      "seed": "RI-186-flow-64",
+      "strategies": [
+        [0, "review-bot", 289, 2, 5, 1, 63.2],
+        [1, "feature-flags", 287, 6, 6, 2, 24.5],
+        [2, "copilot", 285, 6, 4, 2, 22.2]
+      ]
+    }
+  ]
+}

@@ -115,6 +115,8 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 | `npm run format` | Prettierで整形 |
 | `npm run audio:generate` | BGM・効果音アセットを再生成 |
 
+TypeScriptは[公式の併用手順](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0)に従い、`@typescript/native`をTypeScript 7のnpmエイリアスとして導入しています。`build`と`playtest`の`tsc`はTypeScript 7を使い、`typescript`は`@typescript/typescript6`のnpmエイリアスとして、`typescript-eslint`が必要とするTypeScript 6のAPIを提供します。
+
 `npm run test:coverage`は`src`配下の全production TypeScript / TSXを対象にし、未テストのファイルも0%として集計します。ローカルのHTMLレポートは`coverage/index.html`で確認できます。CIでは総合値とPRで変更したファイルの値を固定PRコメントとActions Summaryに表示し、HTMLレポートを14日間artifactとして保持します。現時点ではカバレッジ閾値によるCIゲートは設けていません。
 
 property testは`*.property.test.ts`として通常のVitestスイートにも含まれるため、`npm test`とCIの`test:coverage`でも実行されます。ローカルで探索回数を増やす場合は`PBT_NUM_RUNS=1000 npm run test:property`のように指定します。失敗時にfast-checkが表示する`seed`と`path`は、次の形式で最小反例を再現できます。

@@ -6,6 +6,9 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
+      # Vitest 本体と関連パッケージは同じバージョンが必要なため、メジャー更新もまとめる。
+      vitest:
+        patterns: ['vitest', '@vitest/*']
       npm-minor-and-patch:
         update-types: [minor, patch]
   - package-ecosystem: github-actions

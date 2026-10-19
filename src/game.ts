@@ -13,6 +13,7 @@ import { resolveSeedFromLocation } from './sim/seed';
 import type {
   ActionId,
   ActionTarget,
+  CardExchangeOutcome,
   CardPlayOutcome,
   InterventionOutcome,
   ScenarioId,
@@ -159,6 +160,8 @@ export interface GameHandle {
   dispatch(id: ActionId, target?: ActionTarget): InterventionOutcome;
   /** 手札からカードを発動する（deckIndex。RI-30 / SPEC 第7.1）。 */
   playCard(deckIndex: number): CardPlayOutcome;
+  /** 手札の1枚を山札先頭と交換する（RI-186 / SPEC 第7.1）。 */
+  exchangeCard(deckIndex: number): CardExchangeOutcome;
   /** リザルトを確認してドラフトへ進む。 */
   acknowledgeResult(): RunState;
   /** ドラフトでカードを選ぶ。 */
@@ -1724,6 +1727,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const outcome = engine.playCard(deckIndex);
       bump();
       recordIfFinished();
+      persistRunIfNeeded();
+      return outcome;
+    },
+    exchangeCard(deckIndex) {
+      if (replayMode) return { ok: false, reason: 'complete' };
+      const outcome = engine.exchangeCard(deckIndex);
+      bump();
       persistRunIfNeeded();
       return outcome;
     },

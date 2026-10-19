@@ -169,7 +169,7 @@ export function compareHandExchangeStrategies(
 
 /** RI-186追加評価: 通常のタスク構成・WIP流入を通す標準スプリント盤面。 */
 export function createHandExchangeFlowPrototype(seed: string | number): HandExchangeState {
-  const org = createOrgState('default', false);
+  const org = createOrgState('default', true);
   const deck = ['copilot', 'feature-flags', 'docs', 'review-bot', 'auto-test', 'pr-size-limit'].map(
     (defId) => ({ defId, level: 1 }),
   );
@@ -242,6 +242,7 @@ export function compareHandExchangeFlowStrategies(
       delivered: metrics.delivered,
       completed: metrics.completedCount,
       timedOut: metrics.timedOut ?? false,
+      aiAssistedCompleted: metrics.aiAssistedCompleted,
       incidents: metrics.incidentCount,
       autoContained: metrics.autoContainCount,
       spread: metrics.spread,

@@ -27,9 +27,12 @@ import { planBossSlowMotion } from '../render/juicyEffects';
 import { liveComboCount } from '../render/sprintComboView';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
+import { HAND_EXCHANGE_POLICY } from '../sim/cards';
+import { isAwaitingMinCompleteTick } from '../sim/sprint';
 import type {
   ActionId,
   ActionTarget,
+  CardExchangeOutcome,
   CardPlayOutcome,
   InterventionOutcome,
   SprintState,
@@ -79,6 +82,7 @@ export interface SprintScreenProps {
   header: ReactNode;
   onDispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
   onPlayCard: (deckIndex: number) => CardPlayOutcome;
+  onExchangeCard?: (deckIndex: number) => CardExchangeOutcome;
   getSprintSnapshot: () => SprintState | null;
   /** スローモ中に自動進行を止める（RI-10）。戻り値でキャンセル。 */
   pauseBriefly: (ms: number) => PauseBrieflyClear;
@@ -101,6 +105,7 @@ export function SprintScreen({
   header,
   onDispatch,
   onPlayCard,
+  onExchangeCard,
   getSprintSnapshot,
   pauseBriefly,
   playbackSpeed,
@@ -127,6 +132,12 @@ export function SprintScreen({
     outcome: InterventionOutcome;
     nonce: number;
   } | null>(null);
+  const [exchangeMode, setExchangeMode] = useState<{ sprintKey: string; active: boolean }>({
+    sprintKey: '',
+    active: false,
+  });
+  const sprintKey = `${state.quarterNumber}:${state.sprintIndexInQuarter}`;
+  const isExchangeMode = exchangeMode.sprintKey === sprintKey && exchangeMode.active;
   const feedbackNonce = useRef(0);
   const [tickerFeedback, setTickerFeedback] = useState<{
     sprintId: string | null;
@@ -372,6 +383,15 @@ export function SprintScreen({
     },
     [onPlayCard, playbackSpeed],
   );
+  const handleExchangeCard = useCallback(
+    (deckIndex: number): CardExchangeOutcome => {
+      if (isPlaybackPaused(playbackSpeed)) return { ok: false, reason: 'paused' };
+      const outcome = onExchangeCard?.(deckIndex) ?? { ok: false, reason: 'complete' as const };
+      setExchangeMode({ sprintKey, active: false });
+      return outcome;
+    },
+    [onExchangeCard, playbackSpeed, sprintKey],
+  );
 
   // 初回ガイド中・直後は再生するまで走らせない（#471）。
   useEffect(() => {
@@ -555,9 +575,19 @@ export function SprintScreen({
           deck={state.deck}
           hand={sprint.cardPiles.hand}
           focus={sprint.focus}
+          drawCount={sprint.cardPiles.drawOrder.length}
+          exchangesUsed={sprint.metrics.handExchanges ?? sprint.cardPiles.discard.length}
+          exchangeCost={HAND_EXCHANGE_POLICY.focusCost}
+          maxExchanges={HAND_EXCHANGE_POLICY.maxExchanges}
+          exchangeUnavailableReason={
+            isAwaitingMinCompleteTick(sprint) ? 'スプリント終了処理中です' : undefined
+          }
+          exchangeMode={isExchangeMode}
+          onExchangeModeChange={(active) => setExchangeMode({ sprintKey, active })}
           playable={!sprint.complete}
           paused={paused}
           onPlay={handlePlayCard}
+          onExchange={onExchangeCard ? handleExchangeCard : undefined}
         />
       }
       controls={

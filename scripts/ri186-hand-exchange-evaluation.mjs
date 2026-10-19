@@ -1,5 +1,6 @@
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { format, resolveConfig } from 'prettier';
 import { createServer } from 'vite';
 
 const seedCount = 64;
@@ -16,11 +17,13 @@ try {
     const seed = `RI-186-flow-${String(index + 1).padStart(2, '0')}`;
     return { seed, strategies: compareHandExchangeFlowStrategies(seed) };
   });
-  const { config } = createHandExchangeFlowPrototype(results[0].seed).sprint;
+  const scenario = createHandExchangeFlowPrototype(results[0].seed);
+  const { config } = scenario.sprint;
   const metricNames = [
     'delivered',
     'completed',
     'timedOut',
+    'aiAssistedCompleted',
     'incidents',
     'autoContained',
     'spread',
@@ -143,6 +146,7 @@ try {
       minCompleteTick: config.minCompleteTick,
       maxTicks: config.maxTicks,
       focusMax: config.focusMax,
+      aiEnabled: scenario.org.aiEnabled,
       taskMix: 'default seeded distribution',
       intake: 'default backlog-to-coding WIP flow',
     },
@@ -172,7 +176,11 @@ try {
     results: compactResults,
   };
   const destination = resolve('docs/prototypes/hand-exchange-flow-comparison.json');
-  await writeFile(destination, `${JSON.stringify(artifact, null, 2)}\n`);
+  const formatted = await format(JSON.stringify(artifact), {
+    ...(await resolveConfig(destination)),
+    filepath: destination,
+  });
+  await writeFile(destination, formatted);
   const consoleMetrics = [
     'delivered',
     'incidents',

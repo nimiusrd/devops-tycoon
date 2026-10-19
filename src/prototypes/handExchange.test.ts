@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/hand-exchange-comparison.json';
 import {
+  compareHandExchangeFlowStrategies,
   compareHandExchangeStrategies,
+  createHandExchangeFlowPrototype,
   createHandExchangePrototype,
   exchangeHandCard,
   playHandExchangeCard,
@@ -9,6 +11,19 @@ import {
 } from './handExchange';
 
 describe('集中力を使う手札交換の隔離試作', () => {
+  it('通常流入の比較にAI支援を含め、同じ手札から全方針を完了する', () => {
+    const seed = 'RI-186-flow-01';
+    expect(createHandExchangeFlowPrototype(seed).org.aiEnabled).toBe(true);
+    const results = compareHandExchangeFlowStrategies(seed);
+    for (const row of results) {
+      expect(row.initialHand).toEqual(results[0].initialHand);
+      expect(row.exchanges).toBe(row.attempts);
+      expect(row.aiAssistedCompleted).toBeGreaterThan(0);
+      expect(row.completed).toBe(28);
+      expect(row.timedOut).toBe(false);
+    }
+  });
+
   it.each(['duplicate', 'missing', 'out-of-range', 'fraction', 'invalid-scope'] as const)(
     'JSON復元後の交換対象以外の%sも無消費で拒否する',
     (corruption) => {

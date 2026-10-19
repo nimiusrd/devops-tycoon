@@ -951,6 +951,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   header={sprintHeader}
                   onDispatch={run.dispatch}
                   onPlayCard={run.playCard}
+                  onExchangeCard={run.isReplayMode ? undefined : run.exchangeCard}
                   getSprintSnapshot={run.getSprintSnapshot}
                   pauseBriefly={run.pauseBriefly}
                   playbackSpeed={run.playbackSpeed}

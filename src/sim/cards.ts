@@ -12,6 +12,7 @@ import type { Rng } from './rng';
 import { isAwaitingMinCompleteTick } from './sprint';
 import type {
   CardEffects,
+  CardExchangeOutcome,
   CardInstance,
   CardPlayOutcome,
   OrgState,
@@ -23,6 +24,12 @@ import { CARD_BALANCE, PROCESS_BALANCE } from '../data/balance';
 
 /** スプリント開始時に配る手札枚数（SPEC 第7.1）。 */
 export const HAND_SIZE = CARD_BALANCE.handSize.value;
+
+/** RI-186: 手札交換の初期ルール。 */
+export const HAND_EXCHANGE_POLICY = {
+  focusCost: CARD_BALANCE.handExchangeFocusCost.value,
+  maxExchanges: CARD_BALANCE.handExchangeMaxPerSprint.value,
+} as const;
 
 const EFFECT_KEYS = Object.keys(IDENTITY_CARD_EFFECTS) as (keyof CardEffects)[];
 
@@ -296,6 +303,60 @@ export function playCardFromHand(
   sprint.cardEffects = clampCardEffects(acc);
 
   return { ok: true, focusCost: cost, deckIndex };
+}
+
+/**
+ * 手札の1枚を捨て、山札先頭から1枚引く。乱数は消費せず、失敗時は状態を変えない。
+ * 山札が尽きたときに捨て札を再利用しない。
+ */
+export function exchangeCardFromHand(
+  sprint: SprintState,
+  deck: CardInstance[],
+  deckIndex: number,
+): CardExchangeOutcome {
+  if (sprint.complete || isAwaitingMinCompleteTick(sprint)) {
+    return { ok: false, reason: 'complete' };
+  }
+
+  const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
+  const drawnDeckIndex = sprint.cardPiles.drawOrder[0];
+  const allIndices = Object.values(sprint.cardPiles).flat();
+  const exchangeCount = sprint.metrics.handExchanges ?? sprint.cardPiles.discard.length;
+
+  if (exchangeCount >= HAND_EXCHANGE_POLICY.maxExchanges) {
+    return { ok: false, reason: 'limit' };
+  }
+  if (handIndex < 0) return { ok: false, reason: 'no-card' };
+  if (drawnDeckIndex === undefined) return { ok: false, reason: 'no-draw' };
+
+  const indicesAreValid = allIndices.every(
+    (index) =>
+      Number.isInteger(index) && index >= 0 && index < deck.length && deck[index] !== undefined,
+  );
+  if (
+    !indicesAreValid ||
+    allIndices.length !== deck.length ||
+    new Set(allIndices).size !== allIndices.length
+  ) {
+    return { ok: false, reason: 'invalid' };
+  }
+  if (sprint.focus < HAND_EXCHANGE_POLICY.focusCost) {
+    return { ok: false, reason: 'no-focus' };
+  }
+
+  sprint.cardPiles.hand.splice(handIndex, 1, drawnDeckIndex);
+  sprint.cardPiles.drawOrder.shift();
+  sprint.cardPiles.discard.push(deckIndex);
+  sprint.focus -= HAND_EXCHANGE_POLICY.focusCost;
+  sprint.metrics.focusSpent += HAND_EXCHANGE_POLICY.focusCost;
+  sprint.metrics.handExchanges = exchangeCount + 1;
+
+  return {
+    ok: true,
+    focusCost: HAND_EXCHANGE_POLICY.focusCost,
+    deckIndex,
+    drawnDeckIndex,
+  };
 }
 
 /** カードを 1 段強化したデッキを返す（コスト減・効果増の枠組み。第7.1）。 */

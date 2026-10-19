@@ -145,6 +145,19 @@
   overflow: hidden;
 }
 
+.root :global(.deckbar-with-exchange) {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.root :global(.deckbar-hand) {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .root :global(.deckbar-cards) {
   flex: 1;
   min-width: 0;
@@ -156,6 +169,66 @@
 
 .root :global(.deckbar-cards) > :global(.card) {
   flex-shrink: 0;
+}
+
+.root :global(.deckbar-actions) {
+  gap: 5px;
+}
+
+.root :global(.deckbar-exchange-toggle) {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 2px 6px;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-with-exchange) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-hand) {
+  width: 100%;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-hand > .deckbar-label) {
+  display: none;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-actions) {
+  display: grid;
+  grid-template-areas:
+    'deck-size draw-count exchange-count toggle'
+    'status status status status';
+  grid-template-columns: max-content max-content max-content auto;
+  justify-content: space-between;
+  width: 100%;
+  margin-left: 0;
+  gap: 4px;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-actions [data-testid='deck-size']) {
+  grid-area: deck-size;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-actions [data-testid='deck-draw-count']) {
+  grid-area: draw-count;
+}
+
+.root[data-responsive-width='narrow']
+  :global(.deckbar-actions [data-testid='hand-exchange-count']) {
+  grid-area: exchange-count;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-exchange-toggle) {
+  grid-area: toggle;
+}
+
+.root[data-responsive-width='narrow'] :global(.deckbar-exchange-status) {
+  grid-area: status;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .root :global(.actionbar) {

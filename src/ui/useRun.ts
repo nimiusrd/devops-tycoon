@@ -25,6 +25,7 @@ import type { RunSaveShareResult } from '../state/runSaveShare';
 import type {
   ActionId,
   ActionTarget,
+  CardExchangeOutcome,
   CardPlayOutcome,
   InterventionOutcome,
   SprintState,
@@ -90,6 +91,7 @@ export interface UseRun {
   resolveBeat: (choiceIndex?: number) => void;
   dispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
   playCard: (deckIndex: number) => CardPlayOutcome;
+  exchangeCard: (deckIndex: number) => CardExchangeOutcome;
   /** dispatch 直後のスプリント快照（盤面演出用）。 */
   getSprintSnapshot: () => SprintState | null;
   /**
@@ -318,6 +320,13 @@ export function useRun(game: GameHandle): UseRun {
     },
     [game],
   );
+  const exchangeCard = useCallback(
+    (deckIndex: number): CardExchangeOutcome => {
+      if (isPlaybackPaused(playbackSpeedRef.current)) return { ok: false, reason: 'paused' };
+      return game.exchangeCard(deckIndex);
+    },
+    [game],
+  );
   const getSprintSnapshot = useCallback(() => game.getState().sprint, [game]);
   const pauseBriefly = useCallback((ms: number) => pauseGameBriefly(game, ms), [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
@@ -458,6 +467,7 @@ export function useRun(game: GameHandle): UseRun {
     resolveBeat,
     dispatch,
     playCard,
+    exchangeCard,
     getSprintSnapshot,
     pauseBriefly,
     acknowledgeResult,

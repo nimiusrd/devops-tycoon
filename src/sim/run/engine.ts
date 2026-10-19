@@ -30,6 +30,7 @@ import {
   applyDeckBaseline,
   dealHand,
   drawDraft,
+  exchangeCardFromHand,
   inheritBaselineAppliedForTeams,
   redrawDraftCandidates,
   migrateBaselineAppliedByTeam,
@@ -76,6 +77,7 @@ import {
 import type {
   ActionId,
   ActionTarget,
+  CardExchangeOutcome,
   CardEffects,
   CardInstance,
   CardPlayOutcome,
@@ -792,6 +794,12 @@ export class RunEngine {
     const outcome = applyAction(id, this.sprint, this.org, this.sprintRng, this.sprintTick, target);
     if (outcome.ok && (id === 'overtime' || id === 'andon')) this.usedHeavyActions = true;
     return outcome;
+  }
+
+  /** 手札を山札先頭と交換する（RI-186 / SPEC 第7.1）。 */
+  exchangeCard(deckIndex: number): CardExchangeOutcome {
+    if (this.phase !== 'sprint' || !this.sprint) return { ok: false, reason: 'complete' };
+    return exchangeCardFromHand(this.sprint, this.deck, deckIndex);
   }
 
   /** 手札からカードを発動する（deckIndex。sprint フェーズのみ。RI-30 / SPEC 第7.1）。 */

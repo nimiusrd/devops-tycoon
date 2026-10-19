@@ -32,17 +32,17 @@
   },
   "dependencies": {
     "comlink": "^4.4.2",
-    "framer-motion": "^14.2.0",
+    "framer-motion": "^14.3.0",
     "idb": "^8.0.4",
     "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.22.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.64.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",

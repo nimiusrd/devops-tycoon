@@ -8,8 +8,15 @@ updates:
     groups:
       # Vitest 本体と関連パッケージは同じバージョンが必要なため、メジャー更新もまとめる。
       vitest:
+        applies-to: version-updates
+        patterns: ['vitest', '@vitest/*']
+        update-types: [major, minor, patch]
+      # 通常更新のグループはセキュリティ更新には適用されないため、別に定義する。
+      vitest-security:
+        applies-to: security-updates
         patterns: ['vitest', '@vitest/*']
       npm-minor-and-patch:
+        exclude-patterns: ['vitest', '@vitest/*']
         update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /

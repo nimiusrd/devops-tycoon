@@ -3,6 +3,7 @@ import {
   clientPointHitsDraggableBoardDot,
   clientPointHitsRegisteredBoardDrag,
   hasRegisteredBoardDragHitTest,
+  hitTestClientBoardDot,
   registerBoardDragHitTest,
   registerPixiBoardDragHitTest,
 } from '../../../src/render/boardDragHit';
@@ -37,6 +38,70 @@ describe('clientPointHitsDraggableBoardDot', () => {
     expect(clientPointHitsDraggableBoardDot(720, 300, identityRect, dots, draggable)).toBe(false);
     expect(clientPointHitsDraggableBoardDot(700, 300, identityRect, dots, new Set())).toBe(false);
     expect(clientPointHitsDraggableBoardDot(700, 300, null, dots, draggable)).toBe(false);
+  });
+
+  it.each(['small', 'medium', 'large'] as const)(
+    '320幅の盤面でも%s粒の判定を画面上の直径24pxまで広げる',
+    (size) => {
+      const rect = { left: 14, top: 200, width: 292, height: 119.2 };
+      const dots = [dot({ id: 1, size, x: BOARD_VIEW.w / 2, y: BOARD_VIEW.h / 2 })];
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      for (const [dx, dy] of [
+        [-11.9, 0],
+        [11.9, 0],
+        [0, -11.9],
+        [0, 11.9],
+        [8, 8],
+      ]) {
+        expect(clientPointHitsDraggableBoardDot(x + dx, y + dy, rect, dots, draggable)).toBe(true);
+      }
+      expect(clientPointHitsDraggableBoardDot(x + 12.1, y, rect, dots, draggable)).toBe(false);
+      expect(clientPointHitsDraggableBoardDot(x + 9, y + 9, rect, dots, draggable)).toBe(false);
+    },
+  );
+
+  it('非等比の盤面では両軸の最小判定を保ち、拡大された粒の領域も縮めない', () => {
+    const rect = { left: 10, top: 20, width: BOARD_VIEW.w * 2, height: BOARD_VIEW.h / 5 };
+    const dots = [dot({ id: 1, size: 'large', x: BOARD_VIEW.w / 2, y: BOARD_VIEW.h / 2 })];
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    expect(hitTestClientBoardDot(x + 45, y, rect, dots, draggable)).toBe(1);
+    expect(hitTestClientBoardDot(x + 47, y, rect, dots, draggable)).toBeNull();
+    expect(hitTestClientBoardDot(x, y + 11.9, rect, dots, draggable)).toBe(1);
+    expect(hitTestClientBoardDot(x, y + 12.1, rect, dots, draggable)).toBeNull();
+  });
+
+  it('近接粒は最も近い対象を選び、対象外の粒は選ばない', () => {
+    const rect = { left: 14, top: 200, width: 292, height: 119.2 };
+    const dots = [dot({ id: 1 }), dot({ id: 2, x: 730 }), dot({ id: 9 })];
+    const x = rect.left + (700 / BOARD_VIEW.w) * rect.width;
+    const y = rect.top + (300 / BOARD_VIEW.h) * rect.height;
+    expect(hitTestClientBoardDot(x, y, rect, dots, new Set([1, 2]))).toBe(1);
+    expect(hitTestClientBoardDot(x + 6, y, rect, dots, new Set([1, 2]))).toBe(2);
+    expect(clientPointHitsDraggableBoardDot(x, y, rect, dots, new Set([1, 2]))).toBe(true);
+  });
+
+  it.each([{ width: 0 }, { height: 0 }, { width: -1 }, { height: Infinity }, { left: NaN }])(
+    '無効な盤面寸法・位置なら原点の粒にもヒットしない: %j',
+    (invalid) => {
+      expect(
+        hitTestClientBoardDot(
+          0,
+          0,
+          { ...identityRect, ...invalid },
+          [dot({ id: 1, x: 0, y: 0 })],
+          draggable,
+        ),
+      ).toBeNull();
+    },
+  );
+
+  it('盤面外の点と不正なポインター座標ではヒットしない', () => {
+    const dots = [dot({ id: 1, x: 0, y: 0 })];
+    expect(hitTestClientBoardDot(-1, 0, identityRect, dots, draggable)).toBeNull();
+    expect(hitTestClientBoardDot(0, NaN, identityRect, dots, draggable)).toBeNull();
+    expect(hitTestClientBoardDot(0, 0, identityRect, dots, new Set())).toBeNull();
   });
 });
 

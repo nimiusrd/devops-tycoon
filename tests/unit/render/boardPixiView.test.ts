@@ -95,15 +95,50 @@ describe('hitTestBoardDot', () => {
     expect(hitTestBoardDot({ x: 720, y: 300 }, dots, draggable)).toBeNull();
   });
 
-  it('重なりは後から描かれた粒（手前）を優先する', () => {
+  it('実際の円が重なる場所では中心距離によらず手前の粒を優先する', () => {
     const dots = [dot({ id: 1, x: 700, y: 300 }), dot({ id: 2, x: 706, y: 300 })];
     expect(hitTestBoardDot({ x: 702, y: 300 }, dots, draggable)).toBe(2);
+    expect(hitTestBoardDot({ x: 703, y: 300 }, dots, draggable)).toBe(2);
+    expect(hitTestBoardDot({ x: 705, y: 300 }, dots, draggable)).toBe(2);
+    // 手前の円外にある拡張領域は、奥の実際の円へのクリックを奪わない。
+    expect(hitTestBoardDot({ x: 690, y: 300 }, dots, draggable)).toBe(1);
+  });
+
+  it.each([
+    { scale: 0.675, size: 'medium', separation: 15, offset: 7.6 },
+    { scale: 0.208, size: 'large', separation: 17.3, offset: 8.7 },
+  ] as const)(
+    '縮尺 $scale でも近い小粒が手前の $size 粒の実体を奪わない',
+    ({ scale, size, separation, offset }) => {
+      const dots = [
+        dot({ id: 1, size: 'small', x: 700 + separation }),
+        dot({ id: 2, size, x: 700 }),
+      ];
+      expect(
+        hitTestBoardDot({ x: 700 + offset, y: 300 }, dots, draggable, { x: scale, y: scale }),
+      ).toBe(2);
+    },
+  );
+
+  it('円外の拡張領域が重なる場所は中心に近い粒、同距離なら手前の粒を優先する', () => {
+    const dots = [dot({ id: 1, size: 'small', x: 700 }), dot({ id: 2, size: 'small', x: 706 })];
+    expect(hitTestBoardDot({ x: 702, y: 310 }, dots, draggable)).toBe(1);
+    expect(hitTestBoardDot({ x: 703, y: 310 }, dots, draggable)).toBe(2);
+    expect(hitTestBoardDot({ x: 705, y: 310 }, dots, draggable)).toBe(2);
   });
 
   it('draggable でない粒は手前でも素通しする', () => {
     const dots = [dot({ id: 1, x: 700, y: 300 }), dot({ id: 9, x: 700, y: 300 })];
     expect(hitTestBoardDot({ x: 700, y: 300 }, dots, draggable)).toBe(1);
     expect(hitTestBoardDot({ x: 700, y: 300 }, dots, new Set<number>())).toBeNull();
+  });
+
+  it('近さは設計座標ではなく画面上の距離で比較する', () => {
+    const dots = [
+      dot({ id: 1, size: 'small', x: 100, y: 114 }),
+      dot({ id: 2, size: 'small', x: 120, y: 100 }),
+    ];
+    expect(hitTestBoardDot({ x: 100, y: 100 }, dots, draggable, { x: 0.2, y: 1 })).toBe(2);
   });
 
   it('粒サイズで判定半径が変わる', () => {

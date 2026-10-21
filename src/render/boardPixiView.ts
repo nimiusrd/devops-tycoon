@@ -86,25 +86,44 @@ export const DOT_HIT_MARGIN = VISUAL_TOKENS.dimensions.sprint.dotHitMargin;
 /**
  * 設計座標の点から、掴めるタスク粒を特定する（RI-30 のドラッグ開始判定）。
  *
- * DOM 版は draggable な span の pointerdown で粒が決まるが、Pixi 版は canvas 1 枚
- * なので座標から逆引きする。plan の後方（後から描かれた粒＝手前）を優先し、
- * 半径（直径/2）＋マージンの円判定で最初に当たった draggable 粒の id を返す。
+ * 粒半径＋設計マージンを保ちつつ、各軸で画面上24px以上の操作領域を確保する。
+ * 実際の円内なら後から描かれた粒を優先する。円外の拡張領域だけが重なった場合は
+ * 画面上の中心距離が最短の粒、同距離なら後から描かれた粒を返す。
+ * scale は設計座標から CSS px への軸ごとの縮尺。
  */
 export function hitTestBoardDot(
   pt: BoardPoint,
   dots: readonly BoardDotPlan[],
   draggableIds: ReadonlySet<number>,
-  margin: number = DOT_HIT_MARGIN,
+  scale: BoardPoint = { x: 1, y: 1 },
 ): number | null {
+  if (!Number.isFinite(scale.x) || !Number.isFinite(scale.y) || scale.x <= 0 || scale.y <= 0) {
+    return null;
+  }
+  const minimumRadius = VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter / 2;
+  let nearestId: number | null = null;
+  let nearestDistance = Infinity;
   for (let i = dots.length - 1; i >= 0; i -= 1) {
     const dot = dots[i];
     if (!draggableIds.has(dot.id)) continue;
-    const r = TASK_DIAMETER[dot.size] / 2 + margin;
-    const dx = pt.x - dot.x;
-    const dy = pt.y - dot.y;
-    if (dx * dx + dy * dy <= r * r) return dot.id;
+    const visibleRadius = TASK_DIAMETER[dot.size] / 2;
+    const designDx = pt.x - dot.x;
+    const designDy = pt.y - dot.y;
+    if (designDx * designDx + designDy * designDy <= visibleRadius * visibleRadius) {
+      return dot.id;
+    }
+    const r = visibleRadius + DOT_HIT_MARGIN;
+    const rx = Math.max(r * scale.x, minimumRadius);
+    const ry = Math.max(r * scale.y, minimumRadius);
+    const dx = designDx * scale.x;
+    const dy = designDy * scale.y;
+    const distance = dx * dx + dy * dy;
+    if ((dx / rx) ** 2 + (dy / ry) ** 2 <= 1 && distance < nearestDistance) {
+      nearestId = dot.id;
+      nearestDistance = distance;
+    }
   }
-  return null;
+  return nearestId;
 }
 
 /** flowBobDrift の 1 周期（ms）。CSS `--flow-duration: 1.15s / speedMul` と同値。 */

@@ -1,14 +1,12 @@
 /**
  * 盤面ドラッグのクライアント座標ヒット（Pixi canvas 専用）。
  *
- * Pixi 既定レンダラでは粒が canvas 内にあり `[data-task-id]` が DOM に無い。
- * Board は Pixi 盤面ルートが座標ドラッグを受けるときだけ `hitTestBoardDot`
- * （DOT_HIT_MARGIN）を登録し、ティッカーのタッチスクロールが武装中の粒ドラッグ
- * と同時に始まらないようにする。DOM 粒は span 上でしかドラッグが始まらない。
+ * Board のドラッグ開始と、ティッカーのタッチスクロール抑止で同じ判定を使う。
+ * 盤面の縮尺を渡し、CSS px の最小操作領域を両方の経路へ反映する。
  */
 import { clientToBoardPoint, type BoardClientRect } from './boardDragPlan';
 import { hitTestBoardDot } from './boardPixiView';
-import type { BoardDotPlan } from './boardScene';
+import { BOARD_VIEW, type BoardDotPlan } from './boardScene';
 
 export type BoardDragHitTest = (clientX: number, clientY: number) => boolean;
 
@@ -45,7 +43,35 @@ export function clientPointHitsDraggableBoardDot(
   dots: readonly BoardDotPlan[],
   draggableIds: ReadonlySet<number>,
 ): boolean {
-  if (!boardRect || draggableIds.size === 0) return false;
+  return hitTestClientBoardDot(clientX, clientY, boardRect, dots, draggableIds) !== null;
+}
+
+/** Board とティッカーが共有する、画面上のタスク粒判定。 */
+export function hitTestClientBoardDot(
+  clientX: number,
+  clientY: number,
+  boardRect: BoardClientRect | null | undefined,
+  dots: readonly BoardDotPlan[],
+  draggableIds: ReadonlySet<number>,
+): number | null {
+  if (
+    !boardRect ||
+    draggableIds.size === 0 ||
+    ![clientX, clientY, boardRect.left, boardRect.top, boardRect.width, boardRect.height].every(
+      Number.isFinite,
+    ) ||
+    boardRect.width <= 0 ||
+    boardRect.height <= 0 ||
+    clientX < boardRect.left ||
+    clientY < boardRect.top ||
+    clientX > boardRect.left + boardRect.width ||
+    clientY > boardRect.top + boardRect.height
+  ) {
+    return null;
+  }
   const pt = clientToBoardPoint(clientX, clientY, boardRect);
-  return hitTestBoardDot(pt, dots, draggableIds) !== null;
+  return hitTestBoardDot(pt, dots, draggableIds, {
+    x: boardRect.width / BOARD_VIEW.w,
+    y: boardRect.height / BOARD_VIEW.h,
+  });
 }

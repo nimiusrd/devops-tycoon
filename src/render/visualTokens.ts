@@ -225,6 +225,8 @@ export const VISUAL_TOKENS = {
       flowSpread: 14,
       dotTexturePadding: 20,
       dotHitMargin: 6,
+      /** 縮小された盤面でも確保する操作領域の直径（CSS px）。 */
+      dotHitMinCssDiameter: 24,
       taskDiameter: { small: 16, medium: 26, large: 34 },
       reviewEffects: {
         heatField: {

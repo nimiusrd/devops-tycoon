@@ -314,6 +314,8 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const board = page.getByTestId('board');
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-kinds', /fire:(ignite|spread)/);
+    // 短い演出がブラウザ間の往復中に終わらないよう、計測より先に時刻を固定する。
+    await freezePixiForScreenshot(page);
     await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
     const layerOrder = await page.evaluate(() => ({
       base: Number(getComputedStyle(document.querySelector('.board-pixi-mount')!).zIndex),
@@ -326,8 +328,6 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     expect(layerOrder.base).toBeLessThan(layerOrder.bubble);
     expect(layerOrder.effects).toBeGreaterThan(layerOrder.bubble);
     expect(layerOrder.effects).toBeGreaterThan(layerOrder.summary);
-    await freezePixiForScreenshot(page);
-
     await expect(board).toHaveScreenshot('sprint-pixi-fire-effect.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
@@ -342,6 +342,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const board = page.getByTestId('board');
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-kinds', /intervention:reviewSweep/);
+    await freezePixiForScreenshot(page);
     await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
     await expect(page.locator('.intervention-effects')).toHaveCount(0);
 
@@ -357,6 +358,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       'data-effect-kinds',
       'intervention:firefight',
     );
+    await freezePixiForScreenshot(page);
     await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-effects', '1');
   });
 
@@ -619,6 +621,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       )
       .toBe(before + 1);
     await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:assignDash');
+    await freezePixiForScreenshot(page);
     await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-effects', '1');
   });
 

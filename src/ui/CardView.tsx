@@ -143,9 +143,9 @@ export function CardView({
           </>
         )}
       </div>
-      {disabled && disabledReason && (
+      {((disabled && disabledReason) || (compact && onPlay)) && (
         <span className="card-disabled-reason" data-testid="card-disabled-reason">
-          {disabledReason}
+          {disabled ? disabledReason : undefined}
         </span>
       )}
     </>

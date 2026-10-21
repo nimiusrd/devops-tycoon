@@ -226,9 +226,7 @@
 
 .root[data-responsive-width='narrow'] :global(.deckbar-exchange-status) {
   grid-area: status;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  width: auto;
 }
 
 .root :global(.actionbar) {
@@ -412,7 +410,7 @@
   line-height: 1.2;
 }
 
-/* 短い viewport（SE 縦や横向き）では contain を緩め、盤面最低高を優先する。 */
+/* 短い狭幅ではヘッダーと状態を詰め、盤面の下に手札1枚を表示する（#886）。 */
 .root[data-responsive-width='narrow'][data-responsive-height='short']:has(
     :global(.hud.hud-compact)
   ) {
@@ -422,7 +420,51 @@
 
 .root[data-responsive-width='narrow'][data-responsive-height='short']:has(:global(.hud.hud-compact))
   .stageSlot {
-  flex: 1 1 auto;
-  min-height: clamp(140px, 28vh, 320px);
+  flex: 0 0 auto;
+  min-height: 98px;
+  aspect-ratio: var(--visual-space-sprint-w) / var(--visual-space-sprint-h);
   overflow: hidden;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.runbar-compact) {
+  gap: 4px;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short']
+  :global(.runbar-compact .pill) {
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.roster-faces) {
+  display: none;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short']
+  :global(.subbar:not(.runbar)) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.node-tag) {
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.speed-controls) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.speed-btn) {
+  min-width: 30px;
+  padding-inline: 6px;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.meter-wrap),
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.combo-badge),
+.root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.boss-goal) {
+  grid-column: 1 / -1;
 }

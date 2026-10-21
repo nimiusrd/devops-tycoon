@@ -131,7 +131,7 @@ describe('DeckBar の閲覧と手札発動', () => {
     } else {
       expect(content(card)).not.toContain('一時停止中');
       expect(content(card)).not.toContain('集中力不足');
-      expect(screen.all('card-disabled-reason')).toHaveLength(0);
+      expect(content(screen.find('card-disabled-reason'))).toBe('');
     }
     screen.click('hand-card-docs');
     expect(onPlay).toHaveBeenCalledTimes(disabled ? 0 : 1);

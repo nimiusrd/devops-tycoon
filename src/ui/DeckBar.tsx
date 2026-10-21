@@ -63,10 +63,10 @@ export function DeckBar({
             : focus < exchangeCost
               ? `集中力不足（${exchangeCost}必要）`
               : undefined);
-  const exchangeStatus = isExchangeMode
-    ? '交換するカードを選択'
-    : exchangeDisabledReason
-      ? `交換不可: ${exchangeDisabledReason}`
+  const exchangeStatus = exchangeDisabledReason
+    ? `交換不可: ${exchangeDisabledReason}`
+    : isExchangeMode
+      ? '交換するカードを選択'
       : undefined;
 
   if (isHandMode) {

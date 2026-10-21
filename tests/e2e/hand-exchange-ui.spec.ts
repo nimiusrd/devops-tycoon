@@ -177,15 +177,18 @@ for (const viewport of [
         .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
       expect(size).toBeGreaterThanOrEqual(minimum);
     }
-    await toggle.click();
-    await expect(deck).toHaveAttribute('data-exchange-mode', 'false');
-    await assertStable();
-
     await page.getByTestId('speed-pause').click();
     await expect(deck).toHaveAttribute('data-paused', 'true');
+    await expect(page.getByTestId('hand-exchange-status')).toHaveText('交換不可: 一時停止中');
+    await expect(deck.locator('.card:disabled')).toHaveCount(3);
+    await expect(toggle).toBeEnabled();
     await assertStable();
     await page.getByTestId('speed-1x').click();
     await expect(deck).toHaveAttribute('data-paused', 'false');
+    await expect(page.getByTestId('hand-exchange-status')).toHaveText('交換するカードを選択');
+    await assertStable();
+    await toggle.click();
+    await expect(deck).toHaveAttribute('data-exchange-mode', 'false');
     await assertStable();
 
     for (let count = 1; count <= 2; count += 1) {

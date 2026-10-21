@@ -98,6 +98,7 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
               allowDecimals={false}
             />
             <Tooltip
+              cursor={{ fill: VISUAL_TOKENS.colors.chart.hoverBand }}
               contentStyle={{
                 background: VISUAL_TOKENS.colors.organization.cardBackground,
                 border: '1px solid rgba(179, 157, 255, 0.35)',

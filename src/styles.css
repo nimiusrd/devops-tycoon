@@ -2385,15 +2385,23 @@ body:has(.overlay-contained) {
 }
 .deckbar-actions .deckbar-meta {
   margin-left: 0;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .deckbar-exchange-status {
+  width: 22em;
+  flex-shrink: 0;
   min-width: 0;
+  min-height: 1.2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.2;
 }
 .deckbar-exchange-toggle {
+  min-width: 6em;
   min-height: 32px;
   padding: 4px 8px;
   white-space: nowrap;
@@ -2888,13 +2896,13 @@ body:has(.overlay-contained) {
   border: 1px solid var(--line);
   border-radius: 4px;
   color: var(--mint);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   line-height: 1.2;
 }
 .card-cost-exchange {
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: 12px;
 }
 .card-cost-exchange .visual-icon-tone-sun {
   color: var(--text-dim);
@@ -2942,6 +2950,12 @@ body:has(.overlay-contained) {
 }
 .card-compact .card-name {
   font-size: 12px;
+}
+.card-compact.card-playable .card-head {
+  min-height: 24px;
+}
+.card-compact.card-playable .card-disabled-reason {
+  min-height: 1.2em;
 }
 .card-disabled-reason {
   display: block;

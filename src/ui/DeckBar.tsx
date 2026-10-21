@@ -79,7 +79,7 @@ export function DeckBar({
         data-exchange-mode={isExchangeMode ? 'true' : 'false'}
       >
         <div className="deckbar-hand">
-          <span className="deckbar-label">{isExchangeMode ? '交換するカードを選択' : '手札'}</span>
+          <span className="deckbar-label">手札</span>
           {hand.length === 0 ? (
             <span className="deckbar-empty">手札がありません</span>
           ) : (
@@ -124,7 +124,7 @@ export function DeckBar({
           <span className="deckbar-meta" data-testid="hand-exchange-count">
             交換 {exchangesUsed}/{maxExchanges}
           </span>
-          {onExchange && exchangeStatus && (
+          {onExchange && (
             <span
               className="deckbar-exchange-status"
               data-testid="hand-exchange-status"

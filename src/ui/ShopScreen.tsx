@@ -74,178 +74,187 @@ export function ShopScreen({
     run();
   };
   return (
-    <div className="result-overlay" data-testid="shop" role="dialog" aria-label="Shop">
+    <div
+      className="result-overlay overlay-contained"
+      data-testid="shop"
+      role="dialog"
+      aria-label="Shop"
+    >
       <div className="shop-panel">
-        <p className="result-eyebrow">SHOP</p>
-        <h2 className="draft-title">
-          予算 <b data-testid="shop-budget">💰{state.budget}</b> で施策を仕入れる
-        </h2>
-        {pending ? (
-          <SpendConfirm
-            subject={pending.subject}
-            balanceAfter={pending.risk.balanceAfter}
-            returnTestId={pending.returnTestId}
-            onConfirm={() => {
-              const current = pending;
-              setPending(null);
-              if (current.id.startsWith('card:')) onBuyCard(current.id.slice('card:'.length));
-              else if (current.id === 'relic') onBuyRelic();
-              else if (current.id === 'recruit') onBuyRecruit();
-            }}
-            onCancel={() => setPending(null)}
-          />
-        ) : null}
-        <div className="shop-grid">
-          {shop.cards.map((offer) => {
-            const def = resolveCard(offer.defId);
-            const risk = spendRiskView({
-              budget: state.budget,
-              cost: offer.cost,
-              bought: offer.bought,
-            });
-            return (
+        <div className="overlay-scroll" data-testid="shop-scroll" tabIndex={0}>
+          <p className="result-eyebrow">SHOP</p>
+          <h2 className="draft-title">
+            予算 <b data-testid="shop-budget">💰{state.budget}</b> で施策を仕入れる
+          </h2>
+          {pending ? (
+            <SpendConfirm
+              subject={pending.subject}
+              balanceAfter={pending.risk.balanceAfter}
+              returnTestId={pending.returnTestId}
+              onConfirm={() => {
+                const current = pending;
+                setPending(null);
+                if (current.id.startsWith('card:')) onBuyCard(current.id.slice('card:'.length));
+                else if (current.id === 'relic') onBuyRelic();
+                else if (current.id === 'recruit') onBuyRecruit();
+              }}
+              onCancel={() => setPending(null)}
+            />
+          ) : null}
+          <div className="shop-grid">
+            {shop.cards.map((offer) => {
+              const def = resolveCard(offer.defId);
+              const risk = spendRiskView({
+                budget: state.budget,
+                cost: offer.cost,
+                bought: offer.bought,
+              });
+              return (
+                <button
+                  type="button"
+                  key={offer.defId}
+                  className={`shop-card rarity-${def.rarity}${offer.bought ? ' bought' : ''}${risk.endsRun ? ' is-spend-risk' : ''}`}
+                  data-testid={`shop-card-${offer.defId}`}
+                  disabled={pending !== null || risk.blocked !== null}
+                  onClick={() =>
+                    requestSpend(
+                      {
+                        id: `card:${offer.defId}`,
+                        subject: def.name,
+                        risk,
+                        returnTestId: `shop-card-${offer.defId}`,
+                      },
+                      () => onBuyCard(offer.defId),
+                    )
+                  }
+                >
+                  <span className="shop-card-rarity">{RARITY_LABEL[def.rarity]}</span>
+                  <span className="shop-card-name">{def.name}</span>
+                  <EffectTagList
+                    tags={formatCardDefTags(def)}
+                    testId={`shop-card-effect-tags-${def.id}`}
+                  />
+                  <ul className="shop-card-desc">
+                    {def.description.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                  <span className="shop-card-cost">
+                    {offer.bought ? '購入済み' : `💰${offer.cost}`}
+                    {risk.balanceLabel ? (
+                      <span className="spend-risk-note">{risk.balanceLabel}</span>
+                    ) : null}
+                    {risk.warningLabel ? (
+                      <span className="spend-risk-warning">{risk.warningLabel}</span>
+                    ) : null}
+                    <span className="shop-card-focus-cost">
+                      {' '}
+                      / 発動 ⚡{playCost(def.focusCost, 1)}
+                      {offer.bought
+                        ? ''
+                        : shop.introSupportGranted
+                          ? ' / 次スプ手札'
+                          : ' / 次スプ手札・導入支援'}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+            {relic && shop.relic && relicRisk && (
               <button
                 type="button"
-                key={offer.defId}
-                className={`shop-card rarity-${def.rarity}${offer.bought ? ' bought' : ''}${risk.endsRun ? ' is-spend-risk' : ''}`}
-                data-testid={`shop-card-${offer.defId}`}
-                disabled={pending !== null || risk.blocked !== null}
+                className={`shop-card shop-relic${shop.relic.bought ? ' bought' : ''}${
+                  relicRisk.endsRun ? ' is-spend-risk' : ''
+                }`}
+                data-testid={`shop-relic-${shop.relic.id}`}
+                disabled={pending !== null || relicRisk.blocked !== null}
                 onClick={() =>
                   requestSpend(
                     {
-                      id: `card:${offer.defId}`,
-                      subject: def.name,
-                      risk,
-                      returnTestId: `shop-card-${offer.defId}`,
+                      id: 'relic',
+                      subject: relic.name,
+                      risk: relicRisk,
+                      returnTestId: `shop-relic-${shop.relic!.id}`,
                     },
-                    () => onBuyCard(offer.defId),
+                    onBuyRelic,
                   )
                 }
               >
-                <span className="shop-card-rarity">{RARITY_LABEL[def.rarity]}</span>
-                <span className="shop-card-name">{def.name}</span>
+                <span className="shop-card-rarity">レリック</span>
+                <span className="shop-card-name">🏛 {relic.name}</span>
                 <EffectTagList
-                  tags={formatCardDefTags(def)}
-                  testId={`shop-card-effect-tags-${def.id}`}
+                  tags={formatRelicDefTags(relic)}
+                  testId={`shop-relic-effect-tags-${relic.id}`}
                 />
-                <ul className="shop-card-desc">
-                  {def.description.map((d, i) => (
-                    <li key={i}>{d}</li>
-                  ))}
-                </ul>
+                <p className="shop-card-desc">{relic.description}</p>
                 <span className="shop-card-cost">
-                  {offer.bought ? '購入済み' : `💰${offer.cost}`}
-                  {risk.balanceLabel ? (
-                    <span className="spend-risk-note">{risk.balanceLabel}</span>
+                  {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}
+                  {relicRisk.balanceLabel ? (
+                    <span className="spend-risk-note">{relicRisk.balanceLabel}</span>
                   ) : null}
-                  {risk.warningLabel ? (
-                    <span className="spend-risk-warning">{risk.warningLabel}</span>
+                  {relicRisk.warningLabel ? (
+                    <span className="spend-risk-warning">{relicRisk.warningLabel}</span>
                   ) : null}
-                  <span className="shop-card-focus-cost">
-                    {' '}
-                    / 発動 ⚡{playCost(def.focusCost, 1)}
-                    {offer.bought
-                      ? ''
-                      : shop.introSupportGranted
-                        ? ' / 次スプ手札'
-                        : ' / 次スプ手札・導入支援'}
-                  </span>
                 </span>
               </button>
-            );
-          })}
-          {relic && shop.relic && relicRisk && (
-            <button
-              type="button"
-              className={`shop-card shop-relic${shop.relic.bought ? ' bought' : ''}${
-                relicRisk.endsRun ? ' is-spend-risk' : ''
-              }`}
-              data-testid={`shop-relic-${shop.relic.id}`}
-              disabled={pending !== null || relicRisk.blocked !== null}
-              onClick={() =>
-                requestSpend(
-                  {
-                    id: 'relic',
-                    subject: relic.name,
-                    risk: relicRisk,
-                    returnTestId: `shop-relic-${shop.relic!.id}`,
-                  },
-                  onBuyRelic,
-                )
-              }
-            >
-              <span className="shop-card-rarity">レリック</span>
-              <span className="shop-card-name">🏛 {relic.name}</span>
-              <EffectTagList
-                tags={formatRelicDefTags(relic)}
-                testId={`shop-relic-effect-tags-${relic.id}`}
-              />
-              <p className="shop-card-desc">{relic.description}</p>
-              <span className="shop-card-cost">
-                {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}
-                {relicRisk.balanceLabel ? (
-                  <span className="spend-risk-note">{relicRisk.balanceLabel}</span>
-                ) : null}
-                {relicRisk.warningLabel ? (
-                  <span className="spend-risk-warning">{relicRisk.warningLabel}</span>
-                ) : null}
-              </span>
-            </button>
-          )}
-          {recruit && recruitRisk && (
-            <button
-              type="button"
-              className={`shop-card shop-recruit${recruit.bought ? ' bought' : ''}${
-                recruitRisk.endsRun ? ' is-spend-risk' : ''
-              }`}
-              data-testid="shop-recruit"
-              disabled={pending !== null || !canHire}
-              onClick={() =>
-                requestSpend(
-                  {
-                    id: 'recruit',
-                    subject: 'メンバーの採用',
-                    risk: recruitRisk,
-                    returnTestId: 'shop-recruit',
-                  },
-                  onBuyRecruit,
-                )
-              }
-            >
-              <span className="shop-card-rarity">採用</span>
-              <span className="shop-card-name">🙋 メンバーを採用</span>
-              <EffectTagList
-                tags={formatRestOptionTags('recruit')}
-                testId="shop-recruit-effect-tags"
-              />
-              <p className="shop-card-desc">
-                {spendStatusText(
-                  recruitRisk,
-                  '未来の主力候補を1人迎える（ベンチに加わる）',
-                  recruit.bought ? '採用済み' : 'ロスターが満員です',
-                )}
-              </p>
-              <span className="shop-card-cost">
-                {recruit.bought ? '購入済み' : `💰${recruit.cost}`}
-                {recruitRisk.balanceLabel ? (
-                  <span className="spend-risk-note">{recruitRisk.balanceLabel}</span>
-                ) : null}
-                {recruitRisk.warningLabel ? (
-                  <span className="spend-risk-warning">{recruitRisk.warningLabel}</span>
-                ) : null}
-              </span>
-            </button>
-          )}
+            )}
+            {recruit && recruitRisk && (
+              <button
+                type="button"
+                className={`shop-card shop-recruit${recruit.bought ? ' bought' : ''}${
+                  recruitRisk.endsRun ? ' is-spend-risk' : ''
+                }`}
+                data-testid="shop-recruit"
+                disabled={pending !== null || !canHire}
+                onClick={() =>
+                  requestSpend(
+                    {
+                      id: 'recruit',
+                      subject: 'メンバーの採用',
+                      risk: recruitRisk,
+                      returnTestId: 'shop-recruit',
+                    },
+                    onBuyRecruit,
+                  )
+                }
+              >
+                <span className="shop-card-rarity">採用</span>
+                <span className="shop-card-name">🙋 メンバーを採用</span>
+                <EffectTagList
+                  tags={formatRestOptionTags('recruit')}
+                  testId="shop-recruit-effect-tags"
+                />
+                <p className="shop-card-desc">
+                  {spendStatusText(
+                    recruitRisk,
+                    '未来の主力候補を1人迎える（ベンチに加わる）',
+                    recruit.bought ? '採用済み' : 'ロスターが満員です',
+                  )}
+                </p>
+                <span className="shop-card-cost">
+                  {recruit.bought ? '購入済み' : `💰${recruit.cost}`}
+                  {recruitRisk.balanceLabel ? (
+                    <span className="spend-risk-note">{recruitRisk.balanceLabel}</span>
+                  ) : null}
+                  {recruitRisk.warningLabel ? (
+                    <span className="spend-risk-warning">{recruitRisk.warningLabel}</span>
+                  ) : null}
+                </span>
+              </button>
+            )}
+          </div>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          data-testid="shop-leave"
-          disabled={pending !== null}
-          onClick={onLeave}
-        >
-          ショップを出る →
-        </button>
+        <div className="overlay-actions">
+          <button
+            type="button"
+            className="btn btn-primary"
+            data-testid="shop-leave"
+            disabled={pending !== null}
+            onClick={onLeave}
+          >
+            ショップを出る →
+          </button>
+        </div>
       </div>
     </div>
   );

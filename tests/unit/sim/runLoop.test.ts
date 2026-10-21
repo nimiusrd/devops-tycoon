@@ -64,7 +64,7 @@ describe('イベント種別と重み付け（SPEC 第9章）', () => {
 
   it('weightedEventPool は org 信号で重みをスケールする', () => {
     const pool = eventsOfKind(EVENT_DEFS, 'judgment');
-    const heavy = weightedEventPool(org({ techDebt: 85 }), {} as never, pool);
+    const heavy = weightedEventPool(org({ techDebt: 85 }), pool);
     const debt = heavy.find((w) => w.def.id === 'debt-incident')!;
     const ci = heavy.find((w) => w.def.id === 'ci-improved')!;
     // 負債が高くテストカバレッジ低ければ debt-incident が ci-improved より重い。

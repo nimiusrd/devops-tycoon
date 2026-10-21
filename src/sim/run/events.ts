@@ -15,7 +15,6 @@ import type {
   EventSignal,
   LoseReason,
   RunPassives,
-  RunTotals,
   SprintModifierDelta,
   StakeholderTrust,
 } from './types';
@@ -150,11 +149,9 @@ export function effectiveEventWeight(def: EventDef, signals: Record<EventSignal,
 
 /**
  * 組織状態で重み付けしたイベントプールを返す純関数（決定論・GPU 不要）。
- * `totals` は将来のチューニング用に受け取るが、現状は org の信号のみで重み付けする。
  */
 export function weightedEventPool(
   org: OrgState,
-  _totals: RunTotals,
   pool: EventDef[],
 ): { def: EventDef; weight: number }[] {
   const signals = eventSignals(org);

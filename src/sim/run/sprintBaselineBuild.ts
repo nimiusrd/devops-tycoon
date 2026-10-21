@@ -118,7 +118,6 @@ export interface SprintBaselineBuildContext {
 }
 
 export interface SprintBaselineBuildParams {
-  deck: { defId: string; level: number }[];
   roster: RosterState;
   org: OrgState;
   kind: SprintKind;
@@ -145,13 +144,10 @@ export function applyTrialAiDependencyPressure(
   ctx: Pick<
     SprintBaselineBuildContext,
     'relics' | 'evolution' | 'difficulty' | 'trials' | 'scenario'
-  > & {
-    deck: { defId: string; level: number }[];
-  },
+  >,
   options: AiDependencyPressureOptions = {},
 ): number {
   const fold = foldRunEffects({
-    deck: ctx.deck,
     relics: ctx.relics,
     evolution: ctx.evolution,
     difficulty: ctx.difficulty,
@@ -182,12 +178,9 @@ export function previewInfraCost(
   ctx: Pick<
     SprintBaselineBuildContext,
     'relics' | 'evolution' | 'difficulty' | 'trials' | 'scenario'
-  > & {
-    deck: { defId: string; level: number }[];
-  },
+  >,
 ): { rate: number; infraCostMul: number; cost: number } {
   const fold = foldRunEffects({
-    deck: ctx.deck,
     relics: ctx.relics,
     evolution: ctx.evolution,
     difficulty: ctx.difficulty,
@@ -200,17 +193,16 @@ export function previewInfraCost(
 }
 
 /**
- * 指定したデッキ・編成から次スプリントの純粋な初期入力を組み立てる。
+ * 編成と発動カードから次スプリントの純粋な初期入力を組み立てる。
  * 本番起動と RI-46 の試算で共有し、候補試算中に実ランの状態を変更しない。
  */
 export function buildSprintBaselineInput(
   ctx: SprintBaselineBuildContext,
   params: SprintBaselineBuildParams,
 ): SprintBaselineInput {
-  const { deck, roster, org, kind, modifiers, seed, playedCards = [] } = params;
+  const { roster, org, kind, modifiers, seed, playedCards = [] } = params;
   const isBoss = kind === 'boss';
   const fold = foldRunEffects({
-    deck,
     relics: ctx.relics,
     evolution: ctx.evolution,
     difficulty: ctx.difficulty,

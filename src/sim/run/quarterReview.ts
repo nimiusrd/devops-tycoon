@@ -212,8 +212,6 @@ export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
 export function buildQuarterGoal(
   boss: BossDef,
   difficulty: DifficultyId,
-  /** @deprecated Delivery 目標には使わない。呼び出し互換のため残す。 */
-  _bossTargetMul: number,
   priorGoal?: QuarterGoal,
 ): QuarterGoal {
   const c = boss.clear;
@@ -583,10 +581,10 @@ export function projectForwardGoals(
   const nextBoss = getBoss(pickQuarterBossId(ctx.seed, ctx.fromQuarter + 1));
   const followingBoss = getBoss(pickQuarterBossId(ctx.seed, ctx.fromQuarter + 2));
   const next = nextBoss
-    ? buildQuarterGoal(nextBoss, ctx.difficulty, 1, adjusted)
+    ? buildQuarterGoal(nextBoss, ctx.difficulty, adjusted)
     : decayGoalFromPrior(adjusted);
   const following = followingBoss
-    ? buildQuarterGoal(followingBoss, ctx.difficulty, 1, next)
+    ? buildQuarterGoal(followingBoss, ctx.difficulty, next)
     : decayGoalFromPrior(next);
   return { next, following };
 }

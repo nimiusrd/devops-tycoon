@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { BOSS_DEFS, getBoss, type BossDef } from '../../../src/data/bosses';
-import { getDifficulty } from '../../../src/data/difficulties';
 import { OUTCOME_BALANCE } from '../../../src/data/balance';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../../src/data/goalAdjustments';
 import { RunEngine } from '../../../src/sim/run/engine';
@@ -243,7 +242,7 @@ describe('四半期レビュー（Phase 8）', () => {
     const boss = getBoss('big-release')!;
     const build = () =>
       buildQuarterReview({
-        goal: buildQuarterGoal(boss, 'normal', 1),
+        goal: buildQuarterGoal(boss, 'normal'),
         org: org({ quality: 35, morale: 38, techDebt: 50 }),
         totals: totals({ delivered: 30, incidents: 8, completed: 25 }),
         trust: buildInitialTrust('normal'),
@@ -358,7 +357,7 @@ describe('四半期レビュー（Phase 8）', () => {
     const boss = getBoss('big-release')!;
     const adjusted = applyGoalAdjustment(
       {
-        goal: buildQuarterGoal(boss, 'normal', 1),
+        goal: buildQuarterGoal(boss, 'normal'),
         trust: buildInitialTrust('normal'),
         org: org(),
         budget: 30,
@@ -367,7 +366,7 @@ describe('四半期レビュー（Phase 8）', () => {
       },
       'quality_pivot',
     );
-    const next = buildQuarterGoal(boss, 'normal', 1, adjusted.goal);
+    const next = buildQuarterGoal(boss, 'normal', adjusted.goal);
     expect(next.techDebtLimit).toBe(adjusted.goal.techDebtLimit);
     expect(next.incidentLimit).toBe(adjusted.goal.incidentLimit);
   });
@@ -432,8 +431,7 @@ describe('四半期レビュー（Phase 8）', () => {
 
     for (const boss of BOSS_DEFS) {
       for (const difficulty of difficulties) {
-        const diff = getDifficulty(difficulty);
-        const g = buildQuarterGoal(boss, difficulty, diff.bossTargetMul);
+        const g = buildQuarterGoal(boss, difficulty);
         expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeGreaterThanOrEqual(
           MIN_QUARTER_DELIVERY_TARGET,
         );
@@ -451,7 +449,7 @@ describe('四半期レビュー（Phase 8）', () => {
           expect(g.aiAdoptionTarget, `${boss.id}:${difficulty}:ai`).toBeLessThanOrEqual(45);
         }
 
-        const next = buildQuarterGoal(boss, difficulty, diff.bossTargetMul, g);
+        const next = buildQuarterGoal(boss, difficulty, g);
         expect(next.deliveryTarget, `${boss.id}:${difficulty}:prior`).toBeLessThan(
           g.deliveryTarget,
         );
@@ -833,7 +831,7 @@ describe('四半期レビュー（Phase 8）', () => {
       incidentMul: 1,
       clear: {},
     };
-    const base = buildQuarterGoal(emptyBoss, 'normal', 1);
+    const base = buildQuarterGoal(emptyBoss, 'normal');
     const baseline = BASELINE_SPRINT_DELIVERY_FLOOR * QUARTER_DELIVERY_GOAL_MUL.normal;
     expect(base).toEqual({
       deliveryTarget: Math.max(
@@ -849,14 +847,14 @@ describe('四半期レビュー（Phase 8）', () => {
     });
     expect(base.aiAdoptionTarget).toBeUndefined();
 
-    const priorWithoutAi = buildQuarterGoal(emptyBoss, 'normal', 1, {
+    const priorWithoutAi = buildQuarterGoal(emptyBoss, 'normal', {
       ...base,
       deliveryTarget: MIN_PRIOR_QUARTER_DELIVERY_TARGET + 1,
     });
     expect(priorWithoutAi.deliveryTarget).toBe(MIN_PRIOR_QUARTER_DELIVERY_TARGET);
     expect(priorWithoutAi.aiAdoptionTarget).toBeUndefined();
 
-    const priorWithAi = buildQuarterGoal(emptyBoss, 'normal', 1, {
+    const priorWithAi = buildQuarterGoal(emptyBoss, 'normal', {
       ...base,
       deliveryTarget: 80 * QUARTER_DELIVERY_SCALE,
       aiAdoptionTarget: 35,
@@ -866,8 +864,8 @@ describe('四半期レビュー（Phase 8）', () => {
   });
 
   it('RI-68: Delivery 目標はボス床を全スプリントへ掛けずボス差を抑える', () => {
-    const big = buildQuarterGoal(getBoss('big-release')!, 'normal', 1);
-    const major = buildQuarterGoal(getBoss('major-incident')!, 'normal', 1);
+    const big = buildQuarterGoal(getBoss('big-release')!, 'normal');
+    const major = buildQuarterGoal(getBoss('major-incident')!, 'normal');
     // 旧式（ボス床×6）だと 2700/1200=2.25 倍。通常5+ボス1なら差は小さくなる。
     expect(big.deliveryTarget / major.deliveryTarget).toBeLessThan(1.3);
     // RI-77: AI 出荷価値倍率後の目標再校正値。
@@ -877,7 +875,7 @@ describe('四半期レビュー（Phase 8）', () => {
 
   it('RI-68: cut_scope 後も Delivery 目標が四半期実績帯から大きく外れない', () => {
     const boss = getBoss('exec-review')!;
-    const before = buildQuarterGoal(boss, 'normal', 1);
+    const before = buildQuarterGoal(boss, 'normal');
     const cut = applyGoalAdjustment(
       {
         goal: before,
@@ -889,7 +887,7 @@ describe('四半期レビュー（Phase 8）', () => {
       },
       'cut_scope',
     );
-    const next = buildQuarterGoal(boss, 'normal', 1, cut.goal);
+    const next = buildQuarterGoal(boss, 'normal', cut.goal);
     // 代表的な四半期実績（約 2000〜2500）に対し 3 倍超の自明超過に戻らないこと。
     const representativeActual = 2478;
     expect(next.deliveryTarget).toBeGreaterThan(representativeActual / 2.5);
@@ -901,7 +899,7 @@ describe('四半期レビュー（Phase 8）', () => {
     // 未達は Quality のみにして shutdown（seniorHp<=5 かつ未達>=2）を避ける。
     // 安全性フィルタで候補が空でも「使い切り」ではなく通常の継続不能理由へ分類する。
     const review = buildQuarterReview({
-      goal: buildQuarterGoal(getBoss('big-release')!, 'normal', 1),
+      goal: buildQuarterGoal(getBoss('big-release')!, 'normal'),
       org: org({ quality: 30, morale: 50, techDebt: 40, seniorHp: 1 }),
       totals: totals({ delivered: 5000, incidents: 2, completed: 20 }),
       trust: { management: 60, customers: 60, team: 25 },
@@ -925,7 +923,7 @@ describe('四半期レビュー（Phase 8）', () => {
 
   it('RI-68: cut_scope を繰り返しても Delivery 下限で実績比が壊れない', () => {
     const boss = getBoss('exec-review')!;
-    let goal = buildQuarterGoal(boss, 'normal', 1);
+    let goal = buildQuarterGoal(boss, 'normal');
     const trust = buildInitialTrust('normal');
     for (let i = 0; i < 3; i += 1) {
       const cut = applyGoalAdjustment(
@@ -939,7 +937,7 @@ describe('四半期レビュー（Phase 8）', () => {
         },
         'cut_scope',
       );
-      goal = buildQuarterGoal(boss, 'normal', 1, cut.goal);
+      goal = buildQuarterGoal(boss, 'normal', cut.goal);
     }
     expect(goal.deliveryTarget).toBeGreaterThanOrEqual(MIN_PRIOR_QUARTER_DELIVERY_TARGET);
     expect(2478 / goal.deliveryTarget).toBeLessThan(2.5);
@@ -947,7 +945,7 @@ describe('四半期レビュー（Phase 8）', () => {
 
   it('RI-68: Delivery 目標と実績は四半期累計の同単位で比較される', () => {
     const boss = getBoss('big-release')!;
-    const quarterGoal = buildQuarterGoal(boss, 'normal', 1);
+    const quarterGoal = buildQuarterGoal(boss, 'normal');
     expect(quarterGoal.deliveryTarget).toBeGreaterThanOrEqual(MIN_QUARTER_DELIVERY_TARGET);
 
     // RI-77: AI 出荷価値倍率後の四半期実績帯（約 3800〜4400）に合わせた代表値。
@@ -988,9 +986,9 @@ describe('四半期レビュー（Phase 8）', () => {
 
   it('RI-68: Delivery 目標倍率は難易度別に校正され normal を基準に並ぶ', () => {
     const boss = getBoss('big-release')!;
-    const easy = buildQuarterGoal(boss, 'easy', 1);
-    const normal = buildQuarterGoal(boss, 'normal', 1);
-    const hard = buildQuarterGoal(boss, 'hard', 1);
+    const easy = buildQuarterGoal(boss, 'easy');
+    const normal = buildQuarterGoal(boss, 'normal');
+    const hard = buildQuarterGoal(boss, 'hard');
     expect(QUARTER_DELIVERY_GOAL_MUL.easy).toBeGreaterThan(QUARTER_DELIVERY_GOAL_MUL.normal);
     // hard はスループットが低いので倍率は normal より低くし、未達経路を残す。
     expect(QUARTER_DELIVERY_GOAL_MUL.hard).toBeLessThan(QUARTER_DELIVERY_GOAL_MUL.normal);
@@ -1653,7 +1651,7 @@ describe('RI-91-B2: quarterReview survived mutants', () => {
       for (const id of allGoalAdjustmentIds()) {
         const def = getGoalAdjustment(id)!;
         const applied = applyGoalAdjustment(applyInput, id);
-        const viaPrior = buildQuarterGoal(boss, 'normal', 1, applied.goal);
+        const viaPrior = buildQuarterGoal(boss, 'normal', applied.goal);
         const { next, following } = projectForwardGoals(current, def);
 
         expect(applied.goal, id).toEqual(applyGoalEffectsToGoal(current, def));
@@ -1693,9 +1691,9 @@ describe('RI-91-B2: quarterReview survived mutants', () => {
       const nextBoss = getBoss(pickQuarterBossId(seed, 2))!;
       const followingBoss = getBoss(pickQuarterBossId(seed, 3))!;
       const { next, following } = projectForwardGoals(withoutAi, undefined, ctx);
-      expect(next).toEqual(buildQuarterGoal(nextBoss, 'normal', 1, withoutAi));
+      expect(next).toEqual(buildQuarterGoal(nextBoss, 'normal', withoutAi));
       expect(next.aiAdoptionTarget).toBe(40);
-      expect(following).toEqual(buildQuarterGoal(followingBoss, 'normal', 1, next));
+      expect(following).toEqual(buildQuarterGoal(followingBoss, 'normal', next));
     });
   });
 });

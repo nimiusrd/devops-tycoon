@@ -44,7 +44,6 @@ describe('効果の畳み込み（第7/8/11/16章）', () => {
   it('進化の集中力ボーナスと実装枠ボーナスが合算される', () => {
     const evo: EvolutionState = { points: 0, unlocked: { 'culture-1': true, 'dev-2': true } };
     const fold = foldRunEffects({
-      deck: [],
       relics: [],
       evolution: evo,
       difficulty: 'normal',
@@ -56,7 +55,6 @@ describe('効果の畳み込み（第7/8/11/16章）', () => {
 
   it('試練「集中力 -1」は focusBonus を下げる', () => {
     const fold = foldRunEffects({
-      deck: [],
       relics: [],
       evolution: { points: 0, unlocked: {} },
       difficulty: 'normal',
@@ -67,7 +65,6 @@ describe('効果の畳み込み（第7/8/11/16章）', () => {
 
   it('試練「フロンティアモデル依存」は依存度増加と利用コストを集約する', () => {
     const fold = foldRunEffects({
-      deck: [],
       relics: [],
       evolution: { points: 0, unlocked: {} },
       difficulty: 'normal',

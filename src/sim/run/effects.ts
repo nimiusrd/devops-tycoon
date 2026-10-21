@@ -15,14 +15,7 @@ import { combineEffects } from '../cards';
 import { IDENTITY_CARD_EFFECTS } from '../model';
 import { DEFAULT_SCENARIO, getScenario } from '../scenarios';
 import type { ScenarioId } from '../types';
-import type {
-  CardEffects,
-  CardInstance,
-  DifficultyId,
-  EvolutionState,
-  RunEffects,
-  RunPassives,
-} from './types';
+import type { CardEffects, DifficultyId, EvolutionState, RunEffects, RunPassives } from './types';
 
 /** 部分指定の効果を完全な `CardEffects` に補完する。 */
 export function toEffects(partial: Partial<CardEffects>): CardEffects {
@@ -38,8 +31,6 @@ export const IDENTITY_PASSIVES: RunPassives = {
 };
 
 export interface RunModifierInput {
-  /** @deprecated RI-30: デッキは手札発動のため fold に含めない。後方互換で受け取るのみ。 */
-  deck: CardInstance[];
   relics: string[];
   evolution: EvolutionState;
   difficulty: DifficultyId;
@@ -98,9 +89,6 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
     aiDependencyDriftPerSprint += trial.aiDependencyDriftPerSprint ?? 0;
     frontierModelCostPerDependency += trial.frontierModelCostPerDependency ?? 0;
   }
-
-  // RI-30: デッキカードは手札発動のためここでは合成しない。
-  void input.deck;
 
   for (const relicId of input.relics) {
     const relic = getRelic(relicId);

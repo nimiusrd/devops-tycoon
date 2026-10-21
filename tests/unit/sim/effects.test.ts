@@ -13,7 +13,6 @@ import type { EvolutionState } from '../../../src/sim/run/types';
 const emptyEvolution: EvolutionState = { points: 0, unlocked: {} };
 
 const input = (overrides: Partial<RunModifierInput> = {}): RunModifierInput => ({
-  deck: [],
   relics: [],
   evolution: emptyEvolution,
   difficulty: 'normal',
@@ -99,19 +98,6 @@ describe('run effects fold', () => {
     expect(folded.aiDependencyDriftPerSprint).toBe(5);
     // ベース 0.22 + 試練上乗せ 0.04
     expect(folded.frontierModelCostPerDependency).toBeCloseTo(0.26);
-  });
-
-  it('deck は常時効果に含めない（難易度係数のみ残る）', () => {
-    const folded = foldRunEffects(
-      input({
-        deck: [
-          { defId: 'copilot', level: 3 },
-          { defId: 'auto-test', level: 2 },
-        ],
-      }),
-    );
-
-    expect(folded.effects).toEqual({ ...IDENTITY_CARD_EFFECTS, seniorHpCostMul: 0.8 });
   });
 });
 

@@ -73,6 +73,56 @@ const NARROW_SETUP_VIEWPORTS = [
   { name: 'tablet-portrait', width: 768, height: 1024 },
 ] as const;
 
+for (const viewport of [
+  ...NARROW_SETUP_VIEWPORTS,
+  { name: 'desktop-short', width: 1024, height: 768 },
+  { name: 'desktop', width: 1280, height: 800 },
+  { name: 'desktop-wide', width: 1440, height: 900 },
+]) {
+  test(`${viewport.width}pxでAI配布不可の理由をホバーなしで読める（#815）`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto('/?seed=formation-disabled-reason');
+    await page.getByTestId('difficulty-normal').click();
+    await page.getByTestId('start-run').click();
+    const setup = page.getByTestId('setup');
+    const ai = setup.getByTestId('ai-m2');
+    const reason = setup.getByTestId('formation-member-m2').locator('.fm-ai-reason');
+    await expect(ai).toBeDisabled();
+    await expect(reason).toHaveText('コーディング担当にのみ配れます');
+    await expect(reason).toBeVisible();
+    await expect(reason).toHaveCSS('font-size', '12px');
+    await expect(ai).toHaveAccessibleDescription('コーディング担当にのみ配れます');
+    await expect(ai).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(ai).toHaveCSS('border-style', 'dashed');
+    await expect(ai).toHaveCSS('opacity', '1');
+    const buttonBox = await ai.boundingBox();
+    const reasonBox = await reason.boundingBox();
+    if (!buttonBox || !reasonBox) throw new Error('AIボタンと理由の位置を取得できない');
+    expect(reasonBox.y).toBeGreaterThanOrEqual(buttonBox.y + buttonBox.height);
+    const member = setup.getByTestId('formation-member-m2');
+    expect(await member.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+    await member.scrollIntoViewIfNeeded();
+    await member.screenshot({ path: test.info().outputPath(`ai-disabled-${viewport.width}.png`) });
+
+    await page.getByTestId('open-formation').click();
+    const dialog = page.getByTestId('formation');
+    await expect(dialog.getByTestId('ai-m2')).toHaveAccessibleDescription(
+      'コーディング担当にのみ配れます',
+    );
+    await expect(dialog.locator('.fm-ai-reason')).toBeVisible();
+    const ids = await page
+      .locator('.fm-ai-reason')
+      .evaluateAll((elements) => elements.map((el) => el.id));
+    expect(new Set(ids).size).toBe(ids.length);
+    await dialog.getByTestId('assign-m2-coding').click();
+    await expect(dialog.getByTestId('ai-m2')).toBeEnabled();
+    await expect(dialog.getByTestId('ai-m2')).not.toHaveAttribute('aria-describedby');
+    await expect(dialog.locator('.fm-ai-reason')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(setup.getByTestId('ai-m2')).toBeEnabled();
+  });
+}
+
 test.describe('narrow setup is a reachable 1-column stack', () => {
   for (const viewport of NARROW_SETUP_VIEWPORTS) {
     test(`${viewport.name} ${viewport.width}x${viewport.height} で配置と開始が1カラムで到達できる`, async ({

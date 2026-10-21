@@ -5,7 +5,7 @@
  * ステータス・トレイト・スタミナ・表情（疲れ顔 / ガッツポーズ等）を表示し、
  * 配置と AI 配布を切り替える。状態は読むだけ（第22.2）で、操作は window.game 経由。
  */
-import { useRef } from 'react';
+import { useId, useRef } from 'react';
 import { getTrait } from '../data/traits';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
@@ -37,13 +37,21 @@ export function FormationGrid({
   /** Setup の主画面だけ region にする。編成 dialog と重ねると同名 landmark が二重になる。 */
   landmark?: boolean;
 }) {
+  const descriptionId = useId();
   const locked = readOnly || state.phase === 'sprint';
+  const lockedNoteId = locked ? `${descriptionId}-locked` : undefined;
   return (
     <>
       {readOnly ? (
-        <p className="fm-locked-note">リプレイ閲覧中は編成を変更できません。</p>
+        <p id={lockedNoteId} className="fm-locked-note">
+          リプレイ閲覧中は編成を変更できません。
+        </p>
       ) : (
-        locked && <p className="fm-locked-note">スプリント中は編成を変更できません。</p>
+        locked && (
+          <p id={lockedNoteId} className="fm-locked-note">
+            スプリント中は編成を変更できません。
+          </p>
+        )
       )}
       {(state.whatIf?.current || state.whatIfStatus === 'computing') && (
         <WhatIfPreview
@@ -62,6 +70,8 @@ export function FormationGrid({
             key={m.id}
             m={m}
             locked={locked}
+            lockedNoteId={lockedNoteId}
+            aiReasonId={`${descriptionId}-${m.id}-ai-reason`}
             onAssign={onAssign}
             onToggleAi={onToggleAi}
           />
@@ -95,17 +105,24 @@ const LANES: { id: LaneAssignment; label: string }[] = [
 function MemberCard({
   m,
   locked,
+  lockedNoteId,
+  aiReasonId,
   onAssign,
   onToggleAi,
 }: {
   m: Member;
   locked: boolean;
+  lockedNoteId?: string;
+  aiReasonId: string;
   onAssign: (id: string, assignment: LaneAssignment) => void;
   onToggleAi: (id: string, on: boolean) => void;
 }) {
   const expr = memberExpression(m);
   const staminaPct = m.staminaMax > 0 ? Math.round((m.stamina / m.staminaMax) * 100) : 0;
   const xpNeed = xpForLevel(m.level);
+  const aiReason = m.assignment !== 'coding' ? 'コーディング担当にのみ配れます' : undefined;
+  const aiDescription =
+    [lockedNoteId, aiReason ? aiReasonId : undefined].filter(Boolean).join(' ') || undefined;
   return (
     <div
       className={`formation-member${m.onLeave ? ' on-leave' : ''}`}
@@ -179,12 +196,18 @@ function MemberCard({
             data-testid={`ai-${m.id}`}
             aria-pressed={m.aiAssigned}
             aria-label={`${m.name}の${m.aiAssigned ? 'AI配布中' : 'AIを配る'}`}
-            disabled={locked || m.assignment !== 'coding'}
-            title={m.assignment !== 'coding' ? 'AIはコーディング担当にのみ配れます' : undefined}
+            aria-describedby={aiDescription}
+            disabled={locked || !!aiReason}
+            title={aiReason ? `AIは${aiReason}` : undefined}
             onClick={() => onToggleAi(m.id, !m.aiAssigned)}
           >
             {m.aiAssigned ? '🤖 AI配布中' : 'AIを配る'}
           </button>
+          {aiReason && (
+            <p id={aiReasonId} className="fm-ai-reason">
+              {aiReason}
+            </p>
+          )}
         </>
       )}
     </div>

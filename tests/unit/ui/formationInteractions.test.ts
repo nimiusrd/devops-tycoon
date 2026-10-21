@@ -1,10 +1,14 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('react', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('react')>()),
-  useRef: () => ({ current: null }),
-}));
+vi.mock('react', async (importOriginal) => {
+  let nextId = 0;
+  return {
+    ...(await importOriginal<typeof import('react')>()),
+    useRef: () => ({ current: null }),
+    useId: () => `formation-${nextId++}`,
+  };
+});
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({
   useDialogOverlayLock: vi.fn(),
 }));
@@ -105,6 +109,7 @@ describe('編成画面の配置と AI 配布', () => {
       'aria-pressed': true,
       'aria-label': 'Direct CoderのAI配布中',
     });
+    expect(screen.find('ai-m1').props['aria-describedby']).toBeUndefined();
     const grid = screen.all().find((node) => node.props.className === 'formation-grid');
     expect(grid?.props.role).toBeUndefined();
     expect(grid?.props['aria-label']).toBeUndefined();
@@ -135,6 +140,10 @@ describe('編成画面の配置と AI 配布', () => {
       const screen = mountFormation({ state });
       expect(screen.find('ai-m1').props.disabled).toBe(true);
       expect(screen.find('ai-m1').props.title).toBe('AIはコーディング担当にのみ配れます');
+      const reasonId = screen.find('ai-m1').props['aria-describedby'];
+      const reason = screen.all().find((node) => node.props.id === reasonId);
+      expect(content(reason)).toBe('コーディング担当にのみ配れます');
+      expect(reason?.props.className).toBe('fm-ai-reason');
       screen.click('ai-m1');
       expect(screen.props.onToggleAi).not.toHaveBeenCalled();
       screen.click('assign-m1-coding');
@@ -151,6 +160,8 @@ describe('編成画面の配置と AI 配布', () => {
     ({ phase, readOnly, reason }) => {
       const screen = mountFormation({ state: makeState({ phase }), readOnly });
       expect(screen.text()).toContain(reason);
+      const describedBy = String(screen.find('ai-m1').props['aria-describedby']);
+      expect(content(screen.all().find((node) => node.props.id === describedBy))).toBe(reason);
       for (const id of ['assign-m1-coding', 'assign-m1-review', 'assign-m1-bench', 'ai-m1']) {
         expect(screen.find(id).props.disabled).toBe(true);
         screen.click(id);

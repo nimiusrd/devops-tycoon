@@ -3,12 +3,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 // Node 上の memo とリプレイ Context だけを代行する。
 // OKR・編成・デッキの子コンポーネントは展開し、引き渡された状態も検証する。
-vi.mock('react', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('react')>()),
-  useMemo: (factory: () => unknown) => factory(),
-  useState: (initial: unknown) => [initial, vi.fn()],
-  useRef: (initial: unknown) => ({ current: initial }),
-}));
+vi.mock('react', async (importOriginal) => {
+  let nextId = 0;
+  return {
+    ...(await importOriginal<typeof import('react')>()),
+    useMemo: (factory: () => unknown) => factory(),
+    useState: (initial: unknown) => [initial, vi.fn()],
+    useRef: (initial: unknown) => ({ current: initial }),
+    useId: () => `setup-${nextId++}`,
+  };
+});
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
   return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };

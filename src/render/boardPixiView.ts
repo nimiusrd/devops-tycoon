@@ -87,7 +87,8 @@ export const DOT_HIT_MARGIN = VISUAL_TOKENS.dimensions.sprint.dotHitMargin;
  * 設計座標の点から、掴めるタスク粒を特定する（RI-30 のドラッグ開始判定）。
  *
  * 粒半径＋設計マージンを保ちつつ、各軸で画面上24px以上の操作領域を確保する。
- * 拡張領域が重なったら画面上の中心距離が最短の粒、同距離なら後から描かれた粒を返す。
+ * 実際の円内なら後から描かれた粒を優先する。円外の拡張領域だけが重なった場合は
+ * 画面上の中心距離が最短の粒、同距離なら後から描かれた粒を返す。
  * scale は設計座標から CSS px への軸ごとの縮尺。
  */
 export function hitTestBoardDot(
@@ -105,11 +106,17 @@ export function hitTestBoardDot(
   for (let i = dots.length - 1; i >= 0; i -= 1) {
     const dot = dots[i];
     if (!draggableIds.has(dot.id)) continue;
-    const r = TASK_DIAMETER[dot.size] / 2 + DOT_HIT_MARGIN;
+    const visibleRadius = TASK_DIAMETER[dot.size] / 2;
+    const designDx = pt.x - dot.x;
+    const designDy = pt.y - dot.y;
+    if (designDx * designDx + designDy * designDy <= visibleRadius * visibleRadius) {
+      return dot.id;
+    }
+    const r = visibleRadius + DOT_HIT_MARGIN;
     const rx = Math.max(r * scale.x, minimumRadius);
     const ry = Math.max(r * scale.y, minimumRadius);
-    const dx = (pt.x - dot.x) * scale.x;
-    const dy = (pt.y - dot.y) * scale.y;
+    const dx = designDx * scale.x;
+    const dy = designDy * scale.y;
     const distance = dx * dx + dy * dy;
     if ((dx / rx) ** 2 + (dy / ry) ** 2 <= 1 && distance < nearestDistance) {
       nearestId = dot.id;

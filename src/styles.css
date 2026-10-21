@@ -751,7 +751,8 @@ body {
 }
 .btn:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 .btn-primary {
   background: linear-gradient(135deg, #6a57ad, #4a3a86);
@@ -2336,11 +2337,6 @@ body:has(.overlay-contained) {
   transform: translateY(2px);
   box-shadow: 0 2px 0 var(--visual-color-board-background-bottom);
 }
-/* 説明を読み比べられるよう、disabled でも本文を薄くしない。 */
-.action:disabled {
-  cursor: not-allowed;
-  background: var(--panel);
-}
 .action.ready {
   border-color: color-mix(in srgb, var(--visual-color-interaction-drag) 65%, var(--line));
 }
@@ -2349,6 +2345,12 @@ body:has(.overlay-contained) {
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--sun) 35%, transparent),
     0 4px 0 var(--visual-color-board-background-bottom);
+}
+/* 説明を読み比べられるよう、disabled でも本文を薄くしない。 */
+.action:disabled {
+  cursor: not-allowed;
+  background: var(--panel);
+  box-shadow: none;
 }
 .station.drop-target {
   outline: 2px dashed color-mix(in srgb, var(--visual-color-interaction-drag) 53%, transparent);
@@ -3671,6 +3673,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .title-recipe-section {
   display: grid !important;
   grid-template-columns: minmax(220px, 280px) 1fr;
+  column-gap: 12px;
   align-items: center;
   min-height: 86px;
   padding: 14px 20px !important;
@@ -3724,6 +3727,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .title-recipe-actions button:hover:not(:disabled) {
   border-color: #7edfff;
   background: #142944;
+}
+.title-recipe-actions button:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
 }
 .title-recipe-status {
   margin: 0;
@@ -6681,7 +6688,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #1b3a30;
 }
 .fm-ai:disabled {
-  opacity: 0.5;
+  color: var(--text-dim);
+  background: var(--panel);
+  border-style: dashed;
   cursor: not-allowed;
 }
 .fm-leave-note {

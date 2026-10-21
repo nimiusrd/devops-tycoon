@@ -95,15 +95,22 @@ describe('hitTestBoardDot', () => {
     expect(hitTestBoardDot({ x: 720, y: 300 }, dots, draggable)).toBeNull();
   });
 
-  it('重なりは後から描かれた粒（手前）を優先する', () => {
+  it('重なりは中心に近い粒、同距離なら後から描かれた粒を優先する', () => {
     const dots = [dot({ id: 1, x: 700, y: 300 }), dot({ id: 2, x: 706, y: 300 })];
-    expect(hitTestBoardDot({ x: 702, y: 300 }, dots, draggable)).toBe(2);
+    expect(hitTestBoardDot({ x: 702, y: 300 }, dots, draggable)).toBe(1);
+    expect(hitTestBoardDot({ x: 703, y: 300 }, dots, draggable)).toBe(2);
+    expect(hitTestBoardDot({ x: 705, y: 300 }, dots, draggable)).toBe(2);
   });
 
   it('draggable でない粒は手前でも素通しする', () => {
     const dots = [dot({ id: 1, x: 700, y: 300 }), dot({ id: 9, x: 700, y: 300 })];
     expect(hitTestBoardDot({ x: 700, y: 300 }, dots, draggable)).toBe(1);
     expect(hitTestBoardDot({ x: 700, y: 300 }, dots, new Set<number>())).toBeNull();
+  });
+
+  it('近さは設計座標ではなく画面上の距離で比較する', () => {
+    const dots = [dot({ id: 1, x: 100, y: 108 }), dot({ id: 2, x: 110, y: 100 })];
+    expect(hitTestBoardDot({ x: 100, y: 100 }, dots, draggable, { x: 0.2, y: 1 })).toBe(2);
   });
 
   it('粒サイズで判定半径が変わる', () => {

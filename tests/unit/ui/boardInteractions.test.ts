@@ -409,6 +409,18 @@ describe('Board の座標ドラッグ', () => {
     expect(board.byClass('dragging')).toHaveLength(0);
   });
 
+  it('粒の中心から画面上11px離れても掴め、ティッカーの判定と同じ対象へ一度だけ分割する', () => {
+    const board = mountBoard({ armedAction: 'splitPr' });
+    const point = { ...board.dot(3), x: board.dot(3).x + (11 * BOARD_VIEW.w) / rect.width };
+    const client = clientPoint(point);
+    expect(clientPointHitsRegisteredBoardDrag(client.clientX, client.clientY)).toBe(true);
+    board.downBoard(point);
+    expect(board.layer().props.dragTaskId).toBe(3);
+    board.dispatch('pointerup', point);
+    board.dispatch('pointerup', point);
+    expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 3 });
+  });
+
   it('盤面がドラッグ中に外れた場合は移動・確定を捨てて後続 pointerup も受け付けない', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
     board.downTask(3);

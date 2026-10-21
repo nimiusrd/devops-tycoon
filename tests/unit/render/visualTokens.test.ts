@@ -59,6 +59,7 @@ describe('visual tokens', () => {
       left: '50%',
       top: '50%',
     });
+    expect(VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter).toBeGreaterThanOrEqual(24);
   });
 
   it('Review演出の共有寸法と上限を一元管理する', () => {

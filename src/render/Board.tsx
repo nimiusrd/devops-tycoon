@@ -28,10 +28,10 @@ import {
 } from './boardDragPlan';
 import {
   clientPointHitsDraggableBoardDot,
+  hitTestClientBoardDot,
   registerBoardDragHitTest,
   registerPixiBoardDragHitTest,
 } from './boardDragHit';
-import { hitTestBoardDot } from './boardPixiView';
 import type { InterventionTrigger } from './interventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { usePixiRenderer } from '../ui/usePixiRenderer';
@@ -290,10 +290,13 @@ export function Board({
       ) {
         return;
       }
-      const rect = boardRef.current?.getBoundingClientRect();
-      if (!rect || dragIds.size === 0) return;
-      const pt = clientToBoardPoint(e.clientX, e.clientY, rect);
-      const taskId = hitTestBoardDot(pt, scene.dots, dragIds);
+      const taskId = hitTestClientBoardDot(
+        e.clientX,
+        e.clientY,
+        boardRef.current?.getBoundingClientRect(),
+        scene.dots,
+        dragIds,
+      );
       if (taskId !== null) handlePointerDown(e, taskId);
     },
     [dragIds, scene.dots, handlePointerDown],

@@ -107,12 +107,12 @@ describe('実績・勝利称号・失敗図鑑のコレクション', () => {
     expect(meta.achievements).toEqual([achievement.id, achievement.id, 'unknown-achievement']);
   });
 
-  it('難易度別の勝ち方は達成・未達・難易度未解放を文言で区別し、次の目標を示す', () => {
+  it('難易度別の勝ち方は達成の印・未解放の鍵を示し、未達の2件を次の目標にする', () => {
     const empty = mountCollection();
     expect(content(empty.find('win-combo-count'))).toBe(`0/${4 * WIN_TITLE_DEFS.length}`);
-    expect(content(empty.find('win-combo-next'))).toContain(
-      `未達の勝ち方 ${WIN_TITLE_DEFS.length} 種`,
-    );
+    for (const title of WIN_TITLE_DEFS.slice(0, 2)) {
+      expect(content(empty.find('win-combo-next'))).toContain(title.label);
+    }
     const title = WIN_TITLE_DEFS[1];
     const screen = mountCollection({
       ...defaultMeta(),
@@ -122,20 +122,64 @@ describe('実績・勝利称号・失敗図鑑のコレクション', () => {
     expect(content(screen.find('win-combo-count'))).toBe(`1/${4 * WIN_TITLE_DEFS.length}`);
     const achieved = screen.find(`win-combo-normal-${title.id}`);
     expect(achieved.props['data-achieved']).toBe('true');
+    expect(achieved.props['data-next-goal']).toBe('false');
     expect(content(achieved)).toBe(`✓ ${title.label}`);
     const easy = screen.find(`win-combo-easy-${title.id}`);
     expect(easy.props['data-achieved']).toBe('false');
-    expect(content(easy)).toBe(`未達 ${title.label}`);
+    expect(content(easy)).toBe(title.label);
+    expect(easy.props['data-next-goal']).toBe('false');
     expect(screen.find('win-combo-row-normal').props['data-unlocked']).toBe('true');
     expect(content(screen.find('win-combo-row-normal'))).toContain(`1/${WIN_TITLE_DEFS.length}`);
     const hard = screen.find('win-combo-row-hard');
     expect(hard.props['data-unlocked']).toBe('false');
-    expect(content(hard)).toContain('難易度未解放');
-    expect(content(hard)).toContain('前の難易度でボスを突破すると解放');
+    expect(
+      elements(hard).some(
+        (node) => node.props.role === 'img' && node.props['aria-label'] === '難易度未解放',
+      ),
+    ).toBe(true);
+    expect(content(hard).match(/前の難易度でボスを突破すると解放/g)).toHaveLength(1);
     expect(() => screen.find(`win-combo-hard-${title.id}`)).toThrow();
-    expect(content(screen.find('win-combo-next'))).toContain(
-      `未達の勝ち方 ${WIN_TITLE_DEFS.length - 1} 種`,
+    const goals = WIN_TITLE_DEFS.filter((item) => item.id !== title.id).slice(0, 2);
+    for (const goal of goals) {
+      expect(content(screen.find('win-combo-next'))).toContain(goal.label);
+      expect(screen.find(`win-combo-normal-${goal.id}`).props['data-next-goal']).toBe('true');
+    }
+    expect(content(screen.find('win-combo-next'))).not.toContain(title.label);
+    expect(screen.find('win-combo-row-normal').props.className).toContain('is-next-goal');
+  });
+
+  it('未達が1件だけならその勝ち方だけを次の目標にする', () => {
+    const last = WIN_TITLE_DEFS[WIN_TITLE_DEFS.length - 1];
+    const screen = mountCollection({
+      ...defaultMeta(),
+      collectedWinCombos: WIN_TITLE_DEFS.slice(0, -1).map((title) => `normal:${title.id}`),
+    });
+    expect(content(screen.find('win-combo-next'))).toContain(last.label);
+    expect(content(screen.find('win-combo-next'))).not.toContain(WIN_TITLE_DEFS[0].label);
+    expect(screen.find(`win-combo-normal-${last.id}`).props['data-next-goal']).toBe('true');
+  });
+
+  it('解放済みの組み合わせをすべて達成したら次の目標を強調しない', () => {
+    const meta = defaultMeta();
+    const screen = mountCollection({
+      ...meta,
+      collectedWinCombos: meta.unlockedDifficulties.flatMap((difficulty) =>
+        WIN_TITLE_DEFS.map((title) => `${difficulty}:${title.id}`),
+      ),
+    });
+    expect(content(screen.find('win-combo-next'))).toBe(
+      '解放済みの難易度で、すべての勝ち方を達成しました。',
     );
+    for (const difficulty of meta.unlockedDifficulties) {
+      expect(screen.find(`win-combo-row-${difficulty}`).props.className).not.toContain(
+        'is-next-goal',
+      );
+      for (const title of WIN_TITLE_DEFS) {
+        expect(screen.find(`win-combo-${difficulty}-${title.id}`).props['data-next-goal']).toBe(
+          'false',
+        );
+      }
+    }
   });
 
   it('閉じるボタンとダイアログの dismiss に同じ終了操作を接続する', () => {

@@ -64,7 +64,10 @@ test('タイトルから実績コレクションを開き取得済み／未取�
 const VIEWPORTS = [
   { name: 'phone-se', width: 320, height: 568 },
   { name: 'phone', width: 390, height: 844 },
+  { name: 'tablet-portrait', width: 768, height: 1024 },
+  { name: 'desktop-short', width: 1024, height: 768 },
   { name: 'desktop', width: 1280, height: 800 },
+  { name: 'desktop-wide', width: 1440, height: 900 },
 ] as const;
 
 for (const viewport of VIEWPORTS) {
@@ -79,6 +82,10 @@ for (const viewport of VIEWPORTS) {
     await expect(codex).toBeVisible();
     await expect(page.getByTestId('win-combo-count')).toHaveText('1/28');
     await expect(page.getByTestId('win-combo-next')).toContainText('Normal');
+    await expect(page.getByTestId('win-combo-next')).toContainText('通常勝利・健全勝利');
+    await expect(codex.locator('.win-combo-cells [data-next-goal="true"]')).toHaveCount(2);
+    await expect(page.getByTestId('win-combo-row-normal')).toHaveClass(/is-next-goal/);
+    await expect(codex).not.toContainText('未達');
     await expect(page.getByTestId('win-combo-easy-healthy')).toHaveAttribute(
       'data-achieved',
       'true',
@@ -89,6 +96,9 @@ for (const viewport of VIEWPORTS) {
     );
     const hard = page.getByTestId('win-combo-row-hard');
     await expect(hard).toHaveAttribute('data-unlocked', 'false');
+    await expect(hard.getByRole('img', { name: '難易度未解放' })).toBeVisible();
+    await expect(hard).toHaveCSS('border-style', 'dashed');
+    expect((await hard.innerText()).match(/前の難易度でボスを突破すると解放/g)).toHaveLength(1);
     const lockedContrast = await hard.evaluate((row) => {
       const luminance = (color: string) => {
         const channels = color

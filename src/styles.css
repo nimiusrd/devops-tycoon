@@ -6036,6 +6036,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 /* 解放条件は 12px の通常文字。実績カードの locked 透過を重ねると 4.5:1 を下回る（DS-08）。 */
 .win-combo-rows .achievement-card.locked {
   opacity: 1;
+  border-style: dashed;
+}
+.win-combo-rows .achievement-card.is-next-goal {
+  border-color: var(--sun);
 }
 .win-combo-rows .achievement-card.locked .win-combo-row-count,
 .win-combo-rows .achievement-card.locked .achievement-card-hint {
@@ -6051,6 +6055,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .win-combo-cells .pill.achievement {
   color: var(--cream);
+}
+.win-combo-cells .pill.is-next-goal {
+  color: var(--cream);
+  border-color: var(--sun);
+  border-style: dashed;
 }
 
 /* ラン決着 */

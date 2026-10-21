@@ -30,6 +30,11 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
   const collectedTitles = new Set(meta.collectedWinTypes);
   const titleCount = WIN_TITLE_DEFS.filter((title) => collectedTitles.has(title.id)).length;
   const combos = buildWinComboCodex(meta);
+  const nextGoalTypes = new Set(combos.nextGoal?.remaining.slice(0, 2) ?? []);
+  const nextGoalCells =
+    combos.rows
+      .find((row) => row.difficulty === combos.nextGoal?.difficulty)
+      ?.cells.filter((cell) => nextGoalTypes.has(cell.winType)) ?? [];
   const collectedDiagnoses = new Set(meta.collectedDiagnoses);
   const failureCount = FAILURE_ENCYCLOPEDIA_DEFS.filter((def) =>
     collectedDiagnoses.has(def.type),
@@ -123,43 +128,55 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
             </p>
             <p className="win-combo-next" data-testid="win-combo-next">
               {combos.nextGoal
-                ? `次の目標: ${combos.nextGoal.label} で未達の勝ち方 ${combos.nextGoal.remaining.length} 種`
+                ? `次の目標: ${combos.nextGoal.label} で ${nextGoalCells.map((cell) => cell.label).join('・')}`
                 : '解放済みの難易度で、すべての勝ち方を達成しました。'}
             </p>
             <ul className="win-combo-rows">
-              {combos.rows.map((row) => (
-                <li
-                  key={row.difficulty}
-                  className={`achievement-card${row.unlocked ? '' : ' locked'}`}
-                  data-testid={`win-combo-row-${row.difficulty}`}
-                  data-unlocked={row.unlocked ? 'true' : 'false'}
-                >
-                  <span className="achievement-card-label">
-                    {row.label}{' '}
-                    <span className="win-combo-row-count">
-                      {row.unlocked
-                        ? `${row.achievedCount}/${row.cells.length}`
-                        : '前の難易度でボスを突破すると解放'}
+              {combos.rows.map((row) => {
+                const isGoalRow = row.difficulty === combos.nextGoal?.difficulty;
+                return (
+                  <li
+                    key={row.difficulty}
+                    className={`achievement-card${row.unlocked ? '' : ' locked'}${isGoalRow ? ' is-next-goal' : ''}`}
+                    data-testid={`win-combo-row-${row.difficulty}`}
+                    data-unlocked={row.unlocked ? 'true' : 'false'}
+                  >
+                    <span className="achievement-card-label">
+                      {!row.unlocked && (
+                        <>
+                          <span role="img" aria-label="難易度未解放">
+                            🔒
+                          </span>{' '}
+                        </>
+                      )}
+                      {row.label}{' '}
+                      <span className="win-combo-row-count">
+                        {row.achievedCount}/{row.cells.length}
+                      </span>
                     </span>
-                  </span>
-                  {row.unlocked ? (
-                    <ul className="win-combo-cells" aria-label={`${row.label} の勝ち方`}>
-                      {row.cells.map((cell) => (
-                        <li
-                          key={cell.winType}
-                          className={`pill pill-compact${cell.achieved ? ' achievement' : ''}`}
-                          data-testid={`win-combo-${row.difficulty}-${cell.winType}`}
-                          data-achieved={cell.achieved ? 'true' : 'false'}
-                        >
-                          {cell.achieved ? `✓ ${cell.label}` : `未達 ${cell.label}`}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="achievement-card-hint">難易度未解放</p>
-                  )}
-                </li>
-              ))}
+                    {row.unlocked ? (
+                      <ul className="win-combo-cells" aria-label={`${row.label} の勝ち方`}>
+                        {row.cells.map((cell) => {
+                          const isNextGoal = isGoalRow && nextGoalTypes.has(cell.winType);
+                          return (
+                            <li
+                              key={cell.winType}
+                              className={`pill pill-compact${cell.achieved ? ' achievement' : ''}${isNextGoal ? ' is-next-goal' : ''}`}
+                              data-testid={`win-combo-${row.difficulty}-${cell.winType}`}
+                              data-achieved={cell.achieved ? 'true' : 'false'}
+                              data-next-goal={isNextGoal ? 'true' : 'false'}
+                            >
+                              {cell.achieved ? `✓ ${cell.label}` : cell.label}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="achievement-card-hint">前の難易度でボスを突破すると解放</p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
           <section

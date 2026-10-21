@@ -6,7 +6,7 @@
  * 高価値で大きく弾けるが、決定論には影響しない（描画専用。第22.2）。
  */
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useAudio } from '../audio/useAudio';
 
 interface Pop {
@@ -26,6 +26,7 @@ export interface PointPopsProps {
 }
 
 export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
+  const reducedMotion = useReducedMotion() ?? false;
   const prev = useRef(deliveryScore);
   const prevTeamId = useRef(teamId);
   const nextId = useRef(0);
@@ -69,10 +70,10 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
             key={p.id}
             className={`point-pop${p.amount >= 12 ? ' big' : ''}`}
             style={{ left: `${p.x}%` }}
-            initial={{ y: 0, opacity: 0, scale: 0.8 }}
-            animate={{ y: -42, opacity: 1, scale: 1 }}
-            exit={{ y: -70, opacity: 0 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
+            initial={reducedMotion ? false : { y: 0, opacity: 0, scale: 0.8 }}
+            animate={reducedMotion ? { opacity: 1 } : { y: -42, opacity: 1, scale: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: -70, opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 1, ease: 'easeOut' }}
           >
             +{p.amount}
           </motion.span>

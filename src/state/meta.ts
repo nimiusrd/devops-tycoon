@@ -467,7 +467,7 @@ export interface WinComboCodex {
   rows: WinComboRow[];
   achievedCount: number;
   total: number;
-  /** 解放済みの最上位難易度で未達の勝ち方。全達成なら null。 */
+  /** 解放済みの最も低い未完了難易度で未達の勝ち方。全達成なら null。 */
   nextGoal: { difficulty: DifficultyId; label: string; remaining: WinType[] } | null;
 }
 
@@ -488,9 +488,8 @@ export function buildWinComboCodex(meta: MetaState): WinComboCodex {
       cells,
     };
   });
-  const goalRow = [...rows]
-    .reverse()
-    .find((row) => row.unlocked && row.achievedCount < row.cells.length);
+  // メタ記録に直近のプレイ難易度はないため、タイトルの初期選択と同じ低い順で案内する。
+  const goalRow = rows.find((row) => row.unlocked && row.achievedCount < row.cells.length);
   return {
     rows,
     achievedCount: rows.reduce((sum, row) => sum + row.achievedCount, 0),

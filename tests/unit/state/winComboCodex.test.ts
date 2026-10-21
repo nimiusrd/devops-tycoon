@@ -79,7 +79,11 @@ describe('難易度×勝利種別の図鑑（RI-294）', () => {
     );
   });
 
-  it('未達と解放前の難易度を区別し、解放済みの最上位難易度の未達を次の目標にする', () => {
+  it('記録が空なら初期選択と同じ Easy の未達を次の目標にする', () => {
+    expect(buildWinComboCodex(defaultMeta()).nextGoal?.difficulty).toBe('easy');
+  });
+
+  it('未達と解放前の難易度を区別し、直近の難易度が不明なら低い未完了難易度を案内する', () => {
     const meta: MetaState = {
       ...defaultMeta(),
       collectedWinCombos: [winComboKey('easy', 'healthy'), winComboKey('normal', 'chaos')],
@@ -97,10 +101,18 @@ describe('難易度×勝利種別の図鑑（RI-294）', () => {
     expect(normal.cells.map((cell) => cell.label)).toEqual(WIN_TITLE_DEFS.map((def) => def.label));
     expect(normal.cells.find((cell) => cell.winType === 'chaos')!.achieved).toBe(true);
     expect(codex.nextGoal).toEqual({
-      difficulty: 'normal',
-      label: normal.label,
-      remaining: WIN_TITLE_DEFS.map((def) => def.id).filter((id) => id !== 'chaos'),
+      difficulty: 'easy',
+      label: codex.rows[0].label,
+      remaining: WIN_TITLE_DEFS.map((def) => def.id).filter((id) => id !== 'healthy'),
     });
+  });
+
+  it('Easy をすべて達成すると未完了の Normal に進む', () => {
+    const codex = buildWinComboCodex({
+      ...defaultMeta(),
+      collectedWinCombos: WIN_TITLE_DEFS.map((def) => winComboKey('easy', def.id)),
+    });
+    expect(codex.nextGoal?.difficulty).toBe('normal');
   });
 
   it('解放済みの難易度をすべて達成すると次の目標は無くなる', () => {

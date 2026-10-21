@@ -106,6 +106,7 @@ describe('visual tokens', () => {
     expect(values['--visual-color-board-contact-shadow']).toBe(
       VISUAL_TOKENS.colors.board.contactShadow,
     );
+    expect(values['--visual-color-chart-hover-band']).toBe(VISUAL_TOKENS.colors.chart.hoverBand);
     expect(values['--visual-space-sprint-w']).toBe('1404');
     expect(values['--visual-space-organization-h']).toBe('573');
     expect(values['--visual-space-department-w']).toBe('1404');

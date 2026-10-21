@@ -8,6 +8,7 @@ import {
 import { STABILITY_COMBO_CAP, comboMultiplier, deliveryComboMultiplier } from '../../src/sim/model';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
+import { VISUAL_TOKENS } from '../../src/render/visualTokens';
 
 type GameWindow = Window & {
   game?: {
@@ -352,7 +353,10 @@ test('炎上があったリザルトに「なぜ燃えたか」解説を表示�
   await expect(page.getByTestId('result-burn-cause-entry').first()).toBeVisible();
 });
 
-test('介入ありのリザルトに無介入ベースライン比較を表示する（RI-55）', async ({ page }) => {
+test('介入ありのリザルトに無介入ベースライン比較を表示する（RI-55）', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/?seed=ri55-e2e');
 
   const result = await page.evaluate(() => {
@@ -383,4 +387,16 @@ test('介入ありのリザルトに無介入ベースライン比較を表示�
   await expect(page.getByTestId('result-baseline-disclaimer')).toContainText(
     '厳密な同一世界線ではありません',
   );
+
+  const chart = page.getByTestId('result-baseline-chart');
+  await chart.locator('.recharts-bar-rectangle').first().hover();
+  const cursor = chart.locator('.recharts-tooltip-cursor');
+  await expect(cursor).toBeVisible();
+  await expect(chart.locator('.recharts-tooltip-wrapper')).toContainText(
+    String(result.baseline!.delivered),
+  );
+  await page.getByTestId('result-baseline-comparison').screenshot({
+    path: testInfo.outputPath('result-chart-hover.png'),
+  });
+  await expect(cursor).toHaveAttribute('fill', VISUAL_TOKENS.colors.chart.hoverBand);
 });

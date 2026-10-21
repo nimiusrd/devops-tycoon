@@ -45,6 +45,22 @@ for (const viewport of VIEWPORTS) {
       // 公開状態の revision を React が読み、最初のポップを描画したことを待つ。
       await expect(pops).toHaveText([`+${firstDelta}`]);
 
+      if (reducedMotion === 'reduce') {
+        // 最終フレームまでリトライせず、最初に描かれた得点が静止・不透明か確認する。
+        expect(
+          await pops.first().evaluate((element) => {
+            const style = getComputedStyle(element);
+            const transform = new DOMMatrixReadOnly(style.transform);
+            return {
+              opacity: style.opacity,
+              scaleX: transform.a,
+              scaleY: transform.d,
+              translateY: transform.f,
+            };
+          }),
+        ).toEqual({ opacity: '1', scaleX: 1, scaleY: 1, translateY: 0 });
+      }
+
       // 最初の 1100 ms の寿命内に次の出荷を描画する。
       const secondDelta = await advanceToNextDelivery(page);
       await expect(pops).toHaveText([`+${firstDelta}`, `+${secondDelta}`]);

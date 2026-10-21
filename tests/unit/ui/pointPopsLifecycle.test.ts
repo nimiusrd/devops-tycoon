@@ -7,6 +7,7 @@ const hooks = vi.hoisted(() => ({
   slots: [] as { value?: unknown; dependencies?: readonly unknown[]; cleanup?: () => void }[],
   effects: [] as (() => void)[],
   playSfx: vi.fn(),
+  reducedMotion: false as boolean | null,
 }));
 
 // Node 環境で React の state/ref/effect と音・アニメーション境界のみを代行する。
@@ -52,7 +53,11 @@ vi.mock('react', async (importOriginal) => ({
     });
   },
 }));
-vi.mock('framer-motion', () => ({ AnimatePresence: 'div', motion: { span: 'span' } }));
+vi.mock('framer-motion', () => ({
+  AnimatePresence: 'div',
+  motion: { span: 'span' },
+  useReducedMotion: () => hooks.reducedMotion,
+}));
 vi.mock('../../../src/audio/useAudio', () => ({ useAudio: () => ({ playSfx: hooks.playSfx }) }));
 
 import { PointPops, type PointPopsProps } from '../../../src/ui/PointPops';
@@ -105,6 +110,7 @@ function mountPops(initial: PointPopsProps) {
 
 beforeEach(() => {
   hooks.playSfx = vi.fn();
+  hooks.reducedMotion = false;
   vi.useFakeTimers();
   vi.stubGlobal('window', { setTimeout, clearTimeout });
   vi.spyOn(Math, 'random').mockReturnValue(0.5);
@@ -139,8 +145,10 @@ describe('PointPops の増分とライフサイクル', () => {
     expect(screen.all()[0].props).toMatchObject({
       className: amount >= 12 ? 'point-pop big' : 'point-pop',
       style: { left: '50%' },
+      initial: { y: 0, opacity: 0, scale: 0.8 },
       animate: { y: -42, opacity: 1, scale: 1 },
       exit: { y: -70, opacity: 0 },
+      transition: { duration: 1, ease: 'easeOut' },
     });
     screen.advance(1099);
     expect(screen.all()).toHaveLength(1);
@@ -148,6 +156,38 @@ describe('PointPops の増分とライフサイクル', () => {
     expect(screen.all()).toHaveLength(0);
     expect(vi.getTimerCount()).toBe(0);
     expect(hooks.playSfx).toHaveBeenCalledExactlyOnceWith('ship');
+  });
+
+  it('動きを減らす設定では静止した得点を即時表示し、寿命で即時に消す', () => {
+    hooks.reducedMotion = true;
+    const screen = mountPops({ deliveryScore: 0 });
+    screen.update({ deliveryScore: 12 });
+
+    expect(screen.all().map(content)).toEqual(['+12']);
+    expect(screen.all()[0].props).toMatchObject({
+      initial: false,
+      animate: { opacity: 1 },
+      exit: { opacity: 0 },
+      transition: { duration: 0, ease: 'easeOut' },
+    });
+    screen.advance(1099);
+    expect(screen.all()).toHaveLength(1);
+    screen.advance(1);
+    expect(screen.all()).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(hooks.playSfx).toHaveBeenCalledExactlyOnceWith('ship');
+  });
+
+  it('motion の設定が未確定なら通常の入退場演出を保つ', () => {
+    hooks.reducedMotion = null;
+    const screen = mountPops({ deliveryScore: 0 });
+    screen.update({ deliveryScore: 5 });
+    expect(screen.all()[0].props).toMatchObject({
+      initial: { y: 0, opacity: 0, scale: 0.8 },
+      animate: { y: -42, opacity: 1, scale: 1 },
+      exit: { y: -70, opacity: 0 },
+      transition: { duration: 1, ease: 'easeOut' },
+    });
   });
 
   it('チームを切り替えた時の得点差は無視し、切替後の出荷だけに反応する', () => {

@@ -531,7 +531,7 @@ export class RunEngine {
     this.stakeholderTrust = buildInitialTrust(this.difficulty);
     const boss = getBoss(this.bossId);
     this.quarterGoal = boss
-      ? buildQuarterGoal(boss, this.difficulty, diff.bossTargetMul)
+      ? buildQuarterGoal(boss, this.difficulty)
       : {
           deliveryTarget: MIN_QUARTER_DELIVERY_TARGET,
           qualityTarget: 45,
@@ -610,7 +610,6 @@ export class RunEngine {
     const before = budget;
     const hasFrontier = this.trials.includes('frontier-dependency');
     const pressureCtx = {
-      deck: this.deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,
@@ -705,7 +704,6 @@ export class RunEngine {
     // インフラコストで予算が尽きた場合はスプリントへ進まず継続不能にする。
     if (this.applyImmediateLose()) return;
     const baseline = this.buildSprintBaselineInput({
-      deck: this.deck,
       roster: this.roster,
       org: this.org,
       kind,
@@ -734,11 +732,10 @@ export class RunEngine {
   }
 
   /**
-   * 指定したデッキ・編成から次スプリントの純粋な初期入力を組み立てる。
+   * 編成と発動カードから次スプリントの純粋な初期入力を組み立てる。
    * 本番起動と RI-46 の試算で共有し、候補試算中に実ランの状態を変更しない。
    */
   private buildSprintBaselineInput({
-    deck,
     roster,
     org,
     kind,
@@ -746,7 +743,6 @@ export class RunEngine {
     seed,
     playedCards = [],
   }: {
-    deck: { defId: string; level: number }[];
     roster: RosterState;
     org: OrgState;
     kind: SprintKind;
@@ -768,7 +764,7 @@ export class RunEngine {
         quarterNumber: this.quarterNumber,
         baseConfig: this.baseConfig,
       },
-      { deck, roster, org, kind, modifiers, seed, playedCards },
+      { roster, org, kind, modifiers, seed, playedCards },
     );
   }
 
@@ -1091,15 +1087,9 @@ export class RunEngine {
   private startNextQuarter(): void {
     this.quarterNumber += 1;
     this.bossId = this.pickBoss(this.quarterNumber);
-    const diff = getDifficulty(this.difficulty);
     const boss = getBoss(this.bossId);
     if (boss) {
-      this.quarterGoal = buildQuarterGoal(
-        boss,
-        this.difficulty,
-        diff.bossTargetMul,
-        this.quarterGoal,
-      );
+      this.quarterGoal = buildQuarterGoal(boss, this.difficulty, this.quarterGoal);
     }
     if (this.nextBudgetCap !== null) {
       this.budget = Math.min(this.budget, this.nextBudgetCap);
@@ -1257,11 +1247,11 @@ export class RunEngine {
 
     let def;
     if (primary.length > 0) {
-      def = pickWeighted(weightedEventPool(this.org, this.quarterTotals, primary), rng());
+      def = pickWeighted(weightedEventPool(this.org, primary), rng());
     } else {
       // 空プール対策: もう一方の種別へ決定論フォールバック（別派生キーで偏りを避ける）。
       const fr = createRng(`${this.seed}:beat:q${this.quarterNumber}:s${nextIndex}:fallback`)();
-      def = pickWeighted(weightedEventPool(this.org, this.quarterTotals, fallback), fr);
+      def = pickWeighted(weightedEventPool(this.org, fallback), fr);
     }
     if (!def) {
       // 究極のフォールバック（定義が空のときのみ）。長さゼロのビートとして
@@ -1883,7 +1873,6 @@ export class RunEngine {
   private advanceOtherTeams(stepKey: string): void {
     const before = this.teams;
     const fold = foldRunEffects({
-      deck: this.deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,
@@ -2658,7 +2647,6 @@ export class RunEngine {
 
     const before = this.teams;
     const fold = foldRunEffects({
-      deck: this.deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,

@@ -174,7 +174,6 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   };
 
   const pressureCtx = {
-    deck: input.deck,
     relics: input.relics,
     evolution: input.evolution,
     difficulty: input.difficulty,
@@ -197,7 +196,6 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   };
 
   const previewFor = (
-    deck: { defId: string; level: number }[],
     org: OrgState,
     playedCards: { defId: string; level: number }[] = [],
   ): WhatIfPreview => {
@@ -212,7 +210,6 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
     return previewNextSprint(
       withTeamBoardPressure(
         buildSprintBaselineInput(ctx, {
-          deck,
           roster: input.roster,
           org: previewOrg,
           kind,
@@ -228,7 +225,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
     );
   };
 
-  const current = previewFor(input.deck, input.org);
+  const current = previewFor(input.org);
 
   const startOrg = applySprintStartOrg(input.org);
   const budgetAfterPressure = applyPressureBudget(startOrg, input.budget);
@@ -262,7 +259,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
       const inHand = piles.hand.includes(newCardIndex);
 
       if (!inHand) {
-        draftCandidates[defId] = previewFor(nextDeck, input.org, []);
+        draftCandidates[defId] = previewFor(input.org, []);
         continue;
       }
 
@@ -281,7 +278,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
         };
         continue;
       }
-      draftCandidates[defId] = previewFor(nextDeck, input.org, [{ defId, level: 1 }]);
+      draftCandidates[defId] = previewFor(input.org, [{ defId, level: 1 }]);
     }
   }
   return { current, draftCandidates };

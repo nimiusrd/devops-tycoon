@@ -24,7 +24,6 @@ function expectOrgMatchesScenario(org: OrgState, difficulty: 'normal', scenarioI
 }
 
 const foldInput = (overrides: Partial<RunModifierInput> = {}): RunModifierInput => ({
-  deck: [],
   relics: [],
   evolution: { points: 0, unlocked: {} },
   difficulty: 'normal',

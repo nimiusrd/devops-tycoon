@@ -78,11 +78,9 @@ function build(
     kind?: 'normal' | 'elite' | 'boss';
     modifiers?: SprintModifierDelta;
     playedCards?: { defId: string; level: number }[];
-    deck?: { defId: string; level: number }[];
   } = {},
 ) {
   return buildSprintBaselineInput(context(overrides.ctx), {
-    deck: overrides.deck ?? [],
     roster: overrides.roster ?? balancedRoster,
     org: createOrgState('default', true),
     kind: overrides.kind ?? 'normal',
@@ -215,12 +213,9 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(noCoder.aiAdoptionShare).toBe(0);
   });
 
-  it('発動カードだけを反映し、未発動の deck 差分では結果を変えない', () => {
-    const noCards = build();
-    const deckOnly = build({ deck: [{ defId: 'copilot', level: 2 }] });
+  it('指定した発動カードの効果を初期入力へ反映する', () => {
     const played = build({ playedCards: [{ defId: 'copilot', level: 2 }] });
 
-    expect(deckOnly.cardEffects).toEqual(noCards.cardEffects);
     expect(played.cardEffects.codingSpeedMul).toBeCloseTo(1.225);
     expect(played.cardEffects.routineSpeedMul).toBeCloseTo(1.45);
     expect(played.cardEffects.aiDependencyAdd).toBeCloseTo(7.5);

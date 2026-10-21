@@ -37,7 +37,6 @@ function org(aiDependency: number): OrgState {
 }
 
 const ctx = {
-  deck: [] as { defId: string; level: number }[],
   relics: [] as string[],
   evolution: emptyEvolution,
   difficulty: 'normal' as const,

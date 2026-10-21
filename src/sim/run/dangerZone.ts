@@ -227,7 +227,6 @@ function nextSprintKind(s: RunState): SprintKind {
 /** 次スプリント開始時に確定するインフラ課金後の残高。 */
 function budgetAfterNextInfraCharge(s: RunState): number {
   const fold = foldRunEffects({
-    deck: s.deck,
     relics: s.relics,
     evolution: s.evolution,
     difficulty: s.difficulty,

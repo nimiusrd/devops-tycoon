@@ -384,7 +384,7 @@ effectiveWeight =
 
 例えば技術的負債が高いほど`debt-incident`、AI依存度が高いほど`giant-ai-pr-judgment`、テストが厚いほど`ci-improved`の重みが増える。
 
-現在、`weightedEventPool`が受け取る`RunTotals`は重み計算に使っていない。イベント選択後の効果とプレイヤーが選んだ選択肢の結果は、原則として固定値を適用する。
+`weightedEventPool`は組織状態の信号だけで重みを計算する。イベント選択後の効果とプレイヤーが選んだ選択肢の結果は、原則として固定値を適用する。
 
 ### 5.3 カードとその他の抽選
 

@@ -23,7 +23,6 @@ const SAMPLE_ORG: ScenarioOrg = {
 };
 
 const foldInput = (overrides: Partial<RunModifierInput> = {}): RunModifierInput => ({
-  deck: [],
   relics: [],
   evolution: { points: 0, unlocked: {} },
   difficulty: 'normal',

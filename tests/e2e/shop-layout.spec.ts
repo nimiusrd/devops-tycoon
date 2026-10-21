@@ -74,6 +74,8 @@ for (const viewport of [
   }, testInfo) => {
     await page.setViewportSize(viewport);
     await openRecruitShop(page);
+    await expect(page.getByTestId('shop-scroll')).toHaveRole('region');
+    await expect(page.getByTestId('shop-scroll')).toHaveAccessibleName('商品一覧');
     const leave = page.getByTestId('shop-leave');
     await expect(leave).toBeInViewport({ ratio: 1 });
     const initial = await leave.boundingBox();

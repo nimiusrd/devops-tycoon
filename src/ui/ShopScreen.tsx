@@ -81,7 +81,13 @@ export function ShopScreen({
       aria-label="Shop"
     >
       <div className="shop-panel">
-        <div className="overlay-scroll" data-testid="shop-scroll" tabIndex={0}>
+        <div
+          className="overlay-scroll"
+          data-testid="shop-scroll"
+          role="region"
+          aria-label="商品一覧"
+          tabIndex={0}
+        >
           <p className="result-eyebrow">SHOP</p>
           <h2 className="draft-title">
             予算 <b data-testid="shop-budget">💰{state.budget}</b> で施策を仕入れる

@@ -81,11 +81,23 @@ for (const viewport of VIEWPORTS) {
     await codex.scrollIntoViewIfNeeded();
     await expect(codex).toBeVisible();
     await expect(page.getByTestId('win-combo-count')).toHaveText('1/28');
-    await expect(page.getByTestId('win-combo-next')).toContainText('Normal');
-    await expect(page.getByTestId('win-combo-next')).toContainText('通常勝利・健全勝利');
+    await expect(page.getByTestId('win-combo-next')).toHaveText(
+      '次の目標: Easy で 通常勝利・AI 導入成功勝利',
+    );
     await expect(codex.locator('.win-combo-cells [data-next-goal="true"]')).toHaveCount(2);
-    await expect(page.getByTestId('win-combo-row-normal')).toHaveClass(/is-next-goal/);
-    await expect(codex).not.toContainText('未達');
+    await expect(page.getByTestId('win-combo-row-easy')).toHaveClass(/is-next-goal/);
+    const achieved = page.getByTestId('win-combo-easy-healthy');
+    const nextGoal = page.getByTestId('win-combo-easy-normal');
+    const unmet = page.getByTestId('win-combo-easy-management');
+    expect(await achieved.ariaSnapshot()).toMatch(/健全勝利\s*、達成/);
+    expect(await nextGoal.ariaSnapshot()).toMatch(/通常勝利\s*、未達、次の目標/);
+    expect(await unmet.ariaSnapshot()).toMatch(/経営勝利\s*、未達/);
+    expect(await achieved.ariaSnapshot()).not.toContain('✓');
+    await expect(achieved.locator('[aria-hidden="true"]')).toHaveText('✓');
+    for (const cell of [achieved, nextGoal, unmet]) {
+      await expect(cell.locator('.visually-hidden')).toHaveCSS('width', '0px');
+      await expect(cell.locator('.visually-hidden')).toHaveCSS('height', '0px');
+    }
     await expect(page.getByTestId('win-combo-easy-healthy')).toHaveAttribute(
       'data-achieved',
       'true',
@@ -98,6 +110,7 @@ for (const viewport of VIEWPORTS) {
     await expect(hard).toHaveAttribute('data-unlocked', 'false');
     await expect(hard.getByRole('img', { name: '難易度未解放' })).toBeVisible();
     await expect(hard).toHaveCSS('border-style', 'dashed');
+    await expect(hard.locator('.win-combo-row-count')).toHaveCount(0);
     expect((await hard.innerText()).match(/前の難易度でボスを突破すると解放/g)).toHaveLength(1);
     const lockedContrast = await hard.evaluate((row) => {
       const luminance = (color: string) => {
@@ -135,12 +148,12 @@ for (const viewport of VIEWPORTS) {
       };
       return {
         opacity: getComputedStyle(row).opacity,
-        count: readable('.win-combo-row-count'),
+        label: readable('.achievement-card-label'),
         hint: readable('.achievement-card-hint'),
       };
     });
     expect(Number(lockedContrast.opacity)).toBe(1);
-    expect(lockedContrast.count).toBeGreaterThanOrEqual(4.5);
+    expect(lockedContrast.label).toBeGreaterThanOrEqual(4.5);
     expect(lockedContrast.hint).toBeGreaterThanOrEqual(4.5);
 
     const overflow = await codex.evaluate((el) => el.scrollWidth - el.clientWidth);

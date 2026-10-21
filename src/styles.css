@@ -6041,7 +6041,6 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .win-combo-rows .achievement-card.is-next-goal {
   border-color: var(--sun);
 }
-.win-combo-rows .achievement-card.locked .win-combo-row-count,
 .win-combo-rows .achievement-card.locked .achievement-card-hint {
   color: var(--cream);
 }

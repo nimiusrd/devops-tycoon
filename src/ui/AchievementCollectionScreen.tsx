@@ -14,6 +14,7 @@ import {
   type MetaState,
 } from '../state/meta';
 import { ResultOverlay } from './ResultOverlay';
+import { DIFFICULTY_TAG } from './runSaveSummaryCopy';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { VisualIcon } from './VisualIcon';
 
@@ -128,7 +129,7 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
             </p>
             <p className="win-combo-next" data-testid="win-combo-next">
               {combos.nextGoal
-                ? `次の目標: ${combos.nextGoal.label} で ${nextGoalCells.map((cell) => cell.label).join('・')}`
+                ? `次の目標: ${DIFFICULTY_TAG[combos.nextGoal.difficulty]} で ${nextGoalCells.map((cell) => cell.label).join('・')}`
                 : '解放済みの難易度で、すべての勝ち方を達成しました。'}
             </p>
             <ul className="win-combo-rows">
@@ -150,9 +151,11 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                         </>
                       )}
                       {row.label}{' '}
-                      <span className="win-combo-row-count">
-                        {row.achievedCount}/{row.cells.length}
-                      </span>
+                      {row.unlocked && (
+                        <span className="win-combo-row-count">
+                          {row.achievedCount}/{row.cells.length}
+                        </span>
+                      )}
                     </span>
                     {row.unlocked ? (
                       <ul className="win-combo-cells" aria-label={`${row.label} の勝ち方`}>
@@ -166,7 +169,14 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                               data-achieved={cell.achieved ? 'true' : 'false'}
                               data-next-goal={isNextGoal ? 'true' : 'false'}
                             >
-                              {cell.achieved ? `✓ ${cell.label}` : cell.label}
+                              <span>
+                                {cell.achieved && <span aria-hidden="true">✓ </span>}
+                                {cell.label}
+                                <span className="visually-hidden">
+                                  {cell.achieved ? '、達成' : '、未達'}
+                                  {isNextGoal && '、次の目標'}
+                                </span>
+                              </span>
                             </li>
                           );
                         })}

@@ -166,7 +166,7 @@ describe('PointPops の増分とライフサイクル', () => {
     expect(screen.all().map(content)).toEqual(['+12']);
     expect(screen.all()[0].props).toMatchObject({
       initial: false,
-      animate: { opacity: 1 },
+      animate: { y: -42, opacity: 1, scale: 1 },
       exit: { opacity: 0 },
       transition: { duration: 0, ease: 'easeOut' },
     });
@@ -176,6 +176,50 @@ describe('PointPops の増分とライフサイクル', () => {
     expect(screen.all()).toHaveLength(0);
     expect(vi.getTimerCount()).toBe(0);
     expect(hooks.playSfx).toHaveBeenCalledExactlyOnceWith('ship');
+  });
+
+  it('動きを減らす設定では連続出荷を固定段に置き、先行分が消えても残りを動かさない', () => {
+    hooks.reducedMotion = true;
+    const screen = mountPops({ deliveryScore: 0 });
+    screen.update({ deliveryScore: 8 });
+    screen.advance(180);
+    screen.update({ deliveryScore: 26 });
+    screen.advance(180);
+    screen.update({ deliveryScore: 42 });
+    const positions = () =>
+      screen.all().map((node) => ({
+        text: content(node),
+        y: (node.props.animate as { y: number }).y,
+      }));
+    expect(positions()).toEqual([
+      { text: '+8', y: -42 },
+      { text: '+18', y: -66 },
+      { text: '+16', y: -90 },
+    ]);
+    screen.advance(740);
+    expect(positions()).toEqual([
+      { text: '+18', y: -66 },
+      { text: '+16', y: -90 },
+    ]);
+    screen.update({ deliveryScore: 46 });
+    expect(positions()).toEqual([
+      { text: '+18', y: -66 },
+      { text: '+16', y: -90 },
+      { text: '+4', y: -42 },
+    ]);
+    screen.advance(1100);
+    expect(screen.all()).toHaveLength(0);
+  });
+
+  it('動きを減らす設定の上限超過でも最新6件はそれぞれ異なる固定段を使う', () => {
+    hooks.reducedMotion = true;
+    const screen = mountPops({ deliveryScore: 0 });
+    for (let score = 1; score <= 8; score++) screen.update({ deliveryScore: score });
+    expect(screen.all()).toHaveLength(6);
+    const positions = screen.all().map((node) => (node.props.animate as { y: number }).y);
+    expect(new Set(positions).size).toBe(6);
+    expect(Math.max(...positions)).toBe(-42);
+    expect(Math.min(...positions)).toBe(-162);
   });
 
   it('motion の設定が未確定なら通常の入退場演出を保つ', () => {

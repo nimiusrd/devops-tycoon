@@ -10,6 +10,7 @@ const hooks = vi.hoisted(() => ({
     cleanup?: () => void;
   }[],
   effects: [] as (() => void)[],
+  reducedMotion: false as boolean | null,
   responsive: { width: 'wide', height: 'normal' },
   sameDependencies(previous: readonly unknown[] | undefined, next: readonly unknown[]) {
     return (
@@ -69,6 +70,7 @@ vi.mock('react', async (importOriginal) => ({
 vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: { children: ReactNode }) => children,
   motion: { span: 'span' },
+  useReducedMotion: () => hooks.reducedMotion,
 }));
 vi.mock('../../../src/ui/responsiveMode', () => ({ useResponsiveMode: () => hooks.responsive }));
 
@@ -137,6 +139,11 @@ function mountHud(overrides: Partial<HudProps> = {}) {
         .filter((element) => String(element.props.className).includes('hud-feedback-pop'))
         .map(content);
     },
+    feedbackProps(id: string) {
+      return elements(find(id)).find((element) =>
+        String(element.props.className).includes('hud-feedback-pop'),
+      )?.props;
+    },
     update(next: Partial<HudProps>) {
       props = { ...props, ...next };
       flush();
@@ -161,6 +168,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   vi.stubGlobal('window', { setTimeout, clearTimeout });
   hooks.responsive = { width: 'wide', height: 'normal' };
+  hooks.reducedMotion = false;
 });
 
 afterEach(() => {
@@ -266,6 +274,26 @@ describe('Hud の表示と展開操作', () => {
 });
 
 describe('Hud のスナップショットと差分フィードバック', () => {
+  it.each([false, true, null])('動きを減らす設定=%sを差分ポップにも反映する', (reducedMotion) => {
+    hooks.reducedMotion = reducedMotion;
+    const screen = mountHud();
+    screen.changeOrg({ deliveryScore: 8 });
+    expect(screen.feedback('hud-compact-delivery')).toEqual(['+8']);
+    expect(screen.feedbackProps('hud-compact-delivery')).toMatchObject({
+      initial: reducedMotion ? false : { y: 8, opacity: 0, scale: 0.85 },
+      animate: { y: -14, opacity: 1, scale: 1 },
+      exit: reducedMotion ? { opacity: 0 } : { y: -26, opacity: 0, scale: 0.9 },
+      transition: { duration: reducedMotion ? 0 : 0.55, ease: 'easeOut' },
+    });
+    screen.clickToggle();
+    expect(screen.feedbackProps('hud-delivery')).toMatchObject({
+      initial: reducedMotion ? false : { y: 8, opacity: 0, scale: 0.85 },
+      transition: { duration: reducedMotion ? 0 : 0.55, ease: 'easeOut' },
+    });
+    screen.advance(1000);
+    expect(screen.feedback('hud-delivery')).toEqual([]);
+  });
+
   it('初期比較元がなければ通常表示し、同値の再描画で差分を追加しない', () => {
     const getInitialPreviousSnapshot = vi.fn(() => null);
     const onSnapshotCaptured = vi.fn();

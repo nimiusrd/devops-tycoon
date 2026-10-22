@@ -14,10 +14,15 @@ interface Pop {
   amount: number;
   /** 0..100 の横位置（散らすため）。 */
   x: number;
+  /** 動きを減らす設定で使う固定段。先行ポップが消えても位置を詰めない。 */
+  row: number;
 }
 
 /** 同時に表示するポップの最大数（描き過ぎ防止）。 */
 const MAX_POPS = 6;
+// PointPops だけの局所配置。通常の到達位置から24pxずつ分け、連続得点を隠さない。
+const REDUCED_POP_BASE_Y = -42;
+const REDUCED_POP_ROW_GAP = 24;
 
 export interface PointPopsProps {
   deliveryScore: number;
@@ -53,8 +58,14 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
     prev.current = deliveryScore;
     if (delta <= 0) return;
     playSfx('ship');
-    const pop: Pop = { id: nextId.current++, amount: delta, x: 20 + Math.random() * 60 };
-    setPops((cur) => [...cur, pop].slice(-MAX_POPS));
+    const pop = { id: nextId.current++, amount: delta, x: 20 + Math.random() * 60 };
+    setPops((cur) => {
+      const retained = cur.slice(-(MAX_POPS - 1));
+      const occupied = new Set(retained.map((item) => item.row));
+      let row = 0;
+      while (occupied.has(row)) row += 1;
+      return [...retained, { ...pop, row }];
+    });
     const timer = window.setTimeout(() => {
       timers.current.delete(timer);
       setPops((cur) => cur.filter((p) => p.id !== pop.id));
@@ -71,7 +82,11 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
             className={`point-pop${p.amount >= 12 ? ' big' : ''}`}
             style={{ left: `${p.x}%` }}
             initial={reducedMotion ? false : { y: 0, opacity: 0, scale: 0.8 }}
-            animate={reducedMotion ? { opacity: 1 } : { y: -42, opacity: 1, scale: 1 }}
+            animate={
+              reducedMotion
+                ? { y: REDUCED_POP_BASE_Y - p.row * REDUCED_POP_ROW_GAP, opacity: 1, scale: 1 }
+                : { y: -42, opacity: 1, scale: 1 }
+            }
             exit={reducedMotion ? { opacity: 0 } : { y: -70, opacity: 0 }}
             transition={{ duration: reducedMotion ? 0 : 1, ease: 'easeOut' }}
           >

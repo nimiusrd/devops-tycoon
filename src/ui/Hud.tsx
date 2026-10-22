@@ -8,7 +8,7 @@
  * RI-70 / #468: 初見は幅に関係なく KPI を折り畳み要約し、盤面と介入バーを1画面に収める。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   deriveHudMetrics,
   deriveHudStatusParts,
@@ -39,6 +39,7 @@ function GradeValue({ grade }: { grade: Grade }) {
 }
 
 function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {
+  const reducedMotion = useReducedMotion() ?? false;
   return (
     <AnimatePresence>
       {feedback && (
@@ -46,10 +47,10 @@ function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {
           key={feedback.id}
           className={`hud-feedback-pop feedback-${feedback.tone}`}
           aria-hidden="true"
-          initial={{ y: 8, opacity: 0, scale: 0.85 }}
+          initial={reducedMotion ? false : { y: 8, opacity: 0, scale: 0.85 }}
           animate={{ y: -14, opacity: 1, scale: 1 }}
-          exit={{ y: -26, opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.55, ease: 'easeOut' }}
+          exit={reducedMotion ? { opacity: 0 } : { y: -26, opacity: 0, scale: 0.9 }}
+          transition={{ duration: reducedMotion ? 0 : 0.55, ease: 'easeOut' }}
         >
           {formatSigned(feedback.delta)}
         </motion.span>

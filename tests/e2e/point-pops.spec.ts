@@ -58,7 +58,7 @@ for (const viewport of VIEWPORTS) {
               translateY: transform.f,
             };
           }),
-        ).toEqual({ opacity: '1', scaleX: 1, scaleY: 1, translateY: 0 });
+        ).toEqual({ opacity: '1', scaleX: 1, scaleY: 1, translateY: -42 });
       }
 
       // 最初の 1100 ms の寿命内に次の出荷を描画する。
@@ -81,4 +81,132 @@ for (const viewport of VIEWPORTS) {
       await page.screenshot({ path: testInfo.outputPath('連続出荷のポップ消去後.png') });
     });
   }
+
+  test(`${viewport.name}・動きを減らす: 3件の連続出荷を8回繰り返しても数字が隠れずHUDも静止する`, async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    const measurements = [];
+
+    for (let burst = 0; burst < 8; burst++) {
+      // 同じ初期状態から3件を出荷し、ラン終盤の出荷不足を測定へ混ぜない。
+      await beginPublicSprint(page, { seed: 'point-pops-lifetime', renderer: 'pixi' });
+      const pops = page.locator('.point-pop');
+      const first = await advanceToNextDelivery(page);
+      await expect(pops).toHaveText([`+${first}`]);
+
+      // 出現から消去まで50msごとに測る。DOM要素単位で位置も追い、段の詰め直しを検出する。
+      const sampling = page.evaluate(async () => {
+        const positions = new Map<Element, { left: string; translateY: number }>();
+        const hiddenPairs = new Set<string>();
+        let maxVisible = 0;
+        let hudSeen = false;
+        let moving = false;
+        let clipped = false;
+        for (let sample = 0; sample < 31; sample++) {
+          // 即時退場でDOMから消える直前の完全透明な要素は可視ポップに数えない。
+          const elements = [...document.querySelectorAll('.point-pop')].filter(
+            (element) => getComputedStyle(element).opacity !== '0',
+          );
+          maxVisible = Math.max(maxVisible, elements.length);
+          const rects = elements.map((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            const transform = new DOMMatrixReadOnly(style.transform);
+            const original = positions.get(element);
+            if (!original) {
+              positions.set(element, { left: style.left, translateY: transform.f });
+            } else if (original.left !== style.left || original.translateY !== transform.f) {
+              moving = true;
+            }
+            if (style.opacity !== '1' || transform.a !== 1 || transform.d !== 1) moving = true;
+            const bounds = element.parentElement!.getBoundingClientRect();
+            const visibleWidth = Math.max(
+              0,
+              Math.min(rect.right, bounds.right) - Math.max(rect.left, bounds.left),
+            );
+            const visibleHeight = Math.max(
+              0,
+              Math.min(rect.bottom, bounds.bottom) - Math.max(rect.top, bounds.top),
+            );
+            if ((visibleWidth * visibleHeight) / (rect.width * rect.height) <= 0.5) clipped = true;
+            return rect;
+          });
+          for (let a = 0; a < rects.length; a++) {
+            for (let b = a + 1; b < rects.length; b++) {
+              const firstRect = rects[a]!;
+              const secondRect = rects[b]!;
+              const width = Math.max(
+                0,
+                Math.min(firstRect.right, secondRect.right) -
+                  Math.max(firstRect.left, secondRect.left),
+              );
+              const height = Math.max(
+                0,
+                Math.min(firstRect.bottom, secondRect.bottom) -
+                  Math.max(firstRect.top, secondRect.top),
+              );
+              const smallerArea = Math.min(
+                firstRect.width * firstRect.height,
+                secondRect.width * secondRect.height,
+              );
+              if ((width * height) / smallerArea >= 0.5) hiddenPairs.add(`${a}:${b}`);
+            }
+          }
+          for (const pop of document.querySelectorAll('.hud-feedback-pop')) {
+            const style = getComputedStyle(pop);
+            if (style.opacity === '0') continue;
+            hudSeen = true;
+            const transform = new DOMMatrixReadOnly(style.transform);
+            if (
+              style.opacity !== '1' ||
+              transform.a !== 1 ||
+              transform.d !== 1 ||
+              transform.f !== -14
+            ) {
+              moving = true;
+            }
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, 50));
+        }
+        return {
+          hiddenPairs: hiddenPairs.size,
+          shown: positions.size,
+          maxVisible,
+          hudSeen,
+          moving,
+          clipped,
+        };
+      });
+      await page.waitForTimeout(180);
+      const second = await advanceToNextDelivery(page);
+      await expect(pops).toHaveText([`+${first}`, `+${second}`]);
+      await page.waitForTimeout(180);
+      const third = await advanceToNextDelivery(page);
+      await expect(pops).toHaveText([`+${first}`, `+${second}`, `+${third}`]);
+      if (burst === 0) {
+        await page.screenshot({ path: testInfo.outputPath('静止した3件の出荷とHUD.png') });
+      }
+      const measurement = await sampling;
+      measurements.push(measurement);
+      expect(measurement).toEqual({
+        hiddenPairs: 0,
+        shown: 3,
+        maxVisible: 3,
+        hudSeen: true,
+        moving: false,
+        clipped: false,
+      });
+      await expect(pops).toHaveCount(0);
+    }
+    await testInfo.attach('50ms間隔の重なり・静止計測', {
+      body: JSON.stringify(measurements, null, 2),
+      contentType: 'application/json',
+    });
+    expect(errors).toEqual([]);
+  });
 }

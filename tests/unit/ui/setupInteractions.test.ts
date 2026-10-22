@@ -1,18 +1,42 @@
-import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-// Node 上の memo とリプレイ Context だけを代行する。
-// OKR・編成・デッキの子コンポーネントは展開し、引き渡された状態も検証する。
+const hooks = vi.hoisted(() => ({
+  cursor: 0,
+  values: [] as unknown[],
+  dirty: false,
+  effects: [] as (() => void)[],
+}));
+
+// Node 上でstateの再描画を代行する。DOM上のfocus・Tab循環はE2Eとoverlay lockテストで確認する。
+// OKR・編成・デッキ・確認dialogの子コンポーネントは実装を展開する。
 vi.mock('react', async (importOriginal) => {
   let nextId = 0;
   return {
     ...(await importOriginal<typeof import('react')>()),
     useMemo: (factory: () => unknown) => factory(),
-    useState: (initial: unknown) => [initial, vi.fn()],
+    useState(initial: unknown) {
+      const index = hooks.cursor++;
+      hooks.values[index] ??= initial;
+      return [
+        hooks.values[index],
+        (update: unknown) => {
+          const next =
+            typeof update === 'function'
+              ? (update as (previous: unknown) => unknown)(hooks.values[index])
+              : update;
+          hooks.dirty = !Object.is(next, hooks.values[index]);
+          hooks.values[index] = next;
+        },
+      ];
+    },
     useRef: (initial: unknown) => ({ current: initial }),
+    useEffect: (effect: () => void) => hooks.effects.push(effect),
+    useLayoutEffect: () => {},
     useId: () => `setup-${nextId++}`,
   };
 });
+vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
   return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };
@@ -22,24 +46,27 @@ import { getBoss } from '../../../src/data/bosses';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { SetupScreen, type SetupScreenProps } from '../../../src/ui/SetupScreen';
+import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 import { directRoster } from '../helpers/whatIfFixtures';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
 
+function expand(node: ReactNode): ReactNode {
+  if (!isValidElement<Props>(node)) return node;
+  if (typeof node.type === 'function') {
+    return expand((node.type as (props: Props) => ReactNode)(node.props));
+  }
+  return cloneElement(node, {}, ...Children.toArray(node.props.children).map(expand));
+}
+
 function elements(node: ReactNode): ReactElement<Props>[] {
   if (!isValidElement<Props>(node)) return [];
-  if (typeof node.type === 'function') {
-    return elements((node.type as (props: Props) => ReactNode)(node.props));
-  }
   return [node, ...Children.toArray(node.props.children).flatMap(elements)];
 }
 
 function content(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (!isValidElement<Props>(node)) return '';
-  if (typeof node.type === 'function') {
-    return content((node.type as (props: Props) => ReactNode)(node.props));
-  }
   return Children.toArray(node.props.children).map(content).join('');
 }
 
@@ -58,30 +85,78 @@ function makeState(overrides: Partial<RunState> = {}): RunState {
 }
 
 function mountSetup(overrides: Partial<SetupScreenProps> = {}) {
-  const props: SetupScreenProps = {
+  let props: SetupScreenProps = {
     state: makeState(),
     onAssign: vi.fn(),
     onToggleAi: vi.fn(),
     onBegin: vi.fn(),
     ...overrides,
   };
-  const tree = SetupScreen(props);
+  hooks.values = [];
+  const targets = new Map<
+    string,
+    {
+      dataset: { testid: string };
+      focus: ReturnType<typeof vi.fn>;
+      scrollIntoView: ReturnType<typeof vi.fn>;
+    }
+  >();
+  let tree: ReactNode;
+  const render = () => {
+    let renders = 0;
+    do {
+      if (++renders > 5) throw new Error('SetupScreenの更新が収束しませんでした');
+      hooks.cursor = 0;
+      hooks.dirty = false;
+      hooks.effects = [];
+      tree = expand(SetupScreen(props));
+    } while (hooks.dirty);
+    for (const node of elements(tree)) {
+      const id = node.props['data-testid'];
+      if (typeof id !== 'string') continue;
+      if (!targets.has(id)) {
+        targets.set(id, { dataset: { testid: id }, focus: vi.fn(), scrollIntoView: vi.fn() });
+      }
+      const ref = node.props.ref as { current: unknown } | undefined;
+      if (ref) {
+        ref.current = {
+          ...targets.get(id),
+          querySelectorAll: () => [...targets.values()],
+        };
+      }
+    }
+    for (const effect of hooks.effects.splice(0)) effect();
+  };
+  render();
   const find = (id: string) => {
     const node = elements(tree).find((item) => item.props['data-testid'] === id);
     if (!node) throw new Error(`要素がありません: ${id}`);
     return node;
   };
   return {
-    props,
+    get props() {
+      return props;
+    },
+    targets,
     find,
     has: (id: string) => elements(tree).some((item) => item.props['data-testid'] === id),
     text: () => content(tree),
     click(id: string) {
       const node = find(id);
       if (!node.props.disabled) (node.props.onClick as () => void)();
+      render();
+    },
+    update(next: Partial<SetupScreenProps>) {
+      props = { ...props, ...next };
+      render();
     },
   };
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.mocked(useDialogOverlayLock).mockClear();
+});
 
 describe('SetupScreen の次スプリント案内と編成', () => {
   it('通常案件では四半期・ボス・OKR を示し、編成変更と開始を通知する', () => {
@@ -164,17 +239,123 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     state.roster.members[0].onLeave = true;
     const screen = mountSetup({ state });
     const warning = screen.find('setup-observation-coding-staff');
-    expect(content(warning)).toContain('コーディング担当 0人');
-    expect(content(warning)).toContain('出荷は0になります');
-    expect(content(warning)).toContain('下のメンバー配置');
+    expect(content(warning)).toBe('コーダー0人。出荷できません');
     expect(screen.find('begin-sprint').props['aria-describedby']).toBe(warning.props.id);
     expect(screen.has('setup-observation-dismiss')).toBe(false);
-    expect(screen.find('assign-m2-coding').props.disabled).toBe(false);
-    screen.click('assign-m2-coding');
-    expect(screen.props.onAssign).toHaveBeenCalledExactlyOnceWith('m2', 'coding');
-    // 警告後も開始する選択自体は残す。
+    screen.click('setup-assign-coder');
+    expect(screen.targets.get('assign-m2-coding')!.scrollIntoView).toHaveBeenCalledOnce();
+    expect(screen.targets.get('assign-m2-coding')!.focus).toHaveBeenCalledOnce();
+    expect(screen.props.onAssign).not.toHaveBeenCalled();
     screen.click('begin-sprint');
+    expect(screen.props.onBegin).not.toHaveBeenCalled();
+    const dialog = screen.find('setup-no-coder-confirm');
+    expect(dialog.props).toMatchObject({ role: 'dialog', 'aria-modal': 'true', tabIndex: -1 });
+    expect(content(dialog)).toContain('コーダーが0人です');
+    expect(content(screen.find('setup-no-coder-assign'))).toBe('コーダーを割り当てる');
+    expect(content(screen.find('setup-no-coder-begin'))).toBe('このまま開始');
+    expect(screen.targets.get('setup-no-coder-assign')!.focus).toHaveBeenCalledOnce();
+    expect(useDialogOverlayLock).toHaveBeenLastCalledWith(expect.any(Object), {
+      restoreFocus: true,
+      onDismiss: expect.any(Function),
+    });
+    // 確認後の重複イベントでも開始を二重に通知しない。
+    const confirm = screen.find('setup-no-coder-begin').props.onClick as () => void;
+    confirm();
+    confirm();
+    screen.update({});
     expect(screen.props.onBegin).toHaveBeenCalledExactlyOnceWith();
+    expect(screen.has('setup-no-coder-confirm')).toBe(false);
+  });
+
+  it('割り当てる導線はベンチの稼働メンバーを優先し、確認画面からも配置を変えずに誘導する', () => {
+    vi.useFakeTimers();
+    const state = makeState();
+    state.roster.members[0].assignment = 'review';
+    state.roster.members[1].assignment = 'bench';
+    const screen = mountSetup({ state });
+    screen.click('setup-assign-coder');
+    expect(screen.targets.get('assign-m2-coding')!.focus).toHaveBeenCalledOnce();
+    expect(screen.targets.get('assign-m1-coding')!.focus).not.toHaveBeenCalled();
+    screen.click('begin-sprint');
+    screen.click('setup-no-coder-assign');
+    expect(screen.has('setup-no-coder-confirm')).toBe(false);
+    vi.runAllTimers();
+    expect(screen.targets.get('assign-m2-coding')!.focus).toHaveBeenCalledTimes(2);
+    expect(screen.props.onAssign).not.toHaveBeenCalled();
+    expect(screen.props.onBegin).not.toHaveBeenCalled();
+  });
+
+  it('確認をEscapeで取り消し、別チームやスプリントへ確認状態を持ち越さない', () => {
+    const state = makeState();
+    state.roster.members[0].assignment = 'review';
+    const screen = mountSetup({ state });
+    screen.click('begin-sprint');
+    const options = vi.mocked(useDialogOverlayLock).mock.lastCall?.[1];
+    options?.onDismiss?.();
+    screen.update({});
+    expect(screen.has('setup-no-coder-confirm')).toBe(false);
+    expect(screen.props.onBegin).not.toHaveBeenCalled();
+    for (const next of [
+      { ...state, activeTeamId: `${state.activeTeamId}-other` },
+      { ...state, sprintIndexInQuarter: state.sprintIndexInQuarter + 1 },
+    ]) {
+      screen.click('begin-sprint');
+      expect(screen.has('setup-no-coder-confirm')).toBe(true);
+      screen.update({ state: next });
+      expect(screen.has('setup-no-coder-confirm')).toBe(false);
+      screen.update({ state });
+      expect(screen.has('setup-no-coder-confirm')).toBe(false);
+    }
+    expect(screen.props.onBegin).not.toHaveBeenCalled();
+  });
+
+  it('全員休職時も安全側の編成に戻るへフォーカスし、開始せず取り消せる', () => {
+    const state = makeState();
+    state.roster.members.forEach((member) => {
+      member.onLeave = true;
+    });
+    const screen = mountSetup({ state });
+    expect(screen.find('setup-assign-coder').props.disabled).toBe(true);
+    screen.click('begin-sprint');
+    expect(content(screen.find('setup-no-coder-confirm'))).toContain(
+      '今は割り当てられるメンバーがいません',
+    );
+    expect(content(screen.find('setup-no-coder-assign'))).toBe('編成に戻る');
+    expect(screen.find('setup-no-coder-assign').props.disabled).toBeUndefined();
+    expect(screen.targets.get('setup-no-coder-assign')!.focus).toHaveBeenCalledOnce();
+    expect(screen.targets.get('setup-no-coder-begin')!.focus).not.toHaveBeenCalled();
+    screen.click('setup-no-coder-assign');
+    expect(screen.has('setup-no-coder-confirm')).toBe(false);
+    expect(screen.props.onBegin).not.toHaveBeenCalled();
+  });
+
+  it('通常案内は×で閉じられ、非表示でも常設slotを残す', () => {
+    const screen = mountSetup();
+    expect(screen.has('setup-observation-slot')).toBe(true);
+    expect(screen.has('setup-observation')).toBe(false);
+    const state = screen.props.state;
+    const roster = structuredClone(state.roster);
+    roster.members[1].assignment = 'bench';
+    screen.update({ state: { ...state, roster } });
+    const dismiss = screen.find('setup-observation-dismiss');
+    expect(content(dismiss)).toBe('×');
+    expect(dismiss.props['aria-label']).toBe('案内を閉じる');
+    screen.click('setup-observation-dismiss');
+    expect(screen.has('setup-observation')).toBe(false);
+    expect(screen.has('setup-observation-slot')).toBe(true);
+    expect(screen.targets.get('begin-sprint')!.focus).toHaveBeenCalledOnce();
+  });
+
+  it('読み取り専用ではコーダー不在でも開始確認も配置誘導も実行しない', () => {
+    const state = makeState();
+    state.roster.members[0].assignment = 'review';
+    const screen = mountSetup({ state, readOnly: true });
+    expect(screen.find('setup-assign-coder').props.disabled).toBe(true);
+    screen.click('setup-assign-coder');
+    screen.click('begin-sprint');
+    expect(screen.has('setup-no-coder-confirm')).toBe(false);
+    expect(screen.targets.get('assign-m1-coding')!.focus).not.toHaveBeenCalled();
+    expect(screen.props.onBegin).not.toHaveBeenCalled();
   });
 
   it('リプレイでは編成と開始を無効にし、デッキをコレクション表示する', () => {

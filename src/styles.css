@@ -8147,7 +8147,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   box-shadow: none;
 }
 .setup-observation {
-  margin-bottom: 0.75rem;
+  height: 44px;
+  margin-bottom: 4px;
+  min-width: 0;
 }
 
 /* 決着画像は静的な要約。小画面でも元のPNG全体を確認できる。 */
@@ -8165,19 +8167,33 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 0.75rem;
 }
 
-/* 案内の表示・非表示や種類が変わっても編成の操作位置を保つ（#928）。
- * 全候補を同じセルに重ね、長文の折り返しに応じた最大の高さを予約する。 */
-.setup-observation {
-  display: grid;
-}
-.setup-observation > * {
-  grid-area: 1 / 1;
+/* 2行の短い案内と操作を44pxに収め、空欄でもメンバーを押し下げない（#928/#931）。
+ * Setup専用の局所レイアウト寸法。長文の非表示予約やline-clampには依存しない。 */
+.setup-observation-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
   min-width: 0;
 }
-.setup-observation-reserve {
-  visibility: hidden;
-  pointer-events: none;
+.setup-observation-content > [role='status'] {
+  flex: 1;
+  min-width: 0;
 }
-.setup-coding-warning {
+.setup-observation-content .formation-setup-hint {
+  margin: 0;
+  color: var(--text-dim);
+}
+.setup-observation-content .setup-observation-action {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+}
+.setup-observation-content .setup-coding-warning {
   color: var(--sun);
+}
+/* 短い確認文でも、狭幅では長い選択肢を全幅へ折り返して読めるようにする。 */
+.setup-coder-confirm .result-actions .btn {
+  flex: 1 1 10rem;
 }

@@ -45,11 +45,8 @@ export interface SetupObservation {
   text: string;
 }
 
-/** 案内と高さ予約用の表示候補を同じ判定から作る。 */
-export function setupObservationView(state: CompanyGuidanceState): {
-  observation: SetupObservation | null;
-  candidates: SetupObservation[];
-} {
+/** Coding担当不在を最優先し、次にHUDの体力警告、Review担当不在。 */
+export function setupObservation(state: CompanyGuidanceState): SetupObservation | null {
   const hp = clampSeniorHpDisplay(state.org.seniorHp);
   const warning = seniorHpHudCopy(hp, {
     firefightUrgent: false,
@@ -60,24 +57,15 @@ export function setupObservationView(state: CompanyGuidanceState): {
   const reviewers = active.filter((m) => m.assignment === 'review').length;
   const codingStaff: SetupObservation = {
     id: 'coding-staff',
-    text: '今回見る一点: コーディング担当 0人（休職中を除く）。このまま始めると実装が進まず、出荷は0になります。下のメンバー配置で、休職中でないメンバーをコーディングへ変更できます。',
+    text: 'コーダー0人。出荷できません',
   };
   const seniorHp: SetupObservation = {
     id: 'senior-hp',
-    text: `今回見る一点: シニア体力 ${hp}%（${warning ?? '体力注意'}）。Reviewを支える余力が低下しています。開始後はHUDのシニア体力とReview待ちを観察し、他の課題と合わせて介入を判断できます。`,
+    text: `シニア体力 ${hp}%（${warning ?? '体力注意'}）`,
   };
   const reviewStaff: SetupObservation = {
     id: 'review-staff',
-    text: `今回見る一点: Review担当 ${reviewers}人 / Coding担当 ${coders}人（休職中を除く）。実装に対してレビューの配置支援がありません。配置を見直すか、開始後にReview待ちを観察できます。渋滞の発生を断定する案内ではありません。`,
+    text: 'レビュー0人。配置を見直そう',
   };
-  return {
-    observation:
-      coders === 0 ? codingStaff : warning ? seniorHp : reviewers === 0 ? reviewStaff : null,
-    candidates: [codingStaff, seniorHp, reviewStaff],
-  };
-}
-
-/** Coding担当不在を最優先し、次にHUDの体力警告、Review担当不在。 */
-export function setupObservation(state: CompanyGuidanceState): SetupObservation | null {
-  return setupObservationView(state).observation;
+  return coders === 0 ? codingStaff : warning ? seniorHp : reviewers === 0 ? reviewStaff : null;
 }

@@ -83,15 +83,14 @@ describe('現在の会社に対応したドラフト説明', () => {
 });
 
 describe('準備画面の観察入口', () => {
-  it('健全状態では予兆を作らず、Coding担当不在では出荷0と配置変更を案内する', () => {
+  it('健全状態では予兆を作らず、Coding担当不在では出荷できないと短く警告する', () => {
     const input = state();
     expect(setupObservation(input)).toBeNull();
     input.roster.members.forEach((m) => {
       m.assignment = 'bench';
     });
     expect(setupObservation(input)).toMatchObject({ id: 'coding-staff' });
-    expect(setupObservation(input)!.text).toContain('出荷は0になります');
-    expect(setupObservation(input)!.text).toContain('下のメンバー配置');
+    expect(setupObservation(input)!.text).toBe('コーダー0人。出荷できません');
   });
 
   it('休職中のCoding担当を数えず、体力警告より先に不在を案内する', () => {
@@ -105,11 +104,11 @@ describe('準備画面の観察入口', () => {
     expect(setupObservation(input)).toMatchObject({ id: 'senior-hp' });
   });
 
-  it('休職中のレビュアーは除き、人数と対象工程を明示する', () => {
+  it('休職中のレビュアーを除いて配置見直しを短く案内する', () => {
     const input = state();
     input.roster.members[1].onLeave = true;
     expect(setupObservation(input)).toMatchObject({ id: 'review-staff' });
-    expect(setupObservation(input)!.text).toContain('Review担当 0人 / Coding担当 1人');
+    expect(setupObservation(input)!.text).toBe('レビュー0人。配置を見直そう');
   });
 
   it('複数予兆ではHUDと同じ体力警告を安定して優先する', () => {

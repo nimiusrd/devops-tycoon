@@ -1,11 +1,16 @@
 import { expect, test } from './fixtures';
+import type { Locator } from '@playwright/test';
 import type { RunState } from '../../src/sim/run/types';
+import type { RunSave } from '../../src/state/runPersistence';
 
 type GameWindow = Window & {
   game?: {
     pause(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    exportRunSaveText(): string | null;
+    importRunSaveText(raw: string): Promise<{ ok: boolean }>;
+    resumeRun(): RunState | null;
   };
 };
 
@@ -73,12 +78,59 @@ const NARROW_SETUP_VIEWPORTS = [
   { name: 'tablet-portrait', width: 768, height: 1024 },
 ] as const;
 
-for (const viewport of [
+const SETUP_VIEWPORTS = [
   ...NARROW_SETUP_VIEWPORTS,
   { name: 'desktop-short', width: 1024, height: 768 },
   { name: 'desktop', width: 1280, height: 800 },
   { name: 'desktop-wide', width: 1440, height: 900 },
-]) {
+] as const;
+
+async function assertCompactObservation(
+  setup: Locator,
+  id: 'coding-staff' | 'review-staff' | 'senior-hp' | null,
+): Promise<void> {
+  const slot = setup.getByTestId('setup-observation-slot');
+  const layout = await slot.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      height: bounds.height,
+      outerHeight: bounds.height + parseFloat(style.marginTop) + parseFloat(style.marginBottom),
+    };
+  });
+  expect(layout.height, '案内の有無にかかわらず欄を予約する').toBeGreaterThan(0);
+  expect(layout.outerHeight, '案内欄の余白込み高さは48px以下（#931）').toBeLessThanOrEqual(48);
+  if (id === null) {
+    await expect(setup.getByTestId('setup-observation')).toHaveCount(0);
+    return;
+  }
+  const text = setup.getByTestId(`setup-observation-${id}`);
+  await expect(text).toBeVisible();
+  const textLayout = await text.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const lines = [...range.getClientRects()];
+    const parent = element.closest('[data-testid="setup-observation-slot"]')!;
+    const bounds = parent.getBoundingClientRect();
+    return {
+      lineCount: new Set(lines.map((line) => Math.round(line.top * 100))).size,
+      contained: lines.every(
+        (line) =>
+          line.left >= bounds.left - 1 &&
+          line.right <= bounds.right + 1 &&
+          line.top >= bounds.top - 1 &&
+          line.bottom <= bounds.bottom + 1,
+      ),
+      fontSize: parseFloat(getComputedStyle(element).fontSize),
+    };
+  });
+  expect(textLayout.lineCount, `${id} の案内が空にならない`).toBeGreaterThan(0);
+  expect(textLayout.lineCount, `${id} の案内は2行以内（#931）`).toBeLessThanOrEqual(2);
+  expect(textLayout.contained, `${id} の案内本文を欄から切らない`).toBe(true);
+  expect(textLayout.fontSize, '警告を小さい文字で押し込まない').toBeGreaterThanOrEqual(12);
+}
+
+for (const viewport of SETUP_VIEWPORTS) {
   test(`${viewport.width}pxで今回見る一点が出入りしても編成と開始の操作位置が動かない（#928）`, async ({
     page,
   }) => {
@@ -113,9 +165,7 @@ for (const viewport of [
         );
     const before = await positions();
     await coding.click();
-    await expect(setup.getByTestId('setup-observation-review-staff')).toContainText(
-      'Review担当 0人',
-    );
+    await expect(setup.getByTestId('setup-observation-review-staff')).toContainText('レビュー0人');
     expect(await positions()).toEqual(before);
     await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
     expect(await positions()).toEqual(before);
@@ -124,6 +174,109 @@ for (const viewport of [
     expect(await positions()).toEqual(before);
     await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
     expect(await positions()).toEqual(before);
+  });
+
+  test(`${viewport.width}pxで案内の全状態が48px以下・2行以内で編成を押し出さない（#931）`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({
+      reducedMotion: viewport.width === 320 ? 'reduce' : 'no-preference',
+    });
+    await page.goto('/?renderer=pixi&tutorial=off&seed=devops-tycoon');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    const setup = page.getByTestId('setup');
+    const forecast = setup.getByTestId('formation-forecast');
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    await page.evaluate(() => document.fonts.ready);
+    await assertCompactObservation(setup, null);
+    const liveStatus = await setup
+      .getByTestId('setup-observation-slot')
+      .getByRole('status')
+      .elementHandle();
+    if (!liveStatus) throw new Error('案内がないときも読み上げ領域を残す');
+    const originalSave = await page.evaluate(() => {
+      const raw = (window as GameWindow).game!.exportRunSaveText();
+      if (!raw) throw new Error('準備画面のセーブを取得できない');
+      return raw;
+    });
+    const positions = () =>
+      setup.locator('.formation-panel').evaluate((panel) => {
+        const panelBounds = panel.getBoundingClientRect();
+        return [
+          ...panel.querySelectorAll('.formation-member, .formation-forecast, .primary-button'),
+        ].map((element) => {
+          const bounds = element.getBoundingClientRect();
+          return {
+            id: element.getAttribute('data-testid'),
+            x: bounds.x - panelBounds.x,
+            y: bounds.y - panelBounds.y + panel.scrollTop,
+            width: bounds.width,
+            height: bounds.height,
+          };
+        });
+      });
+    const initialPositions = await positions();
+    const assertStable = async () => {
+      await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+      expect(await positions(), '案内の種類と表示状態で操作位置を変えない').toEqual(
+        initialPositions,
+      );
+    };
+
+    if (viewport.width === 320) {
+      await setup.locator('.formation-panel').evaluate((panel) => {
+        panel.scrollTop = 0;
+        panel.scrollIntoView({ block: 'start', inline: 'nearest' });
+      });
+      // 文書末尾ではscrollIntoViewが上端0pxまで進まないため、到達可能位置で実表示し、
+      // パネル上端を0pxに置いた場合の名前の位置も合わせて確認する。
+      const panel = await setup.locator('.formation-panel').boundingBox();
+      const name = await setup.getByTestId('formation-member-m0').locator('.fm-name').boundingBox();
+      if (!panel || !name) throw new Error('パネルと先頭メンバーの位置を取得できない');
+      expect(name.y - panel.y + name.height).toBeLessThanOrEqual(viewport.height);
+      await expect(setup.getByTestId('formation-member-m0').locator('.fm-name')).toBeInViewport({
+        ratio: 1,
+      });
+      await page.screenshot({ path: testInfo.outputPath('案内なしでも先頭メンバーが見える.png') });
+    }
+
+    await setup.getByTestId('assign-m2-coding').click();
+    await assertCompactObservation(setup, 'review-staff');
+    expect(
+      await liveStatus.evaluate((element) => element.isConnected),
+      '既存のlive regionを更新する',
+    ).toBe(true);
+    await assertStable();
+    for (const id of ['m0', 'm1', 'm2']) {
+      await setup.getByTestId(`assign-${id}-review`).click();
+    }
+    await assertCompactObservation(setup, 'coding-staff');
+    expect(await liveStatus.evaluate((element) => element.isConnected)).toBe(true);
+    await assertStable();
+
+    // 公開の保存・取り込み経路で体力警告を再現し、内部engineへは書き込まない。
+    await page.evaluate(async (raw) => {
+      const game = (window as GameWindow).game!;
+      const save = JSON.parse(raw) as RunSave;
+      save.state.org.seniorHp = 10;
+      const activeTeam = save.state.extras.teams?.find(
+        (team) => team.id === save.state.extras.activeTeamId,
+      );
+      if (activeTeam) activeTeam.seniorHp = 10;
+      const result = await game.importRunSaveText(JSON.stringify(save));
+      if (!result.ok || game.resumeRun()?.phase !== 'setup') {
+        throw new Error('体力警告のある準備画面を再開できない');
+      }
+      game.pause();
+    }, originalSave);
+    await assertCompactObservation(setup, 'senior-hp');
+    await assertStable();
+    await setup.getByTestId('setup-observation-dismiss').click();
+    await assertCompactObservation(setup, null);
+    await assertStable();
+    await expect(setup.getByTestId('begin-sprint')).toBeFocused();
   });
 }
 
@@ -142,25 +295,51 @@ for (const viewport of [
     // 通常の観察案内を閉じた後も、コーダー不在の警告は抑制しない。
     await setup.getByTestId('assign-m2-coding').click();
     await setup.getByTestId('setup-observation-dismiss').click();
-    for (const id of ['m0', 'm1', 'm2']) {
-      await setup.getByTestId(`assign-${id}-review`).click();
-    }
+    await setup.getByTestId('assign-m0-review').click();
+    await setup.getByTestId('assign-m1-review').click();
+    await setup.getByTestId('assign-m2-bench').click();
     const warning = setup.getByTestId('setup-observation-coding-staff');
     await warning.scrollIntoViewIfNeeded();
     await expect(warning).toBeInViewport();
-    await expect(warning).toContainText('コーディング担当 0人');
-    await expect(warning).toContainText('出荷は0になります');
-    await expect(warning).toContainText('下のメンバー配置');
+    await expect(warning).toHaveText('コーダー0人。出荷できません');
+    await expect(warning).not.toContainText('今回見る一点');
     await expect(setup.getByTestId('setup-observation-dismiss')).toHaveCount(0);
     await expect(setup.getByTestId('begin-sprint')).toHaveAccessibleDescription(
-      /コーディング担当 0人.*出荷は0になります/,
+      'コーダー0人。出荷できません',
     );
     await setup.getByTestId('begin-sprint').focus();
     await expect(setup.getByTestId('begin-sprint')).toBeInViewport();
     await expect(warning).toBeInViewport({ ratio: 1 });
     await page.screenshot({ path: testInfo.outputPath('setup-no-coders.png'), fullPage: true });
     await page.screenshot({ path: testInfo.outputPath('setup-no-coders-start.png') });
-    await setup.getByTestId('assign-m0-coding').click();
+    const benchCoding = setup.getByTestId('assign-m2-coding');
+    await setup.getByRole('button', { name: '割り当てる', exact: true }).click();
+    await expect(benchCoding).toBeFocused();
+    await expect(benchCoding).toBeInViewport({ ratio: 1 });
+    expect(
+      await page.evaluate(
+        () =>
+          (window as GameWindow)
+            .game!.getState()
+            .roster.members.filter((m) => !m.onLeave && m.assignment === 'coding').length,
+      ),
+    ).toBe(0);
+
+    const dialog = page.getByRole('dialog', { name: 'コーダーが0人です' });
+    await setup.getByTestId('begin-sprint').click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
+    expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(setup.getByTestId('begin-sprint')).toBeFocused();
+
+    await setup.getByTestId('begin-sprint').click();
+    await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
+    await dialog.getByRole('button', { name: 'コーダーを割り当てる' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(benchCoding).toBeFocused();
+    await benchCoding.click();
     await expect(warning).toHaveCount(0);
     await expect(setup.getByTestId('begin-sprint')).not.toHaveAttribute('aria-describedby');
     const state = await page.evaluate(() => (window as GameWindow).game!.getState());
@@ -170,6 +349,32 @@ for (const viewport of [
     ).toHaveLength(1);
     await setup.getByTestId('begin-sprint').click();
     await expect(page.getByTestId('board')).toBeVisible();
+  });
+
+  test(`${viewport.width}pxでコーダー不在時は明示確認した場合だけそのまま開始できる（#927）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/?renderer=pixi&tutorial=off&seed=qa-seed-1022c');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    const setup = page.getByTestId('setup');
+    for (const id of ['m0', 'm1', 'm2']) {
+      await setup.getByTestId(`assign-${id}-review`).click();
+    }
+    // 控えがいない場合も、先頭の稼働メンバーの配置へ到達できる。
+    await setup.getByRole('button', { name: '割り当てる', exact: true }).click();
+    await expect(setup.getByTestId('assign-m0-coding')).toBeFocused();
+    await expect(setup.getByTestId('assign-m0-coding')).toBeInViewport({ ratio: 1 });
+    await setup.getByTestId('begin-sprint').click();
+    const dialog = page.getByRole('dialog', { name: 'コーダーが0人です' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
+    expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
+    await dialog.getByRole('button', { name: 'このまま開始' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByTestId('board')).toBeVisible();
+    expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('sprint');
   });
 }
 

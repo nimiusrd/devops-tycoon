@@ -158,7 +158,7 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
           <BarChart
             data={data}
             layout="vertical"
-            margin={{ top: 8, right: 48, left: 0, bottom: 0 }}
+            margin={{ top: 8, right: 64, left: 0, bottom: 0 }}
             aria-label="介入の成果 比較グラフ"
           >
             <CartesianGrid

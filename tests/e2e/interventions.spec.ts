@@ -8,6 +8,7 @@ import {
 import { STABILITY_COMBO_CAP, comboMultiplier, deliveryComboMultiplier } from '../../src/sim/model';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
+import type { RunSave } from '../../src/state/runPersistence';
 import { VISUAL_TOKENS } from '../../src/render/visualTokens';
 
 type GameWindow = Window & {
@@ -19,6 +20,9 @@ type GameWindow = Window & {
     step(ms: number): RunState;
     dispatch(id: string): InterventionOutcome;
     acknowledgeResult(): RunState;
+    exportRunSaveText(): string | null;
+    importRunSaveText(raw: string): Promise<{ ok: boolean }>;
+    resumeRun(): RunState | null;
   };
 };
 
@@ -490,6 +494,89 @@ for (const viewport of [
           );
         }
       });
+    }
+  });
+}
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 1280, height: 800 },
+]) {
+  test(`5桁の比較グラフは${viewport.width}pxでも数値がSVG内に収まる`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await beginPublicSprint(page, { seed: 'ri55-e2e' });
+    const originalSave = await page.evaluate(() => {
+      const game = (window as GameWindow).game!;
+      const outcome = game.dispatch('overtime');
+      const state = game.step(1_000_000);
+      const raw = game.exportRunSaveText();
+      if (!outcome.ok || !raw || state.phase !== 'result')
+        throw new Error('比較用リザルトを保存できない');
+      return raw;
+    });
+    const originalResult = (JSON.parse(originalSave) as RunSave).state.lastResult!;
+
+    for (const [baseline, actual] of [
+      [9000, 10000],
+      [18000, 20000],
+      [89999, 99999],
+    ]) {
+      // 公開の保存・取り込み経路で大きい表示値を用意し、内部engineへは書き込まない。
+      await page.evaluate(
+        async ({ raw, baseline, actual }) => {
+          const game = (window as GameWindow).game!;
+          const save = JSON.parse(raw) as RunSave;
+          const result = save.state.lastResult;
+          if (!result?.baseline) throw new Error('介入なしとの比較が保存されていない');
+          result.baseline.delivered = baseline;
+          result.delivered = actual;
+          const imported = await game.importRunSaveText(JSON.stringify(save));
+          if (!imported.ok || game.resumeRun()?.phase !== 'result')
+            throw new Error('大きい表示値のリザルトを再開できない');
+        },
+        { raw: originalSave, baseline, actual },
+      );
+      await expect(page.getByTestId('sprint-result')).toBeVisible();
+      await openSprintResultDetails(page);
+      const chart = page.getByTestId('result-baseline-chart');
+      const labels = chart.locator('.result-baseline-bar-label');
+      await expect(labels).toHaveText([
+        `${baseline} pt`,
+        `${originalResult.baseline!.spread} 件`,
+        `x${originalResult.baseline!.maxCombo}`,
+        `${actual} pt`,
+        `${originalResult.spread} 件`,
+        `x${originalResult.maxCombo}`,
+      ]);
+      await chart.scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready);
+      const bounds = await labels.evaluateAll((elements) =>
+        elements.map((label) => {
+          const rect = label.getBoundingClientRect();
+          const svg = label.closest('svg')!.getBoundingClientRect();
+          return {
+            text: label.textContent,
+            width: rect.width,
+            left: rect.left - svg.left,
+            right: svg.right - rect.right,
+            top: rect.top - svg.top,
+            bottom: svg.bottom - rect.bottom,
+          };
+        }),
+      );
+      await chart.screenshot({ path: testInfo.outputPath(`比較グラフ-${actual}pt.png`) });
+      for (const bound of bounds) {
+        expect(bound.width, `${bound.text} が描画されている`).toBeGreaterThan(0);
+        for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
+          expect(bound[edge], `${bound.text} がSVGの${edge}端で欠けない`).toBeGreaterThanOrEqual(
+            -0.5,
+          );
+        }
+      }
     }
   });
 }

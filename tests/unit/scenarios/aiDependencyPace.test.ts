@@ -154,153 +154,6 @@ describe('RI-74 AI依存ペースと回避経路', () => {
     expect(sawSecondSprint).toBe(true);
   });
 
-  it('旧 Nightmare セーブは復元時に係数と未プレイ初期依存度を補完する', () => {
-    const e = new RunEngine({ seed: 'ri74-hydrate', difficulty: 'nightmare' });
-    e.startRun();
-    const persist = e.exportPersistState();
-    expect(persist).not.toBeNull();
-    // 旧セーブ相当: 係数欠落 + 旧初期依存 55（ライバルは揺らぎ付き）
-    delete persist!.extras.baseConfig.aiDependencyPerTask;
-    persist!.org.aiDependency = 55;
-    persist!.extras.teams = persist!.extras.teams?.map((t, i) => ({
-      ...t,
-      aiDependency: i === 0 ? 55 : 55 + (i % 2 === 0 ? 12 : -8),
-    }));
-    const homeId = persist!.extras.homeTeamId ?? persist!.extras.activeTeamId!;
-    const rivalBefore = persist!.extras.teams!.find((t) => t.id !== homeId)!;
-    const rivalDeltaExpected = rivalBefore.aiDependency - 55;
-
-    const restored = new RunEngine({ seed: 'ri74-hydrate-2', difficulty: 'normal' });
-    restored.hydratePersistState(persist!);
-    const s = restored.snapshot();
-    expect(s.difficulty).toBe('nightmare');
-    expect(s.org.aiDependency).toBe(42);
-    expect(restored.exportPersistState()?.extras.baseConfig.aiDependencyPerTask).toBe(0.8);
-    const rivalAfter = restored
-      .exportPersistState()!
-      .extras.teams!.find((t) => t.id === rivalBefore.id)!;
-    expect(rivalAfter.aiDependency).toBe(42 + rivalDeltaExpected);
-  });
-
-  it('setup 中にライバルへ入った旧 Nightmare セーブも差分移行する', () => {
-    const e = new RunEngine({ seed: 'ri74-hydrate-rival', difficulty: 'nightmare' });
-    e.startRun();
-    const persist = e.exportPersistState();
-    expect(persist).not.toBeNull();
-    delete persist!.extras.baseConfig.aiDependencyPerTask;
-    const homeId = persist!.extras.homeTeamId!;
-    const rival = persist!.extras.teams!.find((t) => t.id !== homeId)!;
-    // 旧セーブ: ホームは 55、アクティブはライバル（揺らぎ値）で保存されている
-    persist!.extras.teams = persist!.extras.teams!.map((t) =>
-      t.id === homeId
-        ? { ...t, aiDependency: 55 }
-        : t.id === rival.id
-          ? { ...t, aiDependency: 67 }
-          : { ...t, aiDependency: 55 + 9 },
-    );
-    persist!.extras.activeTeamId = rival.id;
-    persist!.org = { ...persist!.org, aiDependency: 67, aiLiteracy: 18 };
-
-    const restored = new RunEngine({ seed: 'ri74-hydrate-rival-2', difficulty: 'normal' });
-    restored.hydratePersistState(persist!);
-    const saved = restored.exportPersistState()!;
-    expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(42);
-    // 67-13=54 は現行 ±10（42..52）を超えるため 52 へクランプ
-    expect(saved.extras.teams!.find((t) => t.id === rival.id)!.aiDependency).toBe(52);
-    expect(saved.org.aiDependency).toBe(52);
-    expect(saved.extras.activeTeamId).toBe(rival.id);
-  });
-
-  it('setup 中にホームへレバーを焼いた旧 Nightmare セーブも差分移行する', () => {
-    const e = new RunEngine({ seed: 'ri74-hydrate-lever', difficulty: 'nightmare' });
-    e.startRun();
-    const persist = e.exportPersistState();
-    expect(persist).not.toBeNull();
-    delete persist!.extras.baseConfig.aiDependencyPerTask;
-    const homeId = persist!.extras.homeTeamId!;
-    // teamAiThrottle(-16) 適用後の旧ホーム 55→39。等値 55 では検知できない
-    persist!.extras.teams = persist!.extras.teams!.map((t) =>
-      t.id === homeId
-        ? { ...t, aiDependency: 39 }
-        : { ...t, aiDependency: Math.min(100, t.aiDependency + 8) },
-    );
-    persist!.org = { ...persist!.org, aiDependency: 39 };
-    const rivalBefore = persist!.extras.teams!.find((t) => t.id !== homeId)!;
-    const rivalBeforeDep = rivalBefore.aiDependency;
-
-    const restored = new RunEngine({ seed: 'ri74-hydrate-lever-2', difficulty: 'normal' });
-    restored.hydratePersistState(persist!);
-    const saved = restored.exportPersistState()!;
-    expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(26); // 39-13
-    const rivalAfter = saved.extras.teams!.find((t) => t.id === rivalBefore.id)!.aiDependency;
-    // 高依存側のみ上限クランプ。レバー済み低依存は下限へ引き上げない
-    expect(rivalAfter).toBe(Math.min(52, rivalBeforeDep - 13));
-    expect(saved.org.aiDependency).toBe(26);
-  });
-
-  it('移行時に施策済み rival の低依存を下限へ引き上げない', () => {
-    const e = new RunEngine({ seed: 'ri74-hydrate-rival-lever', difficulty: 'nightmare' });
-    e.startRun();
-    const persist = e.exportPersistState();
-    expect(persist).not.toBeNull();
-    delete persist!.extras.baseConfig.aiDependencyPerTask;
-    const homeId = persist!.extras.homeTeamId!;
-    const rival = persist!.extras.teams!.find((t) => t.id !== homeId)!;
-    // 旧生成最小 30 + 全社ガイドライン -10 → 20。差分 -13 後は 7（下限 32 へ上げない）
-    persist!.extras.teams = persist!.extras.teams!.map((t) =>
-      t.id === homeId
-        ? { ...t, aiDependency: 55 }
-        : t.id === rival.id
-          ? { ...t, aiDependency: 20, aiLiteracy: 20 }
-          : { ...t, aiDependency: 55 },
-    );
-    persist!.org = { ...persist!.org, aiDependency: 55 };
-
-    const restored = new RunEngine({ seed: 'ri74-hydrate-rival-lever-2', difficulty: 'normal' });
-    restored.hydratePersistState(persist!);
-    const saved = restored.exportPersistState()!;
-    expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(42);
-    expect(saved.extras.teams!.find((t) => t.id === rival.id)!.aiDependency).toBe(7);
-  });
-
-  it('旧 ±25 の高依存 rival は移行時に現行 ±10 上限へ抑える', () => {
-    const e = new RunEngine({ seed: 'old-20', difficulty: 'nightmare' });
-    e.startRun('nightmare', ['frontier-dependency'], 'old-20');
-    const persist = e.exportPersistState();
-    expect(persist).not.toBeNull();
-    delete persist!.extras.baseConfig.aiDependencyPerTask;
-    const homeId = persist!.extras.homeTeamId!;
-    persist!.extras.teams = persist!.extras.teams!.map((t) =>
-      t.id === homeId
-        ? { ...t, aiDependency: 55 }
-        : t.id === 'platform-t1'
-          ? { ...t, aiDependency: 80, aiLiteracy: 20 }
-          : { ...t, aiDependency: 60 },
-    );
-    persist!.org.aiDependency = 55;
-
-    const restored = new RunEngine({ seed: 'old-20-restored', difficulty: 'normal' });
-    restored.hydratePersistState(persist!);
-    const saved = restored.exportPersistState()!;
-    expect(saved.trials).toContain('frontier-dependency');
-    expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(42);
-    expect(saved.extras.teams!.find((t) => t.id === 'platform-t1')!.aiDependency).toBe(52);
-    // クランプ後の rival でも frontier 付き無介入 S1 で依存敗北しない
-    expect(restored.enterTeam('platform-t1')).toBe(true);
-    restored.beginSetupSprint();
-    let guard = 0;
-    while (restored.snapshot().phase === 'sprint' && guard < 5000) {
-      guard += 1;
-      restored.step(1_000_000);
-    }
-    const s = restored.snapshot();
-    if (s.status === 'lost') {
-      expect(s.loseReason).not.toBe('aiDependency');
-    } else {
-      expect(s.org.aiDependency).toBeLessThan(AI_DEPENDENCY_CAP);
-    }
-  });
-
   it('Nightmare のライバル依存度は低リテラシー時に振れ幅が抑えられる', () => {
     const e = new RunEngine({ seed: 'scratch-135', difficulty: 'nightmare' });
     e.startRun('nightmare', ['frontier-dependency'], 'scratch-135');
@@ -341,6 +194,9 @@ describe('RI-74 AI依存ペースと回避経路', () => {
     const viewer = new RunEngine({ seed: 'ri74-replay-2', difficulty: 'normal' });
     viewer.hydrateReplayFrame(frame!);
     expect(viewer.snapshot().org.aiDependency).toBe(55);
+    expect(viewer.snapshot().teams.map((team) => team.aiDependency)).toEqual(
+      frame!.extras.teams!.map((team) => team.aiDependency),
+    );
   });
 
   it('pairReview 1回で Nightmare 初期リテラシーが unsafe cap を超える', () => {

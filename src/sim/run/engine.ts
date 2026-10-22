@@ -112,7 +112,6 @@ import {
   HOME_TEAM_ID,
   initTeamRunStates,
   mergeAdjust,
-  RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY,
   deriveTeamCapacities,
   normalizeCoarseTotalsDelta,
   orgFromTeam,
@@ -2242,7 +2241,6 @@ export class RunEngine {
   /** 反実仮想フレームから同一乱数状態を復元する（RI-101）。 */
   hydrateCounterfactualFrame(frame: CounterfactualFrame): void {
     this.applyPersistFrame(frame.persist as RunReplayFrame, {
-      migrateLegacyAiDependency: false,
       normalizeSecurityLevel: true,
       recomputeTeamCapacities: true,
       reconcileCoarseSecurityTrust: false,
@@ -2350,13 +2348,12 @@ export class RunEngine {
     };
   }
 
-  /** 永続スナップショットからラン状態を復元する（RI-58）。 */
+  /** 永続スナップショットを復元する。ルールセット互換判定は保存境界の責務（RI-58）。 */
   hydratePersistState(state: RunPersistStateInput): void {
     if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
     this.applyPersistFrame(state, {
-      migrateLegacyAiDependency: true,
       normalizeSecurityLevel: true,
       recomputeTeamCapacities: true,
       reconcileCoarseSecurityTrust: true,
@@ -2370,9 +2367,8 @@ export class RunEngine {
     if (!isReplayFramePhase(frame.phase)) {
       throw new Error(`cannot hydrate replay frame in phase=${frame.phase}`);
     }
-    // リプレイは記録値の read-only 表示。旧セーブ移行は再開用 hydrate に限定する。
+    // リプレイは記録値の read-only 表示。
     this.applyPersistFrame(frame, {
-      migrateLegacyAiDependency: false,
       normalizeSecurityLevel: false,
       recomputeTeamCapacities: false,
       reconcileCoarseSecurityTrust: false,
@@ -2382,7 +2378,6 @@ export class RunEngine {
   private applyPersistFrame(
     state: RunReplayFrameInput,
     options: {
-      migrateLegacyAiDependency: boolean;
       normalizeSecurityLevel: boolean;
       recomputeTeamCapacities: boolean;
       reconcileCoarseSecurityTrust: boolean;
@@ -2456,10 +2451,9 @@ export class RunEngine {
     this.rankingKind = cloned.rankingKind;
     this.orgAdjust = structuredClone(cloned.extras.orgAdjust);
     if (!this.orgAdjust.byTeam) this.orgAdjust.byTeam = {};
-    const legacyBaseConfig = cloned.extras.baseConfig;
-    const hadAiDependencyPerTask = legacyBaseConfig.aiDependencyPerTask !== undefined;
-    this.baseConfig = { ...legacyBaseConfig };
-    // RI-74: 旧セーブ（係数未保存）も現行難易度定義の上昇量へ補完する。
+    this.baseConfig = { ...cloned.extras.baseConfig };
+    // 係数欠落は現行入力でも許容する。難易度・シナリオの係数だけを同期し、
+    // 保存済みの組織指標を旧初期値からの移行と推測して変更しない。
     this.applyAiDependencyPerTask();
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
     this.goalCarryoverQuarter = cloned.goalCarryoverQuarter;
@@ -2591,11 +2585,6 @@ export class RunEngine {
       this.deck,
       this.teams.map((t) => t.id),
     );
-    // RI-74: 未プレイの旧 Nightmare セーブ（初期依存 55）を現行初期値へ寄せる。
-    // リプレイキーフレームでは記録値を改変しない。
-    if (options.migrateLegacyAiDependency && !hadAiDependencyPerTask) {
-      this.migrateLegacyNightmareAiDependencyBase();
-    }
     this.whatIfCache = null;
   }
 
@@ -2609,33 +2598,6 @@ export class RunEngine {
     if ('aiDependencyPerTask' in this.baseConfig) {
       delete this.baseConfig.aiDependencyPerTask;
     }
-  }
-
-  /**
-   * 旧 Nightmare 初期依存度（55）の未プレイセーブを現行初期値へ移行する（RI-74）。
-   * 呼び出し側で係数欠落を確認済み。ホーム等値は見ない（setup 中のレバー焼き込みや
-   * rival 進入で org / ホームが 55 以外になり得るため）。旧→新ベース差分を全チームへ適用し、
-   * ライバルは旧 ±25 の高依存側だけを現行の低リテラシー上限へ抑える（下限は付けない。
-   * レバー焼き込み済みの低依存を引き上げて施策効果を消さないため）。
-   * 進行中ランは触らない。
-   */
-  private migrateLegacyNightmareAiDependencyBase(): void {
-    if (this.difficulty !== 'nightmare') return;
-    if (this.sprintsPlayed !== 0) return;
-    if (this.phase !== 'setup') return;
-    const nextBase = getDifficulty('nightmare').org.aiDependencyBase;
-    const legacyBase = 55;
-    const delta = nextBase - legacyBase;
-    const rivalMax = nextBase + RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY;
-    this.teams = this.teams.map((team) => {
-      let aiDependency = Math.max(0, Math.min(100, team.aiDependency + delta));
-      if (team.id !== this.homeTeamId) {
-        aiDependency = Math.min(rivalMax, aiDependency);
-      }
-      return { ...team, aiDependency };
-    });
-    const active = this.teams.find((team) => team.id === this.activeTeamId);
-    if (active) this.org = orgFromTeam(active);
   }
 
   /**

@@ -116,6 +116,28 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect(loaded).toEqual({ ok: true, save });
   });
 
+  it('係数が欠けた現行 Nightmare の取り込み・再開で保存済み依存度を変更しない（#891）', async () => {
+    const source = createRunEngine({
+      seed: 'nightmare-share-missing-rate',
+      difficulty: 'nightmare',
+    });
+    source.startRun();
+    expect(source.applyOrgLever('teamAiThrottle', undefined, 'platform-t1')).toBe(true);
+    expect(source.enterTeam('platform-t1')).toBe(true);
+    const state = source.exportPersistState()!;
+    delete state.extras.baseConfig.aiDependencyPerTask;
+    const save = toRunSave(state);
+    const raw = serializeRunSave(save);
+    expect(parseRunSaveShare(raw)).toEqual({ ok: true, save });
+    const game = createGame({ initialMeta: defaultMeta(), runStorage: new MemoryRunStorage() });
+    expect(await game.importRunSaveText(raw)).toMatchObject({ ok: true });
+    expect(game.resumeRun()).not.toBeNull();
+    expect(game.getState().org).toEqual(state.org);
+    expect(game.getState().teams).toEqual(state.extras.teams);
+    expect(game.getState().activeTeamId).toBe('platform-t1');
+    expect(game.engine.exportPersistState()?.extras.baseConfig.aiDependencyPerTask).toBe(0.8);
+  });
+
   it.each([
     ['壊れた JSON', '{', 'corrupt'],
     ['配列', '[]', 'corrupt'],

@@ -108,7 +108,15 @@ for (const viewport of VIEWPORTS) {
     );
     const hard = page.getByTestId('win-combo-row-hard');
     await expect(hard).toHaveAttribute('data-unlocked', 'false');
-    await expect(hard.getByRole('img', { name: '難易度未解放' })).toBeVisible();
+    const lock = hard.getByRole('img', { name: '難易度未解放' });
+    await expect(lock).toBeVisible();
+    const lockIcon = lock.locator('[data-icon="locked"]');
+    await expect(lockIcon).toBeVisible();
+    await expect(lockIcon).toHaveAttribute('aria-hidden', 'true');
+    expect(await lockIcon.evaluate((icon) => getComputedStyle(icon).maskImage)).toContain(
+      'assets/icons/security.svg',
+    );
+    expect(await lock.ariaSnapshot()).toBe('- img "難易度未解放"');
     await expect(hard).toHaveCSS('border-style', 'dashed');
     await expect(hard.locator('.win-combo-row-count')).toHaveCount(0);
     expect((await hard.innerText()).match(/前の難易度でボスを突破すると解放/g)).toHaveLength(1);

@@ -146,7 +146,7 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                       {!row.unlocked && (
                         <>
                           <span role="img" aria-label="難易度未解放">
-                            🔒
+                            <VisualIcon name="locked" size="card" />
                           </span>{' '}
                         </>
                       )}

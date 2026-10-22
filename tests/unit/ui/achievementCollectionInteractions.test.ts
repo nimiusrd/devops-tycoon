@@ -136,11 +136,12 @@ describe('実績・勝利称号・失敗図鑑のコレクション', () => {
     expect(content(screen.find('win-combo-row-easy'))).toContain(`1/${WIN_TITLE_DEFS.length}`);
     const hard = screen.find('win-combo-row-hard');
     expect(hard.props['data-unlocked']).toBe('false');
-    expect(
-      elements(hard).some(
-        (node) => node.props.role === 'img' && node.props['aria-label'] === '難易度未解放',
-      ),
-    ).toBe(true);
+    const lock = elements(hard).find(
+      (node) => node.props.role === 'img' && node.props['aria-label'] === '難易度未解放',
+    );
+    expect(lock).toBeDefined();
+    expect(elements(lock).find((node) => node.props.name === 'locked')?.props.size).toBe('card');
+    expect(content(hard)).not.toContain('🔒');
     expect(content(hard).match(/前の難易度でボスを突破すると解放/g)).toHaveLength(1);
     expect(content(hard)).not.toContain(`0/${WIN_TITLE_DEFS.length}`);
     expect(() => screen.find(`win-combo-hard-${title.id}`)).toThrow();

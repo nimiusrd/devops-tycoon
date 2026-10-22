@@ -40,6 +40,7 @@ export function FormationGrid({
   const descriptionId = useId();
   const locked = readOnly || state.phase === 'sprint';
   const lockedNoteId = locked ? `${descriptionId}-locked` : undefined;
+  const showForecast = state.whatIf?.current || state.whatIfStatus === 'computing';
   return (
     <>
       {readOnly ? (
@@ -53,12 +54,21 @@ export function FormationGrid({
           </p>
         )
       )}
-      {(state.whatIf?.current || state.whatIfStatus === 'computing') && (
-        <WhatIfPreview
-          preview={state.whatIf?.current}
-          computing={state.whatIfStatus === 'computing'}
-          testId="what-if-formation"
-        />
+      {(state.phase === 'setup' || showForecast) && (
+        <div
+          className="formation-forecast"
+          data-testid="formation-forecast"
+          data-what-if-status={state.whatIfStatus}
+          aria-busy={state.whatIfStatus === 'computing'}
+        >
+          {showForecast && (
+            <WhatIfPreview
+              preview={state.whatIf?.current}
+              computing={state.whatIfStatus === 'computing'}
+              testId="what-if-formation"
+            />
+          )}
+        </div>
       )}
       <div
         className="formation-grid"
@@ -102,6 +112,8 @@ const LANES: { id: LaneAssignment; label: string }[] = [
   { id: 'bench', label: 'ベンチ' },
 ];
 
+const AI_ASSIGNMENT_REASON = 'コーディング担当にのみ配れます';
+
 function MemberCard({
   m,
   locked,
@@ -120,7 +132,7 @@ function MemberCard({
   const expr = memberExpression(m);
   const staminaPct = m.staminaMax > 0 ? Math.round((m.stamina / m.staminaMax) * 100) : 0;
   const xpNeed = xpForLevel(m.level);
-  const aiReason = m.assignment !== 'coding' ? 'コーディング担当にのみ配れます' : undefined;
+  const aiReason = m.assignment !== 'coding' ? AI_ASSIGNMENT_REASON : undefined;
   const aiDescription =
     [lockedNoteId, aiReason ? aiReasonId : undefined].filter(Boolean).join(' ') || undefined;
   return (
@@ -203,11 +215,9 @@ function MemberCard({
           >
             {m.aiAssigned ? '🤖 AI配布中' : 'AIを配る'}
           </button>
-          {aiReason && (
-            <p id={aiReasonId} className="fm-ai-reason">
-              {aiReason}
-            </p>
-          )}
+          <p id={aiReasonId} className="fm-ai-reason" aria-hidden={!aiReason || undefined}>
+            {AI_ASSIGNMENT_REASON}
+          </p>
         </>
       )}
     </div>

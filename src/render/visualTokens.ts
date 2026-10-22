@@ -217,6 +217,12 @@ export const VISUAL_TOKENS = {
     },
   },
   dimensions: {
+    pointPops: {
+      bottomRatio: 0.18,
+      reducedLineHeight: 28,
+      baseOffset: 42,
+      rowGap: 24,
+    },
     sprint: {
       stationWidthPercent: 13,
       actor: {
@@ -357,6 +363,12 @@ export const VISUAL_TOKENS = {
       card: 20,
       header: 24,
       action: 22,
+    },
+    /** 文中では文字サイズに追従し、正方形を保ったまま1em分の行高へ収める。 */
+    inlineIcon: {
+      sizeEm: 1.15,
+      marginBlockEm: -0.075,
+      verticalAlignEm: -0.15,
     },
   },
 } as const;
@@ -543,6 +555,8 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-layer-sprint-pixi-effects': String(layers.sprint.pixiEffects),
     '--visual-layer-sprint-intervention-effects': String(layers.sprint.interventionEffects),
     '--visual-layer-sprint-intervention-particle': String(layers.sprint.interventionParticle),
+    '--visual-point-pop-bottom': `${dimensions.pointPops.bottomRatio * 100}%`,
+    '--visual-point-pop-line-height': `${dimensions.pointPops.reducedLineHeight}px`,
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,
     '--visual-sprint-flow-dash': String(dimensions.sprint.flowDash.dash),
     '--visual-sprint-flow-gap': String(dimensions.sprint.flowDash.gap),
@@ -602,6 +616,9 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-icon-size-card': `${dimensions.icon.card}px`,
     '--visual-icon-size-header': `${dimensions.icon.header}px`,
     '--visual-icon-size-action': `${dimensions.icon.action}px`,
+    '--visual-icon-inline-size': `${dimensions.inlineIcon.sizeEm}em`,
+    '--visual-icon-inline-margin-block': `${dimensions.inlineIcon.marginBlockEm}em`,
+    '--visual-icon-inline-align': `${dimensions.inlineIcon.verticalAlignEm}em`,
     '--visual-color-text': colors.text,
     '--visual-color-text-dim': colors.textDim,
     '--visual-color-panel': colors.panel,

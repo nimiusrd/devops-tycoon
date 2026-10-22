@@ -215,9 +215,17 @@ describe('編成画面の配置と AI 配布', () => {
   });
 
   it('試算がなければ予測を隠し、計算中から完成した出荷・延焼予測へ切り替わる', () => {
-    const screen = mountFormation({ state: makeState({ whatIf: null, whatIfStatus: 'idle' }) });
+    const screen = mountFormation({
+      state: makeState({ phase: 'setup', whatIf: null, whatIfStatus: 'idle' }),
+    });
+    expect(screen.find('formation-forecast').props).toMatchObject({
+      className: 'formation-forecast',
+      'data-what-if-status': 'idle',
+      'aria-busy': false,
+    });
     expect(screen.has('what-if-formation')).toBe(false);
     screen.update({ state: { ...screen.props.state, whatIfStatus: 'computing' } });
+    expect(screen.find('formation-forecast').props['aria-busy']).toBe(true);
     expect(content(screen.find('what-if-formation'))).toContain('試算中…');
     screen.update({
       state: {
@@ -235,5 +243,14 @@ describe('編成画面の配置と AI 配布', () => {
     });
     expect(content(screen.find('what-if-formation'))).toContain('出荷 3〜6延焼 0〜15回試算');
     expect(content(screen.find('what-if-formation'))).not.toContain('試算中');
+    expect(screen.find('formation-forecast').props['data-what-if-status']).toBe('ready');
+    expect(screen.find('formation-forecast').props['aria-busy']).toBe(false);
+  });
+
+  it('編成を変更できないスプリント中は、予測のない空き領域を追加しない', () => {
+    const screen = mountFormation({
+      state: makeState({ phase: 'sprint', whatIf: null, whatIfStatus: 'idle' }),
+    });
+    expect(screen.has('formation-forecast')).toBe(false);
   });
 });

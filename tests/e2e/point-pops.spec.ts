@@ -27,6 +27,84 @@ async function advanceToNextDelivery(page: Page): Promise<number> {
   });
 }
 
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 1280, height: 800 },
+]) {
+  test(`${viewport.width}px・動きを減らす: 6回出荷しても全段が盤面内に収まり古い得点から消える`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await beginPublicSprint(page, { seed: 'point-pops-lifetime', renderer: 'pixi' });
+    await page.evaluate(() => (window as PublicGameWindow).game!.pause());
+    const clockStart = new Date('2026-01-01T00:00:00Z');
+    await page.clock.install({ time: clockStart });
+    await page.clock.pauseAt(new Date(clockStart.getTime() + 60_000));
+    const pops = page.locator('.point-pop');
+    const measurements = [];
+    for (let delivery = 0; delivery < 6; delivery++) {
+      await advanceToNextDelivery(page);
+      // 仮想時計を少し進めて React と ResizeObserver を反映し、1100ms の寿命内で測る。
+      await page.clock.runFor(32);
+      await expect(pops.last()).toHaveAttribute('data-pop-id', String(delivery));
+      const visible = await pops.evaluateAll((elements) =>
+        elements
+          .filter((element) => getComputedStyle(element).opacity !== '0')
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            const bounds = element.parentElement!.getBoundingClientRect();
+            const summary = document
+              .querySelector('[data-testid="board-flow-summary"]')!
+              .getBoundingClientRect();
+            return {
+              id: Number(element.getAttribute('data-pop-id')),
+              inside:
+                rect.top >= bounds.top - 0.5 &&
+                rect.bottom <= bounds.bottom + 0.5 &&
+                rect.left >= bounds.left - 0.5 &&
+                rect.right <= bounds.right + 0.5,
+              belowSummary: rect.top >= summary.bottom,
+            };
+          }),
+      );
+      expect(visible.length).toBeGreaterThan(0);
+      expect(visible.every((pop) => pop.inside)).toBe(true);
+      expect(visible.every((pop) => pop.belowSummary)).toBe(true);
+      expect(visible.map((pop) => pop.id)).toEqual(
+        Array.from({ length: visible.length }, (_, i) => delivery - visible.length + 1 + i),
+      );
+      measurements.push(visible);
+    }
+    if (viewport.width < 400) expect(await pops.count()).toBeLessThan(6);
+    else await expect(pops).toHaveCount(6);
+    await page.screenshot({ path: testInfo.outputPath('盤面内に収まる得点ポップ.png') });
+    if (viewport.width === 1280) {
+      await page.setViewportSize({ width: 320, height: 568 });
+      await page.clock.runFor(64);
+      expect(await pops.count()).toBeGreaterThan(0);
+      expect(await pops.count()).toBeLessThanOrEqual(2);
+      await expect(pops.last()).toHaveAttribute('data-pop-id', '5');
+      expect(
+        await pops.evaluateAll((elements) =>
+          elements.every((element) => {
+            const bounds = element.parentElement!.getBoundingClientRect();
+            const rect = element.getBoundingClientRect();
+            return rect.top >= bounds.top && rect.bottom <= bounds.bottom;
+          }),
+        ),
+      ).toBe(true);
+    }
+    await testInfo.attach('可視段と古い順の消去', {
+      body: JSON.stringify(measurements),
+      contentType: 'application/json',
+    });
+    await page.clock.runFor(1200);
+    await expect(pops).toHaveCount(0);
+  });
+}
+
 for (const viewport of VIEWPORTS) {
   for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     const motionLabel = reducedMotion === 'reduce' ? '動きを減らす' : '通常の動き';
@@ -58,7 +136,7 @@ for (const viewport of VIEWPORTS) {
               translateY: transform.f,
             };
           }),
-        ).toEqual({ opacity: '1', scaleX: 1, scaleY: 1, translateY: -42 });
+        ).toEqual({ opacity: '1', scaleX: 1, scaleY: 1, translateY: 0 });
       }
 
       // 最初の 1100 ms の寿命内に次の出荷を描画する。
@@ -82,21 +160,25 @@ for (const viewport of VIEWPORTS) {
     });
   }
 
-  test(`${viewport.name}・動きを減らす: 3件の連続出荷を8回繰り返しても数字が隠れずHUDも静止する`, async ({
-    page,
-  }, testInfo) => {
-    test.setTimeout(60_000);
-    await page.setViewportSize(viewport);
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    const errors: string[] = [];
-    page.on('pageerror', (error) => errors.push(error.message));
-    const measurements = [];
+  for (let burst = 0; burst < 8; burst++) {
+    test(`${viewport.name}・動きを減らす: 3件の連続出荷でも数字が隠れずHUDも静止する（${burst + 1}/8）`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      const measurements = [];
 
-    for (let burst = 0; burst < 8; burst++) {
       // 同じ初期状態から3件を出荷し、ラン終盤の出荷不足を測定へ混ぜない。
       await beginPublicSprint(page, { seed: 'point-pops-lifetime', renderer: 'pixi' });
+      await page.evaluate(() => (window as PublicGameWindow).game!.pause());
+      // 多数回の測定は仮想時計で間隔を固定する。実時間の寿命は上のテストで確認する。
+      await page.clock.install();
+      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 60_000));
       const pops = page.locator('.point-pop');
       const first = await advanceToNextDelivery(page);
+      await page.clock.runFor(32);
       await expect(pops).toHaveText([`+${first}`]);
 
       // 出現から消去まで50msごとに測る。DOM要素単位で位置も追い、段の詰め直しを検出する。
@@ -182,15 +264,18 @@ for (const viewport of VIEWPORTS) {
           clipped,
         };
       });
-      await page.waitForTimeout(180);
+      await page.clock.runFor(180);
       const second = await advanceToNextDelivery(page);
+      await page.clock.runFor(32);
       await expect(pops).toHaveText([`+${first}`, `+${second}`]);
-      await page.waitForTimeout(180);
+      await page.clock.runFor(180);
       const third = await advanceToNextDelivery(page);
+      await page.clock.runFor(32);
       await expect(pops).toHaveText([`+${first}`, `+${second}`, `+${third}`]);
       if (burst === 0) {
         await page.screenshot({ path: testInfo.outputPath('静止した3件の出荷とHUD.png') });
       }
+      await page.clock.runFor(1600);
       const measurement = await sampling;
       measurements.push(measurement);
       expect(measurement).toEqual({
@@ -202,11 +287,11 @@ for (const viewport of VIEWPORTS) {
         clipped: false,
       });
       await expect(pops).toHaveCount(0);
-    }
-    await testInfo.attach('50ms間隔の重なり・静止計測', {
-      body: JSON.stringify(measurements, null, 2),
-      contentType: 'application/json',
+      await testInfo.attach('50ms間隔の重なり・静止計測', {
+        body: JSON.stringify(measurements, null, 2),
+        contentType: 'application/json',
+      });
+      expect(errors).toEqual([]);
     });
-    expect(errors).toEqual([]);
-  });
+  }
 }

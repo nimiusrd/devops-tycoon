@@ -8,6 +8,13 @@ const hooks = vi.hoisted(() => ({
   effects: [] as (() => void)[],
   playSfx: vi.fn(),
   reducedMotion: false as boolean | null,
+  layer: undefined as
+    | {
+        getBoundingClientRect: () => { height: number; top: number };
+        parentElement: { querySelector: () => { getBoundingClientRect: () => { bottom: number } } };
+      }
+    | undefined,
+  resize: undefined as (() => void) | undefined,
 }));
 
 // Node 環境で React の state/ref/effect と音・アニメーション境界のみを代行する。
@@ -16,7 +23,9 @@ vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useRef(initial: unknown) {
     const index = hooks.cursor++;
-    hooks.slots[index] ??= { value: { current: initial } };
+    hooks.slots[index] ??= {
+      value: { current: initial === null ? (hooks.layer ?? null) : initial },
+    };
     return hooks.slots[index].value;
   },
   useState(initial: unknown) {
@@ -111,6 +120,20 @@ function mountPops(initial: PointPopsProps) {
 beforeEach(() => {
   hooks.playSfx = vi.fn();
   hooks.reducedMotion = false;
+  hooks.layer = undefined;
+  hooks.resize = undefined;
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: () => void) {
+        hooks.resize = callback;
+      }
+      observe() {}
+      disconnect() {
+        hooks.resize = undefined;
+      }
+    },
+  );
   vi.useFakeTimers();
   vi.stubGlobal('window', { setTimeout, clearTimeout });
   vi.spyOn(Math, 'random').mockReturnValue(0.5);
@@ -124,6 +147,37 @@ afterEach(() => {
 });
 
 describe('PointPops の増分とライフサイクル', () => {
+  it('狭い盤面では古い得点から消し、リサイズ後も収まる最新の得点だけを残す', () => {
+    hooks.reducedMotion = true;
+    let height = 151.9;
+    hooks.layer = {
+      getBoundingClientRect: () => ({ height, top: 0 }),
+      parentElement: { querySelector: () => ({ getBoundingClientRect: () => ({ bottom: 32 }) }) },
+    };
+    const screen = mountPops({ deliveryScore: 0 });
+    let score = 0;
+    for (let amount = 1; amount <= 6; amount++) {
+      score += amount;
+      screen.update({ deliveryScore: score });
+    }
+    expect(screen.all().map(content)).toEqual(['+4', '+5', '+6']);
+    height = 119.2;
+    hooks.resize?.();
+    screen.update({});
+    expect(screen.all().map(content)).toEqual(['+5', '+6']);
+    screen.update({ deliveryScore: score + 7 });
+    expect(screen.all().map(content)).toEqual(['+6', '+7']);
+    expect(new Set(screen.all().map((node) => (node.props.animate as { y: number }).y)).size).toBe(
+      2,
+    );
+    height = 0;
+    hooks.resize?.();
+    screen.update({ deliveryScore: score + 8 });
+    expect(screen.all()).toHaveLength(0);
+    screen.advance(1100);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('初期値・同値・減少では発火せず、減少後は新しい値からの増分だけを表示する', () => {
     const screen = mountPops({ deliveryScore: 20 });
     expect(screen.root().props['aria-hidden']).toBe('true');
@@ -166,7 +220,7 @@ describe('PointPops の増分とライフサイクル', () => {
     expect(screen.all().map(content)).toEqual(['+12']);
     expect(screen.all()[0].props).toMatchObject({
       initial: false,
-      animate: { y: -42, opacity: 1, scale: 1 },
+      animate: { y: 0, opacity: 1, scale: 1 },
       exit: { opacity: 0 },
       transition: { duration: 0, ease: 'easeOut' },
     });
@@ -192,20 +246,20 @@ describe('PointPops の増分とライフサイクル', () => {
         y: (node.props.animate as { y: number }).y,
       }));
     expect(positions()).toEqual([
-      { text: '+8', y: -42 },
-      { text: '+18', y: -66 },
-      { text: '+16', y: -90 },
+      { text: '+8', y: 0 },
+      { text: '+18', y: -24 },
+      { text: '+16', y: -48 },
     ]);
     screen.advance(740);
     expect(positions()).toEqual([
-      { text: '+18', y: -66 },
-      { text: '+16', y: -90 },
+      { text: '+18', y: -24 },
+      { text: '+16', y: -48 },
     ]);
     screen.update({ deliveryScore: 46 });
     expect(positions()).toEqual([
-      { text: '+18', y: -66 },
-      { text: '+16', y: -90 },
-      { text: '+4', y: -42 },
+      { text: '+18', y: -24 },
+      { text: '+16', y: -48 },
+      { text: '+4', y: 0 },
     ]);
     screen.advance(1100);
     expect(screen.all()).toHaveLength(0);
@@ -218,8 +272,8 @@ describe('PointPops の増分とライフサイクル', () => {
     expect(screen.all()).toHaveLength(6);
     const positions = screen.all().map((node) => (node.props.animate as { y: number }).y);
     expect(new Set(positions).size).toBe(6);
-    expect(Math.max(...positions)).toBe(-42);
-    expect(Math.min(...positions)).toBe(-162);
+    expect(Math.max(...positions)).toBe(0);
+    expect(Math.min(...positions)).toBe(-120);
   });
 
   it('motion の設定が未確定なら通常の入退場演出を保つ', () => {

@@ -72,7 +72,13 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                   data-testid={`achievement-${def.id}`}
                   data-unlocked={unlocked ? 'true' : 'false'}
                 >
-                  <span className="achievement-card-icon">{unlocked ? '🏅' : '🔒'}</span>
+                  <span
+                    className="achievement-card-icon"
+                    role={unlocked ? undefined : 'img'}
+                    aria-label={unlocked ? undefined : '未取得'}
+                  >
+                    {unlocked ? '🏅' : <VisualIcon name="locked" size="card" />}
+                  </span>
                   <span className="achievement-card-label">{def.label}</span>
                   <p className="achievement-card-hint" data-testid={`achievement-hint-${def.id}`}>
                     {unlocked ? '達成済み' : def.hint}
@@ -102,7 +108,13 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                     data-testid={`win-title-${def.id}`}
                     data-unlocked={unlocked ? 'true' : 'false'}
                   >
-                    <span className="achievement-card-icon">{unlocked ? '🏆' : '🔒'}</span>
+                    <span
+                      className="achievement-card-icon"
+                      role={unlocked ? undefined : 'img'}
+                      aria-label={unlocked ? undefined : '未取得'}
+                    >
+                      {unlocked ? '🏆' : <VisualIcon name="locked" size="card" />}
+                    </span>
                     <span className="achievement-card-label">{def.label}</span>
                     <p className="achievement-card-hint" data-testid={`win-title-hint-${def.id}`}>
                       {unlocked ? def.description : def.hint}
@@ -215,8 +227,12 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                     data-testid={`failure-entry-${def.type}`}
                     data-unlocked={unlocked ? 'true' : 'false'}
                   >
-                    <span className="achievement-card-icon">
-                      {unlocked ? <VisualIcon name={theme.icon} size="card" /> : '🔒'}
+                    <span
+                      className="achievement-card-icon"
+                      role={unlocked ? undefined : 'img'}
+                      aria-label={unlocked ? undefined : '未取得'}
+                    >
+                      <VisualIcon name={unlocked ? theme.icon : 'locked'} size="card" />
                     </span>
                     <span className="achievement-card-label">{def.label}</span>
                     <p

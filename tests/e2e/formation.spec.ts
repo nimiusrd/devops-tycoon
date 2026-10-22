@@ -109,7 +109,7 @@ for (const viewport of [
     await expect(dialog.getByTestId('ai-m2')).toHaveAccessibleDescription(
       'コーディング担当にのみ配れます',
     );
-    await expect(dialog.locator('.fm-ai-reason')).toBeVisible();
+    await expect(dialog.getByTestId('formation-member-m2').locator('.fm-ai-reason')).toBeVisible();
     const ids = await page
       .locator('.fm-ai-reason')
       .evaluateAll((elements) => elements.map((el) => el.id));
@@ -117,9 +117,77 @@ for (const viewport of [
     await dialog.getByTestId('assign-m2-coding').click();
     await expect(dialog.getByTestId('ai-m2')).toBeEnabled();
     await expect(dialog.getByTestId('ai-m2')).not.toHaveAttribute('aria-describedby');
-    await expect(dialog.locator('.fm-ai-reason')).toHaveCount(0);
+    const placeholder = dialog.getByTestId('formation-member-m2').locator('.fm-ai-reason');
+    await expect(placeholder).toBeHidden();
+    await expect(placeholder).toHaveAttribute('aria-hidden', 'true');
     await page.keyboard.press('Escape');
     await expect(setup.getByTestId('ai-m2')).toBeEnabled();
+  });
+}
+
+for (const viewport of [
+  ...NARROW_SETUP_VIEWPORTS,
+  { name: 'desktop-short', width: 1024, height: 768 },
+  { name: 'desktop', width: 1280, height: 800 },
+  { name: 'desktop-wide', width: 1440, height: 900 },
+]) {
+  test(`${viewport.width}pxで一覧の下端から担当を切り替えても編成の操作位置が動かない（#920）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto('/?renderer=pixi&tutorial=off&seed=devops-tycoon');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    const setup = page.getByTestId('setup');
+    await expect(setup).toBeVisible();
+
+    // 狭幅では末尾カードの理由を消し、デスクトップでは同じ行のカードへ理由を出す。
+    const memberId = viewport.width < 1024 ? 'm2' : 'm0';
+    const initial = viewport.width < 1024 ? 'bench' : 'coding';
+    const changed = viewport.width < 1024 ? 'coding' : 'review';
+    await setup.getByTestId(`assign-${memberId}-${initial}`).click();
+    const dismissObservation = setup.getByTestId('setup-observation-dismiss');
+    if (await dismissObservation.isVisible()) await dismissObservation.click();
+    const forecast = setup.getByTestId('formation-forecast');
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    await page.evaluate(() => document.fonts.ready);
+    expect(await forecast.evaluate((element) => element.getBoundingClientRect().height)).toBe(66);
+    await page.locator('.formation-panel').evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const changedButton = setup.getByTestId(`assign-${memberId}-${changed}`);
+    await expect(changedButton).toBeInViewport();
+
+    const positions = () =>
+      setup
+        .locator(
+          '.formation-member, .fm-lane, .fm-ai, .formation-forecast, [data-testid="begin-sprint"]',
+        )
+        .evaluateAll((elements) =>
+          elements.map((element) => {
+            const { x, y, width, height } = element.getBoundingClientRect();
+            return { id: element.getAttribute('data-testid'), x, y, width, height };
+          }),
+        );
+    const before = await positions();
+    await changedButton.click();
+    await expect(changedButton).toHaveAttribute('aria-pressed', 'true');
+    expect(await positions()).toEqual(before);
+    // 非同期の予測結果が出た後も、初回の切り替えと同じ位置を維持する。
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    expect(await positions()).toEqual(before);
+
+    // 逆方向でも理由の出入りによる高さ・スクロール位置の変化を起こさない。
+    const initialButton = setup.getByTestId(`assign-${memberId}-${initial}`);
+    await initialButton.click();
+    await expect(initialButton).toHaveAttribute('aria-pressed', 'true');
+    expect(await positions()).toEqual(before);
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    expect(await positions()).toEqual(before);
+    await setup
+      .getByTestId(`formation-member-${memberId}`)
+      .screenshot({ path: test.info().outputPath(`assignment-stable-${viewport.width}.png`) });
   });
 }
 

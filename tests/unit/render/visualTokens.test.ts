@@ -117,6 +117,10 @@ describe('visual tokens', () => {
     expect(values['--visual-layer-sprint-pixi-effects']).toBe('14');
     expect(values['--visual-layer-sprint-intervention-particle']).toBe('15');
     expect(values['--visual-sprint-station-width']).toBe('13%');
+    expect(values['--visual-point-pop-bottom']).toBe('18%');
+    expect(values['--visual-point-pop-line-height']).toBe(
+      `${VISUAL_TOKENS.dimensions.pointPops.reducedLineHeight}px`,
+    );
     expect(values['--visual-sprint-flow-dash']).toBe('6');
     expect(values['--visual-sprint-flow-gap']).toBe('9');
     expect(values['--visual-sprint-flow-period']).toBe('15px');
@@ -185,6 +189,9 @@ describe('visual tokens', () => {
     expect(values['--visual-icon-size-card']).toBe('20px');
     expect(values['--visual-icon-size-header']).toBe('24px');
     expect(values['--visual-icon-size-action']).toBe('22px');
+    expect(values['--visual-icon-inline-size']).toBe('1.15em');
+    expect(values['--visual-icon-inline-margin-block']).toBe('-0.075em');
+    expect(values['--visual-icon-inline-align']).toBe('-0.15em');
     expect(applied.get('--visual-icon-size-hud')).toBe('16px');
   });
 

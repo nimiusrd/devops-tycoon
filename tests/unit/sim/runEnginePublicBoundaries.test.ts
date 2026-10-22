@@ -153,17 +153,19 @@ describe('RunEngine 公開 API の拒否・復元境界', () => {
     expect(save(implicit)).toEqual(after);
   });
 
-  it('1 スプリント進めた旧 Nightmare セーブでは初期依存度への移行を再適用しない', () => {
+  it('1 スプリント進めた Nightmare セーブは係数欠落でも組織と全チームの依存度を保つ', () => {
     const source = new RunEngine({ seed: 'coverage-nightmare-progress', difficulty: 'nightmare' });
     source.startRun();
     const result = playUntil(source, 'result');
     expect(result.phase).toBe('result');
     expect(result.sprintsPlayed).toBe(1);
     const state = save(source);
-    // 旧セーブではこの係数が存在しなかった。プレイ済みの組織指標はそのまま復元する。
+    // 現行保存でも受理する係数欠落は、保存済みの組織指標を変える根拠にしない。
     delete state.extras.baseConfig.aiDependencyPerTask;
 
-    const restored = restore(state).snapshot();
+    const engine = restore(state);
+    expect(save(engine).extras.baseConfig.aiDependencyPerTask).toBe(0.8);
+    const restored = engine.snapshot();
     expect(restored.org.aiDependency).toBe(result.org.aiDependency);
     expect(restored.teams.map(({ id, aiDependency }) => ({ id, aiDependency }))).toEqual(
       result.teams.map(({ id, aiDependency }) => ({ id, aiDependency })),

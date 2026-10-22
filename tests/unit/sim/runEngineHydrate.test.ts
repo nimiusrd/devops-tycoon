@@ -188,6 +188,45 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     expect(restored.snapshot().phase).toBe('setup');
   });
 
+  it.each([
+    ['home', false],
+    ['home', true],
+    ['rival', false],
+    ['rival', true],
+  ] as const)(
+    'Nightmare の係数欠落を復元しても %s 選択・レバー適用 %s の依存度を変えない（#891）',
+    (active, leverApplied) => {
+      const source = new RunEngine({ seed: 'nightmare-missing-rate', difficulty: 'nightmare' });
+      source.startRun();
+      const homeId = source.snapshot().homeTeamId;
+      const rivalId = 'platform-t1';
+      if (leverApplied) {
+        expect(source.applyOrgLever('teamAiThrottle', undefined, homeId)).toBe(true);
+        expect(source.applyOrgLever('teamAiThrottle', undefined, rivalId)).toBe(true);
+      }
+      if (active === 'rival') expect(source.enterTeam(rivalId)).toBe(true);
+      const state = source.exportPersistState()!;
+      expect(state.extras.baseConfig.aiDependencyPerTask).toBe(0.8);
+      expect(state.extras.teams!.find((team) => team.id === homeId)!.aiDependency).toBe(
+        leverApplied ? 26 : 42,
+      );
+      delete state.extras.baseConfig.aiDependencyPerTask;
+      const input = structuredClone(state);
+
+      const restored = started('nightmare-missing-rate-target');
+      restored.hydratePersistState(state);
+      const saved = restored.exportPersistState()!;
+      expect(saved.extras.baseConfig.aiDependencyPerTask).toBe(0.8);
+      expect(saved.org).toEqual(state.org);
+      expect(saved.extras.teams).toEqual(state.extras.teams);
+      expect(saved.extras.orgAdjust).toEqual(state.extras.orgAdjust);
+      expect(saved.extras.activeTeamId).toBe(state.extras.activeTeamId);
+      expect(saved.extras.homeTeamId).toBe(homeId);
+      expect(saved.budget).toBe(state.budget);
+      expect(state).toEqual(input);
+    },
+  );
+
   it('hydratePersistState は valid save の phase と extras を復元し sprint 実行状態を落とす', () => {
     const source = started('ri72-d3-valid-save');
     expect(source.enterTeam('platform-t1')).toBe(true);

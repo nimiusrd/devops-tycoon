@@ -74,6 +74,34 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(() => previewNextSprint(input, 0)).toThrow('trials は 1 以上の整数');
   });
 
+  it('Nightmare の反実仮想復元と what-if 試算は係数欠落でも記録依存度を保持する（#891）', () => {
+    const source = new RunEngine({
+      seed: 'nightmare-counterfactual-rate',
+      difficulty: 'nightmare',
+    });
+    source.startRun();
+    const frame = source.exportCounterfactualFrame()!;
+    delete frame.persist.extras.baseConfig.aiDependencyPerTask;
+    frame.persist.org.aiDependency = 55;
+    frame.persist.extras.teams = frame.persist.extras.teams!.map((team) => ({
+      ...team,
+      aiDependency: 55,
+    }));
+    const recorded = structuredClone(frame);
+
+    const restored = new RunEngine();
+    restored.hydrateCounterfactualFrame(frame);
+    const before = restored.exportPersistState()!;
+    expect(before.org.aiDependency).toBe(55);
+    expect(before.extras.teams!.map((team) => team.aiDependency)).toEqual(
+      frame.persist.extras.teams.map((team) => team.aiDependency),
+    );
+    expect(restored.whatIfComputeInput()?.org.aiDependency).toBe(55);
+    expect(restored.whatIfPreview()?.current).toBeDefined();
+    expect(restored.exportPersistState()).toEqual(before);
+    expect(frame).toEqual(recorded);
+  });
+
   it.each<GoalAdjustmentId>(['pause_ai_rollout', 'quality_pivot'])(
     '%s の現行持越し入力だけで what-if と実ランの開始条件が一致し、保存も往復する',
     (goalCarryoverId) => {

@@ -104,6 +104,31 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(snap.roster).toEqual(exported!.roster);
   });
 
+  it.each([false, true])(
+    '現行 Nightmare 保存は係数欠落 %s でも境界を往復して依存度を保持する（#891）',
+    async (missingRate) => {
+      const engine = createRunEngine({ seed: 'nightmare-save-roundtrip', difficulty: 'nightmare' });
+      engine.startRun();
+      const state = engine.exportPersistState()!;
+      expect(state.org.aiDependency).toBe(42);
+      expect(state.extras.baseConfig.aiDependencyPerTask).toBe(0.8);
+      if (missingRate) delete state.extras.baseConfig.aiDependencyPerTask;
+      const save = toRunSave(state);
+      expect(getRunSaveCompatibilityIssue(save)).toBeNull();
+      const storage = indexedDbStorage();
+      await storage.save(save);
+      const loaded = await storage.load();
+      expect(loaded).toEqual(save);
+      expect(parseRunSave(JSON.parse(JSON.stringify(save)))).toEqual(save);
+
+      const game = createGame({ initialRunSave: loaded });
+      expect(game.resumeRun()).not.toBeNull();
+      expect(game.getState().org).toEqual(state.org);
+      expect(game.getState().teams).toEqual(state.extras.teams);
+      expect(game.engine.exportPersistState()?.extras.baseConfig.aiDependencyPerTask).toBe(0.8);
+    },
+  );
+
   it('旧持越しを読取時に正規化し、保存と同梱リプレイから旧フィールドを除く', () => {
     const save = makeRunSave('legacy-carryover-read');
     const legacy: RunPersistStateInput = structuredClone(save.state);

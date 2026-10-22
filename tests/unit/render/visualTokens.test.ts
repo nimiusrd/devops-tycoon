@@ -108,6 +108,7 @@ describe('visual tokens', () => {
       VISUAL_TOKENS.colors.board.contactShadow,
     );
     expect(values['--visual-color-chart-hover-band']).toBe(VISUAL_TOKENS.colors.chart.hoverBand);
+    expect(values['--visual-color-chart-baseline']).toBe(VISUAL_TOKENS.colors.chart.baseline);
     expect(values['--visual-space-sprint-w']).toBe('1404');
     expect(values['--visual-space-organization-h']).toBe('573');
     expect(values['--visual-space-department-w']).toBe('1404');

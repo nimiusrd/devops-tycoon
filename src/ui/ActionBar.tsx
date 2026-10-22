@@ -512,8 +512,8 @@ export function ActionBar({
             const availability = availabilityById.get(a.id)!;
             const remaining = cooldowns[a.id] ?? 0;
             const onCooldown = remaining > 0;
-            const armed = !paused && armedId === a.id;
-            const ready = availability.canActivate || armed;
+            const armed = armedId === a.id;
+            const ready = availability.canActivate || (armed && !paused);
             const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
             const modRing = sprint.complete
               ? { active: false, remaining: 0, total: 0 }
@@ -537,7 +537,9 @@ export function ActionBar({
               : '';
             const tooltip = `${formatActionTooltip(a)}${dragHint}`;
             const statusLabel = armed
-              ? '武装中。'
+              ? paused
+                ? '武装中。一時停止中は対象を選べません。再開後に選択できます。'
+                : '武装中。'
               : !ready && availability.blockMessage
                 ? `利用不可: ${availability.blockMessage}。`
                 : '実行可能。';
@@ -569,7 +571,7 @@ export function ActionBar({
                   data-role={presentation.role}
                   data-block-reason={availability.blockReason ?? ''}
                   data-armed={armed ? 'true' : undefined}
-                  disabled={!ready && !armed}
+                  disabled={!ready}
                   onClick={() => handleAction(a.id)}
                   onFocus={() => {
                     focusedActionRef.current = a.id;
@@ -622,13 +624,13 @@ export function ActionBar({
                     </span>
                   </span>
                   <span className="action-state">
-                    {!ready && !armed && availability.blockMessage ? (
+                    {armed ? (
+                      <span className="action-block-reason" data-testid={`action-armed-${a.id}`}>
+                        {paused ? '武装中（停止中）' : '武装中'}
+                      </span>
+                    ) : !ready && availability.blockMessage ? (
                       <span className="action-block-reason" data-testid={`action-reason-${a.id}`}>
                         {availability.blockMessage}
-                      </span>
-                    ) : armed ? (
-                      <span className="action-block-reason" data-testid={`action-armed-${a.id}`}>
-                        武装中
                       </span>
                     ) : (
                       <span className="action-ready-label">実行可能</span>

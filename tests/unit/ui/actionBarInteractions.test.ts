@@ -579,7 +579,7 @@ describe('ActionBar の武装と担当選択', () => {
     );
   });
 
-  it('差配の担当を変更でき、一時停止中は武装表示と担当操作を止める', () => {
+  it('差配の担当を変更でき、一時停止中も武装を表示して対象・担当操作を止める', () => {
     const onAssignAssigneeChange = vi.fn();
     const bar = mountActionBar({ armedId: 'assignTask', onAssignAssigneeChange });
     expect(bar.find('assign-assignee-ideal').props.className).toContain(' on');
@@ -598,8 +598,11 @@ describe('ActionBar の武装と担当選択', () => {
 
     bar.update({ paused: true });
     expect(bar.find('action-bar').props['data-paused']).toBe('true');
-    expect(bar.find('action-assignTask').props['data-armed']).toBeUndefined();
-    expect(bar.query('action-armed-assignTask')).toBeUndefined();
+    expect(bar.find('action-assignTask').props['data-armed']).toBe('true');
+    expect(content(bar.find('action-armed-assignTask'))).toBe('武装中（停止中）');
+    expect(bar.find('action-assignTask').props['aria-label']).toContain(
+      '一時停止中は対象を選べません。再開後に選択できます。',
+    );
     expect(bar.byClass('action').every((node) => node.props.disabled === true)).toBe(true);
     for (const choice of ['ideal', 'ai', 'senior']) {
       expect(bar.find(`assign-assignee-${choice}`).props.disabled).toBe(true);

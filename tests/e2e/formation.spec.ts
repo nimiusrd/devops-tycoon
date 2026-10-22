@@ -85,6 +85,33 @@ const SETUP_VIEWPORTS = [
   { name: 'desktop-wide', width: 1440, height: 900 },
 ] as const;
 
+async function assertUnbrokenPhrases(text: Locator, label: string): Promise<void> {
+  const phrases = await text.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return [...element.querySelectorAll('.setup-text-phrase')].map((phrase) => {
+      const range = document.createRange();
+      range.selectNodeContents(phrase);
+      const lines = [...range.getClientRects()].filter((line) => line.width > 0 && line.height > 0);
+      return {
+        text: phrase.textContent,
+        lineCount: new Set(lines.map((line) => Math.round(line.top * 100))).size,
+        contained: lines.every(
+          (line) =>
+            line.left >= bounds.left - 1 &&
+            line.right <= bounds.right + 1 &&
+            line.top >= bounds.top - 1 &&
+            line.bottom <= bounds.bottom + 1,
+        ),
+      };
+    });
+  });
+  expect(phrases.length, `${label} を意味のある句に分ける`).toBeGreaterThan(0);
+  for (const phrase of phrases) {
+    expect(phrase.lineCount, `${label} の「${phrase.text}」を語中で改行しない`).toBe(1);
+    expect(phrase.contained, `${label} の「${phrase.text}」を本文枠内に収める`).toBe(true);
+  }
+}
+
 async function assertCompactObservation(
   setup: Locator,
   id: 'coding-staff' | 'review-staff' | 'senior-hp' | null,
@@ -98,7 +125,7 @@ async function assertCompactObservation(
       outerHeight: bounds.height + parseFloat(style.marginTop) + parseFloat(style.marginBottom),
     };
   });
-  expect(layout.height, '案内の有無にかかわらず欄を予約する').toBeGreaterThan(0);
+  expect(layout.height, '案内の有無にかかわらず44pxの欄を予約する').toBe(44);
   expect(layout.outerHeight, '案内欄の余白込み高さは48px以下（#931）').toBeLessThanOrEqual(48);
   if (id === null) {
     await expect(setup.getByTestId('setup-observation')).toHaveCount(0);
@@ -109,7 +136,7 @@ async function assertCompactObservation(
   const textLayout = await text.evaluate((element) => {
     const range = document.createRange();
     range.selectNodeContents(element);
-    const lines = [...range.getClientRects()];
+    const lines = [...range.getClientRects()].filter((line) => line.width > 0 && line.height > 0);
     const parent = element.closest('[data-testid="setup-observation-slot"]')!;
     const bounds = parent.getBoundingClientRect();
     return {
@@ -128,6 +155,7 @@ async function assertCompactObservation(
   expect(textLayout.lineCount, `${id} の案内は2行以内（#931）`).toBeLessThanOrEqual(2);
   expect(textLayout.contained, `${id} の案内本文を欄から切らない`).toBe(true);
   expect(textLayout.fontSize, '警告を小さい文字で押し込まない').toBeGreaterThanOrEqual(12);
+  await assertUnbrokenPhrases(text, id);
 }
 
 for (const viewport of SETUP_VIEWPORTS) {
@@ -256,23 +284,31 @@ for (const viewport of SETUP_VIEWPORTS) {
     expect(await liveStatus.evaluate((element) => element.isConnected)).toBe(true);
     await assertStable();
 
-    // 公開の保存・取り込み経路で体力警告を再現し、内部engineへは書き込まない。
-    await page.evaluate(async (raw) => {
-      const game = (window as GameWindow).game!;
-      const save = JSON.parse(raw) as RunSave;
-      save.state.org.seniorHp = 10;
-      const activeTeam = save.state.extras.teams?.find(
-        (team) => team.id === save.state.extras.activeTeamId,
+    // 公開の保存・取り込み経路で各段階の体力警告を再現し、内部engineへは書き込まない。
+    for (const hp of [49, 24, 10, 5, 0]) {
+      await page.evaluate(
+        async ({ raw, hp }) => {
+          const game = (window as GameWindow).game!;
+          const save = JSON.parse(raw) as RunSave;
+          save.state.org.seniorHp = hp;
+          const activeTeam = save.state.extras.teams?.find(
+            (team) => team.id === save.state.extras.activeTeamId,
+          );
+          if (activeTeam) activeTeam.seniorHp = hp;
+          const result = await game.importRunSaveText(JSON.stringify(save));
+          if (!result.ok || game.resumeRun()?.phase !== 'setup') {
+            throw new Error(`体力${hp}%の警告がある準備画面を再開できない`);
+          }
+          game.pause();
+        },
+        { raw: originalSave, hp },
       );
-      if (activeTeam) activeTeam.seniorHp = 10;
-      const result = await game.importRunSaveText(JSON.stringify(save));
-      if (!result.ok || game.resumeRun()?.phase !== 'setup') {
-        throw new Error('体力警告のある準備画面を再開できない');
-      }
-      game.pause();
-    }, originalSave);
-    await assertCompactObservation(setup, 'senior-hp');
-    await assertStable();
+      await expect(setup.getByTestId('setup-observation-senior-hp')).toContainText(
+        `シニア体力 ${hp}%`,
+      );
+      await assertCompactObservation(setup, 'senior-hp');
+      await assertStable();
+    }
     await setup.getByTestId('setup-observation-dismiss').click();
     await assertCompactObservation(setup, null);
     await assertStable();
@@ -328,6 +364,7 @@ for (const viewport of [
     const dialog = page.getByRole('dialog', { name: 'コーダーが0人です' });
     await setup.getByTestId('begin-sprint').click();
     await expect(dialog).toBeVisible();
+    await assertUnbrokenPhrases(dialog.locator('#setup-no-coder-description'), '開始確認の説明');
     await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
     expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
     await page.keyboard.press('Escape');
@@ -369,6 +406,7 @@ for (const viewport of [
     await setup.getByTestId('begin-sprint').click();
     const dialog = page.getByRole('dialog', { name: 'コーダーが0人です' });
     await expect(dialog).toBeVisible();
+    await assertUnbrokenPhrases(dialog.locator('#setup-no-coder-description'), '開始確認の説明');
     await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
     expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
     await dialog.getByRole('button', { name: 'このまま開始' }).click();

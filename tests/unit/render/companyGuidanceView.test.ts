@@ -91,6 +91,7 @@ describe('準備画面の観察入口', () => {
     });
     expect(setupObservation(input)).toMatchObject({ id: 'coding-staff' });
     expect(setupObservation(input)!.text).toBe('コーダー0人。出荷できません');
+    expect(setupObservation(input)!.phrases).toEqual(['コーダー0人。', '出荷できません']);
   });
 
   it('休職中のCoding担当を数えず、体力警告より先に不在を案内する', () => {
@@ -109,6 +110,7 @@ describe('準備画面の観察入口', () => {
     input.roster.members[1].onLeave = true;
     expect(setupObservation(input)).toMatchObject({ id: 'review-staff' });
     expect(setupObservation(input)!.text).toBe('レビュー0人。配置を見直そう');
+    expect(setupObservation(input)!.phrases).toEqual(['レビュー0人。', '配置を見直そう']);
   });
 
   it('複数予兆ではHUDと同じ体力警告を安定して優先する', () => {
@@ -119,9 +121,12 @@ describe('準備画面の観察入口', () => {
     expect(setupObservation(input)).toEqual(setupObservation(input));
     expect(setupObservation(input)).toMatchObject({ id: 'senior-hp' });
     expect(setupObservation(input)!.text).toContain('24%（燃え尽き危険）');
+    expect(setupObservation(input)!.phrases).toEqual(['シニア体力 24%', '（燃え尽き危険）']);
+    expect(setupObservation(input)!.phrases.join('')).toBe(setupObservation(input)!.text);
     expect(input).toEqual(before);
     input.org.seniorHp = 49;
     expect(setupObservation(input)!.text).toContain('体力注意');
+    expect(setupObservation(input)!.phrases).toEqual(['シニア体力 49%', '（体力注意）']);
     input.org.seniorHp = 50;
     expect(setupObservation(input)).toMatchObject({ id: 'review-staff' });
   });

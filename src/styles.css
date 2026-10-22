@@ -8193,6 +8193,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .setup-observation-content .setup-coding-warning {
   color: var(--sun);
 }
+.setup-text-phrase {
+  white-space: nowrap;
+}
 /* 短い確認文でも、狭幅では長い選択肢を全幅へ折り返して読めるようにする。 */
 .setup-coder-confirm .result-actions .btn {
   flex: 1 1 10rem;

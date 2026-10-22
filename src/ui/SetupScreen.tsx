@@ -8,7 +8,7 @@
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
 import { getBoss } from '../data/bosses';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { setupObservation } from '../render/companyGuidanceView';
 import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
@@ -26,6 +26,19 @@ export interface SetupScreenProps {
   onBegin: () => void;
   /** リプレイ閲覧など、操作を受け付けないとき。 */
   readOnly?: boolean;
+}
+
+function SetupPhrases({ phrases }: { phrases: readonly string[] }) {
+  return (
+    <>
+      {phrases.map((phrase, index) => (
+        <Fragment key={phrase}>
+          {index > 0 && <wbr />}
+          <span className="setup-text-phrase">{phrase}</span>
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 function MissingCoderConfirm({
@@ -63,10 +76,15 @@ function MissingCoderConfirm({
           コーダーが0人です
         </h2>
         <p id="setup-no-coder-description">
-          このまま始めると出荷できません。
-          {canAssign
-            ? 'コーダーを割り当ててから始めますか？'
-            : '今は割り当てられるメンバーがいません。'}
+          <SetupPhrases
+            phrases={[
+              'このまま始めると',
+              '出荷できません。',
+              ...(canAssign
+                ? ['コーダーを', '割り当ててから', '始めますか？']
+                : ['今は', '割り当てられる', 'メンバーがいません。']),
+            ]}
+          />
         </p>
         <div className="result-actions">
           <button
@@ -215,7 +233,7 @@ export function SetupScreen({
                       className={`formation-setup-hint${missingCoders ? ' setup-coding-warning' : ''}`}
                       data-testid={`setup-observation-${observation.id}`}
                     >
-                      {observation.text}
+                      <SetupPhrases phrases={observation.phrases} />
                     </p>
                   )}
                 </div>

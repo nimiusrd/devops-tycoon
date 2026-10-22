@@ -43,6 +43,15 @@ export function draftCompanyGuidance(
 export interface SetupObservation {
   id: 'coding-staff' | 'senior-hp' | 'review-staff';
   text: string;
+  /** 狭幅でも語中で折り返さない意味単位。本文も同じ句から作る。 */
+  phrases: readonly [string, string];
+}
+
+function setupObservationMessage(
+  id: SetupObservation['id'],
+  phrases: SetupObservation['phrases'],
+): SetupObservation {
+  return { id, phrases, text: phrases.join('') };
 }
 
 /** Coding担当不在を最優先し、次にHUDの体力警告、Review担当不在。 */
@@ -55,17 +64,10 @@ export function setupObservation(state: CompanyGuidanceState): SetupObservation 
   const active = state.roster.members.filter((m) => !m.onLeave);
   const coders = active.filter((m) => m.assignment === 'coding').length;
   const reviewers = active.filter((m) => m.assignment === 'review').length;
-  const codingStaff: SetupObservation = {
-    id: 'coding-staff',
-    text: 'コーダー0人。出荷できません',
-  };
-  const seniorHp: SetupObservation = {
-    id: 'senior-hp',
-    text: `シニア体力 ${hp}%（${warning ?? '体力注意'}）`,
-  };
-  const reviewStaff: SetupObservation = {
-    id: 'review-staff',
-    text: 'レビュー0人。配置を見直そう',
-  };
-  return coders === 0 ? codingStaff : warning ? seniorHp : reviewers === 0 ? reviewStaff : null;
+  if (coders === 0)
+    return setupObservationMessage('coding-staff', ['コーダー0人。', '出荷できません']);
+  if (warning) return setupObservationMessage('senior-hp', [`シニア体力 ${hp}%`, `（${warning}）`]);
+  if (reviewers === 0)
+    return setupObservationMessage('review-staff', ['レビュー0人。', '配置を見直そう']);
+  return null;
 }

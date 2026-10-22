@@ -53,8 +53,12 @@ export const VISUAL_TOKENS = {
     panel: '#2a2350',
     /** パネルの上に載せる入力面。再現情報 JSON と仮説の振り返りで共有する。 */
     fieldInset: '#080b1bcc',
-    /** 結果グラフのホバー帯。暗い面で棒・ラベルより目立たせない（白約7%）。 */
-    chart: { hoverBand: '#ffffff12' },
+    chart: {
+      /** 結果グラフのホバー帯。暗い面で棒・ラベルより目立たせない（白約7%）。 */
+      hoverBand: '#ffffff12',
+      /** 無介入ベースラインの棒。実績のミントと区別する。 */
+      baseline: '#8aa4c0',
+    },
     line: '#4a3d7a',
     cream: '#ffefd6',
     coral: '#ff7e8b',
@@ -603,6 +607,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-color-panel': colors.panel,
     '--visual-color-field-inset': colors.fieldInset,
     '--visual-color-chart-hover-band': colors.chart.hoverBand,
+    '--visual-color-chart-baseline': colors.chart.baseline,
     '--visual-color-line': colors.line,
     '--visual-color-cream': colors.cream,
     '--visual-color-coral': colors.coral,

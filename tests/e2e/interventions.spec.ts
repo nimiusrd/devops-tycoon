@@ -353,50 +353,143 @@ test('炎上があったリザルトに「なぜ燃えたか」解説を表示�
   await expect(page.getByTestId('result-burn-cause-entry').first()).toBeVisible();
 });
 
-test('介入ありのリザルトに無介入ベースライン比較を表示する（RI-55）', async ({
-  page,
-}, testInfo) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/?seed=ri55-e2e');
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 390, height: 844 },
+]) {
+  test.describe(`介入の成果グラフ ${viewport.width}px`, () => {
+    test.use({ viewport, hasTouch: viewport.width === 390 });
+    for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+      test(`数値・日本語・強調対象を読み取れる（${reducedMotion} / RI-55 / #910）`, async ({
+        page,
+      }, testInfo) => {
+        await page.emulateMedia({ reducedMotion });
+        await page.goto('/?seed=ri55-e2e');
 
-  const result = await page.evaluate(() => {
-    const g = (window as GameWindow).game!;
-    g.pause();
-    g.startRun('easy', [], 'ri55-e2e');
-    g.beginSetupSprint();
-    const outcome = g.dispatch('overtime');
-    const state = g.step(1_000_000);
-    if (!outcome.ok || state.phase !== 'result' || !state.lastResult?.baseline) {
-      throw new Error('RI-55 の比較対象リザルトを生成できませんでした');
+        const result = await page.evaluate(() => {
+          const g = (window as GameWindow).game!;
+          g.pause();
+          g.startRun('easy', [], 'ri55-e2e');
+          g.beginSetupSprint();
+          const outcome = g.dispatch('overtime');
+          const state = g.step(1_000_000);
+          if (!outcome.ok || state.phase !== 'result' || !state.lastResult?.baseline) {
+            throw new Error('RI-55 の比較対象リザルトを生成できませんでした');
+          }
+          return state.lastResult;
+        });
+
+        await expect(page.getByTestId('sprint-result')).toBeVisible();
+        await openSprintResultDetails(page);
+        await expect(page.getByTestId('result-baseline-comparison')).toBeVisible();
+        await expect(page.getByTestId('result-baseline-row-delivered')).toContainText(
+          `${result.baseline!.delivered} pt → ${result.delivered} pt`,
+        );
+        await expect(page.getByTestId('result-baseline-row-spread')).toContainText(
+          `${result.baseline!.spread} 件 → ${result.spread} 件`,
+        );
+        await expect(page.getByTestId('result-baseline-row-maxCombo')).toContainText(
+          `x${result.baseline!.maxCombo} → x${result.maxCombo}`,
+        );
+        await expect(page.getByTestId('result-baseline-disclaimer')).toContainText(
+          '厳密な同一世界線ではありません',
+        );
+
+        const chart = page.getByTestId('result-baseline-chart');
+        const svg = chart.getByRole('application', { name: '介入の成果 比較グラフ' });
+        await expect(svg).toBeVisible();
+        await expect(chart.locator('.result-baseline-bar-label')).toHaveCount(6);
+        await page.getByTestId('result-baseline-comparison').screenshot({
+          path: testInfo.outputPath('result-chart-default.png'),
+        });
+        // 0 件も含め、ツールチップに触れる前から全6個の値を読める。
+        await expect(chart.locator('.result-baseline-bar-label')).toHaveText([
+          `${result.baseline!.delivered} pt`,
+          `${result.baseline!.spread} 件`,
+          `x${result.baseline!.maxCombo}`,
+          `${result.delivered} pt`,
+          `${result.spread} 件`,
+          `x${result.maxCombo}`,
+        ]);
+        await expect(chart.locator('.result-baseline-bar-label tspan')).toHaveCount(0);
+        const labelLayout = await chart
+          .locator('.result-baseline-bar-label')
+          .evaluateAll((labels) => {
+            const bounds = labels.map((label) => ({
+              text: label.textContent,
+              box: label.getBoundingClientRect(),
+            }));
+            return bounds.flatMap((label, index) =>
+              bounds
+                .slice(index + 1)
+                .flatMap((other) =>
+                  label.box.left < other.box.right &&
+                  other.box.left < label.box.right &&
+                  label.box.top < other.box.bottom &&
+                  other.box.top < label.box.bottom
+                    ? [`${label.text} / ${other.text}`]
+                    : [],
+                ),
+            );
+          });
+        expect(labelLayout, '数値ラベル同士が重ならない').toEqual([]);
+        await expect(chart.locator('.result-baseline-axis-label')).toHaveText([
+          '出荷',
+          '延焼',
+          '最大コンボ',
+        ]);
+        await expect(chart.locator('.result-baseline-axis-label tspan')).toHaveCount(0);
+        await expect(chart.locator('.recharts-legend-wrapper')).toContainText('介入なし');
+        await expect(chart.locator('.recharts-legend-wrapper')).toContainText('実績');
+
+        await chart.locator('.recharts-bar-rectangle').first().hover();
+        const cursor = chart.locator('.recharts-tooltip-cursor');
+        await expect(cursor).toBeVisible();
+        await expect(chart.locator('.recharts-tooltip-wrapper')).toContainText(
+          `介入なし: ${result.baseline!.delivered} pt`,
+        );
+        await expect(chart.locator('.recharts-tooltip-wrapper')).toContainText(
+          `実績: ${result.delivered} pt`,
+        );
+        for (const bar of await chart.locator('[data-row="出荷"]').all()) {
+          await expect(bar).toHaveAttribute('fill-opacity', '1');
+        }
+        for (const bar of await chart.locator('[data-row="最大コンボ"]').all()) {
+          await expect(bar).toHaveAttribute('fill-opacity', '0.45');
+        }
+        await page.getByTestId('result-baseline-comparison').screenshot({
+          path: testInfo.outputPath('result-chart-hover.png'),
+        });
+        await expect(cursor).toHaveAttribute('fill', VISUAL_TOKENS.colors.chart.hoverBand);
+
+        // キーボードでも同じ項目・数値を示し、選択中の棒と強調を一致させる。
+        await page.mouse.move(0, 0);
+        await svg.focus();
+        // Recharts の縦配置では左キーが次のカテゴリへ進む。
+        await page.keyboard.press('ArrowLeft');
+        await expect(chart.locator('.result-baseline-tooltip-label')).toHaveText('延焼');
+        await page.keyboard.press('ArrowLeft');
+        await expect(chart.locator('.result-baseline-tooltip-label')).toHaveText('最大コンボ');
+        await expect(chart.locator('.result-baseline-tooltip')).toContainText(
+          `実績: x${result.maxCombo}`,
+        );
+        for (const bar of await chart.locator('[data-row="最大コンボ"]').all()) {
+          await expect(bar).toHaveAttribute('fill-opacity', '1');
+        }
+        for (const bar of await chart.locator('[data-row="出荷"]').all()) {
+          await expect(bar).toHaveAttribute('fill-opacity', '0.45');
+        }
+
+        if (viewport.width === 390) {
+          // タッチでも hover に頼らず、表示済みの数値と対象項目を確認できる。
+          const deliveryBar = chart.locator('[data-row="出荷"]').first();
+          await deliveryBar.tap();
+          await expect(chart.locator('.result-baseline-tooltip-label')).toHaveText('出荷');
+          await expect(chart.locator('.result-baseline-tooltip')).toContainText(
+            `実績: ${result.delivered} pt`,
+          );
+        }
+      });
     }
-    return state.lastResult;
   });
-
-  await expect(page.getByTestId('sprint-result')).toBeVisible();
-  await openSprintResultDetails(page);
-  await expect(page.getByTestId('result-baseline-comparison')).toBeVisible();
-  await expect(page.getByTestId('result-baseline-row-delivered')).toContainText(
-    `${result.baseline!.delivered} pt → ${result.delivered} pt`,
-  );
-  await expect(page.getByTestId('result-baseline-row-spread')).toContainText(
-    `${result.baseline!.spread} 件 → ${result.spread} 件`,
-  );
-  await expect(page.getByTestId('result-baseline-row-maxCombo')).toContainText(
-    `x${result.baseline!.maxCombo} → x${result.maxCombo}`,
-  );
-  await expect(page.getByTestId('result-baseline-disclaimer')).toContainText(
-    '厳密な同一世界線ではありません',
-  );
-
-  const chart = page.getByTestId('result-baseline-chart');
-  await chart.locator('.recharts-bar-rectangle').first().hover();
-  const cursor = chart.locator('.recharts-tooltip-cursor');
-  await expect(cursor).toBeVisible();
-  await expect(chart.locator('.recharts-tooltip-wrapper')).toContainText(
-    String(result.baseline!.delivered),
-  );
-  await page.getByTestId('result-baseline-comparison').screenshot({
-    path: testInfo.outputPath('result-chart-hover.png'),
-  });
-  await expect(cursor).toHaveAttribute('fill', VISUAL_TOKENS.colors.chart.hoverBand);
-});
+}

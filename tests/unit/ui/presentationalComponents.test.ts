@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   playSfx: vi.fn(),
   reducedMotion: false,
+  activeChartRows: undefined as { name: string }[] | undefined,
 }));
 
 vi.mock('react', async (importOriginal) => ({
@@ -16,11 +17,14 @@ vi.mock('recharts', () => ({
   Bar: 'Bar',
   BarChart: 'BarChart',
   CartesianGrid: 'CartesianGrid',
+  LabelList: 'LabelList',
   Legend: 'Legend',
+  Rectangle: 'Rectangle',
   ResponsiveContainer: 'ResponsiveContainer',
   Tooltip: 'Tooltip',
   XAxis: 'XAxis',
   YAxis: 'YAxis',
+  useActiveTooltipDataPoints: () => mocks.activeChartRows,
 }));
 vi.mock('framer-motion', () => ({
   motion: { div: 'div' },
@@ -106,6 +110,7 @@ function makeResult(overrides: Partial<SprintResult> = {}): SprintResult {
 beforeEach(() => {
   mocks.playSfx.mockClear();
   mocks.reducedMotion = false;
+  mocks.activeChartRows = undefined;
   vi.mocked(useDialogOverlayLock).mockClear();
 });
 
@@ -132,22 +137,59 @@ describe('BaselineComparisonChart', () => {
     expect(find(tree, 'result-baseline-comparison')).toBeDefined();
     expect(byType(tree, 'BarChart')[0].props).toMatchObject({
       data: [
-        { name: '出荷', baseline: 42, actual: 50 },
-        { name: '延焼', baseline: 2, actual: 0 },
-        { name: '最大コンボ', baseline: 3, actual: 5 },
+        { name: '出荷', baseline: 42, actual: 50, baselineLabel: '42 pt', actualLabel: '50 pt' },
+        { name: '延焼', baseline: 2, actual: 0, baselineLabel: '2 件', actualLabel: '0 件' },
+        { name: '最大コンボ', baseline: 3, actual: 5, baselineLabel: 'x3', actualLabel: 'x5' },
       ],
-      margin: { top: 8, right: 8, left: 0, bottom: 0 },
+      layout: 'vertical',
+      margin: { top: 8, right: 48, left: 0, bottom: 0 },
+      'aria-label': '介入の成果 比較グラフ',
     });
-    const legend = byType(tree, 'Legend')[0];
-    const formatter = legend.props.formatter as (value: string) => string;
-    expect(formatter('baseline')).toBe('介入なし');
-    expect(formatter('actual')).toBe('実績');
     expect(byType(tree, 'Bar').map((bar) => bar.props.dataKey)).toEqual(['baseline', 'actual']);
+    expect(byType(tree, 'Bar').map((bar) => bar.props.name)).toEqual(['介入なし', '実績']);
+    expect(byType(tree, 'LabelList').map((label) => label.props.dataKey)).toEqual([
+      'baselineLabel',
+      'actualLabel',
+    ]);
+    const valueLabel = byType(tree, 'LabelList')[0].props.content as ReactElement<Props>;
+    const label = expand(
+      cloneElement(valueLabel, {
+        viewBox: { x: 10, y: 20, width: 30, height: 10 },
+        value: '42 pt',
+      }),
+    );
+    expect(content(label)).toBe('42 pt');
+    expect(byType(label, 'text')[0].props).toMatchObject({ x: 46, y: 25 });
+    expect(
+      content(
+        expand(
+          cloneElement(valueLabel, {
+            viewBox: { x: 10, y: 20, width: 0, height: 10 },
+            value: '0 件',
+          }),
+        ),
+      ),
+    ).toBe('0 件');
 
     expect(content(find(tree, 'result-baseline-row-delivered'))).toContain('42 pt → 50 pt+8 pt');
     expect(content(find(tree, 'result-baseline-row-spread'))).toContain('2 件 → 0 件-2 件');
     expect(content(find(tree, 'result-baseline-row-maxCombo'))).toContain('x3 → x5+2');
     expect(content(find(tree, 'result-baseline-disclaimer'))).toContain('厳密な同一世界線');
+
+    const tooltip = byType(tree, 'Tooltip')[0].props.content as ReactElement<Props>;
+    expect(content(expand(cloneElement(tooltip, { active: true, label: '最大コンボ' })))).toBe(
+      '最大コンボ介入なし: x3実績: x5',
+    );
+    expect(expand(cloneElement(tooltip, { active: false, label: '最大コンボ' }))).toBeNull();
+
+    const shape = byType(tree, 'Bar')[0].props.shape as ReactElement<Props>;
+    const drawBar = (name: string) =>
+      byType(expand(cloneElement(shape, { payload: { name } })), 'Rectangle')[0];
+    expect(drawBar('最大コンボ').props.fillOpacity).toBe(1);
+    mocks.activeChartRows = [{ name: '最大コンボ' }];
+    expect(drawBar('最大コンボ').props.fillOpacity).toBe(1);
+    expect(drawBar('出荷').props.fillOpacity).toBe(0.45);
+    expect(drawBar('延焼').props.fillOpacity).toBe(0.45);
   });
 });
 

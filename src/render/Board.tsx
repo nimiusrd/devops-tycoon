@@ -24,6 +24,7 @@ import {
   clientToBoardPoint,
   hitTestDropLane,
   planBoardDrag,
+  type BoardClientRect,
   type DraggableActionId,
 } from './boardDragPlan';
 import {
@@ -50,6 +51,28 @@ const BoardPixiLayer = lazyWebgl<BoardPixiLayerProps>(() =>
 
 const VIEW_W = BOARD_VIEW.w;
 const VIEW_H = BOARD_VIEW.h;
+
+interface BoardPointerPosition {
+  clientX: number;
+  clientY: number;
+  rect: BoardClientRect;
+  blocked: boolean;
+  action: DraggableActionId;
+}
+
+interface BoardGesture {
+  pointerId: number;
+  taskId: number;
+  action: DraggableActionId;
+}
+
+function blocksBoardTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest('.st-label, .board-flow-summary, .bubble, .board-legend, .pile-overflow') !==
+      null
+  );
+}
 
 function Station({
   s,
@@ -234,72 +257,201 @@ export function Board({
     return () => registerBoardDragHitTest(null);
   }, [dragIds, scene.dots, usePixi]);
 
-  const [dragTaskId, setDragTaskId] = useState<number | null>(null);
-  const [hoverLane, setHoverLane] = useState<Lane | null>(null);
+  const [pointer, setPointer] = useState<BoardPointerPosition | null>(null);
+  const [gesture, setGesture] = useState<BoardGesture | null>(null);
+  const interactive = usePixi && armedAction !== null && onDragComplete != null && dragPlan != null;
+  // 元のsceneで逆引きし、強調による前面化が次のヒット順を変えないようにする。
+  const previewTaskId =
+    !interactive || !pointer || pointer.action !== armedAction || pointer.blocked
+      ? null
+      : gesture?.action === 'assignTask'
+        ? dragIds.has(gesture.taskId)
+          ? gesture.taskId
+          : null
+        : hitTestClientBoardDot(
+            pointer.clientX,
+            pointer.clientY,
+            pointer.rect,
+            scene.dots,
+            dragIds,
+          );
+  const dragTaskId =
+    interactive &&
+    gesture?.action === 'assignTask' &&
+    gesture.action === armedAction &&
+    dragIds.has(gesture.taskId)
+      ? gesture.taskId
+      : null;
+  const dropPoint = pointer && clientToBoardPoint(pointer.clientX, pointer.clientY, pointer.rect);
+  const hoverLane =
+    gesture?.action === 'assignTask' && dragTaskId !== null && dropPoint && dragPlan
+      ? hitTestDropLane(dropPoint.x, dropPoint.y, dragPlan.dropLanes)
+      : null;
+  const currentInput = useRef({
+    interactive,
+    armedAction,
+    dragPlan,
+    dragIds,
+    dots: scene.dots,
+    previewTaskId,
+    onDragComplete,
+  });
+  useEffect(() => {
+    currentInput.current = {
+      interactive,
+      armedAction,
+      dragPlan,
+      dragIds,
+      dots: scene.dots,
+      previewTaskId,
+      onDragComplete,
+    };
+  }, [interactive, armedAction, dragPlan, dragIds, scene.dots, previewTaskId, onDragComplete]);
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent, taskId: number) => {
-      if (!armedAction || !onDragComplete || !dragPlan) return;
-      e.preventDefault();
-      // 同じpointerイベントから二重にドラッグを開始しない。
-      e.stopPropagation();
-      setDragTaskId(taskId);
-
-      const onMove = (ev: PointerEvent) => {
-        const rect = boardRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const pt = clientToBoardPoint(ev.clientX, ev.clientY, rect);
-        setHoverLane(hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes));
+  const readPointer = useCallback(
+    (clientX: number, clientY: number, target: EventTarget | null): BoardPointerPosition | null => {
+      const rect = boardRef.current?.getBoundingClientRect();
+      if (!rect || !armedAction) return null;
+      return {
+        clientX,
+        clientY,
+        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        blocked: blocksBoardTarget(target),
+        action: armedAction,
       };
-      const onUp = (ev: PointerEvent) => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        const rect = boardRef.current?.getBoundingClientRect();
-        setDragTaskId(null);
-        setHoverLane(null);
-        if (!rect) return;
-        if (armedAction === 'splitPr') {
-          onDragComplete({ taskId });
-          return;
-        }
-        const pt = clientToBoardPoint(ev.clientX, ev.clientY, rect);
-        const lane = hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes);
-        if (!lane) return;
-        onDragComplete({
-          taskId,
-          lane,
-          ...(dragPlan.assignee ? { assignee: dragPlan.assignee } : {}),
-        });
-      };
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
     },
-    [armedAction, dragPlan, onDragComplete],
+    [armedAction],
   );
 
-  // Pixi 時は粒が canvas 内にあり DOM の pointerdown ターゲットが無いため、
-  // 盤面 div で受けて設計座標から掴む粒を逆引きする（RI-30 の Pixi 対応）。
-  const handleBoardPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      // ラベル・吹き出し等のHTML UIの上では粒を掴まない。splitPr は down+up だけで
-      // 確定するため、粒と重なるラベルクリックの誤発動を防ぐ）。全面を覆う装飾
-      // レイヤ（オーラ・演出）は素通しにする（弾くとドラッグ全体が効かなくなる）。
+  useEffect(() => {
+    if (!gesture) return;
+    let finished = false;
+    const matchingPointer = (event: PointerEvent) => (event.pointerId ?? 1) === gesture.pointerId;
+    const position = (event: PointerEvent) =>
+      readPointer(
+        event.clientX,
+        event.clientY,
+        // Touchの暗黙captureでも、指の下にあるHTMLを操作対象から除く。
+        typeof document === 'undefined'
+          ? event.target
+          : document.elementFromPoint(event.clientX, event.clientY),
+      );
+    const cancel = () => {
+      finished = true;
+      setGesture(null);
+      setPointer(null);
+    };
+    const onMove = (event: PointerEvent) => {
+      if (finished || !matchingPointer(event)) return;
+      setPointer(position(event));
+    };
+    const onUp = (event: PointerEvent) => {
+      if (finished || !matchingPointer(event)) return;
+      const input = currentInput.current;
+      const released = position(event);
+      cancel();
       if (
-        e.target instanceof Element &&
-        e.target.closest('.st-label, .bubble, .board-legend, .pile-overflow')
-      ) {
+        !released ||
+        released.blocked ||
+        !input.interactive ||
+        input.armedAction !== gesture.action ||
+        !input.dragPlan
+      )
+        return;
+      if (gesture.action === 'splitPr') {
+        const taskId = hitTestClientBoardDot(
+          event.clientX,
+          event.clientY,
+          released.rect,
+          input.dots,
+          input.dragIds,
+        );
+        // 表示していた対象だけを確定する。消滅やupだけの座標変化は誤発動させない。
+        if (taskId !== null && taskId === input.previewTaskId) input.onDragComplete?.({ taskId });
         return;
       }
+      const { rect } = released;
+      if (
+        !input.dragIds.has(gesture.taskId) ||
+        event.clientX < rect.left ||
+        event.clientX > rect.left + rect.width ||
+        event.clientY < rect.top ||
+        event.clientY > rect.top + rect.height
+      )
+        return;
+      const point = clientToBoardPoint(event.clientX, event.clientY, rect);
+      const lane = hitTestDropLane(point.x, point.y, input.dragPlan.dropLanes);
+      if (lane)
+        input.onDragComplete?.({
+          taskId: gesture.taskId,
+          lane,
+          ...(input.dragPlan.assignee ? { assignee: input.dragPlan.assignee } : {}),
+        });
+    };
+    const onCancel = (event: PointerEvent) => {
+      if (matchingPointer(event)) cancel();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    window.addEventListener('blur', cancel);
+    return () => {
+      // up/cancel後は既に解除済み。後始末で再度state更新して描画を増やさない。
+      if (!finished) cancel();
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      window.removeEventListener('blur', cancel);
+    };
+  }, [gesture, readPointer]);
+
+  // スクロール/リサイズ後の古い矩形から対象を表示・確定しない。
+  useEffect(() => {
+    const clear = () => {
+      setPointer(null);
+      setGesture(null);
+    };
+    window.addEventListener('resize', clear);
+    window.addEventListener('scroll', clear, true);
+    return () => {
+      window.removeEventListener('resize', clear);
+      window.removeEventListener('scroll', clear, true);
+    };
+  }, []);
+
+  const handleBoardPointerDown = useCallback(
+    (event: React.PointerEvent) => {
+      if (
+        !interactive ||
+        gesture ||
+        event.isPrimary === false ||
+        (event.button != null && event.button !== 0)
+      )
+        return;
+      const next = readPointer(event.clientX, event.clientY, event.target);
+      if (!next || next.blocked) return;
       const taskId = hitTestClientBoardDot(
-        e.clientX,
-        e.clientY,
-        boardRef.current?.getBoundingClientRect(),
+        event.clientX,
+        event.clientY,
+        next.rect,
         scene.dots,
         dragIds,
       );
-      if (taskId !== null) handlePointerDown(e, taskId);
+      if (taskId === null || !armedAction) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setPointer(next);
+      setGesture({ pointerId: event.pointerId ?? 1, taskId, action: armedAction });
     },
-    [dragIds, scene.dots, handlePointerDown],
+    [interactive, gesture, readPointer, scene.dots, dragIds, armedAction],
+  );
+
+  const handleBoardPointerMove = useCallback(
+    (event: React.PointerEvent) => {
+      if (gesture || event.pointerType === 'touch') return;
+      setPointer(interactive ? readPointer(event.clientX, event.clientY, event.target) : null);
+    },
+    [gesture, interactive, readPointer],
   );
 
   return (
@@ -308,6 +460,7 @@ export function Board({
       className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
       data-armed={armedAction ?? undefined}
+      data-preview-task-id={previewTaskId ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
       data-effect-renderer={gpuEffectsActive ? 'pixi' : 'loading'}
@@ -320,6 +473,10 @@ export function Board({
       data-effect-last-sfx={boardEffects.audio.last ?? undefined}
       data-animations-paused={animationsPaused ? 'true' : undefined}
       onPointerDown={usePixi ? handleBoardPointerDown : undefined}
+      onPointerMove={usePixi ? handleBoardPointerMove : undefined}
+      onPointerLeave={() => {
+        if (!gesture) setPointer(null);
+      }}
       style={{ '--review-heat': heat } as CSSProperties}
     >
       <OfficeRoom />
@@ -328,6 +485,7 @@ export function Board({
           scene={scene}
           draggableTaskIds={dragIds}
           dragTaskId={dragTaskId}
+          previewTaskId={previewTaskId}
           effects={boardEffects.effects}
           auras={activeAuras}
           onWebglError={onWebglError}
@@ -335,6 +493,15 @@ export function Board({
           animationsPaused={animationsPaused}
         />
       )}
+
+      <span
+        className="visually-hidden"
+        role="status"
+        aria-live="polite"
+        data-testid="board-target-preview"
+      >
+        {previewTaskId !== null ? `対象: タスク #${previewTaskId}` : ''}
+      </span>
 
       {scene.stations.map((s) => (
         <Station

@@ -42,6 +42,7 @@ export function BoardPixiLayer({
   scene,
   draggableTaskIds,
   dragTaskId,
+  previewTaskId,
   effects,
   auras,
   onWebglError,
@@ -57,6 +58,7 @@ export function BoardPixiLayer({
     scene,
     draggableTaskIds,
     dragTaskId,
+    previewTaskId,
     effects,
     auras,
     reducedMotion,
@@ -80,8 +82,16 @@ export function BoardPixiLayer({
   }, [animationsPaused]);
 
   useEffect(() => {
-    inputRef.current = { scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion };
-  }, [scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion]);
+    inputRef.current = {
+      scene,
+      draggableTaskIds,
+      dragTaskId,
+      previewTaskId,
+      effects,
+      auras,
+      reducedMotion,
+    };
+  }, [scene, draggableTaskIds, dragTaskId, previewTaskId, effects, auras, reducedMotion]);
 
   useLayoutEffect(() => {
     const mount = mountRef.current;
@@ -95,6 +105,8 @@ export function BoardPixiLayer({
       const effectEl = effectsMountRef.current;
       if (!el || !effectEl) return;
       el.dataset.boardDots = String(baseMetrics.dots);
+      if (baseMetrics.previewTaskId === null) delete el.dataset.previewTaskId;
+      else el.dataset.previewTaskId = String(baseMetrics.previewTaskId);
       el.dataset.boardActors = String(baseMetrics.actors);
       el.dataset.boardAssets = String(baseMetrics.assets);
       el.dataset.boardReviewTrails = String(baseMetrics.reviewTrails);
@@ -230,10 +242,18 @@ export function BoardPixiLayer({
       baseRenderer.resize(mount.clientWidth, mount.clientHeight);
       effectsRenderer.resize(mount.clientWidth, mount.clientHeight);
     }
-    const input = { scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion };
+    const input = {
+      scene,
+      draggableTaskIds,
+      dragTaskId,
+      previewTaskId,
+      effects,
+      auras,
+      reducedMotion,
+    };
     baseRenderer.render(input);
     effectsRenderer.render(input);
-  }, [scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion]);
+  }, [scene, draggableTaskIds, dragTaskId, previewTaskId, effects, auras, reducedMotion]);
 
   return (
     <>

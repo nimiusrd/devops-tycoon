@@ -2424,6 +2424,7 @@ body:has(.overlay-contained) {
 }
 .board.board-armed {
   cursor: crosshair;
+  touch-action: none;
 }
 .card.card-playable {
   cursor: pointer;

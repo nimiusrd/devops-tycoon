@@ -30,6 +30,7 @@ import {
 import {
   actorTextureKey,
   boardAnimationElapsedMs,
+  boardDotPreviewRing,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
@@ -127,6 +128,8 @@ export interface BoardRenderResourceMetrics {
 /** 描画メトリクス（E2E 安定化・dev 計測用）。 */
 export interface BoardRenderMetrics {
   dots: number;
+  /** 実際にリングを描いた確定前対象。予算・scene外の入力は公開しない。 */
+  previewTaskId: number | null;
   actors: number;
   flows: number;
   reviewTrails: number;
@@ -163,6 +166,7 @@ function resourceMetrics(
 export function emptyBoardRenderMetrics(): BoardRenderMetrics {
   return {
     dots: 0,
+    previewTaskId: null,
     actors: 0,
     flows: 0,
     reviewTrails: 0,
@@ -179,13 +183,15 @@ export function emptyBoardRenderMetrics(): BoardRenderMetrics {
   };
 }
 
-/** レンダラ入力（Board.tsx が plan と drag ハイライトをまとめて渡す）。 */
+/** レンダラ入力（Board.tsx が plan と操作中・確定前対象の強調をまとめて渡す）。 */
 export interface BoardPixiInput {
   scene: BoardScenePlan;
   /** ドラッグ介入（RI-30）で掴める粒（シアン輪郭）。 */
   draggableTaskIds?: ReadonlySet<number>;
   /** ドラッグ中の粒（金色輪郭・最前面）。 */
   dragTaskId?: number | null;
+  /** 確定前の対象（静止した金色の二重リング・候補より前面）。 */
+  previewTaskId?: number | null;
   /** 一時演出の時刻付きタイムライン。 */
   effects: readonly TimedBoardEffect[];
   /** 進行中モディファイアの常駐オーラ。 */
@@ -564,6 +570,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private readonly textures = new Map<string, Texture>();
   private actors: ActorEntry[] = [];
   private dotEntries: DotEntry[] = [];
+  private previewTaskId: number | null = null;
   private reviewTrailEntries: ReviewTrailEntry[] = [];
   private effectEntries: EffectEntry[] = [];
   private activeAuras: readonly BoardAuraPlan[] = [];
@@ -698,12 +705,19 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.frozen = true;
     this.taskMotion.settle();
     this.elapsedMs = 0;
-    const latest = this.effectEntries[this.effectEntries.length - 1]?.plan;
+    // 本体期限でプールから外れた直後でも、最新入力の演出計画から固定位相を作る。
+    const effects = this.lastInput?.effects;
+    const latest = effects?.[effects.length - 1];
     const effectNowMs = latest
       ? latest.startedAtMs + latest.delayMs + latest.durationMs * 0.55
       : performance.now();
     this.effectNowOverride = effectNowMs;
+    if (this.lastInput) {
+      this.render(this.lastInput);
+      return;
+    }
     this.applyAnimations(0, effectNowMs);
+    this.emitRenderMetrics();
     app.ticker.stop();
     app.render();
   }
@@ -749,7 +763,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       this.syncReviewHeat(scene.reviewEffects.heatField);
       this.syncActors(scene.stations);
       this.syncReviewTrails(scene.reviewEffects.trails);
-      this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
+      this.syncDots(
+        scene.dots,
+        input.draggableTaskIds ?? new Set(),
+        input.dragTaskId ?? null,
+        input.previewTaskId ?? null,
+      );
       this.syncAuras(input.auras);
     }
     if (this.stratum !== 'base') this.syncEffects(input.effects);
@@ -1233,6 +1252,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const effectPool = this.effectPool;
     this.opts.onRenderMetrics?.({
       dots: this.dotEntries.length,
+      previewTaskId: this.previewTaskId,
       actors: this.actors.length,
       flows: this.lastFlows.length,
       assets: this.actors.filter((actor) => actor.assetLoaded).length,
@@ -1299,17 +1319,26 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     dots: readonly BoardDotPlan[],
     draggableIds: ReadonlySet<number>,
     dragTaskId: number | null,
+    previewTaskId: number | null,
   ): void {
     const pool = this.pool;
     if (!pool) return;
     this.dotsLayer.removeChildren();
     pool.releaseAll();
     this.dotEntries = [];
-    const renderPlan = planBoardDotsForRender(dots, draggableIds, dragTaskId);
+    this.previewTaskId = null;
+    const renderPlan = planBoardDotsForRender(
+      dots,
+      draggableIds,
+      dragTaskId,
+      BOARD_RENDER_BUDGETS.dots,
+      previewTaskId,
+    );
     this.dotRequestedCount = renderPlan.requested;
     this.dotDroppedCount = renderPlan.dropped;
     const pinned = new Set(draggableIds);
     if (dragTaskId !== null) pinned.add(dragTaskId);
+    if (previewTaskId !== null) pinned.add(previewTaskId);
     this.taskMotion.sync(
       renderPlan.dots,
       this.elapsedMs,
@@ -1328,7 +1357,19 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
       const draggable = draggableIds.has(dot.id);
       const dragging = dot.id === dragTaskId;
-      if (draggable || dragging) {
+      if (dot.id === previewTaskId) this.previewTaskId = dot.id;
+      if (dot.id === previewTaskId && !dragging) {
+        const ring = boardDotPreviewRing(dot.size, this.root.scale.x);
+        // 太い暗色の外周と大きな二重リングで、色に加えて形でも候補と区別する。
+        parts.ring.circle(0, 0, ring.radius).stroke({
+          color: VISUAL_TOKENS.colors.board.contactShadow,
+          width: ring.outlineWidth,
+        });
+        parts.ring.circle(0, 0, ring.radius).stroke({
+          color: VISUAL_TOKENS.colors.sun,
+          width: ring.strokeWidth,
+        });
+      } else if (draggable || dragging) {
         // CSS `.task-dot.draggable` の outline（2px シアン / ドラッグ中は金色）。
         parts.ring.circle(0, 0, d / 2 + 3).stroke({
           color: dragging ? VISUAL_TOKENS.colors.sun : VISUAL_TOKENS.colors.interaction.drag,

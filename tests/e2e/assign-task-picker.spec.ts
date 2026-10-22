@@ -126,3 +126,74 @@ test('武装中 Escape で取消し、起点の介入ボタンへフォーカス
   await expect(assign).toBeFocused();
   await expect(assign).not.toHaveAttribute('data-armed', 'true');
 });
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 1280, height: 800 },
+]) {
+  for (const action of ['assignTask', 'splitPr'] as const) {
+    test(`${viewport.width}px: ${action} の構えと担当は一時停止・再開後も残る`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize(viewport);
+      await beginPublicSprint(page, { seed: 'ri146-pause-armed', renderer: 'pixi' });
+      await waitForBoardReady(page);
+      const taskId = await advanceUntil(
+        page,
+        () => null,
+        action === 'assignTask' ? 'coding' : 'split',
+      );
+      const button = page.getByTestId(`action-${action}`);
+      await button.click();
+      if (action === 'assignTask') await page.getByTestId('assign-assignee-senior').click();
+      const picker = page.getByTestId('action-target-picker');
+      const option = page.getByTestId(`action-target-option-${taskId}`);
+      await expect(option).toBeEnabled();
+      const snapshot = () =>
+        page.evaluate((id) => {
+          const sprint = (window as GameWindow).game!.getState().sprint!;
+          const task = sprint.tasks.find((candidate) => candidate.id === id)!;
+          return { focus: sprint.focus, progress: task.progress, split: task.split };
+        }, taskId);
+      const beforePause = await snapshot();
+
+      await page.getByTestId('speed-pause').click();
+      await expect(button).toHaveAttribute('data-armed', 'true');
+      await expect(button).toBeDisabled();
+      await expect(button).toHaveAccessibleName(/武装中。一時停止中は対象を選べません/);
+      await expect(page.getByTestId(`action-armed-${action}`)).toHaveText('武装中（停止中）');
+      await expect(page.getByTestId('board')).toHaveAttribute('data-armed', action);
+      await expect(picker).toHaveAttribute('data-armed', action);
+      await expect(option).toBeDisabled();
+      await expect(option).toContainText('一時停止中');
+      await expect(option).toHaveCSS('opacity', '1');
+      if (action === 'assignTask') {
+        await expect(page.getByTestId('assign-assignee-senior')).toHaveClass(/\bon\b/);
+        await expect(page.getByTestId('assign-assignee-senior')).toBeDisabled();
+      }
+      // native disabled を外されても、一時停止中は発動も資源消費も起こさない。
+      await option.evaluate((element) => {
+        (element as HTMLButtonElement).disabled = false;
+        (element as HTMLButtonElement).click();
+      });
+      expect(await snapshot()).toEqual(beforePause);
+      await button.scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: testInfo.outputPath('構えを保持した一時停止.png'),
+        fullPage: true,
+      });
+
+      await page.getByTestId('speed-1x').click();
+      await expect(button).toHaveAttribute('data-armed', 'true');
+      await expect(option).toBeEnabled();
+      await option.click();
+      await expect(picker).toHaveCount(0);
+      await expect(button).not.toHaveAttribute('data-armed', 'true');
+      const after = await snapshot();
+      expect(after.focus).toBeLessThan(beforePause.focus);
+      if (action === 'splitPr') expect(after.split).toBe(true);
+      else expect(after.progress).toBeGreaterThan(beforePause.progress);
+    });
+  }
+}

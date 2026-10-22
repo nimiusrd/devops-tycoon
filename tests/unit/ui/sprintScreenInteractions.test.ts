@@ -420,7 +420,7 @@ describe('SprintScreen の表示と親子の連携', () => {
 });
 
 describe('SprintScreen の速度・介入操作', () => {
-  it('一時停止で武装と担当を解除し、再開時は直前の2xに戻る', () => {
+  it('一時停止でも武装と担当を保持し、再開時は直前の2xに戻る', () => {
     const screen = mountSprint();
     screen.click('speed-2x');
     expect(screen.props.setPlaybackSpeed).toHaveBeenLastCalledWith(2);
@@ -431,14 +431,17 @@ describe('SprintScreen の速度・介入操作', () => {
     expect(screen.child(Board)).toMatchObject({ armedAction: 'assignTask', assignAssignee: 'ai' });
     screen.click('speed-pause');
     expect(screen.props.setPlaybackSpeed).toHaveBeenLastCalledWith(0);
-    expect(screen.child(Board).armedAction).toBeNull();
-    expect(screen.child(ActionBar).assignAssignee).toBeUndefined();
+    expect(screen.child(Board)).toMatchObject({ armedAction: 'assignTask', assignAssignee: 'ai' });
     screen.update({ playbackSpeed: 0 });
     expect(screen.find('speed-controls').props['data-paused']).toBe('true');
     expect(screen.child(ActionBar).paused).toBe(true);
     expect(screen.child(DeckBar).paused).toBe(true);
+    expect(screen.child(ActionBar)).toMatchObject({ armedId: 'assignTask', assignAssignee: 'ai' });
+    expect(screen.child(Board)).toMatchObject({ armedAction: 'assignTask', assignAssignee: 'ai' });
     screen.click('speed-pause');
     expect(screen.props.setPlaybackSpeed).toHaveBeenLastCalledWith(2);
+    screen.update({ playbackSpeed: 2 });
+    expect(screen.child(Board)).toMatchObject({ armedAction: 'assignTask', assignAssignee: 'ai' });
     screen.click('speed-1x');
     expect(screen.props.setPlaybackSpeed).toHaveBeenLastCalledWith(1);
   });

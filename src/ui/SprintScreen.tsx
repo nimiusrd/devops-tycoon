@@ -370,10 +370,9 @@ export function SprintScreen({
     (clicked: PlaybackSpeed) => {
       const next = nextPlaybackSpeed(playbackSpeed, clicked, lastPlayingSpeedRef.current);
       if (!isPlaybackPaused(next)) lastPlayingSpeedRef.current = next;
-      if (isPlaybackPaused(next)) setArmedId(null);
       setPlaybackSpeed(next);
     },
-    [playbackSpeed, setArmedId, setPlaybackSpeed],
+    [playbackSpeed, setPlaybackSpeed],
   );
 
   const handlePlayCard = useCallback(

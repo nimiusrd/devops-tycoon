@@ -2204,7 +2204,9 @@ body:has(.overlay-contained) {
 }
 .action-target-option:disabled,
 .action-target-option.disabled {
-  opacity: 0.55;
+  color: var(--text-dim);
+  border-color: var(--text-dim);
+  border-style: dashed;
   cursor: not-allowed;
 }
 .action-target-option-label {

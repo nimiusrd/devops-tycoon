@@ -579,7 +579,7 @@ export function TitleScreen({
                           def.description
                         ) : (
                           <>
-                            <VisualIcon name="locked" size="card" />{' '}
+                            <VisualIcon name="locked" size="card" className="visual-icon-inline" />{' '}
                             未解放（下位難易度をクリアで解放）
                           </>
                         )}

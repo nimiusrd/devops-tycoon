@@ -55,6 +55,12 @@
   width: var(--visual-icon-size-action);
   height: var(--visual-icon-size-action);
 }
+.visual-icon-inline {
+  width: var(--visual-icon-inline-size);
+  height: var(--visual-icon-inline-size);
+  margin-block: var(--visual-icon-inline-margin-block);
+  vertical-align: var(--visual-icon-inline-align);
+}
 .visual-icon-tone-fire {
   color: var(--visual-color-fire);
 }
@@ -3101,6 +3107,46 @@ button.card.card-readonly:disabled {
   margin: 0.75rem 0 0;
   padding: 0.45rem 0.55rem;
   font-size: 0.72rem;
+}
+/* 編成操作は、試算の開始・完了や未取得状態でも同じ場所に保つ。 */
+.formation-forecast {
+  height: 66px;
+  min-height: 66px;
+  min-width: 0;
+  margin-bottom: 0.85rem;
+}
+.formation-forecast > .what-if-preview {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) max-content;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 0 0.8rem;
+  height: 100%;
+  margin: 0;
+  /* 例外的に長い数値も欄内で最後まで参照できる。 */
+  overflow: auto;
+}
+.formation-forecast > .what-if-preview > span {
+  white-space: nowrap;
+}
+.formation-forecast .what-if-label {
+  grid-column: 1;
+  grid-row: 1;
+}
+.formation-forecast .what-if-trials {
+  grid-column: 2;
+  grid-row: 1;
+}
+.formation-forecast > .what-if-preview > span:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+.formation-forecast > .what-if-preview > span:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+}
+.formation-forecast > .what-if-preview:is(.computing, .lose) > span:nth-child(2) {
+  grid-column: 1 / -1;
 }
 .what-if-label {
   color: #8fdbff;

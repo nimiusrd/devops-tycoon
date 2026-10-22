@@ -93,7 +93,11 @@ export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProp
                         {unlock.cost} pt —{' '}
                         {needsAchievement && (
                           <>
-                            <VisualIcon name="locked" size="card" />{' '}
+                            <VisualIcon
+                              name="locked"
+                              size="card"
+                              className="visual-icon-inline"
+                            />{' '}
                           </>
                         )}
                         {status}

@@ -40,6 +40,7 @@ export function FormationGrid({
   const descriptionId = useId();
   const locked = readOnly || state.phase === 'sprint';
   const lockedNoteId = locked ? `${descriptionId}-locked` : undefined;
+  const showForecast = state.whatIf?.current || state.whatIfStatus === 'computing';
   return (
     <>
       {readOnly ? (
@@ -53,12 +54,21 @@ export function FormationGrid({
           </p>
         )
       )}
-      {(state.whatIf?.current || state.whatIfStatus === 'computing') && (
-        <WhatIfPreview
-          preview={state.whatIf?.current}
-          computing={state.whatIfStatus === 'computing'}
-          testId="what-if-formation"
-        />
+      {(state.phase === 'setup' || showForecast) && (
+        <div
+          className="formation-forecast"
+          data-testid="formation-forecast"
+          data-what-if-status={state.whatIfStatus}
+          aria-busy={state.whatIfStatus === 'computing'}
+        >
+          {showForecast && (
+            <WhatIfPreview
+              preview={state.whatIf?.current}
+              computing={state.whatIfStatus === 'computing'}
+              testId="what-if-formation"
+            />
+          )}
+        </div>
       )}
       <div
         className="formation-grid"

@@ -353,6 +353,14 @@ afterEach(() => {
 });
 
 describe('TitleScreen のラン開始条件', () => {
+  it('未解放の難易度説明は文字に追従する文中の鍵を使う', () => {
+    const screen = mountTitle();
+    const locked = elements(screen.find('difficulty-hard')).find(
+      (node) => node.props.name === 'locked',
+    );
+    expect(locked?.props).toMatchObject({ size: 'card', className: 'visual-icon-inline' });
+  });
+
   it('seed / 難易度 / 試練の meta はボタンではなくキャプションにする', () => {
     const screen = mountTitle();
     const metaItems = screen.nodes.filter((node) =>

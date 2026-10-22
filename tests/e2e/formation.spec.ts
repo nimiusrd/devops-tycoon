@@ -148,6 +148,10 @@ for (const viewport of [
     await setup.getByTestId(`assign-${memberId}-${initial}`).click();
     const dismissObservation = setup.getByTestId('setup-observation-dismiss');
     if (await dismissObservation.isVisible()) await dismissObservation.click();
+    const forecast = setup.getByTestId('formation-forecast');
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    await page.evaluate(() => document.fonts.ready);
+    expect(await forecast.evaluate((element) => element.getBoundingClientRect().height)).toBe(66);
     await page.locator('.formation-panel').evaluate((element) => {
       element.scrollTop = element.scrollHeight;
     });
@@ -156,21 +160,30 @@ for (const viewport of [
     await expect(changedButton).toBeInViewport();
 
     const positions = () =>
-      setup.locator('.formation-member, .fm-lane, .fm-ai').evaluateAll((elements) =>
-        elements.map((element) => {
-          const { x, y, width, height } = element.getBoundingClientRect();
-          return { id: element.getAttribute('data-testid'), x, y, width, height };
-        }),
-      );
+      setup
+        .locator(
+          '.formation-member, .fm-lane, .fm-ai, .formation-forecast, [data-testid="begin-sprint"]',
+        )
+        .evaluateAll((elements) =>
+          elements.map((element) => {
+            const { x, y, width, height } = element.getBoundingClientRect();
+            return { id: element.getAttribute('data-testid'), x, y, width, height };
+          }),
+        );
     const before = await positions();
     await changedButton.click();
     await expect(changedButton).toHaveAttribute('aria-pressed', 'true');
+    expect(await positions()).toEqual(before);
+    // 非同期の予測結果が出た後も、初回の切り替えと同じ位置を維持する。
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
     expect(await positions()).toEqual(before);
 
     // 逆方向でも理由の出入りによる高さ・スクロール位置の変化を起こさない。
     const initialButton = setup.getByTestId(`assign-${memberId}-${initial}`);
     await initialButton.click();
     await expect(initialButton).toHaveAttribute('aria-pressed', 'true');
+    expect(await positions()).toEqual(before);
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
     expect(await positions()).toEqual(before);
     await setup
       .getByTestId(`formation-member-${memberId}`)

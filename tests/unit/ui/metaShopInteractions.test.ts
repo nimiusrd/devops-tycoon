@@ -57,6 +57,9 @@ describe('メタショップの購入条件', () => {
     expect(gated.props.disabled).toBe(true);
     expect(content(gated).replace(/\s+/g, ' ')).toContain('50 pt — 実績「超過達成クリア」が必要');
     expect(elements(gated).find((node) => node.props.name === 'locked')?.props.size).toBe('card');
+    expect(elements(gated).find((node) => node.props.name === 'locked')?.props.className).toBe(
+      'visual-icon-inline',
+    );
     expect(content(screen.find('meta-unlock-unlock-hire-senior'))).toContain(
       '実績「目標修正からの生還」が必要',
     );

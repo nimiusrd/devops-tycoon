@@ -39,6 +39,7 @@ export const VISUAL_TOKENS = {
       summary: 10,
       aura: 10,
       pulse: 11,
+      targetPreview: 11,
       fireEffects: 12,
       dragging: 12,
       fireParticle: 13,
@@ -237,6 +238,8 @@ export const VISUAL_TOKENS = {
       dotHitMargin: 6,
       /** 縮小された盤面でも確保する操作領域の直径（CSS px）。 */
       dotHitMinCssDiameter: 24,
+      /** 確定前の対象リングは縮小盤面でも径・二重輪郭を CSS px で保つ。 */
+      dotPreview: { minCssDiameter: 24, strokeCssWidth: 2, outlineCssWidth: 1 },
       taskDiameter: { small: 16, medium: 26, large: 34 },
       reviewEffects: {
         heatField: {
@@ -549,6 +552,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-layer-sprint-summary': String(layers.sprint.summary),
     '--visual-layer-sprint-aura': String(layers.sprint.aura),
     '--visual-layer-sprint-pulse': String(layers.sprint.pulse),
+    '--visual-layer-sprint-target-preview': String(layers.sprint.targetPreview),
     '--visual-layer-sprint-fire-effects': String(layers.sprint.fireEffects),
     '--visual-layer-sprint-dragging': String(layers.sprint.dragging),
     '--visual-layer-sprint-fire-particle': String(layers.sprint.fireParticle),

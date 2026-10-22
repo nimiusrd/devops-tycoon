@@ -44,6 +44,7 @@ describe('visual tokens', () => {
       summary: 10,
       aura: 10,
       pulse: 11,
+      targetPreview: 11,
       fireEffects: 12,
       dragging: 12,
       fireParticle: 13,
@@ -60,6 +61,8 @@ describe('visual tokens', () => {
       top: '50%',
     });
     expect(VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter).toBeGreaterThanOrEqual(24);
+    expect(VISUAL_TOKENS.dimensions.sprint.dotPreview.minCssDiameter).toBeGreaterThanOrEqual(24);
+    expect(VISUAL_TOKENS.dimensions.sprint.dotPreview.strokeCssWidth).toBeGreaterThanOrEqual(2);
   });
 
   it('Review演出の共有寸法と上限を一元管理する', () => {
@@ -115,6 +118,7 @@ describe('visual tokens', () => {
     expect(values['--visual-space-industry-h']).toBe('360');
     expect(values['--visual-layer-sprint-pixi-base']).toBe('3');
     expect(values['--visual-layer-sprint-pixi-effects']).toBe('14');
+    expect(values['--visual-layer-sprint-target-preview']).toBe('11');
     expect(values['--visual-layer-sprint-intervention-particle']).toBe('15');
     expect(values['--visual-sprint-station-width']).toBe('13%');
     expect(values['--visual-point-pop-bottom']).toBe('18%');

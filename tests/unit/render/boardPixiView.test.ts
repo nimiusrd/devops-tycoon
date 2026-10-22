@@ -9,6 +9,7 @@ import {
   actorTextureKey,
   boardAnimationElapsedMs,
   boardDotLayer,
+  boardDotPreviewRing,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
@@ -20,6 +21,7 @@ import {
   planBoardDotsForRender,
 } from '../../../src/render/boardPixiView';
 import type { BoardDotPlan } from '../../../src/render/boardScene';
+import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 
 function dot(overrides: Partial<BoardDotPlan> & { id: number }): BoardDotPlan {
   return {
@@ -81,6 +83,38 @@ describe('planBoardDotsForRender', () => {
       requested: 8,
       dropped: 8,
     });
+  });
+
+  it('確定前の対象は予算で保持して候補より手前に描き、元のヒット順を変えない', () => {
+    const dots = [dot({ id: 1 }), dot({ id: 2 }), dot({ id: 3, fire: true }), dot({ id: 4 })];
+    const original = [...dots];
+    const plan = planBoardDotsForRender(dots, new Set([1, 2]), 4, 3, 1);
+
+    expect(plan.dots.map((entry) => entry.id)).toEqual([3, 1, 4]);
+    expect(dots).toEqual(original);
+    expect(hitTestBoardDot({ x: 700, y: 300 }, dots, new Set([1, 2]))).toBe(2);
+    expect(boardDotLayer(dots[0], true, false, true)).toBeGreaterThan(
+      boardDotLayer(dots[1], true, false),
+    );
+    expect(boardDotLayer(dots[0], true, false, true)).toBeLessThan(
+      boardDotLayer(dots[3], false, true),
+    );
+    expect(planBoardDotsForRender(dots, new Set(), null, 1, 1).dots).toEqual([dots[0]]);
+  });
+});
+
+describe('boardDotPreviewRing', () => {
+  it.each([1, 0.675, 0.208])('縮尺 %s でも対象の輪郭幅と径を CSS px で確保する', (scale) => {
+    for (const size of ['small', 'medium', 'large'] as const) {
+      const ring = boardDotPreviewRing(size, scale);
+      const tokens = VISUAL_TOKENS.dimensions.sprint.dotPreview;
+      // 縮尺の往復計算による浮動小数点誤差だけを許容する。
+      expect(ring.radius * 2 * scale + 1e-9).toBeGreaterThanOrEqual(tokens.minCssDiameter);
+      expect(ring.strokeWidth * scale).toBeCloseTo(tokens.strokeCssWidth);
+      expect(((ring.outlineWidth - ring.strokeWidth) * scale) / 2).toBeCloseTo(
+        tokens.outlineCssWidth,
+      );
+    }
   });
 });
 

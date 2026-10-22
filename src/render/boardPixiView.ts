@@ -26,9 +26,15 @@ export function boardAnimationElapsedMs(elapsedMs: number, reducedMotion: boolea
 }
 
 /** DOM と同じ粒の重なり順。 */
-export function boardDotLayer(dot: BoardDotPlan, draggable: boolean, dragging: boolean): number {
+export function boardDotLayer(
+  dot: BoardDotPlan,
+  draggable: boolean,
+  dragging: boolean,
+  preview = false,
+): number {
   const layers = VISUAL_TOKENS.layers.sprint;
   if (dragging) return layers.dragging;
+  if (preview) return layers.targetPreview;
   if (draggable) return layers.dragCandidate;
   if (dot.motion || dot.fire) return layers.foreground;
   return layers.task;
@@ -40,8 +46,14 @@ export interface BoardDotRenderPlan {
   dropped: number;
 }
 
-function dotRetentionPriority(dot: BoardDotPlan, draggable: boolean, dragging: boolean): number {
-  if (dragging) return 5;
+function dotRetentionPriority(
+  dot: BoardDotPlan,
+  draggable: boolean,
+  dragging: boolean,
+  preview: boolean,
+): number {
+  if (dragging) return 6;
+  if (preview) return 5;
   if (dot.fire) return 4;
   if (draggable) return 3;
   if (dot.motion) return 2;
@@ -49,7 +61,7 @@ function dotRetentionPriority(dot: BoardDotPlan, draggable: boolean, dragging: b
 }
 
 /**
- * 上限超過時も操作中の粒・炎上・操作候補を優先し、最後に画家順へ戻す。
+ * 上限超過時も操作中・確定前対象・炎上・操作候補を優先し、最後に画家順へ戻す。
  * 同順位は scene 順で安定化するため、同一状態から同じ描画結果になる。
  */
 export function planBoardDotsForRender(
@@ -57,16 +69,18 @@ export function planBoardDotsForRender(
   draggableIds: ReadonlySet<number> = new Set<number>(),
   dragTaskId: number | null = null,
   budget = BOARD_RENDER_BUDGETS.dots,
+  previewTaskId: number | null = null,
 ): BoardDotRenderPlan {
   const capacity = Math.max(0, Math.floor(budget));
   const annotated = dots.map((dot, index) => {
     const draggable = draggableIds.has(dot.id);
     const dragging = dot.id === dragTaskId;
+    const preview = dot.id === previewTaskId;
     return {
       dot,
       index,
-      layer: boardDotLayer(dot, draggable, dragging),
-      priority: dotRetentionPriority(dot, draggable, dragging),
+      layer: boardDotLayer(dot, draggable, dragging, preview),
+      priority: dotRetentionPriority(dot, draggable, dragging, preview),
     };
   });
   const selected = annotated
@@ -77,6 +91,18 @@ export function planBoardDotsForRender(
     dots: selected.map(({ dot }) => dot),
     requested: dots.length,
     dropped: Math.max(0, dots.length - selected.length),
+  };
+}
+
+/** 選択対象の静止二重リング。縮尺が小さくても CSS px の輪郭幅と径を保つ。 */
+export function boardDotPreviewRing(size: TaskSize, scale: number) {
+  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const tokens = VISUAL_TOKENS.dimensions.sprint.dotPreview;
+  const strokeWidth = tokens.strokeCssWidth / safeScale;
+  return {
+    radius: Math.max(TASK_DIAMETER[size] / 2 + 6, tokens.minCssDiameter / 2 / safeScale),
+    strokeWidth,
+    outlineWidth: strokeWidth + (2 * tokens.outlineCssWidth) / safeScale,
   };
 }
 

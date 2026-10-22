@@ -154,8 +154,20 @@ class OverlayElement {
 }
 
 let pointerWindow: EventTarget;
-function pointerDown(point = { x: 0, y: 0 }, target: unknown = {}) {
-  return { ...clientPoint(point), target, preventDefault: vi.fn(), stopPropagation: vi.fn() };
+function pointerDown(
+  point = { x: 0, y: 0 },
+  target: unknown = {},
+  options: Record<string, unknown> = {},
+) {
+  return {
+    ...clientPoint(point),
+    target,
+    pointerId: 1,
+    pointerType: 'mouse',
+    ...options,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+  };
 }
 
 function unmount() {
@@ -226,8 +238,8 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
       connected = false;
       flush();
     },
-    downTask(id: number) {
-      const event = pointerDown(dot(id));
+    downTask(id: number, options: Record<string, unknown> = {}) {
+      const event = pointerDown(dot(id), {}, options);
       (find('board').props.onPointerDown as (event: unknown) => void)(event);
       flush();
       return event;
@@ -238,8 +250,26 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
       flush();
       return event;
     },
-    dispatch(type: 'pointermove' | 'pointerup', point: { x: number; y: number }) {
-      pointerWindow.dispatchEvent(Object.assign(new Event(type), clientPoint(point)));
+    hoverTask(id: number) {
+      (find('board').props.onPointerMove as (event: unknown) => void)(pointerDown(dot(id)));
+      flush();
+    },
+    leave() {
+      (find('board').props.onPointerLeave as () => void)();
+      flush();
+    },
+    dispatch(
+      type: 'pointermove' | 'pointerup' | 'pointercancel',
+      point: { x: number; y: number },
+      pointerId = 1,
+    ) {
+      pointerWindow.dispatchEvent(
+        Object.assign(new Event(type), clientPoint(point), { pointerId }),
+      );
+      flush();
+    },
+    blur() {
+      pointerWindow.dispatchEvent(new Event('blur'));
       flush();
     },
     ready() {
@@ -353,6 +383,77 @@ describe('Board の状態表示', () => {
 });
 
 describe('Board の座標ドラッグ', () => {
+  it('武装中だけhover対象を強調し、確定前のIDをHTMLとPixiへ共通で渡す（#917）', () => {
+    const board = mountBoard({ armedAction: 'splitPr' });
+    board.hoverTask(3);
+    expect(board.find('board').props['data-preview-task-id']).toBe(3);
+    expect(board.layer().props.previewTaskId).toBe(3);
+    expect(content(board.find('board-target-preview'))).toBe('対象: タスク #3');
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    board.leave();
+    expect(board.layer().props.previewTaskId).toBeNull();
+    board.hoverTask(2);
+    board.downTask(2);
+    board.dispatch('pointerup', board.dot(2));
+    expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 2 });
+    board.update({ armedAction: null });
+    board.hoverTask(3);
+    expect(board.layer().props.previewTaskId).toBeNull();
+  });
+
+  it('touchは離すまで実行せず、移動で選び直した強調対象だけを確定する（#917）', () => {
+    const board = mountBoard({ armedAction: 'splitPr' });
+    board.downTask(3, { pointerType: 'touch' });
+    expect(board.layer().props.previewTaskId).toBe(3);
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    board.dispatch('pointermove', board.dot(2));
+    expect(board.layer().props.previewTaskId).toBe(2);
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    board.dispatch('pointerup', board.dot(2));
+    expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 2 });
+    board.dispatch('pointerup', board.dot(2));
+    expect(board.props.onDragComplete).toHaveBeenCalledOnce();
+  });
+
+  it.each(['outside', 'cancel', 'blur', 'disarm', 'unmount'] as const)(
+    '%sで選択を取り消し、後から同じ粒で離しても実行しない（#917）',
+    (reason) => {
+      const board = mountBoard({ armedAction: 'splitPr' });
+      const point = board.dot(3);
+      board.downTask(3, { pointerType: 'touch' });
+      if (reason === 'outside') {
+        board.dispatch('pointermove', { x: -20, y: -20 });
+        expect(board.layer().props.previewTaskId).toBeNull();
+        board.dispatch('pointerup', { x: -20, y: -20 });
+      } else if (reason === 'cancel') board.dispatch('pointercancel', point);
+      else if (reason === 'blur') board.blur();
+      else if (reason === 'disarm') {
+        board.update({ armedAction: null });
+        board.update({ armedAction: 'splitPr' });
+      } else unmount();
+      pointerWindow.dispatchEvent(
+        Object.assign(new Event('pointerup'), clientPoint(point), { pointerId: 1 }),
+      );
+      expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    },
+  );
+
+  it('別の指は選択・取消・確定へ干渉せず、候補消滅後も誤発動しない（#917）', () => {
+    const board = mountBoard({ armedAction: 'splitPr' });
+    board.downTask(3, { pointerType: 'touch' });
+    board.dispatch('pointermove', board.dot(2), 2);
+    board.dispatch('pointercancel', board.dot(3), 2);
+    board.dispatch('pointerup', board.dot(2), 2);
+    expect(board.layer().props.previewTaskId).toBe(3);
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    const sprint = structuredClone(board.props.sprint!);
+    sprint.tasks.find((task) => task.id === 3)!.split = true;
+    board.update({ tasks: sprint.tasks, sprint });
+    expect(board.layer().props.previewTaskId).toBeNull();
+    board.dispatch('pointerup', board.dot(3));
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+  });
+
   it.each([undefined, 'ai', 'senior'] as const)(
     '差配の担当 %s と対象 ID を Coding へのドロップで一度だけ通知する',
     (assignee) => {
@@ -399,12 +500,15 @@ describe('Board の座標ドラッグ', () => {
     });
   });
 
-  it('PR 分割は未分割の Coding/Review のみを掴み、レーン外で離しても対象 ID を通知する', () => {
+  it('PR 分割は未分割の Coding/Review のみを選び、対象上で離したときだけ通知する', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
     expect(Array.from(board.layer().props.draggableTaskIds as Set<number>).sort()).toEqual([2, 3]);
     expect((board.layer().props.draggableTaskIds as Set<number>).has(4)).toBe(false);
     board.downTask(3);
     board.dispatch('pointerup', { x: 0, y: 0 });
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    board.downTask(3);
+    board.dispatch('pointerup', board.dot(3));
     expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 3 });
     expect(board.byClass('dragging')).toHaveLength(0);
   });
@@ -415,7 +519,7 @@ describe('Board の座標ドラッグ', () => {
     const client = clientPoint(point);
     expect(clientPointHitsRegisteredBoardDrag(client.clientX, client.clientY)).toBe(true);
     board.downBoard(point);
-    expect(board.layer().props.dragTaskId).toBe(3);
+    expect(board.layer().props.previewTaskId).toBe(3);
     board.dispatch('pointerup', point);
     board.dispatch('pointerup', point);
     expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 3 });

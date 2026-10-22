@@ -590,6 +590,81 @@ describe('Pixi スプリント盤面レンダラー', () => {
     expect(graphics(layer(app, 'auras')).commands).toEqual([]);
   });
 
+  it('確定前の対象だけを二重リングで前面化し、縮小盤面でも輪郭を保って解除する', async () => {
+    const { renderer, app, latest } = await mounted();
+    const scene = planBoardScene([task({ id: 1 }), task({ id: 2 })]);
+    const original = [...scene.dots];
+    renderer.resize(BOARD_VIEW.w * 0.208, BOARD_VIEW.h * 0.208);
+    renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]), previewTaskId: 1 }));
+    const groups = layer(app, 'dots').children;
+    const candidate = groups[0];
+    const preview = groups[1];
+    expect(preview.position.x).toBe(scene.dots[0].x);
+    expect(candidate.position.x).toBe(scene.dots[1].x);
+    expect(drawCalls(graphics(candidate, 1), 'stroke')).toHaveLength(1);
+    const rings = graphics(preview, 1);
+    const strokes = drawCalls(rings, 'stroke').map(([stroke]) => stroke);
+    expect(strokes).toEqual([
+      expect.objectContaining({ color: VISUAL_TOKENS.colors.board.contactShadow }),
+      expect.objectContaining({
+        color: VISUAL_TOKENS.colors.sun,
+        width: VISUAL_TOKENS.dimensions.sprint.dotPreview.strokeCssWidth / 0.208,
+      }),
+    ]);
+    for (const circle of drawCalls(rings, 'circle')) {
+      expect(Number(circle[2]) * 2 * 0.208).toBeGreaterThanOrEqual(
+        VISUAL_TOKENS.dimensions.sprint.dotPreview.minCssDiameter,
+      );
+    }
+    expect(latest().previewTaskId).toBe(1);
+    expect(scene.dots).toEqual(original);
+
+    renderer.render(input({ scene, previewTaskId: 999 }));
+    expect(latest().previewTaskId).toBeNull();
+    for (const group of layer(app, 'dots').children) {
+      expect(graphics(group, 1).commands).toEqual([]);
+    }
+  });
+
+  it('予算超過でも確定前の対象を実描画し、ドラッグ中の強調は維持する', async () => {
+    const { renderer, app, latest } = await mounted();
+    const seedScene = planBoardScene([task()]);
+    const count = BOARD_RENDER_BUDGETS.dots + 2;
+    const dots = Array.from({ length: count }, (_, index) => ({
+      ...seedScene.dots[0],
+      id: index,
+      x: index,
+    }));
+    const previewTaskId = count - 1;
+    renderer.render(
+      input({
+        scene: { ...seedScene, dots },
+        previewTaskId,
+        dragTaskId: 0,
+      }),
+    );
+    const groups = layer(app, 'dots').children;
+    expect(groups.at(-2)?.position.x).toBe(previewTaskId);
+    expect(groups.at(-1)?.position.x).toBe(0);
+    expect(latest().previewTaskId).toBe(previewTaskId);
+    expect(drawCalls(graphics(groups.at(-1)!, 1), 'stroke')).toEqual([
+      [expect.objectContaining({ color: VISUAL_TOKENS.colors.sun, width: 2, alpha: 1 })],
+    ]);
+
+    renderer.render(
+      input({
+        scene: { ...seedScene, dots },
+        previewTaskId: 0,
+        dragTaskId: 0,
+      }),
+    );
+    expect(latest().previewTaskId).toBe(0);
+    expect(layer(app, 'dots').children.at(-1)?.position.x).toBe(0);
+    expect(drawCalls(graphics(layer(app, 'dots').children.at(-1)!, 1), 'stroke')).toEqual([
+      [expect.objectContaining({ color: VISUAL_TOKENS.colors.sun, width: 2, alpha: 1 })],
+    ]);
+  });
+
   it.each<StationMood>(['neutral', 'happy', 'tired', 'exhausted', 'panic', 'sad', 'cheer'])(
     'SVG 未取得でも %s の人物と状態印を描き、同じ表情のテクスチャは再利用する',
     async (mood) => {
@@ -830,7 +905,7 @@ describe('Pixi スプリント盤面レンダラー', () => {
   );
 
   it('遅延中の演出は隠し、スクリーンショットでは最新演出の中央位相を描く', async () => {
-    const { renderer, app } = await mounted({ stratum: 'effects' });
+    const { renderer, app, latest } = await mounted({ stratum: 'effects' });
     const effects = createTimedBoardEffects(
       [
         {
@@ -855,6 +930,7 @@ describe('Pixi スプリント盤面レンダラー', () => {
     expect(group.visible).toBe(false);
     renderer.freezeForScreenshot();
     expect(group.visible).toBe(true);
+    expect(latest().effects).toBe(1);
     expect(group.position.x).toBeCloseTo(65);
     expect(group.position.y).toBeCloseTo(75);
     expect(app.ticker.stop).toHaveBeenCalledOnce();
@@ -863,6 +939,25 @@ describe('Pixi スプリント盤面レンダラー', () => {
     renderer.render(input({ effects }));
     expect(layer(app, 'transientEffects').children[0].visible).toBe(true);
     expect(layer(app, 'transientEffects').children[0].position.x).toBeCloseTo(65);
+  });
+
+  it('画像固定は期限切れで空になったプールを最新入力から再構成し、描画済み件数も同期する', async () => {
+    const { renderer, app, latest } = await mounted({ stratum: 'effects' });
+    const effects = createTimedBoardEffects(
+      [{ source: 'intervention', effect: { kind: 'split', taskId: 1, x: 40, y: 50 } }],
+      1,
+      1_000,
+    ).effects;
+    vi.mocked(performance.now).mockReturnValue(5_000);
+    renderer.render(input({ effects }));
+    expect(layer(app, 'transientEffects').children).toHaveLength(0);
+    expect(latest().effects).toBe(0);
+    renderer.freezeForScreenshot();
+    expect(layer(app, 'transientEffects').children).toHaveLength(1);
+    expect(layer(app, 'transientEffects').children[0].visible).toBe(true);
+    expect(latest().effects).toBe(1);
+    renderer.render(input({ effects: [] }));
+    expect(latest().effects).toBe(0);
   });
 
   it('reduced motion は有効な一時演出だけを抑制数に計上し、解除後はプールを再利用する', async () => {

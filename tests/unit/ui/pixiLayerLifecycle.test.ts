@@ -377,7 +377,7 @@ describe('BoardPixiLayer のライフサイクル', () => {
     Observer.all[0].notify();
     expect(base.resize).not.toHaveBeenCalled();
 
-    const next = boardProps({ dragTaskId: 3, draggableTaskIds: new Set([3]) });
+    const next = boardProps({ dragTaskId: 3, draggableTaskIds: new Set([3]), previewTaskId: 4 });
     layer.update({ ...next, animationsPaused: true, onReady });
     await ready(base);
     expect(onReady).not.toHaveBeenCalled();
@@ -395,10 +395,10 @@ describe('BoardPixiLayer のライフサイクル', () => {
     expect(onReady).toHaveBeenCalledOnce();
 
     boundary.reducedMotion = true;
-    layer.update({ dragTaskId: null, animationsPaused: false });
+    layer.update({ dragTaskId: null, previewTaskId: null, animationsPaused: false });
     for (const renderer of boards) {
       expect(renderer.render).toHaveBeenLastCalledWith(
-        expect.objectContaining({ dragTaskId: null, reducedMotion: true }),
+        expect.objectContaining({ dragTaskId: null, previewTaskId: null, reducedMotion: true }),
       );
       expect(renderer.setAnimationsPaused).toHaveBeenLastCalledWith(false);
     }
@@ -477,6 +477,20 @@ describe('BoardPixiLayer のライフサイクル', () => {
     base.options.onRenderMetrics?.(emptyBoardRenderMetrics());
     expect(base.render).toHaveBeenCalledTimes(renders);
     expect(mount.dataset.boardDots).toBe('4');
+  });
+
+  it('実描画された確定前対象を公開し、対象が消えたら属性を取り除く', async () => {
+    const layer = mountComponent(BoardPixiLayer, boardProps({ previewTaskId: 4 }));
+    const [base, effects] = boards;
+    await ready(base, effects);
+    const mount = layer.host('board-pixi-mount');
+    expect(mount.dataset.previewTaskId).toBeUndefined();
+    base.options.onRenderMetrics?.({ ...emptyBoardRenderMetrics(), previewTaskId: 4 });
+    expect(mount.dataset.previewTaskId).toBe('4');
+    effects.options.onRenderMetrics?.(emptyBoardRenderMetrics());
+    expect(mount.dataset.previewTaskId).toBe('4');
+    base.options.onRenderMetrics?.(emptyBoardRenderMetrics());
+    expect(mount.dataset.previewTaskId).toBeUndefined();
   });
 
   it('初期化失敗は最新の fallback callback だけに通知する', async () => {

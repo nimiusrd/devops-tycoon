@@ -41,31 +41,33 @@ export function draftCompanyGuidance(
 }
 
 export interface SetupObservation {
-  id: 'senior-hp' | 'review-staff';
+  id: 'coding-staff' | 'senior-hp' | 'review-staff';
   text: string;
+  /** 狭幅でも語中で折り返さない意味単位。本文も同じ句から作る。 */
+  phrases: readonly [string, string];
 }
 
-/** HUD の体力警告を優先し、次に Review 担当不在。健全状態では表示しない。 */
+function setupObservationMessage(
+  id: SetupObservation['id'],
+  phrases: SetupObservation['phrases'],
+): SetupObservation {
+  return { id, phrases, text: phrases.join('') };
+}
+
+/** Coding担当不在を最優先し、次にHUDの体力警告、Review担当不在。 */
 export function setupObservation(state: CompanyGuidanceState): SetupObservation | null {
   const hp = clampSeniorHpDisplay(state.org.seniorHp);
   const warning = seniorHpHudCopy(hp, {
     firefightUrgent: false,
     reviewCongested: false,
   }).warningChip;
-  if (warning) {
-    return {
-      id: 'senior-hp',
-      text: `今回見る一点: シニア体力 ${hp}%（${warning}）。Reviewを支える余力が低下しています。開始後はHUDのシニア体力とReview待ちを観察し、他の課題と合わせて介入を判断できます。`,
-    };
-  }
   const active = state.roster.members.filter((m) => !m.onLeave);
   const coders = active.filter((m) => m.assignment === 'coding').length;
   const reviewers = active.filter((m) => m.assignment === 'review').length;
-  if (coders > 0 && reviewers === 0) {
-    return {
-      id: 'review-staff',
-      text: `今回見る一点: Review担当 ${reviewers}人 / Coding担当 ${coders}人（休職中を除く）。実装に対してレビューの配置支援がありません。配置を見直すか、開始後にReview待ちを観察できます。渋滞の発生を断定する案内ではありません。`,
-    };
-  }
+  if (coders === 0)
+    return setupObservationMessage('coding-staff', ['コーダー0人。', '出荷できません']);
+  if (warning) return setupObservationMessage('senior-hp', [`シニア体力 ${hp}%`, `（${warning}）`]);
+  if (reviewers === 0)
+    return setupObservationMessage('review-staff', ['レビュー0人。', '配置を見直そう']);
   return null;
 }

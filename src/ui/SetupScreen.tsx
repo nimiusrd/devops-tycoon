@@ -8,7 +8,7 @@
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
 import { getBoss } from '../data/bosses';
-import { useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { setupObservation } from '../render/companyGuidanceView';
 import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
@@ -17,6 +17,7 @@ import { DeckBar } from './DeckBar';
 import { FormationGrid } from './FormationScreen';
 import { QuarterOkr } from './QuarterOkr';
 import { TermTip } from './TermTip';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface SetupScreenProps {
   state: RunState;
@@ -27,6 +28,92 @@ export interface SetupScreenProps {
   readOnly?: boolean;
 }
 
+function SetupPhrases({ phrases }: { phrases: readonly string[] }) {
+  return (
+    <>
+      {phrases.map((phrase, index) => (
+        <Fragment key={phrase}>
+          {index > 0 && <wbr />}
+          <span className="setup-text-phrase">{phrase}</span>
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
+function MissingCoderConfirm({
+  canAssign,
+  onAssign,
+  onCancel,
+  onBegin,
+}: {
+  canAssign: boolean;
+  onAssign: () => void;
+  onCancel: () => void;
+  onBegin: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const assignRef = useRef<HTMLButtonElement>(null);
+  const acceptedRef = useRef(false);
+  useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: onCancel });
+  useEffect(() => {
+    assignRef.current?.focus();
+  }, [canAssign]);
+
+  return (
+    <div
+      ref={dialogRef}
+      className="result-overlay setup-coder-confirm"
+      data-testid="setup-no-coder-confirm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="setup-no-coder-title"
+      aria-describedby="setup-no-coder-description"
+      tabIndex={-1}
+    >
+      <div className="result-card resume-risk-card">
+        <h2 className="draft-title" id="setup-no-coder-title">
+          コーダーが0人です
+        </h2>
+        <p id="setup-no-coder-description">
+          <SetupPhrases
+            phrases={[
+              'このまま始めると',
+              '出荷できません。',
+              ...(canAssign
+                ? ['コーダーを', '割り当ててから', '始めますか？']
+                : ['今は', '割り当てられる', 'メンバーがいません。']),
+            ]}
+          />
+        </p>
+        <div className="result-actions">
+          <button
+            ref={assignRef}
+            type="button"
+            className="btn btn-primary"
+            data-testid="setup-no-coder-assign"
+            onClick={canAssign ? onAssign : onCancel}
+          >
+            {canAssign ? 'コーダーを割り当てる' : '編成に戻る'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="setup-no-coder-begin"
+            onClick={() => {
+              if (acceptedRef.current) return;
+              acceptedRef.current = true;
+              onBegin();
+            }}
+          >
+            このまま開始
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SetupScreen({
   state,
   onAssign,
@@ -35,6 +122,7 @@ export function SetupScreen({
   readOnly = false,
 }: SetupScreenProps) {
   const [dismissedSprintKeys, setDismissedSprintKeys] = useState<string[]>([]);
+  const setupRef = useRef<HTMLDivElement>(null);
   const beginRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const sprintKey = JSON.stringify([
@@ -44,7 +132,30 @@ export function SetupScreen({
     state.activeTeamId,
   ]);
   const observation = setupObservation(state);
-  const showObservation = observation !== null && !dismissedSprintKeys.includes(sprintKey);
+  const missingCoders = observation?.id === 'coding-staff';
+  const confirmationKey = JSON.stringify([sprintKey, missingCoders, readOnly]);
+  const assignmentTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useLayoutEffect(() => () => clearTimeout(assignmentTimerRef.current), [confirmationKey]);
+  const [confirmation, setConfirmation] = useState({ key: confirmationKey, open: false });
+  // 一時的な確認を別のスプリント・チームや閲覧モードへ持ち越さない。
+  if (confirmation.key !== confirmationKey) {
+    setConfirmation({ key: confirmationKey, open: false });
+  }
+  const showConfirmation = confirmation.key === confirmationKey && confirmation.open;
+  const activeMembers = state.roster.members.filter((member) => !member.onLeave);
+  const assignmentTarget =
+    activeMembers.find((member) => member.assignment === 'bench') ?? activeMembers[0];
+  const focusCodingAssignment = () => {
+    if (readOnly || !assignmentTarget) return;
+    const buttons = setupRef.current?.querySelectorAll<HTMLButtonElement>('.fm-lane');
+    const target = [...(buttons ?? [])].find(
+      (button) => button.dataset.testid === `assign-${assignmentTarget.id}-coding`,
+    );
+    target?.scrollIntoView({ block: 'center', inline: 'nearest' });
+    target?.focus({ preventScroll: true });
+  };
+  const showObservation =
+    observation !== null && (missingCoders || !dismissedSprintKeys.includes(sprintKey));
   const dismissObservation = () => {
     setDismissedSprintKeys((keys) => [...keys, sprintKey]);
     (readOnly ? headingRef.current : beginRef.current)?.focus();
@@ -61,6 +172,7 @@ export function SetupScreen({
       : '編成 — スプリント開始前に配置とAIを決める';
   return (
     <div
+      ref={setupRef}
       className="run-setup"
       data-testid="setup"
       data-readonly={readOnly ? 'true' : undefined}
@@ -109,30 +221,45 @@ export function SetupScreen({
               <TermTip termId="aiLiteracy" />
               <TermTip termId="rework" />
             </div>
-            <div
-              className={showObservation ? 'setup-observation' : undefined}
-              data-testid={showObservation ? 'setup-observation' : undefined}
-            >
-              <div role="status" aria-live="polite" aria-atomic="true">
-                {showObservation && (
-                  <p
-                    className="formation-setup-hint"
-                    data-testid={`setup-observation-${observation.id}`}
-                  >
-                    {observation.text}
-                  </p>
-                )}
+            <div className="setup-observation" data-testid="setup-observation-slot">
+              <div
+                className="setup-observation-content"
+                data-testid={showObservation ? 'setup-observation' : undefined}
+              >
+                <div role="status" aria-live="polite" aria-atomic="true">
+                  {showObservation && (
+                    <p
+                      id="setup-observation-text"
+                      className={`formation-setup-hint${missingCoders ? ' setup-coding-warning' : ''}`}
+                      data-testid={`setup-observation-${observation.id}`}
+                    >
+                      <SetupPhrases phrases={observation.phrases} />
+                    </p>
+                  )}
+                </div>
+                {showObservation &&
+                  (missingCoders ? (
+                    <button
+                      type="button"
+                      className="btn btn-secondary setup-observation-action"
+                      data-testid="setup-assign-coder"
+                      disabled={readOnly || !assignmentTarget}
+                      onClick={focusCodingAssignment}
+                    >
+                      割り当てる
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary setup-observation-action"
+                      aria-label="案内を閉じる"
+                      onClick={dismissObservation}
+                      data-testid="setup-observation-dismiss"
+                    >
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  ))}
               </div>
-              {showObservation && (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={dismissObservation}
-                  data-testid="setup-observation-dismiss"
-                >
-                  案内を閉じる
-                </button>
-              )}
             </div>
           </div>
           <button
@@ -141,8 +268,13 @@ export function SetupScreen({
             className="primary-button"
             data-testid="begin-sprint"
             aria-label="スプリント開始"
+            aria-describedby={missingCoders ? 'setup-observation-text' : undefined}
             disabled={readOnly}
-            onClick={onBegin}
+            onClick={() => {
+              if (readOnly) return;
+              if (missingCoders) setConfirmation({ key: confirmationKey, open: true });
+              else onBegin();
+            }}
           >
             スプリント開始 ▶
           </button>
@@ -155,6 +287,21 @@ export function SetupScreen({
         />
         {readOnly ? <DeckBar deck={state.deck} /> : null}
       </div>
+      {showConfirmation && !readOnly && missingCoders && (
+        <MissingCoderConfirm
+          canAssign={!!assignmentTarget}
+          onCancel={() => setConfirmation({ key: confirmationKey, open: false })}
+          onAssign={() => {
+            setConfirmation({ key: confirmationKey, open: false });
+            // overlay の inert とフォーカス復帰が解除された後で配置操作へ移す。
+            assignmentTimerRef.current = setTimeout(focusCodingAssignment, 0);
+          }}
+          onBegin={() => {
+            setConfirmation({ key: confirmationKey, open: false });
+            onBegin();
+          }}
+        />
+      )}
     </div>
   );
 }

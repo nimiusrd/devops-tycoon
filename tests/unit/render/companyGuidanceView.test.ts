@@ -83,20 +83,34 @@ describe('現在の会社に対応したドラフト説明', () => {
 });
 
 describe('準備画面の観察入口', () => {
-  it('健全状態とCoding担当もいない状態では予兆を作らない', () => {
+  it('健全状態では予兆を作らず、Coding担当不在では出荷できないと短く警告する', () => {
     const input = state();
     expect(setupObservation(input)).toBeNull();
     input.roster.members.forEach((m) => {
       m.assignment = 'bench';
     });
-    expect(setupObservation(input)).toBeNull();
+    expect(setupObservation(input)).toMatchObject({ id: 'coding-staff' });
+    expect(setupObservation(input)!.text).toBe('コーダー0人。出荷できません');
+    expect(setupObservation(input)!.phrases).toEqual(['コーダー0人。', '出荷できません']);
   });
 
-  it('休職中のレビュアーは除き、人数と対象工程を明示する', () => {
+  it('休職中のCoding担当を数えず、体力警告より先に不在を案内する', () => {
+    const input = state();
+    input.roster.members[0].onLeave = true;
+    input.org.seniorHp = 10;
+    const before = structuredClone(input);
+    expect(setupObservation(input)).toMatchObject({ id: 'coding-staff' });
+    expect(input).toEqual(before);
+    input.roster.members[1].assignment = 'coding';
+    expect(setupObservation(input)).toMatchObject({ id: 'senior-hp' });
+  });
+
+  it('休職中のレビュアーを除いて配置見直しを短く案内する', () => {
     const input = state();
     input.roster.members[1].onLeave = true;
     expect(setupObservation(input)).toMatchObject({ id: 'review-staff' });
-    expect(setupObservation(input)!.text).toContain('Review担当 0人 / Coding担当 1人');
+    expect(setupObservation(input)!.text).toBe('レビュー0人。配置を見直そう');
+    expect(setupObservation(input)!.phrases).toEqual(['レビュー0人。', '配置を見直そう']);
   });
 
   it('複数予兆ではHUDと同じ体力警告を安定して優先する', () => {
@@ -107,9 +121,12 @@ describe('準備画面の観察入口', () => {
     expect(setupObservation(input)).toEqual(setupObservation(input));
     expect(setupObservation(input)).toMatchObject({ id: 'senior-hp' });
     expect(setupObservation(input)!.text).toContain('24%（燃え尽き危険）');
+    expect(setupObservation(input)!.phrases).toEqual(['シニア体力 24%', '（燃え尽き危険）']);
+    expect(setupObservation(input)!.phrases.join('')).toBe(setupObservation(input)!.text);
     expect(input).toEqual(before);
     input.org.seniorHp = 49;
     expect(setupObservation(input)!.text).toContain('体力注意');
+    expect(setupObservation(input)!.phrases).toEqual(['シニア体力 49%', '（体力注意）']);
     input.org.seniorHp = 50;
     expect(setupObservation(input)).toMatchObject({ id: 'review-staff' });
   });

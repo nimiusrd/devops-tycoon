@@ -66,9 +66,7 @@ for (const viewport of viewports) {
     await page.evaluate(() => (window as GameWindow).game!.pause());
     await expect(page.getByTestId('setup-observation')).toHaveCount(0);
     await page.getByTestId('assign-m2-coding').click();
-    await expect(page.getByTestId('setup-observation-review-staff')).toContainText(
-      'Review担当 0人',
-    );
+    await expect(page.getByTestId('setup-observation-review-staff')).toContainText('レビュー0人');
     await expect(page.getByTestId('setup-observation').getByRole('status')).toHaveAttribute(
       'aria-live',
       'polite',

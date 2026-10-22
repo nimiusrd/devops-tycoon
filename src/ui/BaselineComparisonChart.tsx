@@ -158,7 +158,8 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
     <div className="result-baseline-comparison" data-testid="result-baseline-comparison">
       <p className="result-section-label">介入の成果</p>
       <p className="result-baseline-caption">
-        介入なしの見込み → 実績。棒の目盛りは指標ごと。異なる指標の長さは比較できません。
+        介入なしの見込み → 実績
+        <span className="result-baseline-caption-scale">（棒の目盛りは指標ごと）</span>
       </p>
       <div className="result-baseline-chart" data-testid="result-baseline-chart">
         <ResponsiveContainer width="100%" height={180}>

@@ -225,7 +225,7 @@ describe('BaselineComparisonChart', () => {
       { name: '最大コンボ', baseline: 0.5, actual: 1, baselineLabel: 'x11', actualLabel: 'x22' },
     ]);
     expect(byType(tree, 'XAxis')[0].props).toMatchObject({ domain: [0, 1], hide: true });
-    expect(content(tree)).toContain('棒の目盛りは指標ごと。異なる指標の長さは比較できません。');
+    expect(content(tree)).toContain('介入なしの見込み → 実績（棒の目盛りは指標ごと）');
   });
 
   it('両方が0の指標は棒の長さを0に保ち、数値を表示する', () => {

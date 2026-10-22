@@ -1773,6 +1773,9 @@ body:has(.overlay-contained) {
   color: var(--text-dim);
   font-size: 0.8rem;
 }
+.result-baseline-caption-scale {
+  white-space: nowrap;
+}
 .result-baseline-chart {
   width: 100%;
   height: 180px;
@@ -8145,7 +8148,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   box-shadow: none;
 }
 .setup-observation {
-  margin-bottom: 0.75rem;
+  height: 44px;
+  margin-bottom: 4px;
+  min-width: 0;
 }
 
 /* 決着画像は静的な要約。小画面でも元のPNG全体を確認できる。 */
@@ -8161,4 +8166,38 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   height: auto;
   margin-block: 1rem;
   border-radius: 0.75rem;
+}
+
+/* 2行の短い案内と操作を44pxに収め、空欄でもメンバーを押し下げない（#928/#931）。
+ * Setup専用の局所レイアウト寸法。長文の非表示予約やline-clampには依存しない。 */
+.setup-observation-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  min-width: 0;
+}
+.setup-observation-content > [role='status'] {
+  flex: 1;
+  min-width: 0;
+}
+.setup-observation-content .formation-setup-hint {
+  margin: 0;
+  color: var(--text-dim);
+}
+.setup-observation-content .setup-observation-action {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+}
+.setup-observation-content .setup-coding-warning {
+  color: var(--sun);
+}
+.setup-text-phrase {
+  white-space: nowrap;
+}
+/* 短い確認文でも、狭幅では長い選択肢を全幅へ折り返して読めるようにする。 */
+.setup-coder-confirm .result-actions .btn {
+  flex: 1 1 10rem;
 }

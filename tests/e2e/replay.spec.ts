@@ -111,7 +111,27 @@ async function assertReadOnlyDraftA11y(page: Page): Promise<void> {
   const card = page.getByTestId('draft-card-copilot');
   await expect(card).toBeDisabled();
   await expect(card).toHaveCSS('cursor', 'not-allowed');
-  await expect(card).toHaveCSS('opacity', '0.45');
+  await expect(card).toHaveCSS('opacity', '1');
+  await expect(card).toHaveCSS('border-style', 'dashed');
+  await expect(card).toHaveAttribute('title', 'リプレイ閲覧中は操作できません');
+  const contrast = await card.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const luminance = (color: string) => {
+      const channels = color
+        .match(/[\d.]+/g)!
+        .slice(0, 3)
+        .map(Number)
+        .map((value) => {
+          const channel = value / 255;
+          return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+      return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;
+    };
+    const foreground = luminance(style.color);
+    const background = luminance(style.backgroundColor);
+    return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+  });
+  expect(contrast).toBeGreaterThanOrEqual(4.5);
   await card.hover();
   await expect(card).toHaveCSS('filter', 'none');
   await expect(card).toHaveCSS('transform', 'none');

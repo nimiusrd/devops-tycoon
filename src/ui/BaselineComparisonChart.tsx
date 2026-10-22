@@ -7,7 +7,6 @@
 import {
   Bar,
   BarChart,
-  CartesianGrid,
   LabelList,
   Legend,
   Rectangle,
@@ -49,12 +48,18 @@ function chartData(result: SprintResult, view: BaselineComparisonView): Comparis
     spread: { baseline: baseline.spread, actual: result.spread },
     maxCombo: { baseline: baseline.maxCombo, actual: result.maxCombo },
   };
-  return view.rows.map((row) => ({
-    name: row.label,
-    ...values[row.key],
-    baselineLabel: row.baseline,
-    actualLabel: row.actual,
-  }));
+  return view.rows.map((row) => {
+    const pair = values[row.key];
+    // 単位の異なる指標を同じ数値軸で縮めず、各ペア内の比率だけを比較する。
+    const maximum = Math.max(pair.baseline, pair.actual, 1);
+    return {
+      name: row.label,
+      baseline: pair.baseline / maximum,
+      actual: pair.actual / maximum,
+      baselineLabel: row.baseline,
+      actualLabel: row.actual,
+    };
+  });
 }
 
 /** マウス・タッチ・キーボードのすべてで、Tooltip と同じ項目を強調する。 */
@@ -152,7 +157,9 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
   return (
     <div className="result-baseline-comparison" data-testid="result-baseline-comparison">
       <p className="result-section-label">介入の成果</p>
-      <p className="result-baseline-caption">介入なしの見込み → 実績</p>
+      <p className="result-baseline-caption">
+        介入なしの見込み → 実績。棒の目盛りは指標ごと。異なる指標の長さは比較できません。
+      </p>
       <div className="result-baseline-chart" data-testid="result-baseline-chart">
         <ResponsiveContainer width="100%" height={180}>
           <BarChart
@@ -161,18 +168,7 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
             margin={{ top: 8, right: 64, left: 0, bottom: 0 }}
             aria-label="介入の成果 比較グラフ"
           >
-            <CartesianGrid
-              stroke={VISUAL_TOKENS.colors.line}
-              strokeDasharray="3 3"
-              horizontal={false}
-            />
-            <XAxis
-              type="number"
-              tick={{ fill: VISUAL_TOKENS.colors.textDim, fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            />
+            <XAxis type="number" domain={[0, 1]} hide />
             <YAxis
               type="category"
               dataKey="name"

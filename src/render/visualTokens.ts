@@ -217,6 +217,12 @@ export const VISUAL_TOKENS = {
     },
   },
   dimensions: {
+    pointPops: {
+      bottomRatio: 0.18,
+      reducedLineHeight: 28,
+      baseOffset: 42,
+      rowGap: 24,
+    },
     sprint: {
       stationWidthPercent: 13,
       actor: {
@@ -543,6 +549,8 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-layer-sprint-pixi-effects': String(layers.sprint.pixiEffects),
     '--visual-layer-sprint-intervention-effects': String(layers.sprint.interventionEffects),
     '--visual-layer-sprint-intervention-particle': String(layers.sprint.interventionParticle),
+    '--visual-point-pop-bottom': `${dimensions.pointPops.bottomRatio * 100}%`,
+    '--visual-point-pop-line-height': `${dimensions.pointPops.reducedLineHeight}px`,
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,
     '--visual-sprint-flow-dash': String(dimensions.sprint.flowDash.dash),
     '--visual-sprint-flow-gap': String(dimensions.sprint.flowDash.gap),

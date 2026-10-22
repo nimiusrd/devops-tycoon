@@ -102,6 +102,8 @@ const LANES: { id: LaneAssignment; label: string }[] = [
   { id: 'bench', label: 'ベンチ' },
 ];
 
+const AI_ASSIGNMENT_REASON = 'コーディング担当にのみ配れます';
+
 function MemberCard({
   m,
   locked,
@@ -120,7 +122,7 @@ function MemberCard({
   const expr = memberExpression(m);
   const staminaPct = m.staminaMax > 0 ? Math.round((m.stamina / m.staminaMax) * 100) : 0;
   const xpNeed = xpForLevel(m.level);
-  const aiReason = m.assignment !== 'coding' ? 'コーディング担当にのみ配れます' : undefined;
+  const aiReason = m.assignment !== 'coding' ? AI_ASSIGNMENT_REASON : undefined;
   const aiDescription =
     [lockedNoteId, aiReason ? aiReasonId : undefined].filter(Boolean).join(' ') || undefined;
   return (
@@ -203,11 +205,9 @@ function MemberCard({
           >
             {m.aiAssigned ? '🤖 AI配布中' : 'AIを配る'}
           </button>
-          {aiReason && (
-            <p id={aiReasonId} className="fm-ai-reason">
-              {aiReason}
-            </p>
-          )}
+          <p id={aiReasonId} className="fm-ai-reason" aria-hidden={!aiReason || undefined}>
+            {AI_ASSIGNMENT_REASON}
+          </p>
         </>
       )}
     </div>

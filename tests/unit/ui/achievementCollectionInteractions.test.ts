@@ -32,6 +32,16 @@ function content(node: ReactNode): string {
   return Children.toArray(node.props.children).map(content).join('');
 }
 
+function expectLockedItem(node: ReactNode, label: string) {
+  expect(content(node)).toContain(label);
+  expect(content(node)).not.toContain('🔒');
+  const lock = elements(node).find(
+    (item) => item.props.role === 'img' && item.props['aria-label'] === '未取得',
+  );
+  expect(lock).toBeDefined();
+  expect(elements(lock).find((item) => item.props.name === 'locked')?.props.size).toBe('card');
+}
+
 function mountCollection(meta: MetaState = defaultMeta()) {
   const onClose = vi.fn();
   const nodes = elements(AchievementCollectionScreen({ meta, onClose }));
@@ -55,17 +65,17 @@ describe('実績・勝利称号・失敗図鑑のコレクション', () => {
     );
     for (const def of ACHIEVEMENT_DEFS) {
       expect(screen.find(`achievement-${def.id}`).props['data-unlocked']).toBe('false');
-      expect(content(screen.find(`achievement-${def.id}`))).toContain(`🔒${def.label}`);
+      expectLockedItem(screen.find(`achievement-${def.id}`), def.label);
       expect(content(screen.find(`achievement-hint-${def.id}`))).toBe(def.hint);
     }
     for (const def of WIN_TITLE_DEFS) {
       expect(screen.find(`win-title-${def.id}`).props['data-unlocked']).toBe('false');
-      expect(content(screen.find(`win-title-${def.id}`))).toContain(`🔒${def.label}`);
+      expectLockedItem(screen.find(`win-title-${def.id}`), def.label);
       expect(content(screen.find(`win-title-hint-${def.id}`))).toBe(def.hint);
     }
     for (const def of FAILURE_ENCYCLOPEDIA_DEFS) {
       expect(screen.find(`failure-entry-${def.type}`).props['data-unlocked']).toBe('false');
-      expect(content(screen.find(`failure-entry-${def.type}`))).toContain(`🔒${def.label}`);
+      expectLockedItem(screen.find(`failure-entry-${def.type}`), def.label);
       expect(content(screen.find(`failure-entry-hint-${def.type}`))).toBe(def.hint);
     }
   });

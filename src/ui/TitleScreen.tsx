@@ -26,6 +26,7 @@ import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
+import { VisualIcon } from './VisualIcon';
 
 function formatRuleset(ruleset: { version: number; fingerprint: string }): string {
   const fingerprint =
@@ -574,7 +575,14 @@ export function TitleScreen({
                       </span>
                       <span className="difficulty-name">{def.label}</span>
                       <span className="difficulty-desc">
-                        {unlocked ? def.description : '🔒 未解放（下位難易度をクリアで解放）'}
+                        {unlocked ? (
+                          def.description
+                        ) : (
+                          <>
+                            <VisualIcon name="locked" size="card" />{' '}
+                            未解放（下位難易度をクリアで解放）
+                          </>
+                        )}
                       </span>
                       <span className="difficulty-action" data-testid={`difficulty-${id}-action`}>
                         {unlocked ? 'この組織で始める →' : '条件未達'}

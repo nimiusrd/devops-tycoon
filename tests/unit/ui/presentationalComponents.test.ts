@@ -137,9 +137,15 @@ describe('BaselineComparisonChart', () => {
     expect(find(tree, 'result-baseline-comparison')).toBeDefined();
     expect(byType(tree, 'BarChart')[0].props).toMatchObject({
       data: [
-        { name: '出荷', baseline: 42, actual: 50, baselineLabel: '42 pt', actualLabel: '50 pt' },
-        { name: '延焼', baseline: 2, actual: 0, baselineLabel: '2 件', actualLabel: '0 件' },
-        { name: '最大コンボ', baseline: 3, actual: 5, baselineLabel: 'x3', actualLabel: 'x5' },
+        {
+          name: '出荷',
+          baseline: 42 / 50,
+          actual: 1,
+          baselineLabel: '42 pt',
+          actualLabel: '50 pt',
+        },
+        { name: '延焼', baseline: 1, actual: 0, baselineLabel: '2 件', actualLabel: '0 件' },
+        { name: '最大コンボ', baseline: 3 / 5, actual: 1, baselineLabel: 'x3', actualLabel: 'x5' },
       ],
       layout: 'vertical',
       margin: { top: 8, right: 64, left: 0, bottom: 0 },
@@ -190,6 +196,55 @@ describe('BaselineComparisonChart', () => {
     expect(drawBar('最大コンボ').props.fillOpacity).toBe(1);
     expect(drawBar('出荷').props.fillOpacity).toBe(0.45);
     expect(drawBar('延焼').props.fillOpacity).toBe(0.45);
+  });
+
+  it.each([
+    [18000, 20000],
+    [89999, 99999],
+  ])('出荷 %i → %i でも件数とコンボを各指標の目盛りで比較する', (baseline, actual) => {
+    const tree = expand(
+      BaselineComparisonChart({
+        result: makeResult({
+          delivered: actual,
+          spread: 1,
+          maxCombo: 22,
+          actionCounts: { interruptReview: 1 },
+          baseline: { delivered: baseline, spread: 2, maxCombo: 11 },
+        }),
+      }),
+    );
+    expect(byType(tree, 'BarChart')[0].props.data).toEqual([
+      {
+        name: '出荷',
+        baseline: baseline / actual,
+        actual: 1,
+        baselineLabel: `${baseline} pt`,
+        actualLabel: `${actual} pt`,
+      },
+      { name: '延焼', baseline: 1, actual: 0.5, baselineLabel: '2 件', actualLabel: '1 件' },
+      { name: '最大コンボ', baseline: 0.5, actual: 1, baselineLabel: 'x11', actualLabel: 'x22' },
+    ]);
+    expect(byType(tree, 'XAxis')[0].props).toMatchObject({ domain: [0, 1], hide: true });
+    expect(content(tree)).toContain('棒の目盛りは指標ごと。異なる指標の長さは比較できません。');
+  });
+
+  it('両方が0の指標は棒の長さを0に保ち、数値を表示する', () => {
+    const tree = expand(
+      BaselineComparisonChart({
+        result: makeResult({
+          spread: 0,
+          maxCombo: 0,
+          actionCounts: { interruptReview: 1 },
+          baseline: { delivered: 42, spread: 0, maxCombo: 0 },
+        }),
+      }),
+    );
+    expect(byType(tree, 'BarChart')[0].props.data).toEqual(
+      expect.arrayContaining([
+        { name: '延焼', baseline: 0, actual: 0, baselineLabel: '0 件', actualLabel: '0 件' },
+        { name: '最大コンボ', baseline: 0, actual: 0, baselineLabel: 'x0', actualLabel: 'x0' },
+      ]),
+    );
   });
 });
 

@@ -11,6 +11,7 @@ import { ACHIEVEMENT_LABEL, type MetaState } from '../state/meta';
 import { UNLOCK_DEFS, type UnlockDef } from '../data/unlocks';
 import { ResultOverlay } from './ResultOverlay';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
+import { VisualIcon } from './VisualIcon';
 
 export interface MetaShopScreenProps {
   meta: MetaState;
@@ -66,7 +67,7 @@ export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProp
               let status = '購入可能';
               if (owned) status = '購入済み';
               else if (needsAchievement) {
-                status = `🔒 実績「${ACHIEVEMENT_LABEL[unlock.requires!] ?? unlock.requires}」が必要`;
+                status = `実績「${ACHIEVEMENT_LABEL[unlock.requires!] ?? unlock.requires}」が必要`;
               } else if (meta.points < unlock.cost) status = 'ポイント不足';
 
               return (
@@ -85,7 +86,19 @@ export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProp
                   <span className="meta-shop-target">{contentLabel(unlock)}</span>
                   <p className="meta-shop-desc">{unlock.description}</p>
                   <span className="meta-shop-status">
-                    {owned ? '✓ 購入済み' : `${unlock.cost} pt — ${status}`}
+                    {owned ? (
+                      '✓ 購入済み'
+                    ) : (
+                      <>
+                        {unlock.cost} pt —{' '}
+                        {needsAchievement && (
+                          <>
+                            <VisualIcon name="locked" size="card" />{' '}
+                          </>
+                        )}
+                        {status}
+                      </>
+                    )}
                   </span>
                 </button>
               );

@@ -221,13 +221,12 @@ test('コンボ途切れ直後の HUD は現在値 0 で、履歴ログだけが
 });
 
 test('途切れ履歴のあとコンボが伸び直したら現在値を履歴と併記する（#357）', async ({ page }) => {
-  await page.goto('/?seed=ri357-combo-rebuild');
+  await beginPublicSprint(page, { seed: 'ri357-combo-rebuild' });
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
+    // WebGL の準備完了後に停止し、UI 操作中にコンボが自然増加しないようにする。
     g.pause();
-    g.startRun('easy', [], 'ri357-combo-rebuild');
-    g.beginSetupSprint();
     const engine = (g as unknown as { engine: { sprint: NonNullable<RunState['sprint']> } }).engine;
     const sprint = engine.sprint;
     sprint.metrics.combo = 12;
@@ -501,9 +500,11 @@ for (const viewport of [
 for (const viewport of [
   { width: 320, height: 568 },
   { width: 390, height: 844 },
-  { width: 1280, height: 800 },
+  { width: 768, height: 1024 },
+  { width: 1024, height: 768 },
+  { width: 1440, height: 900 },
 ]) {
-  test(`5桁の比較グラフは${viewport.width}pxでも数値がSVG内に収まる`, async ({
+  test(`5桁の比較グラフは${viewport.width}pxでも数値と指標ごとの棒を読み取れる`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport);
@@ -534,6 +535,8 @@ for (const viewport of [
           if (!result?.baseline) throw new Error('介入なしとの比較が保存されていない');
           result.baseline.delivered = baseline;
           result.delivered = actual;
+          result.baseline.maxCombo = 11;
+          result.maxCombo = 22;
           const imported = await game.importRunSaveText(JSON.stringify(save));
           if (!imported.ok || game.resumeRun()?.phase !== 'result')
             throw new Error('大きい表示値のリザルトを再開できない');
@@ -547,13 +550,30 @@ for (const viewport of [
       await expect(labels).toHaveText([
         `${baseline} pt`,
         `${originalResult.baseline!.spread} 件`,
-        `x${originalResult.baseline!.maxCombo}`,
+        'x11',
         `${actual} pt`,
         `${originalResult.spread} 件`,
-        `x${originalResult.maxCombo}`,
+        'x22',
       ]);
+      await expect(page.locator('.result-baseline-caption')).toContainText(
+        '棒の目盛りは指標ごと。異なる指標の長さは比較できません。',
+      );
+      await expect(chart.locator('.recharts-xAxis .recharts-cartesian-axis-tick')).toHaveCount(0);
       await chart.scrollIntoViewIfNeeded();
       await page.evaluate(() => document.fonts.ready);
+      // 出荷が大きくなっても、コンボは独立した目盛りの半分と全幅で比較できる。
+      const deliveryWidths = await chart
+        .locator('[data-row="出荷"]')
+        .evaluateAll((bars) => bars.map((bar) => bar.getBoundingClientRect().width));
+      const comboWidths = await chart
+        .locator('[data-row="最大コンボ"]')
+        .evaluateAll((bars) => bars.map((bar) => bar.getBoundingClientRect().width));
+      expect(deliveryWidths).toHaveLength(2);
+      expect(comboWidths).toHaveLength(2);
+      for (const width of comboWidths) expect(width, '正のコンボ値の棒が見える').toBeGreaterThan(2);
+      expect(comboWidths[1]).toBeCloseTo(deliveryWidths[1], 1);
+      expect(comboWidths[0] / comboWidths[1]).toBeCloseTo(0.5, 2);
+      expect(deliveryWidths[0] / deliveryWidths[1]).toBeCloseTo(baseline / actual, 2);
       const bounds = await labels.evaluateAll((elements) =>
         elements.map((label) => {
           const rect = label.getBoundingClientRect();

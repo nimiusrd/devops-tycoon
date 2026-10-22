@@ -17,6 +17,7 @@ import type { CardDef, CardRarity } from '../sim/types';
 import { CardView } from './CardView';
 import { ResultOverlay } from './ResultOverlay';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
+import { VisualIcon } from './VisualIcon';
 
 export interface CardCollectionScreenProps {
   meta: MetaState;
@@ -226,7 +227,7 @@ export function CardCollectionScreen({
                           ) : (
                             <div className="card-collection-locked-card">
                               <span className="card-collection-lock-icon" aria-hidden="true">
-                                🔒
+                                <VisualIcon name="locked" size="card" />
                               </span>
                               <span className="card-collection-locked-name">{def.name}</span>
                               <span className={`card-rarity rarity-${def.rarity}`}>
@@ -277,7 +278,7 @@ export function CardCollectionScreen({
                   <>
                     <div className="card-collection-locked-detail">
                       <span className="card-collection-lock-icon" aria-hidden="true">
-                        🔒
+                        <VisualIcon name="locked" size="card" />
                       </span>
                       <h3 className="card-collection-detail-name">{selected.name}</h3>
                       <span className={`card-rarity rarity-${selected.rarity}`}>

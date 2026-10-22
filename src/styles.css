@@ -750,7 +750,11 @@ body {
   box-shadow: 0 2px 0 #1d1640;
 }
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 1;
+  color: var(--text-dim);
+  background: var(--panel);
+  border-color: var(--text-dim);
+  border-style: dashed;
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -1828,7 +1832,6 @@ body:has(.overlay-contained) {
   padding: 0.7rem 1rem;
 }
 .result-actions .btn:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
   filter: none;
   box-shadow: none;
@@ -3025,7 +3028,6 @@ button.card.card-readonly:disabled {
   align-items: center;
 }
 .draft-actions .btn:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
 }
 .what-if-preview {
@@ -3783,7 +3785,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .title-launch-pending .title-recipe-text:disabled {
   animation: title-launch-dim-control 0.22s linear 150ms forwards;
 }
-.title-launch-pending .is-launch-locked:disabled {
+.title-launch-pending .is-launch-locked:disabled:not(.btn) {
   opacity: 1;
   animation: title-launch-dim-control 0.22s linear 150ms forwards;
 }
@@ -3801,7 +3803,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   .title-launch-pending .difficulty-card:disabled:not(.is-locked),
   .title-launch-pending .trial-chip:disabled,
   .title-launch-pending .title-recipe-text:disabled,
-  .title-launch-pending .is-launch-locked:disabled {
+  .title-launch-pending .is-launch-locked:disabled:not(.btn) {
     animation-duration: 0.01ms;
   }
 }
@@ -8034,7 +8036,6 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   min-height: 44px;
 }
 .draft-options .card > .btn:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
   filter: none;
   transform: none;

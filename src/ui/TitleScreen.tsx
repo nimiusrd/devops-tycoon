@@ -74,9 +74,12 @@ function ResumeRiskDialog({
           {risk.flags.map((flag) => (
             <li key={flag.id}>
               <span className={`pill tone-${flag.tone}`}>{flag.chip}</span>
-              {flag.id === 'seniorHp' || flag.id === 'seniorBurnout'
-                ? ` シニア体力 ${risk.seniorHpPct}%`
-                : null}
+              {flag.id === 'seniorHp' || flag.id === 'seniorBurnout' ? (
+                <>
+                  {' '}
+                  <span className="resume-risk-metric">シニア体力 {risk.seniorHpPct}%</span>
+                </>
+              ) : null}
             </li>
           ))}
         </ul>

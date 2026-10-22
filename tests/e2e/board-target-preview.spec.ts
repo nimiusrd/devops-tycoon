@@ -126,6 +126,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await page.getByTestId('board').screenshot({ path: testInfo.outputPath('対象強調前.png') });
       await page.mouse.move(overlap.x, overlap.y);
       await expectPreview(page, overlap.id);
+      await expect(page.getByTestId('board-target-preview')).toHaveText('');
       expect(await readSplitCount(page)).toBe(before);
       await page.screenshot({ path: testInfo.outputPath('hover中の対象.png') });
       if (reducedMotion === 'reduce' && viewport.width !== 390) {
@@ -135,12 +136,17 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       }
       await page.mouse.move(outside.x, outside.y);
       await expectPreview(page, null);
+      await expect(page.getByTestId('board-target-preview')).toHaveText('');
       await page.mouse.move(overlap.x, overlap.y);
       await expectPreview(page, overlap.id);
+      await expect(page.getByTestId('board-target-preview')).toHaveText('');
       await page.mouse.down();
       expect(await readSplitCount(page)).toBe(before);
       await page.mouse.up();
       await expectSplitResult(page, before, overlap.id);
+      await expect(page.getByTestId('board-target-preview')).toHaveText(
+        /^対象を確定: (レビュー|実装)・(定型|通常|複雑)/,
+      );
     });
 
     test(`${viewport.width}px・${reducedMotion}: touch の取消と選び直しは離すまで発動しない（#917） @pixi`, async ({
@@ -163,6 +169,9 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       // 盤面外へ指を逃がして離しても、集中力と実行回数は変わらない。
       await touch('touchStart', overlap);
       await expectPreview(page, overlap.id);
+      await expect(page.getByTestId('board-target-preview')).toHaveText(
+        /^対象: (レビュー|実装)・(定型|通常|複雑)/,
+      );
       expect(await readSplitCount(page)).toBe(before);
       await touch('touchMove', outside);
       await expectPreview(page, null);
@@ -181,10 +190,71 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await expectPreview(page, overlap.id);
       await touch('touchMove', alternative);
       await expectPreview(page, alternative.id);
+      await expect(page.getByTestId('board-target-preview')).toHaveText(
+        /^対象: (レビュー|実装)・(定型|通常|複雑)/,
+      );
       expect(await readSplitCount(page)).toBe(before);
       await page.screenshot({ path: testInfo.outputPath('指をずらして選び直した対象.png') });
       await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await expectSplitResult(page, before, alternative.id);
+      await expect(page.getByTestId('board-target-preview')).toHaveText(
+        /^対象を確定: (レビュー|実装)・(定型|通常|複雑)/,
+      );
+      await session.detach();
+    });
+  }
+}
+
+// 320×568では盤面を含む画面が縦に溢れる。390×844はスクロール不要で収まる。
+for (const viewport of VIEWPORTS.filter((viewport) => viewport.width === 320)) {
+  for (const action of ['splitPr', 'assignTask'] as const) {
+    test(`${viewport.width}px: ${action}を構えた盤面の空白から上下にスクロールできる（#935）`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await openDenseSprint(page);
+      await page.getByTestId(`action-${action}`).click();
+      await expect(page.getByTestId('board')).toHaveAttribute('data-armed', action);
+      const layout = page.getByTestId('sprint-layout');
+      const board = page.getByTestId('board');
+      const session = await page.context().newCDPSession(page);
+      const beforeCounts = await page.evaluate(
+        () => window.game!.getState().sprint!.metrics.actionCounts,
+      );
+      for (const direction of [-1, 1]) {
+        // 上下どちらにも送れる位置へ盤面を置く。左端の空白は拡張ヒット領域からも離れている。
+        await board.evaluate((element, height) => {
+          const scroller = element.closest('.sprint-layout')!;
+          scroller.scrollTop += element.getBoundingClientRect().top - height * 0.45;
+        }, viewport.height);
+        const box = await board.boundingBox();
+        if (!box) throw new Error('盤面の位置を取得できない');
+        const x = box.x + 6;
+        const y = box.y + box.height * 0.7;
+        const before = await layout.evaluate((element) => element.scrollTop);
+        await session.send('Input.dispatchTouchEvent', {
+          type: 'touchStart',
+          touchPoints: [{ x, y, id: 1 }],
+        });
+        for (const step of [20, 40, 60, 80, 100, 120]) {
+          await session.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [{ x, y: y + direction * step, id: 1 }],
+          });
+        }
+        await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await expect
+          .poll(async () => {
+            const after = await layout.evaluate((element) => element.scrollTop);
+            return (after - before) * -direction;
+          })
+          .toBeGreaterThan(30);
+        await expectPreview(page, null);
+        await expect(page.getByTestId('board')).toHaveAttribute('data-armed', action);
+      }
+      expect(
+        await page.evaluate(() => window.game!.getState().sprint!.metrics.actionCounts),
+      ).toEqual(beforeCounts);
       await session.detach();
     });
   }

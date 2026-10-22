@@ -280,15 +280,14 @@ describe('Hud のスナップショットと差分フィードバック', () => 
     screen.changeOrg({ deliveryScore: 8 });
     expect(screen.feedback('hud-compact-delivery')).toEqual(['+8']);
     expect(screen.feedbackProps('hud-compact-delivery')).toMatchObject({
-      initial: reducedMotion ? false : { y: 8, opacity: 0, scale: 0.85 },
-      animate: { y: -14, opacity: 1, scale: 1 },
-      exit: reducedMotion ? { opacity: 0 } : { y: -26, opacity: 0, scale: 0.9 },
-      transition: { duration: reducedMotion ? 0 : 0.55, ease: 'easeOut' },
+      initial: reducedMotion ? false : { opacity: 0, scale: 0.85 },
+      animate: { opacity: 1, scale: 1 },
+      transition: { duration: reducedMotion ? 0 : 0.18, ease: 'easeOut' },
     });
     screen.clickToggle();
     expect(screen.feedbackProps('hud-delivery')).toMatchObject({
-      initial: reducedMotion ? false : { y: 8, opacity: 0, scale: 0.85 },
-      transition: { duration: reducedMotion ? 0 : 0.55, ease: 'easeOut' },
+      initial: reducedMotion ? false : { opacity: 0, scale: 0.85 },
+      transition: { duration: reducedMotion ? 0 : 0.18, ease: 'easeOut' },
     });
     screen.advance(1000);
     expect(screen.feedback('hud-delivery')).toEqual([]);

@@ -7,8 +7,8 @@
  *
  * RI-70 / #468: 初見は幅に関係なく KPI を折り畳み要約し、盤面と介入バーを1画面に収める。
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   deriveHudMetrics,
   deriveHudStatusParts,
@@ -38,24 +38,30 @@ function GradeValue({ grade }: { grade: Grade }) {
   return <span className={`v grade grade-${grade}`}>{grade}</span>;
 }
 
-function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {
+function FeedbackPop({
+  feedback,
+  fallback,
+}: {
+  feedback?: ActiveHudFeedback;
+  fallback?: ReactNode;
+}) {
   const reducedMotion = useReducedMotion() ?? false;
   return (
-    <AnimatePresence>
-      {feedback && (
+    <span className="hud-feedback-slot" aria-hidden="true">
+      {feedback ? (
         <motion.span
           key={feedback.id}
           className={`hud-feedback-pop feedback-${feedback.tone}`}
-          aria-hidden="true"
-          initial={reducedMotion ? false : { y: 8, opacity: 0, scale: 0.85 }}
-          animate={{ y: -14, opacity: 1, scale: 1 }}
-          exit={reducedMotion ? { opacity: 0 } : { y: -26, opacity: 0, scale: 0.9 }}
-          transition={{ duration: reducedMotion ? 0 : 0.55, ease: 'easeOut' }}
+          initial={reducedMotion ? false : { opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: reducedMotion ? 0 : 0.18, ease: 'easeOut' }}
         >
           {formatSigned(feedback.delta)}
         </motion.span>
+      ) : (
+        fallback
       )}
-    </AnimatePresence>
+    </span>
   );
 }
 
@@ -106,7 +112,14 @@ function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: Ac
       <div className="stat-head">
         <div className="stat-label">
           <span className="stat-icon" aria-hidden="true">
-            <VisualIcon name={metric.icon} size="hud" />
+            {metric.feedbackKey ? (
+              <FeedbackPop
+                feedback={feedback}
+                fallback={<VisualIcon name={metric.icon} size="hud" />}
+              />
+            ) : (
+              <VisualIcon name={metric.icon} size="hud" />
+            )}
           </span>
           <span className="k">{metric.label}</span>
         </div>
@@ -121,7 +134,6 @@ function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: Ac
           <i className={metric.fillClass} style={{ width: `${metric.barPct}%` }} />
         </div>
       )}
-      <FeedbackPop feedback={feedback} />
       {metric.warningChip && (
         <div
           className={`burnout-chip tone-${metric.tone}`}
@@ -183,11 +195,17 @@ function CompactChip({
       title={`${metric.label}: ${valueText}`}
     >
       <span className="hud-compact-chip-icon" aria-hidden="true">
-        <VisualIcon name={metric.icon} size="hud" />
+        {metric.feedbackKey ? (
+          <FeedbackPop
+            feedback={feedback}
+            fallback={<VisualIcon name={metric.icon} size="hud" />}
+          />
+        ) : (
+          <VisualIcon name={metric.icon} size="hud" />
+        )}
       </span>
       <span className="hud-compact-chip-label">{metric.label}</span>
       <span className="hud-compact-chip-value">{valueText}</span>
-      <FeedbackPop feedback={feedback} />
       {metric.warningChip && (
         <span
           className="hud-compact-chip-warn"

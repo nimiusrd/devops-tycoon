@@ -79,6 +79,106 @@ for (const viewport of [
   { name: 'desktop', width: 1280, height: 800 },
   { name: 'desktop-wide', width: 1440, height: 900 },
 ]) {
+  test(`${viewport.width}pxで今回見る一点が出入りしても編成と開始の操作位置が動かない（#928）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({
+      reducedMotion: viewport.width === 320 ? 'reduce' : 'no-preference',
+    });
+    await page.goto('/?renderer=pixi&tutorial=off&seed=devops-tycoon');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    const setup = page.getByTestId('setup');
+    const forecast = setup.getByTestId('formation-forecast');
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(setup.getByTestId('setup-observation')).toHaveCount(0);
+    await page.locator('.formation-panel').evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const coding = setup.getByTestId('assign-m2-coding');
+    await expect(coding).toBeInViewport();
+    const positions = () =>
+      setup
+        .locator(
+          '.formation-member, .fm-lane, .fm-ai, .formation-forecast, [data-testid="begin-sprint"]',
+        )
+        .evaluateAll((elements) =>
+          elements.map((element) => {
+            const { x, y, width, height } = element.getBoundingClientRect();
+            return { id: element.getAttribute('data-testid'), x, y, width, height };
+          }),
+        );
+    const before = await positions();
+    await coding.click();
+    await expect(setup.getByTestId('setup-observation-review-staff')).toContainText(
+      'Review担当 0人',
+    );
+    expect(await positions()).toEqual(before);
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    expect(await positions()).toEqual(before);
+    await setup.getByTestId('assign-m2-review').click();
+    await expect(setup.getByTestId('setup-observation')).toHaveCount(0);
+    expect(await positions()).toEqual(before);
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    expect(await positions()).toEqual(before);
+  });
+}
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 1280, height: 800 },
+]) {
+  test(`${viewport.width}pxでコーディング担当不在に開始前に気づき、その場で配置を直せる（#927）`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/?renderer=pixi&tutorial=off&seed=qa-seed-1022c');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    const setup = page.getByTestId('setup');
+    // 通常の観察案内を閉じた後も、コーダー不在の警告は抑制しない。
+    await setup.getByTestId('assign-m2-coding').click();
+    await setup.getByTestId('setup-observation-dismiss').click();
+    for (const id of ['m0', 'm1', 'm2']) {
+      await setup.getByTestId(`assign-${id}-review`).click();
+    }
+    const warning = setup.getByTestId('setup-observation-coding-staff');
+    await warning.scrollIntoViewIfNeeded();
+    await expect(warning).toBeInViewport();
+    await expect(warning).toContainText('コーディング担当 0人');
+    await expect(warning).toContainText('出荷は0になります');
+    await expect(warning).toContainText('下のメンバー配置');
+    await expect(setup.getByTestId('setup-observation-dismiss')).toHaveCount(0);
+    await expect(setup.getByTestId('begin-sprint')).toHaveAccessibleDescription(
+      /コーディング担当 0人.*出荷は0になります/,
+    );
+    await setup.getByTestId('begin-sprint').focus();
+    await expect(setup.getByTestId('begin-sprint')).toBeInViewport();
+    await expect(warning).toBeInViewport({ ratio: 1 });
+    await page.screenshot({ path: testInfo.outputPath('setup-no-coders.png'), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath('setup-no-coders-start.png') });
+    await setup.getByTestId('assign-m0-coding').click();
+    await expect(warning).toHaveCount(0);
+    await expect(setup.getByTestId('begin-sprint')).not.toHaveAttribute('aria-describedby');
+    const state = await page.evaluate(() => (window as GameWindow).game!.getState());
+    expect(state.phase).toBe('setup');
+    expect(
+      state.roster.members.filter((m) => !m.onLeave && m.assignment === 'coding'),
+    ).toHaveLength(1);
+    await setup.getByTestId('begin-sprint').click();
+    await expect(page.getByTestId('board')).toBeVisible();
+  });
+}
+
+for (const viewport of [
+  ...NARROW_SETUP_VIEWPORTS,
+  { name: 'desktop-short', width: 1024, height: 768 },
+  { name: 'desktop', width: 1280, height: 800 },
+  { name: 'desktop-wide', width: 1440, height: 900 },
+]) {
   test(`${viewport.width}pxでAI配布不可の理由をホバーなしで読める（#815）`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto('/?seed=formation-disabled-reason');

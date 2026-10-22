@@ -1773,6 +1773,9 @@ body:has(.overlay-contained) {
   color: var(--text-dim);
   font-size: 0.8rem;
 }
+.result-baseline-caption-scale {
+  white-space: nowrap;
+}
 .result-baseline-chart {
   width: 100%;
   height: 180px;
@@ -8160,4 +8163,21 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   height: auto;
   margin-block: 1rem;
   border-radius: 0.75rem;
+}
+
+/* 案内の表示・非表示や種類が変わっても編成の操作位置を保つ（#928）。
+ * 全候補を同じセルに重ね、長文の折り返しに応じた最大の高さを予約する。 */
+.setup-observation {
+  display: grid;
+}
+.setup-observation > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.setup-observation-reserve {
+  visibility: hidden;
+  pointer-events: none;
+}
+.setup-coding-warning {
+  color: var(--sun);
 }

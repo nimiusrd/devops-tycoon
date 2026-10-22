@@ -502,6 +502,7 @@ for (const viewport of [
   { width: 390, height: 844 },
   { width: 768, height: 1024 },
   { width: 1024, height: 768 },
+  { width: 1280, height: 800 },
   { width: 1440, height: 900 },
 ]) {
   test(`5桁の比較グラフは${viewport.width}pxでも数値と指標ごとの棒を読み取れる`, async ({
@@ -555,12 +556,30 @@ for (const viewport of [
         `${originalResult.spread} 件`,
         'x22',
       ]);
-      await expect(page.locator('.result-baseline-caption')).toContainText(
-        '棒の目盛りは指標ごと。異なる指標の長さは比較できません。',
-      );
+      const caption = page.locator('.result-baseline-caption');
+      await expect(caption).toHaveText('介入なしの見込み → 実績（棒の目盛りは指標ごと）');
       await expect(chart.locator('.recharts-xAxis .recharts-cartesian-axis-tick')).toHaveCount(0);
       await chart.scrollIntoViewIfNeeded();
       await page.evaluate(() => document.fonts.ready);
+      const captionLayout = await caption.evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const lines = [...new Set([...range.getClientRects()].map((rect) => rect.top))];
+        const scale = element.querySelector('.result-baseline-caption-scale')!;
+        range.selectNodeContents(scale);
+        const scaleRects = [...range.getClientRects()];
+        const bounds = element.getBoundingClientRect();
+        return {
+          lines: lines.length,
+          scaleLines: scaleRects.length,
+          contained: scaleRects.every(
+            (rect) => rect.left >= bounds.left && rect.right <= bounds.right,
+          ),
+        };
+      });
+      expect(captionLayout.lines, '比較の説明は2行以内に収まる（#926）').toBeLessThanOrEqual(2);
+      expect(captionLayout.scaleLines, '目盛りの説明を語中で折り返さない').toBe(1);
+      expect(captionLayout.contained, '説明を切らずに枠内へ収める').toBe(true);
       // 出荷が大きくなっても、コンボは独立した目盛りの半分と全幅で比較できる。
       const deliveryWidths = await chart
         .locator('[data-row="出荷"]')
@@ -588,7 +607,9 @@ for (const viewport of [
           };
         }),
       );
-      await chart.screenshot({ path: testInfo.outputPath(`比較グラフ-${actual}pt.png`) });
+      await page.getByTestId('result-baseline-comparison').screenshot({
+        path: testInfo.outputPath(`比較グラフ-${actual}pt.png`),
+      });
       for (const bound of bounds) {
         expect(bound.width, `${bound.text} が描画されている`).toBeGreaterThan(0);
         for (const edge of ['left', 'right', 'top', 'bottom'] as const) {

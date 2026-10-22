@@ -83,13 +83,26 @@ describe('現在の会社に対応したドラフト説明', () => {
 });
 
 describe('準備画面の観察入口', () => {
-  it('健全状態とCoding担当もいない状態では予兆を作らない', () => {
+  it('健全状態では予兆を作らず、Coding担当不在では出荷0と配置変更を案内する', () => {
     const input = state();
     expect(setupObservation(input)).toBeNull();
     input.roster.members.forEach((m) => {
       m.assignment = 'bench';
     });
-    expect(setupObservation(input)).toBeNull();
+    expect(setupObservation(input)).toMatchObject({ id: 'coding-staff' });
+    expect(setupObservation(input)!.text).toContain('出荷は0になります');
+    expect(setupObservation(input)!.text).toContain('下のメンバー配置');
+  });
+
+  it('休職中のCoding担当を数えず、体力警告より先に不在を案内する', () => {
+    const input = state();
+    input.roster.members[0].onLeave = true;
+    input.org.seniorHp = 10;
+    const before = structuredClone(input);
+    expect(setupObservation(input)).toMatchObject({ id: 'coding-staff' });
+    expect(input).toEqual(before);
+    input.roster.members[1].assignment = 'coding';
+    expect(setupObservation(input)).toMatchObject({ id: 'senior-hp' });
   });
 
   it('休職中のレビュアーは除き、人数と対象工程を明示する', () => {

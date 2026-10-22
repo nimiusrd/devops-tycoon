@@ -159,6 +159,24 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.find('begin-sprint').props.disabled).toBe(false);
   });
 
+  it('休職中を除くコーダーが0人なら開始前に結果と修正方法を案内し、開始操作にも関連付ける', () => {
+    const state = makeState();
+    state.roster.members[0].onLeave = true;
+    const screen = mountSetup({ state });
+    const warning = screen.find('setup-observation-coding-staff');
+    expect(content(warning)).toContain('コーディング担当 0人');
+    expect(content(warning)).toContain('出荷は0になります');
+    expect(content(warning)).toContain('下のメンバー配置');
+    expect(screen.find('begin-sprint').props['aria-describedby']).toBe(warning.props.id);
+    expect(screen.has('setup-observation-dismiss')).toBe(false);
+    expect(screen.find('assign-m2-coding').props.disabled).toBe(false);
+    screen.click('assign-m2-coding');
+    expect(screen.props.onAssign).toHaveBeenCalledExactlyOnceWith('m2', 'coding');
+    // 警告後も開始する選択自体は残す。
+    screen.click('begin-sprint');
+    expect(screen.props.onBegin).toHaveBeenCalledExactlyOnceWith();
+  });
+
   it('リプレイでは編成と開始を無効にし、デッキをコレクション表示する', () => {
     const screen = mountSetup({
       state: makeState({ deck: [{ defId: 'docs', level: 2 }] }),

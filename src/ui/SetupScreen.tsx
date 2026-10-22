@@ -9,7 +9,7 @@
  */
 import { getBoss } from '../data/bosses';
 import { useRef, useState } from 'react';
-import { setupObservation } from '../render/companyGuidanceView';
+import { setupObservationView } from '../render/companyGuidanceView';
 import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
@@ -43,8 +43,10 @@ export function SetupScreen({
     state.sprintIndexInQuarter,
     state.activeTeamId,
   ]);
-  const observation = setupObservation(state);
-  const showObservation = observation !== null && !dismissedSprintKeys.includes(sprintKey);
+  const { observation, candidates } = setupObservationView(state);
+  const missingCoders = observation?.id === 'coding-staff';
+  const showObservation =
+    observation !== null && (missingCoders || !dismissedSprintKeys.includes(sprintKey));
   const dismissObservation = () => {
     setDismissedSprintKeys((keys) => [...keys, sprintKey]);
     (readOnly ? headingRef.current : beginRef.current)?.focus();
@@ -110,29 +112,45 @@ export function SetupScreen({
               <TermTip termId="rework" />
             </div>
             <div
-              className={showObservation ? 'setup-observation' : undefined}
+              className="setup-observation"
               data-testid={showObservation ? 'setup-observation' : undefined}
             >
-              <div role="status" aria-live="polite" aria-atomic="true">
-                {showObservation && (
-                  <p
-                    className="formation-setup-hint"
-                    data-testid={`setup-observation-${observation.id}`}
+              {candidates.map((candidate) => (
+                <div
+                  key={candidate.id}
+                  className="setup-observation-reserve"
+                  aria-hidden="true"
+                  inert
+                >
+                  <p className="formation-setup-hint">{candidate.text}</p>
+                  <button type="button" className="btn btn-secondary" tabIndex={-1}>
+                    案内を閉じる
+                  </button>
+                </div>
+              ))}
+              <div className="setup-observation-content">
+                <div role="status" aria-live="polite" aria-atomic="true">
+                  {showObservation && (
+                    <p
+                      id="setup-observation-text"
+                      className={`formation-setup-hint${missingCoders ? ' setup-coding-warning' : ''}`}
+                      data-testid={`setup-observation-${observation.id}`}
+                    >
+                      {observation.text}
+                    </p>
+                  )}
+                </div>
+                {showObservation && !missingCoders && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={dismissObservation}
+                    data-testid="setup-observation-dismiss"
                   >
-                    {observation.text}
-                  </p>
+                    案内を閉じる
+                  </button>
                 )}
               </div>
-              {showObservation && (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={dismissObservation}
-                  data-testid="setup-observation-dismiss"
-                >
-                  案内を閉じる
-                </button>
-              )}
             </div>
           </div>
           <button
@@ -141,6 +159,7 @@ export function SetupScreen({
             className="primary-button"
             data-testid="begin-sprint"
             aria-label="スプリント開始"
+            aria-describedby={missingCoders ? 'setup-observation-text' : undefined}
             disabled={readOnly}
             onClick={onBegin}
           >

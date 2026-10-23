@@ -1,0 +1,3293 @@
+{
+  "policy": "naive",
+  "difficulty": "easy",
+  "meta": "fresh",
+  "rows": [
+    {
+      "seed": "rd-ez-1",
+      "cond": "base",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 1,
+      "sprintsPlayed": 4,
+      "seniorHpAfterSprints": [56.2, 29.8, 9.4, 2.3],
+      "survive": false,
+      "injected": {
+        "cond": "base",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "サキ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "アオイ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "ソウタ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 56.2,
+          "done": 58,
+          "delivered": 888,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 29.8,
+          "done": 58,
+          "delivered": 719,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 9.4,
+          "done": 58,
+          "delivered": 716,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 2.3,
+          "done": 58,
+          "delivered": 901,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-1",
+      "cond": "c1",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 1,
+      "sprintsPlayed": 4,
+      "seniorHpAfterSprints": [80.1, 54.3, 32.7, 15.7],
+      "survive": false,
+      "injected": {
+        "cond": "c1",
+        "easySeniorHpCostMul": 0.68,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.68,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "サキ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "アオイ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "ソウタ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 80.1,
+          "done": 58,
+          "delivered": 854,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 54.3,
+          "done": 58,
+          "delivered": 722,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 32.7,
+          "done": 58,
+          "delivered": 746,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 15.7,
+          "done": 58,
+          "delivered": 822,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-1",
+      "cond": "c3",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 1,
+      "sprintsPlayed": 4,
+      "seniorHpAfterSprints": [68.7, 41.8, 21.6, 17.1],
+      "survive": false,
+      "injected": {
+        "cond": "c3",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer", "recruit-doc"],
+        "starterCount": 4
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "サキ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "アオイ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "ソウタ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        },
+        {
+          "id": "m3",
+          "name": "ナギ",
+          "rank": "junior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 40,
+            "review": 44,
+            "aiMastery": 40
+          },
+          "traits": ["docMaster"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 68.7,
+          "done": 58,
+          "delivered": 940,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.1600000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 41.8,
+          "done": 58,
+          "delivered": 701,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.3920000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 21.6,
+          "done": 58,
+          "delivered": 842,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 17.1,
+          "done": 58,
+          "delivered": 953,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ソウタ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-2",
+      "cond": "base",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 1,
+      "sprintsPlayed": 3,
+      "seniorHpAfterSprints": [23.7, 23.5, 4.2],
+      "survive": false,
+      "injected": {
+        "cond": "base",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "レン",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "ミナ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 23.7,
+          "done": 58,
+          "delivered": 746,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 23.5,
+          "done": 58,
+          "delivered": 851,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 4.2,
+          "done": 58,
+          "delivered": 800,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-2",
+      "cond": "c1",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 5,
+      "sprintsPlayed": 26,
+      "seniorHpAfterSprints": [
+        31.7, 17.3, 9, 2.8, 8.1, 40.2, 31.7, 14.1, 3.6, 44.6, 44.9, 31.3, 29.8, 50.4, 32.7, 26.1,
+        3.8, 19.3, 25.9, 18.2, 34.1, 40, 61.5, 33.5, 15.6, 20.9
+      ],
+      "survive": true,
+      "injected": {
+        "cond": "c1",
+        "easySeniorHpCostMul": 0.68,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.68,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "レン",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "ミナ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 31.7,
+          "done": 58,
+          "delivered": 776,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 17.3,
+          "done": 58,
+          "delivered": 830,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 9,
+          "done": 58,
+          "delivered": 735,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 2.8,
+          "done": 58,
+          "delivered": 812,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 8.1,
+          "done": 58,
+          "delivered": 819,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 40.2,
+          "done": 68,
+          "delivered": 898,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 31.7,
+          "done": 58,
+          "delivered": 1020,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 14.1,
+          "done": 58,
+          "delivered": 922,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 3.6,
+          "done": 58,
+          "delivered": 770,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 44.6,
+          "done": 58,
+          "delivered": 739,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 44.9,
+          "done": 58,
+          "delivered": 860,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 31.3,
+          "done": 68,
+          "delivered": 1135,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 3,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 29.8,
+          "done": 58,
+          "delivered": 863,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 3,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 50.4,
+          "done": 41,
+          "delivered": 728,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 3,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 32.7,
+          "done": 58,
+          "delivered": 1227,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 3,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 26.1,
+          "done": 58,
+          "delivered": 851,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 3,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 3.8,
+          "done": 72,
+          "delivered": 1377,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 3,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 19.3,
+          "done": 68,
+          "delivered": 1240,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 4,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 25.9,
+          "done": 58,
+          "delivered": 1303,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 4,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 18.2,
+          "done": 72,
+          "delivered": 1160,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 4,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 34.1,
+          "done": 58,
+          "delivered": 869,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 4,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 40,
+          "done": 58,
+          "delivered": 914,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 4,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 61.5,
+          "done": 58,
+          "delivered": 885,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 4,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 33.5,
+          "done": 68,
+          "delivered": 1185,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 5,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 15.6,
+          "done": 58,
+          "delivered": 1060,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 5,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 20.9,
+          "done": 58,
+          "delivered": 990,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-2",
+      "cond": "c3",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 4,
+      "sprintsPlayed": 21,
+      "seniorHpAfterSprints": [
+        33.3, 16.4, 16.6, 10.2, 7.1, 4.5, 18.1, 3.2, 5.2, 8.9, 2.6, 33.5, 32.8, 62, 28.8, 16.1,
+        11.4, 29, 34, 7.8, 13.7
+      ],
+      "survive": true,
+      "injected": {
+        "cond": "c3",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer", "recruit-doc"],
+        "starterCount": 4
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "レン",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "ミナ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        },
+        {
+          "id": "m3",
+          "name": "ヒナタ",
+          "rank": "junior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 40,
+            "review": 44,
+            "aiMastery": 40
+          },
+          "traits": ["docMaster"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 33.3,
+          "done": 58,
+          "delivered": 830,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.1600000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 16.4,
+          "done": 58,
+          "delivered": 785,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.3920000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 16.6,
+          "done": 58,
+          "delivered": 805,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 10.2,
+          "done": 58,
+          "delivered": 823,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 7.1,
+          "done": 58,
+          "delivered": 977,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 4.5,
+          "done": 68,
+          "delivered": 889,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 18.1,
+          "done": 58,
+          "delivered": 1196,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 3.2,
+          "done": 58,
+          "delivered": 1060,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 5.2,
+          "done": 58,
+          "delivered": 763,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 8.9,
+          "done": 58,
+          "delivered": 738,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 2.6,
+          "done": 58,
+          "delivered": 948,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 33.5,
+          "done": 68,
+          "delivered": 1066,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 32.8,
+          "done": 58,
+          "delivered": 967,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 62,
+          "done": 41,
+          "delivered": 670,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 28.8,
+          "done": 58,
+          "delivered": 936,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 16.1,
+          "done": 58,
+          "delivered": 772,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 11.4,
+          "done": 72,
+          "delivered": 1326,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 29,
+          "done": 68,
+          "delivered": 1325,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 4,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 34,
+          "done": 58,
+          "delivered": 1396,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 4,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 7.8,
+          "done": 72,
+          "delivered": 1195,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 4,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 13.7,
+          "done": 58,
+          "delivered": 1133,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-3",
+      "cond": "base",
+      "policy": "naive",
+      "status": "won",
+      "quarter": 2,
+      "sprintsPlayed": 12,
+      "seniorHpAfterSprints": [39.8, 26.3, 17.4, 17.9, 4.2, 2.3, 48.6, 48.4, 32.9, 27.3, 39, 33.7],
+      "survive": true,
+      "injected": {
+        "cond": "base",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ユウ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "レン",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 39.8,
+          "done": 58,
+          "delivered": 745,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 26.3,
+          "done": 58,
+          "delivered": 812,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 17.4,
+          "done": 58,
+          "delivered": 1079,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 17.9,
+          "done": 58,
+          "delivered": 1039,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 4.2,
+          "done": 58,
+          "delivered": 942,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 2.3,
+          "done": 68,
+          "delivered": 1094,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 48.6,
+          "done": 58,
+          "delivered": 928,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 48.4,
+          "done": 58,
+          "delivered": 862,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 32.9,
+          "done": 58,
+          "delivered": 1087,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 27.3,
+          "done": 58,
+          "delivered": 920,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 39,
+          "done": 58,
+          "delivered": 951,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 33.7,
+          "done": 68,
+          "delivered": 1245,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-3",
+      "cond": "c1",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 1,
+      "sprintsPlayed": 3,
+      "seniorHpAfterSprints": [45.6, 30.7, 13.3],
+      "survive": false,
+      "injected": {
+        "cond": "c1",
+        "easySeniorHpCostMul": 0.68,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.68,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ユウ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "レン",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 45.6,
+          "done": 58,
+          "delivered": 746,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 30.7,
+          "done": 58,
+          "delivered": 814,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 13.3,
+          "done": 58,
+          "delivered": 989,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-3",
+      "cond": "c3",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 3,
+      "sprintsPlayed": 14,
+      "seniorHpAfterSprints": [
+        61.1, 36.9, 38, 34.6, 31.7, 17.6, 17.9, 14.1, 26.9, 53.7, 29.9, 20.1, 19.1, 13.8
+      ],
+      "survive": true,
+      "injected": {
+        "cond": "c3",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer", "recruit-doc"],
+        "starterCount": 4
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ユウ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "レン",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        },
+        {
+          "id": "m3",
+          "name": "ヒナタ",
+          "rank": "junior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 40,
+            "review": 44,
+            "aiMastery": 40
+          },
+          "traits": ["docMaster"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 61.1,
+          "done": 58,
+          "delivered": 790,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.1600000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 36.9,
+          "done": 58,
+          "delivered": 922,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.3920000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 38,
+          "done": 58,
+          "delivered": 1180,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 34.6,
+          "done": 58,
+          "delivered": 1084,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 31.7,
+          "done": 58,
+          "delivered": 1061,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 17.6,
+          "done": 68,
+          "delivered": 1128,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 17.9,
+          "done": 58,
+          "delivered": 973,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 14.1,
+          "done": 58,
+          "delivered": 793,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 26.9,
+          "done": 58,
+          "delivered": 882,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 53.7,
+          "done": 58,
+          "delivered": 875,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        },
+        {
+          "quarter": 2,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 29.9,
+          "done": 58,
+          "delivered": 1017,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 20.1,
+          "done": 68,
+          "delivered": 1101,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 19.1,
+          "done": 58,
+          "delivered": 1153,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 3,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 13.8,
+          "done": 58,
+          "delivered": 1034,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-4",
+      "cond": "base",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "reviewFreeze",
+      "quarter": 1,
+      "sprintsPlayed": 6,
+      "seniorHpAfterSprints": [51.5, 28.6, 25.6, 17.5, 21.4, 32.6],
+      "survive": false,
+      "injected": {
+        "cond": "base",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ハルキ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "レン",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "ユウ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 51.5,
+          "done": 58,
+          "delivered": 936,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 28.6,
+          "done": 58,
+          "delivered": 936,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 25.6,
+          "done": 58,
+          "delivered": 1022,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 17.5,
+          "done": 58,
+          "delivered": 1010,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 21.4,
+          "done": 58,
+          "delivered": 923,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 32.6,
+          "done": 68,
+          "delivered": 1037,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-4",
+      "cond": "c1",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "reviewFreeze",
+      "quarter": 1,
+      "sprintsPlayed": 6,
+      "seniorHpAfterSprints": [56.3, 34, 20.6, 11.9, 15.1, 36.4],
+      "survive": false,
+      "injected": {
+        "cond": "c1",
+        "easySeniorHpCostMul": 0.68,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.68,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ハルキ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "レン",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "ユウ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 56.3,
+          "done": 58,
+          "delivered": 902,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 34,
+          "done": 58,
+          "delivered": 910,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 20.6,
+          "done": 58,
+          "delivered": 1011,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 11.9,
+          "done": 58,
+          "delivered": 933,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 15.1,
+          "done": 58,
+          "delivered": 801,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 36.4,
+          "done": 68,
+          "delivered": 999,
+          "reviewers": [],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.152
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-4",
+      "cond": "c3",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 2,
+      "sprintsPlayed": 8,
+      "seniorHpAfterSprints": [49.7, 46.3, 37.8, 18.4, 14.1, 17, 21.2, 19.5],
+      "survive": true,
+      "injected": {
+        "cond": "c3",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer", "recruit-doc"],
+        "starterCount": 4
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ハルキ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "レン",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "ユウ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        },
+        {
+          "id": "m3",
+          "name": "ナギ",
+          "rank": "junior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 40,
+            "review": 44,
+            "aiMastery": 40
+          },
+          "traits": ["docMaster"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 49.7,
+          "done": 58,
+          "delivered": 952,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.1600000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 46.3,
+          "done": 58,
+          "delivered": 1003,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.3920000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 37.8,
+          "done": 58,
+          "delivered": 1208,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 18.4,
+          "done": 58,
+          "delivered": 944,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 14.1,
+          "done": 58,
+          "delivered": 831,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "ユウ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 17,
+          "done": 68,
+          "delivered": 1203,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 21.2,
+          "done": 58,
+          "delivered": 820,
+          "reviewers": [
+            {
+              "id": "m3",
+              "name": "ナギ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        },
+        {
+          "quarter": 2,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 19.5,
+          "done": 58,
+          "delivered": 770,
+          "reviewers": [],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-5",
+      "cond": "base",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 1,
+      "sprintsPlayed": 2,
+      "seniorHpAfterSprints": [58.9, 3],
+      "survive": false,
+      "injected": {
+        "cond": "base",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ソウタ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "ミナ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 58.9,
+          "done": 58,
+          "delivered": 1095,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 3,
+          "done": 58,
+          "delivered": 775,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.74,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-5",
+      "cond": "c1",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 1,
+      "sprintsPlayed": 3,
+      "seniorHpAfterSprints": [52.7, 24, 12.6],
+      "survive": false,
+      "injected": {
+        "cond": "c1",
+        "easySeniorHpCostMul": 0.68,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer"],
+        "starterCount": 3
+      },
+      "difficultySeniorHpCostMul": 0.68,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ソウタ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "ミナ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 52.7,
+          "done": 58,
+          "delivered": 1067,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 0.98
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 24,
+          "done": 58,
+          "delivered": 780,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.176
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 12.6,
+          "done": 58,
+          "delivered": 903,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            }
+          ],
+          "seniorHpCostMul": 0.68,
+          "reviewHpCostMul": 1,
+          "reviewCapacityMul": 1.4112
+        }
+      ]
+    },
+    {
+      "seed": "rd-ez-5",
+      "cond": "c3",
+      "policy": "naive",
+      "status": "lost",
+      "loseReason": "seniorBurnout",
+      "quarter": 2,
+      "sprintsPlayed": 10,
+      "seniorHpAfterSprints": [57, 21.5, 27.8, 20.7, 27.1, 23.5, 20.7, 23.2, 25.6, 21.9],
+      "survive": true,
+      "injected": {
+        "cond": "c3",
+        "easySeniorHpCostMul": 0.74,
+        "starterIds": ["starter-coder", "starter-ai-junior", "starter-reviewer", "recruit-doc"],
+        "starterCount": 4
+      },
+      "difficultySeniorHpCostMul": 0.74,
+      "startRoster": [
+        {
+          "id": "m0",
+          "name": "ソウタ",
+          "rank": "middle",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 58,
+            "review": 40,
+            "aiMastery": 50
+          },
+          "traits": []
+        },
+        {
+          "id": "m1",
+          "name": "ミナ",
+          "rank": "junior",
+          "assignment": "coding",
+          "stats": {
+            "implementation": 48,
+            "review": 32,
+            "aiMastery": 62
+          },
+          "traits": ["aiArtisan"]
+        },
+        {
+          "id": "m2",
+          "name": "アオイ",
+          "rank": "senior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 46,
+            "review": 64,
+            "aiMastery": 48
+          },
+          "traits": ["reviewDemon"]
+        },
+        {
+          "id": "m3",
+          "name": "ヒナタ",
+          "rank": "junior",
+          "assignment": "review",
+          "stats": {
+            "implementation": 40,
+            "review": 44,
+            "aiMastery": 40
+          },
+          "traits": ["docMaster"]
+        }
+      ],
+      "sprints": [
+        {
+          "quarter": 1,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 57,
+          "done": 58,
+          "delivered": 1104,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.1600000000000001
+        },
+        {
+          "quarter": 1,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 21.5,
+          "done": 58,
+          "delivered": 932,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 27.8,
+          "done": 58,
+          "delivered": 1060,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "junior"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 20.7,
+          "done": 58,
+          "delivered": 915,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 5,
+          "completed": true,
+          "seniorHpAfter": 27.1,
+          "done": 58,
+          "delivered": 944,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 1,
+          "index": 6,
+          "completed": true,
+          "seniorHpAfter": 23.5,
+          "done": 68,
+          "delivered": 1225,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 1,
+          "completed": true,
+          "seniorHpAfter": 20.7,
+          "done": 58,
+          "delivered": 1018,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 2,
+          "completed": true,
+          "seniorHpAfter": 23.2,
+          "done": 72,
+          "delivered": 1470,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 3,
+          "completed": true,
+          "seniorHpAfter": 25.6,
+          "done": 58,
+          "delivered": 1380,
+          "reviewers": [
+            {
+              "id": "m2",
+              "name": "アオイ",
+              "rank": "senior"
+            },
+            {
+              "id": "m3",
+              "name": "ヒナタ",
+              "rank": "middle"
+            }
+          ],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        },
+        {
+          "quarter": 2,
+          "index": 4,
+          "completed": true,
+          "seniorHpAfter": 21.9,
+          "done": 72,
+          "delivered": 1258,
+          "reviewers": [],
+          "seniorHpCostMul": 0.6808000000000001,
+          "reviewHpCostMul": 0.8695652173913044,
+          "reviewCapacityMul": 1.6704
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "cond": "base",
+      "n": 5,
+      "survived": 1,
+      "lost": 4,
+      "won": 1
+    },
+    {
+      "cond": "c1",
+      "n": 5,
+      "survived": 1,
+      "lost": 5,
+      "won": 0
+    },
+    {
+      "cond": "c3",
+      "n": 5,
+      "survived": 4,
+      "lost": 5,
+      "won": 0
+    }
+  ]
+}

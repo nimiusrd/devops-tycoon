@@ -1,0 +1,2714 @@
+/**
+ * Issue #906 Phase 1 用のオートプレイ・ハーネス写し。
+ *
+ * `tests/playtest/harness.ts`（研究者が使った harness906.ts と naive 方針は同一）を
+ * `src/rd/issue906/` へ複製したもの。本番ファイル・`npm test`・`npm run playtest` からは
+ * 参照しない。比較ランは `scripts/compare-906.mjs` 経由でのみ実行する。
+ */
+import { getEvent } from '../../data/events';
+import { EVOLUTION_NODES } from '../../data/evolution';
+import { CARD_DEFS, getCard } from '../../data/cards';
+import { getRelic, RELIC_DEFS } from '../../data/relics';
+import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../data/unlocks';
+import { MEMBER_BALANCE, OUTCOME_BALANCE } from '../../data/balance';
+import { getDifficulty } from '../../data/difficulties';
+import { ALL_ACTION_IDS, canApplyAction } from '../../sim/actions';
+import { FIXED_STEP_MS } from '../../data/balance/pacing';
+import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../sim/member/roster';
+import {
+  RunEngine,
+  REST_HEAL,
+  REST_MORALE_HEAL,
+  REST_REPAY,
+  REST_REPAY_REWORK_RATE,
+  REST_UPGRADE_FOCUS_MAX,
+} from '../../sim/run/engine';
+import { foldPassives } from '../../sim/run/effects';
+import {
+  effectiveActionsOf,
+  evaluateCounterfactual,
+  evaluateLatestEffectiveFrame,
+  type CounterfactualEvaluateOptions,
+  type CounterfactualFrameSample,
+} from '../../sim/run/counterfactual';
+import { eventMinSignalFactors, eventSignals } from '../../sim/run/events';
+import {
+  canApplyAssignTaskWithExplicitTarget,
+  listApplicableActions,
+  observeDangerZone,
+  type DangerLoseReason,
+} from '../../sim/run/dangerZone';
+import { eliteTaskMul } from '../../sim/run/sprintBaselineBuild';
+import { summarizeSprint } from '../../sim/sprint';
+import {
+  BUDGET_EXHAUSTED_CAP,
+  MORALE_LOSE_MAX,
+  SENIOR_HP_LOSE_MAX,
+  TECH_DEBT_CAP,
+} from '../../sim/outcome';
+import type {
+  DifficultyId,
+  GoalAdjustmentId,
+  EventSignal,
+  RunState,
+  RunTotals,
+  StakeholderTrust,
+} from '../../sim/run/types';
+import type { ActionId, OrgState } from '../../sim/types';
+import type { EvolutionBranch } from '../../data/evolution';
+import { MS_PER_TICK_1X } from '../../ui/sprintTempo';
+
+/** 介入の発動可否を判定するための盤面サマリー。 */
+export interface BoardCtx {
+  /** Review レーンの件数。 */
+  reviewLen: number;
+  /** 炎上中（Rework かつ incident）の件数。 */
+  burning: number;
+  /**
+   * 炎上中タスクの最短猶予 tick（炎上が無いときは Infinity）。
+   * RI-73 / F-1: 熟練方針が延焼寸前だけを消すために使う。
+   */
+  minBurnTicksLeft: number;
+  /** Coding レーンの件数。 */
+  codingLen: number;
+  /** Rework レーンの件数。 */
+  reworkLen: number;
+  /** 現在 tick。 */
+  tick: number;
+}
+
+export interface PolicySpec {
+  /** 毎ステップ順に試す介入（条件つき）。条件省略は毎回試行。 */
+  actions: { id: ActionId; when?: (ctx: BoardCtx) => boolean }[];
+  /**
+   * 1回の介入判断で進めるシミュレーション時間（ms）。大きいほど反応が鈍い＝初見寄り。
+   *
+   * **壁時計の間隔ではない。** `RunEngine.step(dtMs)` は `FIXED_STEP_MS`（=100ms）ごとに
+   * 1 tick 進めるので、この値は `stepMs / 100` tick に相当する。実 UI の 1x では
+   * 1 tick が壁時計 `MS_PER_TICK_1X`（`src/ui/sprintTempo.ts`）なので、換算は
+   * `壁時計 = stepMs / 100 * MS_PER_TICK_1X`。`300` は3 tick、`600` は6 tick。
+   *
+   * 所見へ書くときは必ず `wallClockIntervalSec()` で換算した値を使うこと。
+   * 「300ms 刻み」と書くと実際の約7分の1の反応間隔として読まれる。
+   */
+  stepMs: number;
+  /**
+   * 手札の使い方。
+   * - `none`: 使わない
+   * - `always`: 手札を集中力が尽きるまで無差別に発動する
+   * - `preferCostOpt`: `always` と同じだがコスト最適化カードを先に発動する（RI-88）
+   * - `preferSecurity`: `always` と同じだがセキュリティ投資カードを先に発動する（RI-87）
+   * - `preferDelivery`: 出荷加速（`codingSpeedMul>1`）カードだけを加速が大きい順に発動する（RI-78）
+   * - `selective`: 集中力に余裕があり、盤面が切迫していないときだけ発動する
+   */
+  cards: 'none' | 'always' | 'preferCostOpt' | 'preferSecurity' | 'preferDelivery' | 'selective';
+  /**
+   * ラン開始時の試練 ID（RI-88: ハーネス比較で継続課金を発生させる等）。
+   * 未指定は試練なし。
+   */
+  trials?: string[];
+  /**
+   * 進化ポイントの使い方（解放するブランチの優先順）。
+   * - `none`: 使わない
+   * - `asListed`: ツリーの定義順（UI 表示順）に上から取る。初見相当
+   * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度
+   * - `aiFirst`: AI → 開発速度 → 品質 → レビュー → 文化。AI ビルド
+   * - `neglectFirst`: AI → 開発速度 → レビュー → 文化 → 品質。品質（セキュリティ加算）を最後にする軽視専用（RI-76）
+   * - `aiBloated`: AI 成功率だけ先に取り、コスト最適化ノード（ai-2/ai-3）は後回し（RI-88）
+   * - `qualityFirst`: 品質 → レビュー → 文化 → 開発速度 → AI。品質ビルド
+   * - `stateAware`: 直前スプリントまでの組織状態を見てブランチ順を決める（RI-86 / F-11）
+   */
+  evolve:
+    | 'none'
+    | 'asListed'
+    | 'reviewFirst'
+    | 'aiFirst'
+    | 'neglectFirst'
+    | 'aiBloated'
+    | 'qualityFirst'
+    | 'stateAware';
+  /**
+   * 1進化フェーズで解放するノード数の上限。未指定はポイントを使い切る（従来契約）。
+   *
+   * F-11 の方向確定標本 `skilledStateEvolve` だけが設定する。希少性標本（代表4方針）は
+   * 使い切りのまま測り、方向確定はこの契約付き方針の結果として report で分離する。
+   */
+  maxEvolutionUnlocksPerPhase?: number;
+  /**
+   * ドラフトの選び方。`first` は提示順の先頭。
+   * それ以外は該当キーワードを含むカードを優先し、無ければ先頭を取る。
+   * `costOpt` / `aiBloated` は RI-88 のインフラコスト軸用。
+   * `security` / `securityNeglect` は RI-87 のセキュリティ軸用。
+   */
+  draft?: 'first' | 'ai' | 'quality' | 'costOpt' | 'aiBloated' | 'security' | 'securityNeglect';
+  /** 編成フェーズで全員に AI を配る / 誰にも配らない。未指定は既定のまま。 */
+  ai?: 'all' | 'none';
+  /** 編成フェーズでレビューへ寄せる。 */
+  formation?: 'reviewHeavy';
+  /**
+   * 採用の方針。採用後はいずれもベンチのメンバーを実働レーンへ配置する。
+   * - `hire`: 枠と予算がある限り無差別に採る
+   * - `skip`: 一切採らない
+   * - `selective`: 欠員（休職者あり／実働2名以下）があり、かつ採用後も予算に
+   *   余裕（`RECRUIT_COST` 1回分以上）が残るときだけ採る
+   *
+   * `hire` と `skip` の比較で分かるのは「無差別採用の是非」までで、実プレイヤーの
+   * 「必要なときだけ採る」判断は測れない。`selective` はその第3の条件。
+   */
+  recruit: 'hire' | 'skip' | 'selective';
+  /**
+   * ショップでのカード・レリック購入。採用枠は `recruit` 側で扱う。
+   * - `skipBuy`: 買わない（既定。既存の統制条件を変えないため）
+   * - `buy`: 予算に余裕がある範囲でレリック → カードの順に買う
+   * - `buyCostOpt`: コスト最適化レリック／カードを優先して買う（RI-88）
+   * - `buyAvoidCostOpt`: 買うがコスト最適化コンテンツは避ける（RI-88 肥大）
+   * - `buySecurity`: セキュリティ投資レリック／カードを優先して買う（RI-87）
+   * - `buyAvoidSecurity`: 買うがセキュリティ投資コンテンツは避ける（RI-87 軽視）
+   *
+   * F-2 のスプリント間投資にはショップも含まれるが、`skipBuy` だけでは
+   * 「投資しない」条件しか測れない。
+   */
+  shop?: 'skipBuy' | 'buy' | 'buyCostOpt' | 'buyAvoidCostOpt' | 'buySecurity' | 'buyAvoidSecurity';
+  /**
+   * 休息フェーズで採用しないときの選択。`RestScreen` には heal / repay / upgrade がある。
+   * - `heal`: 常に回復（既定。既存の統制条件を変えないため）
+   * - `stateAware`: 負債が危険域なら `repay`、そうでなければ `heal`
+   * - `repay`: 休息到達時に常に返済（RI-78 の統制条件）
+   * - `upgrade`: 常にカード強化
+   *
+   * 既定が `heal` 固定だと、負債返済とカード強化が一度も選ばれないまま
+   * F-2 の「スプリント間投資が結果を変えない」の根拠に使われてしまう。
+   */
+  rest?: 'heal' | 'repay' | 'stateAware' | 'upgrade';
+  /**
+   * ビート（スプリント間イベント）の選択肢の選び方。
+   * - `firstChoice`: 提示順の先頭。初見相当
+   * - `stateAware`: 現在の組織状態を見て、削られたくない資源を減らす選択肢を避ける
+   */
+  beat?: 'firstChoice' | 'stateAware';
+  /** 目標修正の選択（固定）。未指定は提示順の先頭。 */
+  goalAdjustment?: GoalAdjustmentId;
+  /** 試行順を tick ごとに回転させる（probe の順序バイアス平準化用）。 */
+  rotateActions?: boolean;
+}
+
+/** `RunEngine.step` の 1 tick 相当（ms）。最小刻みで試行するにはこの値を渡す。 */
+export const MS_PER_TICK = FIXED_STEP_MS;
+
+/** `stepMs` を tick 数へ換算する。 */
+export const stepTicks = (stepMs: number): number => stepMs / MS_PER_TICK;
+
+/**
+ * `stepMs` を実 UI（1x）の壁時計秒へ換算する。
+ *
+ * 所見に「何秒ごとに判断しているか」を書くときはこれを使う。`stepMs` をそのまま
+ * ミリ秒として書くと、実際の約7分の1の反応間隔として読まれる（`MS_PER_TICK_1X` は
+ * `MS_PER_TICK` の 6.8 倍のため）。
+ */
+export const wallClockIntervalSec = (stepMs: number): number =>
+  (stepTicks(stepMs) * MS_PER_TICK_1X) / 1000;
+
+/** メタ進行の解放状態。`fresh` は初見（既定解放のみ）、`full` はやり込み後（全解放）。 */
+export type MetaProfile = 'fresh' | 'full';
+
+/**
+ * 解放コンテンツを実プレイに合わせる（`game.startRun` の `setUnlockedContent` 相当）。
+ * 指定しないと `RunEngine` は全コンテンツを候補にしてしまい、初見プレイと条件がずれる。
+ */
+function unlockedFor(profile: MetaProfile): { cards: Set<string>; relics: Set<string> } {
+  if (profile === 'full') {
+    return {
+      cards: new Set(CARD_DEFS.map((c) => c.id)),
+      relics: new Set(RELIC_DEFS.map((r) => r.id)),
+    };
+  }
+  return { cards: new Set(defaultUnlockedCardIds()), relics: new Set(defaultUnlockedRelicIds()) };
+}
+
+// RI-73 / F-1: 緊急対応は複数炎上、または延焼寸前だけ（高コストな単発先消しを避ける）。
+const SKILLED_ACTIONS: PolicySpec['actions'] = [
+  { id: 'pairReview' },
+  { id: 'aiThrottle', when: (c) => c.reviewLen >= 19 },
+  { id: 'firefight', when: (c) => c.burning >= 2 || (c.burning >= 1 && c.minBurnTicksLeft <= 15) },
+  { id: 'interruptReview', when: (c) => c.reviewLen >= 6 },
+  { id: 'andon', when: (c) => c.reviewLen >= 10 },
+  { id: 'assignTask' },
+];
+
+// RI-134: 正式な熟練方針と、その1要素だけを外す統制群は AI 前提ワークフローも成熟させる。
+// F-10 のビルド比較方針は介入構成まで変えないため、上の従来契約を明示的に使う。
+const WORKFLOW_SKILLED_ACTIONS: PolicySpec['actions'] = [
+  { id: 'pairReview' },
+  { id: 'aiThrottle', when: (c) => c.reviewLen >= 10 },
+  { id: 'firefight', when: (c) => c.burning >= 2 || (c.burning >= 1 && c.minBurnTicksLeft <= 15) },
+  { id: 'interruptReview', when: (c) => c.reviewLen >= 6 },
+  { id: 'andon', when: (c) => c.reviewLen >= 10 },
+  { id: 'assignTask', when: (c) => c.reviewLen === 0 && c.reworkLen === 0 },
+];
+
+/**
+ * 攻略を知っている前提の解放順（レビュー容量 → 品質 → AI → 文化 → 開発速度）。
+ * 前提ノードのある上位も含め、解放できるものを順に取る。
+ */
+const EVOLUTION_ORDER_REVIEW_FIRST = [
+  'review-1',
+  'review-2',
+  'review-3',
+  'quality-1',
+  'quality-2',
+  'quality-3',
+  'ai-1',
+  'ai-2',
+  'ai-3',
+  'culture-1',
+  'culture-2',
+  'culture-3',
+  'dev-1',
+  'dev-2',
+  'dev-3',
+];
+
+/**
+ * 初見相当の解放順。ツリーの定義順＝UI の表示順に上から取るだけで、
+ * どのブランチが有利かの知識を前提にしない。
+ */
+const EVOLUTION_ORDER_AS_LISTED = EVOLUTION_NODES.map((n) => n.id);
+
+/** ブランチ接頭辞の並びから解放順を組む（各ブランチは 1→2→3 の順）。 */
+const orderFromBranches = (branches: readonly string[]): readonly string[] =>
+  branches.flatMap((b) => [1, 2, 3].map((n) => `${b}-${n}`));
+
+const EVOLUTION_ORDER_AI_FIRST = orderFromBranches(['ai', 'dev', 'quality', 'review', 'culture']);
+/** セキュリティ軽視: AI／速度を先に取り、品質（securityAdd）は最後。レビューは凍結回避のため速度の次。 */
+const EVOLUTION_ORDER_NEGLECT_FIRST = orderFromBranches([
+  'ai',
+  'dev',
+  'review',
+  'culture',
+  'quality',
+]);
+/** 肥大ハーネス: 速度側を先に伸ばし、infraCostMul 付きの ai-2/ai-3 は後回し（RI-88）。 */
+const EVOLUTION_ORDER_AI_BLOATED = [
+  'ai-1',
+  'dev-1',
+  'dev-2',
+  'dev-3',
+  'review-1',
+  'review-2',
+  'review-3',
+  'quality-1',
+  'quality-2',
+  'quality-3',
+  'culture-1',
+  'culture-2',
+  'culture-3',
+  'ai-2',
+  'ai-3',
+];
+const EVOLUTION_ORDER_QUALITY_FIRST = orderFromBranches([
+  'quality',
+  'review',
+  'culture',
+  'dev',
+  'ai',
+]);
+
+/** RI-88: コスト最適化を載せた既存カード／レリック（新規 ID はドラフト池を壊すため使わない）。 */
+const COST_OPT_CARD_ID = 'ai-guideline';
+const COST_OPT_RELIC_ID = 'budget-discipline';
+
+/** RI-87: セキュリティ投資を載せた既存カード／レリック。 */
+const SECURITY_FOCUS_CARD_IDS = ['auto-test', 'docs', 'static-analysis'] as const;
+const SECURITY_FOCUS_RELIC_IDS = ['postmortem', 'no-friday-deploy'] as const;
+const SECURITY_NEGLECT_CARD_IDS = ['copilot', 'claude-code', 'devin'] as const;
+
+function isSecurityFocusCard(id: string): boolean {
+  return (SECURITY_FOCUS_CARD_IDS as readonly string[]).includes(id);
+}
+
+function isSecurityFocusRelic(id: string): boolean {
+  return (SECURITY_FOCUS_RELIC_IDS as readonly string[]).includes(id);
+}
+
+/** `stateAware` 進化が参照する盤面（解放フェーズ到達時点）。 */
+export interface EvolveBoardCtx {
+  org: OrgState;
+  totals: RunTotals;
+  /**
+   * **直近スプリント**のレビューキューピーク。
+   * ラン累積の `totals.reviewQueuePeak` を使うと、一度詰まっただけで以降ずっと
+   * review 固定になり、盤面依存の方向選択を測れない。
+   */
+  reviewQueuePeak: number;
+  /** 既に解放済みのノード ID（同一ブランチへ張り付くのを避けるために使う）。 */
+  unlocked: readonly string[];
+  /**
+   * 今の進化フェーズで既に解放したノード ID。
+   * multiPhase 確定のため、同一フェーズでの同ブランチ深化を抑え、
+   * 前スプリントから持ち越した1ノードへの sticky 継続だけを促す。
+   */
+  unlockedThisPhase?: readonly string[];
+}
+
+/**
+ * 盤面に応じたブランチ優先順（RI-86 / F-11）。
+ *
+ * 固定順の方針では「最初の2ノードが必ず同一ブランチ」になり、方向の確定時期を測れない。
+ * ここではボトルネックに応じて先頭ブランチを変える。
+ */
+export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[] {
+  const scores: Record<EvolutionBranch, number> = {
+    review: 0,
+    quality: 0,
+    ai: 0,
+    culture: 0,
+    dev: 0,
+  };
+  const { org, totals, reviewQueuePeak, unlocked, unlockedThisPhase = [] } = ctx;
+  const unlockedCount = (branch: EvolutionBranch): number =>
+    unlocked.filter((id) => id.startsWith(`${branch}-`)).length;
+  const phaseCount = (branch: EvolutionBranch): number =>
+    unlockedThisPhase.filter((id) => id.startsWith(`${branch}-`)).length;
+
+  // キュー高止まりは実ランでほぼ共通なので、主信号はシニアHPの危機度。
+  // 旧実装は peak>=10 で +4 かつ HP<40 で +3 と重なり、全コホートが review 固定になっていた。
+  if (org.seniorHp < 18) scores.review += 4;
+  else if (org.seniorHp < 25) scores.review += 2;
+  else if (org.seniorHp < 40) scores.review += 0.5;
+  if (reviewQueuePeak >= 18) scores.review += 1.5;
+  else if (reviewQueuePeak >= 14) scores.review += 0.5;
+
+  if (org.techDebt >= 45) scores.quality += 4;
+  else if (org.techDebt >= 25) scores.quality += 2.5;
+  else if (org.techDebt >= 10) scores.quality += 1;
+  if (org.testCoverage < 35) scores.quality += 2;
+  else if (org.testCoverage < 45) scores.quality += 1;
+
+  // リテラシー不足を最優先。依存だけ高い（導入難易度で頻出）場合は中程度に抑える。
+  if (org.aiDependency >= 45 && org.aiLiteracy < 40) scores.ai += 4;
+  else if (org.aiDependency >= 85 && org.aiLiteracy >= 40) scores.ai += 3;
+  else if (org.aiDependency >= 55) scores.ai += 1.5;
+  else if (org.aiEnabled && org.aiLiteracy < 35) scores.ai += 1;
+
+  if (org.morale < 50) scores.culture += 4;
+  else if (org.morale < 70) scores.culture += 2.5;
+  else if (org.morale < 85) scores.culture += 1;
+  if (org.quality < 40) scores.culture += 1.5;
+
+  // 出荷効率が悪い／累計出荷が伸びていないときだけ開発へ。
+  if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
+  else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
+
+  // 既取得ブランチの減点と、方向確定（厳密過半 + multiPhase）向けの集中。
+  // commitInQ1 は同一フェーズの2段買いだけでは確定としない。ポイントを使い切る
+  // 前提では序盤に全ブランチへ1ノードずつ散ると過半が組めないため、
+  // 選んだブランチは同一フェーズで2ノードまで深化し、3ノード目は次スプリントへ残す。
+  // 前スプリント持ち越しの1〜2ノードには sticky を足して横断継続する。
+  // multiPhase が揃ったあとの n≥2 は横展開のため強く減点する。
+  //
+  // 今フェーズで2段取ったブランチは基礎スコアに依存せず候補外にする。
+  // quality 危機帯（基礎6）では -5 でも先頭に残って先端まで同フェーズ取得し得るため。
+  const STICKY_BONUS = 2.5;
+  /** 前フェーズ2段→今フェーズで先端を取るための上書き。危機帯信号 (+4〜5.5) を超える。 */
+  const STICKY_TIP_BONUS = 6;
+  const SAME_PHASE_DEEPEN_BONUS = 2.5;
+  const tipReserved = new Set<EvolutionBranch>();
+  for (const b of Object.keys(scores) as EvolutionBranch[]) {
+    const n = unlockedCount(b);
+    const phaseN = phaseCount(b);
+    const priorN = n - phaseN;
+    if (phaseN >= 2) {
+      tipReserved.add(b);
+      scores[b] = Number.NEGATIVE_INFINITY;
+      continue;
+    }
+    if (n >= 3) {
+      scores[b] -= 5;
+    } else if (n >= 2) {
+      if (priorN >= 1 && phaseN >= 1) {
+        // 既に複数スプリントにまたがる2ノード — 確定後の横展開。
+        scores[b] -= 3;
+      } else if (priorN >= 2 && phaseN === 0) {
+        // 前フェーズで2段まで買ったブランチを次スプリントで触り multiPhase を成立させる。
+        scores[b] += STICKY_TIP_BONUS;
+      } else {
+        scores[b] -= 0.5;
+      }
+    } else if (n >= 1) {
+      scores[b] -= 0.5;
+      if (phaseN >= 1) scores[b] += SAME_PHASE_DEEPEN_BONUS;
+      else scores[b] += STICKY_BONUS;
+    }
+  }
+
+  // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。
+  // 先端予約済みブランチは候補に戻さない。
+  const activeScores = (Object.keys(scores) as EvolutionBranch[]).filter(
+    (b) => !tipReserved.has(b),
+  );
+  if (activeScores.length > 0 && Math.max(...activeScores.map((b) => scores[b])) <= 0) {
+    const weakness: Record<EvolutionBranch, number> = {
+      review: 100 - org.seniorHp,
+      quality: org.techDebt + (100 - org.testCoverage) * 0.5,
+      ai: org.aiDependency * 0.5 + (100 - org.aiLiteracy) * 0.5,
+      culture: 100 - org.morale + (100 - org.quality) * 0.3,
+      dev: Math.max(0, 120 - totals.delivered),
+    };
+    let best = activeScores[0]!;
+    for (const b of activeScores) {
+      if (weakness[b] > weakness[best]) best = b;
+    }
+    scores[best] += 1;
+  }
+
+  // 同点時の安定したタイブレーク（レビュー → 品質 → …）。スコア差を上書きしない微小量。
+  // 先端予約済みブランチは順序から除外する（末尾へ残すと、他が買えないとき3段目が選ばれる）。
+  const tie: Record<EvolutionBranch, number> = {
+    review: 0.05,
+    quality: 0.04,
+    ai: 0.03,
+    culture: 0.02,
+    dev: 0.01,
+  };
+  return activeScores.sort((a, b) => scores[b] + tie[b] - (scores[a] + tie[a]));
+}
+
+function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): readonly string[] {
+  switch (mode) {
+    case 'reviewFirst':
+      return EVOLUTION_ORDER_REVIEW_FIRST;
+    case 'aiFirst':
+      return EVOLUTION_ORDER_AI_FIRST;
+    case 'neglectFirst':
+      return EVOLUTION_ORDER_NEGLECT_FIRST;
+    case 'aiBloated':
+      return EVOLUTION_ORDER_AI_BLOATED;
+    case 'qualityFirst':
+      return EVOLUTION_ORDER_QUALITY_FIRST;
+    case 'stateAware':
+      return orderFromBranches(
+        ctx ? stateAwareEvolveBranches(ctx) : ['review', 'quality', 'ai', 'culture', 'dev'],
+      );
+    default:
+      return EVOLUTION_ORDER_AS_LISTED;
+  }
+}
+
+/** ドラフト選好に合うカード ID を選ぶ（無ければ先頭）。 */
+const DRAFT_PREFERENCE: Record<
+  'ai' | 'quality' | 'costOpt' | 'security' | 'securityNeglect',
+  readonly string[]
+> = {
+  ai: ['copilot', 'claude-code', 'devin', 'ai-guideline'],
+  quality: ['auto-test', 'pr-size-limit', 'docs', 'review-bot', 'hire-senior'],
+  costOpt: [COST_OPT_CARD_ID, 'ai-guideline', 'copilot', 'claude-code'],
+  security: SECURITY_FOCUS_CARD_IDS,
+  securityNeglect: [...SECURITY_NEGLECT_CARD_IDS, 'feature-flags', 'copilot'],
+};
+
+function pickDraft(offer: readonly string[], mode: PolicySpec['draft']): string {
+  if (!mode || mode === 'first') return offer[0];
+  if (mode === 'aiBloated') {
+    const prefer = DRAFT_PREFERENCE.ai;
+    return (
+      offer.find((id) => prefer.includes(id) && id !== COST_OPT_CARD_ID) ??
+      offer.find((id) => id !== COST_OPT_CARD_ID) ??
+      offer[0]
+    );
+  }
+  if (mode === 'securityNeglect') {
+    const prefer = DRAFT_PREFERENCE.securityNeglect;
+    return (
+      offer.find((id) => prefer.includes(id) && !isSecurityFocusCard(id)) ??
+      offer.find((id) => !isSecurityFocusCard(id)) ??
+      offer[0]
+    );
+  }
+  const prefer = DRAFT_PREFERENCE[mode];
+  return offer.find((id) => prefer.includes(id)) ?? offer[0];
+}
+
+function skilledBase(): PolicySpec {
+  return {
+    actions: WORKFLOW_SKILLED_ACTIONS,
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'reviewFirst',
+    beat: 'stateAware',
+    recruit: 'skip',
+  };
+}
+
+/**
+ * 単一介入だけを打つ方針。介入構成**以外**は比較対象の `skilledNoHire` と揃える。
+ * 進化順（`reviewFirst`）とビート選択（`stateAware`）を揃えないと、勝率差に進化順や
+ * イベント判断の巧拙が混入し、F-1 の判定を介入構成へ帰属できない。
+ */
+const single = (id: ActionId): PolicySpec => ({
+  actions: [{ id }],
+  stepMs: 300,
+  cards: 'always',
+  evolve: 'reviewFirst',
+  beat: 'stateAware',
+  recruit: 'skip',
+});
+
+/** 方針一覧（SPEC 第19.1.3 の観測に対応）。 */
+export const POLICY_DEFS: Record<string, PolicySpec> = {
+  /** 介入もカードも一切使わない完全放置（下限ベースライン）。 */
+  idle: { actions: [], stepMs: 1_000_000, cards: 'none', evolve: 'none', recruit: 'skip' },
+  /** 介入なし・カードのみ（F-5 の無介入ベースライン）。 */
+  passive: { actions: [], stepMs: 1_000_000, cards: 'always', evolve: 'none', recruit: 'skip' },
+  /** 初見想定。異常が目立ってから反応する。 */
+  naive: {
+    actions: [
+      { id: 'firefight', when: (c) => c.burning >= 2 },
+      { id: 'interruptReview', when: (c) => c.reviewLen >= 12 },
+    ],
+    stepMs: 600,
+    cards: 'always',
+    evolve: 'asListed',
+    recruit: 'skip',
+  },
+  /** naive と同じ初見条件で、介入だけを外した F-5 の因果統制。 */
+  naiveNoInterventionCtl: {
+    actions: [],
+    stepMs: 600,
+    cards: 'always',
+    evolve: 'asListed',
+    recruit: 'skip',
+  },
+  /** 上級者想定。閾値低め＋andon＋差配、採用あり。 */
+  skilled: {
+    actions: WORKFLOW_SKILLED_ACTIONS,
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'reviewFirst',
+    beat: 'stateAware',
+    recruit: 'hire',
+  },
+  /** skilled から採用だけを外した統制条件。 */
+  skilledNoHire: skilledBase(),
+  /** skilled から採用とカードを外した統制条件。 */
+  skilledNoCards: { ...skilledBase(), cards: 'none' },
+  /** 単一介入だけを打ち続ける（F-1 の固定強手検出）。 */
+  onlyFirefight: single('firefight'),
+  onlyInterrupt: single('interruptReview'),
+  onlyOvertime: single('overtime'),
+  onlyAndon: single('andon'),
+  onlyAssign: single('assignTask'),
+  onlySplit: single('splitPr'),
+  onlyPair: single('pairReview'),
+  onlyThrottle: single('aiThrottle'),
+  /**
+   * ビルド差分（F-10）。
+   *
+   * **ビート選択は `stateAware` に揃えてある。** 既定の `firstChoice` のままだと、
+   * 比較対象の `skilledNoHire`（`stateAware`）との差へビルド構成だけでなく
+   * イベント判断の巧拙が混ざる。実際、揃える前は予算10で `postmortem-culture` が出ると
+   * この3方針だけが予算-10（＝残高0で即敗北）の先頭選択肢を取っており、
+   * `budgetExhausted` 敗北8件すべてがこの経路だった（RI-90）。
+   */
+  aiFullBet: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'aiFirst',
+    draft: 'ai',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+  },
+  /**
+   * RI-88 / F-10: 自前エージェントハーネス（肥大）。
+   * AI を全面導入しつつ、コスト最適化ノード・カード・レリックを後回し／回避する。
+   */
+  harnessBloated: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'preferDelivery',
+    evolve: 'aiBloated',
+    draft: 'aiBloated',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buyAvoidCostOpt',
+    // 通常単価 0.01 では多くのランで課金 0 になるため、継続課金が効く試練で比較する。
+    trials: ['frontier-dependency'],
+  },
+  /**
+   * RI-88 / F-10: 自前エージェントハーネス（最適化）。
+   * 同じく AI 全面だが、進化で ai-2/ai-3 を早めに取り、ドラフト／ショップでコスト最適化へ投資する。
+   */
+  harnessOptimized: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'preferCostOpt',
+    evolve: 'aiFirst',
+    draft: 'costOpt',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buyCostOpt',
+    trials: ['frontier-dependency'],
+  },
+  /**
+   * RI-87 / F-10: セキュリティ軽視。
+   * 速度／AI を優先し、検証・セキュリティ投資カード／レリックを後回し／回避する。
+   * 進化は AI／速度を先に取り、品質（セキュリティ加算）は最後にする（RI-76）。
+   */
+  securityNeglect: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'neglectFirst',
+    draft: 'securityNeglect',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buyAvoidSecurity',
+  },
+  /**
+   * RI-87 / F-10: セキュリティ重視。
+   * 同じく AI ありだが、品質進化とセキュリティ投資カード／レリックへ寄せる。
+   */
+  securityFocus: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'preferSecurity',
+    evolve: 'qualityFirst',
+    draft: 'security',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buySecurity',
+  },
+  noAi: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'qualityFirst',
+    draft: 'quality',
+    ai: 'none',
+    beat: 'stateAware',
+    recruit: 'hire',
+  },
+  reviewHeavy: {
+    actions: [{ id: 'firefight', when: (c) => c.burning >= 1 }, { id: 'assignTask' }],
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'reviewFirst',
+    formation: 'reviewHeavy',
+    beat: 'stateAware',
+    recruit: 'hire',
+  },
+  /**
+   * F-5 用の統制条件。`skilledNoHire` から介入だけを外し、
+   * カード・進化・採用は揃える（進化条件が違うと分散差を介入に帰属できない）。
+   */
+  noInterventionCtl: { ...skilledBase(), actions: [] },
+  /**
+   * RI-77 用の統制条件。`skilledNoHire` から **AI 配布だけ**を外す。
+   *
+   * ビルド差分の `noAi` は AI に加えて andon の有無・進化ブランチ（`qualityFirst`）・
+   * ドラフト選好（`quality`）・採用（`hire`）まで同時に違うため、出荷や勝率の差を
+   * AI へ帰属できない。AI の因果を見るにはこちらを使う。
+   */
+  noAiCtl: { ...skilledBase(), ai: 'none' },
+  /** カードを状況に応じて選ぶ方針（無差別発動との比較用。RI-78）。 */
+  skilledSelectiveCards: { ...skilledBase(), cards: 'selective' },
+  /**
+   * 目標修正の選択別の後続差分を見る統制条件（F-2 第4層）。
+   * 提示されないときだけ提示順の先頭へフォールバックする。
+   */
+  adjCutScope: { ...skilledBase(), goalAdjustment: 'cut_scope' },
+  adjExtendDeadline: { ...skilledBase(), goalAdjustment: 'extend_deadline' },
+  adjQualityPivot: { ...skilledBase(), goalAdjustment: 'quality_pivot' },
+  adjRequestBudget: { ...skilledBase(), goalAdjustment: 'request_budget' },
+  adjPauseAiRollout: { ...skilledBase(), goalAdjustment: 'pause_ai_rollout' },
+  adjReorgTeams: { ...skilledBase(), goalAdjustment: 'reorg_teams' },
+  adjStakeholderCare: { ...skilledBase(), goalAdjustment: 'stakeholder_care' },
+  /**
+   * 採用の第3の条件（欠員があるときだけ採る）。`skilled`（無差別採用）・
+   * `skilledNoHire`（一切採らない）と3点で比較する。
+   */
+  skilledSelectiveHire: { ...skilledBase(), recruit: 'selective' },
+  /**
+   * ショップ投資の統制（買わない）。カードは出荷加速だけ発動し、購入方針と揃える（RI-78）。
+   */
+  skilledShopCtl: { ...skilledBase(), cards: 'preferDelivery' },
+  /**
+   * ショップでカード・レリックを買う方針（F-2 のスプリント間投資）。
+   * 統制先は同条件で買わない `skilledShopCtl`（カード発動も揃える）。
+   */
+  skilledShopBuy: { ...skilledBase(), cards: 'preferDelivery', shop: 'buy' },
+  /**
+   * 休息の選択肢を回復以外にも振る（F-2 のスプリント間投資）。
+   * 統制先は常に回復する `skilledNoHire`。
+   */
+  skilledRestRepay: { ...skilledBase(), rest: 'repay' },
+  skilledRestUpgrade: { ...skilledBase(), rest: 'upgrade' },
+  /**
+   * 全介入を 1 tick ごとに試行する（RI-78）。
+   *
+   * これは「発動可能回数の上限」ではない。8種を順に実際に発動するため、先行アクションが
+   * 集中力・盤面を消費して後続の機会を消す。試行順は tick ごとに回転させて順序バイアスを
+   * 平準化しているが、あくまで**全介入を同時に撃ち続けた場合の成立数**として読むこと。
+   * アクション単体の対象不足は、順序の影響を受けない `onlyXxx` 方針の `no-target` で見る。
+
+   */
+  probe: {
+    actions: ALL_ACTION_IDS.map((id) => ({ id })),
+    stepMs: MS_PER_TICK,
+    rotateActions: true,
+    cards: 'none',
+    evolve: 'reviewFirst',
+    recruit: 'skip',
+  },
+  /**
+   * RI-86 / F-11 用。`skilledNoHire` と同じ介入・カードだが、進化ブランチを盤面で選ぶ。
+   * 固定順方針では方向の確定時期を測れないため、この方針で commit 時期を観測する。
+   */
+  /**
+   * RI-86 / F-11 方向確定用。盤面依存ブランチ選択に加え、1フェーズ最大3解放
+   * （余り持ち越し）を契約とする。希少性は代表4方針の使い切り契約で別計測する。
+   */
+  skilledStateEvolve: {
+    ...skilledBase(),
+    evolve: 'stateAware',
+    maxEvolutionUnlocksPerPhase: 3,
+  },
+};
+
+/** 介入の試行結果内訳（RI-78 の「発動可能だった回数」測定用）。 */
+export type DispatchReason = 'ok' | 'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'other';
+
+export interface SprintLog {
+  quarter: number;
+  index: number;
+  kind: string;
+  ticks: number;
+  /** 即時敗北で完走しなかった終端スプリントは false。計測値は破棄せず保持する。 */
+  completed: boolean;
+  focusMax: number;
+  /** 初回観測時点で Coding 枠に空きがあったか。 */
+  codingSlotAvailable: boolean;
+  focusRemaining: number;
+  /** 方針が実際に成立させた介入回数。 */
+  interventions: number;
+  /** スプリント中に実際に発動したカード枚数。 */
+  cardsPlayed: number;
+  /** スプリント中にカード発動で消費した集中力（強化レベル反映後）。 */
+  cardFocusSpent: number;
+  /** スプリント中に介入で消費した集中力。 */
+  interventionFocusSpent: number;
+  /** 介入 ID ごとの試行結果内訳（probe 方針では発動可能性の上限測定になる）。 */
+  attempts: Record<string, Partial<Record<DispatchReason, number>>>;
+  /** 集中力・クールダウンを除いた対象あり区間の開始回数。 */
+  opportunityWindows: Partial<Record<ActionId, number>>;
+  /** スプリント冒頭の初回判断で対象があったか。 */
+  initialOpportunity: Partial<Record<ActionId, boolean>>;
+  delivered: number;
+  reviewQueueMax: number;
+  incidents: number;
+  contained: number;
+  spread: number;
+  rework: number;
+  aiPct: number;
+  grade: string;
+  hpDelta: number;
+  seniorHpAfter: number;
+  moraleAfter: number;
+  techDebtAfter: number;
+  aiDepAfter: number;
+  budgetAfter: number;
+  /** Done になったタスク数（レビュー通過の件数）。Issue #906 C3 確認用。 */
+  done: number;
+  /** スプリント終了時点のレビューレーン配置。 */
+  reviewers: { id: string; name: string; rank: string }[];
+  /** 畳み込み後のシニア消耗倍率（難易度 × 編成 × カード）。 */
+  seniorHpCostMul: number;
+  reviewHpCostMul: number;
+  reviewCapacityMul: number;
+}
+
+/** スプリント間投資の実績（同一 seed・位置で統制と対応付ける）。 */
+export interface InvestmentLog {
+  quarter: number;
+  index: number;
+  kind: 'shop' | 'rest';
+  /** 休息で実際に選んだ選択肢。ショップでは省略。 */
+  choice?: 'heal' | 'repay' | 'upgrade' | 'recruit';
+  shopCardsBought?: number;
+  shopRelicBought?: boolean;
+  /** ショップ投資の純効用を計算するための購入前後予算。 */
+  budgetBefore?: number;
+  budgetAfter?: number;
+  purchaseCost?: number;
+}
+
+/** 四半期レビュー到達時のスナップショット（RI-79 の発火要因分解用）。 */
+export interface QuarterLog {
+  quarter: number;
+  outcome: string;
+  bossCleared: boolean;
+  trustManagement: number;
+  trustCustomers: number;
+  trustTeam: number;
+  minTrust: number;
+  budget: number;
+  missedCount: number;
+  /** `missed_crisis` を発火させうる条件のうち、実際に成立していたもの。 */
+  crisisTriggers: string[];
+  /** `shutdown` を発火させうる条件のうち、実際に成立していたもの。 */
+  shutdownTriggers: string[];
+  /** シニアHP（`shutdown` 判定の入力）。 */
+  seniorHp: number;
+  /** 士気（`shutdown` 判定の入力）。 */
+  morale: number;
+  chosenAdjustment?: string;
+}
+
+export interface RunLog {
+  seed: string;
+  difficulty: string;
+  policy: string;
+  /** メタ進行の解放状態（`fresh`=初見相当 / `full`=全解放）。 */
+  meta: MetaProfile;
+  /** startRun 直後の初期編成（方針の再配置前）。Issue #906 C3 確認用。 */
+  startRoster: {
+    id: string;
+    name: string;
+    rank: string;
+    assignment: string;
+    stats: { implementation: number; review: number; aiMastery: number };
+    traits: readonly string[];
+  }[];
+  /** ラン開始時に読んだ Easy 難易度の seniorHpCostMul。 */
+  difficultySeniorHpCostMul: number;
+  /** 進化ノードの解放イベント（F-11「Q1 で方向が決まるか」の判定用）。 */
+  evolutionUnlocks: { id: string; quarter: number; sprintIndex: number }[];
+  /** 敗北したフェーズ（`sprint`=スプリント終了時 / それ以外=スプリント間）。 */
+  lostPhase?: string;
+  /**
+   * 敗北がビートで確定したときの、そのビートの内訳。
+   * `judgment` は選択不能、`decision` はプレイヤーが選べる。混ぜると
+   * 「操作の余地がない画面で敗北」かどうかを判定できない。
+   */
+  lostBeat?: { eventId: string; kind: string; choiceIndex?: number };
+  /** ビート発火時の `minSignal` 由来要因（RI-115）。 */
+  beatTriggers: {
+    eventId: string;
+    kind: string;
+    minSignalFactors: { signal: EventSignal; threshold: number; actual: number }[];
+  }[];
+  /**
+   * `lostPhase === 'sprint'` のとき、敗北したスプリントが結果を残したか。
+   *
+   * `true` なら `sprints` の末尾が敗北スプリントそのもの、
+   * `false` ならスプリント中に即時敗北した（終端計測を残した `completed=false` の行を含む）。
+   *
+   * 直前状態の参照先を決めるために入れたフィールドだが、その用途は `lostPrevState` が
+   * 引き継いだ。現在は「敗北したスプリントが結果を残したか」の分類にだけ使う。
+   */
+  lostSprintCompleted?: boolean;
+  /**
+   * **敗北を確定させた処理に入る直前**の組織状態。
+   *
+   * 以前は「最後に完了したスプリントの終了時点」を直前状態として読んでいたが、
+   * スプリント終了とその敗北の間にはビート・ショップ・休息・setup が挟まる。
+   * 例えば `giant-pr` の士気 -6 で負けたランでは、レポートには**その手前の休息で
+   * 回復した後の値**ではなく前スプリント末尾の値が出ており、「敗北直前の士気」が
+   * 実際より高くも低くも出ていた。戦略フェーズは外側ループの各反復、スプリントは
+   * カード・介入・tickごとに処理前の状態を控え、敗北を検知した処理の控えを残す。
+   */
+  lostPrevState?: {
+    seniorHp: number;
+    morale: number;
+    techDebt: number;
+    aiDependency: number;
+    budget: number;
+    /**
+     * ステークホルダー信頼の最小値と3者の内訳。
+     *
+     * `trustExhausted` は敗因の多数（実測25件中20件が信頼閾値由来）を占めるのに、
+     * 組織値と予算だけでは**その敗因を起こした指標が「直前」に出ない**。
+     * 他の敗因が自分の指標を表示できるのと揃えるため、最小値と内訳の両方を残す
+     * （`outcomeFor` の判定は最小値だが、どのステークホルダーが落ちたかは内訳でしか分からない）。
+     */
+    minTrust: number;
+    trustManagement: number;
+    trustCustomers: number;
+    trustTeam: number;
+    /** 控えを取った時点のフェーズ（どの処理の直前かを読めるようにする）。 */
+    phase: string;
+  };
+  status: string;
+  winType?: string;
+  loseReason?: string;
+  quarterNumber: number;
+  sprintsPlayed: number;
+  diagnosis: string;
+  sprints: SprintLog[];
+  /** ショップ訪問・購入と休息選択のログ。 */
+  investments: InvestmentLog[];
+  quarters: QuarterLog[];
+  finalOrg: Record<string, number | boolean>;
+  totalDelivered: number;
+  /**
+   * 勝利種別判定の入力になるラン累計（RI-76）。
+   * スプリント行から復元すると `aiAssisted` / `completed` / `reviewQueuePeak` が落ちる。
+   */
+  totals: {
+    delivered: number;
+    done: number;
+    rework: number;
+    incidents: number;
+    contained: number;
+    spread: number;
+    aiAssisted: number;
+    completed: number;
+    reviewQueuePeak: number;
+  };
+  budget: number;
+  relics: number;
+  deckSize: number;
+  evolutionUnlocked: number;
+  goalAdjustments: string[];
+  /**
+   * 最終敗因に対応する危険域で発動可能だった介入の和集合（RI-89）。
+   * その敗因の危険域を一度も観測していなければ省略。
+   * 観測したが打てる手がゼロなら空配列（未観測とは区別する）。
+   * `canApplyAction` による盤面非破壊観測。attempts（実際に試した手）とは別。
+   */
+  availableActionsInDanger?: string[];
+  /**
+   * 最終敗因の危険域で、非空の機械的発動可能手が最後に見えた時点。
+   * 危険域は観測したが一度も非空が無ければ省略（その場合は firstSample を参照）。
+   */
+  availableActionsInDangerLastNonEmpty?: DangerSample;
+  /** 最終敗因の危険域で最初に取ったサンプル（常時空集合ランの打ち切り起点）。 */
+  availableActionsInDangerFirstSample?: DangerSample;
+  /** 最終敗因の危険域で最後に取ったサンプル（空集合もありうる）。 */
+  availableActionsInDangerLastSample?: DangerSample;
+  /**
+   * 最終敗因の last-non-empty フレームを反実仮想評価した有効手（RI-101）。
+   * `PT_COUNTERFACTUAL=1` のときだけ付く。空配列は「評価したが有効手なし」。
+   */
+  effectiveActionsInDanger?: string[];
+  /** 有効手が残っていた最後の危険域サンプル位置（RI-101。有効手または無介入回復があるとき）。 */
+  lastEffectiveActionsAt?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  /** 同じフレームから無介入で進めたベースライン（RI-101）。 */
+  counterfactualBaseline?: {
+    sprintsToLose: number | null;
+    leftDanger: boolean;
+    loseReason: string | null;
+    status: string;
+    truncated: boolean;
+  };
+  /** 限定介入を分岐した危険域フレームの位置。 */
+  counterfactualOrigin?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+  };
+  /** 限定介入の起点で実際に機械的発動可能だった手。 */
+  counterfactualApplicableActions?: string[];
+  /**
+   * RI-139 の代表シナリオで明示指定した限定介入の結果。
+   * 既定コホートでは記録せず、全合法手列の評価や RI-132 の合否には使わない。
+   */
+  counterfactualBranches?: Array<{
+    actionId: string;
+    sprintsToLose: number | null;
+    leftDanger: boolean;
+    loseReason: string | null;
+    status: string;
+    truncated: boolean;
+  }>;
+  /** 分岐上限で未評価の候補が残った（RI-101。不完全な「有効手なし」と F-9 集合から除外する）。 */
+  counterfactualIncomplete?: boolean;
+  counterfactualSkipped?: string[];
+  /** 無介入ベースラインが評価期間を生存または危険域離脱した（RI-101。有効手なしとは区別する）。 */
+  counterfactualBaselineRecovered?: boolean;
+}
+
+/** 危険域の位置、機械的に打てる手、敗因固有の予兆を読める状態指標。 */
+export interface DangerSample {
+  sprintsPlayed: number;
+  quarter: number;
+  index: number;
+  actions: string[];
+  signals: {
+    seniorHp: number;
+    morale: number;
+    techDebt: number;
+    /** 危険判定が集約値と併用する、アクティブチーム単体の負債。 */
+    activeTeamTechDebt: number;
+    aiDependency: number;
+    aiLiteracy: number;
+    budget: number;
+    budgetAfterNextInfraCharge: number;
+    strategicSpendExhaustsBudget: boolean;
+    reviewQueue: number;
+    reviewQueuePeak: number;
+    consecutiveIncidentSprints: number;
+  };
+}
+
+/**
+ * オートプレイ用のビート選択肢 index。
+ * 明示指定がなければ即時採用（`grantRecruit`）を避け、決定論シードの安定を保つ。
+ */
+/**
+ * ビート評価が参照する現在状態。
+ *
+ * 組織値だけでなく**予算とステークホルダー信頼**も要る。予算0は即敗北であり、
+ * 信頼はどれか1つでも10以下になると次の四半期レビューで `shutdown` が確定するためである
+ * （`outcomeFor`、`src/sim/run/quarterReview.ts`）。信頼を入れないと、残量に関係なく
+ * 固定点で採点されて確定敗北を安全候補として選ぶ。
+ */
+interface BeatCtx {
+  org: RunState['org'];
+  budget: number;
+  trust: StakeholderTrust;
+  /**
+   * 士気減少の軽減倍率（レリックの `moraleDamageMul` を畳んだ値）。
+   * `applyEventOutcome` は**負の**士気差分にだけこれを掛けるので、素の差分で敗北判定すると
+   * 実際には生き残る選択肢を確定敗北として外してしまう
+   * （士気6・`expectation-mgmt` 所持で `giant-pr` の -6 は -4.5 になり士気1.5で生存する）。
+   */
+  moraleDamageMul: number;
+  /**
+   * この方針が休息フェーズで実際に選ぶ内容。`leadsTo: 'rest'` の価値は選ぶ内容で変わる。
+   * `upgrade` はカードを強化するだけでシニアHPも士気も回復しない。
+   */
+  rest: PolicySpec['rest'];
+  /**
+   * 個体メンバーの状態。`restChoose('heal')` は組織値だけでなく
+   * `recoverStamina(..., REST_STAMINA_RECOVER)` も実行し、休職者を復帰させる。
+   * 組織HP・士気が高くても休職者や低スタミナ要員がいれば休息の価値は大きいので、
+   * ロスターを見ないと休息の主要な利益を0点として攻め続ける側を選んでしまう。
+   */
+  roster: RunState['roster'];
+  /**
+   * 所持レリックと枠数。`RunEngine.grantRelic()` は**既に持っている／枠が満杯**なら
+   * 何もせず終了する（`src/sim/run/engine.ts`）。無条件に加点すると、実際には得られない
+   * レリックの架空の価値で代償（信頼低下など）を上書きしてしまう。
+   * 例: `expectation-mgmt` を所持した状態で `urgent-demo` が再登場すると、
+   * レリックを得られないのに管理信頼-8 の選択肢が高得点になる。
+   */
+  relics: readonly string[];
+  relicSlots: number;
+  /** 休息の回復量に乗るレリックボーナス（`foldPassives(relics).restHealBonus`）。 */
+  restHealBonus: number;
+  /** elite 負荷採点に使う難易度（`eliteTaskMul` と同期）。 */
+  difficulty: DifficultyId;
+}
+
+/**
+ * 選択肢を現在の状態で評価する。減らされたくない資源ほど強く嫌う。
+ * 実プレイヤーが「シニアが限界なら残業を選ばない」程度の判断をする想定。
+ *
+ * **選ぶと即敗北する選択肢は候補から外す**（`INSTANT_LOSS`）。`evaluateLose`
+ * （`src/sim/outcome.ts`）は `budget <= 0` / `seniorHp <= 1` / `morale <= 1` /
+ * `techDebt >= 90` で敗北を返す。組織値だけを見ていたころは、たとえば残予算10で
+ * `postmortem-culture`（予算 -10・レリック付与）が出るとレリックの加点が予算の減点を上回り、
+ * 予算0＝`budgetExhausted` を自分から選んでいた。避けられる自滅が熟練方針の勝率と
+ * 敗因分布に混ざるため、状態を見て選ぶ `stateAware` では取らない。
+ */
+const INSTANT_LOSS = -1e6;
+/**
+ * 四半期レビューで `shutdown`（＝敗北）が確定する信頼の下限。
+ * `outcomeFor` の `minTrust <= 10`（`src/sim/run/quarterReview.ts`）に対応する。
+ */
+const TRUST_SHUTDOWN = OUTCOME_BALANCE.quarterShutdownTrustMax.value;
+/** `missed_crisis` になる信頼の下限。ここを割ると立て直しが難しくなる。 */
+const TRUST_CRISIS = OUTCOME_BALANCE.quarterCrisisTrustMax.value;
+/**
+ * 高負荷スプリントを受けてよい最低体力（シニアHPと士気の低い方）。
+ * これを上回るぶんは出荷機会、下回るぶんは渋滞・炎上のリスクとして評価する。
+ */
+const ELITE_HEADROOM_MIN = 45;
+/** 体力1あたりの重み。上の閾値との差にこれを掛ける。 */
+const ELITE_HEADROOM_WEIGHT = 0.15;
+/** 技術的負債（0〜100 を 0〜1 に正規化）1あたりの重み。負債が高いほど手戻りへ回る。 */
+const ELITE_DEBT_WEIGHT = 4;
+
+/** 選択肢のうち評価に必要な部分。`leadsTo` を見るため `outcome` だけでは足りない。 */
+interface ScorableChoice {
+  outcome: Record<string, unknown>;
+  leadsTo?: string;
+}
+
+/** `EventChoice` を評価用の形へ落とす（`EventOutcome` に index signature が無いため）。 */
+const scorable = (c: { outcome: unknown; leadsTo?: string }): ScorableChoice => ({
+  outcome: (c.outcome ?? {}) as Record<string, unknown>,
+  leadsTo: c.leadsTo,
+});
+
+function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
+  const outcome = choice.outcome;
+  const num = (v: unknown): number => (typeof v === 'number' ? v : 0);
+  const scarcity = (current: number): number => 1 + (100 - current) / 50;
+  const trust = (outcome.trust ?? {}) as Record<string, number>;
+
+  // 適用後の信頼（最小値）。信頼は3者それぞれに差分が乗るので最小値で見る。
+  // `applyTrust` は 0〜100 に丸めるので、閾値判定も丸めた後の値で見る。
+  const clamp100 = (v: number): number => Math.min(100, Math.max(0, v));
+  const trustAfter = Math.min(
+    clamp100(ctx.trust.management + num(trust.management)),
+    clamp100(ctx.trust.customers + num(trust.customers)),
+    clamp100(ctx.trust.team + num(trust.team)),
+  );
+
+  // 士気の減少はレリックで軽減される。実際に適用される量で判定する。
+  const moraleRaw = num(outcome.morale);
+  const moraleEff = moraleRaw < 0 ? moraleRaw * ctx.moraleDamageMul : moraleRaw;
+
+  // **確定敗北の選択肢だけを外す。**
+  //
+  // ここに挙げた条件は `evaluateLose`（`src/sim/outcome.ts`）が状態を見て即座に返すもの、
+  // または outcome が直接 `forceLose` を指定するもので、踏んだ時点で敗北が確定する。
+  //
+  // **信頼はここに含めない。** 信頼が効くのは四半期 outcome の判定で、
+  // `evaluateQuarterOutcome`（`src/sim/run/quarterReview.ts`）は
+  // **ボス突破かつ全KPI達成なら `met` / `exceeded` を先に返してから** `minTrust <= 10` の
+  // `shutdown` を見る。つまり信頼10以下でも、次のレビューで目標を達成すれば勝てる。
+  // 確定敗北として候補から外すと、勝ち得る選択肢を落として方針比較を歪める。
+  // 危険域はリスクとして重く減点するにとどめる（下の `TRUST_SHUTDOWN` の項）。
+  if (
+    outcome.forceLose ||
+    ctx.budget + num(outcome.budget) <= BUDGET_EXHAUSTED_CAP ||
+    ctx.org.seniorHp + num(outcome.seniorHp) <= SENIOR_HP_LOSE_MAX ||
+    ctx.org.morale + moraleEff <= MORALE_LOSE_MAX ||
+    ctx.org.techDebt + num(outcome.techDebt) >= TECH_DEBT_CAP
+  ) {
+    return INSTANT_LOSS;
+  }
+
+  let score = 0;
+  score += num(outcome.delivered) * 0.05;
+
+  /**
+   * **クランプ後に実際に動く量で採点する。**
+   *
+   * `applyEventOutcome`（`src/sim/run/events.ts`）は組織指標を 0..100 にクランプするので、
+   * 上限に張り付いた指標への加算は効かない。素の差分で採点すると、たとえば士気100 の
+   * `standup-acronym-storm` で「士気+4・負債+2」が加点され、実際には負債だけが増える
+   * 選択肢を選んでしまう。
+   */
+  const applied = (current: number, delta: number): number =>
+    Math.min(100, Math.max(0, current + delta)) - current;
+
+  // 予算もシニアHP・士気と同じく、残量が少ないほど減少を重く見る。
+  // 予算は 0..100 のクランプが無い（`budgetDelta` として engine が加減する）ので素の差分。
+  const budget = num(outcome.budget);
+  score += budget >= 0 ? budget * 0.2 : budget * scarcity(Math.min(ctx.budget, 100)) * 0.5;
+  const hp = applied(ctx.org.seniorHp, num(outcome.seniorHp));
+  score += hp >= 0 ? hp * 0.5 : hp * scarcity(ctx.org.seniorHp) * 1.5;
+  const morale = applied(ctx.org.morale, moraleEff);
+  score += morale >= 0 ? morale * 0.3 : morale * scarcity(ctx.org.morale) * 0.8;
+  // 負債は下限0のみ（`Math.max(0, ...)`）。上限クランプは無い。
+  score -= (Math.max(0, ctx.org.techDebt + num(outcome.techDebt)) - ctx.org.techDebt) * 0.4;
+  score -= applied(ctx.org.aiDependency, num(outcome.aiDependency)) * 0.2;
+
+  // **品質系の指標も採点する。** ここが未評価だと、品質・テスト・AIリテラシーを上げる
+  // 選択肢が一律0点になり、士気や出荷の小さな加点に必ず負ける。品質ビルドと AI ビルドの
+  // 比較（F-10）に、方針と無関係な固定選択が混ざる。
+  score += applied(ctx.org.quality, num(outcome.quality)) * 0.3;
+  score += applied(ctx.org.testCoverage, num(outcome.testCoverage)) * 0.25;
+  // AI リテラシーは `aiDependency` 敗北（依存95以上かつリテラシー30以下）の回避軸なので、
+  // 低いときほど重く見る。
+  score +=
+    applied(ctx.org.aiLiteracy, num(outcome.aiLiteracy)) * 0.25 * scarcity(ctx.org.aiLiteracy);
+  // 信頼も予算・シニアHP・士気と同じく、残量が少ないほど減少を重く見る。
+  // 危機域（`missed_crisis` の閾値）へ踏み込む場合はさらに重くする。
+  //
+  // **差分はクランプ後の実効値で見る。** `applyTrust` は各信頼値を 0〜100 に丸めるので、
+  // 残量2で -8 を受けても実際には -2 しか動かない。素の差分で採点すると、
+  // 実害の小さい選択肢を過大に嫌って負債や消耗を増やす側を選びうる。
+  const trustDelta =
+    applied(ctx.trust.management, num(trust.management)) +
+    applied(ctx.trust.customers, num(trust.customers)) +
+    applied(ctx.trust.team, num(trust.team));
+  const trustMin = Math.min(ctx.trust.management, ctx.trust.customers, ctx.trust.team);
+  score +=
+    trustDelta >= 0 ? trustDelta * 0.2 : trustDelta * scarcity(Math.min(trustMin, 100)) * 0.5;
+  // 危険域へ踏み込むぶんは重く減点する。`shutdown` の閾値（10以下）は
+  // 「次のレビューで目標を達成できなければ敗北」なので、危機域（15以下）よりさらに重い。
+  if (trustAfter <= TRUST_CRISIS && trustMin > TRUST_CRISIS) score -= 6;
+  if (trustAfter <= TRUST_SHUTDOWN && trustMin > TRUST_SHUTDOWN) score -= 25;
+  // 実際に獲得できるときだけ加点する（重複・枠満杯では `grantRelic` が no-op になる）。
+  if (
+    typeof outcome.grantRelic === 'string' &&
+    !ctx.relics.includes(outcome.grantRelic) &&
+    ctx.relics.length < ctx.relicSlots
+  ) {
+    score += 4;
+  }
+  // カード付与もデッキが太る分の価値がある。レリック（恒久パッシブ・枠が有限）より軽く見る。
+  if (outcome.grantCard) score += 2;
+
+  // **遷移先スプリントの負荷も見る。** `outcome` だけを採点すると `leadsTo` を認識できない。
+  // `elite-offer` は高負荷側の `outcome` が空（=0点）、通常側が信頼-4（=負点）なので、
+  // 組織がどれだけ消耗していても常に高負荷側を選んでしまっていた。実際の高負荷スプリントは
+  // タスク量が `eliteTaskMul(difficulty)` 倍で、余力があれば出荷機会、消耗していれば
+  // 渋滞と炎上の増幅になる。この固定選択が熟練系方針の勝率と敗因へ混ざる。
+  if (choice.leadsTo === 'sprint-elite') {
+    const load = eliteTaskMul(ctx.difficulty) - 1;
+    const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
+    score += load * (worst - ELITE_HEADROOM_MIN) * ELITE_HEADROOM_WEIGHT;
+    score -= load * (ctx.org.techDebt / 100) * ELITE_DEBT_WEIGHT;
+  }
+
+  // **`nextSprint` の一時効果も採点する。** `rest-offer` は「休む」が
+  // `nextSprint.taskCountMul=0.7`、「攻め続ける」が空の `outcome` で、どちらも0点だったため
+  // 提示順の先頭（＝常に休む）が無条件に選ばれていた。組織状態や四半期目標に関係なく
+  // 毎回タスクを30%減らす固定選択が、F-4 の所要時間と方針別勝率へ混ざる。
+  const next = (outcome.nextSprint ?? {}) as Record<string, unknown>;
+  if (next.taskCountMul !== undefined) {
+    // タスク減は消耗しているほど価値があり、余力があるなら出荷機会を捨てる損になる。
+    // 高負荷スプリントの評価と符号を揃える（あちらは増加、こちらは減少）。
+    const relief = 1 - num(next.taskCountMul);
+    const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
+    score += relief * (ELITE_HEADROOM_MIN - worst) * ELITE_HEADROOM_WEIGHT;
+    score += relief * (ctx.org.techDebt / 100) * ELITE_DEBT_WEIGHT;
+  }
+  // レビュー初期負荷・手戻り率・集中力上限は、いずれも次スプリントを直接苦しくする。
+  score -= num(next.reviewLoadAdd) * 0.3;
+  score -= num(next.reworkRateAdd) * 10;
+  score += num(next.focusMaxAdd) * 0.3;
+
+  // **休息の価値は方針が実際に選ぶ内容で決まる。** `leadsTo: 'rest'` へ一律に回復価値を
+  // 与えると、カードを強化するだけの `skilledRestUpgrade` や負債を返す `skilledRestRepay` に
+  // 存在しない回復を期待することになり、ショップ・休息投資の比較が歪む。
+  if (choice.leadsTo === 'rest') {
+    const choiceAtRest = restChoiceFor(ctx.rest, ctx.org.techDebt);
+    if (choiceAtRest === 'heal') {
+      // クランプ後に実際に回復する量で見る（満タンに近ければ価値は小さい）。
+      // `restChoose('heal')` は `REST_HEAL` に `restHealBonus`（`flow-first` で +10）を足す。
+      score += applied(ctx.org.seniorHp, REST_HEAL + ctx.restHealBonus) * 0.5;
+      score += applied(ctx.org.morale, REST_MORALE_HEAL) * 0.3;
+      // **個体スタミナの回復と復職も採点する。** `recoverStamina` は休職者に
+      // 休職者にはレジストリの復職回復倍率を与え、復職割合を超えたら復帰させる。
+      for (const m of ctx.roster.members) {
+        const gain = Math.round(
+          REST_STAMINA_RECOVER * (m.onLeave ? MEMBER_BALANCE.leaveRecoveryMultiplier.value : 1),
+        );
+        const after = Math.min(m.staminaMax, m.stamina + gain);
+        score += (after - m.stamina) * 0.02;
+        // 復職は戦力が1人戻るので、スタミナ量とは別枠で重く見る。
+        if (m.onLeave && after >= m.staminaMax * MEMBER_BALANCE.returnRatio.value) score += 5;
+      }
+    } else if (choiceAtRest === 'repay') {
+      score += Math.min(REST_REPAY, ctx.org.techDebt) * 0.4;
+      // `restChoose('repay')` は負債返済に加えて次スプリントの手戻り率を抑える。
+      // 休息ビートの outcome にはまだこの効果が載っていないため、ここで実効果を評価する。
+      score -= REST_REPAY_REWORK_RATE * 10;
+    } else {
+      // カード強化。盤面の状態には依らない一定の投資価値に加え、次スプリントの
+      // 集中力上限増加を評価する。
+      score += 2 + REST_UPGRADE_FOCUS_MAX * 0.3;
+    }
+  }
+  return score;
+}
+
+export function autoplayBeatChoiceIndex(
+  eventId: string,
+  kind: 'judgment' | 'decision',
+  takeRecruit = false,
+  mode: PolicySpec['beat'] = 'firstChoice',
+  ctx?: BeatCtx,
+): number | undefined {
+  if (kind === 'judgment') return undefined;
+  const choices = getEvent(eventId)?.choices ?? [];
+  if (choices.length === 0) return 0;
+  // この盤面で採用すると決めたときだけ即時採用の選択肢を取る。そうでなければ避ける
+  // （避けないと「採用なし」「必要なときだけ採用」群に無条件の採用が混ざる）。
+  //
+  // ただし即敗北する採用は取らない。採用の可否はイベントの `outcome` だけでは判定できない。
+  // `grantRecruit` は解決時に `tryRecruit` が**さらに** `RECRUIT_COST` を引くため、
+  // 予算がちょうど `RECRUIT_COST` のとき outcome 上は予算差分0でも、実際には予算0＝
+  // `budgetExhausted` になる。採用費を引いた後の予算で評価する。
+  // 採用費を引いた後の予算で敗北しないか。`grantRecruit` の選択肢はこれで判定する。
+  const afterRecruit = ctx && { ...ctx, budget: ctx.budget - RECRUIT_COST };
+  const recruitIsSafe = (c: (typeof choices)[number]): boolean =>
+    !afterRecruit || scoreChoice(scorable(c), afterRecruit) > INSTANT_LOSS;
+  if (takeRecruit) {
+    const grant = choices.findIndex((c) => c.outcome.grantRecruit && recruitIsSafe(c));
+    if (grant >= 0) return grant;
+  }
+  // 安全判定に落ちた採用肢は、後続の候補集合からも外す。
+  // ここで `takeRecruit` だけを理由に通すと、上で弾いた同じ選択肢が
+  // 「見送りより高得点」として選び直され、`tryRecruit` の控除で `budgetExhausted` になる。
+  const allowed = choices
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => !c.outcome.grantRecruit || (takeRecruit && recruitIsSafe(c)));
+  const pool = allowed.length > 0 ? allowed : choices.map((c, i) => ({ c, i }));
+  if (mode !== 'stateAware' || !ctx) return pool[0].i;
+  // 状態依存: 現在いちばん減らしたくない資源を削る選択肢を避ける。
+  let best = pool[0];
+  let bestScore = scoreChoice(scorable(pool[0].c), ctx);
+  for (const cand of pool.slice(1)) {
+    const sc = scoreChoice(scorable(cand.c), ctx);
+    if (sc > bestScore) {
+      best = cand;
+      bestScore = sc;
+    }
+  }
+  return best.i;
+}
+
+/**
+ * `selective` の発動条件。
+ * 介入用の集中力を残し、盤面が切迫していないときだけカードを切る。
+ */
+function shouldPlaySelective(e: RunEngine): boolean {
+  const s = e.snapshot();
+  const sp = s.sprint;
+  if (!sp) return false;
+  const focusRatio = sp.config.focusMax > 0 ? sp.focus / sp.config.focusMax : 0;
+  const reviewLen = sp.tasks.filter((t) => t.lane === 'review').length;
+  const burning = sp.tasks.filter((t) => t.lane === 'rework' && t.incident).length;
+  // 集中力を6割以上残していて、渋滞も炎上も起きていないときだけ投資に回す。
+  return focusRatio >= 0.6 && reviewLen < 6 && burning === 0;
+}
+
+/** 手札発動（単体テストからも呼ぶ）。 */
+export function playHand(
+  e: RunEngine,
+  mode: PolicySpec['cards'],
+  onPlayed?: (focusSpent: number) => void,
+  onBeforePlay?: () => void,
+): void {
+  if (mode === 'none') return;
+  let guard = 0;
+  while (guard < 24 && e.snapshot().phase === 'sprint') {
+    guard += 1;
+    if (mode === 'selective' && !shouldPlaySelective(e)) break;
+    const s = e.snapshot();
+    const hand = s.sprint?.cardPiles.hand ?? [];
+    if (hand.length === 0) break;
+    const order =
+      mode === 'preferCostOpt'
+        ? [...hand].sort((a, b) => {
+            const aOpt = s.deck[a]?.defId === COST_OPT_CARD_ID ? 0 : 1;
+            const bOpt = s.deck[b]?.defId === COST_OPT_CARD_ID ? 0 : 1;
+            return aOpt - bOpt;
+          })
+        : mode === 'preferSecurity'
+          ? [...hand].sort((a, b) => {
+              const aId = s.deck[a]?.defId ?? '';
+              const bId = s.deck[b]?.defId ?? '';
+              const aSec = isSecurityFocusCard(aId) ? 0 : 1;
+              const bSec = isSecurityFocusCard(bId) ? 0 : 1;
+              if (aSec !== bSec) return aSec - bSec;
+              const aAdd = getCard(aId)?.base?.securityAdd ?? 0;
+              const bAdd = getCard(bId)?.base?.securityAdd ?? 0;
+              return bAdd - aAdd;
+            })
+          : mode === 'preferDelivery'
+            ? [...hand]
+                .filter((idx) => (getCard(s.deck[idx]?.defId ?? '')?.base?.codingSpeedMul ?? 1) > 1)
+                .sort((a, b) => {
+                  const aMul = getCard(s.deck[a]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
+                  const bMul = getCard(s.deck[b]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
+                  return bMul - aMul;
+                })
+            : [...hand];
+    if (mode === 'preferDelivery' && order.length === 0) break;
+    let played = false;
+    for (const deckIndex of order) {
+      const focusSpentBefore = e.snapshot().sprint?.metrics.focusSpent ?? 0;
+      onBeforePlay?.();
+      if (e.playCard(deckIndex).ok) {
+        played = true;
+        // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
+        const focusSpentAfter = e.snapshot().sprint?.metrics.focusSpent ?? focusSpentBefore;
+        onPlayed?.(Math.max(0, focusSpentAfter - focusSpentBefore));
+        break;
+      }
+    }
+    if (!played) break;
+  }
+}
+
+function boardCtx(s: RunState): BoardCtx | null {
+  const sp = s.sprint;
+  if (!sp || sp.complete) return null;
+  const burningTasks = sp.tasks.filter((t) => t.lane === 'rework' && t.incident);
+  let minBurnTicksLeft = Number.POSITIVE_INFINITY;
+  for (const t of burningTasks) {
+    const left = t.burnTicksLeft ?? Number.POSITIVE_INFINITY;
+    if (left < minBurnTicksLeft) minBurnTicksLeft = left;
+  }
+  return {
+    reviewLen: sp.tasks.filter((t) => t.lane === 'review').length,
+    burning: burningTasks.length,
+    minBurnTicksLeft,
+    codingLen: sp.tasks.filter((t) => t.lane === 'coding').length,
+    reworkLen: sp.tasks.filter((t) => t.lane === 'rework').length,
+    tick: s.sprintTick,
+  };
+}
+
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
+}
+
+/** 敗北直前の参照に使う組織状態の控え（`RunLog.lostPrevState`）。 */
+function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
+  return {
+    seniorHp: round1(s.org.seniorHp),
+    morale: round1(s.org.morale),
+    techDebt: round1(s.org.techDebt),
+    aiDependency: round1(s.org.aiDependency),
+    budget: round1(s.budget),
+    minTrust: round1(
+      Math.min(
+        s.stakeholderTrust.management,
+        s.stakeholderTrust.customers,
+        s.stakeholderTrust.team,
+      ),
+    ),
+    trustManagement: round1(s.stakeholderTrust.management),
+    trustCustomers: round1(s.stakeholderTrust.customers),
+    trustTeam: round1(s.stakeholderTrust.team),
+    phase: s.phase,
+  };
+}
+
+/** 敗因ごとの危険域観測トラック（和集合＋時系列）。 */
+type DangerTrack = {
+  actions: Set<string>;
+  firstSample: DangerSample;
+  lastSample: DangerSample;
+  lastNonEmpty: DangerSample | null;
+};
+
+/** 集中力・クールダウンを満たす前提で、対象が存在するかを観測する。 */
+function hasTargetOpportunity(
+  id: ActionId,
+  sprint: NonNullable<RunState['sprint']>,
+  org: RunState['org'],
+  tick: number,
+): boolean {
+  const probe = {
+    ...sprint,
+    focus: sprint.config.focusMax,
+    cooldowns: {},
+  };
+  const gate = canApplyAction(id, probe, org, tick);
+  if (gate.ok) return true;
+  return id === 'assignTask' && canApplyAssignTaskWithExplicitTarget(sprint, org, tick);
+}
+
+/** 対象あり区間の開始を記録する（同一状態の連続観測は1区間）。 */
+function observeOpportunityWindows(
+  e: RunEngine,
+  open: Record<string, boolean>,
+  windows: Partial<Record<ActionId, number>>,
+): void {
+  const s = e.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
+  for (const id of ['assignTask', 'firefight', 'interruptReview', 'splitPr'] as const) {
+    const available = hasTargetOpportunity(id, s.sprint, s.org, s.sprintTick);
+    if (available && !open[id]) windows[id] = (windows[id] ?? 0) + 1;
+    open[id] = available;
+  }
+}
+
+/** `PT_CF_POLICIES` を検証して返す。未指定は全方針（`null`）。 */
+export function parseCfPolicies(raw: string | undefined): string[] | null {
+  if (raw == null || raw.trim() === '') return null;
+  const list = raw
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+  if (list.length === 0) throw new Error('PT_CF_POLICIES が空');
+  const unknown = list.filter((p) => !POLICY_DEFS[p]);
+  if (unknown.length > 0) {
+    throw new Error(`PT_CF_POLICIES に未知の方針: ${unknown.join(', ')}`);
+  }
+  const dup = list.filter((x, i) => list.indexOf(x) !== i);
+  if (dup.length > 0) {
+    throw new Error(`PT_CF_POLICIES に重複: ${[...new Set(dup)].join(', ')}`);
+  }
+  return list;
+}
+
+function counterfactualEnabled(policy?: string): boolean {
+  const processLike = (
+    globalThis as typeof globalThis & {
+      process?: { env?: Record<string, string | undefined> };
+    }
+  ).process;
+  if (processLike?.env?.PT_COUNTERFACTUAL !== '1') return false;
+  const allow = parseCfPolicies(processLike.env.PT_CF_POLICIES);
+  if (allow == null) return true;
+  return policy != null && allow.includes(policy);
+}
+
+function rememberCounterfactualFrame(
+  framesByReason: Map<DangerLoseReason, CounterfactualFrameSample[]>,
+  reason: DangerLoseReason,
+  sample: { sprintsPlayed: number; quarter: number; index: number; sig?: string },
+  frame: CounterfactualFrameSample['frame'],
+): void {
+  const list = framesByReason.get(reason) ?? [];
+  const last = list[list.length - 1] as
+    (CounterfactualFrameSample & { lastSig?: string }) | undefined;
+  if (
+    last &&
+    last.sprintsPlayed === sample.sprintsPlayed &&
+    last.quarter === sample.quarter &&
+    last.index === sample.index
+  ) {
+    if (sample.sig && last.lastSig === sample.sig) return;
+    const frames = last.frames ?? [last.frame];
+    frames.push(frame);
+    last.frames = frames;
+    last.lastSig = sample.sig;
+    return;
+  }
+  list.push({
+    ...sample,
+    frame,
+    frames: [frame],
+    lastSig: sample.sig,
+  } as CounterfactualFrameSample & {
+    lastSig?: string;
+  });
+  framesByReason.set(reason, list);
+}
+
+function sampleAvailableInDanger(
+  e: RunEngine,
+  byReason: Map<DangerLoseReason, DangerTrack>,
+  framesByReason?: Map<DangerLoseReason, CounterfactualFrameSample[]>,
+  policy?: string,
+  forceCounterfactual = false,
+): void {
+  const s = e.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
+  const danger = observeDangerZone(e);
+  const dangers = danger.reasons;
+  if (dangers.length === 0) return;
+  const available = listApplicableActions(e);
+  const sample: DangerSample = {
+    sprintsPlayed: s.sprintsPlayed,
+    quarter: s.quarterNumber,
+    index: s.sprintIndexInQuarter,
+    actions: [...available].sort(),
+    signals: {
+      seniorHp: danger.org.seniorHp,
+      morale: danger.org.morale,
+      techDebt: danger.org.techDebt,
+      activeTeamTechDebt: s.org.techDebt,
+      aiDependency: s.org.aiDependency,
+      aiLiteracy: s.org.aiLiteracy,
+      budget: s.budget,
+      budgetAfterNextInfraCharge: danger.budgetAfterNextInfraCharge,
+      strategicSpendExhaustsBudget: danger.strategicSpendExhaustsBudget,
+      reviewQueue: s.sprint.tasks.filter((task) => task.lane === 'review').length,
+      reviewQueuePeak: danger.reviewQueuePeak,
+      consecutiveIncidentSprints: s.totals.consecutiveIncidentSprints ?? 0,
+    },
+  };
+  const sig = [
+    s.sprintTick,
+    s.sprint.focus,
+    s.org.seniorHp,
+    s.org.morale,
+    s.budget,
+    s.sprint.tasks.filter((task) => task.lane === 'review').length,
+    available.join(','),
+  ].join('|');
+  for (const reason of dangers) {
+    let track = byReason.get(reason);
+    if (!track) {
+      // 空集合も「危険域を観測した」印として残す。初回サンプルは常時空集合の起点にも使う。
+      track = {
+        actions: new Set(),
+        firstSample: sample,
+        lastSample: sample,
+        lastNonEmpty: null,
+      };
+      byReason.set(reason, track);
+    }
+    for (const id of available) track.actions.add(id);
+    track.lastSample = sample;
+    if (available.length > 0) track.lastNonEmpty = sample;
+  }
+  if (
+    framesByReason &&
+    (forceCounterfactual || counterfactualEnabled(policy)) &&
+    dangers.length > 0
+  ) {
+    const frame = e.exportCounterfactualFrame();
+    if (frame) {
+      for (const reason of dangers) {
+        rememberCounterfactualFrame(framesByReason, reason, { ...sample, sig }, frame);
+      }
+    }
+  }
+}
+
+function bump(
+  attempts: Record<string, Partial<Record<DispatchReason, number>>>,
+  id: string,
+  reason: DispatchReason,
+): void {
+  const slot = (attempts[id] ??= {});
+  slot[reason] = (slot[reason] ?? 0) + 1;
+}
+
+function intervene(
+  e: RunEngine,
+  spec: PolicySpec,
+  attempts: Record<string, Partial<Record<DispatchReason, number>>>,
+  onSuccess?: () => void,
+  onBeforeDispatch?: () => void,
+): number {
+  const first = boardCtx(e.snapshot());
+  if (!first) return 0;
+  let n = 0;
+  // 固定順だと先頭のアクションが集中力を独占するため、probe では tick ごとに順を回す。
+  const order = spec.rotateActions
+    ? spec.actions.map((_, i) => spec.actions[(i + first.tick) % spec.actions.length])
+    : spec.actions;
+  for (const a of order) {
+    // **各 dispatch の直前に盤面を取り直す。** 同じ tick 内でも先行の介入がレーンを変える。
+    // 例: `firefight` が炎上タスクを Review へ戻すとキューが増え、`interruptReview` が
+    // 抜くとキューが減る。ループ開始時の盤面で `when` を評価すると、増えたのに見送ったり
+    // 減ったのに andon を撃ったりして、方針定義どおりの挙動にならない。
+    const ctx = boardCtx(e.snapshot());
+    if (!ctx) break;
+    if (a.when && !a.when(ctx)) continue;
+    onBeforeDispatch?.();
+    const outcome = e.dispatch(a.id);
+    if (outcome.ok) {
+      bump(attempts, a.id, 'ok');
+      n += 1;
+      // バッチ後一度ではなく、各成功直後に危険域を再観測する（一時的な選択肢の欠落防止）。
+      onSuccess?.();
+    } else {
+      const reason = (outcome.reason ?? 'other') as DispatchReason;
+      bump(attempts, a.id, reason);
+    }
+    if (e.snapshot().phase !== 'sprint') break;
+  }
+  return n;
+}
+
+/**
+ * ベンチにいるメンバーを実働レーンへ配置する。レビュー適性が実装適性以上なら review、
+ * それ以外は coding。
+ *
+ * ベンチに来る経路は2つあり、**どちらも全方針で配置する**。
+ * - 採用（`recruitMember` は採用直後を必ず `bench` に置く）
+ * - 休職からの復帰（`recoverStamina` は `onLeave` を外すだけで `assignment` は `bench` のまま）
+ *
+ * 採用方針でのみ配置すると、復職者を戦力に戻すかどうかが採用の比較へ混入する。
+ */
+function assignBenchMembers(e: RunEngine): void {
+  for (const m of e.snapshot().roster.members) {
+    if (m.assignment !== 'bench' || m.onLeave) continue;
+    e.assignMember(m.id, m.stats.review >= m.stats.implementation ? 'review' : 'coding');
+  }
+}
+
+/**
+ * 稼働中のコーダーが0人にならないようにする。**方針を問わず適用する。**
+ *
+ * `foldFormationEffects()` はコーダー不在で coding slot を0・速度を0.15 へ落とすので、
+ * 健常なレビュー担当が残っているのにほぼ無人のスプリントを始めてしまう。実プレイヤーなら
+ * 編成画面で1人戻せる局面なので、これは方針の違いではなく自動再配置の欠落である。
+ *
+ * **当初 `reviewHeavy` 専用の補正として入れたが、それでは足りなかった。**
+ * `assignBenchMembers` はレビュー適性が実装適性以上のメンバーを review へ置くため、
+ * coding にいた全員が休職すると、どの方針でもコーダーが0人になりうる。
+ * 実測では easy/normal/hard の `noAiCtl`/`pt-4` と normal の `noAi`/`pt-9` で
+ * 実際に `setup` へ到達しており、**RI-77 の AI 統制比較（`noAiCtl`）に混ざっていた**。
+ */
+function ensureAtLeastOneCoder(e: RunEngine): void {
+  const members = e.snapshot().roster.members;
+  if (members.some((m) => m.assignment === 'coding' && !m.onLeave)) return;
+  const candidate = members
+    .filter((m) => !m.onLeave && m.assignment === 'review')
+    // 実装適性が高い方を戻す（レビュー適性の高い担当をレビューに残す）。
+    .sort((a, b) => b.stats.implementation - a.stats.implementation)[0];
+  if (candidate) e.assignMember(candidate.id, 'coding');
+}
+
+/**
+ * ベンチ配置に加えて、**方針固有の AI 配布・編成も適用する**。
+ *
+ * `applySetup` を `setup` フェーズだけで呼ぶと、復職タイミングとずれることがある。
+ * RI-77 以降 `resolveBeat()` の sprint 系は `setup` へ戻るが、予防としてベンチ復帰と
+ * 方針固有の編成・AI をスプリント以外の全フェーズで掛け直す。
+ *
+ * なお `noAiCtl` に AI 利用が残るのは `assignTask` 介入が `defaultAssignee` 経由で
+ * 個別タスクを AI へ回すためである（`org.aiEnabled` は true のまま）。
+ * `aiFullBet` が100%に届かないのも `AI_ADOPTION`（=0.85）の確率抽選のばらつきで、仕様どおり。
+ *
+ * 順序は「ベンチ配置 → 編成 → AI」。`reviewHeavy` は coding のメンバーを見て動かすため
+ * ベンチ配置の後でなければ復職者を拾えず、AI 配布はレーンに依らないので最後でよい。
+ */
+function applyRosterPolicy(e: RunEngine, spec: PolicySpec): void {
+  assignBenchMembers(e);
+  if (spec.formation === 'reviewHeavy') {
+    let coders = 0;
+    for (const m of e.snapshot().roster.members) {
+      if (m.assignment !== 'coding' || m.onLeave) continue;
+      coders += 1;
+      if (coders > 1) e.assignMember(m.id, 'review');
+    }
+  }
+  ensureAtLeastOneCoder(e);
+  if (spec.ai) {
+    for (const m of e.snapshot().roster.members) e.setMemberAi(m.id, spec.ai === 'all');
+  }
+}
+
+/**
+ * この盤面で採用するか。`selective` は「欠員があり、かつ**採用後も**予算が残る」ときだけ採る。
+ *
+ * 欠員の定義: 休職者がいる、または実働（bench でも onLeave でもない）が2名以下。
+ * 予算条件は**採用費を引いた残額**で判定する。`tryRecruit` はこの後さらに `RECRUIT_COST` を
+ * 引くので、引く前の額で見ると「採用後に◯◯残る」という条件にならない。
+ *
+ * 残額の下限は `RECRUIT_COST` 1回分（=25）。当初は2回分にしていたが、それだと
+ * 採用時点で予算75が要る一方、**実測の予算は p50=45 / p90=60 / 最大68 で75へ到達しない**。
+ * 条件が一度も成立せず、この方針が `skilledNoHire` と完全に同一のランになっていた
+ * （40ラン全部が一致）。到達可能な水準へ下げた。下限を置く理由自体は変わらず、
+ * 採用で予算を使い切ると直後の四半期レビューで `budget<=5` の危機条件へ落ちるため。
+ */
+function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
+  if (spec.recruit === 'skip') return false;
+  // **採用後に予算が残ることまで見る。** `tryRecruit` は `budget >= RECRUIT_COST` なら通し、
+  // 差し引いた後で `applyImmediateLose()` を呼ぶ（`src/sim/run/engine.ts`）。予算がちょうど
+  // `RECRUIT_COST` だと残高0＝`budget <= BUDGET_EXHAUSTED_CAP` で `budgetExhausted` になる。
+  //
+  // **介入（`dispatch`）と違い、採用は本当に即時敗北を判定する。** 実測でも
+  // `budgetExhausted` 14件中6件が予算ちょうど25からの採用で、いずれも shop / rest / recruit
+  // フェーズだった。ビートの `grantRecruit` 経路は既に採用費を引いた額で評価しているので、
+  // ここを見ないと**同じ採用でも経路によって自滅したりしなかったり**する。
+  const roomAndCash = s.roster.members.length < ROSTER_CAP && s.budget - RECRUIT_COST > 0;
+  if (!roomAndCash) return false;
+  if (spec.recruit === 'hire') return true;
+  const onLeave = s.roster.members.some((m) => m.onLeave);
+  // 復職直後は `onLeave=false` でも `assignment` は `bench` のままで、実働へ戻るのは次の
+  // `setup` である。`bench` を除いて数えると、その間のビート・ショップ・休息・採用フェーズで
+  // 復職者が欠員に見え、不要な採用を打ってしまう。ハーネスは全方針で健常なベンチを
+  // 次の `setup` に必ず配置するので、**休職していないメンバーは戦力として数える**。
+  const working = s.roster.members.filter((m) => !m.onLeave).length;
+  return (onLeave || working <= 2) && s.budget - RECRUIT_COST >= RECRUIT_COST;
+}
+
+/**
+ * 休息フェーズで採用しないときの選択。
+ *
+ * `stateAware` の閾値（負債50以上で返済）は決めた値。敗北条件は `techDebt >= 90`
+ * （`src/sim/outcome.ts`）で、`REST_REPAY` 1回では 90 から安全域まで戻らないため、
+ * 危険域へ入る前に返すという想定で中間に置いた。
+ * `upgrade` は強化対象があるときだけ成立するので、デッキが空なら回復へ落とす。
+ */
+const REST_REPAY_DEBT_THRESHOLD = 50;
+function restChoice(s: RunState, spec: PolicySpec): 'heal' | 'repay' | 'upgrade' {
+  return restChoiceFor(spec.rest, s.org.techDebt, s.deck.length > 0);
+}
+
+/**
+ * 休息フェーズで選ぶ内容を、方針と負債から決める。
+ *
+ * `restChoice` と**同じ判断をビート評価からも参照する**ために切り出してある。
+ * 評価側が `leadsTo: 'rest'` へ一律の回復価値を与えていると、カード強化しかしない方針にも
+ * 回復を期待してしまい、実際の挙動と乖離する。
+ */
+function restChoiceFor(
+  rest: PolicySpec['rest'],
+  techDebt: number,
+  hasDeck = true,
+): 'heal' | 'repay' | 'upgrade' {
+  if (rest === 'upgrade') return hasDeck ? 'upgrade' : 'heal';
+  if (rest === 'repay') return 'repay';
+  if (rest === 'stateAware' && techDebt >= REST_REPAY_DEBT_THRESHOLD) return 'repay';
+  return 'heal';
+}
+
+/**
+ * 強化するデッキ位置。**最もレベルの低いカード**を選ぶ（同率は先頭）。
+ *
+ * `deckIndex` を 0 固定にすると、ドラフトやショップで後から入ったカードが一度も強化候補に
+ * ならず、同じ1枚だけが繰り返しレベルアップする。実画面では任意の位置を選べるので、
+ * 固定のままでは「休息でカードを強化しても寄与しない」の根拠にならない。
+ * どのカードを伸ばすかの選好（効果種別など）までは見ておらず、これも決めた基準である。
+ */
+function restUpgradeIndex(s: RunState): number {
+  let best = 0;
+  for (let i = 1; i < s.deck.length; i += 1) {
+    if (s.deck[i].level < s.deck[best].level) best = i;
+  }
+  return best;
+}
+
+/**
+ * 四半期レビューの危機条件（`budget<=5`）に対して残す安全余裕。
+ * 採用しない方針はこれだけ残せばよく、`RECRUIT_COST`（=25）を残すのは過剰に保守的。
+ */
+const SHOP_BUDGET_FLOOR = 10;
+
+/**
+ * ショップカードの次スプリント出荷寄与スコア（費用対効果）。
+ * `codingSpeedMul` の加速を主、手戻り抑制を副として cost で割る（RI-78）。
+ */
+export function shopCardDeliveryScore(defId: string, cost: number): number {
+  const base = getCard(defId)?.base ?? {};
+  const codingDelta = (base.codingSpeedMul ?? 1) - 1;
+  const reworkHelp = -(base.reworkRateAdd ?? 0);
+  return (codingDelta * 100 + reworkHelp * 10) / Math.max(1, cost);
+}
+
+/**
+ * ショップレリックの次スプリント出荷寄与スコア（費用対効果）。
+ * コーディング加速・手戻り減・レビュー容量を加点し、士気／事故専用は低得点になる（RI-78）。
+ */
+export function shopRelicDeliveryScore(id: string, cost: number): number {
+  const effects = getRelic(id)?.effects ?? {};
+  const codingDelta = (effects.codingSpeedMul ?? 1) - 1;
+  const reworkHelp = -(effects.reworkRateAdd ?? 0);
+  const reviewCap = (effects.reviewCapacityMul ?? 1) - 1;
+  const reviewEff = (effects.reviewEfficiencyMul ?? 1) - 1;
+  return (
+    (codingDelta * 100 + reworkHelp * 40 + reviewCap * 30 + reviewEff * 15) / Math.max(1, cost)
+  );
+}
+
+/**
+ * ショップでカード・レリックを買う。
+ *
+ * - `shop: 'buy'`（RI-78）: レリック優先／最安順ではなく、次スプリント出荷寄与スコアが高い順に買う。
+ * - `buyCostOpt` / `buyAvoidCostOpt`（RI-88）: コスト最適化の優先／回避を維持する。
+ * - `buySecurity` / `buyAvoidSecurity`（RI-87）: セキュリティ投資の優先／回避を維持する。
+ *
+ * 残す予算は**採用方針で変える**。採用する方針は次の採用機会のために `RECRUIT_COST` を残すが、
+ * 採用しない方針（`skilledShopBuy` は `recruit: 'skip'`）にその予約は要らない。
+ * 一律に25を残すと、たとえば予算30で8のカードが出ても買えず（買っても22残り、
+ * 危機条件の5には十分余裕がある）、「ショップへ投資する」条件が実際には
+ * 多くの機会を見送る保守方針になってしまう。
+ */
+/** ショップ購入方針の適用（単体テストからも呼ぶ）。 */
+export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
+  const reserve = spec.recruit === 'skip' ? SHOP_BUDGET_FLOOR : RECRUIT_COST;
+  const avoidCostOpt = spec.shop === 'buyAvoidCostOpt';
+  const preferCostOpt = spec.shop === 'buyCostOpt';
+  const avoidSecurity = spec.shop === 'buyAvoidSecurity';
+  const preferSecurity = spec.shop === 'buySecurity';
+  const deliveryValueBuy = spec.shop === 'buy';
+
+  const tryBuyRelic = (onlyPreferred: boolean): void => {
+    const s = e.snapshot();
+    const relic = s.shop?.relic;
+    if (!relic || relic.bought) return;
+    if (s.budget - relic.cost < reserve) return;
+    if (avoidCostOpt && relic.id === COST_OPT_RELIC_ID) return;
+    if (avoidSecurity && isSecurityFocusRelic(relic.id)) return;
+    if (preferCostOpt) {
+      if (onlyPreferred && relic.id !== COST_OPT_RELIC_ID) return;
+      if (!onlyPreferred && relic.id !== COST_OPT_RELIC_ID) return;
+    }
+    if (preferSecurity) {
+      if (onlyPreferred && !isSecurityFocusRelic(relic.id)) return;
+      if (!onlyPreferred && !isSecurityFocusRelic(relic.id)) return;
+    }
+    e.buyShopRelic();
+  };
+
+  // RI-78: 出荷加速カードだけを候補にし、正スコアの最良1点だけ買う。
+  // 購入カードは次スプ手札へ優先配布。買い漁りは購入費と集中力競合で純出荷を落とす。
+  if (deliveryValueBuy) {
+    const s = e.snapshot();
+    if (s.phase === 'shop') {
+      type Candidate =
+        { kind: 'card'; defId: string; score: number } | { kind: 'relic'; score: number };
+      const candidates: Candidate[] = [];
+      for (const c of s.shop?.cards ?? []) {
+        if (c.bought || s.budget - c.cost < reserve) continue;
+        if ((getCard(c.defId)?.base?.codingSpeedMul ?? 1) <= 1) continue;
+        const score = shopCardDeliveryScore(c.defId, c.cost);
+        if (score <= 0) continue;
+        candidates.push({ kind: 'card', defId: c.defId, score });
+      }
+      const relic = s.shop?.relic;
+      if (
+        relic &&
+        !relic.bought &&
+        s.budget - relic.cost >= reserve &&
+        (getRelic(relic.id)?.effects?.codingSpeedMul ?? 1) > 1
+      ) {
+        const score = shopRelicDeliveryScore(relic.id, relic.cost);
+        if (score > 0) candidates.push({ kind: 'relic', score });
+      }
+      candidates.sort((a, b) => b.score - a.score);
+      const best = candidates[0];
+      if (best?.kind === 'relic') e.buyShopRelic();
+      else if (best?.kind === 'card') e.buyShopCard(best.defId);
+    }
+    return;
+  }
+
+  // preferCostOpt / preferSecurity では無関係レリックをカードより先に買わない。
+  if (preferCostOpt || preferSecurity) {
+    tryBuyRelic(true);
+  } else {
+    tryBuyRelic(false);
+  }
+
+  // 陳列は購入で `bought` が立つので、毎回取り直して安い順に買えるだけ買う。
+  for (;;) {
+    const s = e.snapshot();
+    // カード購入は `applyImmediateLose` を呼ぶ。敗北したらフェーズが外れるので抜ける。
+    if (s.phase !== 'shop') break;
+    const affordable = (s.shop?.cards ?? [])
+      .filter(
+        (c) =>
+          !c.bought &&
+          s.budget - c.cost >= reserve &&
+          !(avoidCostOpt && c.defId === COST_OPT_CARD_ID) &&
+          !(avoidSecurity && isSecurityFocusCard(c.defId)),
+      )
+      .sort((a, b) => {
+        if (preferCostOpt) {
+          const aOpt = a.defId === COST_OPT_CARD_ID ? 0 : 1;
+          const bOpt = b.defId === COST_OPT_CARD_ID ? 0 : 1;
+          if (aOpt !== bOpt) return aOpt - bOpt;
+        }
+        if (preferSecurity) {
+          const aSec = isSecurityFocusCard(a.defId) ? 0 : 1;
+          const bSec = isSecurityFocusCard(b.defId) ? 0 : 1;
+          if (aSec !== bSec) return aSec - bSec;
+        }
+        return a.cost - b.cost;
+      });
+    if (affordable.length === 0) break;
+    e.buyShopCard(affordable[0].defId);
+    // 予算不足などで `bought` が立たなければ無限ループになるため、変化が無ければ抜ける。
+    if (!e.snapshot().shop?.cards.find((c) => c.defId === affordable[0].defId)?.bought) break;
+  }
+
+  // カード購入後の余りで無関係レリックを検討する（prefer 時）。
+  if (preferCostOpt || preferSecurity) {
+    const s = e.snapshot();
+    const relic = s.shop?.relic;
+    const isPreferred = preferCostOpt
+      ? relic?.id === COST_OPT_RELIC_ID
+      : relic
+        ? isSecurityFocusRelic(relic.id)
+        : false;
+    if (relic && !relic.bought && !isPreferred && s.budget - relic.cost >= reserve) {
+      e.buyShopRelic();
+    }
+  }
+}
+
+/**
+ * `setup` フェーズの編成。中身は `applyRosterPolicy` と同じで、
+ * 「setup でしか掛からない方針」を作らないために一本化してある。
+ */
+function applySetup(e: RunEngine, spec: PolicySpec): void {
+  applyRosterPolicy(e, spec);
+}
+
+/**
+ * `missed_crisis` を発火させうる条件のうち、実際に成立していたものを列挙する。
+ * `evaluateQuarterOutcome` / `buildQuarterReview`（`src/sim/run/quarterReview.ts`）と対応させる。
+ */
+function crisisTriggers(minTrust: number, budget: number, missedCount: number): string[] {
+  const hit: string[] = [];
+  if (minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) {
+    hit.push(`trust<=${OUTCOME_BALANCE.quarterCrisisTrustMax.value}`);
+  }
+  if (budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value) {
+    hit.push(`budget<=${OUTCOME_BALANCE.quarterCrisisBudgetMax.value}`);
+  }
+  if (missedCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) {
+    hit.push(`missed>=${OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value}`);
+  }
+  return hit;
+}
+
+/**
+ * `shutdown` を発火させうる条件のうち、実際に成立していたものを列挙する。
+ * RI-79 以降は `loseReasonForOutcome` が信頼/予算/シニアへ分解するが、
+ * 発火条件の生データとしても両方を残す。
+ *
+ * エンジンは `companyOrgFromTeams(this.teams, this.org)` の全社集約値で判定するが、
+ * ここで使う `morale` / `seniorHp` は再現できている。`companyOrgFromTeams` はこの2つだけ
+ * 平均を取らず `fallback`（＝選択中チームの `this.org`）をそのまま返す仕様であり
+ * （`src/sim/orgscale/teamState.ts`。粗粒度チームの消耗で Q1 勝率が潰れるのを避けるため）、
+ * `snapshot().org` は同じ `this.org` の複製だからである。`trust` と `budget` はラン単位で
+ * チーム別の値を持たない。したがって shutdown の3条件はすべて判定時と同じ入力で再現される。
+ *
+ * 平均を取る `aiDependency` などは選択中チームの値と乖離しうるが、shutdown の判定には
+ * 使われないため、ここには影響しない。
+ */
+function shutdownTriggers(
+  minTrust: number,
+  budget: number,
+  morale: number,
+  seniorHp: number,
+  missedCount: number,
+): string[] {
+  const hit: string[] = [];
+  if (minTrust <= OUTCOME_BALANCE.quarterShutdownTrustMax.value) {
+    hit.push(`trust<=${OUTCOME_BALANCE.quarterShutdownTrustMax.value}`);
+  }
+  if (
+    budget <= OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
+    morale <= OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value
+  ) {
+    hit.push(
+      `budget<=${OUTCOME_BALANCE.quarterShutdownBudgetMax.value}&morale<=${OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value}`,
+    );
+  }
+  if (
+    seniorHp <= OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value &&
+    missedCount >= OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value
+  ) {
+    hit.push(
+      `seniorHp<=${OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value}&missed>=${OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value}`,
+    );
+  }
+  return hit;
+}
+
+/** `runOnce` の任意オプション。ユニットテストでは反実仮想の分岐を絞るために使う。 */
+export interface RunOnceOptions {
+  /** 省略時はプレイテスト本番と同じ分岐上限（96 / 32 / 192）。 */
+  counterfactual?: CounterfactualEvaluateOptions;
+  /** 環境変数に依存せず、代表シナリオの限定反実仮想を有効にする。 */
+  forceCounterfactual?: boolean;
+  /** 明示した限定介入の分岐結果を RunLog へ残す。既定コホートでは false。 */
+  recordCounterfactualBranches?: boolean;
+  /** RI-139 では探索せず、最初の危険域または全指定手を打てる最初のフレームを固定観測点にする。 */
+  counterfactualFrame?: 'first-danger' | 'first-all-actions';
+}
+
+/** 1ランを最後まで自動プレイし、計測ログを返す。 */
+export function runOnce(
+  seed: string,
+  difficulty: string,
+  policy: string,
+  meta: MetaProfile = 'fresh',
+  options: RunOnceOptions = {},
+): RunLog {
+  const spec = POLICY_DEFS[policy];
+  if (!spec) throw new Error(`unknown policy: ${policy}`);
+  const unlocked = unlockedFor(meta);
+  const e = new RunEngine({
+    seed,
+    difficulty: difficulty as RunState['difficulty'],
+    allowedCards: unlocked.cards,
+    allowedRelics: unlocked.relics,
+    trials: spec.trials ?? [],
+  });
+  e.startRun();
+  const started = e.snapshot();
+  const startRoster = started.roster.members.map((m) => ({
+    id: m.id,
+    name: m.name,
+    rank: m.rank,
+    assignment: m.assignment,
+    stats: { ...m.stats },
+    traits: [...m.traits],
+  }));
+  const difficultySeniorHpCostMul =
+    getDifficulty(started.difficulty).globalEffects?.seniorHpCostMul ?? 1;
+  const sprints: SprintLog[] = [];
+  const quarters: QuarterLog[] = [];
+  const beatTriggers: RunLog['beatTriggers'] = [];
+  const investments: InvestmentLog[] = [];
+  const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
+  /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
+  const availableInDangerByReason = new Map<DangerLoseReason, DangerTrack>();
+  /** 危険種別ごとの last-non-empty 反実仮想フレーム列（RI-101。オプトイン時のみ更新）。 */
+  const counterfactualFramesByReason = new Map<DangerLoseReason, CounterfactualFrameSample[]>();
+  /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
+  let lostPhase: string | undefined;
+  /**
+   * 敗北したスプリントが結果を残したか。
+   *
+   * `sprint` フェーズでの敗北には2通りある。スプリントを完走して結果が敗北条件を満たした場合と、
+   * カード発動（`playCard` は `applyImmediateLose` を呼ぶ）などで結果を残さずスプリント中に
+   * 終わる場合である。ログは `sprintsPlayed` が増えたときだけ push するので、後者では
+   * `sprints` の末尾が敗北スプリントではなく**最後に完了したスプリント**になる。
+   * 直前状態をどこから取るかが変わるため区別して記録する。
+   */
+  let lostSprintCompleted: boolean | undefined;
+  /** 直近に解決したビート（敗北がビートで確定したときに残す）。 */
+  let lastBeat: { eventId: string; kind: string; choiceIndex?: number } | undefined;
+  let lostBeat: typeof lastBeat;
+  /** 敗北を確定させた処理の直前状態。スプリント内はカード・介入・tick単位で控える。 */
+  let lostPrevState: RunLog['lostPrevState'];
+  let sprintLostPrevState: RunLog['lostPrevState'];
+  let guard = 0;
+  let s = e.snapshot();
+  while (s.status === 'playing' && guard < 60_000) {
+    guard += 1;
+    s = e.snapshot();
+    const beforeAction = orgSnapshot(s);
+    const loggedBefore = sprints.length;
+    // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻し、方針固有の編成も掛け直す。
+    // RI-77 以降ビート後は setup を通るが、shop/rest 等の途中フェーズでも方針を維持する。
+    // `assignMember` は `sprint` フェーズでは何もしないので、それ以外の全フェーズで呼ぶ。
+    if (s.phase !== 'sprint') applyRosterPolicy(e, spec);
+    switch (s.phase) {
+      case 'setup':
+        applySetup(e, spec);
+        e.beginSetupSprint();
+        break;
+      case 'sprint': {
+        let beforeSprintMutation = beforeAction;
+        const markBeforeSprintMutation = (): void => {
+          beforeSprintMutation = orgSnapshot(e.snapshot());
+        };
+        const kind = s.currentSprintKind ?? 'normal';
+        const quarter = s.quarterNumber;
+        const index = s.sprintIndexInQuarter;
+        const focusMax = s.sprint?.config.focusMax ?? 0;
+        const codingSlotAvailable = s.sprint
+          ? s.sprint.tasks.filter((task) => task.lane === 'coding').length <
+            s.sprint.config.codingSlots
+          : false;
+        const before = s.sprintsPlayed;
+        const attempts: Record<string, Partial<Record<DispatchReason, number>>> = {};
+        const opportunityOpen: Record<string, boolean> = {};
+        const opportunityWindows: Partial<Record<ActionId, number>> = {};
+        const initialOpportunity: Partial<Record<ActionId, boolean>> = s.sprint
+          ? {
+              assignTask: hasTargetOpportunity('assignTask', s.sprint, s.org, s.sprintTick),
+              firefight: hasTargetOpportunity('firefight', s.sprint, s.org, s.sprintTick),
+              interruptReview: hasTargetOpportunity(
+                'interruptReview',
+                s.sprint,
+                s.org,
+                s.sprintTick,
+              ),
+              splitPr: hasTargetOpportunity('splitPr', s.sprint, s.org, s.sprintTick),
+            }
+          : {};
+        let interventions = 0;
+        let cardsPlayed = 0;
+        let cardFocusSpent = 0;
+        const sampleDanger = (): void => {
+          observeOpportunityWindows(e, opportunityOpen, opportunityWindows);
+          sampleAvailableInDanger(
+            e,
+            availableInDangerByReason,
+            counterfactualFramesByReason,
+            policy,
+            options.forceCounterfactual,
+          );
+        };
+        const onCardPlayed = (focusSpent: number): void => {
+          cardsPlayed += 1;
+          cardFocusSpent += focusSpent;
+          sampleDanger();
+        };
+        sampleDanger();
+        playHand(e, spec.cards, onCardPlayed, markBeforeSprintMutation);
+        let inner = 0;
+        while (e.snapshot().phase === 'sprint' && inner < 20_000) {
+          inner += 1;
+          sampleDanger();
+          const n = intervene(e, spec, attempts, sampleDanger, markBeforeSprintMutation);
+          interventions += n;
+          if (e.snapshot().phase !== 'sprint') break;
+          // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
+          if (spec.cards === 'selective') {
+            playHand(e, 'selective', onCardPlayed, markBeforeSprintMutation);
+          }
+          if (e.snapshot().phase !== 'sprint') break;
+          // stepMs を固定 tick に分割し、各 tick 後に危険域を観測（tick 間の一時的な手を拾う）。
+          const ticks = Math.max(1, Math.floor(spec.stepMs / MS_PER_TICK));
+          for (let t = 0; t < ticks; t += 1) {
+            markBeforeSprintMutation();
+            e.step(MS_PER_TICK);
+            if (e.snapshot().phase !== 'sprint') break;
+            sampleDanger();
+          }
+        }
+        const after = e.snapshot();
+        if (after.status !== 'playing') sprintLostPrevState = beforeSprintMutation;
+        const completed = after.sprintsPlayed > before;
+        // `playCard` やスプリント開始時の予算枯渇は、結果を確定せず phase=lost へ遷移する。
+        // その場合でも盤面に積み上がったカード発動・試行・対象あり区間と途中 KPI を保存し、
+        // 後段の共通機会集計から生存者だけが残らないようにする。
+        const partialResult =
+          !completed && after.sprint ? summarizeSprint(after.sprint, after.org) : null;
+        if (completed || partialResult) {
+          const r = completed ? after.lastResult : partialResult;
+          const metrics = after.sprint?.metrics;
+          const interventionFocusSpent = Math.max(0, (metrics?.focusSpent ?? 0) - cardFocusSpent);
+          sprints.push({
+            quarter,
+            index,
+            kind,
+            ticks: after.sprintTick,
+            completed,
+            focusMax,
+            codingSlotAvailable,
+            focusRemaining: r?.focusRemaining ?? 0,
+            interventions,
+            cardsPlayed,
+            cardFocusSpent,
+            interventionFocusSpent,
+            attempts,
+            opportunityWindows,
+            initialOpportunity,
+            delivered: r?.delivered ?? metrics?.delivered ?? 0,
+            reviewQueueMax: r?.reviewQueueMax ?? metrics?.reviewQueueMax ?? 0,
+            incidents: r?.incidents ?? metrics?.incidentCount ?? 0,
+            contained: r?.contained ?? metrics?.contained ?? 0,
+            spread: r?.spread ?? metrics?.spread ?? 0,
+            rework: r?.rework ?? metrics?.reworkCount ?? 0,
+            aiPct: Math.round(r?.aiAssistedPct ?? 0),
+            grade: r?.grade ?? '',
+            hpDelta:
+              Math.round(
+                (r?.seniorHpDelta ?? (metrics ? after.org.seniorHp - metrics.seniorHpStart : 0)) *
+                  10,
+              ) / 10,
+            seniorHpAfter: Math.round(after.org.seniorHp * 10) / 10,
+            moraleAfter: Math.round(after.org.morale * 10) / 10,
+            techDebtAfter: Math.round(after.org.techDebt * 10) / 10,
+            aiDepAfter: Math.round(after.org.aiDependency * 10) / 10,
+            budgetAfter: Math.round(after.budget * 10) / 10,
+            done: r?.done ?? metrics?.doneCount ?? 0,
+            reviewers: after.roster.members
+              .filter((m) => m.assignment === 'review' && !m.onLeave)
+              .map((m) => ({ id: m.id, name: m.name, rank: m.rank })),
+            seniorHpCostMul: after.sprint?.cardEffects.seniorHpCostMul ?? 0,
+            reviewHpCostMul: after.sprint?.cardEffects.reviewHpCostMul ?? 0,
+            reviewCapacityMul: after.sprint?.cardEffects.reviewCapacityMul ?? 0,
+          });
+        }
+        break;
+      }
+      case 'result':
+        e.acknowledgeResult();
+        break;
+      case 'draft':
+        if (s.draft && s.draft.length > 0) e.chooseCard(pickDraft(s.draft, spec.draft));
+        else e.skipDraft();
+        break;
+      case 'evolution': {
+        // 使えるポイントは使い切る（プレイヤーは持ち越さない）。順序は方針で変える。
+        if (spec.evolve !== 'none') {
+          const snap = e.snapshot();
+          const recentPeak = sprints.length > 0 ? sprints[sprints.length - 1]!.reviewQueueMax : 0;
+          // 固定順方針は一度決めた順を維持。stateAware は解放のたびに盤面と既解放を見直す。
+          const fixedOrder =
+            spec.evolve === 'stateAware'
+              ? null
+              : evolutionOrder(spec.evolve, {
+                  org: snap.org,
+                  totals: snap.totals,
+                  reviewQueuePeak: recentPeak,
+                  unlocked: Object.keys(snap.evolution.unlocked),
+                });
+          let spent = 0;
+          const unlockedThisPhase: string[] = [];
+          // 既定はポイント使い切り。`maxEvolutionUnlocksPerPhase` がある方針だけ上限で止める。
+          const maxUnlocksThisPhase = spec.maxEvolutionUnlocksPerPhase ?? 16;
+          while (
+            e.snapshot().evolution.points > 0 &&
+            spent < 16 &&
+            unlockedThisPhase.length < maxUnlocksThisPhase
+          ) {
+            const beforeSnap = e.snapshot();
+            const before = beforeSnap.evolution.points;
+            const beforeIds = new Set(Object.keys(beforeSnap.evolution.unlocked));
+            const order =
+              fixedOrder ??
+              evolutionOrder('stateAware', {
+                org: beforeSnap.org,
+                totals: beforeSnap.totals,
+                reviewQueuePeak: recentPeak,
+                unlocked: Object.keys(beforeSnap.evolution.unlocked),
+                unlockedThisPhase,
+              });
+            for (const id of order) {
+              // 先端予約ガードは stateAware のみ。固定順方針は従来どおり3段まで進める。
+              if (spec.evolve === 'stateAware') {
+                const branch = id.split('-')[0] ?? '';
+                if (unlockedThisPhase.filter((x) => x.startsWith(`${branch}-`)).length >= 2) {
+                  continue;
+                }
+              }
+              e.unlockEvolution(id);
+              if (e.snapshot().evolution.points < before) break;
+            }
+            const after = e.snapshot();
+            if (after.evolution.points >= before) break;
+            // どのノードをいつ解放したかを残す（F-11 はタイミングが判定対象）。
+            for (const id of Object.keys(after.evolution.unlocked)) {
+              if (beforeIds.has(id)) continue;
+              unlockedThisPhase.push(id);
+              evolutionUnlocks.push({
+                id,
+                quarter: after.quarterNumber,
+                sprintIndex: after.sprintIndexInQuarter,
+              });
+            }
+            spent += 1;
+          }
+        }
+        e.finishEvolution();
+        break;
+      }
+      case 'beat': {
+        if (!s.beat) {
+          guard = 60_000;
+          break;
+        }
+        const event = getEvent(s.beat.eventId);
+        if (event) {
+          const signals = eventSignals(s.org);
+          beatTriggers.push({
+            eventId: s.beat.eventId,
+            kind: s.beat.kind,
+            minSignalFactors: eventMinSignalFactors(event, signals).map(
+              ({ signal, threshold, actual }) => ({ signal, threshold, actual }),
+            ),
+          });
+        }
+        const choice = autoplayBeatChoiceIndex(
+          s.beat.eventId,
+          s.beat.kind,
+          wantsRecruit(s, spec),
+          spec.beat,
+          {
+            org: s.org,
+            budget: s.budget,
+            trust: s.stakeholderTrust,
+            moraleDamageMul: foldPassives(s.relics).moraleDamageMul,
+            rest: spec.rest,
+            roster: s.roster,
+            relics: s.relics,
+            relicSlots: foldPassives(s.relics).relicSlots,
+            restHealBonus: foldPassives(s.relics).restHealBonus,
+            difficulty: s.difficulty,
+          },
+        );
+        lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };
+        e.resolveBeat(choice);
+        break;
+      }
+      case 'shop': {
+        const nextIndex = s.sprintIndexInQuarter + 1;
+        const budgetBeforeShop = s.budget;
+        const beforeShop = s.shop;
+        const beforeCards = new Set(
+          (beforeShop?.cards ?? []).filter((card) => card.bought).map((card) => card.defId),
+        );
+        const beforeRelicBought = beforeShop?.relic?.bought ?? false;
+        // 採用方針は専用フェーズだけでなくショップの採用枠にも適用する。
+        // 適用しないと「採用あり」群に採用機会を見送ったランが混ざる。
+        if (s.shop?.recruit && !s.shop.recruit.bought && wantsRecruit(s, spec)) {
+          e.buyShopRecruit();
+        }
+        // カード・レリックはスプリント間投資（F-2）の一部。買う方針だけ買う。
+        if (
+          spec.shop === 'buy' ||
+          spec.shop === 'buyCostOpt' ||
+          spec.shop === 'buyAvoidCostOpt' ||
+          spec.shop === 'buySecurity' ||
+          spec.shop === 'buyAvoidSecurity'
+        ) {
+          buyShopItems(e, spec);
+        }
+        const afterShopState = e.snapshot();
+        const afterShop = afterShopState.shop;
+        investments.push({
+          quarter: s.quarterNumber,
+          index: nextIndex,
+          kind: 'shop',
+          shopCardsBought: (afterShop?.cards ?? []).filter(
+            (card) => card.bought && !beforeCards.has(card.defId),
+          ).length,
+          shopRelicBought: Boolean(afterShop?.relic?.bought && !beforeRelicBought),
+          budgetBefore: Math.round(budgetBeforeShop * 10) / 10,
+          budgetAfter: Math.round(afterShopState.budget * 10) / 10,
+          purchaseCost: Math.round(Math.max(0, budgetBeforeShop - afterShopState.budget) * 10) / 10,
+        });
+        e.leaveShop();
+        break;
+      }
+      case 'rest': {
+        const nextIndex = s.sprintIndexInQuarter + 1;
+        // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
+        // ただし満員・予算不足では実画面のボタンが無効なので、他の選択へフォールバックする。
+        const choice = wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec);
+        investments.push({ quarter: s.quarterNumber, index: nextIndex, kind: 'rest', choice });
+        e.restChoose(choice, restUpgradeIndex(s));
+        break;
+      }
+      case 'recruit':
+        e.recruitChoose(wantsRecruit(s, spec) ? 'hire' : 'skip');
+        break;
+      case 'quarterReview': {
+        const qr = s.quarterReview;
+        if (qr) {
+          const minTrust = Math.min(qr.trust.management, qr.trust.customers, qr.trust.team);
+          const missedCount = qr.progress.filter((p) => p.status === 'missed').length;
+          const log: QuarterLog = {
+            quarter: s.quarterNumber,
+            outcome: qr.outcome,
+            bossCleared: qr.bossCleared,
+            trustManagement: Math.round(qr.trust.management),
+            trustCustomers: Math.round(qr.trust.customers),
+            trustTeam: Math.round(qr.trust.team),
+            minTrust: Math.round(minTrust),
+            budget: Math.round(s.budget),
+            missedCount,
+            crisisTriggers: crisisTriggers(minTrust, s.budget, missedCount),
+            shutdownTriggers: shutdownTriggers(
+              minTrust,
+              s.budget,
+              s.org.morale,
+              s.org.seniorHp,
+              missedCount,
+            ),
+            seniorHp: Math.round(s.org.seniorHp),
+            morale: Math.round(s.org.morale),
+          };
+          if (qr.outcome === 'missed_adjustable') {
+            const want = spec.goalAdjustment;
+            const pick =
+              want && qr.availableAdjustments.includes(want)
+                ? want
+                : (qr.availableAdjustments[0] ?? 'cut_scope');
+            log.chosenAdjustment = pick;
+            quarters.push(log);
+            e.chooseGoalAdjustment(pick);
+            break;
+          }
+          quarters.push(log);
+        }
+        e.acknowledgeQuarterReview();
+        break;
+      }
+      default:
+        guard = 60_000;
+        break;
+    }
+    const next = e.snapshot();
+    if (next.status !== 'playing' && lostPhase === undefined) {
+      lostPhase = s.phase;
+      lostPrevState = s.phase === 'sprint' ? (sprintLostPrevState ?? beforeAction) : beforeAction;
+      if (s.phase === 'beat') lostBeat = lastBeat;
+      // 終端計測を残すためにログが増えていても、`completed` が false なら
+      // スプリント完走とは数えない（カード発動などで途中敗北した行が該当する）。
+      if (s.phase === 'sprint') {
+        lostSprintCompleted = sprints.slice(loggedBefore).some((sprint) => sprint.completed);
+      }
+    }
+    s = next;
+  }
+  const f = e.snapshot();
+  return {
+    seed,
+    difficulty,
+    policy,
+    meta,
+    evolutionUnlocks,
+    beatTriggers,
+    ...(f.status === 'lost' ? { lostPhase } : {}),
+    ...(f.status === 'lost' && lostBeat ? { lostBeat } : {}),
+    ...(f.status === 'lost' && lostSprintCompleted !== undefined ? { lostSprintCompleted } : {}),
+    ...(f.status === 'lost' && lostPrevState ? { lostPrevState } : {}),
+    status: f.status,
+    startRoster,
+    difficultySeniorHpCostMul,
+    winType: f.winType,
+    loseReason: f.loseReason,
+    quarterNumber: f.quarterNumber,
+    sprintsPlayed: f.sprintsPlayed,
+    diagnosis: f.diagnosis,
+    sprints,
+    quarters,
+    investments,
+    ...(f.loseReason && availableInDangerByReason.has(f.loseReason as DangerLoseReason)
+      ? (() => {
+          const track = availableInDangerByReason.get(f.loseReason as DangerLoseReason)!;
+          return {
+            availableActionsInDanger: [...track.actions].sort(),
+            availableActionsInDangerFirstSample: track.firstSample,
+            availableActionsInDangerLastSample: track.lastSample,
+            ...(track.lastNonEmpty
+              ? { availableActionsInDangerLastNonEmpty: track.lastNonEmpty }
+              : {}),
+          };
+        })()
+      : {}),
+    ...(f.status === 'lost' &&
+    f.loseReason &&
+    (options.forceCounterfactual || counterfactualEnabled(policy)) &&
+    counterfactualFramesByReason.has(f.loseReason as DangerLoseReason)
+      ? (() => {
+          const frames = counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!;
+          const evaluateOptions = {
+            focusReason: f.loseReason as DangerLoseReason,
+            maxActionBranches: 96,
+            maxComboBranches: 32,
+            maxStrategicBranches: 192,
+            ...options.counterfactual,
+          } satisfies CounterfactualEvaluateOptions;
+          const fixedSelection = (() => {
+            if (!options.counterfactualFrame) return null;
+            if (options.counterfactualFrame === 'first-danger') {
+              const frame = frames[0]!.frame;
+              const probe = new RunEngine({ seed: 'playtest-frame-probe', difficulty: 'easy' });
+              probe.hydrateCounterfactualFrame(frame);
+              return { frame, applicableActions: listApplicableActions(probe) };
+            }
+            const requested = options.counterfactual?.actions ?? [];
+            for (const sample of frames) {
+              for (const frame of sample.frames ?? [sample.frame]) {
+                const probe = new RunEngine({ seed: 'playtest-frame-probe', difficulty: 'easy' });
+                probe.hydrateCounterfactualFrame(frame);
+                const applicableActions = listApplicableActions(probe);
+                const applicable = new Set(applicableActions);
+                if (requested.every((action) => applicable.has(action))) {
+                  return { frame, applicableActions };
+                }
+              }
+            }
+            throw new Error(
+              `${f.loseReason}: 指定した限定介入をすべて発動できる危険域フレームがない`,
+            );
+          })();
+          const selected = fixedSelection
+            ? (() => {
+                const evaluation = evaluateCounterfactual(fixedSelection.frame, evaluateOptions);
+                return {
+                  evaluation,
+                  effective: effectiveActionsOf(evaluation),
+                  baselineRecovered:
+                    evaluation.baseline.leftDanger || evaluation.baseline.status === 'won',
+                };
+              })()
+            : evaluateLatestEffectiveFrame(frames, evaluateOptions);
+          if (!selected) return {};
+          const { evaluation, effective, baselineRecovered } = selected;
+          const skipped = [...evaluation.skippedActions, ...evaluation.skippedStrategic];
+          return {
+            effectiveActionsInDanger: effective,
+            ...(skipped.length > 0
+              ? {
+                  counterfactualIncomplete: true,
+                  counterfactualSkipped: skipped,
+                }
+              : {}),
+            ...(effective.length > 0
+              ? {
+                  lastEffectiveActionsAt: {
+                    sprintsPlayed: evaluation.origin.sprintsPlayed,
+                    quarter: evaluation.origin.quarter,
+                    index: evaluation.origin.index,
+                    actions: effective,
+                  },
+                }
+              : {}),
+            ...(baselineRecovered && effective.length === 0
+              ? { counterfactualBaselineRecovered: true }
+              : {}),
+            counterfactualBaseline: {
+              sprintsToLose: evaluation.baseline.sprintsToLose,
+              leftDanger: evaluation.baseline.leftDanger,
+              loseReason: evaluation.baseline.loseReason,
+              status: evaluation.baseline.status,
+              truncated: evaluation.baseline.truncated,
+            },
+            ...(options.recordCounterfactualBranches
+              ? { counterfactualOrigin: evaluation.origin }
+              : {}),
+            ...(options.recordCounterfactualBranches
+              ? {
+                  counterfactualApplicableActions:
+                    fixedSelection?.applicableActions ?? evaluation.applicableActions,
+                }
+              : {}),
+            ...(options.recordCounterfactualBranches
+              ? {
+                  counterfactualBranches: evaluation.branches
+                    .filter((branch) => branch.actionId !== null)
+                    .map((branch) => ({
+                      actionId: branch.actionId!,
+                      sprintsToLose: branch.sprintsToLose,
+                      leftDanger: branch.leftDanger,
+                      loseReason: branch.loseReason,
+                      status: branch.status,
+                      truncated: branch.truncated,
+                    })),
+                }
+              : {}),
+          };
+        })()
+      : {}),
+    finalOrg: {
+      aiEnabled: f.org.aiEnabled,
+      aiDependency: Math.round(f.org.aiDependency),
+      aiLiteracy: Math.round(f.org.aiLiteracy),
+      testCoverage: Math.round(f.org.testCoverage),
+      documentation: Math.round(f.org.documentation),
+      quality: Math.round(f.org.quality),
+      securityLevel: Math.round(f.org.securityLevel),
+      morale: Math.round(f.org.morale),
+      seniorHp: Math.round(f.org.seniorHp),
+      techDebt: Math.round(f.org.techDebt),
+    },
+    totalDelivered: Math.round(f.totals.delivered ?? 0),
+    totals: {
+      delivered: Math.round(f.totals.delivered ?? 0),
+      done: Math.round(f.totals.done ?? 0),
+      rework: Math.round(f.totals.rework ?? 0),
+      incidents: Math.round(f.totals.incidents ?? 0),
+      contained: Math.round(f.totals.contained ?? 0),
+      spread: Math.round(f.totals.spread ?? 0),
+      aiAssisted: Math.round(f.totals.aiAssisted ?? 0),
+      completed: Math.round(f.totals.completed ?? 0),
+      reviewQueuePeak: Math.round(f.totals.reviewQueuePeak ?? 0),
+    },
+    budget: Math.round(f.budget),
+    relics: f.relics.length,
+    deckSize: f.deck.length,
+    evolutionUnlocked: Object.keys(f.evolution.unlocked).length,
+    goalAdjustments: f.goalAdjustmentsTaken,
+  };
+}
+
+/** 難易度 × 方針 × seed の総当たりを実行する。 */
+export function runMatrix(
+  difficulties: readonly string[],
+  policies: readonly string[],
+  seeds: readonly string[],
+  meta: MetaProfile = 'fresh',
+): RunLog[] {
+  const out: RunLog[] = [];
+  for (const d of difficulties) {
+    for (const p of policies) {
+      for (const seed of seeds) out.push(runOnce(seed, d, p, meta));
+    }
+  }
+  return out;
+}

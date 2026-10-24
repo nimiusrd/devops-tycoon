@@ -183,6 +183,7 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
   let props: BoardProps = { tasks: sprint.tasks, sprint, onDragComplete: vi.fn(), ...overrides };
   let tree: ReactElement<ElementProps>;
   let connected = true;
+  const boardElement = Object.assign(new EventTarget(), { getBoundingClientRect: () => rect });
   const flush = () => {
     let renders = 0;
     do {
@@ -190,9 +191,7 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
       hooks.cursor = 0;
       hooks.dirty = false;
       tree = Board(props) as ReactElement<ElementProps>;
-      (tree.props.ref as { current: unknown }).current = connected
-        ? { getBoundingClientRect: () => rect }
-        : null;
+      (tree.props.ref as { current: unknown }).current = connected ? boardElement : null;
       for (const effect of hooks.effects.splice(0)) effect();
     } while (hooks.dirty);
   };
@@ -257,6 +256,13 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
     leave() {
       (find('board').props.onPointerLeave as () => void)();
       flush();
+    },
+    touchStart(point: { x: number; y: number }, count = 1) {
+      const event = Object.assign(new Event('touchstart', { cancelable: true }), {
+        touches: Array.from({ length: count }, () => clientPoint(point)),
+      });
+      boardElement.dispatchEvent(event);
+      return event;
     },
     dispatch(
       type: 'pointermove' | 'pointerup' | 'pointercancel',
@@ -383,12 +389,34 @@ describe('Board の状態表示', () => {
 });
 
 describe('Board の座標ドラッグ', () => {
+  it('同じ工程・種類の別粒へtouchで選び直すと、補助番号も変わる（#933）', () => {
+    const sprint = makeSprint(createOrgState('default', true), [makeTask(3), makeTask(5)]);
+    const board = mountBoard({ armedAction: 'splitPr', sprint, tasks: sprint.tasks });
+    board.downTask(3, { pointerType: 'touch' });
+    expect(content(board.find('board-target-preview'))).toBe('対象: レビュー・通常（#3）');
+    board.dispatch('pointermove', board.dot(5));
+    expect(content(board.find('board-target-preview'))).toBe('対象: レビュー・通常（#5）');
+  });
+
+  it('touchのスクロール抑止は対象粒から始まる1本指だけに限り、解除時は戻す（#935）', () => {
+    const board = mountBoard({ armedAction: 'splitPr' });
+    expect(board.touchStart(board.dot(3)).defaultPrevented).toBe(true);
+    expect(board.touchStart({ x: 0, y: 0 }).defaultPrevented).toBe(false);
+    expect(board.touchStart(board.dot(1)).defaultPrevented).toBe(false);
+    expect(board.touchStart(board.dot(3), 2).defaultPrevented).toBe(false);
+    board.update({ armedAction: null });
+    expect(board.touchStart(board.dot(3)).defaultPrevented).toBe(false);
+    board.update({ armedAction: 'splitPr' });
+    unmount();
+    expect(board.touchStart(board.dot(3)).defaultPrevented).toBe(false);
+  });
+
   it('武装中だけhover対象を強調し、確定前のIDをHTMLとPixiへ共通で渡す（#917）', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
     board.hoverTask(3);
     expect(board.find('board').props['data-preview-task-id']).toBe(3);
     expect(board.layer().props.previewTaskId).toBe(3);
-    expect(content(board.find('board-target-preview'))).toBe('対象: タスク #3');
+    expect(content(board.find('board-target-preview'))).toBe('');
     expect(board.props.onDragComplete).not.toHaveBeenCalled();
     board.leave();
     expect(board.layer().props.previewTaskId).toBeNull();
@@ -396,6 +424,7 @@ describe('Board の座標ドラッグ', () => {
     board.downTask(2);
     board.dispatch('pointerup', board.dot(2));
     expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 2 });
+    expect(content(board.find('board-target-preview'))).toBe('対象を確定: 実装・通常（#2）');
     board.update({ armedAction: null });
     board.hoverTask(3);
     expect(board.layer().props.previewTaskId).toBeNull();
@@ -405,14 +434,17 @@ describe('Board の座標ドラッグ', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
     board.downTask(3, { pointerType: 'touch' });
     expect(board.layer().props.previewTaskId).toBe(3);
+    expect(content(board.find('board-target-preview'))).toBe('対象: レビュー・通常（#3）');
     expect(board.props.onDragComplete).not.toHaveBeenCalled();
     board.dispatch('pointermove', board.dot(2));
     expect(board.layer().props.previewTaskId).toBe(2);
+    expect(content(board.find('board-target-preview'))).toBe('対象: 実装・通常（#2）');
     expect(board.props.onDragComplete).not.toHaveBeenCalled();
     board.dispatch('pointerup', board.dot(2));
     expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 2 });
     board.dispatch('pointerup', board.dot(2));
     expect(board.props.onDragComplete).toHaveBeenCalledOnce();
+    expect(content(board.find('board-target-preview'))).toBe('対象を確定: 実装・通常（#2）');
   });
 
   it.each(['outside', 'cancel', 'blur', 'disarm', 'unmount'] as const)(

@@ -1,8 +1,32 @@
 import { expect, test } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 import type { RunState } from '../../src/sim/run/types';
 import type { MetaState } from '../../src/state/meta';
 import { RUN_SAVE_SCHEMA_VERSION, type RunSaveSummary } from '../../src/state/runPersistence';
 import { seedMeta } from './seedMeta';
+import { beginPublicSprint } from './fixtures';
+
+const RESUME_RISK_VIEWPORTS = [
+  { name: 'phone-se', width: 320, height: 568 },
+  { name: 'phone', width: 390, height: 844 },
+  { name: 'tablet-portrait', width: 768, height: 1024 },
+  { name: 'desktop-short', width: 1024, height: 768 },
+  { name: 'desktop', width: 1440, height: 900 },
+] as const;
+
+async function expectSingleLineText(locator: Locator): Promise<void> {
+  const layout = await locator.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return {
+      lineTops: [...new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)))],
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+    };
+  });
+  expect(layout.lineTops, `${await locator.innerText()} が語中で改行されている`).toHaveLength(1);
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+}
 
 type RunGameWindow = Window & {
   game?: {
@@ -396,3 +420,90 @@ test('シニア体力 2% のセーブは再開前に警告し、確認なしで�
       org: { seniorHp: 2 },
     });
 });
+
+for (const viewport of RESUME_RISK_VIEWPORTS) {
+  test(`危険セーブ再開の数値と操作を読み取り、キーボードで選択できる: ${viewport.name}`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await beginPublicSprint(page, { seed: 'resume-risk-layout' });
+    await expect(page.getByTestId('board-pixi-mount').locator('canvas')).toBeVisible();
+    await page.evaluate(() => {
+      const game = (window as RunGameWindow).game;
+      if (!game) throw new Error('game missing');
+      let guard = 0;
+      while (game.isSprintRunning() && guard++ < 20_000) game.step(100);
+    });
+    await expect
+      .poll(() => storedRunSummary(page))
+      .toMatchObject({ seed: 'resume-risk-layout', phase: 'result', sprintsPlayed: 1 });
+    await setStoredSeniorHp(page, 16);
+    await page.reload();
+
+    const resume = page.getByTestId('resume-run');
+    const dialog = page.getByRole('dialog', { name: '燃え尽き寸前のセーブです' });
+    const cancel = page.getByRole('button', { name: '再開しない', exact: true });
+    const confirm = page.getByRole('button', { name: 'それでも再開する', exact: true });
+    await resume.click();
+    await expect(dialog).toBeVisible();
+    await expect(cancel).toBeFocused();
+    const metric = dialog.locator('.resume-risk-metric');
+    await expect(metric).toHaveText('シニア体力 16%');
+    await expectSingleLineText(metric);
+    for (const button of [cancel, confirm]) {
+      await button.scrollIntoViewIfNeeded();
+      await expect(button).toBeInViewport({ ratio: 1 });
+      await expectSingleLineText(button);
+      const box = await button.boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true,
+    );
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(confirm).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(cancel).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(confirm).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(cancel).toBeFocused();
+    await expect(cancel).toHaveCSS('outline-style', 'solid');
+    await expect(cancel).toHaveCSS('outline-width', '2px');
+    await expect(cancel).toBeInViewport({ ratio: 1 });
+    await page.screenshot({ path: testInfo.outputPath('resume-risk.png'), animations: 'disabled' });
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(resume).toBeFocused();
+    await expect
+      .poll(() => page.evaluate(() => (window as RunGameWindow).game?.phase()))
+      .toBe('title');
+    await page.keyboard.press('Enter');
+    await expect(dialog).toBeVisible();
+    await expect(cancel).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(dialog).toHaveCount(0);
+    await expect(resume).toBeFocused();
+    await expect
+      .poll(() => page.evaluate(() => (window as RunGameWindow).game?.phase()))
+      .toBe('title');
+
+    await page.keyboard.press('Enter');
+    await expect(cancel).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(confirm).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(dialog).toHaveCount(0);
+    await expect
+      .poll(() => page.evaluate(() => (window as RunGameWindow).game?.getState()))
+      .toMatchObject({ phase: 'result', org: { seniorHp: 16 } });
+    await expect(page.getByTestId('sprint-result')).toBeVisible();
+    await expect(page.getByTestId('webgl-status')).toHaveCount(0);
+  });
+}

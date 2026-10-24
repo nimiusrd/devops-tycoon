@@ -43,16 +43,14 @@ function laneLabel(lane: Lane): string {
   return lane;
 }
 
-function formatTaskOption(task: Task): Pick<ActionTargetPickerOption, 'label' | 'detail'> {
+/** 盤面とHTMLの対象選択で共有する、工程・種類・担当の説明。 */
+export function describeTaskTarget(task: Task): string {
   const lane = laneLabel(task.lane);
   const kind = KIND_LABELS[task.kind];
   const extras: string[] = [];
   if (task.aiAssisted) extras.push('AI担当');
   if (task.split) extras.push('分割済');
-  return {
-    label: `タスク #${task.id}`,
-    detail: extras.length > 0 ? `${lane}・${kind}（${extras.join('・')}）` : `${lane}・${kind}`,
-  };
+  return extras.length > 0 ? `${lane}・${kind}（${extras.join('・')}）` : `${lane}・${kind}`;
 }
 
 function buildTarget(
@@ -91,7 +89,7 @@ export function planActionTargetPickerView(
 
   const pickerOptions: ActionTargetPickerOption[] = tasks.map((task) => {
     const target = buildTarget(armed, task.id, options?.assignee);
-    const copy = formatTaskOption(task);
+    const copy = { label: `タスク #${task.id}`, detail: describeTaskTarget(task) };
     if (paused) {
       return {
         taskId: task.id,

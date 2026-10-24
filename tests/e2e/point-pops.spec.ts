@@ -8,6 +8,14 @@ const VIEWPORTS = [
   { name: 'スマートフォン', width: 390, height: 844 },
 ] as const;
 
+const HUD_VIEWPORTS = [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1024, height: 768 },
+  { width: 1440, height: 900 },
+] as const;
+
 /** 公開 step() だけで次の出荷まで進め、今回のポイント増分を返す。 */
 async function advanceToNextDelivery(page: Page): Promise<number> {
   return page.evaluate(() => {
@@ -25,6 +33,95 @@ async function advanceToNextDelivery(page: Page): Promise<number> {
     }
     throw new Error(`次の出荷へ到達しない: phase=${state.phase} guard=${guard}`);
   });
+}
+
+for (const viewport of HUD_VIEWPORTS) {
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    const motionLabel = reducedMotion === 'reduce' ? '動きを減らす' : '通常の動き';
+    test(`${viewport.width}px・${motionLabel}: HUD増減はチップ内に収まり文字と重ならない`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ reducedMotion });
+      await beginPublicSprint(page, { seed: 'point-pops-lifetime', renderer: 'pixi' });
+      const hud = page.getByTestId('hud');
+      await expect(hud).toHaveAttribute('data-compact', 'true');
+      const initialHeight = await hud.evaluate((element) => element.getBoundingClientRect().height);
+
+      await advanceToNextDelivery(page);
+      await expect(hud.locator('.feedback-positive')).not.toHaveCount(0);
+      // 介入バーへスクロールせず、HUDが画面上端にある状態で負の増減も同時に出す。
+      const outcome = await page.evaluate(() =>
+        (window as PublicGameWindow).game!.dispatch('overtime'),
+      );
+      expect(outcome.ok).toBe(true);
+      await expect(hud.locator('.feedback-negative')).not.toHaveCount(0);
+
+      const sampling = page.evaluate(async (initialHudHeight) => {
+        const failures = new Set<string>();
+        let visibleSamples = 0;
+        const intersects = (first: DOMRect, second: DOMRect) =>
+          first.left < second.right - 0.5 &&
+          first.right > second.left + 0.5 &&
+          first.top < second.bottom - 0.5 &&
+          first.bottom > second.top + 0.5;
+        for (let sample = 0; sample < 51; sample++) {
+          const hudElement = document.querySelector('[data-testid="hud"]')!;
+          if (Math.abs(hudElement.getBoundingClientRect().height - initialHudHeight) > 0.5) {
+            failures.add('増減表示でHUDの高さが変わる');
+          }
+          const textRects = [
+            ...hudElement.querySelectorAll(
+              '.hud-compact-chip-label, .hud-compact-chip-value, .hud-compact-chip-warn, .hud-toggle',
+            ),
+          ].map((element) => element.getBoundingClientRect());
+          for (const pop of hudElement.querySelectorAll('.hud-feedback-pop')) {
+            if (Number(getComputedStyle(pop).opacity) === 0) continue;
+            visibleSamples++;
+            const rect = pop.getBoundingClientRect();
+            const chip = pop.closest('.hud-compact-chip')!.getBoundingClientRect();
+            if (
+              rect.top < chip.top - 0.5 ||
+              rect.bottom > chip.bottom + 0.5 ||
+              rect.left < chip.left - 0.5 ||
+              rect.right > chip.right + 0.5
+            ) {
+              failures.add('チップの外へ増減がはみ出す');
+            }
+            if (rect.top < 0 || rect.left < 0 || rect.right > window.innerWidth) {
+              failures.add('画面端へ増減がはみ出す');
+            }
+            if (textRects.some((text) => intersects(rect, text))) {
+              failures.add('KPIのラベル・現在値・警告・展開操作と増減が重なる');
+            }
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, 25));
+        }
+        return { failures: [...failures], visibleSamples };
+      }, initialHeight);
+      await expect
+        .poll(() =>
+          hud
+            .locator('.hud-feedback-pop')
+            .evaluateAll((elements) =>
+              Math.max(0, ...elements.map((element) => Number(getComputedStyle(element).opacity))),
+            ),
+        )
+        .toBeGreaterThan(0.5);
+      await page.screenshot({ path: testInfo.outputPath('チップ内のHUD増減.png') });
+      const measurement = await sampling;
+      await testInfo.attach('HUD増減の25ms間隔計測', {
+        body: JSON.stringify(measurement),
+        contentType: 'application/json',
+      });
+      expect(measurement.visibleSamples).toBeGreaterThan(0);
+      expect(measurement.failures).toEqual([]);
+      await expect(hud.locator('.hud-feedback-pop')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        viewport.width,
+      );
+    });
+  }
 }
 
 for (const viewport of [
@@ -248,7 +345,7 @@ for (const viewport of VIEWPORTS) {
               style.opacity !== '1' ||
               transform.a !== 1 ||
               transform.d !== 1 ||
-              transform.f !== -14
+              transform.f !== 0
             ) {
               moving = true;
             }

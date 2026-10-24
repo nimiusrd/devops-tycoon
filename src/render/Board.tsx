@@ -43,6 +43,7 @@ import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
+import { describeTaskTarget } from './actionTargetPickerView';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const BoardPixiLayer = lazyWebgl<BoardPixiLayerProps>(() =>
@@ -64,6 +65,7 @@ interface BoardGesture {
   pointerId: number;
   taskId: number;
   action: DraggableActionId;
+  announce: boolean;
 }
 
 function blocksBoardTarget(target: EventTarget | null): boolean {
@@ -259,6 +261,7 @@ export function Board({
 
   const [pointer, setPointer] = useState<BoardPointerPosition | null>(null);
   const [gesture, setGesture] = useState<BoardGesture | null>(null);
+  const [confirmedTarget, setConfirmedTarget] = useState('');
   const interactive = usePixi && armedAction !== null && onDragComplete != null && dragPlan != null;
   // 元のsceneで逆引きし、強調による前面化が次のヒット順を変えないようにする。
   const previewTaskId =
@@ -282,6 +285,10 @@ export function Board({
     dragIds.has(gesture.taskId)
       ? gesture.taskId
       : null;
+  const selectedTask = gesture?.announce ? tasks.find((task) => task.id === previewTaskId) : null;
+  const targetAnnouncement = selectedTask
+    ? `対象: ${describeTaskTarget(selectedTask)}（#${selectedTask.id}）`
+    : confirmedTarget;
   const dropPoint = pointer && clientToBoardPoint(pointer.clientX, pointer.clientY, pointer.rect);
   const hoverLane =
     gesture?.action === 'assignTask' && dragTaskId !== null && dropPoint && dragPlan
@@ -293,6 +300,7 @@ export function Board({
     dragPlan,
     dragIds,
     dots: scene.dots,
+    tasks,
     previewTaskId,
     onDragComplete,
   });
@@ -303,10 +311,44 @@ export function Board({
       dragPlan,
       dragIds,
       dots: scene.dots,
+      tasks,
       previewTaskId,
       onDragComplete,
     };
-  }, [interactive, armedAction, dragPlan, dragIds, scene.dots, previewTaskId, onDragComplete]);
+  }, [
+    interactive,
+    armedAction,
+    dragPlan,
+    dragIds,
+    scene.dots,
+    tasks,
+    previewTaskId,
+    onDragComplete,
+  ]);
+
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board || !usePixi) return;
+    // Reactのtouchstartはpassive。粒をつかむときだけnative scrollを止め、空白は縦に送れる。
+    const onTouchStart = (event: TouchEvent) => {
+      const input = currentInput.current;
+      if (!input.interactive || event.touches.length !== 1 || blocksBoardTarget(event.target))
+        return;
+      const touch = event.touches[0];
+      if (
+        hitTestClientBoardDot(
+          touch.clientX,
+          touch.clientY,
+          board.getBoundingClientRect(),
+          input.dots,
+          input.dragIds,
+        ) !== null
+      )
+        event.preventDefault();
+    };
+    board.addEventListener('touchstart', onTouchStart, { passive: false });
+    return () => board.removeEventListener('touchstart', onTouchStart);
+  }, [usePixi]);
 
   const readPointer = useCallback(
     (clientX: number, clientY: number, target: EventTarget | null): BoardPointerPosition | null => {
@@ -358,6 +400,11 @@ export function Board({
         !input.dragPlan
       )
         return;
+      const confirm = (target: ActionTarget) => {
+        const task = input.tasks.find((task) => task.id === target.taskId);
+        if (task) setConfirmedTarget(`対象を確定: ${describeTaskTarget(task)}（#${task.id}）`);
+        input.onDragComplete?.(target);
+      };
       if (gesture.action === 'splitPr') {
         const taskId = hitTestClientBoardDot(
           event.clientX,
@@ -367,7 +414,7 @@ export function Board({
           input.dragIds,
         );
         // 表示していた対象だけを確定する。消滅やupだけの座標変化は誤発動させない。
-        if (taskId !== null && taskId === input.previewTaskId) input.onDragComplete?.({ taskId });
+        if (taskId !== null && taskId === input.previewTaskId) confirm({ taskId });
         return;
       }
       const { rect } = released;
@@ -382,7 +429,7 @@ export function Board({
       const point = clientToBoardPoint(event.clientX, event.clientY, rect);
       const lane = hitTestDropLane(point.x, point.y, input.dragPlan.dropLanes);
       if (lane)
-        input.onDragComplete?.({
+        confirm({
           taskId: gesture.taskId,
           lane,
           ...(input.dragPlan.assignee ? { assignee: input.dragPlan.assignee } : {}),
@@ -440,8 +487,14 @@ export function Board({
       if (taskId === null || !armedAction) return;
       event.preventDefault();
       event.stopPropagation();
+      setConfirmedTarget('');
       setPointer(next);
-      setGesture({ pointerId: event.pointerId ?? 1, taskId, action: armedAction });
+      setGesture({
+        pointerId: event.pointerId ?? 1,
+        taskId,
+        action: armedAction,
+        announce: event.pointerType === 'touch' || event.pointerType === 'pen',
+      });
     },
     [interactive, gesture, readPointer, scene.dots, dragIds, armedAction],
   );
@@ -498,9 +551,10 @@ export function Board({
         className="visually-hidden"
         role="status"
         aria-live="polite"
+        aria-atomic="true"
         data-testid="board-target-preview"
       >
-        {previewTaskId !== null ? `対象: タスク #${previewTaskId}` : ''}
+        {targetAnnouncement}
       </span>
 
       {scene.stations.map((s) => (

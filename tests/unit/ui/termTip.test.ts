@@ -66,6 +66,17 @@ describe('TermTip', () => {
     expect(root.querySelector).not.toHaveBeenCalled();
   });
 
+  it('AIリテラシーは句の境だけで折り返し、定義の全文を保つ（#941）', () => {
+    const tree = TermTip({ termId: 'aiLiteracy' });
+    const nodes = elements(tree);
+    const panel = nodes.find((node) => node.props['data-testid'] === 'term-tip-aiLiteracy-panel');
+    const phrases = nodes.filter((node) => node.props.className === 'setup-text-phrase');
+    expect(content(panel)).toBe(GLOSSARY.aiLiteracy.definition);
+    expect(phrases.map((node) => content(node))).toEqual(GLOSSARY.aiLiteracy.phrases);
+    expect(GLOSSARY.aiLiteracy.definition).toContain('かつ');
+    expect(GLOSSARY.aiLiteracy.definition).not.toContain('依存が高いと敗北');
+  });
+
   it('介入バー向けは上向き配置を付け、同じ name で排他開閉する', () => {
     const tree = TermTip({ termId: 'focus', placement: 'up' });
     const nodes = elements(tree);

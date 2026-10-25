@@ -5,6 +5,7 @@
  * 同じ `name` のチップは同時に一つだけ開く。
  * ボタンの中には置かない（入れ子の interactive を避ける）。
  */
+import { Fragment } from 'react';
 import { GLOSSARY, type GlossaryTermId } from '../data/glossary';
 
 export type TermTipPlacement = 'inline' | 'up';
@@ -40,7 +41,14 @@ export function TermTip({ termId, children, testId, placement = 'inline' }: Term
     >
       <summary className="term-tip-summary">{children ?? entry.term}</summary>
       <p className="term-tip-panel" data-testid={`${triggerId}-panel`} role="note">
-        {entry.definition}
+        {entry.phrases
+          ? entry.phrases.map((phrase, index) => (
+              <Fragment key={phrase}>
+                {index > 0 && <wbr />}
+                <span className="setup-text-phrase">{phrase}</span>
+              </Fragment>
+            ))
+          : entry.definition}
       </p>
     </details>
   );

@@ -4,6 +4,8 @@
  * セットアップ・介入バー・初回ガイドの初出で使う。遊び方ヘルプの長文は置換しない。
  * 無効理由など他画面の共用が必要なときも、同じ語はここに足して参照する。
  */
+import { OUTCOME_BALANCE } from './balance/outcome';
+
 export const GLOSSARY_MAX_DEFINITION_LENGTH = 40;
 
 export const GLOSSARY_TERM_IDS = [
@@ -20,7 +22,28 @@ export type GlossaryTermId = (typeof GLOSSARY_TERM_IDS)[number];
 export interface GlossaryEntry {
   term: string;
   definition: string;
+  /**
+   * 折り返し単位。各句は途中で改行せず、句の境だけ折り返す（#941）。
+   * 省略時は definition を一続きで出す。
+   */
+  phrases?: readonly string[];
 }
+
+/**
+ * AIリテラシーの用語定義（#941）。
+ *
+ * 敗北は依存度だけでは起きない。リテラシーの危険上限と依存度の上限を、
+ * `OUTCOME_BALANCE` から入れて両方の条件が読めるようにする。
+ * 句は 320px の用語パネルに収まる長さを保つ。
+ */
+export function aiLiteracyGlossaryPhrases(
+  literacyMax: number = OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value,
+  dependencyCap: number = OUTCOME_BALANCE.loseAiDependencyCap.value,
+): readonly string[] {
+  return ['低いと手戻り増。', `値が${literacyMax}以下かつ、`, `依存${dependencyCap}%で敗北。`];
+}
+
+const aiLiteracyPhrases = aiLiteracyGlossaryPhrases();
 
 export const GLOSSARY: Record<GlossaryTermId, GlossaryEntry> = {
   pr: {
@@ -37,7 +60,8 @@ export const GLOSSARY: Record<GlossaryTermId, GlossaryEntry> = {
   },
   aiLiteracy: {
     term: 'AIリテラシー',
-    definition: '低いと手戻りが増える。依存が高いと敗北する。',
+    phrases: aiLiteracyPhrases,
+    definition: aiLiteracyPhrases.join(''),
   },
   rework: {
     term: '手戻り',

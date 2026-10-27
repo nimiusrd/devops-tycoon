@@ -28,6 +28,7 @@ import type { RunState } from '../sim/run/types';
 import { formatSigned } from './formatSigned';
 import { useReplayContent } from './replayContent';
 import { RunSessionMenu } from './RunSessionMenu';
+import { PhraseText } from './PhraseText';
 import { VisualIcon } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1600;
@@ -217,7 +218,9 @@ export function RunBar({
           </span>{' '}
           {diag.label}
         </span>
-        <span className="diagnosis-warning">{theme.warning}</span>
+        <span className="diagnosis-warning">
+          <PhraseText phrases={theme.warningPhrases} />
+        </span>
       </div>
     </>
   );

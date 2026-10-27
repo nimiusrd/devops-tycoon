@@ -14,6 +14,33 @@ const RESUME_RISK_VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
 ] as const;
 
+async function assertKeepPhrases(text: Locator, label: string): Promise<void> {
+  const phrases = await text.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return [...element.querySelectorAll('.text-phrase')].map((phrase) => {
+      const range = document.createRange();
+      range.selectNodeContents(phrase);
+      const lines = [...range.getClientRects()].filter((line) => line.width > 0 && line.height > 0);
+      return {
+        text: phrase.textContent,
+        lineCount: new Set(lines.map((line) => Math.round(line.top))).size,
+        contained: lines.every(
+          (line) =>
+            line.left >= bounds.left - 1 &&
+            line.right <= bounds.right + 1 &&
+            line.top >= bounds.top - 1 &&
+            line.bottom <= bounds.bottom + 1,
+        ),
+      };
+    });
+  });
+  expect(phrases.length, `${label} を文節に分ける`).toBeGreaterThan(0);
+  for (const phrase of phrases) {
+    expect(phrase.lineCount, `${label} の「${phrase.text}」が語中で改行されている`).toBe(1);
+    expect(phrase.contained, `${label} の「${phrase.text}」が枠からはみ出している`).toBe(true);
+  }
+}
+
 async function expectSingleLineText(locator: Locator): Promise<void> {
   const layout = await locator.evaluate((element) => {
     const range = document.createRange();
@@ -450,6 +477,8 @@ for (const viewport of RESUME_RISK_VIEWPORTS) {
     const metric = dialog.locator('.resume-risk-metric');
     await expect(metric).toHaveText('シニア体力 16%');
     await expectSingleLineText(metric);
+    await assertKeepPhrases(dialog.locator('#resume-risk-title'), `${viewport.name} のタイトル`);
+    await assertKeepPhrases(dialog.locator('#resume-risk-body'), `${viewport.name} の本文`);
     for (const button of [cancel, confirm]) {
       await button.scrollIntoViewIfNeeded();
       await expect(button).toBeInViewport({ ratio: 1 });

@@ -392,3 +392,47 @@ for (const viewport of VIEWPORTS) {
     });
   }
 }
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+] as const) {
+  test(`${viewport.width}px: 4文字のHUD増減でもラベルと値の位置が動かない`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await beginPublicSprint(page, { seed: 'hud-delta-width', renderer: 'pixi' });
+    const chip = page.getByTestId('hud-compact-delivery');
+    await expect(chip).toBeVisible();
+    const readOffsets = () =>
+      chip.evaluate((element) => {
+        const label = element.querySelector('.hud-compact-chip-label')!.getBoundingClientRect();
+        const value = element.querySelector('.hud-compact-chip-value')!.getBoundingClientRect();
+        const slot = element.querySelector('.hud-feedback-slot')!.getBoundingClientRect();
+        return { labelX: label.x, valueX: value.x, slotWidth: slot.width };
+      });
+    const before = await readOffsets();
+    const delta = await page.evaluate(() => {
+      const game = (window as PublicGameWindow).game;
+      if (!game) throw new Error('window.game が公開されていない');
+      const start = game.getState().org.deliveryScore;
+      let guard = 0;
+      while (guard < 8_000) {
+        const state = game.getState();
+        if (state.phase !== 'sprint') break;
+        const gained = state.org.deliveryScore - start;
+        if (gained >= 100) return gained;
+        game.step(100);
+        guard += 1;
+      }
+      return game.getState().org.deliveryScore - start;
+    });
+    expect(delta, '4文字になる出荷増分まで到達しない').toBeGreaterThanOrEqual(100);
+    expect(delta, '検証対象は符号込み4文字の増分').toBeLessThan(1000);
+    const pop = chip.locator('.hud-feedback-pop');
+    await expect(pop).toHaveText(`+${delta}`);
+    const after = await readOffsets();
+    expect(Math.abs(after.labelX - before.labelX)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(after.valueX - before.valueX)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(after.slotWidth - before.slotWidth)).toBeLessThanOrEqual(0.5);
+  });
+}

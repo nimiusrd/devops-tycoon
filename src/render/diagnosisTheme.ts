@@ -11,39 +11,41 @@ export interface DiagnosisTheme {
   toneClass: string;
   icon: IconKey;
   warning: string;
+  /** 型の説明を語中で割らないための文節。連結すると warning になる。 */
+  warningPhrases: readonly string[];
+}
+
+function diagnosisThemeEntry(
+  toneClass: string,
+  icon: IconKey,
+  warningPhrases: readonly string[],
+): DiagnosisTheme {
+  return { toneClass, icon, warningPhrases, warning: warningPhrases.join('') };
 }
 
 const THEMES: Record<DiagnosisType, DiagnosisTheme> = {
-  healthyAcceleration: {
-    toneClass: 'tone-healthy-acceleration',
-    icon: 'healthyAcceleration',
-    warning: '加速と品質のバランスが取れています',
-  },
-  reviewHell: {
-    toneClass: 'tone-review-hell',
-    icon: 'reviewHell',
-    warning: 'レビュー工程が崩壊寸前です',
-  },
-  aiOverproduction: {
-    toneClass: 'tone-ai-overproduction',
-    icon: 'aiOverproduction',
-    warning: '実装量に検証能力が追いついていません',
-  },
-  reworkSpiral: {
-    toneClass: 'tone-rework-spiral',
-    icon: 'reworkSpiral',
-    warning: '手戻りが連鎖しています。品質投資を',
-  },
-  seniorSacrifice: {
-    toneClass: 'tone-senior-sacrifice',
-    icon: 'seniorSacrifice',
-    warning: 'シニアがすべてを背負っています。負荷分散を',
-  },
-  documentationKingdom: {
-    toneClass: 'tone-documentation-kingdom',
-    icon: 'documentationKingdom',
-    warning: '盤石の基盤で AI が安定稼働しています',
-  },
+  healthyAcceleration: diagnosisThemeEntry('tone-healthy-acceleration', 'healthyAcceleration', [
+    '加速と品質の',
+    'バランスが取れています',
+  ]),
+  reviewHell: diagnosisThemeEntry('tone-review-hell', 'reviewHell', ['レビュー工程が崩壊寸前です']),
+  aiOverproduction: diagnosisThemeEntry('tone-ai-overproduction', 'aiOverproduction', [
+    '実装量に検証能力が',
+    '追いついていません',
+  ]),
+  reworkSpiral: diagnosisThemeEntry('tone-rework-spiral', 'reworkSpiral', [
+    '手戻りが連鎖しています。',
+    '品質投資を',
+  ]),
+  seniorSacrifice: diagnosisThemeEntry('tone-senior-sacrifice', 'seniorSacrifice', [
+    'シニアがすべてを',
+    '背負っています。',
+    '負荷分散を',
+  ]),
+  documentationKingdom: diagnosisThemeEntry('tone-documentation-kingdom', 'documentationKingdom', [
+    '盤石の基盤で',
+    'AI が安定稼働しています',
+  ]),
 };
 
 /** 診断種別に対応する画面演出を取得する。 */

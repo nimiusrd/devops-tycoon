@@ -7,6 +7,8 @@ const ceremonyState = vi.hoisted(() => ({ value: null as string | null }));
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useState: () => [ceremonyState.value, (value: string | null) => (ceremonyState.value = value)],
+  useRef: (initial: unknown) => ({ current: initial }),
+  useLayoutEffect: () => {},
 }));
 
 import { BRANCH_LABEL, EVOLUTION_NODES } from '../../../src/data/evolution';
@@ -81,7 +83,9 @@ describe('EvolutionScreen の解放と前提条件', () => {
     const screen = mountEvolution({ points: 0, unlocked: {} });
     expect(screen.find('evolution').props).toMatchObject({
       role: 'dialog',
+      'aria-modal': 'true',
       'aria-label': 'Evolution Tree',
+      tabIndex: -1,
     });
     expect(content(screen.find('evo-points'))).toBe('0');
     for (const label of Object.values(BRANCH_LABEL)) expect(screen.text()).toContain(label);

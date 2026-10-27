@@ -23,6 +23,8 @@ describe('診断別の画面演出（RI-21）', () => {
     expect(theme.toneClass).toMatch(/^tone-/);
     expect(theme.icon).not.toHaveLength(0);
     expect(theme.warning).not.toHaveLength(0);
+    expect(theme.warningPhrases.join('')).toBe(theme.warning);
+    expect(theme.warningPhrases.every((phrase) => phrase.length > 0)).toBe(true);
   });
 
   it('6タイプをそれぞれ異なる画面トーンへ割り当てる', () => {

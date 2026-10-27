@@ -85,10 +85,14 @@ const SETUP_VIEWPORTS = [
   { name: 'desktop-wide', width: 1440, height: 900 },
 ] as const;
 
-async function assertUnbrokenPhrases(text: Locator, label: string): Promise<void> {
-  const phrases = await text.evaluate((element) => {
+async function assertUnbrokenPhrases(
+  text: Locator,
+  label: string,
+  phraseSelector = '.setup-text-phrase',
+): Promise<void> {
+  const phrases = await text.evaluate((element, selector) => {
     const bounds = element.getBoundingClientRect();
-    return [...element.querySelectorAll('.setup-text-phrase')].map((phrase) => {
+    return [...element.querySelectorAll(selector)].map((phrase) => {
       const range = document.createRange();
       range.selectNodeContents(phrase);
       const lines = [...range.getClientRects()].filter((line) => line.width > 0 && line.height > 0);
@@ -104,7 +108,7 @@ async function assertUnbrokenPhrases(text: Locator, label: string): Promise<void
         ),
       };
     });
-  });
+  }, phraseSelector);
   expect(phrases.length, `${label} を意味のある句に分ける`).toBeGreaterThan(0);
   for (const phrase of phrases) {
     expect(phrase.lineCount, `${label} の「${phrase.text}」を語中で改行しない`).toBe(1);
@@ -695,4 +699,40 @@ test('RunBar の編成は dialog へフォーカスし、Escape で起点へ戻�
   await expect(dialog).toHaveCount(0);
   await expect(page.locator('.app-background')).not.toHaveAttribute('inert');
   await expect(openButton).toBeFocused();
+});
+
+test('狭幅の編成では型の説明を名前の下へ置き、語の途中で改行しない', async ({ page }) => {
+  for (const viewport of [
+    { name: '320', width: 320, height: 568 },
+    { name: '390', width: 390, height: 844 },
+  ] as const) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto('/?seed=diagnosis-wrap&renderer=pixi&tutorial=off');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    await expect(page.getByTestId('setup')).toBeVisible();
+
+    const diagnosis = page.getByTestId('runbar-diagnosis');
+    const warning = diagnosis.locator('.diagnosis-warning');
+    const name = diagnosis.locator('.pill.diagnosis');
+    await warning.scrollIntoViewIfNeeded();
+    await expect(warning).toContainText('加速と品質のバランスが取れています');
+    await assertUnbrokenPhrases(warning, `${viewport.name} の型の説明`, '.text-phrase');
+    const lines = await warning.evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return new Set(
+        [...range.getClientRects()]
+          .filter((line) => line.width > 0 && line.height > 0)
+          .map((line) => Math.round(line.top)),
+      ).size;
+    });
+    expect(lines, `${viewport.name} の型の説明が2行を超える`).toBeLessThanOrEqual(2);
+    const nameBox = await name.boundingBox();
+    const warningBox = await warning.boundingBox();
+    if (!nameBox || !warningBox) throw new Error('型の名前か説明の位置が取れない');
+    expect(warningBox.y, `${viewport.name} で説明が名前の下にない`).toBeGreaterThanOrEqual(
+      nameBox.y + nameBox.height - 1,
+    );
+  }
 });

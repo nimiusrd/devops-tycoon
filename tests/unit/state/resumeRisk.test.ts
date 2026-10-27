@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BUDGET_EXHAUSTED_CAP, TECH_DEBT_CAP } from '../../../src/sim/outcome';
 import { createRunEngine } from '../../../src/sim/run/engine';
 import { createGame } from '../../../src/game';
+import { seniorHpHudCopy } from '../../../src/render/status';
 import { assessResumeRisk } from '../../../src/state/resumeRisk';
 import { MemoryRunStorage, toRunSave } from '../../../src/state/runPersistence';
 import { makeOrg, zeroTotals } from '../helpers/runEngineFixtures';
@@ -28,6 +29,12 @@ describe('assessResumeRisk', () => {
     expect(risk?.tone).toBe('danger');
     expect(risk?.seniorHpPct).toBe(2);
     expect(risk?.headline).toBe('燃え尽き寸前のセーブです');
+    expect(risk?.headlinePhrases.join('')).toBe(risk?.headline);
+    const hpCopy = seniorHpHudCopy(2, { firefightUrgent: false, reviewCongested: false });
+    expect(risk?.body).toBe(
+      `シニア体力は 2% です。${hpCopy.detail}。休息で回復しない限り、再開後に継続不能になる恐れがあります。`,
+    );
+    expect(risk?.bodyPhrases.join('')).toBe(risk?.body);
     expect(risk?.body).toContain('シニア体力は 2%');
     expect(risk?.body).toContain('燃え尽き寸前');
     expect(risk?.body).toContain('継続不能');
@@ -43,6 +50,8 @@ describe('assessResumeRisk', () => {
     expect(risk?.requiresConfirm).toBe(false);
     expect(risk?.tone).toBe('watch');
     expect(risk?.headline).toBe('体力に注意が必要なセーブです');
+    expect(risk?.headlinePhrases.join('')).toBe(risk?.headline);
+    expect(risk?.bodyPhrases.join('')).toBe(risk?.body);
     expect(risk?.flags.some((flag) => flag.chip === '体力注意')).toBe(true);
   });
 
@@ -54,7 +63,9 @@ describe('assessResumeRisk', () => {
     });
     expect(risk?.requiresConfirm).toBe(true);
     expect(risk?.headline).toBe('再開するとゲームオーバーになります');
+    expect(risk?.headlinePhrases.join('')).toBe(risk?.headline);
     expect(risk?.body).toContain('ゲームオーバー');
+    expect(risk?.bodyPhrases.join('')).toBe(risk?.body);
     expect(risk?.flags.some((flag) => flag.chip === '継続不能')).toBe(true);
   });
 
@@ -66,7 +77,9 @@ describe('assessResumeRisk', () => {
     });
     expect(risk?.requiresConfirm).toBe(true);
     expect(risk?.headline).toBe('再開するとゲームオーバーになります');
+    expect(risk?.headlinePhrases.join('')).toBe(risk?.headline);
     expect(risk?.body).toContain('技術的負債');
+    expect(risk?.bodyPhrases.join('')).toBe(risk?.body);
   });
 });
 

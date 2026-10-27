@@ -25,6 +25,7 @@ import { HYPOTHESIS_START_UNRECORDED } from '../state/hypothesisNote';
 import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
 import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 import { downloadTextFile } from './downloadTextFile';
+import { PhraseText } from './PhraseText';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { VisualIcon } from './VisualIcon';
 
@@ -65,10 +66,10 @@ function ResumeRiskDialog({
       <div className="result-card resume-risk-card">
         <p className="result-eyebrow">RESUME WARNING</p>
         <h2 id="resume-risk-title" className="draft-title">
-          {risk.headline}
+          <PhraseText phrases={risk.headlinePhrases} />
         </h2>
         <p id="resume-risk-body" className="resume-risk-body">
-          {risk.body}
+          <PhraseText phrases={risk.bodyPhrases} />
         </p>
         <ul className="resume-risk-flags">
           {risk.flags.map((flag) => (

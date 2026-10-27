@@ -363,19 +363,33 @@ body {
   animation: hudFlashNegative 0.8s ease-out;
 }
 .hud-feedback-slot {
-  /* アイコンと増減で同じ枠を使い、演出中もラベル・現在値の位置を保つ。 */
+  /* アイコンと増減で同じ枠を使う。符号込み4文字（+120）まで幅を固定し、
+   * それより長い差分は枠の上に重ねて、ラベルと現在値をずらさない（#934）。 */
+  position: relative;
   display: inline-flex;
+  flex: 0 0 4ch;
   align-items: center;
   justify-content: center;
-  min-width: 3ch;
-  min-height: var(--visual-icon-size-hud);
+  width: 4ch;
+  min-width: 4ch;
+  height: var(--visual-icon-size-hud);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 .hud-feedback-pop {
-  display: inline-block;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  height: max-content;
+  margin: auto;
   font-weight: 1000;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
+  white-space: nowrap;
   pointer-events: none;
 }
 .hud-feedback-pop.feedback-positive {
@@ -4822,6 +4836,15 @@ html:has(.title-screen.title-command) .title-screen.title-command {
     max-width: none;
   }
 }
+/* 型の名前の右に説明を押し込むと、320 で語の途中まで折れる。説明は名前の下へ全幅で置く（#945）。 */
+:root[data-responsive-width='narrow'] .diagnosis-status {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+:root[data-responsive-width='narrow'] .diagnosis-warning {
+  max-width: 100%;
+}
 .pill.node-tag.node-boss {
   border-color: var(--coral);
   color: var(--sun);
@@ -8208,7 +8231,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .setup-observation-content .setup-coding-warning {
   color: var(--sun);
 }
-.setup-text-phrase {
+.setup-text-phrase,
+.text-phrase {
   white-space: nowrap;
 }
 /* 短い確認文でも、狭幅では長い選択肢を全幅へ折り返して読めるようにする。 */

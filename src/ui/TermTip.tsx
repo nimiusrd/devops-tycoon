@@ -51,19 +51,28 @@ function syncSetupTermHost(host: HTMLElement): void {
   applySetupTermPanelSpace(host, openTermPanel(host.querySelector('details.term-tip[open]')));
 }
 
+function syncOpenSetupTermPanels(): void {
+  for (const node of document.querySelectorAll('.setup-term-tips')) {
+    if (!(node instanceof HTMLElement)) continue;
+    syncSetupTermHost(node);
+  }
+}
+
+/**
+ * 幅や向きが変わったあと、開いている定義の空きだけを測り直す。
+ * スクロールはしない。resize のたびに画面を動かすと、見ていた位置が引き戻される（#955）。
+ * 幅モードの反映は resize より遅れることがあるので、属性の更新でも測り直す。
+ */
 function ensureSetupTermPanelResizeSync(): void {
   if (setupTermPanelResizeBound || typeof window === 'undefined') return;
   setupTermPanelResizeBound = true;
   window.addEventListener('resize', () => {
-    requestAnimationFrame(() => {
-      for (const node of document.querySelectorAll('.setup-term-tips')) {
-        if (!(node instanceof HTMLElement)) continue;
-        syncSetupTermHost(node);
-        if (document.documentElement.dataset.responsiveWidth !== 'narrow') continue;
-        const panel = openTermPanel(node.querySelector('details.term-tip[open]'));
-        panel?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      }
-    });
+    requestAnimationFrame(syncOpenSetupTermPanels);
+  });
+  const observer = new MutationObserver(syncOpenSetupTermPanels);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-responsive-width'],
   });
 }
 

@@ -190,3 +190,144 @@ test(`${DESKTOP.name} ${DESKTOP.width}x${DESKTOP.height} では用語チップ�
     path: test.info().outputPath('setup-term-tip-1280.png'),
   });
 });
+
+async function waitForLayout(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
+async function waitForReservedPanel(page: Page, testId: string): Promise<void> {
+  await expect
+    .poll(async () =>
+      page.evaluate((id) => {
+        const host = document.querySelector('[data-testid="setup-term-tips"]');
+        const panel = document.querySelector(`[data-testid="${id}"]`);
+        if (!(host instanceof HTMLElement) || !(panel instanceof HTMLElement)) return '';
+        if (!panel.closest('details')?.hasAttribute('open')) return '';
+        return getComputedStyle(host).paddingBottom;
+      }, testId),
+    )
+    .not.toBe('0px');
+}
+
+async function armScrollSpy(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const calls: string[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (
+      this: Element,
+      ...args: Parameters<Element['scrollIntoView']>
+    ) {
+      calls.push(
+        this instanceof HTMLElement ? (this.getAttribute('data-testid') ?? this.tagName) : 'node',
+      );
+      return original.apply(this, args);
+    };
+    (window as Window & { __termScrolls?: string[] }).__termScrolls = calls;
+  });
+}
+
+async function scrollCalls(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as Window & { __termScrolls?: string[] }).__termScrolls ?? []);
+}
+
+/** スパイのクロージャが push する配列を残したまま、記録だけ消す。 */
+async function resetScrollCalls(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const calls = (window as Window & { __termScrolls?: string[] }).__termScrolls;
+    if (calls) calls.length = 0;
+  });
+}
+
+async function expectOpenPanelClearsSetup(
+  page: Page,
+  testId: string,
+  label: string,
+): Promise<void> {
+  const layout = await page.evaluate((id) => {
+    const panel = document.querySelector(`[data-testid="${id}"]`);
+    const host = document.querySelector('[data-testid="setup-term-tips"]');
+    const observation = document.querySelector('[data-testid="setup-observation-slot"]');
+    const begin = document.querySelector('[data-testid="begin-sprint"]');
+    if (
+      !(panel instanceof HTMLElement) ||
+      !(host instanceof HTMLElement) ||
+      !(observation instanceof HTMLElement) ||
+      !(begin instanceof HTMLElement)
+    ) {
+      return null;
+    }
+    const panelRect = panel.getBoundingClientRect();
+    const summaryBottom = Math.max(
+      ...[...host.querySelectorAll('summary')].map(
+        (summary) => summary.getBoundingClientRect().bottom,
+      ),
+    );
+    return {
+      open:
+        panel.closest('details') instanceof HTMLDetailsElement &&
+        panel.closest('details')?.hasAttribute('open'),
+      padding: getComputedStyle(host).paddingBottom,
+      panelTop: panelRect.top,
+      panelBottom: panelRect.bottom,
+      summaryBottom,
+      observationTop: observation.getBoundingClientRect().top,
+      beginTop: begin.getBoundingClientRect().top,
+      hostBottom: host.getBoundingClientRect().bottom,
+    };
+  }, testId);
+  expect(layout, `${label} の用語配置が取れない`).not.toBeNull();
+  expect(layout?.open, `${label} で定義が閉じている`).toBe(true);
+  expect(layout?.padding, `${label} で定義の高さが予約されない`).not.toBe('0px');
+  expect(layout!.panelTop, `${label} で定義がチップに重なる`).toBeGreaterThanOrEqual(
+    layout!.summaryBottom - 1,
+  );
+  expect(layout!.observationTop, `${label} で定義が案内に重なる`).toBeGreaterThanOrEqual(
+    layout!.panelBottom - 1,
+  );
+  expect(layout!.beginTop, `${label} で定義が開始ボタンに重なる`).toBeGreaterThanOrEqual(
+    layout!.panelBottom - 1,
+  );
+  expect(
+    Math.abs(layout!.hostBottom - layout!.panelBottom),
+    `${label} で予約余白と定義の下端がずれる`,
+  ).toBeLessThanOrEqual(1);
+}
+
+test('開いたまま回転しても定義は重ならず、スクロール位置を引き戻さない（#950 #955）', async ({
+  page,
+}) => {
+  await openSetup(page, 390, 844);
+  await page.getByTestId('term-tip-aiLiteracy').locator('summary').click();
+  await waitForReservedPanel(page, 'term-tip-aiLiteracy-panel');
+  await expectOpenPanelClearsSetup(page, 'term-tip-aiLiteracy-panel', '390×844');
+  await armScrollSpy(page);
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.evaluate(waitForLayout);
+  await waitForReservedPanel(page, 'term-tip-aiLiteracy-panel');
+  expect(await scrollCalls(page), '844×390 へ回すと定義へスクロールする').toEqual([]);
+  await expectOpenPanelClearsSetup(page, 'term-tip-aiLiteracy-panel', '844×390');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(waitForLayout);
+  await waitForReservedPanel(page, 'term-tip-aiLiteracy-panel');
+  expect(await scrollCalls(page), '390×844 へ戻すと定義へスクロールする').toEqual([]);
+  await expectOpenPanelClearsSetup(page, 'term-tip-aiLiteracy-panel', '390×844 に戻したあと');
+});
+
+test('広い幅から狭幅へ縮めても、開いた定義が案内に重ならない（#950）', async ({ page }) => {
+  await openSetup(page, DESKTOP.width, DESKTOP.height);
+  await armScrollSpy(page);
+  await page.getByTestId('term-tip-aiLiteracy').locator('summary').click();
+  await expect(page.getByTestId('term-tip-aiLiteracy-panel')).toBeVisible();
+  await expect.poll(() => scrollCalls(page)).toContain('term-tip-aiLiteracy-panel');
+  await resetScrollCalls(page);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(waitForLayout);
+  await waitForReservedPanel(page, 'term-tip-aiLiteracy-panel');
+  expect(await scrollCalls(page), '1280 から 390 へ縮めると定義へスクロールする').toEqual([]);
+  await expectOpenPanelClearsSetup(page, 'term-tip-aiLiteracy-panel', '1280 から 390');
+});

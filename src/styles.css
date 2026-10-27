@@ -6061,12 +6061,12 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .tutorial-guide-terms .term-tip[open] {
   flex: 1 0 100%;
 }
-/* #950: 狭幅の編成では開いたチップを全幅の次行へ送らない。
- * パネルはチップ行の下に重ね、高さは --setup-term-panel-reserve で確保する。
- * 広い幅とチュートリアルは上のフロー内折り返しのまま。 */
+/* #950: 狭幅の編成では開いたチップを次行へ送らない。
+ * 定義はチップ列の下、コンテナ全幅に重ねず、測った高さだけ空きを足す。
+ * 1280 など wide はこの規則を使わず、上の折り返しのままにする。 */
 :root[data-responsive-width='narrow'] .setup-term-tips {
   position: relative;
-  padding-bottom: var(--setup-term-panel-reserve, 0px);
+  padding-bottom: var(--setup-term-panel-space, 0px);
 }
 :root[data-responsive-width='narrow'] .setup-term-tips .term-tip {
   position: static;
@@ -6077,11 +6077,12 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 :root[data-responsive-width='narrow'] .setup-term-tips .term-tip[open] .term-tip-panel {
   position: absolute;
   left: 0;
-  right: auto;
+  right: 0;
   bottom: 0;
-  top: auto;
-  width: 100%;
+  width: auto;
+  max-width: none;
   margin: 0;
+  scroll-margin-block: 8px;
 }
 .term-tip[data-placement='up'] .term-tip-panel {
   position: absolute;

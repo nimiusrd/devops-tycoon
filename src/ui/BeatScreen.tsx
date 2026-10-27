@@ -30,6 +30,45 @@ interface DecisionDialogProps {
   onDismiss: () => void;
 }
 
+function JudgmentDialog({ event, onResolve }: { event: EventDef; onResolve: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef);
+  const { resolveCard, resolveRelic } = useReplayContent();
+  const contentResolver = { getCard: resolveCard, getRelic: resolveRelic };
+  const outcome = event.choices[0];
+  return (
+    <div
+      ref={overlayRef}
+      className="result-overlay"
+      data-testid="beat"
+      data-kind="judgment"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="judgment-title"
+      tabIndex={-1}
+    >
+      <div className={`event-panel tone-${event.tone}`}>
+        <p className="result-eyebrow">JUDGMENT</p>
+        <h2 className="event-title" id="judgment-title">
+          {event.title}
+        </h2>
+        <p className="event-prompt">{event.prompt}</p>
+        {outcome && (
+          <>
+            <EffectTagList tags={formatEventOutcomeTags(outcome.outcome, contentResolver)} />
+            {outcome.description && <p className="event-choice-desc">{outcome.description}</p>}
+          </>
+        )}
+        <div className="event-choices">
+          <button type="button" className="event-choice" data-testid="beat-ack" onClick={onResolve}>
+            <span className="event-choice-label">了解</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function recruitSpendRisk(choice: EventChoice, state: RunState): SpendRiskView | null {
   if (!choice.outcome.grantRecruit) return null;
   return spendRiskView({
@@ -163,39 +202,12 @@ function DecisionReminder({ event, onOpen }: { event: EventDef; onOpen: () => vo
 
 export function BeatScreen({ state, onResolve }: BeatScreenProps) {
   const [decisionOpen, setDecisionOpen] = useState(true);
-  const { resolveCard, resolveRelic } = useReplayContent();
-  const contentResolver = { getCard: resolveCard, getRelic: resolveRelic };
   const beat = state.beat;
   const ev = beat ? getEvent(beat.eventId) : undefined;
   if (!beat || !ev) return null;
 
   if (beat.kind === 'judgment') {
-    const outcome = ev.choices[0];
-    return (
-      <div className="result-overlay" data-testid="beat" data-kind="judgment" role="dialog">
-        <div className={`event-panel tone-${ev.tone}`}>
-          <p className="result-eyebrow">JUDGMENT</p>
-          <h2 className="event-title">{ev.title}</h2>
-          <p className="event-prompt">{ev.prompt}</p>
-          {outcome && (
-            <>
-              <EffectTagList tags={formatEventOutcomeTags(outcome.outcome, contentResolver)} />
-              {outcome.description && <p className="event-choice-desc">{outcome.description}</p>}
-            </>
-          )}
-          <div className="event-choices">
-            <button
-              type="button"
-              className="event-choice"
-              data-testid="beat-ack"
-              onClick={() => onResolve()}
-            >
-              <span className="event-choice-label">了解</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <JudgmentDialog event={ev} onResolve={() => onResolve()} />;
   }
 
   if (!decisionOpen) {

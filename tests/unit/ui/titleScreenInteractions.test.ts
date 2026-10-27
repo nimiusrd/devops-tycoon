@@ -82,6 +82,7 @@ vi.mock('../../../src/ui/downloadTextFile', () => ({ downloadTextFile: vi.fn(() 
 
 import { dailyRunKey, defaultMeta } from '../../../src/state/meta';
 import type { ResumeRisk } from '../../../src/state/resumeRisk';
+import { PhraseText } from '../../../src/ui/PhraseText';
 import type { RunSaveSummary } from '../../../src/state/runPersistence';
 import { serializeStartRecipe, type StartRecipeInput } from '../../../src/state/startRecipe';
 import { downloadTextFile } from '../../../src/ui/downloadTextFile';
@@ -98,6 +99,7 @@ function elements(node: ReactNode): ReactElement<ElementProps>[] {
 function content(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (!isValidElement<ElementProps>(node)) return '';
+  if (node.type === PhraseText) return (node.props.phrases as readonly string[]).join('');
   return Children.toArray(node.props.children).map(content).join('');
 }
 
@@ -305,7 +307,9 @@ const dangerousRisk: ResumeRisk = {
   tone: 'danger',
   requiresConfirm: true,
   headline: '燃え尽き寸前のセーブです',
+  headlinePhrases: ['燃え尽き寸前の', 'セーブです'],
   body: '休息が必要です。',
+  bodyPhrases: ['休息が必要です。'],
   seniorHpPct: 12,
   flags: [{ id: 'seniorHp', tone: 'danger', chip: '燃え尽き寸前', detail: '体力低下' }],
 };

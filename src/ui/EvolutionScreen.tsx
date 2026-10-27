@@ -4,13 +4,14 @@
  * スプリントで得た進化ポイントを 5 ブランチに割り振る。前提・コストを満たす
  * ノードのみ解放できる。ビルドの個性（どの会社になるか）がここで決まる。
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { BRANCH_LABEL, EVOLUTION_NODES, type EvolutionBranch } from '../data/evolution';
 import { formatEvolutionNodeTags } from '../render/eventOutcomeView';
 import { canUnlock, isUnlocked } from '../sim/run/evolution';
 import type { RunState } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
 import { RewardCeremony } from './JuicyEffects';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 const BRANCH_ORDER: EvolutionBranch[] = ['dev', 'review', 'quality', 'ai', 'culture'];
 
@@ -22,16 +23,21 @@ export interface EvolutionScreenProps {
 
 export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenProps) {
   const evo = state.evolution;
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef);
   const [unlockedNode, setUnlockedNode] = useState<string | null>(null);
   const unlockedNodeName = unlockedNode
     ? EVOLUTION_NODES.find((node) => node.id === unlockedNode)?.name
     : undefined;
   return (
     <div
+      ref={overlayRef}
       className="result-overlay evolution-overlay"
       data-testid="evolution"
       role="dialog"
+      aria-modal="true"
       aria-label="Evolution Tree"
+      tabIndex={-1}
     >
       <div className="evolution-panel" data-testid="evolution-panel">
         <header className="evolution-head">

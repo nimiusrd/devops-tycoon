@@ -99,3 +99,50 @@ test('進化オーバーレイ中は壁時計が進んでも盤面数字と出�
   });
   expect(pulseStates).toEqual({ risk: 'paused', burnout: 'paused' });
 });
+
+test('進化画面を開いている間は背面に届かず、閉じると次の操作へフォーカスが移る', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await advancePublicRun(page, {
+    seed: 'evo-overlay-inert',
+    difficulty: 'easy',
+    target: { phase: 'evolution' },
+  });
+  const evolution = page.getByTestId('evolution');
+  await expect(evolution).toBeVisible();
+  await expect(page.getByTestId('webgl-status')).toHaveCount(0);
+  await expect(evolution).toHaveAttribute('aria-modal', 'true');
+  const sprint = page.getByTestId('sprint-layout');
+  await expect(sprint).toHaveAttribute('inert', '');
+  await expect(sprint).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.getByTestId('deck')).toBeVisible();
+  expect(
+    await page.getByTestId('deck').evaluate((element) => element.closest('[inert]') !== null),
+  ).toBe(true);
+
+  for (let step = 0; step < 8; step += 1) {
+    const inside = await page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="evolution"]');
+      const active = document.activeElement;
+      return overlay instanceof HTMLElement && (active === overlay || overlay.contains(active));
+    });
+    expect(inside, `Tab ${step} で進化画面の外へ出た`).toBe(true);
+    await page.keyboard.press('Tab');
+  }
+
+  await page.getByTestId('evolution-done').click();
+  await expect(evolution).toHaveCount(0);
+  const beat = page.getByTestId('beat');
+  await expect(beat).toBeVisible();
+  await expect(page.locator('.app-background')).not.toHaveAttribute('inert');
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const dialog = document.querySelector('[data-testid="beat"]');
+        const active = document.activeElement;
+        return dialog instanceof HTMLElement && (active === dialog || dialog.contains(active));
+      }),
+    )
+    .toBe(true);
+});

@@ -255,7 +255,9 @@ describe('useRun', () => {
       tone: 'danger',
       requiresConfirm: true,
       headline: '継続不能',
+      headlinePhrases: ['継続不能'],
       body: '再開前に確認',
+      bodyPhrases: ['再開前に確認'],
       seniorHpPct: 0,
       flags: [],
     };

@@ -3,10 +3,12 @@
  *
  * native の details/summary で開き、フォーカス中の Escape で閉じる。
  * 同じ `name` のチップは同時に一つだけ開く。
+ * 編成の狭幅では、開いた定義を画面内へ寄せる（#950）。
  * ボタンの中には置かない（入れ子の interactive を避ける）。
  */
 import { Fragment } from 'react';
 import { GLOSSARY, type GlossaryTermId } from '../data/glossary';
+import { revealSetupTermPanel } from './termTipLayout';
 
 export type TermTipPlacement = 'inline' | 'up';
 
@@ -36,10 +38,25 @@ export function TermTip({ termId, children, testId, placement = 'inline' }: Term
         event.preventDefault();
         event.stopPropagation();
         root.open = false;
+        // toggle イベントは閉じた後のタスクで届く。余白はその場で戻す。
+        revealSetupTermPanel(root);
         root.querySelector('summary')?.focus();
       }}
+      onToggle={(event) => {
+        revealSetupTermPanel(event.currentTarget);
+      }}
     >
-      <summary className="term-tip-summary">{children ?? entry.term}</summary>
+      <summary
+        className="term-tip-summary"
+        onClick={(event) => {
+          const root = event.currentTarget.parentElement;
+          if (!(root instanceof HTMLDetailsElement)) return;
+          // 開閉の既定動作のあと、描画前にパネルの余白を合わせる。
+          root.ownerDocument.defaultView?.requestAnimationFrame(() => revealSetupTermPanel(root));
+        }}
+      >
+        {children ?? entry.term}
+      </summary>
       <p className="term-tip-panel" data-testid={`${triggerId}-panel`} role="note">
         {entry.phrases
           ? entry.phrases.map((phrase, index) => (

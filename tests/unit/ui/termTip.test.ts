@@ -77,6 +77,17 @@ describe('TermTip', () => {
     expect(GLOSSARY.aiLiteracy.definition).not.toContain('依存が高いと敗北');
   });
 
+  it('編成以外の用語は開閉しても余白を調整しない（#950）', () => {
+    const tree = TermTip({ termId: 'focus', placement: 'up' });
+    const nodes = elements(tree);
+    const details = nodes.find((node) => node.props['data-testid'] === 'term-tip-focus');
+    const closest = vi.fn(() => null);
+    (details?.props.onToggle as (event: { currentTarget: { closest: typeof closest } }) => void)({
+      currentTarget: { closest },
+    });
+    expect(closest).toHaveBeenCalledWith('.setup-term-tips');
+  });
+
   it('介入バー向けは上向き配置を付け、同じ name で排他開閉する', () => {
     const tree = TermTip({ termId: 'focus', placement: 'up' });
     const nodes = elements(tree);

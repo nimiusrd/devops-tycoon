@@ -6061,6 +6061,28 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .tutorial-guide-terms .term-tip[open] {
   flex: 1 0 100%;
 }
+/* #950: 狭幅の編成では開いたチップを全幅の次行へ送らない。
+ * パネルはチップ行の下に重ね、高さは --setup-term-panel-reserve で確保する。
+ * 広い幅とチュートリアルは上のフロー内折り返しのまま。 */
+:root[data-responsive-width='narrow'] .setup-term-tips {
+  position: relative;
+  padding-bottom: var(--setup-term-panel-reserve, 0px);
+}
+:root[data-responsive-width='narrow'] .setup-term-tips .term-tip {
+  position: static;
+}
+:root[data-responsive-width='narrow'] .setup-term-tips .term-tip[open] {
+  flex: 0 0 auto;
+}
+:root[data-responsive-width='narrow'] .setup-term-tips .term-tip[open] .term-tip-panel {
+  position: absolute;
+  left: 0;
+  right: auto;
+  bottom: 0;
+  top: auto;
+  width: 100%;
+  margin: 0;
+}
 .term-tip[data-placement='up'] .term-tip-panel {
   position: absolute;
   left: 0;

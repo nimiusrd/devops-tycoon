@@ -6038,6 +6038,29 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 .tutorial-guide-terms .term-tip[open] {
   flex: 1 0 100%;
 }
+/* #950: 狭幅の編成では開いたチップを次行へ送らない。
+ * 定義はチップ列の下、コンテナ全幅に重ねず、測った高さだけ空きを足す。
+ * 1280 など wide はこの規則を使わず、上の折り返しのままにする。 */
+:root[data-responsive-width='narrow'] .setup-term-tips {
+  position: relative;
+  padding-bottom: var(--setup-term-panel-space, 0px);
+}
+:root[data-responsive-width='narrow'] .setup-term-tips .term-tip {
+  position: static;
+}
+:root[data-responsive-width='narrow'] .setup-term-tips .term-tip[open] {
+  flex: 0 0 auto;
+}
+:root[data-responsive-width='narrow'] .setup-term-tips .term-tip[open] .term-tip-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  scroll-margin-block: 8px;
+}
 .term-tip[data-placement='up'] .term-tip-panel {
   position: absolute;
   left: 0;

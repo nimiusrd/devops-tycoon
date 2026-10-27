@@ -77,6 +77,46 @@ describe('TermTip', () => {
     expect(GLOSSARY.aiLiteracy.definition).not.toContain('依存が高いと敗北');
   });
 
+  it('開いた定義を画面内へ寄せ、閉じたときは動かさない（#950）', () => {
+    const tree = TermTip({ termId: 'aiLiteracy', revealOnOpen: true });
+    const nodes = elements(tree);
+    const details = nodes.find((node) => node.props['data-testid'] === 'term-tip-aiLiteracy');
+    const scrollIntoView = vi.fn();
+    const openRoot = {
+      open: true,
+      closest: () => null,
+      querySelector: vi.fn(() => ({ scrollIntoView })),
+    };
+    (details?.props.onToggle as (event: { currentTarget: typeof openRoot }) => void)({
+      currentTarget: openRoot,
+    });
+    expect(openRoot.querySelector).toHaveBeenCalledWith('.term-tip-panel');
+    expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'nearest', inline: 'nearest' });
+
+    scrollIntoView.mockClear();
+    const closedRoot = {
+      open: false,
+      closest: () => null,
+      querySelector: vi.fn(() => ({ scrollIntoView })),
+    };
+    (details?.props.onToggle as (event: { currentTarget: typeof closedRoot }) => void)({
+      currentTarget: closedRoot,
+    });
+    expect(closedRoot.querySelector).not.toHaveBeenCalled();
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('画面内へ寄せないチップは開いてもスクロールしない', () => {
+    const tree = TermTip({ termId: 'focus', placement: 'up' });
+    const nodes = elements(tree);
+    const details = nodes.find((node) => node.props['data-testid'] === 'term-tip-focus');
+    const scrollIntoView = vi.fn();
+    (details?.props.onToggle as (event: { currentTarget: { open: boolean } }) => void)({
+      currentTarget: { open: true },
+    });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
   it('介入バー向けは上向き配置を付け、同じ name で排他開閉する', () => {
     const tree = TermTip({ termId: 'focus', placement: 'up' });
     const nodes = elements(tree);

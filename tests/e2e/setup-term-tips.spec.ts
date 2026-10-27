@@ -232,6 +232,14 @@ async function scrollCalls(page: Page): Promise<string[]> {
   return page.evaluate(() => (window as Window & { __termScrolls?: string[] }).__termScrolls ?? []);
 }
 
+/** スパイのクロージャが push する配列を残したまま、記録だけ消す。 */
+async function resetScrollCalls(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const calls = (window as Window & { __termScrolls?: string[] }).__termScrolls;
+    if (calls) calls.length = 0;
+  });
+}
+
 async function expectOpenPanelClearsSetup(
   page: Page,
   testId: string,
@@ -315,9 +323,7 @@ test('広い幅から狭幅へ縮めても、開いた定義が案内に重な�
   await page.getByTestId('term-tip-aiLiteracy').locator('summary').click();
   await expect(page.getByTestId('term-tip-aiLiteracy-panel')).toBeVisible();
   await expect.poll(() => scrollCalls(page)).toContain('term-tip-aiLiteracy-panel');
-  await page.evaluate(() => {
-    (window as Window & { __termScrolls?: string[] }).__termScrolls = [];
-  });
+  await resetScrollCalls(page);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(waitForLayout);

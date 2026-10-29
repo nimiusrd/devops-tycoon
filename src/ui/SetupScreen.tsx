@@ -221,7 +221,11 @@ export function SetupScreen({
               <TermTip termId="aiLiteracy" revealOnOpen />
               <TermTip termId="rework" revealOnOpen />
             </div>
-            <div className="setup-observation" data-testid="setup-observation-slot">
+            <div
+              className="setup-observation"
+              data-testid="setup-observation-slot"
+              data-empty={showObservation ? undefined : 'true'}
+            >
               <div
                 className="setup-observation-content"
                 data-testid={showObservation ? 'setup-observation' : undefined}

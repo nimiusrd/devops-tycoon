@@ -1,4 +1,4 @@
-import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { GLOSSARY } from '../../../src/data/glossary';
 import { TermTip } from '../../../src/ui/TermTip';
@@ -27,7 +27,10 @@ describe('TermTip', () => {
     expect(details?.props.name).toBe('glossary-term-tip');
     expect(details?.props['data-placement']).toBe('inline');
     expect(content(summary)).toBe('手戻り');
-    expect(content(panel)).toBe(GLOSSARY.rework.definition);
+    expect(content(panel)).toBe(`手戻り：${GLOSSARY.rework.definition}`);
+    expect(content(nodes.find((node) => node.props.className === 'term-tip-term'))).toBe(
+      '手戻り：',
+    );
     expect(panel?.props.role).toBe('note');
 
     const focus = vi.fn();
@@ -66,12 +69,24 @@ describe('TermTip', () => {
     expect(root.querySelector).not.toHaveBeenCalled();
   });
 
+  it('定義の先頭に用語名を置き、同じ句でも Fragment の key に index を含める（#949 #950）', () => {
+    const tree = TermTip({ termId: 'aiLiteracy' });
+    const nodes = elements(tree);
+    const fragments = nodes.filter((node) => node.type === Fragment);
+    const phrases = GLOSSARY.aiLiteracy.phrases ?? [];
+    // Children.toArray は key の `:` を `=2` に逃がす。index が残っていれば句が重複しても衝突しない。
+    expect(fragments.map((node) => String(node.key))).toEqual(
+      phrases.map((phrase, index) => expect.stringContaining(`$${index}=2${phrase}`)),
+    );
+    expect(new Set(fragments.map((node) => node.key)).size).toBe(phrases.length);
+  });
+
   it('AIリテラシーは句の境だけで折り返し、定義の全文を保つ（#941）', () => {
     const tree = TermTip({ termId: 'aiLiteracy' });
     const nodes = elements(tree);
     const panel = nodes.find((node) => node.props['data-testid'] === 'term-tip-aiLiteracy-panel');
     const phrases = nodes.filter((node) => node.props.className === 'setup-text-phrase');
-    expect(content(panel)).toBe(GLOSSARY.aiLiteracy.definition);
+    expect(content(panel)).toBe(`AIリテラシー：${GLOSSARY.aiLiteracy.definition}`);
     expect(phrases.map((node) => content(node))).toEqual(GLOSSARY.aiLiteracy.phrases);
     expect(GLOSSARY.aiLiteracy.definition).toContain('かつ');
     expect(GLOSSARY.aiLiteracy.definition).not.toContain('依存が高いと敗北');
@@ -102,8 +117,36 @@ describe('TermTip', () => {
     (details?.props.onToggle as (event: { currentTarget: typeof closedRoot }) => void)({
       currentTarget: closedRoot,
     });
-    expect(closedRoot.querySelector).not.toHaveBeenCalled();
+    expect(closedRoot.querySelector).toHaveBeenCalledWith('summary');
+    expect(closedRoot.querySelector).not.toHaveBeenCalledWith('.term-tip-panel');
     expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('開閉を summary の aria-expanded に写す（#950）', () => {
+    const tree = TermTip({ termId: 'pr', revealOnOpen: true });
+    const nodes = elements(tree);
+    const details = nodes.find((node) => node.props['data-testid'] === 'term-tip-pr');
+    const summary = { setAttribute: vi.fn() };
+    const root = {
+      open: true,
+      closest: () => null,
+      querySelector: vi.fn((selector: string) => (selector === 'summary' ? summary : null)),
+    };
+    (details?.props.onToggle as (event: { currentTarget: typeof root }) => void)({
+      currentTarget: root,
+    });
+    expect(summary.setAttribute).toHaveBeenCalledWith('aria-expanded', 'true');
+
+    summary.setAttribute.mockClear();
+    root.open = false;
+    (details?.props.onToggle as (event: { currentTarget: typeof root }) => void)({
+      currentTarget: root,
+    });
+    expect(summary.setAttribute).toHaveBeenCalledWith('aria-expanded', 'false');
+
+    const mounted = { open: false, querySelector: vi.fn(() => summary) } as HTMLDetailsElement;
+    (details?.props.ref as (node: HTMLDetailsElement) => void)(mounted);
+    expect(summary.setAttribute).toHaveBeenCalledWith('aria-expanded', 'false');
   });
 
   it('画面内へ寄せないチップは開いてもスクロールしない', () => {

@@ -30,17 +30,22 @@ export interface GlossaryEntry {
 }
 
 /**
- * AIリテラシーの用語定義（#941）。
+ * AIリテラシーの用語定義（#941 / #949）。
  *
  * 敗北は依存度だけでは起きない。リテラシーの危険上限と依存度の上限を、
  * `OUTCOME_BALANCE` から入れて両方の条件が読めるようにする。
+ * 判定はリテラシーが上限以下、かつ依存度が上限以上（`evaluateLose`）。
  * 句は 320px の用語パネルに収まる長さを保つ。
  */
 export function aiLiteracyGlossaryPhrases(
   literacyMax: number = OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value,
   dependencyCap: number = OUTCOME_BALANCE.loseAiDependencyCap.value,
 ): readonly string[] {
-  return ['低いと手戻り増。', `値が${literacyMax}以下かつ、`, `依存${dependencyCap}%で敗北。`];
+  return [
+    '低いと手戻り増。',
+    `リテラシー${literacyMax}以下かつ`,
+    `依存${dependencyCap}%以上で敗北。`,
+  ];
 }
 
 const aiLiteracyPhrases = aiLiteracyGlossaryPhrases();

@@ -49,7 +49,10 @@ for (const viewport of VIEWPORTS) {
     await tip.locator('summary').click();
     const panel = page.getByTestId('term-tip-aiLiteracy-panel');
     await expect(panel).toBeVisible();
-    await expect(panel).toHaveText(GLOSSARY.aiLiteracy.definition);
+    await expect(panel).toHaveText(
+      `${GLOSSARY.aiLiteracy.term}：${GLOSSARY.aiLiteracy.definition}`,
+    );
+    await expect(panel).toContainText('以上');
 
     const literacy = OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value;
     const dependency = OUTCOME_BALANCE.loseAiDependencyCap.value;

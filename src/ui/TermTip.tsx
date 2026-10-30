@@ -93,6 +93,44 @@ function revealOpenTermPanel(root: HTMLDetailsElement): void {
   panel.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
+/**
+ * `details` の開閉は summary の暗黙状態だけでは伝わらない環境がある（#950）。
+ * `name` 付き details は summary の click で開いても toggle が来ないことがある。
+ * クリックの既定動作のあと、開いている実体から読み上げ状態を写す。
+ */
+const boundTermTips = new WeakSet<HTMLDetailsElement>();
+
+function syncTermTipExpanded(root: HTMLDetailsElement): void {
+  if (typeof root.querySelector !== 'function') return;
+  const summary = root.querySelector('summary');
+  if (summary?.setAttribute === undefined) return;
+  summary.setAttribute('aria-expanded', root.open ? 'true' : 'false');
+}
+
+function syncOpenTermTips(): void {
+  if (typeof document === 'undefined') return;
+  for (const node of document.querySelectorAll('details.term-tip')) {
+    if (node instanceof HTMLDetailsElement) syncTermTipExpanded(node);
+  }
+}
+
+function bindTermTipExpanded(node: HTMLDetailsElement | null): void {
+  if (!node || boundTermTips.has(node)) return;
+  boundTermTips.add(node);
+  if (typeof node.addEventListener !== 'function') {
+    syncTermTipExpanded(node);
+    return;
+  }
+  node.addEventListener('toggle', syncOpenTermTips);
+  const summary = node.querySelector('summary');
+  if (summary && typeof summary.addEventListener === 'function') {
+    summary.addEventListener('click', () => {
+      queueMicrotask(syncOpenTermTips);
+    });
+  }
+  syncTermTipExpanded(node);
+}
+
 export function TermTip({
   termId,
   children,
@@ -108,7 +146,9 @@ export function TermTip({
       name="glossary-term-tip"
       data-testid={triggerId}
       data-placement={placement}
+      ref={bindTermTipExpanded}
       onToggle={(event) => {
+        syncTermTipExpanded(event.currentTarget);
         if (!revealOnOpen) return;
         revealOpenTermPanel(event.currentTarget);
       }}
@@ -119,6 +159,7 @@ export function TermTip({
         event.preventDefault();
         event.stopPropagation();
         root.open = false;
+        syncTermTipExpanded(root);
         // open の直接更新は toggle が遅れることがある。空きの解消はここで確定する。
         if (revealOnOpen) revealOpenTermPanel(root);
         root.querySelector('summary')?.focus();
@@ -126,14 +167,20 @@ export function TermTip({
     >
       <summary className="term-tip-summary">{children ?? entry.term}</summary>
       <p className="term-tip-panel" data-testid={`${triggerId}-panel`} role="note">
-        {entry.phrases
-          ? entry.phrases.map((phrase, index) => (
-              <Fragment key={phrase}>
-                {index > 0 && <wbr />}
-                <span className="setup-text-phrase">{phrase}</span>
-              </Fragment>
-            ))
-          : entry.definition}
+        <span className="term-tip-term">{entry.term}：</span>
+        {entry.phrases ? (
+          entry.phrases.map((phrase, index) => (
+            <Fragment key={`${index}:${phrase}`}>
+              <wbr />
+              <span className="setup-text-phrase">{phrase}</span>
+            </Fragment>
+          ))
+        ) : (
+          <>
+            <wbr />
+            {entry.definition}
+          </>
+        )}
       </p>
     </details>
   );

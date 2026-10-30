@@ -28,8 +28,79 @@ async function summaryOffsets(
         text: summary.textContent,
         x: Math.round(rect.left - hostRect.left),
         y: Math.round(rect.top - hostRect.top),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
       };
     });
+  });
+}
+
+function channelLuminance(channel: number): number {
+  const value = channel / 255;
+  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const parse = (color: string): [number, number, number] => {
+    const rgb = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+    const srgb = color.match(/color\(srgb\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)/);
+    if (srgb) {
+      return [Number(srgb[1]) * 255, Number(srgb[2]) * 255, Number(srgb[3]) * 255];
+    }
+    throw new Error(`色を読めない: ${color}`);
+  };
+  const luminance = (color: string) => {
+    const [red, green, blue] = parse(color);
+    return (
+      0.2126 * channelLuminance(red) +
+      0.7152 * channelLuminance(green) +
+      0.0722 * channelLuminance(blue)
+    );
+  };
+  const lighter = Math.max(luminance(foreground), luminance(background));
+  const darker = Math.min(luminance(foreground), luminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+async function chipChrome(page: Page, testId: string) {
+  return page
+    .getByTestId(testId)
+    .locator('summary')
+    .evaluate((summary) => {
+      const style = getComputedStyle(summary);
+      return {
+        background: style.backgroundColor,
+        boxShadow: style.boxShadow,
+        color: style.color,
+        expanded: summary.getAttribute('aria-expanded'),
+      };
+    });
+}
+
+async function closedTermLayout(page: Page) {
+  return page.evaluate(() => {
+    const head = document.querySelector('.formation-head');
+    const slot = document.querySelector('[data-testid="setup-observation-slot"]');
+    const begin = document.querySelector('[data-testid="begin-sprint"]');
+    const host = document.querySelector('[data-testid="setup-term-tips"]');
+    if (
+      !(head instanceof HTMLElement) ||
+      !(slot instanceof HTMLElement) ||
+      !(begin instanceof HTMLElement) ||
+      !(host instanceof HTMLElement)
+    ) {
+      return null;
+    }
+    const headTop = head.getBoundingClientRect().top;
+    const slotRect = slot.getBoundingClientRect();
+    const beginRect = begin.getBoundingClientRect();
+    return {
+      slotHeight: Math.round(slotRect.height),
+      slotTop: Math.round(slotRect.top - headTop),
+      beginTop: Math.round(beginRect.top - headTop),
+      marginBottom: getComputedStyle(host).marginBottom,
+    };
   });
 }
 
@@ -67,6 +138,9 @@ for (const viewport of NARROW_VIEWPORTS) {
   }) => {
     await openSetup(page, viewport.width, viewport.height);
     const before = await summaryOffsets(page);
+    const closedLayout = await closedTermLayout(page);
+    expect(closedLayout, `${viewport.name} の閉じた配置が取れない`).not.toBeNull();
+    expect(closedLayout?.slotHeight, `${viewport.name} で閉じた案内枠が 44px でない`).toBe(44);
     expect(
       before.map((item) => item.y),
       `${viewport.name} で用語が横一列`,
@@ -74,6 +148,22 @@ for (const viewport of NARROW_VIEWPORTS) {
 
     await page.getByTestId('term-tip-aiLiteracy').locator('summary').click();
     await expect(page.getByTestId('term-tip-aiLiteracy-panel')).toBeVisible();
+    await expect(page.getByTestId('term-tip-aiLiteracy-panel')).toContainText('AIリテラシー：');
+    const openChip = await chipChrome(page, 'term-tip-aiLiteracy');
+    const closedChip = await chipChrome(page, 'term-tip-rework');
+    expect(openChip.background, `${viewport.name} で開いたチップの背景が閉じたまま`).not.toBe(
+      closedChip.background,
+    );
+    expect(openChip.boxShadow, `${viewport.name} で開いたチップの線が閉じたまま`).not.toBe(
+      closedChip.boxShadow,
+    );
+    expect(openChip.boxShadow, `${viewport.name} で開いた線が内側にない`).toContain('inset');
+    expect(openChip.expanded, `${viewport.name} で開いたチップを読み上げない`).toBe('true');
+    expect(closedChip.expanded, `${viewport.name} で閉じたチップが開いていると読む`).toBe('false');
+    expect(
+      contrastRatio(openChip.color, openChip.background),
+      `${viewport.name} で開いた線と文字のコントラストが足りない`,
+    ).toBeGreaterThanOrEqual(4.5);
     const afterLiteracy = await summaryOffsets(page);
     expect(afterLiteracy, `${viewport.name} で AIリテラシーを開いてもチップがずれない`).toEqual(
       before,
@@ -112,10 +202,22 @@ for (const viewport of NARROW_VIEWPORTS) {
 
     const literacyBox = await page.getByTestId('term-tip-aiLiteracy-panel').boundingBox();
     const observationBox = await page.getByTestId('setup-observation-slot').boundingBox();
-    if (!literacyBox || !observationBox) throw new Error('定義か案内の領域が取得できない');
+    const beginBox = await page.getByTestId('begin-sprint').boundingBox();
+    if (!literacyBox || !observationBox || !beginBox) {
+      throw new Error('定義か案内か開始ボタンの領域が取得できない');
+    }
     expect(observationBox.y, `${viewport.name} で定義が案内に重なる`).toBeGreaterThanOrEqual(
       literacyBox.y + literacyBox.height - 1,
     );
+    const openGap = beginBox.y - (literacyBox.y + literacyBox.height);
+    expect(
+      openGap,
+      `${viewport.name} で定義から開始ボタンまでが 12〜16px でない`,
+    ).toBeGreaterThanOrEqual(12);
+    expect(
+      openGap,
+      `${viewport.name} で定義から開始ボタンまでが 12〜16px でない`,
+    ).toBeLessThanOrEqual(16);
 
     await page.getByTestId('term-tip-pr').locator('summary').click();
     await expect(page.getByTestId('term-tip-pr-panel')).toBeVisible();
@@ -141,6 +243,9 @@ for (const viewport of NARROW_VIEWPORTS) {
       .evaluate((host) => getComputedStyle(host).paddingBottom);
     expect(closedSpace, `${viewport.name} で閉じたあとも下段の空きが残る`).toBe('0px');
     expect(await summaryOffsets(page)).toEqual(before);
+    expect(await closedTermLayout(page), `${viewport.name} で閉じた配置が変わる`).toEqual(
+      closedLayout,
+    );
 
     const overflow = await page.evaluate(() => {
       const setup = document.querySelector('[data-testid="setup"]');
@@ -185,6 +290,14 @@ test(`${DESKTOP.name} ${DESKTOP.width}x${DESKTOP.height} では用語チップ�
   expect(layout.panelPosition).toBe('static');
   expect(layout.hostPadding).toBe('0px');
   expect(layout.widthRatio, 'wide では開いたチップが行幅を使う').toBeGreaterThan(0.95);
+  const openChip = await chipChrome(page, 'term-tip-aiLiteracy');
+  const closedChip = await chipChrome(page, 'term-tip-pr');
+  expect(openChip.background).not.toBe(closedChip.background);
+  expect(openChip.boxShadow).not.toBe(closedChip.boxShadow);
+  expect(openChip.expanded).toBe('true');
+  expect(closedChip.expanded).toBe('false');
+  expect(contrastRatio(openChip.color, openChip.background)).toBeGreaterThanOrEqual(4.5);
+  await expect(panel).toContainText('AIリテラシー：');
 
   await page.locator('.formation-head').screenshot({
     path: test.info().outputPath('setup-term-tip-1280.png'),
@@ -275,6 +388,10 @@ async function expectOpenPanelClearsSetup(
       observationTop: observation.getBoundingClientRect().top,
       beginTop: begin.getBoundingClientRect().top,
       hostBottom: host.getBoundingClientRect().bottom,
+      nextGap:
+        (observation.getAttribute('data-empty') === 'true'
+          ? begin.getBoundingClientRect().top
+          : observation.getBoundingClientRect().top) - panelRect.bottom,
     };
   }, testId);
   expect(layout, `${label} の用語配置が取れない`).not.toBeNull();
@@ -293,6 +410,8 @@ async function expectOpenPanelClearsSetup(
     Math.abs(layout!.hostBottom - layout!.panelBottom),
     `${label} で予約余白と定義の下端がずれる`,
   ).toBeLessThanOrEqual(1);
+  expect(layout!.nextGap, `${label} で定義の下の空きが 12〜16px でない`).toBeGreaterThanOrEqual(12);
+  expect(layout!.nextGap, `${label} で定義の下の空きが 12〜16px でない`).toBeLessThanOrEqual(16);
 }
 
 test('開いたまま回転しても定義は重ならず、スクロール位置を引き戻さない（#950 #955）', async ({

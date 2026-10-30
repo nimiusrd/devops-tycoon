@@ -6033,6 +6033,15 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   text-decoration: underline dotted;
   text-underline-offset: 3px;
   font: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+/* #950: 開いたチップは背景と内側の線で閉じたチップと区別する。
+ * 幅を保つため、枠と文字の太さは閉じたチップと同じ。 */
+.term-tip[open] > .term-tip-summary {
+  background: color-mix(in srgb, var(--sky) 16%, var(--panel));
+  box-shadow: inset 0 0 0 2px var(--sky);
+  border-radius: 8px;
 }
 .term-tip-summary::-webkit-details-marker,
 .term-tip-summary::marker {
@@ -6083,6 +6092,20 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   max-width: none;
   margin: 0;
   scroll-margin-block: 8px;
+}
+/* #957: 狭幅で定義を開いたとき、空の案内枠（44px）とチップ列の下余白が
+ * 開始ボタンまでの空きを二重にしない。閉じている間の 44px 予約は #928 のまま。
+ * 案内があるときは、定義から案内まで既存の 12px を残す。 */
+:root[data-responsive-width='narrow']
+  .setup-term-tips:has(.term-tip[open]):has(+ .setup-observation[data-empty='true']) {
+  margin-bottom: 0;
+}
+:root[data-responsive-width='narrow']
+  .setup-term-tips:has(.term-tip[open])
+  + .setup-observation[data-empty='true'] {
+  height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
 }
 .term-tip[data-placement='up'] .term-tip-panel {
   position: absolute;
@@ -8255,7 +8278,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--sun);
 }
 .setup-text-phrase,
-.text-phrase {
+.text-phrase,
+.term-tip-term {
   white-space: nowrap;
 }
 /* 短い確認文でも、狭幅では長い選択肢を全幅へ折り返して読めるようにする。 */

@@ -45,9 +45,14 @@ describe('glossary（#469）', () => {
 
     expect(definition).toBe(aiLiteracyGlossaryPhrases().join(''));
     expect(phrases).toEqual(aiLiteracyGlossaryPhrases());
+    expect(definition).toBe(
+      `低いと手戻り増。リテラシー${literacy}以下かつ依存${dependency}%以上で敗北。`,
+    );
+    expect(definition).toContain('リテラシー');
     expect(definition).toContain(`${literacy}以下`);
-    expect(definition).toContain(`依存${dependency}%`);
+    expect(definition).toContain(`依存${dependency}%以上`);
     expect(definition).toContain('かつ');
+    expect(definition).not.toContain('値が');
     expect(definition).not.toContain('依存が高いと敗北');
     expect(definition).not.toMatch(/依存(度)?だけ/);
 
@@ -64,9 +69,11 @@ describe('glossary（#469）', () => {
       for (const dependencyCap of [dependencyRange.min, dependencyRange.max]) {
         const extreme = aiLiteracyGlossaryPhrases(literacyMax, dependencyCap);
         expect(extreme.join('').length).toBeLessThanOrEqual(GLOSSARY_MAX_DEFINITION_LENGTH);
+        expect(extreme.join('')).toContain('リテラシー');
         expect(extreme.join('')).toContain(`${literacyMax}以下`);
-        expect(extreme.join('')).toContain(`依存${dependencyCap}%`);
+        expect(extreme.join('')).toContain(`依存${dependencyCap}%以上`);
         expect(extreme.join('')).toContain('かつ');
+        expect(extreme.join('')).not.toContain('値が');
       }
     }
   });

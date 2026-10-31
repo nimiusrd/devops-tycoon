@@ -5,6 +5,8 @@ vi.mock('react', async (importOriginal) => {
   let nextId = 0;
   return {
     ...(await importOriginal<typeof import('react')>()),
+    // このファイルは関数として展開する。案内行の useState も初期値を返すだけにする。
+    useState: (initial: unknown) => [initial, () => {}],
     useRef: () => ({ current: null }),
     useId: () => `formation-${nextId++}`,
   };

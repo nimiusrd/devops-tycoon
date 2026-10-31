@@ -12,6 +12,7 @@ import {
   boardDotPreviewRing,
   boardDotReadabilityMagnification,
   presentBoardDot,
+  presentBoardDots,
   presentedDotHitsOtherStation,
   presentedDotLeavesBoard,
   presentedDotRadius,
@@ -20,6 +21,7 @@ import { containFitTransform } from '../../src/render/deptPixiView';
 import { TASK_DIAMETER, type TaskSize } from '../../src/render/taskView';
 import { VISUAL_TOKENS } from '../../src/render/visualTokens';
 import type { Lane } from '../../src/sim/types';
+import { designToClient, readBoardCanvasFrame } from './boardCanvasPoint';
 import { beginPublicSprint, expect, test, type PublicGameWindow } from './fixtures';
 
 const STATIONS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
@@ -107,22 +109,19 @@ function assertDiameters(
 
 async function presentedStationaryDots(page: Page) {
   const sprint = await page.evaluate(() => (window as PublicGameWindow).game?.getState().sprint);
-  const box = await readBoardBox(page);
+  const frame = await readBoardCanvasFrame(page);
   if (!sprint) throw new Error('スプリントがない');
-  const cssScale = Math.min(box.width / BOARD_VIEW.w, box.height / BOARD_VIEW.h);
   const planned = planBoardScene(sprint.tasks).dots;
-  const stationary = planned
-    .filter((dot) => !dot.motion)
-    .map((dot) => presentBoardDot(dot, cssScale));
+  const stationary = presentBoardDots(planned, frame.fit.scale).filter((dot) => !dot.motion);
   const review = stationary.filter((dot) => dot.lane === 'review');
-  return { box, cssScale, dots: review.length > 0 ? review : stationary };
+  return { frame, dots: review.length > 0 ? review : stationary };
 }
 
 async function assertPileRowSpacing(page: Page): Promise<void> {
   const sprint = await page.evaluate(() => (window as PublicGameWindow).game?.getState().sprint);
-  const box = await readBoardBox(page);
+  const frame = await readBoardCanvasFrame(page);
   if (!sprint) throw new Error('スプリントがない');
-  const cssScale = Math.min(box.width / BOARD_VIEW.w, box.height / BOARD_VIEW.h);
+  const cssScale = frame.fit.scale;
   const planned = planBoardScene(sprint.tasks).dots.filter((dot) => !dot.motion);
   const review = planned.filter((dot) => dot.lane === 'review');
   const dots = review.length > 0 ? review : planned;
@@ -251,7 +250,7 @@ async function assertControlsUncovered(page: Page): Promise<void> {
 }
 
 async function assertReviewDotUncovered(page: Page): Promise<void> {
-  const { box, dots } = await presentedStationaryDots(page);
+  const { frame, dots } = await presentedStationaryDots(page);
   const sample = dots[Math.floor(dots.length / 2)];
   if (!sample) throw new Error('盤面の粒がない');
   const onBoard = await page.evaluate(
@@ -262,10 +261,7 @@ async function assertReviewDotUncovered(page: Page): Promise<void> {
         element.closest('[data-testid="action-target-picker"]') == null
       );
     },
-    {
-      x: box.x + (sample.x / BOARD_VIEW.w) * box.width,
-      y: box.y + (sample.y / BOARD_VIEW.h) * box.height,
-    },
+    designToClient(frame, sample),
   );
   expect(onBoard, 'レビューの粒が対象ピッカーに隠れている').toBe(true);
 }

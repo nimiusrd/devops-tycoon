@@ -14,7 +14,9 @@ import {
   type PublicGameWindow,
   test,
 } from './fixtures';
+import { designToClient, readBoardCanvasFrame } from './boardCanvasPoint';
 import { planBoardScene } from '../../src/render/boardScene';
+import { presentBoardDots } from '../../src/render/boardPixiView';
 import { assignableTasks } from '../../src/sim/assignTask';
 import type { SprintState } from '../../src/sim/types';
 import type {
@@ -572,21 +574,18 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     )) as SprintState;
     const scene = planBoardScene(sprint.tasks);
     const candidateIds = new Set(assignableTasks(sprint).map((t) => t.id));
-    const candidates = scene.dots.filter((d) => candidateIds.has(d.id));
-    if (candidates.length === 0) throw new Error('draggable dot not found on board');
 
     const board = page.getByTestId('board');
-    const box = await board.boundingBox();
-    if (!box) throw new Error('board bounding box missing');
-    const toPage = (x: number, y: number) => ({
-      x: box.x + box.width * (x / 1404),
-      y: box.y + box.height * (y / 573),
-    });
+    const frame = await readBoardCanvasFrame(page);
+    const presented = presentBoardDots(scene.dots, frame.fit.scale);
+    const visibleCandidates = presented.filter((dot) => candidateIds.has(dot.id));
+    if (visibleCandidates.length === 0) throw new Error('draggable dot not found on board');
+    const toPage = (x: number, y: number) => designToClient(frame, { x, y });
 
     // ラベル・吹き出し等の DOM オーバーレイに覆われた粒は掴めない仕様
     // ため、覆われていない粒を選ぶ。
     let from: { x: number; y: number } | null = null;
-    for (const dot of candidates) {
+    for (const dot of visibleCandidates) {
       const pt = toPage(dot.x, dot.y);
       const covered = await page.evaluate(
         ([x, y]) =>

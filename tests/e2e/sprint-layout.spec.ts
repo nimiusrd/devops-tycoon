@@ -2425,8 +2425,11 @@ async function hitOverlayAtDesignPoint(
       const board = document.querySelector<HTMLElement>('[data-testid="board"]');
       if (!board) throw new Error('board が無い');
       const rect = board.getBoundingClientRect();
-      const cx = rect.left + (x / viewW) * rect.width;
-      const cy = rect.top + (y / viewH) * rect.height;
+      const hostW = board.clientWidth;
+      const hostH = board.clientHeight;
+      const scale = Math.min(hostW / viewW, hostH / viewH);
+      const cx = rect.left + board.clientLeft + (hostW - viewW * scale) / 2 + x * scale;
+      const cy = rect.top + board.clientTop + (hostH - viewH * scale) / 2 + y * scale;
       const hit = document.elementFromPoint(cx, cy);
       const blockedBy = hit ? (blockers.find((selector) => hit.closest(selector)) ?? null) : null;
       return {

@@ -432,6 +432,26 @@ describe('hitTestBoardDot', () => {
     expect(hitTestBoardDot({ x: 690, y: 300 }, dots, draggable)).toBe(1);
   });
 
+  it('別工程の粒は、重なった手前の円の下でも中心を押すとその粒が選ばれる', () => {
+    const dots = [
+      dot({ id: 29, lane: 'coding', x: 700, y: 300, size: 'medium' }),
+      dot({ id: 30, lane: 'review', x: 708, y: 300, size: 'large' }),
+    ];
+    const ids = new Set([29, 30]);
+    expect(hitTestBoardDot({ x: 700, y: 300 }, dots, ids)).toBe(29);
+    expect(hitTestBoardDot({ x: 704, y: 300 }, dots, ids)).toBe(30);
+  });
+
+  it('別工程の粒は、重なった手前の円の下でも中心を押すとその粒が選ばれる', () => {
+    const dots = [
+      dot({ id: 29, lane: 'coding', x: 700, y: 300, size: 'medium' }),
+      dot({ id: 30, lane: 'review', x: 708, y: 300, size: 'large' }),
+    ];
+    const ids = new Set([29, 30]);
+    expect(hitTestBoardDot({ x: 700, y: 300 }, dots, ids)).toBe(29);
+    expect(hitTestBoardDot({ x: 704, y: 300 }, dots, ids)).toBe(30);
+  });
+
   it.each([
     { scale: 0.675, size: 'medium', separation: 15, offset: 7.6 },
     { scale: 0.208, size: 'large', separation: 17.3, offset: 8.7 },

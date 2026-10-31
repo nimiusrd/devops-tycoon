@@ -889,7 +889,8 @@ export class RunEngine {
           orgScale: orgScaleForTrend,
         }),
       ];
-      this.setPhase('quarterReview');
+      // 集計はここで確定する。結果画面の確認では再計算せず、四半期レビューへ一度だけ進む。
+      this.setPhase('result');
       return;
     }
 
@@ -1119,9 +1120,16 @@ export class RunEngine {
     this.setPhase('setup');
   }
 
-  /** リザルトを確認してドラフトへ進む。 */
+  /**
+   * リザルトを確認する。
+   * 通常スプリントはドラフトへ、四半期末（レビュー集計済み）は四半期レビューへ一度だけ進む。
+   */
   acknowledgeResult(): void {
     if (this.phase !== 'result') return;
+    if (this.quarterReview) {
+      this.setPhase('quarterReview');
+      return;
+    }
     this.draftMulliganUsed = false;
     this.draft = drawDraft(
       createRng(`${this.seed}:draft:${this.sprintsPlayed}`),

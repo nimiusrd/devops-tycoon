@@ -60,7 +60,7 @@ export interface SprintResultScreenProps {
   result: SprintResult;
   /** 直近スプリントの個体成長（昇格・休職など。第12章）。省略時は表示しない。 */
   growth?: GrowthOutcome | null;
-  /** 「次へ」: カードドラフトへ進む（第7章）。 */
+  /** 「次へ」: 通常はカードドラフト、四半期末は四半期レビューへ進む。 */
   onContinue: () => void;
   /** 二次アクション（ランを中断してタイトルへ等）。省略時は表示しない。 */
   onAbandon?: () => void;

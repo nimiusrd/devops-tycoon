@@ -804,7 +804,7 @@ describe('RI-72-D4 engine outcome / quarterReview entry', () => {
     expect(state.reviewHistory).toEqual([]);
   });
 
-  it('ボス突破かつKPIが目標値ちょうどなら met の quarterReview へ入り、勝利は承認まで保留する', () => {
+  it('ボス突破かつKPIが目標値ちょうどなら結果のあと met の quarterReview へ入り、勝利は承認まで保留する', () => {
     const engine = new RunEngine({ seed: 'ri-72-d4-boss-met', difficulty: 'easy' });
     arrangeResolvedSprint(engine, {
       kind: 'boss',
@@ -813,6 +813,17 @@ describe('RI-72-D4 engine outcome / quarterReview entry', () => {
       budget: 10,
     }).resolveSprint();
 
+    const result = engine.snapshot();
+    expect(result.phase).toBe('result');
+    expect(result.status).toBe('playing');
+    expect(result.quarterReview).toMatchObject({
+      bossCleared: true,
+      outcome: 'met',
+    });
+    expect(result.reviewHistory).toEqual(['met']);
+    expect(result.winType).toBeUndefined();
+
+    engine.acknowledgeResult();
     const state = engine.snapshot();
     expect(state.phase).toBe('quarterReview');
     expect(state.status).toBe('playing');
@@ -838,7 +849,7 @@ describe('RI-72-D4 engine outcome / quarterReview entry', () => {
     expect(state.winType).toBeUndefined();
   });
 
-  it('ボス突破失敗でも即時敗北でなければ missed_adjustable の quarterReview へ入る', () => {
+  it('ボス突破失敗でも即時敗北でなければ結果のあと missed_adjustable の quarterReview へ入る', () => {
     const engine = new RunEngine({ seed: 'ri-72-d4-boss-missed-adjustable', difficulty: 'easy' });
     arrangeResolvedSprint(engine, {
       kind: 'boss',
@@ -848,6 +859,17 @@ describe('RI-72-D4 engine outcome / quarterReview entry', () => {
       budget: 10,
     }).resolveSprint();
 
+    const result = engine.snapshot();
+    expect(result.phase).toBe('result');
+    expect(result.status).toBe('playing');
+    expect(result.quarterReview).toMatchObject({
+      bossCleared: false,
+      outcome: 'missed_adjustable',
+    });
+    expect(result.bossRelicReward).toBeUndefined();
+    expect(result.reviewHistory).toEqual(['missed_adjustable']);
+
+    engine.acknowledgeResult();
     const state = engine.snapshot();
     expect(state.phase).toBe('quarterReview');
     expect(state.status).toBe('playing');

@@ -239,7 +239,10 @@ describe('RI-74 AI依存ペースと回避経路', () => {
   it('HUD と敗北提示・チュートリアルに回避経路の手掛かりがある', () => {
     const warn = aiDependencyHudCopy(55, 25);
     expect(warn.warningChip).toMatch(/依存危険/);
-    expect(warn.detail).toMatch(/Literacy/);
+    expect(warn.detail).toBe(
+      `AIリテラシー25・依存${AI_DEPENDENCY_CAP}%以上かつAIリテラシー${AI_LITERACY_UNSAFE_CAP}以下で敗北`,
+    );
+    expect(warn.detail).not.toMatch(/Literacy/);
 
     const safe = aiDependencyHudCopy(40, 45);
     expect(safe.warningChip).toBeUndefined();

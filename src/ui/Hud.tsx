@@ -22,6 +22,7 @@ import {
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
 import { formatSigned } from './formatSigned';
+import { PhraseText } from './PhraseText';
 import { pickCompactMetrics } from './hudCompact';
 import { useResponsiveMode } from './responsiveMode';
 import { VisualIcon } from './VisualIcon';
@@ -128,7 +129,9 @@ function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: Ac
         </span>
       </div>
       <MetricValue metric={metric} />
-      <div className="stat-detail">{metric.detail}</div>
+      <div className="stat-detail">
+        {metric.detailPhrases ? <PhraseText phrases={metric.detailPhrases} /> : metric.detail}
+      </div>
       {metric.barPct !== undefined && metric.fillClass && (
         <div className="bar">
           <i className={metric.fillClass} style={{ width: `${metric.barPct}%` }} />

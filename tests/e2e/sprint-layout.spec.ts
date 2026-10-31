@@ -1143,6 +1143,8 @@ test.describe('RI-94 レイアウト契約', () => {
   });
 
   test('HUD展開・シニア担当の武装状態を5 viewportで維持する', async ({ page }) => {
+    // 展開HUDと武装の確認を5 viewportで回すと、CI の workers=2 では 30 秒を超える。
+    test.setTimeout(60_000);
     await page.setViewportSize({ width: 390, height: 844 });
     await beginPublicSprint(page, { seed: 'ri94-assignTask-0' });
 

@@ -18,6 +18,13 @@ import {
   BOARD_PIXI_LAYER_ORDER,
   BOARD_RENDER_BUDGETS,
 } from '../../../src/render/boardRenderBudget';
+import {
+  boardDotReadabilityMagnification,
+  hitTestBoardDot,
+  presentBoardDot,
+  presentBoardDots,
+  presentedDotRadius,
+} from '../../../src/render/boardPixiView';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import type { Task } from '../../../src/sim/types';
 
@@ -481,6 +488,107 @@ describe('Pixi スプリント盤面レンダラー', () => {
     }
   });
 
+  it('縮小盤面の Review 軌跡は拡大後の粒の中心に付き、粒の倍率は戻さない', async () => {
+    const { renderer, app } = await mounted();
+    const scene = planBoardScene([
+      task({ id: 1, lane: 'coding', progress: 0.55 }),
+      task({ id: 2, lane: 'coding', progress: 0.55 }),
+      ...Array.from({ length: 10 }, (_, index) =>
+        task({ id: index + 10, lane: 'review', progress: 0 }),
+      ),
+    ]);
+    const scale = 0.208;
+    renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
+    renderer.render(input({ scene }));
+
+    const trails = layer(app, 'reviewTrails').children as FakeGraphics[];
+    expect(trails).toHaveLength(scene.reviewEffects.trails.length);
+    expect(trails.length).toBeGreaterThan(0);
+    let moved = false;
+    for (const [index, trail] of trails.entries()) {
+      const plan = scene.reviewEffects.trails[index];
+      const source = scene.dots.find((entry) => entry.id === plan.taskId);
+      expect(source, `軌跡 ${plan.taskId} の粒`).toBeDefined();
+      const presented = presentBoardDot(source!, scale);
+      expect(trail.position).toMatchObject({ x: presented.x, y: presented.y });
+      const outer = Math.max(
+        ...drawCalls(trail, 'moveTo').map((args) => Math.hypot(Number(args[0]), Number(args[1]))),
+      );
+      expect(outer).toBeGreaterThanOrEqual(presentedDotRadius(source!.size, scale));
+      if (presented.x !== plan.x || presented.y !== plan.y) moved = true;
+    }
+    expect(moved).toBe(true);
+
+    const magnification = boardDotReadabilityMagnification(scale);
+    expect(magnification).toBeGreaterThan(1);
+    for (const group of layer(app, 'dots').children) {
+      expect(sprite(group).scale.x).toBeCloseTo(magnification);
+    }
+  });
+
+  it('プレビューで描画順が変わっても、粒の中心とヒット判定は同じ位置を使う', async () => {
+    const { renderer, app } = await mounted();
+    const tasks = Array.from({ length: 20 }, (_, index) => task({ id: index + 1, lane: 'review' }));
+    const scene = planBoardScene(tasks);
+    const scale = 0.208;
+    const previewId = tasks[17].id;
+    renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
+    renderer.render(
+      input({
+        scene,
+        draggableTaskIds: new Set(tasks.map((entry) => entry.id)),
+        previewTaskId: previewId,
+      }),
+    );
+
+    const presented = presentBoardDots(scene.dots, scale);
+    const ids = new Set(presented.map((entry) => entry.id));
+    const groups = layer(app, 'dots').children;
+    expect(groups.length).toBe(presented.length);
+    for (const group of groups) {
+      const hit = hitTestBoardDot(group.position, scene.dots, ids, { x: scale, y: scale });
+      const match = presented.find((entry) => entry.id === hit);
+      expect(match, `描画位置 (${group.position.x}, ${group.position.y})`).toBeDefined();
+      expect(group.position.x).toBeCloseTo(match!.x, 4);
+      expect(group.position.y).toBeCloseTo(match!.y, 4);
+    }
+  });
+
+  it('縮小盤面の緊急対応は、拡大後の Rework 粒の中心から始まる', async () => {
+    const { renderer, app } = await mounted();
+    const tasks = Array.from({ length: 12 }, (_, index) =>
+      task({ id: index + 1, lane: 'rework', incident: true, burnTicksLeft: 3 }),
+    );
+    const scene = planBoardScene(tasks);
+    const scale = 0.208;
+    const raw = scene.dots.find((entry) => Math.hypot(entry.x - 1006, entry.y - 142) < 0.5);
+    expect(raw, 'Rework 最上段の中央').toBeDefined();
+    const [effect] = createTimedBoardEffects(
+      [
+        {
+          source: 'intervention',
+          effect: { kind: 'firefight', taskId: raw!.id, x: raw!.x, y: raw!.y },
+        },
+      ],
+      1,
+      1_000,
+    ).effects;
+    vi.mocked(performance.now).mockReturnValue(
+      effect.startedAtMs + effect.delayMs + effect.durationMs / 2,
+    );
+    renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
+    renderer.render(input({ scene, effects: [effect] }));
+
+    const presented = presentBoardDots(scene.dots, scale);
+    const shown = presented[scene.dots.indexOf(raw!)];
+    const group = layer(app, 'transientEffects').children[0];
+    expect(group.position.x).toBeCloseTo(shown.x, 4);
+    expect(group.position.y).toBeCloseTo(shown.y, 4);
+    expect(
+      Math.hypot(group.position.x - raw!.x, group.position.y - raw!.y) * scale,
+    ).toBeGreaterThan(10);
+  });
+
   it('ドラッグ粒を最前面に描き、再利用後はリングと炎を残さずテクスチャを共有する', async () => {
     const { renderer, app, latest } = await mounted();
     const scene = planBoardScene([
@@ -599,8 +707,11 @@ describe('Pixi スプリント盤面レンダラー', () => {
     const groups = layer(app, 'dots').children;
     const candidate = groups[0];
     const preview = groups[1];
-    expect(preview.position.x).toBe(scene.dots[0].x);
-    expect(candidate.position.x).toBe(scene.dots[1].x);
+    const narrowScale = 0.208;
+    expect(preview.position.x).toBe(presentBoardDot(scene.dots[0], narrowScale).x);
+    expect(candidate.position.x).toBe(presentBoardDot(scene.dots[1], narrowScale).x);
+    expect(sprite(preview).scale.x).toBeCloseTo(boardDotReadabilityMagnification(narrowScale));
+    expect(sprite(preview).scale.x).toBeGreaterThan(1);
     expect(drawCalls(graphics(candidate, 1), 'stroke')).toHaveLength(1);
     const rings = graphics(preview, 1);
     const strokes = drawCalls(rings, 'stroke').map(([stroke]) => stroke);
@@ -618,6 +729,12 @@ describe('Pixi スプリント盤面レンダラー', () => {
     }
     expect(latest().previewTaskId).toBe(1);
     expect(scene.dots).toEqual(original);
+
+    renderer.resize(BOARD_VIEW.w, BOARD_VIEW.h);
+    renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]), previewTaskId: 1 }));
+    const restored = layer(app, 'dots').children;
+    expect(restored[1].position.x).toBe(scene.dots[0].x);
+    expect(sprite(restored[1]).scale.x).toBe(1);
 
     renderer.render(input({ scene, previewTaskId: 999 }));
     expect(latest().previewTaskId).toBeNull();

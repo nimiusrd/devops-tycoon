@@ -51,7 +51,12 @@ describe('visual tokens', () => {
       pixiEffects: 14,
       interventionEffects: 14,
       interventionParticle: 15,
+      actionBarArmed: 16,
     });
+    expect(VISUAL_TOKENS.layers.sprint.actionBarArmed).toBeGreaterThan(
+      VISUAL_TOKENS.layers.sprint.interventionParticle,
+    );
+    expect(VISUAL_TOKENS.layers.sprint.actionBarArmed).toBeLessThan(20);
   });
 
   it('設計 px を CSS の相対座標へ変換する', () => {
@@ -61,6 +66,10 @@ describe('visual tokens', () => {
       top: '50%',
     });
     expect(VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter).toBeGreaterThanOrEqual(24);
+    expect(VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter).toBe(8);
+    expect(VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter).toBeLessThan(
+      VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter,
+    );
     expect(VISUAL_TOKENS.dimensions.sprint.dotPreview.minCssDiameter).toBeGreaterThanOrEqual(24);
     expect(VISUAL_TOKENS.dimensions.sprint.dotPreview.strokeCssWidth).toBeGreaterThanOrEqual(2);
   });
@@ -120,6 +129,7 @@ describe('visual tokens', () => {
     expect(values['--visual-layer-sprint-pixi-effects']).toBe('14');
     expect(values['--visual-layer-sprint-target-preview']).toBe('11');
     expect(values['--visual-layer-sprint-intervention-particle']).toBe('15');
+    expect(values['--visual-layer-sprint-action-bar-armed']).toBe('16');
     expect(values['--visual-sprint-station-width']).toBe('13%');
     expect(values['--visual-point-pop-bottom']).toBe('18%');
     expect(values['--visual-point-pop-line-height']).toBe(

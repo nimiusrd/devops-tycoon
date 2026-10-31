@@ -31,12 +31,17 @@ import {
   actorTextureKey,
   boardAnimationElapsedMs,
   boardDotPreviewRing,
+  boardDotReadabilityMagnification,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
   flowDriftOffset,
   lineDashSegments,
   planBoardDotsForRender,
+  presentBoardDots,
+  presentBoardEffectPoint,
+  presentBoardReviewTrail,
+  presentedDotRadius,
 } from '../boardPixiView';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
 import { BoardTaskMotion, shipmentParticle, TASK_MOTION } from '../boardTaskMotion';
@@ -257,6 +262,7 @@ function getDotParts(group: Container): DotParts {
 
 function resetDotContainer(group: Container): void {
   const parts = getDotParts(group);
+  parts.sprite.scale.set(1);
   parts.ring.clear();
   parts.flame.visible = false;
   group.rotation = 0;
@@ -762,7 +768,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       this.drawFlows(this.elapsedMs);
       this.syncReviewHeat(scene.reviewEffects.heatField);
       this.syncActors(scene.stations);
-      this.syncReviewTrails(scene.reviewEffects.trails);
+      this.syncReviewTrails(scene.reviewEffects.trails, scene.dots, this.root.scale.x);
       this.syncDots(
         scene.dots,
         input.draggableTaskIds ?? new Set(),
@@ -785,6 +791,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   /** 直近 render の入力（resize 後の再描画用）。 */
   getLastInput(): BoardPixiInput | null {
     return this.lastInput;
+  }
+
+  /** 粒の contain-fit 縮尺と、見分けのための拡大倍率。 */
+  getDotReadability(): { scale: number; magnification: number } {
+    const scale = this.root.scale.x;
+    return { scale, magnification: boardDotReadabilityMagnification(scale) };
   }
 
   /** dev/E2E が必要な時だけ読み、毎フレーム DOM を更新しない。 */
@@ -947,7 +959,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   }
 
   /** Coding / Rework から Review へ向かう上限付きの光跡を plan と同期する。 */
-  private syncReviewTrails(trails: readonly BoardReviewTrailPlan[]): void {
+  private syncReviewTrails(
+    trails: readonly BoardReviewTrailPlan[],
+    dots: readonly BoardDotPlan[],
+    cssScale: number,
+  ): void {
     const pool = this.reviewTrailPool;
     if (!pool) return;
     this.reviewTrailRequestedCount = trails.length;
@@ -955,7 +971,15 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     pool.releaseAll();
     this.reviewTrailEntries = [];
 
-    for (const plan of trails) {
+    const dotsById = new Map(dots.map((dot) => [dot.id, dot]));
+    for (const source of trails) {
+      const sourceDot = dotsById.get(source.taskId);
+      const plan = presentBoardReviewTrail(source, sourceDot, cssScale);
+      // 軌跡は粒の背後で中心から伸びる。拡大で半径が計画長を超えると全体が隠れるので、
+      // 広い盤面で見えていた外側の長さだけ足す。倍率 1 では計画長のまま。
+      const designRadius = sourceDot ? TASK_DIAMETER[sourceDot.size] / 2 : 0;
+      const visibleRadius = sourceDot ? presentedDotRadius(sourceDot.size, cssScale) : 0;
+      const length = plan.length + Math.max(0, visibleRadius - designRadius);
       const trail = pool.acquire();
       if (!trail) break;
       const color =
@@ -966,8 +990,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
             : VISUAL_TOKENS.colors.flow.normal;
       const parts = 3;
       for (let i = 0; i < parts; i += 1) {
-        const from = -plan.length * ((i + 1) / parts);
-        const to = -plan.length * (i / parts);
+        const from = -length * ((i + 1) / parts);
+        const to = -length * (i / parts);
         const nearDot = (i + 1) / parts;
         trail
           .moveTo(from, 0)
@@ -1339,20 +1363,28 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const pinned = new Set(draggableIds);
     if (dragTaskId !== null) pinned.add(dragTaskId);
     if (previewTaskId !== null) pinned.add(previewTaskId);
+    const cssScale = this.root.scale.x;
+    const magnification = boardDotReadabilityMagnification(cssScale);
+    // 押し離しは入力順に依存する。ヒット判定と同じ scene 順で位置を確定してから描画順へ並べる。
+    const presentedById = new Map(
+      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    );
+    const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
     this.taskMotion.sync(
-      renderPlan.dots,
+      presentedDots,
       this.elapsedMs,
       this.reducedMotion || this.frozen || this.loopPaused,
       pinned,
     );
 
-    for (const dot of renderPlan.dots) {
+    for (const dot of presentedDots) {
       const group = pool.acquire();
       if (!group) break;
       const parts = getDotParts(group);
       const d = TASK_DIAMETER[dot.size];
 
       parts.sprite.texture = this.dotTexture(dot.variant, dot.size);
+      parts.sprite.scale.set(magnification);
       group.position.set(dot.x, dot.y);
 
       const draggable = draggableIds.has(dot.id);
@@ -1371,7 +1403,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         });
       } else if (draggable || dragging) {
         // CSS `.task-dot.draggable` の outline（2px シアン / ドラッグ中は金色）。
-        parts.ring.circle(0, 0, d / 2 + 3).stroke({
+        parts.ring.circle(0, 0, (d / 2) * magnification + 3).stroke({
           color: dragging ? VISUAL_TOKENS.colors.sun : VISUAL_TOKENS.colors.interaction.drag,
           width: 2,
           alpha: dragging ? 1 : 0.67,
@@ -1383,7 +1415,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         // CSS `.flame`: font-size 0.75〜1.1em を焼き込みサイズ比で近似。
         const scale = urgency !== undefined ? 0.75 + (1 - urgency) * 0.35 : 0.9;
         parts.flame.scale.set(scale);
-        parts.flame.position.set(0, -d / 2 + 3);
+        parts.flame.position.set(0, (-d / 2) * magnification + 3);
         parts.flame.visible = true;
       }
 
@@ -1518,6 +1550,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
   /** 時刻付き plan を現在フレームの座標・透明度・拡大率へ写す。 */
   private applyEffectAnimations(nowMs: number): void {
+    const planned = this.lastInput?.scene.dots ?? [];
+    const cssScale = this.root.scale.x;
+    const presented = presentBoardDots(planned, cssScale);
+    const place = (x: number, y: number) =>
+      presentBoardEffectPoint({ x, y }, planned, presented, cssScale);
     for (const entry of this.effectEntries) {
       const { group, plan } = entry;
       const startsAt = plan.startedAtMs + plan.delayMs;
@@ -1536,24 +1573,28 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       if (plan.source === 'fire') {
         const effect = plan.effect;
         switch (effect.kind) {
-          case 'spread':
-            group.position.set(
-              lerp(effect.fromX, effect.toX, progress),
-              lerp(effect.fromY, effect.toY, progress),
-            );
+          case 'spread': {
+            const from = place(effect.fromX, effect.fromY);
+            const to = place(effect.toX, effect.toY);
+            group.position.set(lerp(from.x, to.x, progress), lerp(from.y, to.y, progress));
             group.alpha = Math.min(1, progress * 7) * (0.75 + pulse * 0.25);
             group.scale.set(0.5 + pulse * 0.7);
             break;
-          case 'extinguish':
-            group.position.set(effect.x, effect.y);
+          }
+          case 'extinguish': {
+            const at = place(effect.x, effect.y);
+            group.position.set(at.x, at.y);
             group.alpha = pulse;
             group.scale.set(0.3 + progress * 1.9);
             break;
-          case 'ignite':
-            group.position.set(effect.x, effect.y);
+          }
+          case 'ignite': {
+            const at = place(effect.x, effect.y);
+            group.position.set(at.x, at.y);
             group.alpha = pulse;
             group.scale.set(0.4 + pulse * 1.4);
             break;
+          }
         }
         continue;
       }
@@ -1561,35 +1602,38 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       const effect = plan.effect;
       switch (effect.kind) {
         case 'reviewSweep': {
-          const angle = Math.atan2(effect.toY - effect.fromY, effect.toX - effect.fromX);
-          group.position.set(
-            lerp(effect.fromX, effect.toX, progress),
-            lerp(effect.fromY, effect.toY, progress),
-          );
+          const from = place(effect.fromX, effect.fromY);
+          const to = place(effect.toX, effect.toY);
+          const angle = Math.atan2(to.y - from.y, to.x - from.x);
+          group.position.set(lerp(from.x, to.x, progress), lerp(from.y, to.y, progress));
           group.rotation = angle;
           group.alpha = Math.min(1, progress * 8) * (0.72 + pulse * 0.28);
           group.scale.set(0.6 + pulse * 0.5);
           break;
         }
-        case 'split':
-          group.position.set(effect.x, effect.y);
+        case 'split': {
+          const at = place(effect.x, effect.y);
+          group.position.set(at.x, at.y);
           group.alpha = pulse;
           group.scale.set(0.55 + pulse * 0.75);
           break;
-        case 'firefight':
-          group.position.set(effect.x, effect.y);
+        }
+        case 'firefight': {
+          const at = place(effect.x, effect.y);
+          group.position.set(at.x, at.y);
           group.alpha = pulse;
           group.scale.set(0.4 + progress * 1.8);
           break;
-        case 'assignDash':
-          group.position.set(
-            lerp(effect.fromX, effect.toX, progress),
-            lerp(effect.fromY, effect.toY, progress),
-          );
+        }
+        case 'assignDash': {
+          const from = place(effect.fromX, effect.fromY);
+          const to = place(effect.toX, effect.toY);
+          group.position.set(lerp(from.x, to.x, progress), lerp(from.y, to.y, progress));
           group.rotation = (effect.angleDeg * Math.PI) / 180;
           group.alpha = pulse;
           group.scale.set(0.3 + pulse, 0.75 + pulse * 0.25);
           break;
+        }
         case 'boardAura':
         case 'successPulse':
           group.position.set(BOARD_VIEW.w / 2, BOARD_VIEW.h * 0.42);

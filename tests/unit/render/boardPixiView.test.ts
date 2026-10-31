@@ -9,7 +9,9 @@ import {
   actorTextureKey,
   boardAnimationElapsedMs,
   boardDotLayer,
+  boardDotCssDiameter,
   boardDotPreviewRing,
+  boardDotReadabilityMagnification,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
@@ -19,9 +21,37 @@ import {
   hitTestBoardDot,
   lineDashSegments,
   planBoardDotsForRender,
+  presentBoardDot,
+  presentBoardDots,
+  presentBoardEffectPoint,
+  presentBoardReviewTrail,
+  presentedDotHitsOtherStation,
+  presentedDotLeavesBoard,
+  presentedDotRadius,
 } from '../../../src/render/boardPixiView';
-import type { BoardDotPlan } from '../../../src/render/boardScene';
+import {
+  BOARD_STATION_CENTERS,
+  planBoardScene,
+  type BoardDotPlan,
+} from '../../../src/render/boardScene';
+import type { Lane, Task } from '../../../src/sim/types';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
+
+const STATIONS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
+  lane,
+  x: BOARD_STATION_CENTERS[lane].x,
+  y: BOARD_STATION_CENTERS[lane].y,
+}));
+
+const FLOW = {
+  kind: 'flow' as const,
+  from: 'coding' as const,
+  to: 'review' as const,
+  t: 0.4,
+  angleDeg: 28,
+  aiAssisted: false,
+  speedMul: 1,
+};
 
 function dot(overrides: Partial<BoardDotPlan> & { id: number }): BoardDotPlan {
   return {
@@ -115,6 +145,270 @@ describe('boardDotPreviewRing', () => {
         tokens.outlineCssWidth,
       );
     }
+  });
+});
+
+describe('boardDotReadability', () => {
+  const pile = { clusterX: 840, clusterY: 315 };
+
+  it('広い盤面では倍率 1 で位置を変えず、狭い盤面では最小直径と 3px の隙間を確保する', () => {
+    const dots = [
+      dot({ id: 1, size: 'small', x: 840, y: 315, ...pile }),
+      dot({ id: 2, size: 'small', x: 862, y: 315, ...pile }),
+      dot({ id: 3, size: 'medium', x: 884, y: 315, ...pile }),
+    ];
+    expect(boardDotReadabilityMagnification(0.68)).toBe(1);
+    expect(boardDotReadabilityMagnification(0.5)).toBe(1);
+    expect(dots.map((entry) => presentBoardDot(entry, 0.68))).toEqual(dots);
+
+    const narrowScale = 0.208;
+    const magnification = boardDotReadabilityMagnification(narrowScale);
+    expect(magnification).toBeGreaterThan(1);
+    expect(boardDotCssDiameter('small', narrowScale)).toBeCloseTo(
+      VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter,
+    );
+    expect(boardDotCssDiameter('medium', narrowScale)).toBeGreaterThan(
+      boardDotCssDiameter('small', narrowScale),
+    );
+    const presented = dots.map((entry) => presentBoardDot(entry, narrowScale));
+    const spacing = (presented[1].x - presented[0].x) * narrowScale;
+    const smallGap = spacing - boardDotCssDiameter('small', narrowScale);
+    expect(smallGap).toBeCloseTo(3);
+    expect(presented[0].x).toBe(840);
+    expect(presented[1].x).toBeGreaterThan(862);
+  });
+
+  it('基準点がない粒は拡大しても中心を動かさない', () => {
+    const entry = dot({ id: 1, size: 'small', x: 100, y: 80 });
+    expect(presentBoardDot(entry, 0.208)).toMatchObject({ x: 100, y: 80 });
+  });
+
+  it('山の中心でも隣の工程に入る大きい粒は、自分の工程の中心へ寄せる', () => {
+    const scale = 0.2006980802792321;
+    const entry = dot({
+      id: 0,
+      lane: 'done',
+      size: 'large',
+      x: 973,
+      y: 330,
+      clusterX: 1006,
+      clusterY: 330,
+    });
+    const presented = presentBoardDot(entry, scale);
+    expect(presented.x).toBeGreaterThan(1006);
+    expect(presented.y).toBeGreaterThan(330);
+    expect(presentedDotHitsOtherStation(entry, scale, STATIONS)).toBe(false);
+    expect(presentedDotLeavesBoard(entry, scale)).toBe(false);
+    expect(boardDotCssDiameter('large', scale)).toBeGreaterThan(
+      VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter,
+    );
+  });
+
+  it('別工程に入る静止粒は基準点へ戻し、見た目の直径は保つ', () => {
+    const scale = 0.208;
+    const anchor = { x: 840, y: 315 };
+    const entry = dot({
+      id: 9,
+      size: 'small',
+      lane: 'review',
+      x: anchor.x + 44,
+      y: anchor.y - 16,
+      clusterX: anchor.x,
+      clusterY: anchor.y,
+    });
+    const magnification = boardDotReadabilityMagnification(scale);
+    const full = {
+      x: anchor.x + 44 * magnification,
+      y: anchor.y - 16 * magnification,
+    };
+    const presented = presentBoardDot(entry, scale);
+    expect(Math.hypot(presented.x - anchor.x, presented.y - anchor.y)).toBeLessThan(
+      Math.hypot(full.x - anchor.x, full.y - anchor.y),
+    );
+    expect(presentedDotHitsOtherStation(entry, scale, STATIONS)).toBe(false);
+    expect(presentedDotLeavesBoard(entry, scale)).toBe(false);
+    expect(boardDotCssDiameter('small', scale)).toBeCloseTo(
+      VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter,
+    );
+  });
+
+  it('同じ段の右端が別工程に当たっても、粒は別の中心に残る', () => {
+    const scale = 0.208;
+    const pile = { clusterX: 840, clusterY: 315 };
+    const dots = [-44, -22, 0, 22, 44].map((dx, index) =>
+      dot({
+        id: index + 1,
+        size: 'medium',
+        lane: 'review',
+        x: 840 + dx,
+        y: 315,
+        ...pile,
+      }),
+    );
+    const presented = presentBoardDots(dots, scale);
+    for (let i = 0; i < dots.length; i += 1) {
+      const placed = {
+        ...dots[i],
+        x: presented[i].x,
+        y: presented[i].y,
+        clusterX: undefined,
+        clusterY: undefined,
+      };
+      expect(presentedDotHitsOtherStation(placed, scale, STATIONS)).toBe(false);
+      expect(presentedDotLeavesBoard(placed, scale)).toBe(false);
+    }
+    const right = presented.slice(-2);
+    const gap = Math.hypot(right[0].x - right[1].x, right[0].y - right[1].y);
+    // 独立に境界へ寄せると中心差は 0.001 CSS px 未満になり、奥の粒を選べない。
+    expect(gap * scale).toBeGreaterThan(1);
+    const ids = new Set(dots.map((entry) => entry.id));
+    for (let i = 0; i < dots.length; i += 1) {
+      expect(hitTestBoardDot(presented[i], dots, ids, { x: scale, y: scale })).toBe(dots[i].id);
+    }
+  });
+
+  it('複数段の Review 山でも、各中心を押すとその粒が選ばれる', () => {
+    const scale = 0.208;
+    const perRow = 5;
+    const count = 11;
+    const dots = Array.from({ length: count }, (_, index) => {
+      const row = Math.floor(index / perRow);
+      const col = index % perRow;
+      const rows = Math.ceil(count / perRow);
+      const inRow = row === rows - 1 ? count - row * perRow : perRow;
+      const ox = (col - (inRow - 1) / 2) * 22;
+      const oy = -row * 16;
+      return dot({
+        id: index + 1,
+        size: 'medium',
+        lane: 'review',
+        x: 840 + ox,
+        y: 315 + oy,
+        clusterX: 840,
+        clusterY: 315,
+      });
+    });
+    const presented = presentBoardDots(dots, scale);
+    const ids = new Set(dots.map((entry) => entry.id));
+    for (let i = 0; i < dots.length; i += 1) {
+      const placed = {
+        ...dots[i],
+        x: presented[i].x,
+        y: presented[i].y,
+        clusterX: undefined,
+        clusterY: undefined,
+      };
+      expect(presentedDotHitsOtherStation(placed, scale, STATIONS), `粒 ${dots[i].id}`).toBe(false);
+      expect(presentedDotLeavesBoard(placed, scale), `粒 ${dots[i].id}`).toBe(false);
+      expect(hitTestBoardDot(presented[i], dots, ids, { x: scale, y: scale })).toBe(dots[i].id);
+    }
+  });
+
+  it('緊急対応の開始位置は、拡大後の粒の中心へ移る', () => {
+    const scale = 0.208;
+    const tasks: Task[] = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      kind: 'normal',
+      highValue: false,
+      aiAssisted: false,
+      lane: 'rework',
+      progress: 0,
+      reworkAttempts: 0,
+      wasReworked: false,
+      incident: true,
+      debt: false,
+      burnTicksLeft: 3,
+    }));
+    const planned = planBoardScene(tasks).dots;
+    const raw = planned.find((entry) => Math.hypot(entry.x - 1006, entry.y - 142) < 0.5);
+    expect(raw, 'Rework 最上段の中央').toBeDefined();
+    const presented = presentBoardDots(planned, scale);
+    const shown = presented[planned.indexOf(raw!)];
+    const anchor = { x: raw!.x, y: raw!.y };
+    expect(presentBoardEffectPoint(anchor, planned, presented, scale)).toEqual({
+      x: shown.x,
+      y: shown.y,
+    });
+    expect(Math.hypot(shown.x - anchor.x, shown.y - anchor.y) * scale).toBeGreaterThan(10);
+    expect(presentBoardEffectPoint(anchor, planned, presented, 1)).toEqual(anchor);
+    expect(presentBoardEffectPoint({ x: 10, y: 20 }, planned, presented, scale)).toEqual({
+      x: 10,
+      y: 20,
+    });
+  });
+
+  it('盤面の外へ出るフロー粒は端の内側へ戻し、別工程の上は通す', () => {
+    const scale = 0.208;
+    const magnification = boardDotReadabilityMagnification(scale);
+    const off = dot({
+      id: 3,
+      lane: 'coding',
+      size: 'small',
+      x: 0,
+      y: 0,
+      clusterX: 30,
+      clusterY: 30,
+      motion: FLOW,
+    });
+    const fullX = 30 + (0 - 30) * magnification;
+    expect(fullX).toBeLessThan(0);
+    const presented = presentBoardDot(off, scale);
+    const radius = presentedDotRadius('small', scale);
+    expect(presented.x - radius).toBeGreaterThanOrEqual(-0.5);
+    expect(presented.y - radius).toBeGreaterThanOrEqual(-0.5);
+    expect(presented.x).toBeGreaterThan(fullX);
+    expect(presentedDotLeavesBoard(off, scale)).toBe(false);
+
+    const crossing = dot({
+      id: 4,
+      lane: 'coding',
+      size: 'small',
+      x: 900,
+      y: 280,
+      clusterX: 860,
+      clusterY: 280,
+      motion: FLOW,
+    });
+    expect(presentBoardDot(crossing, scale).x).toBeCloseTo(860 + 40 * magnification);
+    expect(presentedDotHitsOtherStation(crossing, scale, STATIONS)).toBe(false);
+  });
+
+  it('軌跡の根元を拡大後の粒の中心へ移す', () => {
+    const dotOnFlow = dot({
+      id: 4,
+      lane: 'coding',
+      size: 'small',
+      x: 900,
+      y: 280,
+      clusterX: 860,
+      clusterY: 280,
+      motion: FLOW,
+    });
+    const trail = {
+      taskId: 4,
+      x: 900,
+      y: 280,
+      angleDeg: 28,
+      progress: 0.4,
+      speedMul: 1,
+      length: 18,
+      width: 3,
+      tone: 'normal' as const,
+    };
+    const presented = presentBoardDot(dotOnFlow, 0.208);
+    expect(presentBoardReviewTrail(trail, dotOnFlow, 0.208)).toMatchObject({
+      x: presented.x,
+      y: presented.y,
+      angleDeg: 28,
+      tone: 'normal',
+    });
+    expect(presented.x).not.toBe(trail.x);
+    expect(presentBoardReviewTrail(trail, undefined, 0.208)).toBe(trail);
+    expect(presentBoardReviewTrail({ ...trail, taskId: 99 }, dotOnFlow, 0.208).taskId).toBe(99);
+
+    const still = dot({ id: 1, size: 'small', x: 100, y: 80 });
+    const stillTrail = { ...trail, taskId: 1, x: 100, y: 80 };
+    expect(presentBoardReviewTrail(stillTrail, still, 0.208)).toBe(stillTrail);
   });
 });
 

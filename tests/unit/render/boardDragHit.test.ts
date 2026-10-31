@@ -9,6 +9,7 @@ import {
 } from '../../../src/render/boardDragHit';
 import { BOARD_VIEW } from '../../../src/render/boardScene';
 import type { BoardDotPlan } from '../../../src/render/boardScene';
+import { presentBoardDot } from '../../../src/render/boardPixiView';
 
 function dot(overrides: Partial<BoardDotPlan> & { id: number }): BoardDotPlan {
   return {
@@ -74,12 +75,34 @@ describe('clientPointHitsDraggableBoardDot', () => {
 
   it('近接粒は最も近い対象を選び、対象外の粒は選ばない', () => {
     const rect = { left: 14, top: 200, width: 292, height: 119.2 };
-    const dots = [dot({ id: 1 }), dot({ id: 2, x: 730 }), dot({ id: 9 })];
-    const x = rect.left + (700 / BOARD_VIEW.w) * rect.width;
-    const y = rect.top + (300 / BOARD_VIEW.h) * rect.height;
-    expect(hitTestClientBoardDot(x, y, rect, dots, new Set([1, 2]))).toBe(1);
-    expect(hitTestClientBoardDot(x + 6, y, rect, dots, new Set([1, 2]))).toBe(2);
-    expect(clientPointHitsDraggableBoardDot(x, y, rect, dots, new Set([1, 2]))).toBe(true);
+    const cssScale = Math.min(rect.width / BOARD_VIEW.w, rect.height / BOARD_VIEW.h);
+    const dots = [
+      dot({ id: 1, clusterX: 700, clusterY: 300 }),
+      dot({ id: 2, x: 730, clusterX: 700, clusterY: 300 }),
+      dot({ id: 9 }),
+    ];
+    const presented = dots.map((entry) => presentBoardDot(entry, cssScale));
+    const client = (designX: number, designY: number) => ({
+      x: rect.left + (designX / BOARD_VIEW.w) * rect.width,
+      y: rect.top + (designY / BOARD_VIEW.h) * rect.height,
+    });
+    const first = client(presented[0].x, presented[0].y);
+    const second = client(presented[1].x, presented[1].y);
+    const nearerSecond = client(
+      presented[0].x + (presented[1].x - presented[0].x) * 0.62,
+      presented[0].y,
+    );
+    expect(hitTestClientBoardDot(first.x, first.y, rect, dots, new Set([1, 2]))).toBe(1);
+    expect(hitTestClientBoardDot(nearerSecond.x, nearerSecond.y, rect, dots, new Set([1, 2]))).toBe(
+      2,
+    );
+    expect(hitTestClientBoardDot(second.x, second.y, rect, dots, new Set([1, 2]))).toBe(2);
+    expect(clientPointHitsDraggableBoardDot(first.x, first.y, rect, dots, new Set([1, 2]))).toBe(
+      true,
+    );
+    expect(clientPointHitsDraggableBoardDot(second.x, second.y, rect, dots, new Set([9]))).toBe(
+      false,
+    );
   });
 
   it.each([{ width: 0 }, { height: 0 }, { width: -1 }, { height: Infinity }, { left: NaN }])(

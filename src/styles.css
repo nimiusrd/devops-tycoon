@@ -2216,6 +2216,16 @@ body:has(.overlay-contained) {
   bottom: calc(100% + 8px);
   z-index: 1;
   flex: none;
+  /*
+   * 取消 44px + 余白 + 一覧 1 段強。枠自体は切らず、あふれた候補は一覧の中でスクロールする。
+   * 16 件でも下の工程とプレビュー輪を覆わない高さ（#918）。
+   */
+  max-height: 148px;
+  overflow: hidden;
+}
+.actionbar[data-responsive-width='wide'] .action-target-picker-list {
+  min-height: 0;
+  max-height: 72px;
 }
 .action-target-picker {
   flex: 1 1 100%;

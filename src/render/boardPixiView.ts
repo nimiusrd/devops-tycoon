@@ -8,11 +8,16 @@
  * contain-fit は部署ビューと同じ `containFitTransform`（deptPixiView.ts）を使う。
  */
 import type { Lane } from '../sim/types';
-import type { BoardDotPlan, StationMood } from './boardScene';
+import {
+  BOARD_STATION_CENTERS,
+  type BoardDotPlan,
+  type BoardReviewTrailPlan,
+  type StationMood,
+} from './boardScene';
 import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import type { TaskSize, TaskVariant } from './taskView';
 import { TASK_DIAMETER } from './taskView';
-import { VISUAL_TOKENS } from './visualTokens';
+import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 
 /** 設計座標の点。 */
 export interface BoardPoint {
@@ -126,8 +131,163 @@ export function boardDotCssDiameter(size: TaskSize, cssScale: number): number {
   return TASK_DIAMETER[size] * cssScale * boardDotReadabilityMagnification(cssScale);
 }
 
+/** 拡大後の粒半径（設計 px）。倍率 1 のときは設計半径のまま。 */
+export function presentedDotRadius(size: TaskSize, cssScale: number): number {
+  return (TASK_DIAMETER[size] / 2) * boardDotReadabilityMagnification(cssScale);
+}
+
+/** ステーションキャラの半幅・半高（設計 px）。描画の anchor 0.5 と同じ箱。 */
+export function boardActorHalfExtents(): BoardPoint {
+  const sprint = VISUAL_TOKENS.dimensions.sprint;
+  const width = (DESIGN_SPACES.sprint.w * sprint.stationWidthPercent) / 100;
+  const height = (width * sprint.actor.dom.h) / sprint.actor.dom.w;
+  return { x: width / 2, y: height / 2 };
+}
+
+const BOARD_ACTORS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
+  lane,
+  x: BOARD_STATION_CENTERS[lane].x,
+  y: BOARD_STATION_CENTERS[lane].y,
+}));
+
+/**
+ * 山の基準点が自分の工程の中心からこの距離以内なら、その工程の粒として収める。
+ * 完了の山が工程中心から約 80 設計px 離れるため、それより広く、任意座標の判定用の粒は含めない。
+ */
+const OWN_STATION_PILE_REACH = 120;
+
+function belongsToOwnStationPile(dot: BoardDotPlan): boolean {
+  if (dot.clusterX === undefined || dot.clusterY === undefined) return false;
+  const station = BOARD_STATION_CENTERS[dot.lane];
+  return Math.hypot(dot.clusterX - station.x, dot.clusterY - station.y) <= OWN_STATION_PILE_REACH;
+}
+
+/** 粒の円が設計盤面の外に出て、端で切れるか。 */
+function circleLeavesDesignBoard(x: number, y: number, radius: number): boolean {
+  const { w, h } = DESIGN_SPACES.sprint;
+  return x - radius < -0.5 || y - radius < -0.5 || x + radius > w + 0.5 || y + radius > h + 0.5;
+}
+
+/**
+ * 円が別工程のキャラ枠に入るか。
+ * 自分の工程は山の置き場なので見ない。半径 0.5px 未満の食い込みは接触とみなさない。
+ */
+function circleHitsOtherStation(
+  x: number,
+  y: number,
+  radius: number,
+  lane: Lane,
+  stations: readonly { lane: Lane; x: number; y: number }[],
+): boolean {
+  const limit = radius - 0.5;
+  if (limit <= 0) return false;
+  const half = boardActorHalfExtents();
+  return stations.some((station) => {
+    if (station.lane === lane) return false;
+    const nearestX = Math.max(station.x - half.x, Math.min(x, station.x + half.x));
+    const nearestY = Math.max(station.y - half.y, Math.min(y, station.y + half.y));
+    const dx = x - nearestX;
+    const dy = y - nearestY;
+    return dx * dx + dy * dy < limit * limit;
+  });
+}
+
+/** その中心なら、盤面の内側に収まり、静止粒は別工程のキャラに入らない。 */
+function pointFits(dot: BoardDotPlan, x: number, y: number, cssScale: number): boolean {
+  const radius = presentedDotRadius(dot.size, cssScale);
+  if (circleLeavesDesignBoard(x, y, radius)) return false;
+  // フロー上の粒は工程の間を通る。基準点が工程の山でない粒は、判定用の任意座標なので動かさない。
+  if (dot.motion || !belongsToOwnStationPile(dot)) return true;
+  return !circleHitsOtherStation(x, y, radius, dot.lane, BOARD_ACTORS);
+}
+
+/**
+ * 広げた位置が盤面の外、または静止粒が別工程に入るとき、基準点へ戻す割合（0..1）。
+ * 収まるときは 1。見た目の直径は変えず、中心だけを戻す。
+ */
+function containmentScale(
+  dot: BoardDotPlan,
+  anchorX: number,
+  anchorY: number,
+  spreadX: number,
+  spreadY: number,
+  cssScale: number,
+): number {
+  const fits = (t: number) =>
+    pointFits(dot, anchorX + spreadX * t, anchorY + spreadY * t, cssScale);
+  if (fits(1)) return 1;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 16; i += 1) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * 山の基準点でも別工程に入るとき、自分の工程の中心へ必要分だけ寄せる。
+ * 直径は変えない。自分のキャラに乗るのは山の置き場なので許容する。
+ */
+function retreatTowardOwnStation(
+  dot: BoardDotPlan,
+  x: number,
+  y: number,
+  cssScale: number,
+): BoardPoint {
+  const station = BOARD_STATION_CENTERS[dot.lane];
+  let dirX = station.x - x;
+  let dirY = station.y - y;
+  let len = Math.hypot(dirX, dirY);
+  if (len < 1) {
+    let nearest = Infinity;
+    dirX = 0;
+    dirY = -1;
+    for (const actor of BOARD_ACTORS) {
+      if (actor.lane === dot.lane) continue;
+      const dx = x - actor.x;
+      const dy = y - actor.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > 0 && distance < nearest) {
+        nearest = distance;
+        dirX = dx / distance;
+        dirY = dy / distance;
+      }
+    }
+    len = 1;
+  }
+  dirX /= len;
+  dirY /= len;
+  const maxDist = Math.hypot(DESIGN_SPACES.sprint.w, DESIGN_SPACES.sprint.h);
+  const at = (distance: number): BoardPoint => ({
+    x: x + dirX * distance,
+    y: y + dirY * distance,
+  });
+  if (!pointFits(dot, at(maxDist).x, at(maxDist).y, cssScale)) {
+    let best = { x, y };
+    for (let distance = 0; distance <= maxDist; distance += 4) {
+      const point = at(distance);
+      if (circleLeavesDesignBoard(point.x, point.y, presentedDotRadius(dot.size, cssScale))) break;
+      best = point;
+      if (pointFits(dot, point.x, point.y, cssScale)) return point;
+    }
+    return best;
+  }
+  let lo = 0;
+  let hi = maxDist;
+  for (let i = 0; i < 16; i += 1) {
+    const mid = (lo + hi) / 2;
+    const point = at(mid);
+    if (pointFits(dot, point.x, point.y, cssScale)) hi = mid;
+    else lo = mid;
+  }
+  return at(hi);
+}
+
 /**
  * 見分けの倍率で、山（またはフロー）の基準点から粒を広げた座標。
+ * 盤面の外へ出る粒と、別工程のキャラに入る静止粒は、収まるところまで基準点へ戻す。
  * 倍率 1 のときは同じオブジェクトを返す。
  */
 export function presentBoardDot(dot: BoardDotPlan, cssScale: number): BoardDotPlan {
@@ -135,11 +295,57 @@ export function presentBoardDot(dot: BoardDotPlan, cssScale: number): BoardDotPl
   if (magnification === 1) return dot;
   const anchorX = dot.clusterX ?? dot.x;
   const anchorY = dot.clusterY ?? dot.y;
-  return {
-    ...dot,
-    x: anchorX + (dot.x - anchorX) * magnification,
-    y: anchorY + (dot.y - anchorY) * magnification,
-  };
+  const spreadX = (dot.x - anchorX) * magnification;
+  const spreadY = (dot.y - anchorY) * magnification;
+  const t = containmentScale(dot, anchorX, anchorY, spreadX, spreadY, cssScale);
+  let x = anchorX + spreadX * t;
+  let y = anchorY + spreadY * t;
+  // 山の中心自体が隣の工程に入る大きい粒は、自分の工程の中心側へ寄せる。
+  if (!dot.motion && belongsToOwnStationPile(dot) && !pointFits(dot, x, y, cssScale)) {
+    const retreated = retreatTowardOwnStation(dot, x, y, cssScale);
+    x = retreated.x;
+    y = retreated.y;
+  }
+  if (x === dot.x && y === dot.y) return dot;
+  return { ...dot, x, y };
+}
+
+/** 軌跡の根元を、同じ粒の拡大後の中心へ合わせる。倍率 1 のときは計画のまま。 */
+export function presentBoardReviewTrail(
+  trail: BoardReviewTrailPlan,
+  dot: BoardDotPlan | undefined,
+  cssScale: number,
+): BoardReviewTrailPlan {
+  if (!dot || dot.id !== trail.taskId) return trail;
+  const presented = presentBoardDot(dot, cssScale);
+  if (presented.x === trail.x && presented.y === trail.y) return trail;
+  return { ...trail, x: presented.x, y: presented.y };
+}
+
+/** 表示後の粒の円が設計盤面の外にはみ出し、端で切れるか。 */
+export function presentedDotLeavesBoard(dot: BoardDotPlan, cssScale: number): boolean {
+  const presented = presentBoardDot(dot, cssScale);
+  return circleLeavesDesignBoard(presented.x, presented.y, presentedDotRadius(dot.size, cssScale));
+}
+
+/**
+ * 表示後の静止した粒が、別工程のキャラに重なるか。
+ * フロー上の粒は工程間を通るので対象外。自分の工程のキャラに乗るのは山の置き場なので許容する。
+ */
+export function presentedDotHitsOtherStation(
+  dot: BoardDotPlan,
+  cssScale: number,
+  stations: readonly { lane: Lane; x: number; y: number }[],
+): boolean {
+  if (dot.motion) return false;
+  const presented = presentBoardDot(dot, cssScale);
+  return circleHitsOtherStation(
+    presented.x,
+    presented.y,
+    presentedDotRadius(dot.size, cssScale),
+    dot.lane,
+    stations,
+  );
 }
 
 /**

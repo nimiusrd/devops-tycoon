@@ -22,9 +22,30 @@ import {
   lineDashSegments,
   planBoardDotsForRender,
   presentBoardDot,
+  presentBoardReviewTrail,
+  presentedDotHitsOtherStation,
+  presentedDotLeavesBoard,
+  presentedDotRadius,
 } from '../../../src/render/boardPixiView';
-import type { BoardDotPlan } from '../../../src/render/boardScene';
+import { BOARD_STATION_CENTERS, type BoardDotPlan } from '../../../src/render/boardScene';
+import type { Lane } from '../../../src/sim/types';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
+
+const STATIONS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
+  lane,
+  x: BOARD_STATION_CENTERS[lane].x,
+  y: BOARD_STATION_CENTERS[lane].y,
+}));
+
+const FLOW = {
+  kind: 'flow' as const,
+  from: 'coding' as const,
+  to: 'review' as const,
+  t: 0.4,
+  angleDeg: 28,
+  aiAssisted: false,
+  speedMul: 1,
+};
 
 function dot(overrides: Partial<BoardDotPlan> & { id: number }): BoardDotPlan {
   return {
@@ -154,6 +175,129 @@ describe('boardDotReadability', () => {
   it('基準点がない粒は拡大しても中心を動かさない', () => {
     const entry = dot({ id: 1, size: 'small', x: 100, y: 80 });
     expect(presentBoardDot(entry, 0.208)).toMatchObject({ x: 100, y: 80 });
+  });
+
+  it('山の中心でも隣の工程に入る大きい粒は、自分の工程の中心へ寄せる', () => {
+    const scale = 0.2006980802792321;
+    const entry = dot({
+      id: 0,
+      lane: 'done',
+      size: 'large',
+      x: 973,
+      y: 330,
+      clusterX: 1006,
+      clusterY: 330,
+    });
+    const presented = presentBoardDot(entry, scale);
+    expect(presented.x).toBeGreaterThan(1006);
+    expect(presented.y).toBeGreaterThan(330);
+    expect(presentedDotHitsOtherStation(entry, scale, STATIONS)).toBe(false);
+    expect(presentedDotLeavesBoard(entry, scale)).toBe(false);
+    expect(boardDotCssDiameter('large', scale)).toBeGreaterThan(
+      VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter,
+    );
+  });
+
+  it('別工程に入る静止粒は基準点へ戻し、見た目の直径は保つ', () => {
+    const scale = 0.208;
+    const anchor = { x: 840, y: 315 };
+    const entry = dot({
+      id: 9,
+      size: 'small',
+      lane: 'review',
+      x: anchor.x + 44,
+      y: anchor.y - 16,
+      clusterX: anchor.x,
+      clusterY: anchor.y,
+    });
+    const magnification = boardDotReadabilityMagnification(scale);
+    const full = {
+      x: anchor.x + 44 * magnification,
+      y: anchor.y - 16 * magnification,
+    };
+    const presented = presentBoardDot(entry, scale);
+    expect(Math.hypot(presented.x - anchor.x, presented.y - anchor.y)).toBeLessThan(
+      Math.hypot(full.x - anchor.x, full.y - anchor.y),
+    );
+    expect(presentedDotHitsOtherStation(entry, scale, STATIONS)).toBe(false);
+    expect(presentedDotLeavesBoard(entry, scale)).toBe(false);
+    expect(boardDotCssDiameter('small', scale)).toBeCloseTo(
+      VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter,
+    );
+  });
+
+  it('盤面の外へ出るフロー粒は端の内側へ戻し、別工程の上は通す', () => {
+    const scale = 0.208;
+    const magnification = boardDotReadabilityMagnification(scale);
+    const off = dot({
+      id: 3,
+      lane: 'coding',
+      size: 'small',
+      x: 0,
+      y: 0,
+      clusterX: 30,
+      clusterY: 30,
+      motion: FLOW,
+    });
+    const fullX = 30 + (0 - 30) * magnification;
+    expect(fullX).toBeLessThan(0);
+    const presented = presentBoardDot(off, scale);
+    const radius = presentedDotRadius('small', scale);
+    expect(presented.x - radius).toBeGreaterThanOrEqual(-0.5);
+    expect(presented.y - radius).toBeGreaterThanOrEqual(-0.5);
+    expect(presented.x).toBeGreaterThan(fullX);
+    expect(presentedDotLeavesBoard(off, scale)).toBe(false);
+
+    const crossing = dot({
+      id: 4,
+      lane: 'coding',
+      size: 'small',
+      x: 900,
+      y: 280,
+      clusterX: 860,
+      clusterY: 280,
+      motion: FLOW,
+    });
+    expect(presentBoardDot(crossing, scale).x).toBeCloseTo(860 + 40 * magnification);
+    expect(presentedDotHitsOtherStation(crossing, scale, STATIONS)).toBe(false);
+  });
+
+  it('軌跡の根元を拡大後の粒の中心へ移す', () => {
+    const dotOnFlow = dot({
+      id: 4,
+      lane: 'coding',
+      size: 'small',
+      x: 900,
+      y: 280,
+      clusterX: 860,
+      clusterY: 280,
+      motion: FLOW,
+    });
+    const trail = {
+      taskId: 4,
+      x: 900,
+      y: 280,
+      angleDeg: 28,
+      progress: 0.4,
+      speedMul: 1,
+      length: 18,
+      width: 3,
+      tone: 'normal' as const,
+    };
+    const presented = presentBoardDot(dotOnFlow, 0.208);
+    expect(presentBoardReviewTrail(trail, dotOnFlow, 0.208)).toMatchObject({
+      x: presented.x,
+      y: presented.y,
+      angleDeg: 28,
+      tone: 'normal',
+    });
+    expect(presented.x).not.toBe(trail.x);
+    expect(presentBoardReviewTrail(trail, undefined, 0.208)).toBe(trail);
+    expect(presentBoardReviewTrail({ ...trail, taskId: 99 }, dotOnFlow, 0.208).taskId).toBe(99);
+
+    const still = dot({ id: 1, size: 'small', x: 100, y: 80 });
+    const stillTrail = { ...trail, taskId: 1, x: 100, y: 80 };
+    expect(presentBoardReviewTrail(stillTrail, still, 0.208)).toBe(stillTrail);
   });
 });
 

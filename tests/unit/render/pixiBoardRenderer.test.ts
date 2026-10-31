@@ -18,7 +18,10 @@ import {
   BOARD_PIXI_LAYER_ORDER,
   BOARD_RENDER_BUDGETS,
 } from '../../../src/render/boardRenderBudget';
-import { presentBoardDot } from '../../../src/render/boardPixiView';
+import {
+  boardDotReadabilityMagnification,
+  presentBoardDot,
+} from '../../../src/render/boardPixiView';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import type { Task } from '../../../src/sim/types';
 
@@ -482,6 +485,40 @@ describe('Pixi スプリント盤面レンダラー', () => {
     }
   });
 
+  it('縮小盤面の Review 軌跡は拡大後の粒の中心に付き、粒の倍率は戻さない', async () => {
+    const { renderer, app } = await mounted();
+    const scene = planBoardScene([
+      task({ id: 1, lane: 'coding', progress: 0.55 }),
+      task({ id: 2, lane: 'coding', progress: 0.55 }),
+      ...Array.from({ length: 10 }, (_, index) =>
+        task({ id: index + 10, lane: 'review', progress: 0 }),
+      ),
+    ]);
+    const scale = 0.208;
+    renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
+    renderer.render(input({ scene }));
+
+    const trails = layer(app, 'reviewTrails').children as FakeGraphics[];
+    expect(trails).toHaveLength(scene.reviewEffects.trails.length);
+    expect(trails.length).toBeGreaterThan(0);
+    let moved = false;
+    for (const [index, trail] of trails.entries()) {
+      const plan = scene.reviewEffects.trails[index];
+      const source = scene.dots.find((entry) => entry.id === plan.taskId);
+      expect(source, `軌跡 ${plan.taskId} の粒`).toBeDefined();
+      const presented = presentBoardDot(source!, scale);
+      expect(trail.position).toMatchObject({ x: presented.x, y: presented.y });
+      if (presented.x !== plan.x || presented.y !== plan.y) moved = true;
+    }
+    expect(moved).toBe(true);
+
+    const magnification = boardDotReadabilityMagnification(scale);
+    expect(magnification).toBeGreaterThan(1);
+    for (const group of layer(app, 'dots').children) {
+      expect(sprite(group).scale.x).toBeCloseTo(magnification);
+    }
+  });
+
   it('ドラッグ粒を最前面に描き、再利用後はリングと炎を残さずテクスチャを共有する', async () => {
     const { renderer, app, latest } = await mounted();
     const scene = planBoardScene([
@@ -603,6 +640,7 @@ describe('Pixi スプリント盤面レンダラー', () => {
     const narrowScale = 0.208;
     expect(preview.position.x).toBe(presentBoardDot(scene.dots[0], narrowScale).x);
     expect(candidate.position.x).toBe(presentBoardDot(scene.dots[1], narrowScale).x);
+    expect(sprite(preview).scale.x).toBeCloseTo(boardDotReadabilityMagnification(narrowScale));
     expect(sprite(preview).scale.x).toBeGreaterThan(1);
     expect(drawCalls(graphics(candidate, 1), 'stroke')).toHaveLength(1);
     const rings = graphics(preview, 1);

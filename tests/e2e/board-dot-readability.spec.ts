@@ -6,15 +6,27 @@
  * なる。そこは設計上の山間隔が画面上 3px 以上開く最小直径まで粒と間隔を広げる。
  */
 import type { Page } from '@playwright/test';
-import { BOARD_VIEW, planBoardScene } from '../../src/render/boardScene';
+import { BOARD_STATION_CENTERS, BOARD_VIEW, planBoardScene } from '../../src/render/boardScene';
 import {
   boardDotCssDiameter,
+  boardDotPreviewRing,
   boardDotReadabilityMagnification,
   presentBoardDot,
+  presentedDotHitsOtherStation,
+  presentedDotLeavesBoard,
+  presentedDotRadius,
 } from '../../src/render/boardPixiView';
+import { containFitTransform } from '../../src/render/deptPixiView';
 import { TASK_DIAMETER, type TaskSize } from '../../src/render/taskView';
 import { VISUAL_TOKENS } from '../../src/render/visualTokens';
+import type { Lane } from '../../src/sim/types';
 import { beginPublicSprint, expect, test, type PublicGameWindow } from './fixtures';
+
+const STATIONS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
+  lane,
+  x: BOARD_STATION_CENTERS[lane].x,
+  y: BOARD_STATION_CENTERS[lane].y,
+}));
 
 const MIN_DIAMETER = VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter;
 const SIZES = ['small', 'medium', 'large'] as const satisfies readonly TaskSize[];
@@ -107,21 +119,117 @@ async function presentedStationaryDots(page: Page) {
 }
 
 async function assertPileRowSpacing(page: Page): Promise<void> {
-  const { cssScale, dots } = await presentedStationaryDots(page);
+  const sprint = await page.evaluate(() => (window as PublicGameWindow).game?.getState().sprint);
+  const box = await readBoardBox(page);
+  if (!sprint) throw new Error('スプリントがない');
+  const cssScale = Math.min(box.width / BOARD_VIEW.w, box.height / BOARD_VIEW.h);
+  const planned = planBoardScene(sprint.tasks).dots.filter((dot) => !dot.motion);
+  const review = planned.filter((dot) => dot.lane === 'review');
+  const dots = review.length > 0 ? review : planned;
   expect(dots.length, '盤面の静止した粒').toBeGreaterThan(1);
-  let nearest = Infinity;
+  const magnification = boardDotReadabilityMagnification(cssScale);
+  let unconstrainedNearest = Infinity;
+  let unconstrainedPairs = 0;
   let pairs = 0;
   for (let i = 0; i < dots.length; i += 1) {
     for (let j = i + 1; j < dots.length; j += 1) {
+      const presentedI = presentBoardDot(dots[i], cssScale);
+      const presentedJ = presentBoardDot(dots[j], cssScale);
       // 同じ段（山の横間隔）。縦は設計上、小さい粒が接する。
-      if (Math.abs(dots[i].y - dots[j].y) > 0.5) continue;
+      if (Math.abs(presentedI.y - presentedJ.y) > 0.5) continue;
       pairs += 1;
-      nearest = Math.min(nearest, Math.abs(dots[i].x - dots[j].x) * cssScale);
+      const presentedGap = Math.abs(presentedI.x - presentedJ.x);
+      const anchorI = dots[i].clusterX ?? dots[i].x;
+      const anchorJ = dots[j].clusterX ?? dots[j].x;
+      const fullGap = Math.abs(
+        anchorI +
+          (dots[i].x - anchorI) * magnification -
+          (anchorJ + (dots[j].x - anchorJ) * magnification),
+      );
+      // 別工程へ入る粒は基準点側へ戻すので、その組の隙間は 3px より狭くてよい。
+      if (presentedGap >= fullGap - 0.5) {
+        unconstrainedPairs += 1;
+        unconstrainedNearest = Math.min(unconstrainedNearest, presentedGap * cssScale);
+      }
     }
   }
   expect(pairs, '同じ段に並ぶ粒').toBeGreaterThan(0);
-  // 小さい粒の直径を最小値まで広げたとき、横の隙間は約 3px。
-  expect(nearest - MIN_DIAMETER).toBeGreaterThanOrEqual(2.5);
+  if (unconstrainedPairs > 0) {
+    // 小さい粒の直径を最小値まで広げたとき、戻していない横の隙間は約 3px。
+    expect(unconstrainedNearest - MIN_DIAMETER).toBeGreaterThanOrEqual(2.5);
+  }
+}
+
+/** 拡大した粒が盤面の端で切れず、静止粒が別工程のキャラに入らない。 */
+async function assertPresentedDotsContained(page: Page): Promise<void> {
+  const sprint = await page.evaluate(() => (window as PublicGameWindow).game?.getState().sprint);
+  if (!sprint) throw new Error('スプリントがない');
+  const readability = await readDotReadability(page);
+  const planned = planBoardScene(sprint.tasks).dots;
+  expect(planned.length).toBeGreaterThan(0);
+  for (const dot of planned) {
+    expect(presentedDotLeavesBoard(dot, readability.scale), `粒 ${dot.id} が盤面の端で切れる`).toBe(
+      false,
+    );
+    if (!dot.motion) {
+      expect(
+        presentedDotHitsOtherStation(dot, readability.scale, STATIONS),
+        `粒 ${dot.id} が別の工程にはみ出す`,
+      ).toBe(false);
+    }
+  }
+}
+
+function circleMeetsRect(
+  cx: number,
+  cy: number,
+  radius: number,
+  rect: { x: number; y: number; width: number; height: number },
+): boolean {
+  const nearestX = Math.max(rect.x + 0.5, Math.min(cx, rect.x + rect.width - 0.5));
+  const nearestY = Math.max(rect.y + 0.5, Math.min(cy, rect.y + rect.height - 0.5));
+  const dx = cx - nearestX;
+  const dy = cy - nearestY;
+  return dx * dx + dy * dy < radius * radius;
+}
+
+/** 候補 16 件の粒と、プレビュー輪の外縁が対象ピッカーに重ならない。 */
+async function assertCandidateDotsAndRingsUncovered(page: Page): Promise<void> {
+  const pickerBox = await page.getByTestId('action-target-picker').boundingBox();
+  if (!pickerBox) throw new Error('対象ピッカーの位置を取得できない');
+  const mount = await page.getByTestId('board-pixi-mount').boundingBox();
+  if (!mount) throw new Error('盤面キャンバスの位置を取得できない');
+  const fit = containFitTransform(mount.width, mount.height, BOARD_VIEW.w, BOARD_VIEW.h);
+  const scrolls = await page.locator('.action-target-picker-list').evaluate((element) => {
+    return element.scrollHeight > element.clientHeight + 1;
+  });
+  expect(scrolls, 'あふれた候補は一覧の中でスクロールする').toBe(true);
+
+  const taskIds = await page
+    .locator('[data-action-target-option]')
+    .evaluateAll((nodes) => nodes.map((node) => Number((node as HTMLElement).dataset.taskId)));
+  expect(taskIds).toHaveLength(16);
+  const sprint = await page.evaluate(() => (window as PublicGameWindow).game?.getState().sprint);
+  if (!sprint) throw new Error('スプリントがない');
+  const planned = planBoardScene(sprint.tasks).dots;
+  for (const taskId of taskIds) {
+    const dot = planned.find((entry) => entry.id === taskId);
+    expect(dot, `候補 ${taskId} の粒`).toBeDefined();
+    const presented = presentBoardDot(dot!, fit.scale);
+    const centerX = mount.x + fit.x + presented.x * fit.scale;
+    const centerY = mount.y + fit.y + presented.y * fit.scale;
+    const dotRadius = presentedDotRadius(dot!.size, fit.scale) * fit.scale;
+    const ring = boardDotPreviewRing(dot!.size, fit.scale);
+    const ringRadius = (ring.radius + ring.outlineWidth / 2) * fit.scale;
+    expect(
+      circleMeetsRect(centerX, centerY, dotRadius, pickerBox),
+      `候補 ${taskId} の粒が対象ピッカーに重なる`,
+    ).toBe(false);
+    expect(
+      circleMeetsRect(centerX, centerY, ringRadius, pickerBox),
+      `候補 ${taskId} のプレビュー輪が対象ピッカーに重なる`,
+    ).toBe(false);
+  }
 }
 
 async function assertControlsUncovered(page: Page): Promise<void> {
@@ -197,7 +305,13 @@ for (const viewport of [
       const after = await readDotReadability(page);
       assertDiameters(after, `${viewport.width}px 候補 ${candidates} 件`);
       if (viewport.width === 1280) expect(after.magnification).toBe(1);
-      if (viewport.width === 320) expect(after.magnification).toBeGreaterThan(1);
+      if (viewport.width === 320) {
+        expect(after.magnification).toBeGreaterThan(1);
+        await assertPresentedDotsContained(page);
+      }
+      if (viewport.width === 1280 && candidates === 16) {
+        await assertCandidateDotsAndRingsUncovered(page);
+      }
       await assertPileRowSpacing(page);
       await assertReviewDotUncovered(page);
       await assertControlsUncovered(page);
@@ -213,19 +327,21 @@ for (const viewport of [
 test('短い広幅でも武装後に状態要約と主操作が見える（#918） @pixi', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 720 });
   await beginPublicSprint(page, { seed: 'devops-tycoon', renderer: 'pixi' });
-  await advanceToSplitCandidateCount(page, 7);
+  await advanceToSplitCandidateCount(page, 16);
   const before = await readBoardBox(page);
   await page.getByTestId('action-splitPr').click();
   await expect(page.getByTestId('action-target-picker')).toBeVisible();
+  await expect(page.locator('[data-action-target-option]')).toHaveCount(16);
   const after = await readBoardBox(page);
   expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(4);
   expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(4);
   const readability = await readDotReadability(page);
   assertDiameters(readability, '1024x720');
+  await assertCandidateDotsAndRingsUncovered(page);
   await assertReviewDotUncovered(page);
   await assertControlsUncovered(page);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.getByTestId('board').screenshot({
-    path: '/opt/cursor/artifacts/armed-board-1024x720-candidates-7.png',
+    path: '/opt/cursor/artifacts/armed-board-1024x720-candidates-16.png',
   });
 });

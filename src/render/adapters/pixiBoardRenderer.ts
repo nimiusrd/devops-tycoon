@@ -39,6 +39,7 @@ import {
   lineDashSegments,
   planBoardDotsForRender,
   presentBoardDot,
+  presentBoardReviewTrail,
 } from '../boardPixiView';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
 import { BoardTaskMotion, shipmentParticle, TASK_MOTION } from '../boardTaskMotion';
@@ -765,7 +766,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       this.drawFlows(this.elapsedMs);
       this.syncReviewHeat(scene.reviewEffects.heatField);
       this.syncActors(scene.stations);
-      this.syncReviewTrails(scene.reviewEffects.trails);
+      this.syncReviewTrails(scene.reviewEffects.trails, scene.dots, this.root.scale.x);
       this.syncDots(
         scene.dots,
         input.draggableTaskIds ?? new Set(),
@@ -956,7 +957,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   }
 
   /** Coding / Rework から Review へ向かう上限付きの光跡を plan と同期する。 */
-  private syncReviewTrails(trails: readonly BoardReviewTrailPlan[]): void {
+  private syncReviewTrails(
+    trails: readonly BoardReviewTrailPlan[],
+    dots: readonly BoardDotPlan[],
+    cssScale: number,
+  ): void {
     const pool = this.reviewTrailPool;
     if (!pool) return;
     this.reviewTrailRequestedCount = trails.length;
@@ -964,7 +969,9 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     pool.releaseAll();
     this.reviewTrailEntries = [];
 
-    for (const plan of trails) {
+    const dotsById = new Map(dots.map((dot) => [dot.id, dot]));
+    for (const source of trails) {
+      const plan = presentBoardReviewTrail(source, dotsById.get(source.taskId), cssScale);
       const trail = pool.acquire();
       if (!trail) break;
       const color =

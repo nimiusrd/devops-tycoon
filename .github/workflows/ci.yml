@@ -36,7 +36,7 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           RUN_ID: ${{ github.run_id }}
         run: node scripts/cancel-superseded-pr-runs.mjs
-      - uses: nimiusrd/should-run-checks@d7138ff8549a9410601e972c41f0f1257514f390 # v1.0.0
+      - uses: nimiusrd/should-run-checks@3e50509883a6900c2314c56345985b21b57ae800 # v1.0.1
         id: scope
         if: steps.supersede.outputs.superseded != 'true'
         with:

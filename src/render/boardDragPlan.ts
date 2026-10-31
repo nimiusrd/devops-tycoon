@@ -7,6 +7,7 @@
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, Lane, SprintState } from '../sim/types';
 import { BOARD_STATION_CENTERS, BOARD_VIEW, planBoardScene } from './boardScene';
+import { designToHostTransform } from './visualTokens';
 
 /** ドラッグ武装可能なアクション。 */
 export type DraggableActionId = 'assignTask' | 'splitPr';
@@ -96,7 +97,11 @@ export function hitTestDropLane(
 /** 盤面要素のクライアント矩形（DOMRect 互換）。 */
 export type BoardClientRect = Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>;
 
-/** クライアント座標を盤面の設計座標へ変換する。 */
+/**
+ * クライアント座標を盤面の設計座標へ変換する。
+ * Pixi の root と同じく、キャンバス実寸へ designToHostTransform で contain-fit する。
+ * 枠線を含む border box を渡すと、山の押し広げに使う倍率までずれる。
+ */
 export function clientToBoardPoint(
   clientX: number,
   clientY: number,
@@ -110,7 +115,9 @@ export function clientToBoardPoint(
   ) {
     return { x: 0, y: 0 };
   }
-  const x = ((clientX - boardRect.left) / boardRect.width) * BOARD_VIEW.w;
-  const y = ((clientY - boardRect.top) / boardRect.height) * BOARD_VIEW.h;
-  return { x, y };
+  const fit = designToHostTransform(boardRect.width, boardRect.height, BOARD_VIEW);
+  return {
+    x: (clientX - boardRect.left - fit.x) / fit.scale,
+    y: (clientY - boardRect.top - fit.y) / fit.scale,
+  };
 }

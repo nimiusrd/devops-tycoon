@@ -690,7 +690,10 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     return this.app !== null;
   }
 
-  /** 盤面（mount）のピクセルサイズへ renderer と contain-fit を合わせる。 */
+  /**
+   * 盤面（mount）のピクセルサイズへ renderer と contain-fit を合わせる。
+   * ヒット判定は同じ client 寸法を designToHostTransform で写す。
+   */
   resize(boardWidth: number, boardHeight: number): void {
     if (!this.app || boardWidth <= 0 || boardHeight <= 0) return;
     this.app.renderer.resize(boardWidth, boardHeight);

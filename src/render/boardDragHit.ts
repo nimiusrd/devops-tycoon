@@ -7,6 +7,7 @@
 import { clientToBoardPoint, type BoardClientRect } from './boardDragPlan';
 import { hitTestBoardDot } from './boardPixiView';
 import { BOARD_VIEW, type BoardDotPlan } from './boardScene';
+import { designToHostTransform } from './visualTokens';
 
 export type BoardDragHitTest = (clientX: number, clientY: number) => boolean;
 
@@ -46,6 +47,46 @@ export function clientPointHitsDraggableBoardDot(
   return hitTestClientBoardDot(clientX, clientY, boardRect, dots, draggableIds) !== null;
 }
 
+/** 枠線の内側にあるキャンバス（Pixi mount と同じ padding edge）。 */
+export interface BoardCanvasElement {
+  getBoundingClientRect(): BoardClientRect;
+  clientLeft: number;
+  clientTop: number;
+  clientWidth: number;
+  clientHeight: number;
+}
+
+/**
+ * 描画キャンバスのクライアント矩形。
+ * border box は 2px の枠を含むため、contain-fit の倍率と原点がキャンバスとずれる。
+ */
+export function boardCanvasHostRect(board: BoardCanvasElement): BoardClientRect | null {
+  const border = board.getBoundingClientRect();
+  const { clientLeft, clientTop, clientWidth, clientHeight } = board;
+  if (
+    ![
+      border.left,
+      border.top,
+      border.width,
+      border.height,
+      clientLeft,
+      clientTop,
+      clientWidth,
+      clientHeight,
+    ].every(Number.isFinite) ||
+    clientWidth <= 0 ||
+    clientHeight <= 0
+  ) {
+    return null;
+  }
+  return {
+    left: border.left + clientLeft,
+    top: border.top + clientTop,
+    width: clientWidth,
+    height: clientHeight,
+  };
+}
+
 /** Board とティッカーが共有する、画面上のタスク粒判定。 */
 export function hitTestClientBoardDot(
   clientX: number,
@@ -69,9 +110,7 @@ export function hitTestClientBoardDot(
   ) {
     return null;
   }
+  const fit = designToHostTransform(boardRect.width, boardRect.height, BOARD_VIEW);
   const pt = clientToBoardPoint(clientX, clientY, boardRect);
-  return hitTestBoardDot(pt, dots, draggableIds, {
-    x: boardRect.width / BOARD_VIEW.w,
-    y: boardRect.height / BOARD_VIEW.h,
-  });
+  return hitTestBoardDot(pt, dots, draggableIds, { x: fit.scale, y: fit.scale });
 }

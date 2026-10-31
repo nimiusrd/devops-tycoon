@@ -602,10 +602,18 @@ export function presentedDotHitsOtherStation(
 }
 
 /**
+ * 描かれた中心へのタップは、重なった手前の円よりその粒を選ぶ。
+ * 画面上 1px より離れた重なりは、従来どおり手前の粒を優先する。
+ */
+const DOT_CENTER_TAP_CSS_PX = 1;
+
+/**
  * 設計座標の点から、掴めるタスク粒を特定する（RI-30 のドラッグ開始判定）。
  *
  * 粒半径＋設計マージンを保ちつつ、各軸で画面上24px以上の操作領域を確保する。
- * 実際の円内なら後から描かれた粒を優先する。円外の拡張領域だけが重なった場合は
+ * 描かれた中心から画面上 1px 以内ならその粒を返す。山の下になった別工程も、
+ * 中心を押せばその粒が選ばれる。
+ * それ以外で実際の円内なら後から描かれた粒を優先する。円外の拡張領域だけが重なった場合は
  * 画面上の中心距離が最短の粒、同距離なら後から描かれた粒を返す。
  * scale は設計座標から CSS px への軸ごとの縮尺。
  * 縮小盤面では描画と同じ倍率で中心と見た目の半径を広げる。
@@ -626,6 +634,21 @@ export function hitTestBoardDot(
   const magnification = boardDotReadabilityMagnification(cssScale);
   const minimumRadius = VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter / 2;
   const presentedDots = presentBoardDots(dots, cssScale);
+  let centerId: number | null = null;
+  let centerDistance = Infinity;
+  for (let i = dots.length - 1; i >= 0; i -= 1) {
+    const dot = dots[i];
+    if (!draggableIds.has(dot.id)) continue;
+    const presented = presentedDots[i];
+    const distance = Math.hypot((pt.x - presented.x) * scale.x, (pt.y - presented.y) * scale.y);
+    // 同距離なら手前（後から描かれた粒）を残す。
+    if (distance <= DOT_CENTER_TAP_CSS_PX && distance < centerDistance) {
+      centerId = dot.id;
+      centerDistance = distance;
+    }
+  }
+  if (centerId !== null) return centerId;
+
   let nearestId: number | null = null;
   let nearestDistance = Infinity;
   for (let i = dots.length - 1; i >= 0; i -= 1) {

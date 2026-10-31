@@ -99,8 +99,9 @@ import {
   clientPointHitsRegisteredBoardDrag,
   hasRegisteredBoardDragHitTest,
 } from '../../../src/render/boardDragHit';
+import { presentBoardDot } from '../../../src/render/boardPixiView';
 import { BOARD_STATION_CENTERS, BOARD_VIEW } from '../../../src/render/boardScene';
-import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
+import { designToHostTransform, VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import { OVERTIME_TICKS } from '../../../src/sim/actions';
 import { createInitialRoster } from '../../../src/sim/member';
 import { BURN_TICKS } from '../../../src/sim/model';
@@ -139,10 +140,11 @@ function dragSprint(): SprintState {
 
 // 非等倍・オフセットありの盤面で、client 座標と設計座標の混同も検出する。
 const rect = { left: 37, top: 83, width: BOARD_VIEW.w / 2, height: BOARD_VIEW.h / 3 };
+const hostFit = designToHostTransform(rect.width, rect.height, BOARD_VIEW);
 function clientPoint(point: { x: number; y: number }) {
   return {
-    clientX: rect.left + (point.x * rect.width) / BOARD_VIEW.w,
-    clientY: rect.top + (point.y * rect.height) / BOARD_VIEW.h,
+    clientX: rect.left + hostFit.x + point.x * hostFit.scale,
+    clientY: rect.top + hostFit.y + point.y * hostFit.scale,
   };
 }
 
@@ -183,7 +185,13 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
   let props: BoardProps = { tasks: sprint.tasks, sprint, onDragComplete: vi.fn(), ...overrides };
   let tree: ReactElement<ElementProps>;
   let connected = true;
-  const boardElement = Object.assign(new EventTarget(), { getBoundingClientRect: () => rect });
+  const boardElement = Object.assign(new EventTarget(), {
+    getBoundingClientRect: () => rect,
+    clientLeft: 0,
+    clientTop: 0,
+    clientWidth: rect.width,
+    clientHeight: rect.height,
+  });
   const flush = () => {
     let renders = 0;
     do {
@@ -547,7 +555,8 @@ describe('Board の座標ドラッグ', () => {
 
   it('粒の中心から画面上11px離れても掴め、ティッカーの判定と同じ対象へ一度だけ分割する', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
-    const point = { ...board.dot(3), x: board.dot(3).x + (11 * BOARD_VIEW.w) / rect.width };
+    const presented = presentBoardDot(board.dot(3), hostFit.scale);
+    const point = { ...presented, x: presented.x + 11 / hostFit.scale };
     const client = clientPoint(point);
     expect(clientPointHitsRegisteredBoardDrag(client.clientX, client.clientY)).toBe(true);
     board.downBoard(point);

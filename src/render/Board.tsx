@@ -28,6 +28,7 @@ import {
   type DraggableActionId,
 } from './boardDragPlan';
 import {
+  boardCanvasHostRect,
   clientPointHitsDraggableBoardDot,
   hitTestClientBoardDot,
   registerBoardDragHitTest,
@@ -251,7 +252,7 @@ export function Board({
       clientPointHitsDraggableBoardDot(
         clientX,
         clientY,
-        boardRef.current?.getBoundingClientRect() ?? null,
+        boardRef.current ? boardCanvasHostRect(boardRef.current) : null,
         scene.dots,
         dragIds,
       ),
@@ -339,7 +340,7 @@ export function Board({
         hitTestClientBoardDot(
           touch.clientX,
           touch.clientY,
-          board.getBoundingClientRect(),
+          boardCanvasHostRect(board),
           input.dots,
           input.dragIds,
         ) !== null
@@ -352,7 +353,7 @@ export function Board({
 
   const readPointer = useCallback(
     (clientX: number, clientY: number, target: EventTarget | null): BoardPointerPosition | null => {
-      const rect = boardRef.current?.getBoundingClientRect();
+      const rect = boardRef.current ? boardCanvasHostRect(boardRef.current) : null;
       if (!rect || !armedAction) return null;
       return {
         clientX,

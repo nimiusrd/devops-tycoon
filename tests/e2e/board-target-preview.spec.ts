@@ -1,8 +1,9 @@
 /** 武装中の強調対象と、mouse / touch で確定する対象を一致させる（#917）。 */
 import type { Page } from '@playwright/test';
 import { beginPublicSprint, expect, test } from './fixtures';
-import { BOARD_VIEW, planBoardScene, type BoardDotPlan } from '../../src/render/boardScene';
-import { boardDotReadabilityMagnification, presentBoardDot } from '../../src/render/boardPixiView';
+import { designToClient, readBoardCanvasFrame } from './boardCanvasPoint';
+import { planBoardScene, type BoardDotPlan } from '../../src/render/boardScene';
+import { boardDotReadabilityMagnification, presentBoardDots } from '../../src/render/boardPixiView';
 import { TASK_DIAMETER } from '../../src/render/taskView';
 import { splitPrCandidates } from '../../src/sim/assignTask';
 
@@ -51,13 +52,15 @@ async function readTargetPoints(page: Page): Promise<{
     window.__boardPixiTest.freezeForScreenshot();
   });
   const sprint = await page.evaluate(() => window.game!.getState().sprint);
+  const frame = await readBoardCanvasFrame(page);
   const box = await board.boundingBox();
   if (!sprint || !box) throw new Error('盤面の状態と位置を取得できない');
   const candidates = new Set(splitPrCandidates(sprint).map((task) => task.id));
-  const planned = planBoardScene(sprint.tasks).dots.filter((dot) => candidates.has(dot.id));
-  const cssScale = Math.min(box.width / BOARD_VIEW.w, box.height / BOARD_VIEW.h);
+  const cssScale = frame.fit.scale;
   const magnification = boardDotReadabilityMagnification(cssScale);
-  const dots = planned.map((dot) => presentBoardDot(dot, cssScale));
+  const dots = presentBoardDots(planBoardScene(sprint.tasks).dots, cssScale).filter((dot) =>
+    candidates.has(dot.id),
+  );
   const front = dots.find((dot) => dot.id === 6);
   const behind = dots.find((dot) => dot.id === 5);
   if (!front || !behind) throw new Error('重なった Review の粒がない');
@@ -76,8 +79,7 @@ async function readTargetPoints(page: Page): Promise<{
     );
   expect(frontmost(point)?.id).toBe(front.id);
   const toClient = (at: { x: number; y: number }, id: number): TargetPoint => ({
-    x: box.x + (at.x / BOARD_VIEW.w) * box.width,
-    y: box.y + (at.y / BOARD_VIEW.h) * box.height,
+    ...designToClient(frame, at),
     id,
   });
   const overlap = toClient(point, front.id);

@@ -23,13 +23,18 @@ import {
   planBoardDotsForRender,
   presentBoardDot,
   presentBoardDots,
+  presentBoardEffectPoint,
   presentBoardReviewTrail,
   presentedDotHitsOtherStation,
   presentedDotLeavesBoard,
   presentedDotRadius,
 } from '../../../src/render/boardPixiView';
-import { BOARD_STATION_CENTERS, type BoardDotPlan } from '../../../src/render/boardScene';
-import type { Lane } from '../../../src/sim/types';
+import {
+  BOARD_STATION_CENTERS,
+  planBoardScene,
+  type BoardDotPlan,
+} from '../../../src/render/boardScene';
+import type { Lane, Task } from '../../../src/sim/types';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 
 const STATIONS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
@@ -297,6 +302,39 @@ describe('boardDotReadability', () => {
       expect(presentedDotLeavesBoard(placed, scale), `粒 ${dots[i].id}`).toBe(false);
       expect(hitTestBoardDot(presented[i], dots, ids, { x: scale, y: scale })).toBe(dots[i].id);
     }
+  });
+
+  it('緊急対応の開始位置は、拡大後の粒の中心へ移る', () => {
+    const scale = 0.208;
+    const tasks: Task[] = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      kind: 'normal',
+      highValue: false,
+      aiAssisted: false,
+      lane: 'rework',
+      progress: 0,
+      reworkAttempts: 0,
+      wasReworked: false,
+      incident: true,
+      debt: false,
+      burnTicksLeft: 3,
+    }));
+    const planned = planBoardScene(tasks).dots;
+    const raw = planned.find((entry) => Math.hypot(entry.x - 1006, entry.y - 142) < 0.5);
+    expect(raw, 'Rework 最上段の中央').toBeDefined();
+    const presented = presentBoardDots(planned, scale);
+    const shown = presented[planned.indexOf(raw!)];
+    const anchor = { x: raw!.x, y: raw!.y };
+    expect(presentBoardEffectPoint(anchor, planned, presented, scale)).toEqual({
+      x: shown.x,
+      y: shown.y,
+    });
+    expect(Math.hypot(shown.x - anchor.x, shown.y - anchor.y) * scale).toBeGreaterThan(10);
+    expect(presentBoardEffectPoint(anchor, planned, presented, 1)).toEqual(anchor);
+    expect(presentBoardEffectPoint({ x: 10, y: 20 }, planned, presented, scale)).toEqual({
+      x: 10,
+      y: 20,
+    });
   });
 
   it('盤面の外へ出るフロー粒は端の内側へ戻し、別工程の上は通す', () => {

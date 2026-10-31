@@ -39,7 +39,9 @@ import {
   lineDashSegments,
   planBoardDotsForRender,
   presentBoardDots,
+  presentBoardEffectPoint,
   presentBoardReviewTrail,
+  presentedDotRadius,
 } from '../boardPixiView';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
 import { BoardTaskMotion, shipmentParticle, TASK_MOTION } from '../boardTaskMotion';
@@ -971,7 +973,13 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
     const dotsById = new Map(dots.map((dot) => [dot.id, dot]));
     for (const source of trails) {
-      const plan = presentBoardReviewTrail(source, dotsById.get(source.taskId), cssScale);
+      const sourceDot = dotsById.get(source.taskId);
+      const plan = presentBoardReviewTrail(source, sourceDot, cssScale);
+      // 軌跡は粒の背後で中心から伸びる。拡大で半径が計画長を超えると全体が隠れるので、
+      // 広い盤面で見えていた外側の長さだけ足す。倍率 1 では計画長のまま。
+      const designRadius = sourceDot ? TASK_DIAMETER[sourceDot.size] / 2 : 0;
+      const visibleRadius = sourceDot ? presentedDotRadius(sourceDot.size, cssScale) : 0;
+      const length = plan.length + Math.max(0, visibleRadius - designRadius);
       const trail = pool.acquire();
       if (!trail) break;
       const color =
@@ -982,8 +990,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
             : VISUAL_TOKENS.colors.flow.normal;
       const parts = 3;
       for (let i = 0; i < parts; i += 1) {
-        const from = -plan.length * ((i + 1) / parts);
-        const to = -plan.length * (i / parts);
+        const from = -length * ((i + 1) / parts);
+        const to = -length * (i / parts);
         const nearDot = (i + 1) / parts;
         trail
           .moveTo(from, 0)
@@ -1357,7 +1365,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     if (previewTaskId !== null) pinned.add(previewTaskId);
     const cssScale = this.root.scale.x;
     const magnification = boardDotReadabilityMagnification(cssScale);
-    const presentedDots = presentBoardDots(renderPlan.dots, cssScale);
+    // 押し離しは入力順に依存する。ヒット判定と同じ scene 順で位置を確定してから描画順へ並べる。
+    const presentedById = new Map(
+      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    );
+    const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
     this.taskMotion.sync(
       presentedDots,
       this.elapsedMs,
@@ -1538,6 +1550,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
   /** 時刻付き plan を現在フレームの座標・透明度・拡大率へ写す。 */
   private applyEffectAnimations(nowMs: number): void {
+    const planned = this.lastInput?.scene.dots ?? [];
+    const cssScale = this.root.scale.x;
+    const presented = presentBoardDots(planned, cssScale);
+    const place = (x: number, y: number) =>
+      presentBoardEffectPoint({ x, y }, planned, presented, cssScale);
     for (const entry of this.effectEntries) {
       const { group, plan } = entry;
       const startsAt = plan.startedAtMs + plan.delayMs;
@@ -1556,24 +1573,28 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       if (plan.source === 'fire') {
         const effect = plan.effect;
         switch (effect.kind) {
-          case 'spread':
-            group.position.set(
-              lerp(effect.fromX, effect.toX, progress),
-              lerp(effect.fromY, effect.toY, progress),
-            );
+          case 'spread': {
+            const from = place(effect.fromX, effect.fromY);
+            const to = place(effect.toX, effect.toY);
+            group.position.set(lerp(from.x, to.x, progress), lerp(from.y, to.y, progress));
             group.alpha = Math.min(1, progress * 7) * (0.75 + pulse * 0.25);
             group.scale.set(0.5 + pulse * 0.7);
             break;
-          case 'extinguish':
-            group.position.set(effect.x, effect.y);
+          }
+          case 'extinguish': {
+            const at = place(effect.x, effect.y);
+            group.position.set(at.x, at.y);
             group.alpha = pulse;
             group.scale.set(0.3 + progress * 1.9);
             break;
-          case 'ignite':
-            group.position.set(effect.x, effect.y);
+          }
+          case 'ignite': {
+            const at = place(effect.x, effect.y);
+            group.position.set(at.x, at.y);
             group.alpha = pulse;
             group.scale.set(0.4 + pulse * 1.4);
             break;
+          }
         }
         continue;
       }
@@ -1581,35 +1602,38 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       const effect = plan.effect;
       switch (effect.kind) {
         case 'reviewSweep': {
-          const angle = Math.atan2(effect.toY - effect.fromY, effect.toX - effect.fromX);
-          group.position.set(
-            lerp(effect.fromX, effect.toX, progress),
-            lerp(effect.fromY, effect.toY, progress),
-          );
+          const from = place(effect.fromX, effect.fromY);
+          const to = place(effect.toX, effect.toY);
+          const angle = Math.atan2(to.y - from.y, to.x - from.x);
+          group.position.set(lerp(from.x, to.x, progress), lerp(from.y, to.y, progress));
           group.rotation = angle;
           group.alpha = Math.min(1, progress * 8) * (0.72 + pulse * 0.28);
           group.scale.set(0.6 + pulse * 0.5);
           break;
         }
-        case 'split':
-          group.position.set(effect.x, effect.y);
+        case 'split': {
+          const at = place(effect.x, effect.y);
+          group.position.set(at.x, at.y);
           group.alpha = pulse;
           group.scale.set(0.55 + pulse * 0.75);
           break;
-        case 'firefight':
-          group.position.set(effect.x, effect.y);
+        }
+        case 'firefight': {
+          const at = place(effect.x, effect.y);
+          group.position.set(at.x, at.y);
           group.alpha = pulse;
           group.scale.set(0.4 + progress * 1.8);
           break;
-        case 'assignDash':
-          group.position.set(
-            lerp(effect.fromX, effect.toX, progress),
-            lerp(effect.fromY, effect.toY, progress),
-          );
+        }
+        case 'assignDash': {
+          const from = place(effect.fromX, effect.fromY);
+          const to = place(effect.toX, effect.toY);
+          group.position.set(lerp(from.x, to.x, progress), lerp(from.y, to.y, progress));
           group.rotation = (effect.angleDeg * Math.PI) / 180;
           group.alpha = pulse;
           group.scale.set(0.3 + pulse, 0.75 + pulse * 0.25);
           break;
+        }
         case 'boardAura':
         case 'successPulse':
           group.position.set(BOARD_VIEW.w / 2, BOARD_VIEW.h * 0.42);

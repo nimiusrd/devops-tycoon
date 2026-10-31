@@ -519,6 +519,50 @@ export function presentBoardDots(dots: readonly BoardDotPlan[], cssScale: number
   return presented;
 }
 
+/**
+ * 演出が保存した計画座標を、今の粒と同じ表示位置へ移す。
+ * 押し離しは入力順に依存するため、描画順へ並べ替える前の scene 順で求めた結果を渡す。
+ * 倍率 1、または山から離れたフロー上の点は、計画のまま返す。
+ */
+export function presentBoardEffectPoint(
+  point: BoardPoint,
+  planned: readonly BoardDotPlan[],
+  presented: readonly BoardDotPlan[],
+  cssScale: number,
+): BoardPoint {
+  if (boardDotReadabilityMagnification(cssScale) === 1 || planned.length !== presented.length) {
+    return point;
+  }
+  let best = -1;
+  let bestDist = 0.75;
+  for (let i = 0; i < planned.length; i += 1) {
+    const dist = Math.hypot(planned[i].x - point.x, planned[i].y - point.y);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  }
+  if (best >= 0) return { x: presented[best].x, y: presented[best].y };
+
+  let host: BoardDotPlan | null = null;
+  let hostDist = Infinity;
+  for (const dot of planned) {
+    if (dot.motion || dot.clusterX === undefined || dot.clusterY === undefined) continue;
+    const dist = Math.hypot(dot.clusterX - point.x, dot.clusterY - point.y);
+    if (dist < hostDist) {
+      hostDist = dist;
+      host = dot;
+    }
+  }
+  if (!host || host.clusterX === undefined || host.clusterY === undefined) return point;
+  if (hostDist > OWN_STATION_PILE_REACH) return point;
+  const synthetic = presentBoardDot(
+    { ...host, x: point.x, y: point.y, motion: undefined },
+    cssScale,
+  );
+  return { x: synthetic.x, y: synthetic.y };
+}
+
 /** 軌跡の根元を、同じ粒の拡大後の中心へ合わせる。倍率 1 のときは計画のまま。 */
 export function presentBoardReviewTrail(
   trail: BoardReviewTrailPlan,

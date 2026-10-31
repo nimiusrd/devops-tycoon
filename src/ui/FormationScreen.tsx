@@ -7,9 +7,12 @@
  */
 import { useId, useRef } from 'react';
 import { getTrait } from '../data/traits';
+import { isShopOfferPresent, shouldShowOrgLeverHint } from '../render/orgLeverHintView';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
+import { OrgLeverHintRow } from './OrgLeverHintRow';
+import { readOrgLeverHintSession } from './orgLeverHintSession';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { WhatIfPreview } from './WhatIfPreview';
 
@@ -20,6 +23,8 @@ export interface FormationScreenProps {
   onClose: () => void;
   /** リプレイ閲覧など、操作を受け付けないとき。 */
   readOnly?: boolean;
+  /** startRun ごとの世代。組織レバー案内をラン単位で区切る。 */
+  runEpoch?: number;
 }
 
 /** 編成グリッド（モーダルと setup 画面で共有）。 */
@@ -230,9 +235,18 @@ export function FormationScreen({
   onToggleAi,
   onClose,
   readOnly = false,
+  runEpoch = 0,
 }: FormationScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
+  const hintSession = readOrgLeverHintSession(runEpoch);
+  const showOrgLeverHint = shouldShowOrgLeverHint({
+    quarterNumber: state.quarterNumber,
+    budget: state.budget,
+    shopArrived: isShopOfferPresent(state) || hintSession.shopArrived,
+    dismissed: hintSession.dismissed,
+    readOnly,
+  });
   return (
     <div
       ref={overlayRef}
@@ -248,6 +262,7 @@ export function FormationScreen({
           <div>
             <p className="result-eyebrow">FORMATION</p>
             <h2 className="draft-title">編成 — 誰をどこに置き、AIを誰に配るか</h2>
+            <OrgLeverHintRow eligible={showOrgLeverHint} dismissed={hintSession.dismissed} />
           </div>
           <button
             type="button"

@@ -29,7 +29,6 @@ import { formatSigned } from './formatSigned';
 import {
   isShopOfferPresent,
   ORG_LEVER_BUTTON_LABEL,
-  ORG_LEVER_HINT_MESSAGE,
   shouldShowOrgLeverHint,
 } from '../render/orgLeverHintView';
 import { useReplayContent } from './replayContent';
@@ -360,11 +359,10 @@ export function RunBar({
       {onOpenOrg && (
         <button
           type="button"
-          className={`pill org-pill${showOrgLeverHint ? ' org-pill-marked' : ''}`}
+          className="pill org-pill"
           data-testid="open-org"
           data-org-lever-hint={showOrgLeverHint ? 'true' : 'false'}
           disabled={readOnly}
-          aria-describedby={showOrgLeverHint ? 'org-lever-hint' : undefined}
           onClick={(event) => {
             dismissOrgLeverHint(runEpoch);
             setOrgLeverHintDismissedEpoch(runEpoch);
@@ -376,23 +374,8 @@ export function RunBar({
               : '組織レバー。全社マップを開いて予算を使います'
           }
         >
-          <span
-            className={showOrgLeverHint ? 'org-pill-label is-hidden' : 'org-pill-label'}
-            aria-hidden={showOrgLeverHint ? true : undefined}
-          >
-            <span aria-hidden="true">🗺</span>
-            {ORG_LEVER_BUTTON_LABEL}
-          </span>
-          {showOrgLeverHint && (
-            <span
-              id="org-lever-hint"
-              className="org-lever-hint"
-              data-testid="org-lever-hint"
-              role="status"
-            >
-              {ORG_LEVER_HINT_MESSAGE}
-            </span>
-          )}
+          <span aria-hidden="true">🗺</span>
+          {ORG_LEVER_BUTTON_LABEL}
           {showOrgLeverHint && (
             <span
               className="org-lever-hint-mark"

@@ -4724,8 +4724,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   text-align: center;
 }
 
-/* ランバー */
+/* ランバー。案内は絶対配置なので、表示の出入りで中のボタンを動かさない（#943）。 */
 .runbar {
+  position: relative;
+  z-index: 2;
   flex-wrap: wrap;
 }
 .runbar .diagnosis-status {
@@ -6954,6 +6956,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 /* ===== Phase 5: 組織スケール / ズーム階層（第4.7〜4.11） ===== */
 
 .org-pill {
+  position: relative;
   cursor: pointer;
   border: 1px solid var(--line);
   background: #1f1942;
@@ -6962,9 +6965,43 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-pill:hover:not(:disabled) {
   border-color: var(--lav);
 }
+.org-pill:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
 .org-pill:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+.org-pill-marked {
+  border-color: var(--sun);
+}
+.org-lever-hint-mark {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sun);
+  pointer-events: none;
+}
+.org-lever-hint {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 4px);
+  left: 8px;
+  right: 8px;
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--sun);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--cream);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  pointer-events: none;
 }
 
 /* 全社・部署画面はオーバーレイ内で盤面へ残りの高さを配分する。 */

@@ -74,8 +74,12 @@ vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };
 });
 
+import { EVENT_DEFS } from '../../../src/data/events';
+import { LEVER_DEFS } from '../../../src/data/levers';
+import { MIN_ORG_LEVER_BUDGET } from '../../../src/render/orgLeverHintView';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
+import { resetOrgLeverHintSession } from '../../../src/ui/orgLeverHintSession';
 import { RunBar, type RunBarProps } from '../../../src/ui/RunBar';
 
 type ElementProps = Record<string, unknown> & { children?: ReactNode };
@@ -169,6 +173,7 @@ function mountRunBar(overrides: Partial<RunBarProps> = {}) {
 }
 
 beforeEach(() => {
+  resetOrgLeverHintSession();
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   vi.stubGlobal('window', { setTimeout, clearTimeout });
 });
@@ -273,6 +278,65 @@ describe('RunBar の表示と操作', () => {
     });
     screen.update({ onOpenFormation: undefined });
     expect(content(screen.find('roster-count'))).toBe('👥3 😴1');
+  });
+
+  it('Q1で予算が最安レバー以上かつショップ未到来のときだけ案内し、開くと戻さない', () => {
+    const shopEvent = EVENT_DEFS.find((event) =>
+      event.choices.some((choice) => choice.leadsTo === 'shop'),
+    );
+    expect(shopEvent, 'ショップへ進むイベント').toBeDefined();
+    expect(MIN_ORG_LEVER_BUDGET).toBe(Math.min(...LEVER_DEFS.map((lever) => lever.cost)));
+    const onOpenOrg = vi.fn();
+    const screen = mountRunBar({
+      onOpenOrg,
+      runEpoch: 3,
+      state: makeState({ budget: MIN_ORG_LEVER_BUDGET, quarterNumber: 1 }),
+    });
+    expect(content(screen.find('open-org'))).toContain('組織レバー');
+    expect(screen.find('open-org').props).toMatchObject({
+      'data-org-lever-hint': 'true',
+      'aria-describedby': 'org-lever-hint',
+      title: '組織レバー。全社マップを開いて予算を使います',
+    });
+    expect(content(screen.find('org-lever-hint'))).toBe('予算は組織レバーで使えます');
+    expect(screen.find('org-lever-hint').props.role).toBe('status');
+    expect(screen.has('org-lever-hint-mark')).toBe(true);
+
+    screen.changeState({ budget: MIN_ORG_LEVER_BUDGET - 1 });
+    expect(screen.has('org-lever-hint')).toBe(false);
+    expect(screen.find('open-org').props['data-org-lever-hint']).toBe('false');
+    screen.changeState({ budget: MIN_ORG_LEVER_BUDGET });
+    expect(screen.has('org-lever-hint')).toBe(true);
+
+    screen.changeState({ quarterNumber: 2 });
+    expect(screen.has('org-lever-hint')).toBe(false);
+    screen.changeState({ quarterNumber: 1 });
+    expect(screen.has('org-lever-hint')).toBe(true);
+
+    screen.update({ readOnly: true });
+    expect(screen.has('org-lever-hint')).toBe(false);
+    screen.update({ readOnly: false });
+    expect(screen.has('org-lever-hint')).toBe(true);
+
+    screen.changeState({
+      phase: 'beat',
+      beat: { eventId: shopEvent!.id, kind: 'decision' },
+    });
+    expect(screen.has('org-lever-hint')).toBe(false);
+    screen.changeState({ phase: 'setup', beat: null, shop: null });
+    expect(screen.has('org-lever-hint')).toBe(false);
+
+    screen.update({ runEpoch: 4 });
+    expect(screen.has('org-lever-hint')).toBe(true);
+    const trigger = { focus: vi.fn() } as unknown as HTMLButtonElement;
+    screen.click('open-org', { currentTarget: trigger });
+    expect(onOpenOrg).toHaveBeenCalledExactlyOnceWith(trigger);
+    expect(screen.has('org-lever-hint')).toBe(false);
+    expect(screen.has('org-lever-hint-mark')).toBe(false);
+    screen.changeState({ budget: MIN_ORG_LEVER_BUDGET + 20 });
+    expect(screen.has('org-lever-hint')).toBe(false);
+    screen.update({ runEpoch: 4 });
+    expect(screen.has('org-lever-hint')).toBe(false);
   });
 
   it('ラン中メニューから遊び方と音の切替を開き、閉じたメニューは盤面操作を増やさない', () => {

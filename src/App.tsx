@@ -909,6 +909,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           audio.unlock();
           run.setSoundMuted(!meta.soundMuted);
         }}
+        runEpoch={run.runEpoch}
       />
     </>
   );

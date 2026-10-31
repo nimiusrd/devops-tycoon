@@ -573,7 +573,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       const result = computeTitleAndDiagnosis(sprint, org);
       expect(result).toEqual({
         title: '手が止まった',
-        diagnosis: 'コーダーがいなくて作業が進まなかった。',
+        diagnosis: 'コーダーがいなくて、作業が進みませんでした。',
       });
       expectNoShippingPraise(result);
     });
@@ -595,7 +595,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(result.grade).toBe('D');
       expect(result).toMatchObject({
         title: '手が止まった',
-        diagnosis: 'コーダーがいなくて作業が進まなかった。',
+        diagnosis: 'コーダーがいなくて、作業が進みませんでした。',
       });
       expectNoShippingPraise(result);
     });

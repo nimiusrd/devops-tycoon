@@ -747,7 +747,7 @@ function zeroShipmentDiagnosis(sprint: SprintState): string {
   const inFlight = coding + review + rework;
   const noCoders = sprint.config.codingSlots <= 0;
   // 流入枠 0 はコーダー不在（編成の slot ペナルティ）。稼働中の工程が空なら、それが 0 件の理由。
-  if (noCoders && inFlight === 0) return 'コーダーがいなくて作業が進まなかった。';
+  if (noCoders && inFlight === 0) return 'コーダーがいなくて、作業が進みませんでした。';
 
   const burning = tasks.some((task) => task.lane === 'rework' && task.incident);
   // 時間切れの打ち切りは incident フラグを下ろすが、件数と Rework 残留は残る。

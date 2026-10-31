@@ -940,6 +940,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   onToggleAi={run.setMemberAi}
                   onBegin={run.beginSetupSprint}
                   readOnly={run.isReplayMode}
+                  runEpoch={run.runEpoch}
                 />
               </SceneScrollReset>
             )}
@@ -1118,6 +1119,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               onToggleAi={run.setMemberAi}
               onClose={() => setFormationOpen(false)}
               readOnly={run.isReplayMode}
+              runEpoch={run.runEpoch}
             />
           )}
         </Suspense>

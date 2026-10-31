@@ -1,5 +1,10 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const hooks = vi.hoisted(() => ({
+  cursor: 0,
+  values: [] as unknown[],
+}));
 
 vi.mock('react', async (importOriginal) => {
   let nextId = 0;
@@ -7,15 +12,23 @@ vi.mock('react', async (importOriginal) => {
     ...(await importOriginal<typeof import('react')>()),
     useRef: () => ({ current: null }),
     useId: () => `formation-${nextId++}`,
+    useState(initial: unknown) {
+      const index = hooks.cursor++;
+      hooks.values[index] ??=
+        typeof initial === 'function' ? (initial as () => unknown)() : initial;
+      return [hooks.values[index], () => {}];
+    },
   };
 });
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({
   useDialogOverlayLock: vi.fn(),
 }));
 
+import { MIN_ORG_LEVER_BUDGET } from '../../../src/render/orgLeverHintView';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { FormationScreen, type FormationScreenProps } from '../../../src/ui/FormationScreen';
+import { dismissOrgLeverHint, resetOrgLeverHintSession } from '../../../src/ui/orgLeverHintSession';
 import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 import { directRoster } from '../helpers/whatIfFixtures';
 
@@ -61,7 +74,13 @@ function mountFormation(overrides: Partial<FormationScreenProps> = {}) {
     onClose: vi.fn(),
     ...overrides,
   };
-  let tree = expand(FormationScreen(props));
+  hooks.values = [];
+  let tree: ReactNode;
+  const render = () => {
+    hooks.cursor = 0;
+    tree = expand(FormationScreen(props));
+  };
+  render();
   const find = (id: string) => {
     const node = elements(tree).find((item) => item.props['data-testid'] === id);
     if (!node) throw new Error(`要素がありません: ${id}`);
@@ -77,7 +96,7 @@ function mountFormation(overrides: Partial<FormationScreenProps> = {}) {
     text: () => content(tree),
     update(next: Partial<FormationScreenProps>) {
       props = { ...props, ...next };
-      tree = expand(FormationScreen(props));
+      render();
     },
     click(id: string) {
       const node = find(id);
@@ -85,6 +104,10 @@ function mountFormation(overrides: Partial<FormationScreenProps> = {}) {
     },
   };
 }
+
+afterEach(() => {
+  resetOrgLeverHintSession();
+});
 
 describe('編成画面の配置と AI 配布', () => {
   it('選んだ配置と AI 配布の反転を通知し、入力のロスターを変更しない', () => {
@@ -252,5 +275,30 @@ describe('編成画面の配置と AI 配布', () => {
       state: makeState({ phase: 'sprint', whatIf: null, whatIfStatus: 'idle' }),
     });
     expect(screen.has('formation-forecast')).toBe(false);
+  });
+
+  it('開いた時点で条件を満たすときだけ案内行を出し、途中では足さず開封で消す', () => {
+    const hidden = mountFormation({
+      runEpoch: 4,
+      readOnly: true,
+      state: makeState({ budget: MIN_ORG_LEVER_BUDGET, quarterNumber: 1, phase: 'sprint' }),
+    });
+    expect(hidden.has('org-lever-hint')).toBe(false);
+    hidden.update({ readOnly: false });
+    expect(hidden.has('org-lever-hint')).toBe(false);
+
+    const shown = mountFormation({
+      runEpoch: 4,
+      state: makeState({ budget: MIN_ORG_LEVER_BUDGET, quarterNumber: 1, phase: 'sprint' }),
+    });
+    expect(content(shown.find('org-lever-hint'))).toBe('予算は組織レバーで使えます');
+    expect(shown.find('org-lever-hint').props.role).toBe('status');
+    shown.update({
+      state: makeState({ budget: 0, quarterNumber: 2, phase: 'sprint' }),
+    });
+    expect(shown.has('org-lever-hint')).toBe(true);
+    dismissOrgLeverHint(4);
+    shown.update({});
+    expect(shown.has('org-lever-hint')).toBe(false);
   });
 });

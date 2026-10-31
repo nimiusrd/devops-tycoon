@@ -17,7 +17,8 @@ vi.mock('react', async (importOriginal) => {
     useMemo: (factory: () => unknown) => factory(),
     useState(initial: unknown) {
       const index = hooks.cursor++;
-      hooks.values[index] ??= initial;
+      hooks.values[index] ??=
+        typeof initial === 'function' ? (initial as () => unknown)() : initial;
       return [
         hooks.values[index],
         (update: unknown) => {
@@ -43,8 +44,10 @@ vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
 });
 
 import { getBoss } from '../../../src/data/bosses';
+import { MIN_ORG_LEVER_BUDGET } from '../../../src/render/orgLeverHintView';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
+import { dismissOrgLeverHint, resetOrgLeverHintSession } from '../../../src/ui/orgLeverHintSession';
 import { SetupScreen, type SetupScreenProps } from '../../../src/ui/SetupScreen';
 import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 import { directRoster } from '../helpers/whatIfFixtures';
@@ -156,6 +159,7 @@ function mountSetup(overrides: Partial<SetupScreenProps> = {}) {
 afterEach(() => {
   vi.useRealTimers();
   vi.mocked(useDialogOverlayLock).mockClear();
+  resetOrgLeverHintSession();
 });
 
 describe('SetupScreen の次スプリント案内と編成', () => {
@@ -380,5 +384,31 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.props.onBegin).not.toHaveBeenCalled();
     expect(screen.props.onAssign).not.toHaveBeenCalled();
     expect(screen.props.onToggleAi).not.toHaveBeenCalled();
+  });
+
+  it('開いた時点で条件を満たすときだけ案内行を出し、途中では足さず開封で消す', () => {
+    const hidden = mountSetup({
+      runEpoch: 2,
+      state: makeState({ budget: MIN_ORG_LEVER_BUDGET - 1, quarterNumber: 1 }),
+    });
+    expect(hidden.has('org-lever-hint')).toBe(false);
+    hidden.update({
+      state: makeState({ budget: MIN_ORG_LEVER_BUDGET, quarterNumber: 1 }),
+    });
+    expect(hidden.has('org-lever-hint')).toBe(false);
+
+    const shown = mountSetup({
+      runEpoch: 2,
+      state: makeState({ budget: MIN_ORG_LEVER_BUDGET, quarterNumber: 1 }),
+    });
+    expect(content(shown.find('org-lever-hint'))).toBe('予算は組織レバーで使えます');
+    expect(shown.find('org-lever-hint').props.role).toBe('status');
+    shown.update({
+      state: makeState({ budget: MIN_ORG_LEVER_BUDGET - 1, quarterNumber: 2 }),
+    });
+    expect(shown.has('org-lever-hint')).toBe(true);
+    dismissOrgLeverHint(2);
+    shown.update({});
+    expect(shown.has('org-lever-hint')).toBe(false);
   });
 });

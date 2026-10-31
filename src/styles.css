@@ -6970,44 +6970,21 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.org-pill-marked {
-  border-color: var(--sun);
-}
-/* 案内の有無で枠を変えない。ラベルがサイズを決め、文は同じ内容箱に収める。 */
+/* ラベルが枠の寸法を決める。点はパディング内の絶対配置で、文字にも枠にも被さらない。 */
 .org-pill-label {
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
   white-space: nowrap;
 }
-.org-pill-label.is-hidden {
-  visibility: hidden;
-}
 .org-lever-hint-mark {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 4px;
   border-radius: 999px;
   background: var(--sun);
-  pointer-events: none;
-}
-.org-lever-hint {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0 4px;
-  overflow: hidden;
-  color: var(--cream);
-  /* ラベルの文字サイズに追従し、狭幅の詰めたピルでも枠をはみ出さない。 */
-  font-size: 0.55em;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
   pointer-events: none;
 }
 

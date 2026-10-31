@@ -12,6 +12,13 @@ interface ButtonBox {
   y: number;
 }
 
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 async function startQ1(page: Page): Promise<void> {
   await page.goto('/?seed=org-lever-hint');
   await page.evaluate(() => {
@@ -43,63 +50,18 @@ async function otherRunbarButtons(page: Page, origin: 'viewport' | 'runbar'): Pr
   }, origin);
 }
 
-/** 案内の文字が組織レバーの枠の中に収まり、枠からはみ出していない。 */
-async function hintFitsInOrgPill(page: Page): Promise<{
-  fits: boolean;
-  scrollWidth: number;
-  clientWidth: number;
-  textWidth: number;
-  pillWidth: number;
-  pillHeight: number;
-}> {
-  return page.evaluate(() => {
-    const hint = document.querySelector('[data-testid="org-lever-hint"]');
-    const pill = document.querySelector('[data-testid="open-org"]');
-    if (!(hint instanceof HTMLElement) || !pill) {
-      return {
-        fits: false,
-        scrollWidth: 0,
-        clientWidth: 0,
-        textWidth: 0,
-        pillWidth: 0,
-        pillHeight: 0,
-      };
-    }
-    const range = document.createRange();
-    range.selectNodeContents(hint);
-    const textBox = range.getBoundingClientRect();
-    const pillBox = pill.getBoundingClientRect();
-    const fits =
-      textBox.width > 0 &&
-      textBox.height > 0 &&
-      textBox.left >= pillBox.left - 0.5 &&
-      textBox.right <= pillBox.right + 0.5 &&
-      textBox.top >= pillBox.top - 0.5 &&
-      textBox.bottom <= pillBox.bottom + 0.5 &&
-      textBox.width <= pillBox.width + 0.5;
-    return {
-      fits,
-      scrollWidth: hint.scrollWidth,
-      clientWidth: hint.clientWidth,
-      textWidth: textBox.width,
-      pillWidth: pillBox.width,
-      pillHeight: pillBox.height,
-    };
-  });
+async function usedFontSize(page: Page, selector: string): Promise<number> {
+  return page.evaluate((target) => {
+    const element = document.querySelector(target);
+    if (!(element instanceof HTMLElement)) return 0;
+    return Number.parseFloat(getComputedStyle(element).fontSize);
+  }, selector);
 }
 
-async function overlaps(page: Page, hintId: string, targetId: string): Promise<boolean> {
-  return page.evaluate(
-    ({ hintTestId, targetTestId }) => {
-      const hint = document.querySelector(`[data-testid="${hintTestId}"]`);
-      const target = document.querySelector(`[data-testid="${targetTestId}"]`);
-      if (!hint || !target) throw new Error(`${hintTestId} または ${targetTestId} がありません`);
-      const a = hint.getBoundingClientRect();
-      const b = target.getBoundingClientRect();
-      return a.bottom > b.top && a.top < b.bottom && a.right > b.left && a.left < b.right;
-    },
-    { hintTestId: hintId, targetTestId: targetId },
-  );
+async function boxOf(page: Page, testId: string): Promise<Box> {
+  const box = await page.getByTestId(testId).boundingBox();
+  if (!box) throw new Error(`${testId} の寸法が取れません`);
+  return box;
 }
 
 function expectSamePositions(before: ButtonBox[], after: ButtonBox[]): void {
@@ -111,10 +73,17 @@ function expectSamePositions(before: ButtonBox[], after: ButtonBox[]): void {
   }
 }
 
+function expectSameBox(before: Box, after: Box, label: string): void {
+  expect(after.x, `${label} x`).toBe(before.x);
+  expect(after.y, `${label} y`).toBe(before.y);
+  expect(after.width, `${label} width`).toBe(before.width);
+  expect(after.height, `${label} height`).toBe(before.height);
+}
+
 for (const viewport of VIEWPORTS) {
-  test(`Q1開始で組織レバーが見え、案内は開くと消え、他ボタンは動かない (${viewport.name})`, async ({
+  test(`Q1開始の編成に案内行があり、ボタン名は見えたまま開くと消える (${viewport.name})`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await startQ1(page);
 
@@ -122,11 +91,28 @@ for (const viewport of VIEWPORTS) {
     await expect(opener).toBeInViewport();
     await expect(opener).toHaveAccessibleName(/組織レバー/);
     await expect(opener).toHaveAttribute('data-org-lever-hint', 'true');
+    await expect(opener).toContainText('🗺');
+    await expect(opener).toContainText('組織レバー');
+    const labelVisible = await page.evaluate(() => {
+      const label = document.querySelector('[data-testid="open-org"] .org-pill-label');
+      if (!(label instanceof HTMLElement)) return false;
+      const style = getComputedStyle(label);
+      return style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity) > 0;
+    });
+    expect(labelVisible).toBe(true);
+
     const hint = page.getByTestId('org-lever-hint');
     await expect(hint).toHaveText('予算は組織レバーで使えます');
+    await expect(page.getByTestId('setup')).toContainText('予算は組織レバーで使えます');
+    await expect(page.getByTestId('runbar')).not.toContainText('予算は組織レバーで使えます');
     await expect(page.getByTestId('org-lever-hint-mark')).toBeVisible();
-    const fitted = await hintFitsInOrgPill(page);
-    expect(fitted.fits, JSON.stringify(fitted)).toBe(true);
+
+    const labelSize = await usedFontSize(page, '[data-testid="open-org"] .org-pill-label');
+    const hintSize = await usedFontSize(page, '[data-testid="org-lever-hint"]');
+    console.log(`font-size setup ${viewport.name} label=${labelSize} hint=${hintSize}`);
+    expect(labelSize).toBeGreaterThanOrEqual(11);
+    expect(hintSize).toBeGreaterThanOrEqual(11);
+    await page.screenshot({ path: testInfo.outputPath(`setup-${viewport.name}.png`) });
 
     const before = await otherRunbarButtons(page, 'viewport');
     const openerBefore = await opener.boundingBox();
@@ -143,6 +129,7 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId('setup')).toBeVisible();
     await expect(hint).toHaveCount(0);
     await expect(opener).toHaveAttribute('data-org-lever-hint', 'false');
+    await expect(opener).toContainText('組織レバー');
 
     const after = await otherRunbarButtons(page, 'viewport');
     expectSamePositions(before, after);
@@ -162,32 +149,75 @@ for (const viewport of VIEWPORTS) {
     expectSamePositions(before, await otherRunbarButtons(page, 'viewport'));
   });
 
-  test(`案内を残したスプリントでも種別と速度操作に重ならない (${viewport.name})`, async ({
+  test(`スプリント中は案内文を出さず、点の有無で盤面とランバーが動かない (${viewport.name})`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await startQ1(page);
-    await expect(page.getByTestId('org-lever-hint')).toBeVisible();
-
     await beginCurrentSetupSprint(page);
-    const hint = page.getByTestId('org-lever-hint');
-    await expect(hint).toBeVisible();
-    await expect(hint).toHaveText('予算は組織レバーで使えます');
-    const fitted = await hintFitsInOrgPill(page);
-    expect(fitted.fits, JSON.stringify(fitted)).toBe(true);
-    expect(await overlaps(page, 'org-lever-hint', 'speed-controls')).toBe(false);
-    expect(await overlaps(page, 'org-lever-hint', 'sprint-kind')).toBe(false);
-    expect(await overlaps(page, 'org-lever-hint', 'board')).toBe(false);
-    expect(await overlaps(page, 'org-lever-hint', 'action-bar')).toBe(false);
-    await expect(page.getByTestId('sprint-kind')).toBeVisible();
-    await expect(page.getByTestId('speed-1x')).toBeVisible();
 
-    const before = await otherRunbarButtons(page, 'runbar');
-    await page.getByTestId('open-org').click();
+    await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
+    await expect(page.getByTestId('org-lever-hint-mark')).toBeVisible();
+    const opener = page.getByTestId('open-org');
+    await expect(opener).toContainText('🗺');
+    await expect(opener).toContainText('組織レバー');
+    await expect(opener).toHaveAttribute('data-org-lever-hint', 'true');
+    const labelSize = await usedFontSize(page, '[data-testid="open-org"] .org-pill-label');
+    console.log(`font-size sprint ${viewport.name} label=${labelSize}`);
+    expect(labelSize).toBeGreaterThanOrEqual(11);
+    await page.screenshot({ path: testInfo.outputPath(`sprint-${viewport.name}.png`) });
+
+    const boardBefore = await boxOf(page, 'board');
+    const runbarBefore = await boxOf(page, 'runbar');
+    const buttonsBefore = await otherRunbarButtons(page, 'runbar');
+
+    await opener.click();
     await expect(page.getByTestId('org-levers')).toBeVisible();
     await page.getByTestId('crumb-team').click();
     await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
-    await expect(hint).toHaveCount(0);
-    expectSamePositions(before, await otherRunbarButtons(page, 'runbar'));
+    await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
+    await expect(page.getByTestId('org-lever-hint-mark')).toHaveCount(0);
+    await expect(opener).toHaveAttribute('data-org-lever-hint', 'false');
+
+    expectSameBox(boardBefore, await boxOf(page, 'board'), 'board');
+    expectSameBox(runbarBefore, await boxOf(page, 'runbar'), 'runbar');
+    expectSamePositions(buttonsBefore, await otherRunbarButtons(page, 'runbar'));
+  });
+
+  test(`ラン中の編成は開いた時点の案内行を出し、スプリントの盤面は動かない (${viewport.name})`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await startQ1(page);
+    await beginCurrentSetupSprint(page);
+    await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
+
+    const boardBefore = await boxOf(page, 'board');
+    const runbarBefore = await boxOf(page, 'runbar');
+    await page.getByTestId('open-formation').click();
+    await expect(page.getByTestId('formation')).toBeVisible();
+    const hint = page.getByTestId('org-lever-hint');
+    await expect(hint).toHaveText('予算は組織レバーで使えます');
+    const hintSize = await usedFontSize(page, '[data-testid="org-lever-hint"]');
+    const labelSize = await usedFontSize(page, '[data-testid="open-org"] .org-pill-label');
+    console.log(`font-size formation ${viewport.name} label=${labelSize} hint=${hintSize}`);
+    expect(hintSize).toBeGreaterThanOrEqual(11);
+    expect(labelSize).toBeGreaterThanOrEqual(11);
+    await page.screenshot({ path: testInfo.outputPath(`formation-${viewport.name}.png`) });
+    const insideFormation = await page.evaluate(() => {
+      const row = document.querySelector('[data-testid="org-lever-hint"]');
+      const formation = document.querySelector('[data-testid="formation"]');
+      const runbar = document.querySelector('[data-testid="runbar"]');
+      return !!row && !!formation && formation.contains(row) && !!runbar && !runbar.contains(row);
+    });
+    expect(insideFormation).toBe(true);
+    expectSameBox(boardBefore, await boxOf(page, 'board'), 'board');
+    expectSameBox(runbarBefore, await boxOf(page, 'runbar'), 'runbar');
+
+    await page.getByTestId('formation-close').click();
+    await expect(page.getByTestId('formation')).toHaveCount(0);
+    await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
+    expectSameBox(boardBefore, await boxOf(page, 'board'), 'board');
+    expectSameBox(runbarBefore, await boxOf(page, 'runbar'), 'runbar');
   });
 }

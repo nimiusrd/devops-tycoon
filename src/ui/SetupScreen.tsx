@@ -15,6 +15,7 @@ import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { DeckBar } from './DeckBar';
 import { FormationGrid } from './FormationScreen';
+import { OrgLeverHintRow } from './OrgLeverHintRow';
 import { QuarterOkr } from './QuarterOkr';
 import { TermTip } from './TermTip';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
@@ -26,6 +27,8 @@ export interface SetupScreenProps {
   onBegin: () => void;
   /** リプレイ閲覧など、操作を受け付けないとき。 */
   readOnly?: boolean;
+  /** startRun ごとの世代。組織レバー案内をラン単位で区切る。 */
+  runEpoch?: number;
 }
 
 function SetupPhrases({ phrases }: { phrases: readonly string[] }) {
@@ -120,6 +123,7 @@ export function SetupScreen({
   onToggleAi,
   onBegin,
   readOnly = false,
+  runEpoch = 0,
 }: SetupScreenProps) {
   const [dismissedSprintKeys, setDismissedSprintKeys] = useState<string[]>([]);
   const setupRef = useRef<HTMLDivElement>(null);
@@ -216,6 +220,7 @@ export function SetupScreen({
                   ? '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。'
                   : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'}
             </p>
+            <OrgLeverHintRow state={state} readOnly={readOnly} runEpoch={runEpoch} kind="setup" />
             <div className="setup-term-tips" data-testid="setup-term-tips">
               <TermTip termId="pr" revealOnOpen />
               <TermTip termId="aiLiteracy" revealOnOpen />

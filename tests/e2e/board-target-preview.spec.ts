@@ -139,6 +139,12 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       if (reducedMotion === 'reduce' && viewport.width !== 390) {
         await expect(page.getByTestId('board')).toHaveScreenshot(
           `target-preview-${viewport.width}.png`,
+          {
+            animations: 'disabled',
+            // CI とローカルの日本語フォント計量差を、結果カードと同じ 5% まで吸収する。
+            // 寸法が違う画像はこの比率では通らない。1280 の基準は CI の描画に合わせる。
+            maxDiffPixelRatio: 0.05,
+          },
         );
       }
       await page.mouse.move(outside.x, outside.y);

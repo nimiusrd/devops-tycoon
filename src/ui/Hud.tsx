@@ -23,7 +23,7 @@ import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
 import { formatSigned } from './formatSigned';
 import { PhraseText } from './PhraseText';
-import { pickCompactMetrics } from './hudCompact';
+import { compactValueSlot, pickCompactMetrics } from './hudCompact';
 import { useResponsiveMode } from './responsiveMode';
 import { VisualIcon } from './VisualIcon';
 
@@ -187,6 +187,7 @@ function CompactChip({
   feedback?: ActiveHudFeedback;
 }) {
   const valueText = `${metric.value}${metric.unit ?? ''}`;
+  const valueSlot = compactValueSlot(metric);
   const feedbackClass = feedback ? ` hud-feedback flash-${feedback.tone}` : '';
   // ガイド/CSS/E2E はフル表示と同じ `hud-seniorHp` を対象にする。
   const testId = metric.id === 'seniorHp' ? 'hud-seniorHp' : `hud-compact-${metric.id}`;
@@ -208,7 +209,13 @@ function CompactChip({
         )}
       </span>
       <span className="hud-compact-chip-label">{metric.label}</span>
-      <span className="hud-compact-chip-value">{valueText}</span>
+      <span
+        className="hud-compact-chip-value"
+        data-value-slot={valueSlot.slot}
+        style={{ minWidth: `${valueSlot.glyphs}ch` }}
+      >
+        {valueText}
+      </span>
       {metric.warningChip && (
         <span
           className="hud-compact-chip-warn"

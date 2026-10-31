@@ -4,7 +4,7 @@ import type {
   StatusMetricTone,
   StatusMetricView,
 } from '../../../src/render/status';
-import { pickCompactMetrics } from '../../../src/ui/hudCompact';
+import { compactValueSlot, pickCompactMetrics } from '../../../src/ui/hudCompact';
 
 function metric(
   id: StatusMetricId,
@@ -69,5 +69,30 @@ describe('pickCompactMetrics', () => {
     ]);
 
     expect(picked.map(({ id }) => id)).toEqual(['delivery', 'seniorHp', 'morale', 'aiDependency']);
+  });
+});
+
+describe('compactValueSlot', () => {
+  it('想定する最大桁の文字数を先に確保する', () => {
+    expect(compactValueSlot({ id: 'delivery', value: 12, unit: 'pt' })).toEqual({
+      slot: 'delivery',
+      glyphs: 8,
+    });
+    expect(compactValueSlot({ id: 'seniorHp', value: 100, unit: '%' })).toEqual({
+      slot: 'percent',
+      glyphs: 4,
+    });
+    expect(compactValueSlot({ id: 'techDebt', value: 90 })).toEqual({
+      slot: 'points',
+      glyphs: 4,
+    });
+    expect(compactValueSlot({ id: 'quality', value: 'S' })).toEqual({
+      slot: 'grade',
+      glyphs: 1,
+    });
+    expect(compactValueSlot({ id: 'fireRisk', value: 'HIGH' })).toEqual({
+      slot: 'risk',
+      glyphs: 4,
+    });
   });
 });

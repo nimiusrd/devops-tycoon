@@ -127,6 +127,15 @@
   padding: 4px 10px;
 }
 
+/* ボス条件は2行ぶんを先に確保し、折り返しても盤面を押さない（#975）。 */
+.root :global(.subbar) :global(.boss-goal) {
+  box-sizing: border-box;
+  line-height: 1.35;
+  min-height: calc(2 * 1.35em + 14px);
+  word-break: keep-all;
+  line-break: strict;
+}
+
 .root :global(.meter) {
   width: 140px;
 }

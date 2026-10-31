@@ -1,5 +1,25 @@
 import type { StatusMetricId, StatusMetricTone, StatusMetricView } from '../render/status';
 
+/** コンパクト KPI の数字幅。桁が増えてもチップ幅を変えない（#975）。 */
+export type CompactValueSlot = 'delivery' | 'percent' | 'points' | 'grade' | 'risk';
+
+/**
+ * 数字スロットの最大文字数。
+ *
+ * 出荷はラン累計の 6 桁と単位 `pt`。百分率は `100%`。単位なしの点数は 4 桁。
+ * グレードは 1 文字、炎上リスクは `HIGH`。
+ */
+export function compactValueSlot(metric: { id: string; unit?: string; value: string | number }): {
+  slot: CompactValueSlot;
+  glyphs: number;
+} {
+  if (metric.id === 'delivery') return { slot: 'delivery', glyphs: 8 };
+  if (metric.id === 'fireRisk') return { slot: 'risk', glyphs: 4 };
+  if (typeof metric.value === 'string') return { slot: 'grade', glyphs: 1 };
+  if (metric.unit === '%') return { slot: 'percent', glyphs: 4 };
+  return { slot: 'points', glyphs: 4 };
+}
+
 /**
  * 平常時に人が一度に追う KPI の上限。
  * 出荷を1枠固定し、残り3枠を危険度順に入れ替える。

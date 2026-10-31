@@ -284,7 +284,7 @@ describe('RunBar の表示と操作', () => {
     expect(content(screen.find('roster-count'))).toBe('👥3 😴1');
   });
 
-  it('Q1で予算が最安レバー以上かつショップ未到来のときだけ案内し、開くと戻さない', () => {
+  it('Q1で予算が最安レバー以上のとき案内し、温存では残し、開くと戻さない', () => {
     const shopEvent = EVENT_DEFS.find((event) =>
       event.choices.some((choice) => choice.leadsTo === 'shop'),
     );
@@ -326,9 +326,24 @@ describe('RunBar の表示と操作', () => {
       phase: 'beat',
       beat: { eventId: shopEvent!.id, kind: 'decision' },
     });
-    expect(screen.has('org-lever-hint-mark')).toBe(false);
+    expect(screen.has('org-lever-hint-mark')).toBe(true);
+    expect(screen.find('open-org').props['data-org-lever-hint']).toBe('true');
+    screen.changeState({
+      phase: 'shop',
+      beat: null,
+      shop: { cards: [], recruit: { cost: 25, bought: false } },
+    });
+    expect(screen.has('org-lever-hint-mark')).toBe(true);
     screen.changeState({ phase: 'setup', beat: null, shop: null });
+    expect(screen.has('org-lever-hint-mark')).toBe(true);
+    expect(readOrgLeverHintSession(3).dismissed).toBe(false);
+
+    screen.changeState({ budget: 0 });
     expect(screen.has('org-lever-hint-mark')).toBe(false);
+    expect(readOrgLeverHintSession(3).dismissed).toBe(true);
+    screen.changeState({ budget: MIN_ORG_LEVER_BUDGET + 20, phase: 'setup', shop: null });
+    expect(screen.has('org-lever-hint-mark')).toBe(false);
+    expect(screen.find('open-org').props['data-org-lever-hint']).toBe('false');
 
     screen.update({ runEpoch: 4 });
     expect(screen.has('org-lever-hint-mark')).toBe(true);
@@ -342,7 +357,7 @@ describe('RunBar の表示と操作', () => {
     expect(screen.has('org-lever-hint-mark')).toBe(false);
   });
 
-  it('リプレイ閲覧中のショップは到来を記憶せず、同じ世代のQ1案内を残す', () => {
+  it('リプレイ閲覧中のショップと予算0は消去を記憶せず、同じ世代のQ1案内を残す', () => {
     const screen = mountRunBar({
       onOpenOrg: vi.fn(),
       runEpoch: 7,
@@ -366,7 +381,21 @@ describe('RunBar の表示と操作', () => {
       },
     });
     expect(screen.has('org-lever-hint-mark')).toBe(false);
-    expect(readOrgLeverHintSession(7).shopArrived).toBe(false);
+    expect(readOrgLeverHintSession(7).dismissed).toBe(false);
+
+    screen.update({
+      readOnly: true,
+      state: {
+        ...screen.state,
+        phase: 'setup',
+        shop: null,
+        beat: null,
+        quarterNumber: 1,
+        budget: 0,
+      },
+    });
+    expect(screen.has('org-lever-hint-mark')).toBe(false);
+    expect(readOrgLeverHintSession(7).dismissed).toBe(false);
 
     screen.update({
       readOnly: false,
@@ -379,12 +408,12 @@ describe('RunBar の表示と操作', () => {
         budget: MIN_ORG_LEVER_BUDGET,
       },
     });
-    expect(readOrgLeverHintSession(7).shopArrived).toBe(false);
+    expect(readOrgLeverHintSession(7).dismissed).toBe(false);
     expect(screen.has('org-lever-hint-mark')).toBe(true);
     expect(screen.find('open-org').props['data-org-lever-hint']).toBe('true');
   });
 
-  it('編成の案内行は開いた時点だけ足し、消すのは開封だけ', () => {
+  it('編成の案内行は開いた時点だけ足し、消すのは dismissed のときだけ', () => {
     let props = { eligible: true, dismissed: false };
     let tree: ReactNode = null;
     const flush = () => {

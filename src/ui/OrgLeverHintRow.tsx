@@ -3,7 +3,8 @@ import { ORG_LEVER_HINT_MESSAGE } from '../render/orgLeverHintView';
 
 /**
  * 編成を開いた時点の判定だけを行にする。
- * 開いている途中で条件が揃っても行は足さない。消すのは組織レバーを開いたときだけ。
+ * 開いている途中で条件が揃っても行は足さない。
+ * 消すのは、レバーを開いたときか予算が 0 になったときだけ。
  */
 export function OrgLeverHintRow({
   eligible,

@@ -5,6 +5,7 @@ import { createSprint, resolveSprintConfig } from '../../../src/sim/sprint';
 import {
   REVIEW_FREEZE_DANGER_PEAK,
   REVIEW_FREEZE_WATCH_PEAK,
+  AI_DEPENDENCY_HELP,
   aiDependencyHudCopy,
   budgetHudCopy,
   fireRiskHudCopy,
@@ -23,7 +24,13 @@ import {
   type HudMetricSnapshot,
   type RunMetricSnapshot,
 } from '../../../src/render/status';
-import { REVIEW_FREEZE_PEAK } from '../../../src/sim/outcome';
+import { GLOSSARY } from '../../../src/data/glossary';
+import { loseNextActionView } from '../../../src/render/loseNextActionView';
+import {
+  AI_DEPENDENCY_CAP,
+  AI_LITERACY_UNSAFE_CAP,
+  REVIEW_FREEZE_PEAK,
+} from '../../../src/sim/outcome';
 import type { OrgScaleState } from '../../../src/sim/orgscale/types';
 import type { OrgState, SimState } from '../../../src/sim/types';
 
@@ -190,7 +197,12 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     expect(metrics.find((m) => m.id === 'aiDependency')).toMatchObject({
       warningChip: '依存危険・ペアかガイド',
     });
-    expect(metrics.find((m) => m.id === 'aiDependency')?.detail).toMatch(/Literacy 25/);
+    const aiDetail = metrics.find((m) => m.id === 'aiDependency')?.detail;
+    expect(aiDetail).toBe(
+      `AIリテラシー25・依存${AI_DEPENDENCY_CAP}%以上かつAIリテラシー${AI_LITERACY_UNSAFE_CAP}以下で敗北`,
+    );
+    expect(aiDetail).not.toMatch(/Literacy/);
+    expect(metrics.find((m) => m.id === 'aiDependency')?.detailPhrases?.join('')).toBe(aiDetail);
     expect(metrics.find((m) => m.id === 'aiDependency')?.help).toMatch(/95/);
 
     // 俯瞰では全社集約依存度とチーム Literacy を混ぜない
@@ -214,7 +226,47 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     };
     const scaled = deriveHudMetrics(state.org, state.sprint.tasks, orgScale);
     expect(scaled.find((m) => m.id === 'aiDependency')?.warningChip).toBeUndefined();
-    expect(scaled.find((m) => m.id === 'aiDependency')?.detail).not.toMatch(/Literacy/);
+    expect(scaled.find((m) => m.id === 'aiDependency')?.detail).not.toMatch(
+      /Literacy|AIリテラシー/,
+    );
+    expect(scaled.find((m) => m.id === 'aiDependency')?.detailPhrases).toBeUndefined();
+  });
+
+  it('AI依存の詳細は英語の Literacy を残さず、他画面と同じ敗北条件を句に分ける（#959）', () => {
+    const safe = aiDependencyHudCopy(40, 60.4);
+    const overconfident = aiDependencyHudCopy(80, 60);
+    const warned = aiDependencyHudCopy(80, 25);
+    const expected = (literacy: number, withOverconfidence = false) => {
+      const phrases = [
+        `AIリテラシー${literacy}・`,
+        `依存${AI_DEPENDENCY_CAP}%以上かつ`,
+        `AIリテラシー${AI_LITERACY_UNSAFE_CAP}以下`,
+        'で敗北',
+        ...(withOverconfidence ? ['・過信域'] : []),
+      ];
+      return { detail: phrases.join(''), detailPhrases: phrases };
+    };
+
+    expect(safe).toMatchObject(expected(60));
+    expect(overconfident).toMatchObject(expected(60, true));
+    expect(warned).toMatchObject({
+      ...expected(25),
+      warningChip: '依存危険・ペアかガイド',
+    });
+    for (const copy of [safe, overconfident, warned]) {
+      expect(copy.detail).not.toMatch(/Literacy/);
+      expect(copy.detailPhrases?.join('')).toBe(copy.detail);
+      expect(copy.detail).toContain(`${AI_DEPENDENCY_CAP}%以上`);
+      expect(copy.detail).toContain(`AIリテラシー${AI_LITERACY_UNSAFE_CAP}以下`);
+    }
+
+    expect(AI_DEPENDENCY_HELP).toContain(`リテラシーが${AI_LITERACY_UNSAFE_CAP}以下`);
+    expect(AI_DEPENDENCY_HELP).toContain(`${AI_DEPENDENCY_CAP}に達すると敗北`);
+    expect(GLOSSARY.aiLiteracy.definition).toContain(`リテラシー${AI_LITERACY_UNSAFE_CAP}以下`);
+    expect(GLOSSARY.aiLiteracy.definition).toContain(`依存${AI_DEPENDENCY_CAP}%以上で敗北`);
+    const nextAction = loseNextActionView('aiDependency').nextAction;
+    expect(nextAction).toContain(`AIリテラシーが${AI_LITERACY_UNSAFE_CAP}以下`);
+    expect(nextAction).toContain(`依存度が${AI_DEPENDENCY_CAP}に達すると敗北`);
   });
 
   it('シニア体力と士気は低下すると危険域として表示する', () => {

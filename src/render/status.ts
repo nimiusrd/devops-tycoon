@@ -91,6 +91,11 @@ export interface StatusMetricView {
   directionLabel: string;
   tone: StatusMetricTone;
   detail: string;
+  /**
+   * 詳細文の折り返し単位。あるときは `detail` と同じ内容を句に分け、
+   * 語の途中では改行しない（#959）。
+   */
+  detailPhrases?: readonly string[];
   help: string;
   barPct?: number;
   fillClass?: string;
@@ -139,7 +144,7 @@ export function seniorHpHudCopy(
 
 export interface AiDependencyHudCopyOptions {
   /**
-   * 全社集約など、依存度と Literacy のスコープが一致しない表示。
+   * 全社集約など、依存度とリテラシーのスコープが一致しない表示。
    * true のときは敗北条件チップを出さず、過信域の一般警告だけにする（RI-74）。
    */
   suppressLoseWarning?: boolean;
@@ -155,6 +160,7 @@ export function aiDependencyHudCopy(
   options: AiDependencyHudCopyOptions = {},
 ): {
   detail: string;
+  detailPhrases?: readonly string[];
   warningChip?: string;
 } {
   if (options.suppressLoseWarning) {
@@ -163,17 +169,26 @@ export function aiDependencyHudCopy(
     return { detail: '75%以上は過信域' };
   }
   const literacy = Math.round(aiLiteracy);
-  const detail = `Literacy ${literacy}・${AI_DEPENDENCY_CAP}%かつLiteracy≤${AI_LITERACY_UNSAFE_CAP}で敗北`;
-  if (literacy <= AI_LITERACY_UNSAFE_CAP && aiDependencyPct >= 50) {
+  const lowLiteracyWarning = literacy <= AI_LITERACY_UNSAFE_CAP && aiDependencyPct >= 50;
+  // 句は wide 直後の最小 KPI カード（約140px）でも途中で切れない長さにする（#959）。
+  // 320px は1列でこのカードより広い。現在値と二つの上限は、ヘルプ・用語チップ・敗北の次の一手と同じ定数。
+  // 低リテラシーの警告チップが出るときは、過信域の追記より先にその案内を優先する。
+  const detailPhrases = [
+    `AIリテラシー${literacy}・`,
+    `依存${AI_DEPENDENCY_CAP}%以上かつ`,
+    `AIリテラシー${AI_LITERACY_UNSAFE_CAP}以下`,
+    'で敗北',
+  ];
+  if (aiDependencyPct >= 75 && !lowLiteracyWarning) detailPhrases.push('・過信域');
+  const detail = detailPhrases.join('');
+  if (lowLiteracyWarning) {
     return {
       detail,
+      detailPhrases,
       warningChip: '依存危険・ペアかガイド',
     };
   }
-  if (aiDependencyPct >= 75) {
-    return { detail: `${detail}・過信域` };
-  }
-  return { detail };
+  return { detail, detailPhrases };
 }
 
 export type HudMetricKey =
@@ -497,7 +512,7 @@ export function deriveHudMetrics(
       directionLabel: LOWER_BETTER,
       tone: lowerBetterTone(s.aiDependencyPct, 50, 75),
       ...aiDependencyHudCopy(s.aiDependencyPct, org.aiLiteracy, {
-        // 俯瞰中は依存度が全社集約、Literacy は選択中チームのままなので混ぜない。
+        // 俯瞰中は依存度が全社集約、リテラシーは選択中チームのままなので混ぜない。
         suppressLoseWarning: !!orgScale,
       }),
       help: AI_DEPENDENCY_HELP,

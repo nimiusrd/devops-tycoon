@@ -324,6 +324,236 @@ for (const viewport of [
   { width: 320, height: 568 },
   { width: 1280, height: 800 },
 ]) {
+  test(`${viewport.width}pxで休職復帰の通知が出ても開始ボタンの位置がずれない（#937）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({
+      reducedMotion: viewport.width === 320 ? 'reduce' : 'no-preference',
+    });
+    await page.goto('/?renderer=pixi&tutorial=off&seed=leave-return-notice');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    const draft = page.getByTestId('setup');
+    await expect(draft.getByTestId('formation-forecast')).toHaveAttribute(
+      'data-what-if-status',
+      'ready',
+      { timeout: 15_000 },
+    );
+    const raw = await page.evaluate(() => {
+      const text = (window as GameWindow).game!.exportRunSaveText();
+      if (!text) throw new Error('準備画面のセーブを取得できない');
+      return text;
+    });
+    const withKind = (saved: string, kind: 'boss' | 'elite', returns: boolean) => {
+      const save = JSON.parse(saved) as RunSave;
+      save.state.pendingSprintKind = kind;
+      const teamId = save.state.extras.activeTeamId;
+      if (!teamId) throw new Error('選択中チームがない');
+      if (returns) {
+        save.state.extras.pendingLeaveReturns = {
+          [teamId]: save.state.roster.members.slice(0, 3).map((member) => ({
+            id: member.id,
+            name: member.name,
+          })),
+        };
+      } else {
+        delete save.state.extras.pendingLeaveReturns;
+      }
+      return JSON.stringify(save);
+    };
+    const names = (JSON.parse(withKind(raw, 'boss', true)) as RunSave).state.roster.members
+      .slice(0, 3)
+      .map((member) => member.name);
+    const speech = names.map((name) => `${name}が復帰しました（ベンチ）`).join('');
+
+    const openSetup = async (saved: string, boot: string, watchSpeech = false) => {
+      await page.goto(`/?renderer=pixi&tutorial=off&seed=leave-return-notice&boot=${boot}`);
+      await page.getByTestId('difficulty-easy').waitFor();
+      if (watchSpeech) {
+        await page.evaluate(() => {
+          const log: string[] = [];
+          const mark = () => {
+            const status = document.querySelector('[data-testid="leave-return-status"]');
+            if (!status) return;
+            const text = status.textContent ?? '';
+            if (log.length === 0 || log[log.length - 1] !== text) log.push(text);
+          };
+          new MutationObserver(mark).observe(document.documentElement, {
+            subtree: true,
+            childList: true,
+            characterData: true,
+          });
+          (window as unknown as { __leaveReturnLiveLog: string[] }).__leaveReturnLiveLog = log;
+        });
+      }
+      await page.evaluate(async (text) => {
+        const game = (window as GameWindow).game!;
+        const result = await game.importRunSaveText(text);
+        if (!result.ok || game.resumeRun()?.phase !== 'setup') {
+          throw new Error('ボス前の準備画面を開けない');
+        }
+        game.pause();
+      }, saved);
+      const setup = page.getByTestId('setup');
+      await expect(setup).toBeVisible();
+      await expect(setup.getByTestId('formation-forecast')).toHaveAttribute(
+        'data-what-if-status',
+        'ready',
+        { timeout: 15_000 },
+      );
+      await page.evaluate(() => document.fonts.ready);
+      return setup;
+    };
+    const positions = (setup: Locator) =>
+      setup.locator('.formation-panel').evaluate((panel) => {
+        const panelBounds = panel.getBoundingClientRect();
+        return [
+          ...panel.querySelectorAll('.formation-member, .formation-forecast, .primary-button'),
+        ].map((element) => {
+          const bounds = element.getBoundingClientRect();
+          return {
+            id: element.getAttribute('data-testid'),
+            x: bounds.x - panelBounds.x,
+            y: bounds.y - panelBounds.y + panel.scrollTop,
+            width: bounds.width,
+            height: bounds.height,
+          };
+        });
+      });
+
+    const withoutNotice = await openSetup(withKind(raw, 'boss', false), 'plain');
+    await expect(withoutNotice.locator('.formation-setup-hint')).toContainText('次はボス');
+    const before = await positions(withoutNotice);
+
+    const setup = await openSetup(withKind(raw, 'boss', true), 'return', true);
+    const hint = setup.locator('.formation-setup-copy .formation-setup-hint');
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText('次はボス');
+    const fit = await setup.locator('.formation-setup-copy').evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    }));
+    expect(fit.scrollHeight, '復帰通知でヒント枠をスクロールさせない').toBeLessThanOrEqual(
+      fit.clientHeight,
+    );
+    const warningCovered = async (warning: Locator) =>
+      warning.evaluate((element) => {
+        const summary = document.querySelector('[data-testid="leave-return-summary"]');
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const boxes = [...range.getClientRects()].filter((box) => box.width > 0 && box.height > 0);
+        if (boxes.length === 0) return true;
+        if (!summary) return false;
+        const summaryBox = summary.getBoundingClientRect();
+        return boxes.some(
+          (box) =>
+            box.bottom > summaryBox.top + 1 &&
+            box.top < summaryBox.bottom - 1 &&
+            box.right > summaryBox.left + 1 &&
+            box.left < summaryBox.right - 1,
+        );
+      });
+    await expect(hint).toHaveText(
+      '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。',
+    );
+    expect(await warningCovered(hint), 'ボスの警告の全文を復帰の要約で覆わない').toBe(false);
+    await expect(setup.getByTestId('leave-return-status')).toHaveText(speech);
+    await expect(setup.getByRole('alert')).toHaveCount(0);
+    const liveLog = await page.evaluate(
+      () => (window as unknown as { __leaveReturnLiveLog?: string[] }).__leaveReturnLiveLog ?? [],
+    );
+    expect(liveLog[0], '編成画面は空の読み上げ領域で開く').toBe('');
+    expect(liveLog.filter((entry) => entry.length > 0)).toEqual([speech]);
+    const after = await positions(setup);
+    const shiftedByOneLine = before.every((item, index) => {
+      const next = after[index];
+      if (!next || item.id !== next.id || item.x !== next.x || item.width !== next.width)
+        return false;
+      const dy = next.y - item.y;
+      return dy >= -1 && dy <= 32 && Math.abs(next.height - item.height) <= 1;
+    });
+    expect(shiftedByOneLine, '通知の有無で開始と編成が1行を超えてずれない').toBe(true);
+    if (viewport.width !== 320) return;
+    const eliteWarning =
+      '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。';
+    const elitePlain = await openSetup(withKind(raw, 'elite', false), 'elite-plain');
+    const eliteBefore = await positions(elitePlain);
+    const eliteSetup = await openSetup(withKind(raw, 'elite', true), 'elite-return');
+    const eliteHint = eliteSetup.locator('.formation-setup-copy .formation-setup-hint');
+    await expect(eliteHint).toHaveText(eliteWarning);
+    expect(await warningCovered(eliteHint), '高負荷の警告の全文を復帰の要約で覆わない').toBe(false);
+    const eliteFit = await eliteSetup.locator('.formation-setup-copy').evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    }));
+    expect(eliteFit.scrollHeight).toBeLessThanOrEqual(eliteFit.clientHeight);
+    const eliteAfter = await positions(eliteSetup);
+    expect(
+      eliteBefore.every((item, index) => {
+        const next = eliteAfter[index];
+        if (!next || item.id !== next.id) return false;
+        const dy = next.y - item.y;
+        return dy >= -1 && dy <= 32;
+      }),
+      '高負荷前も通知で開始位置が1行を超えてずれない',
+    ).toBe(true);
+  });
+}
+
+test('1024pxの通常スプリントでは復帰の要約が文末まで見える（#937）', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto('/?renderer=pixi&tutorial=off&seed=leave-return-summary');
+  await page.getByTestId('difficulty-easy').click();
+  await page.getByTestId('start-run').click();
+  const raw = await page.evaluate(() => {
+    const text = (window as GameWindow).game!.exportRunSaveText();
+    if (!text) throw new Error('準備画面のセーブを取得できない');
+    return text;
+  });
+  const save = JSON.parse(raw) as RunSave;
+  const teamId = save.state.extras.activeTeamId;
+  if (!teamId) throw new Error('選択中チームがない');
+  const members = save.state.roster.members.slice(0, 3);
+  save.state.pendingSprintKind = 'normal';
+  save.state.extras.pendingLeaveReturns = {
+    [teamId]: members.map((member) => ({ id: member.id, name: member.name })),
+  };
+  await page.goto('/?renderer=pixi&tutorial=off&seed=leave-return-summary&boot=summary');
+  await page.getByTestId('difficulty-easy').waitFor();
+  await page.evaluate(async (text) => {
+    const game = (window as GameWindow).game!;
+    const result = await game.importRunSaveText(text);
+    if (!result.ok || game.resumeRun()?.phase !== 'setup') {
+      throw new Error('通常スプリントの準備画面を開けない');
+    }
+    game.pause();
+  }, JSON.stringify(save));
+  const setup = page.getByTestId('setup');
+  await expect(setup).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const summary = setup.getByTestId('leave-return-summary');
+  const tail = `${members.length - 1}人がベンチに復帰しました`;
+  await expect(summary).toBeVisible();
+  await expect(summary).toContainText(`ほか${tail}`);
+  await expect(summary.locator('.leave-return-tail')).toHaveText(`ほか${tail}`);
+  const visibleTail = await summary.locator('.leave-return-tail').evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const parent = element.parentElement?.getBoundingClientRect();
+    return (
+      element.scrollWidth <= element.clientWidth + 1 &&
+      box.width > 0 &&
+      parent !== undefined &&
+      box.right <= (parent?.right ?? 0) + 1
+    );
+  });
+  expect(visibleTail, '要約の文末が切れない').toBe(true);
+});
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 1280, height: 800 },
+]) {
   test(`${viewport.width}pxでコーディング担当不在に開始前に気づき、その場で配置を直せる（#927）`, async ({
     page,
   }, testInfo) => {

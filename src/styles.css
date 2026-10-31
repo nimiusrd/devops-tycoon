@@ -6886,6 +6886,51 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   line-height: 1.45;
   color: var(--muted, #9aa3b5);
 }
+/* #937: 復帰はヒント枠の下端1行だけ。枠の高さはヒントのまま。スクロールはしない。 */
+.formation-setup-copy {
+  --leave-return-line: calc(0.85rem * 1.45);
+  position: relative;
+  margin: 0 0 0.75rem;
+}
+/* 復帰者がいる画面だけ要約1行分を空ける。開いたあとには増減しない。 */
+.formation-setup-copy[data-reserve='true'] {
+  padding-bottom: var(--leave-return-line);
+}
+.formation-setup-copy .formation-setup-hint {
+  margin: 0;
+}
+.leave-return-summary {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  height: var(--leave-return-line);
+  margin: 0;
+  overflow: hidden;
+  color: var(--mint);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.45;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--panel);
+}
+.leave-return-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.leave-return-tail {
+  flex: none;
+}
+.leave-return-slot {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
 .formation-close {
   flex: 0 0 auto;
   padding: 8px 16px;

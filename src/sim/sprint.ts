@@ -668,6 +668,11 @@ export function computeTitleAndDiagnosis(
       diagnosis: '手戻りが多すぎます。AIの使い方とレビュー品質を見直しましょう。',
     };
   }
+  // 出荷 0 件は、この先の火消し称賛や安定出荷の称号に進まない。
+  // 延焼・過労・Review Hell・Rework 過多は上で先に返す（0 件でも、その事実の診断を残す）。
+  if (m.doneCount === 0 && m.completedCount === 0 && m.delivered <= 0) {
+    return zeroShipmentTitle(sprint);
+  }
   // RI-73: 余裕のある先消し（brokeCombo）は危機対応に数えない。
   const urgentFirefights = sprint.fireEvents.filter(
     (e) => e.kind === 'contain' && !e.brokeCombo,
@@ -722,6 +727,37 @@ export function computeTitleAndDiagnosis(
     title: '見かけ上の生産性王',
     diagnosis: '数字は出ていますが、負債や手戻りが静かに積み上がっています。',
   };
+}
+
+/**
+ * 出荷 0 件の称号と診断。
+ * 安定した出荷や無理のないペースはほめず、止まった工程から理由を一文で返す。
+ */
+function zeroShipmentTitle(sprint: SprintState): { title: string; diagnosis: string } {
+  return { title: '手が止まった', diagnosis: zeroShipmentDiagnosis(sprint) };
+}
+
+function zeroShipmentDiagnosis(sprint: SprintState): string {
+  const { tasks } = sprint;
+  if (tasks.length === 0) return '出荷できる作業がありませんでした。';
+
+  const coding = countLane(tasks, 'coding');
+  const review = countLane(tasks, 'review');
+  const rework = countLane(tasks, 'rework');
+  const inFlight = coding + review + rework;
+  const noCoders = sprint.config.codingSlots <= 0;
+  // 流入枠 0 はコーダー不在（編成の slot ペナルティ）。稼働中の工程が空なら、それが 0 件の理由。
+  if (noCoders && inFlight === 0) return 'コーダーがいなくて、作業が進みませんでした。';
+
+  const burning = tasks.some((task) => task.lane === 'rework' && task.incident);
+  // 時間切れの打ち切りは incident フラグを下ろすが、件数と Rework 残留は残る。
+  if (burning || (sprint.metrics.incidentCount > 0 && rework > 0)) {
+    return '炎上の対応に追われ、出荷まで届きませんでした。';
+  }
+  if (review > 0) return 'レビューが終わらず、出荷まで届きませんでした。';
+  if (rework > 0) return '手戻りから戻せないまま、出荷できませんでした。';
+  if (coding > 0) return '実装が終わらず、出荷まで届きませんでした。';
+  return '着手できないまま、出荷できませんでした。';
 }
 
 /** スプリント状態から最終リザルトを集計する（途中経過の表示にも使える）。 */

@@ -22,6 +22,7 @@ import {
   lineDashSegments,
   planBoardDotsForRender,
   presentBoardDot,
+  presentBoardDots,
   presentBoardReviewTrail,
   presentedDotHitsOtherStation,
   presentedDotLeavesBoard,
@@ -224,6 +225,78 @@ describe('boardDotReadability', () => {
     expect(boardDotCssDiameter('small', scale)).toBeCloseTo(
       VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter,
     );
+  });
+
+  it('同じ段の右端が別工程に当たっても、粒は別の中心に残る', () => {
+    const scale = 0.208;
+    const pile = { clusterX: 840, clusterY: 315 };
+    const dots = [-44, -22, 0, 22, 44].map((dx, index) =>
+      dot({
+        id: index + 1,
+        size: 'medium',
+        lane: 'review',
+        x: 840 + dx,
+        y: 315,
+        ...pile,
+      }),
+    );
+    const presented = presentBoardDots(dots, scale);
+    for (let i = 0; i < dots.length; i += 1) {
+      const placed = {
+        ...dots[i],
+        x: presented[i].x,
+        y: presented[i].y,
+        clusterX: undefined,
+        clusterY: undefined,
+      };
+      expect(presentedDotHitsOtherStation(placed, scale, STATIONS)).toBe(false);
+      expect(presentedDotLeavesBoard(placed, scale)).toBe(false);
+    }
+    const right = presented.slice(-2);
+    const gap = Math.hypot(right[0].x - right[1].x, right[0].y - right[1].y);
+    // 独立に境界へ寄せると中心差は 0.001 CSS px 未満になり、奥の粒を選べない。
+    expect(gap * scale).toBeGreaterThan(1);
+    const ids = new Set(dots.map((entry) => entry.id));
+    for (let i = 0; i < dots.length; i += 1) {
+      expect(hitTestBoardDot(presented[i], dots, ids, { x: scale, y: scale })).toBe(dots[i].id);
+    }
+  });
+
+  it('複数段の Review 山でも、各中心を押すとその粒が選ばれる', () => {
+    const scale = 0.208;
+    const perRow = 5;
+    const count = 11;
+    const dots = Array.from({ length: count }, (_, index) => {
+      const row = Math.floor(index / perRow);
+      const col = index % perRow;
+      const rows = Math.ceil(count / perRow);
+      const inRow = row === rows - 1 ? count - row * perRow : perRow;
+      const ox = (col - (inRow - 1) / 2) * 22;
+      const oy = -row * 16;
+      return dot({
+        id: index + 1,
+        size: 'medium',
+        lane: 'review',
+        x: 840 + ox,
+        y: 315 + oy,
+        clusterX: 840,
+        clusterY: 315,
+      });
+    });
+    const presented = presentBoardDots(dots, scale);
+    const ids = new Set(dots.map((entry) => entry.id));
+    for (let i = 0; i < dots.length; i += 1) {
+      const placed = {
+        ...dots[i],
+        x: presented[i].x,
+        y: presented[i].y,
+        clusterX: undefined,
+        clusterY: undefined,
+      };
+      expect(presentedDotHitsOtherStation(placed, scale, STATIONS), `粒 ${dots[i].id}`).toBe(false);
+      expect(presentedDotLeavesBoard(placed, scale), `粒 ${dots[i].id}`).toBe(false);
+      expect(hitTestBoardDot(presented[i], dots, ids, { x: scale, y: scale })).toBe(dots[i].id);
+    }
   });
 
   it('盤面の外へ出るフロー粒は端の内側へ戻し、別工程の上は通す', () => {

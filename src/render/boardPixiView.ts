@@ -285,9 +285,84 @@ function retreatTowardOwnStation(
   return at(hi);
 }
 
+function nearestOtherActor(lane: Lane, point: BoardPoint): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
+  let bestDistance = Infinity;
+  for (const actor of BOARD_ACTORS) {
+    if (actor.lane === lane) continue;
+    const distance = Math.hypot(point.x - actor.x, point.y - actor.y);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = actor;
+    }
+  }
+  return best;
+}
+
+/** 原点から (dx, dy) 方向へ、収まる最長距離。上限は maxDist。 */
+function maxFitDistance(
+  dot: BoardDotPlan,
+  origin: BoardPoint,
+  dx: number,
+  dy: number,
+  maxDist: number,
+  cssScale: number,
+): number {
+  const fits = (distance: number) =>
+    pointFits(dot, origin.x + dx * distance, origin.y + dy * distance, cssScale);
+  if (maxDist <= 0 || !fits(0)) return 0;
+  if (fits(maxDist)) return maxDist;
+  let lo = 0;
+  let hi = maxDist;
+  for (let i = 0; i < 16; i += 1) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * 基準点方向へ戻して捨てた分を、隣の工程から離れる横方向へ移す。
+ * 同じ境界へ独立に寄せると中心が重なり、奥の粒を選べなくなる。
+ */
+function shiftOverflowAside(
+  dot: BoardDotPlan,
+  clamped: BoardPoint,
+  overflowX: number,
+  overflowY: number,
+  cssScale: number,
+): BoardPoint {
+  const overflow = Math.hypot(overflowX, overflowY);
+  if (overflow < 0.5) return clamped;
+  let sideX = -overflowY / overflow;
+  let sideY = overflowX / overflow;
+  const nearest = nearestOtherActor(dot.lane, clamped);
+  if (nearest) {
+    const awayX = clamped.x - nearest.x;
+    const awayY = clamped.y - nearest.y;
+    if (sideX * awayX + sideY * awayY < 0) {
+      sideX = -sideX;
+      sideY = -sideY;
+    }
+  }
+  // 隣の工程から離れる側を優先する。反対側の方が長く動けるときも、山を横切って
+  // 別の段へ被さらないよう、離れる側が少しでも空いていればそちらへ寄せる。
+  const preferred = maxFitDistance(dot, clamped, sideX, sideY, overflow, cssScale);
+  const opposite = maxFitDistance(dot, clamped, -sideX, -sideY, overflow, cssScale);
+  const distance = preferred >= 0.5 ? preferred : opposite;
+  if (distance < 0.5) return clamped;
+  const sign = preferred >= 0.5 ? 1 : -1;
+  return {
+    x: clamped.x + sideX * sign * distance,
+    y: clamped.y + sideY * sign * distance,
+  };
+}
+
 /**
  * 見分けの倍率で、山（またはフロー）の基準点から粒を広げた座標。
  * 盤面の外へ出る粒と、別工程のキャラに入る静止粒は、収まるところまで基準点へ戻す。
+ * 戻して余った分は横へずらし、同じ境界に粒が重ならないようにする。
  * 倍率 1 のときは同じオブジェクトを返す。
  */
 export function presentBoardDot(dot: BoardDotPlan, cssScale: number): BoardDotPlan {
@@ -305,9 +380,143 @@ export function presentBoardDot(dot: BoardDotPlan, cssScale: number): BoardDotPl
     const retreated = retreatTowardOwnStation(dot, x, y, cssScale);
     x = retreated.x;
     y = retreated.y;
+  } else if (!dot.motion && belongsToOwnStationPile(dot) && t < 1) {
+    const shifted = shiftOverflowAside(
+      dot,
+      { x, y },
+      spreadX * (1 - t),
+      spreadY * (1 - t),
+      cssScale,
+    );
+    x = shifted.x;
+    y = shifted.y;
   }
   if (x === dot.x && y === dot.y) return dot;
   return { ...dot, x, y };
+}
+
+function fullSpreadPoint(dot: BoardDotPlan, cssScale: number): BoardPoint {
+  const magnification = boardDotReadabilityMagnification(cssScale);
+  const anchorX = dot.clusterX ?? dot.x;
+  const anchorY = dot.clusterY ?? dot.y;
+  return {
+    x: anchorX + (dot.x - anchorX) * magnification,
+    y: anchorY + (dot.y - anchorY) * magnification,
+  };
+}
+
+/** 別工程や盤面の外を避けて、広げきった位置から戻した粒か。 */
+function wasPulledBack(dot: BoardDotPlan, presented: BoardDotPlan, cssScale: number): boolean {
+  const full = fullSpreadPoint(dot, cssScale);
+  return Math.hypot(presented.x - full.x, presented.y - full.y) > 0.5;
+}
+
+/**
+ * 戻した粒を、相手の円の外へ押し出す。
+ * 戻した側が動けない分は、収まる相手が引き受ける。
+ */
+function nudgePulledPair(
+  presented: BoardDotPlan[],
+  planned: readonly BoardDotPlan[],
+  i: number,
+  j: number,
+  cssScale: number,
+): boolean {
+  const a = presented[i];
+  const b = presented[j];
+  const iPulled = wasPulledBack(planned[i], a, cssScale);
+  const jPulled = wasPulledBack(planned[j], b, cssScale);
+  if (!iPulled && !jPulled) return false;
+  const need =
+    Math.max(presentedDotRadius(a.size, cssScale), presentedDotRadius(b.size, cssScale)) + 0.5;
+  const presentedDx = b.x - a.x;
+  const presentedDy = b.y - a.y;
+  const presentedDist = Math.hypot(presentedDx, presentedDy);
+  if (presentedDist >= need) return false;
+  let dx = presentedDx;
+  let dy = presentedDy;
+  let axisLen = presentedDist;
+  if (axisLen < 0.5) {
+    dx = planned[j].x - planned[i].x;
+    dy = planned[j].y - planned[i].y;
+    axisLen = Math.hypot(dx, dy);
+    if (axisLen < 0.5) {
+      dx = 0;
+      dy = 1;
+      axisLen = 1;
+    }
+  }
+  const ux = dx / axisLen;
+  const uy = dy / axisLen;
+  const deficit = need - presentedDist;
+  const iRoom = maxFitDistance(planned[i], a, -ux, -uy, deficit, cssScale);
+  const jRoom = maxFitDistance(planned[j], b, ux, uy, deficit, cssScale);
+  const iCap = iPulled ? iRoom : 0;
+  const jCap = jPulled ? jRoom : 0;
+  let iDist = Math.min(iCap, deficit / 2);
+  let jDist = Math.min(jCap, deficit - iDist);
+  if (iDist + jDist + 0.01 < deficit) iDist = Math.min(iCap, deficit - jDist);
+  let remain = deficit - iDist - jDist;
+  if (remain > 0.5 && !iPulled) {
+    const extra = Math.min(iRoom, remain);
+    iDist += extra;
+    remain -= extra;
+  }
+  if (remain > 0.5 && !jPulled) {
+    jDist += Math.min(jRoom, remain);
+  }
+  if (iDist < 0.5 && jDist < 0.5) return false;
+  if (iDist >= 0.5) presented[i] = { ...a, x: a.x - ux * iDist, y: a.y - uy * iDist };
+  if (jDist >= 0.5) presented[j] = { ...b, x: b.x + ux * jDist, y: b.y + uy * jDist };
+  return true;
+}
+
+/**
+ * 同じ山で境界へ戻した粒が、互いの中心を選べなくなっているときだけ押し離す。
+ * 広げきった粒は、戻した粒の逃げ場がないときだけ必要分を譲る。
+ */
+function separatePulledPileDots(
+  presented: BoardDotPlan[],
+  planned: readonly BoardDotPlan[],
+  cssScale: number,
+): void {
+  const indexesByPile = new Map<string, number[]>();
+  for (let i = 0; i < planned.length; i += 1) {
+    const dot = planned[i];
+    if (dot.motion || !belongsToOwnStationPile(dot)) continue;
+    const key = `${dot.lane}:${dot.clusterX}:${dot.clusterY}`;
+    const list = indexesByPile.get(key);
+    if (list) list.push(i);
+    else indexesByPile.set(key, [i]);
+  }
+  for (const indexes of indexesByPile.values()) {
+    const pulled = indexes.filter((index) =>
+      wasPulledBack(planned[index], presented[index], cssScale),
+    );
+    if (pulled.length === 0) continue;
+    for (let iter = 0; iter < 12; iter += 1) {
+      let moved = false;
+      for (let left = 0; left < indexes.length; left += 1) {
+        for (let right = left + 1; right < indexes.length; right += 1) {
+          if (nudgePulledPair(presented, planned, indexes[left], indexes[right], cssScale)) {
+            moved = true;
+          }
+        }
+      }
+      if (!moved) break;
+    }
+  }
+}
+
+/**
+ * 山の粒を、見分けの倍率で広げてから互いに重ならない中心へ置く。
+ * 倍率 1 のときは粒ごとの結果だけを返す。
+ */
+export function presentBoardDots(dots: readonly BoardDotPlan[], cssScale: number): BoardDotPlan[] {
+  const presented = dots.map((dot) => presentBoardDot(dot, cssScale));
+  if (boardDotReadabilityMagnification(cssScale) === 1) return presented;
+  separatePulledPileDots(presented, dots, cssScale);
+  return presented;
 }
 
 /** 軌跡の根元を、同じ粒の拡大後の中心へ合わせる。倍率 1 のときは計画のまま。 */
@@ -372,12 +581,13 @@ export function hitTestBoardDot(
   const cssScale = major <= minor * 1.05 ? minor : 1;
   const magnification = boardDotReadabilityMagnification(cssScale);
   const minimumRadius = VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter / 2;
+  const presentedDots = presentBoardDots(dots, cssScale);
   let nearestId: number | null = null;
   let nearestDistance = Infinity;
   for (let i = dots.length - 1; i >= 0; i -= 1) {
     const dot = dots[i];
     if (!draggableIds.has(dot.id)) continue;
-    const presented = presentBoardDot(dot, cssScale);
+    const presented = presentedDots[i];
     const visibleRadius = (TASK_DIAMETER[dot.size] / 2) * magnification;
     const designDx = pt.x - presented.x;
     const designDy = pt.y - presented.y;

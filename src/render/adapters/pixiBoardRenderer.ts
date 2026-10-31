@@ -38,7 +38,7 @@ import {
   flowDriftOffset,
   lineDashSegments,
   planBoardDotsForRender,
-  presentBoardDot,
+  presentBoardDots,
   presentBoardReviewTrail,
 } from '../boardPixiView';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
@@ -1357,7 +1357,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     if (previewTaskId !== null) pinned.add(previewTaskId);
     const cssScale = this.root.scale.x;
     const magnification = boardDotReadabilityMagnification(cssScale);
-    const presentedDots = renderPlan.dots.map((dot) => presentBoardDot(dot, cssScale));
+    const presentedDots = presentBoardDots(renderPlan.dots, cssScale);
     this.taskMotion.sync(
       presentedDots,
       this.elapsedMs,

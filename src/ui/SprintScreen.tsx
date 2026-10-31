@@ -456,7 +456,7 @@ export function SprintScreen({
       status={
         <>
           <div className="subbar" data-testid="sprint-subbar">
-            <span className={`pill node-tag node-${kind}`}>
+            <span className={`pill node-tag node-${kind}`} data-testid="sprint-kind">
               {isBoss ? (
                 `★ ボス: ${boss?.name ?? ''}`
               ) : isElite ? (

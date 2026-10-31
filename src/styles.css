@@ -4724,10 +4724,8 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   text-align: center;
 }
 
-/* ランバー。案内は絶対配置なので、表示の出入りで中のボタンを動かさない（#943）。 */
+/* ランバー。案内は末尾の専用行なので、表示の出入りで中のボタンを動かさない（#943）。 */
 .runbar {
-  position: relative;
-  z-index: 2;
   flex-wrap: wrap;
 }
 .runbar .diagnosis-status {
@@ -6987,11 +6985,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .org-lever-hint {
-  position: absolute;
-  z-index: 3;
-  top: calc(100% + 4px);
-  left: 8px;
-  right: 8px;
+  flex: 1 0 100%;
+  min-width: 0;
   margin: 0;
   padding: 4px 10px;
   border: 1px solid var(--sun);
@@ -7001,7 +6996,6 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-size: 12px;
   font-weight: 800;
   line-height: 1.35;
-  pointer-events: none;
 }
 
 /* 全社・部署画面はオーバーレイ内で盤面へ残りの高さを配分する。 */

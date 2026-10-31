@@ -173,8 +173,10 @@ export function RunBar({
 
   const shopPresent = isShopOfferPresent(state);
   useEffect(() => {
-    if (shopPresent) noteOrgLeverShopArrived(runEpoch);
-  }, [shopPresent, runEpoch]);
+    // リプレイは別ランの shop キーフレームを同じ runEpoch で開く。到来を覚えると復帰後の Q1 案内が消える。
+    if (readOnly || !shopPresent) return;
+    noteOrgLeverShopArrived(runEpoch);
+  }, [readOnly, shopPresent, runEpoch]);
   const orgLeverHintSession = readOrgLeverHintSession(runEpoch);
   const showOrgLeverHint = shouldShowOrgLeverHint({
     quarterNumber: state.quarterNumber,
@@ -385,16 +387,6 @@ export function RunBar({
           )}
         </button>
       )}
-      {onOpenOrg && showOrgLeverHint && (
-        <p
-          id="org-lever-hint"
-          className="org-lever-hint"
-          data-testid="org-lever-hint"
-          role="status"
-        >
-          {ORG_LEVER_HINT_MESSAGE}
-        </p>
-      )}
       {showSessionMenu && onOpenHelp && onToggleSoundMuted && (
         <RunSessionMenu
           soundMuted={soundMuted}
@@ -425,6 +417,16 @@ export function RunBar({
         </>
       ) : (
         secondaryDetails
+      )}
+      {onOpenOrg && showOrgLeverHint && (
+        <p
+          id="org-lever-hint"
+          className="org-lever-hint"
+          data-testid="org-lever-hint"
+          role="status"
+        >
+          {ORG_LEVER_HINT_MESSAGE}
+        </p>
       )}
     </div>
   );

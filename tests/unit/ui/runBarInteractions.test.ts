@@ -79,7 +79,10 @@ import { LEVER_DEFS } from '../../../src/data/levers';
 import { MIN_ORG_LEVER_BUDGET } from '../../../src/render/orgLeverHintView';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
-import { resetOrgLeverHintSession } from '../../../src/ui/orgLeverHintSession';
+import {
+  readOrgLeverHintSession,
+  resetOrgLeverHintSession,
+} from '../../../src/ui/orgLeverHintSession';
 import { RunBar, type RunBarProps } from '../../../src/ui/RunBar';
 
 type ElementProps = Record<string, unknown> & { children?: ReactNode };
@@ -337,6 +340,47 @@ describe('RunBar の表示と操作', () => {
     expect(screen.has('org-lever-hint')).toBe(false);
     screen.update({ runEpoch: 4 });
     expect(screen.has('org-lever-hint')).toBe(false);
+  });
+
+  it('リプレイ閲覧中のショップは到来を記憶せず、同じ世代のQ1案内を残す', () => {
+    const screen = mountRunBar({
+      onOpenOrg: vi.fn(),
+      runEpoch: 7,
+      state: makeState({
+        budget: MIN_ORG_LEVER_BUDGET,
+        quarterNumber: 1,
+        phase: 'setup',
+        shop: null,
+        beat: null,
+      }),
+    });
+    expect(screen.has('org-lever-hint')).toBe(true);
+
+    screen.update({
+      readOnly: true,
+      state: {
+        ...screen.state,
+        phase: 'shop',
+        shop: { cards: [], recruit: { cost: 25, bought: false } },
+      },
+    });
+    expect(screen.has('org-lever-hint')).toBe(false);
+    expect(readOrgLeverHintSession(7).shopArrived).toBe(false);
+
+    screen.update({
+      readOnly: false,
+      state: {
+        ...screen.state,
+        phase: 'setup',
+        shop: null,
+        beat: null,
+        quarterNumber: 1,
+        budget: MIN_ORG_LEVER_BUDGET,
+      },
+    });
+    expect(readOrgLeverHintSession(7).shopArrived).toBe(false);
+    expect(screen.has('org-lever-hint')).toBe(true);
+    expect(screen.find('open-org').props['data-org-lever-hint']).toBe('true');
   });
 
   it('ラン中メニューから遊び方と音の切替を開き、閉じたメニューは盤面操作を増やさない', () => {

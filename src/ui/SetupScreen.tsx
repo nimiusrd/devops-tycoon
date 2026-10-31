@@ -231,6 +231,7 @@ export function SetupScreen({
                     : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'
               }
               notices={state.leaveReturns ?? []}
+              runEpoch={runEpoch}
             />
             <div className="setup-term-tips" data-testid="setup-term-tips">
               <TermTip termId="pr" revealOnOpen />

@@ -484,6 +484,55 @@ for (const viewport of [
   });
 }
 
+test('1024pxの通常スプリントでは復帰の要約が文末まで見える（#937）', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto('/?renderer=pixi&tutorial=off&seed=leave-return-summary');
+  await page.getByTestId('difficulty-easy').click();
+  await page.getByTestId('start-run').click();
+  const raw = await page.evaluate(() => {
+    const text = (window as GameWindow).game!.exportRunSaveText();
+    if (!text) throw new Error('準備画面のセーブを取得できない');
+    return text;
+  });
+  const save = JSON.parse(raw) as RunSave;
+  const teamId = save.state.extras.activeTeamId;
+  if (!teamId) throw new Error('選択中チームがない');
+  const members = save.state.roster.members.slice(0, 3);
+  save.state.pendingSprintKind = 'normal';
+  save.state.extras.pendingLeaveReturns = {
+    [teamId]: members.map((member) => ({ id: member.id, name: member.name })),
+  };
+  await page.goto('/?renderer=pixi&tutorial=off&seed=leave-return-summary&boot=summary');
+  await page.getByTestId('difficulty-easy').waitFor();
+  await page.evaluate(async (text) => {
+    const game = (window as GameWindow).game!;
+    const result = await game.importRunSaveText(text);
+    if (!result.ok || game.resumeRun()?.phase !== 'setup') {
+      throw new Error('通常スプリントの準備画面を開けない');
+    }
+    game.pause();
+  }, JSON.stringify(save));
+  const setup = page.getByTestId('setup');
+  await expect(setup).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const summary = setup.getByTestId('leave-return-summary');
+  const tail = `${members.length - 1}人がベンチに復帰しました`;
+  await expect(summary).toBeVisible();
+  await expect(summary).toContainText(`ほか${tail}`);
+  await expect(summary.locator('.leave-return-tail')).toHaveText(`ほか${tail}`);
+  const visibleTail = await summary.locator('.leave-return-tail').evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const parent = element.parentElement?.getBoundingClientRect();
+    return (
+      element.scrollWidth <= element.clientWidth + 1 &&
+      box.width > 0 &&
+      parent !== undefined &&
+      box.right <= (parent?.right ?? 0) + 1
+    );
+  });
+  expect(visibleTail, '要約の文末が切れない').toBe(true);
+});
+
 for (const viewport of [
   { width: 320, height: 568 },
   { width: 1280, height: 800 },

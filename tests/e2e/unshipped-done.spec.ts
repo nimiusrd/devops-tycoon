@@ -5,7 +5,7 @@ import type { PublicGameWindow } from './fixtures';
  * Issue #939: コーダー不在で出荷 0 のとき、未出荷を Done の山へ入れない。
  * Easy の通常タスク床は 58。以前は打ち切りで Done 58 / +44 になっていた。
  */
-test('レビューだけの編成では出荷 0 でも Done は 0 で +N が出ない', async ({ page }) => {
+test('レビューだけの編成では出荷 0 でも Done は 0 で +N が出ない', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?renderer=pixi&tutorial=off&seed=devops-tycoon');
   await page.getByTestId('difficulty-easy').click();
@@ -55,7 +55,7 @@ test('レビューだけの編成では出荷 0 でも Done は 0 で +N が出�
   await expect(page.getByTestId('overflow-done')).toHaveCount(0);
   await expect(page.getByTestId('count-backlog')).toHaveText('58');
   await page.screenshot({
-    path: '/opt/cursor/artifacts/sprint-zero-ship-board.png',
+    path: testInfo.outputPath('sprint-zero-ship-board.png'),
     fullPage: false,
   });
 
@@ -66,7 +66,7 @@ test('レビューだけの編成では出荷 0 でも Done は 0 で +N が出�
   await expect(highlights.filter({ hasText: '完了' }).locator('dd')).toHaveText('0件');
   await expect(highlights.filter({ hasText: '出荷' }).locator('dd')).toHaveText('0pt');
   await page.screenshot({
-    path: '/opt/cursor/artifacts/sprint-zero-ship-result.png',
+    path: testInfo.outputPath('sprint-zero-ship-result.png'),
     fullPage: false,
   });
 });

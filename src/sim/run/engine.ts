@@ -1971,7 +1971,7 @@ export class RunEngine {
   applyOrgLever(leverId: string, deptId?: string, teamId?: string): boolean {
     // ラン外（タイトル・終端）では発動しない（即時敗北判定が終端フェーズから再遷移しないように）。
     if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
-    // RI-75: minCompleteTick 待ち（時間調整だけのパディング）では組織レバーも拒否する。
+    // RI-75: minCompleteTick 待ち（枯渇、またはコーダー不在の停滞）では組織レバーも拒否する。
     if (this.phase === 'sprint' && this.sprint && isAwaitingMinCompleteTick(this.sprint)) {
       return false;
     }

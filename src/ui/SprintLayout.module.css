@@ -579,10 +579,8 @@
     line-height: 1;
     letter-spacing: 0;
   }
-}
 
-/* 390 以下は「×12 1.2x」。長い文言はバーの右端を隠す（#967）。 */
-@media (max-width: 390px) {
+  /* 560 以下は「×12 1.2x」。長い文言はバーの半分で途中まで切れる（#967）。 */
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-label-full) {
     position: absolute;
     width: 1px;

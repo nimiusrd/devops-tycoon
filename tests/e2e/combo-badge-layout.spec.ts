@@ -1,9 +1,9 @@
 /**
  * 狭い状態枠で COMBO が出ても盤面がずれない（#967）。
  *
- * コンボ 2 未満はバッジが空で、×2 で中身が入る。電話幅ではその差分が
- * 行になって盤面を押し下げないこと、文字がメーターのラベルと件数に重ならないこと、
- * 広い幅では従来どおりインラインのままであることを見る。
+ * コンボ 2 未満はバッジが空で、×2 で中身が入る。560px 以下ではその差分が
+ * 行になって盤面を押し下げないこと、見える文字が「×N N.Nx」で切れないこと、
+ * 炎上バーの半分以上が残ること、広い幅では従来どおりインラインのままであることを見る。
  */
 import type { Page } from '@playwright/test';
 import { advanceCurrentSprintToReviewQueue, beginPublicSprint, expect, test } from './fixtures';
@@ -11,6 +11,8 @@ import { advanceCurrentSprintToReviewQueue, beginPublicSprint, expect, test } fr
 const PHONE_VIEWPORTS = [
   { name: 'phone-se', width: 320, height: 568 },
   { name: 'phone', width: 390, height: 844 },
+  { name: 'phone-412', width: 412, height: 915 },
+  { name: 'phone-430', width: 430, height: 932 },
 ] as const;
 
 const WIDE_VIEWPORTS = [

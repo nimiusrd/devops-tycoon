@@ -1942,7 +1942,7 @@ body:has(.overlay-contained) {
   align-items: flex-start;
   line-height: 1;
 }
-/* 電話幅の短い表示。広い幅では出さない（#967）。 */
+/* 560px 以下の短い表示。それより広い幅では出さない（#967）。 */
 .combo-label-short {
   display: none;
 }

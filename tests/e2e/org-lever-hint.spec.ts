@@ -43,20 +43,48 @@ async function otherRunbarButtons(page: Page, origin: 'viewport' | 'runbar'): Pr
   }, origin);
 }
 
-async function hintInsideRunbar(page: Page): Promise<boolean> {
+/** 案内の文字が組織レバーの枠の中に収まり、枠からはみ出していない。 */
+async function hintFitsInOrgPill(page: Page): Promise<{
+  fits: boolean;
+  scrollWidth: number;
+  clientWidth: number;
+  textWidth: number;
+  pillWidth: number;
+  pillHeight: number;
+}> {
   return page.evaluate(() => {
     const hint = document.querySelector('[data-testid="org-lever-hint"]');
-    const runbar = document.querySelector('[data-testid="runbar"]');
-    if (!hint || !runbar) return false;
-    const hintBox = hint.getBoundingClientRect();
-    const runbarBox = runbar.getBoundingClientRect();
-    return (
-      hintBox.top >= runbarBox.top - 0.5 &&
-      hintBox.bottom <= runbarBox.bottom + 0.5 &&
-      hintBox.left >= runbarBox.left - 0.5 &&
-      hintBox.right <= runbarBox.right + 0.5 &&
-      hintBox.height > 0
-    );
+    const pill = document.querySelector('[data-testid="open-org"]');
+    if (!(hint instanceof HTMLElement) || !pill) {
+      return {
+        fits: false,
+        scrollWidth: 0,
+        clientWidth: 0,
+        textWidth: 0,
+        pillWidth: 0,
+        pillHeight: 0,
+      };
+    }
+    const range = document.createRange();
+    range.selectNodeContents(hint);
+    const textBox = range.getBoundingClientRect();
+    const pillBox = pill.getBoundingClientRect();
+    const fits =
+      textBox.width > 0 &&
+      textBox.height > 0 &&
+      textBox.left >= pillBox.left - 0.5 &&
+      textBox.right <= pillBox.right + 0.5 &&
+      textBox.top >= pillBox.top - 0.5 &&
+      textBox.bottom <= pillBox.bottom + 0.5 &&
+      textBox.width <= pillBox.width + 0.5;
+    return {
+      fits,
+      scrollWidth: hint.scrollWidth,
+      clientWidth: hint.clientWidth,
+      textWidth: textBox.width,
+      pillWidth: pillBox.width,
+      pillHeight: pillBox.height,
+    };
   });
 }
 
@@ -97,11 +125,12 @@ for (const viewport of VIEWPORTS) {
     const hint = page.getByTestId('org-lever-hint');
     await expect(hint).toHaveText('予算は組織レバーで使えます');
     await expect(page.getByTestId('org-lever-hint-mark')).toBeVisible();
-    await expect(hint).not.toHaveCSS('position', 'absolute');
-    expect(await hintInsideRunbar(page)).toBe(true);
+    const fitted = await hintFitsInOrgPill(page);
+    expect(fitted.fits, JSON.stringify(fitted)).toBe(true);
 
     const before = await otherRunbarButtons(page, 'viewport');
     const openerBefore = await opener.boundingBox();
+    const runbarBefore = await page.getByTestId('runbar').boundingBox();
     expect(openerBefore).not.toBeNull();
 
     await opener.click();
@@ -118,8 +147,12 @@ for (const viewport of VIEWPORTS) {
     const after = await otherRunbarButtons(page, 'viewport');
     expectSamePositions(before, after);
     const openerAfter = await opener.boundingBox();
+    const runbarAfter = await page.getByTestId('runbar').boundingBox();
     expect(openerAfter?.x).toBe(openerBefore?.x);
     expect(openerAfter?.y).toBe(openerBefore?.y);
+    expect(openerAfter?.width).toBe(openerBefore?.width);
+    expect(openerAfter?.height).toBe(openerBefore?.height);
+    expect(runbarAfter?.height).toBe(runbarBefore?.height);
 
     await opener.click();
     await expect(page.getByTestId('org-levers')).toBeVisible();
@@ -140,7 +173,8 @@ for (const viewport of VIEWPORTS) {
     const hint = page.getByTestId('org-lever-hint');
     await expect(hint).toBeVisible();
     await expect(hint).toHaveText('予算は組織レバーで使えます');
-    expect(await hintInsideRunbar(page)).toBe(true);
+    const fitted = await hintFitsInOrgPill(page);
+    expect(fitted.fits, JSON.stringify(fitted)).toBe(true);
     expect(await overlaps(page, 'org-lever-hint', 'speed-controls')).toBe(false);
     expect(await overlaps(page, 'org-lever-hint', 'sprint-kind')).toBe(false);
     expect(await overlaps(page, 'org-lever-hint', 'board')).toBe(false);

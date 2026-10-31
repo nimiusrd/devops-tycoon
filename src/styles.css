@@ -4724,7 +4724,6 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   text-align: center;
 }
 
-/* ランバー。案内は末尾の専用行なので、表示の出入りで中のボタンを動かさない（#943）。 */
 .runbar {
   flex-wrap: wrap;
 }
@@ -6974,6 +6973,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-pill-marked {
   border-color: var(--sun);
 }
+/* 案内の有無で枠を変えない。ラベルがサイズを決め、文は同じ内容箱に収める。 */
+.org-pill-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  white-space: nowrap;
+}
+.org-pill-label.is-hidden {
+  visibility: hidden;
+}
 .org-lever-hint-mark {
   position: absolute;
   top: 2px;
@@ -6985,17 +6994,21 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .org-lever-hint {
-  flex: 1 0 100%;
-  min-width: 0;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  padding: 4px 10px;
-  border: 1px solid var(--sun);
-  border-radius: 999px;
-  background: var(--panel);
+  padding: 0 4px;
+  overflow: hidden;
   color: var(--cream);
-  font-size: 12px;
+  /* ラベルの文字サイズに追従し、狭幅の詰めたピルでも枠をはみ出さない。 */
+  font-size: 0.55em;
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* 全社・部署画面はオーバーレイ内で盤面へ残りの高さを配分する。 */

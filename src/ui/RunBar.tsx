@@ -376,8 +376,23 @@ export function RunBar({
               : '組織レバー。全社マップを開いて予算を使います'
           }
         >
-          <span aria-hidden="true">🗺</span>
-          {ORG_LEVER_BUTTON_LABEL}
+          <span
+            className={showOrgLeverHint ? 'org-pill-label is-hidden' : 'org-pill-label'}
+            aria-hidden={showOrgLeverHint ? true : undefined}
+          >
+            <span aria-hidden="true">🗺</span>
+            {ORG_LEVER_BUTTON_LABEL}
+          </span>
+          {showOrgLeverHint && (
+            <span
+              id="org-lever-hint"
+              className="org-lever-hint"
+              data-testid="org-lever-hint"
+              role="status"
+            >
+              {ORG_LEVER_HINT_MESSAGE}
+            </span>
+          )}
           {showOrgLeverHint && (
             <span
               className="org-lever-hint-mark"
@@ -417,16 +432,6 @@ export function RunBar({
         </>
       ) : (
         secondaryDetails
-      )}
-      {onOpenOrg && showOrgLeverHint && (
-        <p
-          id="org-lever-hint"
-          className="org-lever-hint"
-          data-testid="org-lever-hint"
-          role="status"
-        >
-          {ORG_LEVER_HINT_MESSAGE}
-        </p>
       )}
     </div>
   );

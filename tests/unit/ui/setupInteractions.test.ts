@@ -372,6 +372,28 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     ).toBe('アオイが復帰しました（ベンチ）ハルキが復帰しました（ベンチ）');
   });
 
+  it('別チームへ移ると、そのチームの復帰者で要約の余白を取り直す', () => {
+    const screen = mountSetup();
+    const copy = () =>
+      elements(screen.find('setup')).find(
+        (node) => node.props.className === 'formation-setup-copy',
+      );
+    expect(copy()?.props['data-reserve']).toBeUndefined();
+    const state = screen.props.state;
+    screen.update({
+      state: {
+        ...state,
+        activeTeamId: 'other-team',
+        leaveReturns: [
+          { id: 'm1', name: 'アオイ' },
+          { id: 'm2', name: 'ハルキ' },
+          { id: 'm3', name: 'ミナ' },
+        ],
+      },
+    });
+    expect(copy()?.props['data-reserve']).toBe('true');
+  });
+
   it('復帰が無いときも読み上げ領域だけ残し、通知の本文は出さない', () => {
     const screen = mountSetup();
     expect(screen.has('leave-return-slot')).toBe(true);

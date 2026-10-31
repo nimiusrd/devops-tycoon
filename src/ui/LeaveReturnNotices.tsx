@@ -17,11 +17,14 @@ export function LeaveReturnNotices({
   hint,
   notices,
   runEpoch,
+  teamId,
 }: {
   hint: string;
   notices: readonly LeaveReturnNotice[];
   /** startRun ごとの世代。別ランの同じ文は、空の領域から読み上げ直す。 */
   runEpoch: number;
+  /** 入り込み先。チームが変わったら、そのチームの復帰者で余白を取り直す。 */
+  teamId: string;
 }) {
   const unique = planLeaveReturnNotices(notices, []);
   const speech = leaveReturnSpeech(unique);
@@ -29,10 +32,15 @@ export function LeaveReturnNotices({
   const copyRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLParagraphElement>(null);
   const [showSummary, setShowSummary] = useState(false);
-  // 余白を足すかは開いたときの復帰者で決める。あとから行を足して開始位置を動かさない。
-  const [reserveLine] = useState(notices.length > 0);
+  // 余白を足すかは、このチームの編成画面を開いたときの復帰者で決める。
+  const reserveKey = `${runEpoch}:${teamId}`;
+  const [reserved, setReserved] = useState({ key: reserveKey, line: notices.length > 0 });
+  if (reserved.key !== reserveKey) {
+    setReserved({ key: reserveKey, line: notices.length > 0 });
+  }
+  const reserveLine = reserved.key === reserveKey ? reserved.line : notices.length > 0;
   const [spoken, setSpoken] = useState(() =>
-    speech !== '' && readAnnouncedLeaveReturnSpeech(runEpoch) === speech ? speech : '',
+    speech !== '' && readAnnouncedLeaveReturnSpeech(reserveKey) === speech ? speech : '',
   );
 
   useLayoutEffect(() => {
@@ -65,8 +73,8 @@ export function LeaveReturnNotices({
         setSpoken('');
         return;
       }
-      if (readAnnouncedLeaveReturnSpeech(runEpoch) !== speech) {
-        noteAnnouncedLeaveReturnSpeech(runEpoch, speech);
+      if (readAnnouncedLeaveReturnSpeech(reserveKey) !== speech) {
+        noteAnnouncedLeaveReturnSpeech(reserveKey, speech);
       }
       setSpoken(speech);
     };
@@ -81,7 +89,7 @@ export function LeaveReturnNotices({
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [runEpoch, speech]);
+  }, [reserveKey, speech]);
 
   return (
     <div

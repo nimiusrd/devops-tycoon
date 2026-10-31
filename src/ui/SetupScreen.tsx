@@ -223,6 +223,7 @@ export function SetupScreen({
             </h2>
             <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
             <LeaveReturnNotices
+              key={`${runEpoch}:${state.activeTeamId}`}
               hint={
                 bossPending
                   ? '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。'
@@ -232,6 +233,7 @@ export function SetupScreen({
               }
               notices={state.leaveReturns ?? []}
               runEpoch={runEpoch}
+              teamId={state.activeTeamId}
             />
             <div className="setup-term-tips" data-testid="setup-term-tips">
               <TermTip termId="pr" revealOnOpen />

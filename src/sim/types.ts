@@ -368,7 +368,7 @@ export interface SprintConfig {
   codingSlots: number;
   /**
    * 無限ループ防止の最大 tick。
-   * 超過時は未完了タスクを盤面から畳む（出荷・完了数は計上しない）。
+   * 超過時は未完了タスクを出荷せず打ち切る（Done へは移さず、完了数も計上しない）。
    */
   maxTicks: number;
   /**

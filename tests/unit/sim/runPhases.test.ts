@@ -104,11 +104,12 @@ describe('フェーズ遷移表（単一の真実源 / RI-39）', () => {
     ['REVIEW_WON', 'won'],
     ['REVIEW_CONTINUE', 'setup'],
     ['REVIEW_LOST', 'lost'],
-  ] as const)('ボス完了後の四半期レビューは %s で %s へ分岐する', (event, phase) => {
-    expect(followPath(['START', 'BEGIN', 'BOSS_REVIEW', event])).toEqual([
+  ] as const)('ボス完了はリザルトのあと四半期レビューから %s で %s へ分岐する', (event, phase) => {
+    expect(followPath(['START', 'BEGIN', 'SPRINT_DONE', 'BOSS_REVIEW', event])).toEqual([
       'title',
       'setup',
       'sprint',
+      'result',
       'quarterReview',
       phase,
     ]);
@@ -123,7 +124,9 @@ describe('フェーズ遷移表（単一の真実源 / RI-39）', () => {
     // 正例（代表的な経路）。
     expect(canTransition('title', 'setup')).toBe(true);
     expect(canTransition('setup', 'sprint')).toBe(true);
-    expect(canTransition('sprint', 'quarterReview')).toBe(true);
+    expect(canTransition('sprint', 'result')).toBe(true);
+    expect(canTransition('result', 'quarterReview')).toBe(true);
+    expect(canTransition('sprint', 'quarterReview')).toBe(false);
     expect(canTransition('beat', 'shop')).toBe(true);
     expect(canTransition('quarterReview', 'won')).toBe(true);
     expect(canTransition('result', 'lost')).toBe(true);

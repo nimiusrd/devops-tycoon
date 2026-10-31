@@ -66,7 +66,7 @@ import {
 import { hypothesisNoteStore } from './state/hypothesisNotePersistence';
 import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS, dailySeed, utcDateStr } from './state/meta';
 import { DEFAULT_SCENARIO, resolveScenarioId } from './sim/scenarios';
-import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
+import { REPLAY_DRAFT_MISSING_HINT, REPLAY_QUARTER_REVIEW_MISSING_HINT } from './state/replayJump';
 import {
   downloadTextFile,
   persistenceExportMessage,
@@ -782,7 +782,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
 
   // 終端診断（ReplayBlob.outcome）で判定する。キーフレーム時点の state.diagnosis とは別。
   const reviewHellReplay = run.isReplayMode && run.activeReplayDiagnosis === 'reviewHell';
-  const replayDraftMissing = run.isReplayMode && run.findReplayJumpIndex('draft') === null;
+  // 四半期末はレビュー集計済みで結果を出す。次の操作はそのレビューであり、ドラフトではない。
+  const resultContinuesToQuarterReview = state.quarterReview !== null;
+  const resultReplayPhase = resultContinuesToQuarterReview ? 'quarterReview' : 'draft';
+  const replayResultContinueMissing =
+    run.isReplayMode && run.findReplayJumpIndex(resultReplayPhase) === null;
   const replayBanner = run.isReplayMode ? (
     <div
       className={`replay-mode-banner${reviewHellReplay ? ' replay-mode-banner-review-hell' : ''}`}
@@ -1010,12 +1014,19 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   result={state.lastResult}
                   growth={state.lastGrowth}
                   onContinue={
-                    run.isReplayMode ? () => run.jumpReplayToPhase('draft') : run.acknowledgeResult
+                    run.isReplayMode
+                      ? () => run.jumpReplayToPhase(resultReplayPhase)
+                      : run.acknowledgeResult
                   }
                   onAbandon={run.isReplayMode ? exitReplay : newRun}
-                  continueDisabled={replayDraftMissing}
+                  continueLabel={resultContinuesToQuarterReview ? '四半期レビューへ →' : undefined}
+                  continueDisabled={replayResultContinueMissing}
                   continueDisabledReason={
-                    replayDraftMissing ? REPLAY_DRAFT_MISSING_HINT : undefined
+                    replayResultContinueMissing
+                      ? resultContinuesToQuarterReview
+                        ? REPLAY_QUARTER_REVIEW_MISSING_HINT
+                        : REPLAY_DRAFT_MISSING_HINT
+                      : undefined
                   }
                   replayMode={run.isReplayMode}
                   diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}

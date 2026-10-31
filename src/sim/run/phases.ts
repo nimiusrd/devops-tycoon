@@ -3,7 +3,8 @@
  *
  * **固定トラック（スプリント列）＋スプリント間ビート**の正当な遷移を純TSデータで定義する。
  * 編成（setup）→ スプリント → リザルト → ドラフト → 進化 → ビート（判定/選択）→ 編成（setup）…
- * → ボススプリント → 四半期レビュー → 勝敗/継続。ショップ/休息/採用もビート経由で setup に戻る（RI-77）。
+ * → ボススプリント → リザルト → 四半期レビュー → 勝敗/継続。
+ * ショップ/休息/採用もビート経由で setup に戻る（RI-77）。
  *
  * `RunEngine.setPhase()` がこの表で実ランタイムの遷移を検証する。
  * 契約テストも同じ表を参照し、フェーズ遷移の二重管理を防ぐ（第22.3）。
@@ -68,8 +69,9 @@ export const RUN_PHASE_TRANSITIONS: Readonly<
   title: { START: 'setup' },
   // setup は第1スプリント前の編成、かつショップ/休息後・次四半期の編成入口（setup-pre）も兼ねる。
   setup: { BEGIN: 'sprint', LOST: 'lost' },
-  sprint: { SPRINT_DONE: 'result', BOSS_REVIEW: 'quarterReview', LOST: 'lost' },
-  result: { ACK: 'draft', LOST: 'lost' },
+  sprint: { SPRINT_DONE: 'result', LOST: 'lost' },
+  // 四半期末もリザルトを一度出してからレビューへ進む（#989）。sprint から飛ばさない。
+  result: { ACK: 'draft', BOSS_REVIEW: 'quarterReview', LOST: 'lost' },
   draft: { NEXT: 'evolution', LOST: 'lost' },
   evolution: { FINISH: 'beat', LOST: 'lost' },
   beat: {

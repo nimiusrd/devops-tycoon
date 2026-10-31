@@ -10,13 +10,16 @@
 import { getBoss } from '../data/bosses';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { setupObservation } from '../render/companyGuidanceView';
+import { isShopOfferPresent, shouldShowOrgLeverHint } from '../render/orgLeverHintView';
 import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { DeckBar } from './DeckBar';
 import { FormationGrid } from './FormationScreen';
+import { OrgLeverHintRow } from './OrgLeverHintRow';
 import { QuarterOkr } from './QuarterOkr';
 import { TermTip } from './TermTip';
+import { readOrgLeverHintSession } from './orgLeverHintSession';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface SetupScreenProps {
@@ -26,6 +29,8 @@ export interface SetupScreenProps {
   onBegin: () => void;
   /** リプレイ閲覧など、操作を受け付けないとき。 */
   readOnly?: boolean;
+  /** startRun ごとの世代。組織レバー案内をラン単位で区切る。 */
+  runEpoch?: number;
 }
 
 function SetupPhrases({ phrases }: { phrases: readonly string[] }) {
@@ -120,6 +125,7 @@ export function SetupScreen({
   onToggleAi,
   onBegin,
   readOnly = false,
+  runEpoch = 0,
 }: SetupScreenProps) {
   const [dismissedSprintKeys, setDismissedSprintKeys] = useState<string[]>([]);
   const setupRef = useRef<HTMLDivElement>(null);
@@ -165,6 +171,14 @@ export function SetupScreen({
   // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
   const bossPending = state.pendingSprintKind === 'boss' || nextIndex >= total;
   const elitePending = !bossPending && state.pendingSprintKind === 'elite';
+  const hintSession = readOrgLeverHintSession(runEpoch);
+  const showOrgLeverHint = shouldShowOrgLeverHint({
+    quarterNumber: state.quarterNumber,
+    budget: state.budget,
+    shopArrived: isShopOfferPresent(state) || hintSession.shopArrived,
+    dismissed: hintSession.dismissed,
+    readOnly,
+  });
   const heading = bossPending
     ? '編成 — ボススプリントの前に配置とAIを決める'
     : elitePending
@@ -209,6 +223,7 @@ export function SetupScreen({
             <h2 ref={headingRef} tabIndex={-1} className="draft-title" id="setup-heading">
               {heading}
             </h2>
+            <OrgLeverHintRow eligible={showOrgLeverHint} dismissed={hintSession.dismissed} />
             <p className="formation-setup-hint">
               {bossPending
                 ? '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。'

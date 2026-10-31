@@ -177,4 +177,64 @@ describe('lockBackgroundSiblings', () => {
     expect(retry.inert).toBe(false);
     expect(root.inert).toBe(true);
   });
+
+  it('読み込み枠のあとに増えた兄弟もロックし、閉じると元へ戻す', () => {
+    vi.stubGlobal('HTMLElement', ElementStub);
+    const observers: Array<{
+      callback: () => void;
+      roots: ElementStub[];
+      observe: (root: ElementStub) => void;
+      disconnect: () => void;
+    }> = [];
+    class MutationObserverStub {
+      roots: ElementStub[] = [];
+      constructor(private readonly callback: () => void) {
+        observers.push(this);
+      }
+      observe(root: ElementStub) {
+        this.roots.push(root);
+      }
+      disconnect() {
+        this.roots = [];
+      }
+    }
+    vi.stubGlobal('MutationObserver', MutationObserverStub);
+
+    const parent = new ElementStub();
+    const early = new ElementStub();
+    early.setAttribute('aria-hidden', 'menu');
+    const dialog = new ElementStub();
+    parent.children = [early, dialog];
+    early.parentElement = parent;
+    dialog.parentElement = parent;
+    const body = new ElementStub();
+    vi.stubGlobal('document', { body, getElementById: () => null });
+
+    const restore = lockBackgroundSiblings(dialog as unknown as HTMLElement);
+    expect(early.inert).toBe(true);
+    expect(observers).toHaveLength(1);
+    expect(observers[0]?.roots).toEqual([parent]);
+
+    const late = new ElementStub();
+    const exempt = new ElementStub();
+    exempt.setAttribute('data-overlay-lock-exempt', 'true');
+    parent.children.push(late, exempt);
+    late.parentElement = parent;
+    exempt.parentElement = parent;
+    observers[0]?.callback();
+    observers[0]?.callback();
+
+    expect(late.inert).toBe(true);
+    expect(late.getAttribute('aria-hidden')).toBe('true');
+    expect(exempt.inert).toBe(false);
+    expect(early.getAttribute('aria-hidden')).toBe('true');
+
+    restore();
+
+    expect(early.inert).toBe(false);
+    expect(early.getAttribute('aria-hidden')).toBe('menu');
+    expect(late.inert).toBe(false);
+    expect(late.getAttribute('aria-hidden')).toBeNull();
+    expect(observers[0]?.roots).toEqual([]);
+  });
 });

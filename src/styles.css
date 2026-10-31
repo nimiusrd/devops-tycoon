@@ -6970,23 +6970,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.org-pill-marked {
-  border-color: var(--sun);
-}
-/* 案内の有無で枠を変えない。ラベルがサイズを決め、文は同じ内容箱に収める。 */
-.org-pill-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  white-space: nowrap;
-}
-.org-pill-label.is-hidden {
-  visibility: hidden;
-}
 .org-lever-hint-mark {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  /* 狭いピル（padding 4px 6px）でも文字箱に入らない角。枠の寸法は変えない。 */
+  top: -4px;
+  right: -2px;
   width: 8px;
   height: 8px;
   border-radius: 999px;
@@ -6994,21 +6982,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .org-lever-hint {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0 4px;
-  overflow: hidden;
+  margin: 0 0 0.75rem;
+  max-width: 36rem;
   color: var(--cream);
-  /* ラベルの文字サイズに追従し、狭幅の詰めたピルでも枠をはみ出さない。 */
-  font-size: 0.55em;
+  font-size: 0.85rem;
   font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-  pointer-events: none;
+  line-height: 1.45;
 }
 
 /* 全社・部署画面はオーバーレイ内で盤面へ残りの高さを配分する。 */

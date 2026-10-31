@@ -26,10 +26,21 @@ import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { formatSigned } from './formatSigned';
+import {
+  isShopOfferPresent,
+  ORG_LEVER_BUTTON_LABEL,
+  ORG_LEVER_HINT_MESSAGE,
+  shouldShowOrgLeverHint,
+} from '../render/orgLeverHintView';
 import { useReplayContent } from './replayContent';
 import { RunSessionMenu } from './RunSessionMenu';
 import { PhraseText } from './PhraseText';
 import { VisualIcon } from './VisualIcon';
+import {
+  dismissOrgLeverHint,
+  noteOrgLeverShopArrived,
+  readOrgLeverHintSession,
+} from './orgLeverHintSession';
 
 const FEEDBACK_TTL_MS = 1600;
 
@@ -57,6 +68,8 @@ export interface RunBarProps {
   onOpenHelp?: () => void;
   /** 既存のミュート設定を切り替える。 */
   onToggleSoundMuted?: () => void;
+  /** startRun ごとの世代。組織レバー案内の一度きりをラン単位で区切る。 */
+  runEpoch?: number;
 }
 
 /** 表情演出の絵文字（第12.2）。 */
@@ -103,6 +116,7 @@ export function RunBar({
   soundMuted = false,
   onOpenHelp,
   onToggleSoundMuted,
+  runEpoch = 0,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
   const { resolveRelic, resolveTrial } = useReplayContent();
@@ -116,6 +130,7 @@ export function RunBar({
   const [feedbacks, setFeedbacks] = useState<ActiveRunFeedback[]>([]);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [orgLeverHintDismissedEpoch, setOrgLeverHintDismissedEpoch] = useState<number | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const showSessionMenu = onOpenHelp !== undefined && onToggleSoundMuted !== undefined;
 
@@ -155,6 +170,21 @@ export function RunBar({
     },
     [],
   );
+
+  const shopPresent = isShopOfferPresent(state);
+  useEffect(() => {
+    // リプレイは別ランの shop キーフレームを同じ runEpoch で開く。到来を覚えると復帰後の Q1 案内が消える。
+    if (readOnly || !shopPresent) return;
+    noteOrgLeverShopArrived(runEpoch);
+  }, [readOnly, shopPresent, runEpoch]);
+  const orgLeverHintSession = readOrgLeverHintSession(runEpoch);
+  const showOrgLeverHint = shouldShowOrgLeverHint({
+    quarterNumber: state.quarterNumber,
+    budget: state.budget,
+    shopArrived: shopPresent || orgLeverHintSession.shopArrived,
+    dismissed: orgLeverHintDismissedEpoch === runEpoch || orgLeverHintSession.dismissed,
+    readOnly,
+  });
 
   const feedbackByKey = new Map(feedbacks.map((feedback) => [feedback.key, feedback]));
   const budgetFeedback = feedbackByKey.get('budget');
@@ -330,17 +360,46 @@ export function RunBar({
       {onOpenOrg && (
         <button
           type="button"
-          className="pill org-pill"
+          className={`pill org-pill${showOrgLeverHint ? ' org-pill-marked' : ''}`}
           data-testid="open-org"
+          data-org-lever-hint={showOrgLeverHint ? 'true' : 'false'}
           disabled={readOnly}
-          onClick={(event) => onOpenOrg(event.currentTarget)}
+          aria-describedby={showOrgLeverHint ? 'org-lever-hint' : undefined}
+          onClick={(event) => {
+            dismissOrgLeverHint(runEpoch);
+            setOrgLeverHintDismissedEpoch(runEpoch);
+            onOpenOrg(event.currentTarget);
+          }}
           title={
             readOnly
               ? 'リプレイ閲覧中は全社マップを開けません'
-              : '全社マップへズームアウト（業界 ▸ 全社 ▸ 部署 ▸ 現場）'
+              : '組織レバー。全社マップを開いて予算を使います'
           }
         >
-          🗺 全社
+          <span
+            className={showOrgLeverHint ? 'org-pill-label is-hidden' : 'org-pill-label'}
+            aria-hidden={showOrgLeverHint ? true : undefined}
+          >
+            <span aria-hidden="true">🗺</span>
+            {ORG_LEVER_BUTTON_LABEL}
+          </span>
+          {showOrgLeverHint && (
+            <span
+              id="org-lever-hint"
+              className="org-lever-hint"
+              data-testid="org-lever-hint"
+              role="status"
+            >
+              {ORG_LEVER_HINT_MESSAGE}
+            </span>
+          )}
+          {showOrgLeverHint && (
+            <span
+              className="org-lever-hint-mark"
+              data-testid="org-lever-hint-mark"
+              aria-hidden="true"
+            />
+          )}
         </button>
       )}
       {showSessionMenu && onOpenHelp && onToggleSoundMuted && (

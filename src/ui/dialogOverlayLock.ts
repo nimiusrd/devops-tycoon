@@ -197,36 +197,66 @@ export function lockBackgroundSiblings(dialog: HTMLElement): () => void {
   const parent = dialog.parentElement;
   if (!parent) return () => {};
 
-  const restores: Array<() => void> = [];
-  for (const sibling of Array.from(parent.children)) {
-    if (sibling === dialog || !(sibling instanceof HTMLElement)) continue;
-    if (isOverlayLockExempt(sibling)) continue;
-    const targets = [sibling];
+  // 同じ要素を二度ロックすると、復元値が「ロック中」になり閉じても背面が残る。
+  const restores = new Map<HTMLElement, () => void>();
+
+  const lockTarget = (target: HTMLElement) => {
+    if (restores.has(target) || isOverlayLockExempt(target)) return;
+    const previousInert = target.inert;
+    const previousAriaHidden = target.getAttribute('aria-hidden');
+    target.inert = true;
+    target.setAttribute('aria-hidden', 'true');
+    restores.set(target, () => {
+      target.inert = previousInert;
+      if (previousAriaHidden === null) target.removeAttribute('aria-hidden');
+      else target.setAttribute('aria-hidden', previousAriaHidden);
+    });
+  };
+
+  const lockSibling = (sibling: Element) => {
+    if (sibling === dialog || !(sibling instanceof HTMLElement)) return;
+    lockTarget(sibling);
     // ResultOverlay は body へ portal されるため、React root の直下にある
     // 実画面にも inert を付けて、従来の同階層 overlay と同じ契約を保つ。
     // ロック免除の案内はクリックと Tab を残す。
     if (parent === document.body && sibling.id === 'root') {
-      targets.push(
-        ...Array.from(sibling.children).filter(
-          (child): child is HTMLElement =>
-            child instanceof HTMLElement && !isOverlayLockExempt(child),
-        ),
-      );
+      for (const child of Array.from(sibling.children)) {
+        if (child instanceof HTMLElement) lockTarget(child);
+      }
     }
-    for (const target of targets) {
-      const previousInert = target.inert;
-      const previousAriaHidden = target.getAttribute('aria-hidden');
-      target.inert = true;
-      target.setAttribute('aria-hidden', 'true');
-      restores.push(() => {
-        target.inert = previousInert;
-        if (previousAriaHidden === null) target.removeAttribute('aria-hidden');
-        else target.setAttribute('aria-hidden', previousAriaHidden);
+  };
+
+  const lockCurrentSiblings = () => {
+    for (const sibling of Array.from(parent.children)) lockSibling(sibling);
+    if (parent === document.body) {
+      const root = document.getElementById?.('root');
+      if (root) lockSibling(root);
+    }
+  };
+
+  lockCurrentSiblings();
+
+  // 進化画面などは lazy の読み込み枠を先にロックする。枠が実画面へ
+  // 差し替わったあと、新しい兄弟へ同じ契約を付け直す（#966）。
+  let observer: MutationObserver | undefined;
+  if (typeof MutationObserver === 'function') {
+    try {
+      observer = new MutationObserver(() => {
+        lockCurrentSiblings();
       });
+      observer.observe(parent, { childList: true });
+      if (parent === document.body) {
+        const root = document.getElementById?.('root');
+        if (root) observer.observe(root, { childList: true });
+      }
+    } catch {
+      observer = undefined;
     }
   }
 
   return () => {
-    for (const restore of restores) restore();
+    observer?.disconnect();
+    for (const restore of restores.values()) restore();
+    restores.clear();
   };
 }

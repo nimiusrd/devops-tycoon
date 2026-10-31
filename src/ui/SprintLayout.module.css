@@ -470,54 +470,131 @@
 }
 
 /*
- * 電話幅の状態枠では、コンボを炎上メーターのバー右端に重ねる（#967）。
- * インラインのまま ×2 になると行が増え、盤面が下がる。空のときも同じ行高を残し、
- * 出現・更新・途切れで状態枠の高さを変えない。ラベルと件数の文字には被せない。
- * 状態枠が 520px を超える狭幅（タブレット）は、速度ボタンに被るためインラインのまま。
- * 320 の枠は約 292px、390 は約 362px、768 は約 740px。
+ * 電話幅の状態枠では、コンボを炎上バーの右端に重ねる（#967）。
+ * anchor も display:contents も使わない。炎上の行自身をグリッドにし、
+ * バッジはバーと同じマスへ absolute で置く。空のときは行を増やさない。
+ * 560px より広い狭幅（タブレット）は、従来どおりインラインのまま。
  */
-@supports (position-anchor: --sprint-fire-meter) {
-  .root[data-responsive-width='narrow'] .statusSlot {
+.root[data-responsive-width='narrow'] .statusSlot {
+  position: relative;
+}
+
+@media (max-width: 560px) {
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.subbar:not(.runbar)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 4px;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.node-tag) {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.speed-controls) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.boss-goal),
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.meter-wrap) {
+    grid-column: 1 / -1;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.meter-wrap-fire) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 8px;
+    align-items: center;
     position: relative;
-    container-type: inline-size;
-    container-name: sprint-status;
+    width: 100%;
+    min-width: 0;
   }
 
-  .root[data-responsive-width='narrow'] :global(.meter.fire) {
-    anchor-name: --sprint-fire-meter;
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.meter-wrap-fire)
+    :global(.meter-label) {
+    grid-column: 1;
+    grid-row: 1;
   }
 
-  @container sprint-status (max-width: 520px) {
-    .root :global(.combo-badge) {
-      height: 0;
-      min-height: 0;
-      max-height: none;
-      overflow: visible;
-      pointer-events: none;
-    }
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.meter.fire) {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    justify-self: stretch;
+  }
 
-    .root :global(.combo-inner) {
-      position: absolute;
-      position-anchor: --sprint-fire-meter;
-      right: anchor(right);
-      bottom: anchor(bottom);
-      /* 1行にすると炎上バーの縦幅に収まり、上の Review Hell に被らない。 */
-      flex-direction: row;
-      align-items: baseline;
-      column-gap: 4px;
-      width: max-content;
-      margin: 0;
-      border-radius: 8px;
-      background: var(--panel);
-      pointer-events: none;
-      white-space: nowrap;
-    }
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.meter-wrap-fire)
+    :global(.meter-count) {
+    grid-column: 3;
+    grid-row: 1;
+  }
 
-    .root :global(.combo-x),
-    .root :global(.combo-mult) {
-      font-size: 11px;
-      line-height: 1;
-      letter-spacing: 0;
-    }
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.meter-wrap-fire)
+    :global(.combo-badge) {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: stretch;
+    align-self: end;
+    position: relative;
+    width: auto;
+    height: 0;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-inner) {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    /* 不透明のまま、バーの右半分より外側へ出さない。 */
+    max-width: 50%;
+    flex-direction: row;
+    align-items: baseline;
+    column-gap: 4px;
+    width: max-content;
+    margin: 0;
+    border-radius: 8px;
+    background: var(--panel);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-x),
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-mult) {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+}
+
+/* 390 以下は「×12 1.2x」。長い文言はバーの右端を隠す（#967）。 */
+@media (max-width: 390px) {
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-label-full) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-label-short) {
+    display: inline;
   }
 }

@@ -37,8 +37,18 @@ export function ComboBadge({ combo, stabilized = false }: ComboBadgeProps) {
             reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 18 }
           }
         >
-          <div className="combo-x">COMBO ×{combo}</div>
-          <div className="combo-mult">出荷倍率 {mult.toFixed(1)}x</div>
+          <div className="combo-x">
+            <span className="combo-label-full">COMBO ×{combo}</span>
+            <span className="combo-label-short" aria-hidden="true">
+              ×{combo}
+            </span>
+          </div>
+          <div className="combo-mult">
+            <span className="combo-label-full">出荷倍率 {mult.toFixed(1)}x</span>
+            <span className="combo-label-short" aria-hidden="true">
+              {mult.toFixed(1)}x
+            </span>
+          </div>
         </motion.div>
       )}
     </div>

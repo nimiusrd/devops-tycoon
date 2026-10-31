@@ -20,7 +20,11 @@ const WIDE_VIEWPORTS = [
 
 /** コンボ行が増えたときの状態枠（約 145px）より明らかに低い上限。 */
 const RESTING_STATUS_MAX_PX = 124;
-/** 課題で観測したコンボ前の状態枠（118px）からの許容。 */
+/**
+ * コンボ前の状態枠。空のバッジは行にしないので、課題で見た 118px より
+ * 空行の分だけ低い。ここからコンボが出ても動かないこと。
+ */
+const RESTING_STATUS_PX = 113.4;
 const RESTING_STATUS_TOLERANCE_PX = 2;
 
 type Box = { x: number; y: number; width: number; height: number; fontSize: number };
@@ -141,9 +145,10 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
       const initial = await readLayout(page);
       expect(initial.scrollY, '初期 scrollY').toBe(0);
       expect(initial.layoutScroll, '初期の枠内スクロール').toBe(0);
-      expect(Math.abs(initial.status.height - 118), 'コンボ前の状態枠').toBeLessThanOrEqual(
-        RESTING_STATUS_TOLERANCE_PX,
-      );
+      expect(
+        Math.abs(initial.status.height - RESTING_STATUS_PX),
+        'コンボ前の状態枠',
+      ).toBeLessThanOrEqual(RESTING_STATUS_TOLERANCE_PX);
       expect(initial.status.height).toBeLessThan(RESTING_STATUS_MAX_PX);
 
       for (const combo of [2, 3, 12, 0]) {
@@ -170,7 +175,31 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
         }
 
         expect(layout.innerPosition, '電話幅のバッジはバーに重なる').toBe('absolute');
-        expect(badges.map((item) => item.text).join(' ')).toContain(`COMBO ×${combo}`);
+        expect(badges.map((item) => item.text).join(' ')).toContain(`×${combo}`);
+        const shortText = (await page.locator('.combo-label-short').allTextContents()).map((text) =>
+          text.trim(),
+        );
+        expect(shortText[0]).toBe(`×${combo}`);
+        expect(shortText[1]).toMatch(/^\d+\.\dx$/);
+        expect(shortText.join('')).not.toContain('COMBO');
+        expect(shortText.join('')).not.toContain('出荷倍率');
+        const cover = await page.evaluate(() => {
+          const fire = document.querySelector('[data-testid="fire-meter"]');
+          const inner = document.querySelector('.combo-inner');
+          if (!(fire instanceof HTMLElement) || !(inner instanceof HTMLElement)) {
+            throw new Error('炎上バーかバッジが無い');
+          }
+          const fireBox = fire.getBoundingClientRect();
+          const innerBox = inner.getBoundingClientRect();
+          const overlap = Math.max(
+            0,
+            Math.min(innerBox.right, fireBox.right) - Math.max(innerBox.left, fireBox.left),
+          );
+          return { fire: fireBox.width, visible: fireBox.width - overlap };
+        });
+        expect(cover.visible, '炎上バーの半分以上が見える').toBeGreaterThanOrEqual(
+          cover.fire / 2 - 0.5,
+        );
         const badgeTop = Math.min(...badges.map((badge) => badge.y));
         const badgeBottom = Math.max(...badges.map((badge) => badge.y + badge.height));
         expect(badgeBottom, 'バッジが炎上バーより上だけに出る').toBeGreaterThan(layout.fire.y);
@@ -258,7 +287,23 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
         for (const meter of meterTexts(withCombo)) {
           expect(overlaps(badge, meter), `${badge.text} が「${meter.text}」に重なる`).toBe(false);
         }
+        expect(badge.fontSize, badge.text).toBeGreaterThanOrEqual(11);
       }
+      const crowdedCover = await page.evaluate(() => {
+        const fire = document.querySelector('[data-testid="fire-meter"]');
+        const inner = document.querySelector('.combo-inner');
+        if (!(fire instanceof HTMLElement) || !(inner instanceof HTMLElement)) {
+          throw new Error('炎上バーかバッジが無い');
+        }
+        const fireBox = fire.getBoundingClientRect();
+        const innerBox = inner.getBoundingClientRect();
+        const overlap = Math.max(
+          0,
+          Math.min(innerBox.right, fireBox.right) - Math.max(innerBox.left, fireBox.left),
+        );
+        return fireBox.width - overlap >= fireBox.width / 2 - 0.5;
+      });
+      expect(crowdedCover, '渋滞・炎上中も炎上バーの半分以上が見える').toBe(true);
     });
   }
 });

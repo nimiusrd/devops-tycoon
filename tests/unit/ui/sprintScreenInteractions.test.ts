@@ -671,7 +671,10 @@ describe('SprintScreen の自動ポーズと演出の寿命', () => {
     screen.updateSprint({ fireEvents: [{ tick: 1, kind: 'ignite', taskId: 1, source: 'review' }] });
     expect(screen.child(AttentionOverlay)).toEqual({ label: 'IGNITE', title: '点火!' });
     const fireWrap = elements(screen.child(SprintLayout).status).find(
-      (node) => node.props.className === 'meter-wrap attention',
+      (node) =>
+        typeof node.props.className === 'string' &&
+        node.props.className.includes('meter-wrap-fire') &&
+        node.props.className.includes('attention'),
     );
     expect(content(fireWrap)).toContain('炎上タイマー');
     screen.advance(ATTENTION_PAUSE_MS);

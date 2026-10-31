@@ -513,7 +513,7 @@ export function SprintScreen({
               )}
             </div>
             <div
-              className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
+              className={`meter-wrap meter-wrap-fire${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
             >
               <span className="meter-label">炎上タイマー</span>
               <div
@@ -526,11 +526,11 @@ export function SprintScreen({
                 <VisualIcon name="fire" size="hud" />
                 {incidents > 0 ? `炎上 ${incidents}` : incidents}
               </span>
+              <ComboBadge
+                combo={liveCombo}
+                stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
+              />
             </div>
-            <ComboBadge
-              combo={liveCombo}
-              stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
-            />
           </div>
           {dockTickerOffBoard ? eventTicker : null}
         </>

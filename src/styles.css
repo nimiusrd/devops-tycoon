@@ -1932,11 +1932,19 @@ body:has(.overlay-contained) {
   max-height: 34px;
   overflow: hidden;
 }
+/* 中身が無いときは flex の隙間にもならない。 */
+.combo-badge:not(:has(.combo-inner)) {
+  display: none;
+}
 .combo-inner {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   line-height: 1;
+}
+/* 電話幅の短い表示。広い幅では出さない（#967）。 */
+.combo-label-short {
+  display: none;
 }
 .combo-x {
   font-size: 17px;

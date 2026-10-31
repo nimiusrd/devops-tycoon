@@ -1947,7 +1947,8 @@ body:has(.overlay-contained) {
     0 2px 0 #00000055;
 }
 .combo-mult {
-  font-size: 10px;
+  /* 状態バッジの文字は 11px 以上（#967）。 */
+  font-size: 11px;
   font-weight: 800;
   color: var(--lav);
   letter-spacing: 0.06em;

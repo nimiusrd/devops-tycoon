@@ -468,3 +468,56 @@
 .root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.boss-goal) {
   grid-column: 1 / -1;
 }
+
+/*
+ * 電話幅の状態枠では、コンボを炎上メーターのバー右端に重ねる（#967）。
+ * インラインのまま ×2 になると行が増え、盤面が下がる。空のときも同じ行高を残し、
+ * 出現・更新・途切れで状態枠の高さを変えない。ラベルと件数の文字には被せない。
+ * 状態枠が 520px を超える狭幅（タブレット）は、速度ボタンに被るためインラインのまま。
+ * 320 の枠は約 292px、390 は約 362px、768 は約 740px。
+ */
+@supports (position-anchor: --sprint-fire-meter) {
+  .root[data-responsive-width='narrow'] .statusSlot {
+    position: relative;
+    container-type: inline-size;
+    container-name: sprint-status;
+  }
+
+  .root[data-responsive-width='narrow'] :global(.meter.fire) {
+    anchor-name: --sprint-fire-meter;
+  }
+
+  @container sprint-status (max-width: 520px) {
+    .root :global(.combo-badge) {
+      height: 0;
+      min-height: 0;
+      max-height: none;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .root :global(.combo-inner) {
+      position: absolute;
+      position-anchor: --sprint-fire-meter;
+      right: anchor(right);
+      bottom: anchor(bottom);
+      /* 1行にすると炎上バーの縦幅に収まり、上の Review Hell に被らない。 */
+      flex-direction: row;
+      align-items: baseline;
+      column-gap: 4px;
+      width: max-content;
+      margin: 0;
+      border-radius: 8px;
+      background: var(--panel);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .root :global(.combo-x),
+    .root :global(.combo-mult) {
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+  }
+}

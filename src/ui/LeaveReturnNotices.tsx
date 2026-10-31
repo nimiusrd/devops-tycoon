@@ -29,6 +29,8 @@ export function LeaveReturnNotices({
   const copyRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLParagraphElement>(null);
   const [showSummary, setShowSummary] = useState(false);
+  // 余白を足すかは開いたときの復帰者で決める。あとから行を足して開始位置を動かさない。
+  const [reserveLine] = useState(notices.length > 0);
   const [spoken, setSpoken] = useState(() =>
     speech !== '' && readAnnouncedLeaveReturnSpeech(runEpoch) === speech ? speech : '',
   );
@@ -82,7 +84,11 @@ export function LeaveReturnNotices({
   }, [runEpoch, speech]);
 
   return (
-    <div ref={copyRef} className="formation-setup-copy">
+    <div
+      ref={copyRef}
+      className="formation-setup-copy"
+      data-reserve={reserveLine ? 'true' : undefined}
+    >
       <p ref={hintRef} className="formation-setup-hint">
         {hint}
       </p>

@@ -6765,7 +6765,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   --leave-return-line: calc(0.85rem * 1.45);
   position: relative;
   margin: 0 0 0.75rem;
-  /* 警告の下に要約1行分を常に空ける。通知の有無で開始位置を変えない。 */
+}
+/* 復帰者がいる画面だけ要約1行分を空ける。開いたあとには増減しない。 */
+.formation-setup-copy[data-reserve='true'] {
   padding-bottom: var(--leave-return-line);
 }
 .formation-setup-copy .formation-setup-hint {

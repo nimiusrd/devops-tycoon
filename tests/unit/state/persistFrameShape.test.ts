@@ -314,6 +314,23 @@ describe('isPersistFrameShape', () => {
     expect(isPersistFrameShape(frame)).toBe(false);
   });
 
+  it('休職復帰の通知はチームごとの名前を受理し、壊れた形は拒否する', () => {
+    const frame = makeFrame();
+    setAtPath(frame, 'extras.pendingLeaveReturns', {
+      'product-t0': [
+        { id: 'm0', name: 'アオイ' },
+        { id: 'm1', name: 'ハルキ' },
+      ],
+    });
+    setAtPath(frame, 'extras.announcedLeaveReturnKeys', ['product-t0:m0']);
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    expectPathRejected('extras.pendingLeaveReturns', []);
+    expectPathRejected('extras.pendingLeaveReturns', { 'product-t0': [{ id: 'm0' }] });
+    expectPathRejected('extras.pendingLeaveReturns', { 'product-t0': [null] });
+    expectPathRejected('extras.announcedLeaveReturnKeys', [1]);
+  });
+
   it('成長結果とショップの各入れ子構造を検査する', () => {
     for (const growth of [
       [],

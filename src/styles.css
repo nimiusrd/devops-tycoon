@@ -6760,6 +6760,35 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   line-height: 1.45;
   color: var(--muted, #9aa3b5);
 }
+/* #937: 復帰通知は常にあるヒント枠へ重ねる。行を足すと 320 で開始ボタンがずれる（#928 / #931）。 */
+.formation-setup-copy {
+  position: relative;
+  margin: 0 0 0.75rem;
+}
+.formation-setup-copy .formation-setup-hint {
+  margin: 0;
+}
+.leave-return-slot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  min-width: 0;
+  overflow: auto;
+  pointer-events: none;
+}
+.leave-return-slot:has(.leave-return-notices) {
+  pointer-events: auto;
+  background: var(--panel);
+}
+.leave-return-notices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--mint);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
 .formation-close {
   flex: 0 0 auto;
   padding: 8px 16px;

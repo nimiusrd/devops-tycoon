@@ -329,6 +329,53 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.props.onBegin).not.toHaveBeenCalled();
   });
 
+  it('復帰通知は名前を一度ずつ出し、alert ではなく既存の polite で読む', () => {
+    const state = makeState({
+      leaveReturns: [
+        { id: 'm1', name: 'アオイ' },
+        { id: 'm2', name: 'ハルキ' },
+        { id: 'm1', name: 'アオイ' },
+      ],
+    });
+    const screen = mountSetup({ state });
+    const items = elements(screen.find('leave-return-notices')).filter((node) =>
+      String(node.props['data-testid'] ?? '').startsWith('leave-return-m'),
+    );
+    expect(items.map((node) => node.props['data-testid'])).toEqual([
+      'leave-return-m1',
+      'leave-return-m2',
+    ]);
+    expect(content(screen.find('leave-return-m1'))).toBe('アオイが復帰しました（ベンチ）');
+    expect(content(screen.find('leave-return-m2'))).toBe('ハルキが復帰しました（ベンチ）');
+    const status = elements(screen.find('leave-return-slot')).find(
+      (node) => node.props.role === 'status',
+    );
+    expect(status?.props).toMatchObject({
+      role: 'status',
+      'aria-live': 'polite',
+      'aria-atomic': 'true',
+    });
+    expect(elements(screen.find('setup')).some((node) => node.props.role === 'alert')).toBe(false);
+    expect(screen.find('leave-return-slot').props.className).toBe('leave-return-slot');
+    const copy = elements(screen.find('setup')).find(
+      (node) => node.props.className === 'formation-setup-copy',
+    );
+    expect(content(copy)).toContain('誰に配るかこのタイミングで見直そう');
+    expect(elements(copy).some((node) => node.props['data-testid'] === 'begin-sprint')).toBe(false);
+  });
+
+  it('復帰が無いときも読み上げ領域だけ残し、通知の本文は出さない', () => {
+    const screen = mountSetup();
+    expect(screen.has('leave-return-slot')).toBe(true);
+    expect(screen.find('leave-return-slot').props['data-empty']).toBe('true');
+    expect(screen.has('leave-return-notices')).toBe(false);
+    const status = elements(screen.find('leave-return-slot')).find(
+      (node) => node.props.role === 'status',
+    );
+    expect(status?.props['aria-live']).toBe('polite');
+    expect(content(status)).toBe('');
+  });
+
   it('通常案内は×で閉じられ、非表示でも常設slotを残す', () => {
     const screen = mountSetup();
     expect(screen.has('setup-observation-slot')).toBe(true);

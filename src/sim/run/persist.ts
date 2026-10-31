@@ -100,6 +100,16 @@ export interface RunPersistExtras {
   coarseSecurityTrustAppliedRaw?: number;
   /** 今ドラフトでのマリガン使用済み（RI-81。旧セーブでは欠落しうる）。 */
   draftMulliganUsed?: boolean;
+  /**
+   * チームごとの、編成画面でまだ出している休職復帰（#937）。
+   * 旧セーブでは欠落しうる。
+   */
+  pendingLeaveReturns?: Record<string, { id: string; name: string }[]>;
+  /**
+   * このランで通知済みの `teamId:memberId`（#937）。
+   * 旧セーブでは欠落しうる。
+   */
+  announcedLeaveReturnKeys?: string[];
 }
 
 /**

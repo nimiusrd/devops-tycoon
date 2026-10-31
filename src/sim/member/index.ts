@@ -13,6 +13,7 @@ export type {
   RosterState,
   FormationEffects,
   GrowthOutcome,
+  LeaveReturnNotice,
   TraitId,
 } from './types';
 export {
@@ -47,3 +48,4 @@ export {
   effectiveAiMastery,
 } from './roster';
 export type { GrowthContext } from './roster';
+export { membersReturnedFromLeave, planLeaveReturnNotices } from './leaveReturnNotice';

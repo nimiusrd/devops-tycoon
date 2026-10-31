@@ -50,13 +50,20 @@ import {
   createInitialRoster,
   pickRecruitArchetype,
   recoverStamina,
+  membersReturnedFromLeave,
+  planLeaveReturnNotices,
   recruitMember,
   setAiAssigned,
   RECRUIT_COST,
   REST_STAMINA_RECOVER,
   STAMINA_RECOVER_BETWEEN,
 } from '../member';
-import type { GrowthOutcome, LaneAssignment, RosterState } from '../member/types';
+import type {
+  GrowthOutcome,
+  LaneAssignment,
+  LeaveReturnNotice,
+  RosterState,
+} from '../member/types';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng, createRngFromState, getRngState } from '../rng';
 import { DEFAULT_SEED } from '../seed';
@@ -356,6 +363,10 @@ export class RunEngine {
   private evolution!: EvolutionState;
   private roster!: RosterState;
   private lastGrowth: GrowthOutcome | null = null;
+  /** チームごとの、編成画面でまだ出している休職復帰（#937）。 */
+  private pendingLeaveReturns = new Map<string, LeaveReturnNotice[]>();
+  /** このランで通知済みの `teamId:memberId`。同じ人は再通知しない。 */
+  private announcedLeaveReturnKeys = new Set<string>();
   private budget = 0;
 
   private phase: RunState['phase'] = 'title';
@@ -526,6 +537,8 @@ export class RunEngine {
     this.evolution = { points: 0, unlocked: {} };
     this.roster = createInitialRoster(createRng(`${this.seed}:roster`));
     this.lastGrowth = null;
+    this.pendingLeaveReturns = new Map();
+    this.announcedLeaveReturnKeys = new Set();
     this.budget = Math.round(diff.startBudget * this.trialBudgetMul());
     this.stakeholderTrust = buildInitialTrust(this.difficulty);
     const boss = getBoss(this.bossId);
@@ -648,6 +661,8 @@ export class RunEngine {
    * トラック最終インデックスでは必ず boss を優先する（二重決定防止）。
    */
   private launchSprint(): void {
+    // 編成画面で出した復帰通知は、このスプリントを始めたら消す。通知済みの人は残す。
+    this.pendingLeaveReturns.delete(this.activeTeamId);
     const index = this.sprintIndexInQuarter + 1;
     const kind: SprintKind = index >= this.sprintsPerQuarter ? 'boss' : this.pendingSprintKind;
     const modifiers = this.pendingSprintModifiers;
@@ -839,7 +854,12 @@ export class RunEngine {
     // スプリント終了時に個体スタミナを一部回復する（休職者は復帰しうる）。
     // ここで回復させることで、続くビート／編成ウィンドウで復帰メンバーをすぐ再配置できる。
     const justLeft = new Set((this.lastGrowth?.wentOnLeave ?? []).map((w) => w.id));
-    this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN, justLeft);
+    this.roster = this.recoverRoster(
+      this.activeTeamId,
+      this.roster,
+      STAMINA_RECOVER_BETWEEN,
+      justLeft,
+    );
     // RI-64: 選択チームを永続へ同期し、他チームを粗粒度で進める。
     this.syncActiveTeamFromOrg();
     this.advanceOtherTeams(`sprint:${this.currentSprintId}`);
@@ -936,6 +956,40 @@ export class RunEngine {
           )
         : securityCustomerTrustDelta(this.org.securityLevel, result.incidents, result.spread);
     if (delta !== 0) this.applyTrust({ customers: delta });
+  }
+
+  /**
+   * スタミナを回復し、休職が解けてベンチへ戻った人を編成通知へ積む。
+   * 同じメンバーは同じランでは一度だけ積む。
+   */
+  private recoverRoster(
+    teamId: string,
+    roster: RosterState,
+    amount: number,
+    skipIds?: ReadonlySet<string>,
+  ): RosterState {
+    const next = recoverStamina(roster, amount, skipIds);
+    const pending = this.pendingLeaveReturns.get(teamId) ?? [];
+    const fresh = planLeaveReturnNotices(membersReturnedFromLeave(roster.members, next.members), [
+      ...this.announcedIdsFor(teamId),
+      ...pending.map((person) => person.id),
+    ]);
+    if (fresh.length === 0) return next;
+    this.pendingLeaveReturns.set(teamId, [...pending, ...fresh]);
+    for (const person of fresh) {
+      this.announcedLeaveReturnKeys.add(`${teamId}:${person.id}`);
+    }
+    return next;
+  }
+
+  /** このチームで通知済みのメンバー id。 */
+  private announcedIdsFor(teamId: string): string[] {
+    const prefix = `${teamId}:`;
+    const ids: string[] = [];
+    for (const key of this.announcedLeaveReturnKeys) {
+      if (key.startsWith(prefix)) ids.push(key.slice(prefix.length));
+    }
+    return ids;
   }
 
   /**
@@ -1484,7 +1538,7 @@ export class RunEngine {
       this.org.seniorHp = clamp(this.org.seniorHp + REST_HEAL + bonus, 0, 100);
       this.org.morale = clamp(this.org.morale + REST_MORALE_HEAL, 0, 100);
       // 個体メンバーのスタミナも大きく回復し、休職者は復帰しやすくなる。
-      this.roster = recoverStamina(this.roster, REST_STAMINA_RECOVER);
+      this.roster = this.recoverRoster(this.activeTeamId, this.roster, REST_STAMINA_RECOVER);
     } else if (option === 'repay') {
       this.org.techDebt = Math.max(0, this.org.techDebt - REST_REPAY);
       this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
@@ -1932,7 +1986,9 @@ export class RunEngine {
     // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
     for (const id of Object.keys(this.teamRosters)) {
       if (id === this.activeTeamId) continue;
-      this.teamRosters[id] = recoverStamina(this.teamRosters[id], STAMINA_RECOVER_BETWEEN);
+      const beforeRoster = this.teamRosters[id];
+      if (!beforeRoster) continue;
+      this.teamRosters[id] = this.recoverRoster(id, beforeRoster, STAMINA_RECOVER_BETWEEN);
       // 復職で稼働人数が戻ったら粗粒度正本へも同期する（ロスター外席も維持）。
       const idx = this.teams.findIndex((t) => t.id === id);
       if (idx < 0) continue;
@@ -2288,6 +2344,7 @@ export class RunEngine {
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
       roster: structuredClone(this.roster),
       lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
+      leaveReturns: this.leaveReturnsFor(this.activeTeamId),
       budget: this.budget,
       currentSprintId: this.currentSprintId,
       sprint: null,
@@ -2344,7 +2401,33 @@ export class RunEngine {
         coarseSecurityTrustCount: this.coarseSecurityTrustCount,
         coarseSecurityTrustAppliedDelta: this.coarseSecurityTrustAppliedDelta,
         draftMulliganUsed: this.draftMulliganUsed,
+        ...this.leaveReturnPersistExtras(),
       },
+    };
+  }
+
+  private leaveReturnsFor(teamId: string): LeaveReturnNotice[] {
+    return (this.pendingLeaveReturns.get(teamId) ?? []).map((person) => ({ ...person }));
+  }
+
+  private leaveReturnPersistExtras(): {
+    pendingLeaveReturns?: Record<string, LeaveReturnNotice[]>;
+    announcedLeaveReturnKeys?: string[];
+  } {
+    const pendingLeaveReturns =
+      this.pendingLeaveReturns.size > 0
+        ? Object.fromEntries(
+            [...this.pendingLeaveReturns].map(([teamId, people]) => [
+              teamId,
+              people.map((person) => ({ ...person })),
+            ]),
+          )
+        : undefined;
+    const announcedLeaveReturnKeys =
+      this.announcedLeaveReturnKeys.size > 0 ? [...this.announcedLeaveReturnKeys] : undefined;
+    return {
+      ...(pendingLeaveReturns ? { pendingLeaveReturns } : {}),
+      ...(announcedLeaveReturnKeys ? { announcedLeaveReturnKeys } : {}),
     };
   }
 
@@ -2422,6 +2505,13 @@ export class RunEngine {
     };
     this.roster = cloned.roster;
     this.lastGrowth = cloned.lastGrowth;
+    this.pendingLeaveReturns = new Map(
+      Object.entries(cloned.extras.pendingLeaveReturns ?? {}).map(([teamId, people]) => [
+        teamId,
+        people.map((person) => ({ id: person.id, name: person.name })),
+      ]),
+    );
+    this.announcedLeaveReturnKeys = new Set(cloned.extras.announcedLeaveReturnKeys ?? []);
     this.budget = cloned.budget;
     this.currentSprintId = cloned.currentSprintId;
     this.sprint = null;
@@ -2712,6 +2802,7 @@ export class RunEngine {
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
       roster: structuredClone(this.roster),
       lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
+      leaveReturns: this.leaveReturnsFor(this.activeTeamId),
       budget: this.budget,
       currentSprintId: this.currentSprintId,
       sprint: this.sprint ? structuredClone(this.sprint) : null,

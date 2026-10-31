@@ -324,6 +324,111 @@ for (const viewport of [
   { width: 320, height: 568 },
   { width: 1280, height: 800 },
 ]) {
+  test(`${viewport.width}pxで休職復帰の通知が出ても開始ボタンの位置がずれない（#937）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({
+      reducedMotion: viewport.width === 320 ? 'reduce' : 'no-preference',
+    });
+    await page.goto('/?renderer=pixi&tutorial=off&seed=leave-return-notice');
+    await page.getByTestId('difficulty-easy').click();
+    await page.getByTestId('start-run').click();
+    const setup = page.getByTestId('setup');
+    const forecast = setup.getByTestId('formation-forecast');
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    await page.evaluate(() => document.fonts.ready);
+    const liveStatus = await setup
+      .getByTestId('leave-return-slot')
+      .getByRole('status')
+      .elementHandle();
+    if (!liveStatus) throw new Error('復帰が無いときも読み上げ領域を残す');
+    await expect(setup.getByTestId('leave-return-notices')).toHaveCount(0);
+
+    const positions = () =>
+      setup.locator('.formation-panel').evaluate((panel) => {
+        const panelBounds = panel.getBoundingClientRect();
+        return [
+          ...panel.querySelectorAll('.formation-member, .formation-forecast, .primary-button'),
+        ].map((element) => {
+          const bounds = element.getBoundingClientRect();
+          return {
+            id: element.getAttribute('data-testid'),
+            x: bounds.x - panelBounds.x,
+            y: bounds.y - panelBounds.y + panel.scrollTop,
+            width: bounds.width,
+            height: bounds.height,
+          };
+        });
+      });
+    const before = await positions();
+    const raw = await page.evaluate(() => {
+      const text = (window as GameWindow).game!.exportRunSaveText();
+      if (!text) throw new Error('準備画面のセーブを取得できない');
+      return text;
+    });
+    await page.evaluate(async (saved) => {
+      const game = (window as GameWindow).game!;
+      const save = JSON.parse(saved) as RunSave;
+      const teamId = save.state.extras.activeTeamId;
+      if (!teamId) throw new Error('選択中チームがない');
+      const members = save.state.roster.members.slice(0, 2);
+      save.state.extras.pendingLeaveReturns = {
+        [teamId]: [
+          { id: members[0]!.id, name: members[0]!.name },
+          { id: members[1]!.id, name: members[1]!.name },
+          { id: members[0]!.id, name: members[0]!.name },
+        ],
+      };
+      const result = await game.importRunSaveText(JSON.stringify(save));
+      if (!result.ok || game.resumeRun()?.phase !== 'setup') {
+        throw new Error('復帰通知のある準備画面を再開できない');
+      }
+      game.pause();
+    }, raw);
+
+    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
+    const notices = setup.getByTestId('leave-return-notices');
+    await expect(notices).toBeVisible();
+    await expect(notices.getByRole('listitem')).toHaveCount(2);
+    const texts = await notices.locator('[data-testid^="leave-return-m"]').allTextContents();
+    expect(texts).toHaveLength(2);
+    expect(new Set(texts).size).toBe(2);
+    for (const text of texts) {
+      expect(text).toMatch(/^.+が復帰しました（ベンチ）$/);
+    }
+    await expect(setup.getByTestId('leave-return-slot').getByRole('status')).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
+    await expect(setup.getByRole('alert')).toHaveCount(0);
+    expect(
+      await liveStatus.evaluate((element) => element.isConnected),
+      '既存のlive regionを更新する',
+    ).toBe(true);
+    expect(await positions(), '通知の有無で開始と編成の位置を変えない').toEqual(before);
+    const overlay = await setup.getByTestId('leave-return-slot').evaluate((element) => {
+      const slot = element.getBoundingClientRect();
+      const copy = element.parentElement?.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        position: style.position,
+        top: slot.top,
+        height: slot.height,
+        copyTop: copy?.top ?? Number.NaN,
+        copyHeight: copy?.height ?? Number.NaN,
+      };
+    });
+    expect(overlay.position).toBe('absolute');
+    expect(overlay.top).toBeCloseTo(overlay.copyTop, 0);
+    expect(overlay.height).toBeCloseTo(overlay.copyHeight, 0);
+  });
+}
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 1280, height: 800 },
+]) {
   test(`${viewport.width}pxでコーディング担当不在に開始前に気づき、その場で配置を直せる（#927）`, async ({
     page,
   }, testInfo) => {

@@ -528,6 +528,270 @@ describe('RI-91-B3 sprint survived mutants', () => {
     });
   });
 
+  describe('出荷 0 件の称号と診断', () => {
+    const praiseTitles = [
+      'ノー残業の勇者',
+      '健全な加速者',
+      'コンボ職人',
+      '火消しの達人',
+      '見かけ上の生産性王',
+    ];
+
+    function calmZero(sprint: SprintState, org: ReturnType<typeof createOrgState>): void {
+      org.seniorHp = 100;
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 0,
+        doneCount: 0,
+        completedCount: 0,
+        reworkCount: 0,
+        incidentCount: 0,
+        spread: 0,
+        reviewQueueMax: 0,
+        maxCombo: 0,
+        aiAssistedCompleted: 0,
+        actionCounts: {},
+      });
+    }
+
+    function expectNoShippingPraise(result: { title: string; diagnosis: string }): void {
+      expect(praiseTitles).not.toContain(result.title);
+      expect(result.diagnosis).not.toContain('安定して出荷');
+      expect(result.diagnosis).not.toContain('無理のないペース');
+      expect(result.diagnosis).not.toContain('数字は出ています');
+      expect(result.diagnosis).not.toContain('理想的な導入');
+      expect(result.diagnosis).not.toContain('見事な危機対応');
+      expect(result.diagnosis).not.toContain('流れを支配');
+    }
+
+    it('コーダー不在で稼働中の工程が無いときは、その理由を診断する', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog' })]);
+      sprint.config.codingSlots = 0;
+      calmZero(sprint, org);
+
+      const result = computeTitleAndDiagnosis(sprint, org);
+      expect(result).toEqual({
+        title: '手が止まった',
+        diagnosis: 'コーダーがいなくて作業が進まなかった。',
+      });
+      expectNoShippingPraise(result);
+    });
+
+    it('コーダー 0 人のスプリントを進めても、安定出荷の称号にならない', () => {
+      const org = createOrgState('default', false);
+      const rng = createRng('qa-seed-1031c');
+      const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+      sprint.config.codingSlots = 0;
+
+      for (let tick = 0; !sprint.complete && tick < 100_000; tick += 1) {
+        stepSprint(sprint, org, rng, tick);
+      }
+
+      const result = summarizeSprint(sprint, org);
+      expect(sprint.complete).toBe(true);
+      expect(result.done).toBe(0);
+      expect(result.delivered).toBe(0);
+      expect(result.grade).toBe('D');
+      expect(result).toMatchObject({
+        title: '手が止まった',
+        diagnosis: 'コーダーがいなくて作業が進まなかった。',
+      });
+      expectNoShippingPraise(result);
+    });
+
+    it('レビュー待ちのまま 0 件なら、安定出荷ではなくレビュー止まりと診断する', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, [
+        makeTask(0, { lane: 'review' }),
+        makeTask(1, { lane: 'coding' }),
+      ]);
+      calmZero(sprint, org);
+
+      const result = computeTitleAndDiagnosis(sprint, org);
+      expect(result).toEqual({
+        title: '手が止まった',
+        diagnosis: 'レビューが終わらず、出荷まで届きませんでした。',
+      });
+      expectNoShippingPraise(result);
+    });
+
+    it('実装中のまま 0 件なら、実装が終わらなかったと診断する', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'coding' })]);
+      calmZero(sprint, org);
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: '手が止まった',
+        diagnosis: '実装が終わらず、出荷まで届きませんでした。',
+      });
+    });
+
+    it('手戻りだけが残って 0 件なら、手戻りから戻せなかったと診断する', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'rework', wasReworked: true })]);
+      calmZero(sprint, org);
+      patchMetrics(sprint, { reworkCount: 2 });
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: '手が止まった',
+        diagnosis: '手戻りから戻せないまま、出荷できませんでした。',
+      });
+    });
+
+    it('炎上を鎮火しても 0 件なら、火消しをほめず炎上で止まったと診断する', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'rework', incident: false })]);
+      calmZero(sprint, org);
+      patchMetrics(sprint, { incidentCount: 3, actionCounts: { firefight: 3 } });
+      sprint.fireEvents = [
+        { tick: 1, kind: 'contain', taskId: 0, combo: 1 },
+        { tick: 2, kind: 'contain', taskId: 1, combo: 2 },
+        { tick: 3, kind: 'contain', taskId: 2, combo: 3 },
+      ];
+
+      const result = computeTitleAndDiagnosis(sprint, org);
+      expect(result).toEqual({
+        title: '手が止まった',
+        diagnosis: '炎上の対応に追われ、出荷まで届きませんでした。',
+      });
+      expectNoShippingPraise(result);
+    });
+
+    it('着手できないまま 0 件なら、コーダー不在以外の理由として着手できなかったと診断する', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog' })]);
+      calmZero(sprint, org);
+      expect(sprint.config.codingSlots).toBeGreaterThan(0);
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: '手が止まった',
+        diagnosis: '着手できないまま、出荷できませんでした。',
+      });
+    });
+
+    it('作業そのものが無い 0 件は、作業が無かったと診断する', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, []);
+      calmZero(sprint, org);
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: '手が止まった',
+        diagnosis: '出荷できる作業がありませんでした。',
+      });
+    });
+
+    it('0 件でも延焼が重いときは、静かな崩壊の診断を残す', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog' })]);
+      sprint.config.codingSlots = 0;
+      calmZero(sprint, org);
+      patchMetrics(sprint, { spread: 2 });
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: '静かな崩壊',
+        diagnosis: '障害が鎮火しきれず延焼し、技術的負債として積み上がっています。',
+      });
+    });
+
+    it('1 件以上出荷した回は、ノー残業の勇者と安定出荷の診断のまま', () => {
+      const org = createOrgState('default', false);
+      org.seniorHp = 95;
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'done' })]);
+      sprint.config.codingSlots = 0;
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 40,
+        doneCount: 1,
+        completedCount: 5,
+        reworkCount: 0,
+        incidentCount: 0,
+        spread: 0,
+        reviewQueueMax: 0,
+        maxCombo: 4,
+        aiAssistedCompleted: 0,
+        actionCounts: {},
+      });
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: 'ノー残業の勇者',
+        diagnosis: '無理のないペースで安定して出荷できています。',
+      });
+    });
+
+    it('1 件以上で AI を受け止めている回は、健全な加速者のまま', () => {
+      const org = createOrgState('default', true);
+      org.seniorHp = 100;
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'done', aiAssisted: true })]);
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 40,
+        doneCount: 8,
+        completedCount: 8,
+        reworkCount: 0,
+        incidentCount: 0,
+        spread: 0,
+        reviewQueueMax: 0,
+        maxCombo: 3,
+        aiAssistedCompleted: 4,
+        actionCounts: {},
+      });
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: '健全な加速者',
+        diagnosis: 'AIの加速を、レビューと品質が受け止められています。理想的な導入です。',
+      });
+    });
+
+    it('1 件以上で高コンボの回は、コンボ職人のまま', () => {
+      const org = createOrgState('default', false);
+      org.seniorHp = 100;
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'done' })]);
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 100,
+        doneCount: 20,
+        completedCount: 20,
+        reworkCount: 0,
+        incidentCount: 0,
+        spread: 0,
+        reviewQueueMax: 0,
+        maxCombo: 15,
+        aiAssistedCompleted: 0,
+        actionCounts: {},
+      });
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: 'コンボ職人',
+        diagnosis: '途切れない出荷でコンボを積み上げました。流れを支配しています。',
+      });
+    });
+
+    it('1 件以上で安定出荷の条件を外れた回は、見かけ上の生産性王のまま', () => {
+      const org = createOrgState('default', false);
+      org.seniorHp = 90;
+      const sprint = makeSprint(org, [makeTask(0, { lane: 'done' })]);
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 50,
+        doneCount: 10,
+        completedCount: 10,
+        reworkCount: 3,
+        incidentCount: 0,
+        spread: 0,
+        reviewQueueMax: 0,
+        maxCombo: 1,
+        aiAssistedCompleted: 0,
+        actionCounts: {},
+      });
+
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: '見かけ上の生産性王',
+        diagnosis: '数字は出ていますが、負債や手戻りが静かに積み上がっています。',
+      });
+    });
+  });
+
   describe('reviewOne / computeGrade 補強', () => {
     it('Done 路で doneCount/completedCount/morale を exact に更新する', () => {
       const rng = () => 0.99; // incident / rework 両方外す

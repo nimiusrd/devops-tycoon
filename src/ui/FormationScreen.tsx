@@ -7,12 +7,11 @@
  */
 import { useId, useRef } from 'react';
 import { getTrait } from '../data/traits';
-import { isShopOfferPresent, shouldShowOrgLeverHint } from '../render/orgLeverHintView';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { OrgLeverHintRow } from './OrgLeverHintRow';
-import { readOrgLeverHintSession } from './orgLeverHintSession';
+import { resolveOrgLeverHint } from './orgLeverHintSession';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { WhatIfPreview } from './WhatIfPreview';
 
@@ -239,12 +238,10 @@ export function FormationScreen({
 }: FormationScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
-  const hintSession = readOrgLeverHintSession(runEpoch);
-  const showOrgLeverHint = shouldShowOrgLeverHint({
+  const orgLeverHint = resolveOrgLeverHint({
+    epoch: runEpoch,
     quarterNumber: state.quarterNumber,
     budget: state.budget,
-    shopArrived: isShopOfferPresent(state) || hintSession.shopArrived,
-    dismissed: hintSession.dismissed,
     readOnly,
   });
   return (
@@ -262,7 +259,7 @@ export function FormationScreen({
           <div>
             <p className="result-eyebrow">FORMATION</p>
             <h2 className="draft-title">編成 — 誰をどこに置き、AIを誰に配るか</h2>
-            <OrgLeverHintRow eligible={showOrgLeverHint} dismissed={hintSession.dismissed} />
+            <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
           </div>
           <button
             type="button"

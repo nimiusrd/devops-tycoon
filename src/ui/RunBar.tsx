@@ -26,19 +26,15 @@ import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { formatSigned } from './formatSigned';
-import {
-  isShopOfferPresent,
-  ORG_LEVER_BUTTON_LABEL,
-  shouldShowOrgLeverHint,
-} from '../render/orgLeverHintView';
+import { ORG_LEVER_BUTTON_LABEL } from '../render/orgLeverHintView';
 import { useReplayContent } from './replayContent';
 import { RunSessionMenu } from './RunSessionMenu';
 import { PhraseText } from './PhraseText';
 import { VisualIcon } from './VisualIcon';
 import {
   dismissOrgLeverHint,
-  noteOrgLeverShopArrived,
-  readOrgLeverHintSession,
+  noteOrgLeverBudgetDepleted,
+  resolveOrgLeverHint,
 } from './orgLeverHintSession';
 
 const FEEDBACK_TTL_MS = 1600;
@@ -170,20 +166,17 @@ export function RunBar({
     [],
   );
 
-  const shopPresent = isShopOfferPresent(state);
   useEffect(() => {
-    // リプレイは別ランの shop キーフレームを同じ runEpoch で開く。到来を覚えると復帰後の Q1 案内が消える。
-    if (readOnly || !shopPresent) return;
-    noteOrgLeverShopArrived(runEpoch);
-  }, [readOnly, shopPresent, runEpoch]);
-  const orgLeverHintSession = readOrgLeverHintSession(runEpoch);
-  const showOrgLeverHint = shouldShowOrgLeverHint({
+    // リプレイの予算 0 を同じ runEpoch で覚えると、復帰後の Q1 案内が消える。
+    noteOrgLeverBudgetDepleted(runEpoch, state.budget, readOnly);
+  }, [readOnly, state.budget, runEpoch]);
+  const showOrgLeverHint = resolveOrgLeverHint({
+    epoch: runEpoch,
     quarterNumber: state.quarterNumber,
     budget: state.budget,
-    shopArrived: shopPresent || orgLeverHintSession.shopArrived,
-    dismissed: orgLeverHintDismissedEpoch === runEpoch || orgLeverHintSession.dismissed,
     readOnly,
-  });
+    opened: orgLeverHintDismissedEpoch === runEpoch,
+  }).show;
 
   const feedbackByKey = new Map(feedbacks.map((feedback) => [feedback.key, feedback]));
   const budgetFeedback = feedbackByKey.get('budget');

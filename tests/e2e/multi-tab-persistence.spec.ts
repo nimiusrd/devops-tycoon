@@ -12,6 +12,8 @@ type TabGameWindow = Window & {
     hasTabConflict(): boolean;
     startRun(difficulty?: string, trials?: string[], seed?: string): unknown;
     beginSetupSprint(): unknown;
+    pause(): void;
+    zoomTo(level: string): unknown;
     clearRunSave(): void;
     getPersistenceStatus(): unknown;
   };
@@ -57,6 +59,36 @@ async function storedRunSummary(page: Page): Promise<RunSaveSummary | null> {
   });
 }
 
+/** 句点で区切った語が、行をまたいで割れていないこと。 */
+async function wordsBrokenAcrossLines(page: Page, testId: string): Promise<string[]> {
+  return page.evaluate((id) => {
+    const root = document.querySelector(`[data-testid="${id}"]`);
+    if (!(root instanceof HTMLElement)) return ['missing'];
+    const broken: string[] = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let current = walker.nextNode();
+    while (current) {
+      const text = current.textContent ?? '';
+      const parts = text.split(/[。、！？\s]+/).filter((part) => part.length >= 2);
+      for (const part of parts) {
+        const start = text.indexOf(part);
+        if (start < 0) continue;
+        const range = document.createRange();
+        range.setStart(current, start);
+        range.setEnd(current, start + part.length);
+        const tops = new Set(
+          [...range.getClientRects()]
+            .filter((rect) => rect.width > 0 && rect.height > 0)
+            .map((rect) => Math.round(rect.top)),
+        );
+        if (tops.size > 1) broken.push(part);
+      }
+      current = walker.nextNode();
+    }
+    return broken;
+  }, testId);
+}
+
 test('古いタブの音切替では購入を巻き戻さず、競合を案内する', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   const other = await page.context().newPage();
@@ -90,6 +122,31 @@ test('古いタブの音切替では購入を巻き戻さず、競合を案内�
   await other.evaluate(() => (window as TabGameWindow).game?.setSoundMuted(false));
   await expect(other.getByTestId('tab-conflict-notice')).toBeVisible();
   await expect(other.getByTestId('tab-conflict-reload')).toBeVisible();
+  const banner = other.getByTestId('tab-conflict-notice');
+  const bannerBox = await banner.boundingBox();
+  expect(bannerBox).not.toBeNull();
+  expect(bannerBox!.height).toBeLessThanOrEqual(136);
+  await expect(banner).not.toHaveAttribute('role', 'alert');
+  expect(await banner.getAttribute('aria-live')).toBeNull();
+  const liveCount = await other.evaluate(() => {
+    return [...document.querySelectorAll('[aria-live]')].filter((element) =>
+      (element.textContent ?? '').includes('別のタブが記録を更新しました'),
+    ).length;
+  });
+  expect(liveCount).toBe(1);
+  const fontSize = await other.evaluate(() => {
+    const headline = document.querySelector('.persistence-notice-headline');
+    const detail = document.querySelector('.persistence-notice-detail');
+    if (!(headline instanceof HTMLElement) || !(detail instanceof HTMLElement)) return null;
+    return {
+      headline: Number.parseFloat(getComputedStyle(headline).fontSize),
+      detail: Number.parseFloat(getComputedStyle(detail).fontSize),
+    };
+  });
+  expect(fontSize).not.toBeNull();
+  expect(fontSize!.headline).toBeGreaterThanOrEqual(11);
+  expect(fontSize!.detail).toBeGreaterThanOrEqual(11);
+  expect(await wordsBrokenAcrossLines(other, 'tab-conflict-notice')).toEqual([]);
   const reload = await other.getByTestId('tab-conflict-reload').boundingBox();
   expect(reload).not.toBeNull();
   expect(reload!.width).toBeGreaterThanOrEqual(44);
@@ -109,7 +166,23 @@ test('古いタブの音切替では購入を巻き戻さず、競合を案内�
   });
 });
 
-test('320px の競合案内は復旧チップと HUD の上に重ならない', async ({ page }) => {
+async function sprintBoardBox(target: Page) {
+  return target.evaluate(() => {
+    const board = document.querySelector('[data-testid="board"]');
+    const stage = document.querySelector('[data-testid="sprint-slot-stage"]');
+    if (!(board instanceof HTMLElement) || !(stage instanceof HTMLElement)) return null;
+    const boardRect = board.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+    return {
+      boardY: boardRect.y,
+      boardHeight: boardRect.height,
+      stageY: stageRect.y,
+      stageHeight: stageRect.height,
+    };
+  });
+}
+
+test('320px の競合案内は盤面を動かさず、書き出しと再読込を一段に置く', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   const other = await page.context().newPage();
   await other.setViewportSize({ width: 320, height: 568 });
@@ -127,6 +200,25 @@ test('320px の競合案内は復旧チップと HUD の上に重ならない', 
   await page.goto('/?seed=multi-tab-layout-a');
   await other.goto('/?tutorial=off&seed=multi-tab-layout-b');
   await expect(other.getByTestId('title')).toBeVisible();
+  await other.evaluate(() => {
+    const game = (window as TabGameWindow).game;
+    if (!game) throw new Error('game missing');
+    game.startRun('easy', [], 'multi-tab-layout');
+    game.beginSetupSprint();
+    game.pause();
+  });
+  await expect(other.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
+  await expect(other.getByTestId('webgl-status')).toHaveCount(0);
+  await expect
+    .poll(async () => (await sprintBoardBox(other))?.boardHeight ?? 0)
+    .toBeGreaterThan(40);
+  await other.evaluate(() => (window as TabGameWindow).game?.zoomTo('company'));
+  await expect(other.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  await expect(other.getByTestId('crumb-team')).toBeVisible();
+
+  const before = await sprintBoardBox(other);
+  expect(before).not.toBeNull();
+
   expect(
     await page.evaluate(() => (window as TabGameWindow).game?.purchaseMetaUnlock('unlock-devin')),
   ).toEqual({ ok: true });
@@ -134,57 +226,112 @@ test('320px の競合案内は復旧チップと HUD の上に重ならない', 
   await other.evaluate(() => (window as TabGameWindow).game?.setSoundMuted(false));
   const banner = other.getByTestId('tab-conflict-notice');
   await expect(banner).toBeVisible();
+  await expect(other.getByTestId('tab-conflict-export')).toBeVisible();
+  await expect(other.getByTestId('tab-conflict-reload')).toBeVisible();
+
+  const after = await sprintBoardBox(other);
+  expect(after).not.toBeNull();
+  expect(Math.abs(after!.boardY - before!.boardY)).toBeLessThan(0.5);
+  expect(Math.abs(after!.boardHeight - before!.boardHeight)).toBeLessThan(0.5);
+  expect(Math.abs(after!.stageY - before!.stageY)).toBeLessThan(0.5);
+  expect(Math.abs(after!.stageHeight - before!.stageHeight)).toBeLessThan(0.5);
 
   const reserved = await other.evaluate(() => {
-    const height = getComputedStyle(document.documentElement)
-      .getPropertyValue('--persistence-banner-height')
-      .trim();
-    const box = document
-      .querySelector('[data-testid="tab-conflict-notice"]')
-      ?.getBoundingClientRect();
-    return { height, banner: box?.height ?? 0 };
-  });
-  expect(Number.parseFloat(reserved.height)).toBeGreaterThan(40);
-  expect(Math.abs(Number.parseFloat(reserved.height) - reserved.banner)).toBeLessThan(2);
-
-  await other.evaluate(() => {
-    const game = (window as TabGameWindow).game;
-    if (!game) throw new Error('game missing');
-    game.getPersistenceStatus = () => ({
-      state: 'saved',
-      tone: 'quiet',
-      headline: '保存済み',
-      detail: '保存済みデータを読み直せました。',
-      liveMessage: '保存済みデータを読み直せました。',
-      showRetry: false,
-      showExport: false,
-      persistent: false,
-    });
-    game.startRun('easy', [], 'multi-tab-layout');
-  });
-  await expect(other.getByTestId('persistence-quiet-slot')).toBeVisible();
-  await expect(other.getByTestId('hud')).toBeVisible();
-
-  const overlap = await other.evaluate(() => {
-    const bannerBox = document
-      .querySelector('[data-testid="tab-conflict-notice"]')
-      ?.getBoundingClientRect();
-    const hudBox = document.querySelector('[data-testid="hud"]')?.getBoundingClientRect();
-    const quietBox = document
-      .querySelector('[data-testid="persistence-quiet-slot"]')
-      ?.getBoundingClientRect();
+    const app = document.querySelector('.app-sprint-layout');
     return {
-      bannerBottom: bannerBox?.bottom ?? 0,
-      hudTop: hudBox?.top ?? 0,
-      quietTop: quietBox?.top ?? 0,
+      height: getComputedStyle(document.documentElement)
+        .getPropertyValue('--persistence-banner-height')
+        .trim(),
+      paddingTop: app instanceof HTMLElement ? getComputedStyle(app).paddingTop : '',
     };
   });
-  expect(overlap.hudTop).toBeGreaterThanOrEqual(overlap.bannerBottom - 1);
-  expect(overlap.quietTop).toBeGreaterThanOrEqual(overlap.bannerBottom - 1);
+  const bannerBox = await banner.boundingBox();
+  expect(bannerBox).not.toBeNull();
+  expect(bannerBox!.height).toBeLessThanOrEqual(136);
+  expect(Math.abs(Number.parseFloat(reserved.height) - bannerBox!.height)).toBeLessThan(2);
+  expect(Number.parseFloat(reserved.paddingTop)).toBe(0);
+  const crumb = await other.getByTestId('crumb-team').boundingBox();
+  expect(crumb).not.toBeNull();
+  expect(crumb!.y).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height - 1);
+  expect(crumb!.height).toBeGreaterThan(0);
   await other.screenshot({
-    path: '/opt/cursor/artifacts/tab-conflict-quiet-320.png',
+    path: '/opt/cursor/artifacts/tab-conflict-board-320.png',
     fullPage: true,
   });
+  await other.evaluate(() => {
+    const copy = document.querySelector(
+      '[data-testid="tab-conflict-notice"] .persistence-notice-copy',
+    );
+    const error = document.createElement('p');
+    error.className = 'persistence-notice-detail';
+    error.dataset.testid = 'tab-conflict-export-error';
+    error.textContent = '途中セーブをファイルに保存できませんでした。';
+    copy?.appendChild(error);
+  });
+  const withError = await banner.boundingBox();
+  expect(withError).not.toBeNull();
+  expect(withError!.height).toBeLessThanOrEqual(136);
+  await expect
+    .poll(async () => {
+      const errorBox = await banner.boundingBox();
+      const crumbBox = await other.getByTestId('crumb-team').boundingBox();
+      if (!errorBox || !crumbBox) return -1;
+      return crumbBox.y - (errorBox.y + errorBox.height);
+    })
+    .toBeGreaterThanOrEqual(-1);
+  const afterError = await sprintBoardBox(other);
+  expect(Math.abs(afterError!.boardY - before!.boardY)).toBeLessThan(0.5);
+  expect(Math.abs(afterError!.stageHeight - before!.stageHeight)).toBeLessThan(0.5);
+  await expect(banner).not.toHaveAttribute('role', 'alert');
+  expect(await banner.getAttribute('aria-live')).toBeNull();
+
+  const exportBox = await other.getByTestId('tab-conflict-export').boundingBox();
+  const reloadBox = await other.getByTestId('tab-conflict-reload').boundingBox();
+  expect(exportBox).not.toBeNull();
+  expect(reloadBox).not.toBeNull();
+  expect(exportBox!.height).toBeGreaterThanOrEqual(44);
+  expect(reloadBox!.height).toBeGreaterThanOrEqual(44);
+  expect(Math.abs(exportBox!.y - reloadBox!.y)).toBeLessThan(1);
+  expect(exportBox!.x + exportBox!.width).toBeLessThanOrEqual(reloadBox!.x + 1);
+  expect(reloadBox!.x + reloadBox!.width).toBeLessThanOrEqual(320);
+
+  const fontSize = await other.evaluate(() => {
+    const headline = document.querySelector(
+      '[data-testid="tab-conflict-notice"] .persistence-notice-headline',
+    );
+    const detail = document.querySelector(
+      '[data-testid="tab-conflict-notice"] .persistence-notice-detail',
+    );
+    const button = document.querySelector('[data-testid="tab-conflict-reload"]');
+    if (
+      !(headline instanceof HTMLElement) ||
+      !(detail instanceof HTMLElement) ||
+      !(button instanceof HTMLElement)
+    ) {
+      return null;
+    }
+    return {
+      headline: Number.parseFloat(getComputedStyle(headline).fontSize),
+      detail: Number.parseFloat(getComputedStyle(detail).fontSize),
+      button: Number.parseFloat(getComputedStyle(button).fontSize),
+    };
+  });
+  expect(fontSize).not.toBeNull();
+  expect(fontSize!.headline).toBeGreaterThanOrEqual(11);
+  expect(fontSize!.detail).toBeGreaterThanOrEqual(11);
+  expect(fontSize!.button).toBeGreaterThanOrEqual(11);
+  expect(await wordsBrokenAcrossLines(other, 'tab-conflict-notice')).toEqual([]);
+  const liveCount = await other.evaluate(
+    () =>
+      [...document.querySelectorAll('[aria-live]')].filter((element) =>
+        (element.textContent ?? '').includes('別のタブが記録を更新しました'),
+      ).length,
+  );
+  expect(liveCount).toBe(1);
+  const fits = await other.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+  );
+  expect(fits).toBe(true);
 });
 
 test('古いタブは途中セーブを破棄できず、閉じたあとに引き継げる', async ({ page }) => {

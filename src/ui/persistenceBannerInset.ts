@@ -2,6 +2,8 @@
  * 常駐の保存バナーは body へ portal され position: fixed なので、
  * タイトルのフローには乗らない。実高さを CSS 変数へ渡し、タイトルだけ上を空ける（DS-06）。
  * 操作のない復旧チップは幅いっぱいに被さらないため、余白には使わない。
+ * 別タブの競合案内も高さは残す。スプリント盤面の余白だけ CSS で打ち消し、
+ * 俯瞰のパンくずがバナーに隠れないようにする。
  */
 export const PERSISTENCE_BANNER_HEIGHT_VAR = '--persistence-banner-height';
 

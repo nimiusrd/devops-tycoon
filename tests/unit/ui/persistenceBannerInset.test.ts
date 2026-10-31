@@ -21,11 +21,12 @@ function createRoot() {
   return { props, root };
 }
 
-function banner(height: number, persistent: boolean) {
+function banner(height: number, persistent: boolean, layout?: string) {
   return {
     persistent,
     getAttribute(name: string) {
       if (name === 'data-persistent') return persistent ? 'true' : 'false';
+      if (name === 'data-layout') return layout ?? null;
       return null;
     },
     getBoundingClientRect: () => ({ height }),
@@ -53,6 +54,14 @@ describe('persistenceBannerInset', () => {
     stop();
     expect(props[PERSISTENCE_BANNER_HEIGHT_VAR]).toBeUndefined();
     clearPersistenceBannerHeight(root);
+  });
+
+  it('別タブの競合案内も俯瞰の戻る導線用に高さを残す', () => {
+    const { props, root } = createRoot();
+    const stop = observePersistenceBannerHeight(banner(118, true, 'overlay'), root);
+    expect(props[PERSISTENCE_BANNER_HEIGHT_VAR]).toBe('118px');
+    stop();
+    expect(props[PERSISTENCE_BANNER_HEIGHT_VAR]).toBeUndefined();
   });
 
   it('バナーが無いときは変数を外す', () => {

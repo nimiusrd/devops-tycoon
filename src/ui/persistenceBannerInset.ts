@@ -2,6 +2,7 @@
  * 常駐の保存バナーは body へ portal され position: fixed なので、
  * タイトルのフローには乗らない。実高さを CSS 変数へ渡し、タイトルだけ上を空ける（DS-06）。
  * 操作のない復旧チップは幅いっぱいに被さらないため、余白には使わない。
+ * 別タブの競合案内は data-layout="overlay" で盤面へ重ね、行を足して押し下げない。
  */
 export const PERSISTENCE_BANNER_HEIGHT_VAR = '--persistence-banner-height';
 
@@ -25,6 +26,7 @@ export function clearPersistenceBannerHeight(root: StyleRoot = document.document
 }
 
 function reservesTitleSpace(banner: Element): boolean {
+  if (banner.getAttribute('data-layout') === 'overlay') return false;
   return banner.getAttribute('data-persistent') === 'true';
 }
 

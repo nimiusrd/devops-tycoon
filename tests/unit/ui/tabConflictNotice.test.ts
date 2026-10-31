@@ -32,6 +32,9 @@ describe('別タブ競合の案内', () => {
     );
     expect(notice?.props['data-tone']).toBe('warn');
     expect(notice?.props['data-persistent']).toBe('true');
+    expect(notice?.props['data-layout']).toBe('overlay');
+    expect(notice?.props.role).toBeUndefined();
+    expect(notice?.props['aria-live']).toBeUndefined();
     expect(elements(node).some((element) => element.props.children === '再試行')).toBe(false);
     expect(button?.type).toBe('button');
     (button?.props.onClick as () => void)();
@@ -60,6 +63,8 @@ describe('別タブ競合の案内', () => {
       (element) => element.props['data-testid'] === 'tab-conflict-notice',
     );
     expect(conflict?.props['data-persistent']).toBe('true');
+    expect(conflict?.props['data-layout']).toBe('overlay');
+    expect(conflict?.props.role).toBeUndefined();
     expect(conflict?.props.ref).toEqual(expect.any(Function));
     expect(
       elements(node).some((element) => element.props['data-testid'] === 'persistence-retry'),
@@ -95,7 +100,17 @@ describe('別タブ競合の案内', () => {
     const live = elements(node).find(
       (element) => element.props['data-testid'] === 'persistence-live',
     );
+    expect(live?.props['aria-live']).toBe('polite');
     expect(String(live?.props.children)).toContain('ファイルを書き出せませんでした。');
+    expect(String(live?.props.children)).toContain('別のタブが記録を更新しました');
+    const conflict = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-notice',
+    );
+    expect(conflict?.props.role).toBeUndefined();
+    expect(conflict?.props['aria-live']).toBeUndefined();
+    expect(elements(conflict).some((element) => element.props['aria-live'] !== undefined)).toBe(
+      false,
+    );
     expect(
       elements(node).some(
         (element) => element.props['data-testid'] === 'tab-conflict-export-error',

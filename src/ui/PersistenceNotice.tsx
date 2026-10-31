@@ -91,8 +91,9 @@ export function PersistenceNotice({
   tabConflict = false,
   onTakeOver,
 }: PersistenceNoticeProps) {
-  const conflictText =
-    '別のタブが記録を更新しました。このタブの変更は保存していません。再読込して引き継げます。';
+  const conflictText = notice.showExport
+    ? '別のタブが記録を更新しました。このタブの変更は保存していません。未保存のデータは破棄されます。残す場合は先に書き出してください。'
+    : '別のタブが記録を更新しました。このタブの変更は保存していません。再読込して引き継げます。';
   const liveText = tabConflict
     ? [conflictText, exportMessage].filter((part) => part).join(' ')
     : exportMessage

@@ -5487,6 +5487,51 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
+/* 別タブの競合は上へ重ねる。文は句点でのみ折り返し、書き出しと再読込は一段に置く。 */
+.persistence-notice[data-state='conflict'] {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px 8px;
+}
+.persistence-notice-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+.persistence-notice[data-state='conflict'] .persistence-notice-headline,
+.persistence-notice[data-state='conflict'] .persistence-notice-detail {
+  flex: none;
+  width: auto;
+  font-size: 12px;
+  line-height: 1.2;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+}
+.persistence-notice[data-state='conflict'] .persistence-notice-headline {
+  font-size: 13px;
+  font-weight: 800;
+}
+.persistence-notice-actions {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+.persistence-notice-actions .btn {
+  flex: 1 1 auto;
+  min-width: max-content;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+  word-break: keep-all;
+  line-height: 1.2;
+}
 @media (prefers-reduced-motion: reduce) {
   .persistence-notice {
     animation: none;

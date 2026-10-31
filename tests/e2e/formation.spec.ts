@@ -345,9 +345,9 @@ for (const viewport of [
       if (!text) throw new Error('準備画面のセーブを取得できない');
       return text;
     });
-    const withBoss = (saved: string, returns: boolean) => {
+    const withKind = (saved: string, kind: 'boss' | 'elite', returns: boolean) => {
       const save = JSON.parse(saved) as RunSave;
-      save.state.pendingSprintKind = 'boss';
+      save.state.pendingSprintKind = kind;
       const teamId = save.state.extras.activeTeamId;
       if (!teamId) throw new Error('選択中チームがない');
       if (returns) {
@@ -362,7 +362,7 @@ for (const viewport of [
       }
       return JSON.stringify(save);
     };
-    const names = (JSON.parse(withBoss(raw, true)) as RunSave).state.roster.members
+    const names = (JSON.parse(withKind(raw, 'boss', true)) as RunSave).state.roster.members
       .slice(0, 3)
       .map((member) => member.name);
     const speech = names.map((name) => `${name}が復帰しました（ベンチ）`).join('');
@@ -422,11 +422,11 @@ for (const viewport of [
         });
       });
 
-    const withoutNotice = await openSetup(withBoss(raw, false), 'plain');
+    const withoutNotice = await openSetup(withKind(raw, 'boss', false), 'plain');
     await expect(withoutNotice.locator('.formation-setup-hint')).toContainText('次はボス');
     const before = await positions(withoutNotice);
 
-    const setup = await openSetup(withBoss(raw, true), 'return', true);
+    const setup = await openSetup(withKind(raw, 'boss', true), 'return', true);
     const hint = setup.locator('.formation-setup-copy .formation-setup-hint');
     await expect(hint).toBeVisible();
     await expect(hint).toContainText('次はボス');
@@ -437,42 +437,27 @@ for (const viewport of [
     expect(fit.scrollHeight, '復帰通知でヒント枠をスクロールさせない').toBeLessThanOrEqual(
       fit.clientHeight,
     );
-    const hintLines = await hint.evaluate((element) => {
-      const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight);
-      return element.clientHeight / lineHeight;
-    });
-    if (hintLines > 1.5) {
-      const summary = setup.getByTestId('leave-return-summary');
-      await expect(summary).toBeVisible();
-      await expect(summary).toHaveText(`${names[0]}ほか2人がベンチに復帰しました`);
-      const summaryFit = await summary.evaluate((element) => ({
-        scrollHeight: element.scrollHeight,
-        clientHeight: element.clientHeight,
-      }));
-      expect(summaryFit.scrollHeight).toBeLessThanOrEqual(summaryFit.clientHeight);
-      const coversWarning = await page.evaluate(() => {
-        const warning = document.querySelector('.formation-setup-copy .formation-setup-hint');
-        const line = document.querySelector('[data-testid="leave-return-summary"]');
-        if (!warning || !line) return true;
-        const walker = document.createTreeWalker(warning, NodeFilter.SHOW_TEXT);
-        const label = '次はボス';
-        let node = walker.nextNode();
-        while (node) {
-          const index = node.textContent?.indexOf(label) ?? -1;
-          if (index >= 0) {
-            const range = document.createRange();
-            range.setStart(node, index);
-            range.setEnd(node, index + label.length);
-            const textBox = range.getBoundingClientRect();
-            const summaryBox = line.getBoundingClientRect();
-            return !(textBox.bottom <= summaryBox.top + 1 || textBox.top >= summaryBox.bottom - 1);
-          }
-          node = walker.nextNode();
-        }
-        return true;
+    const warningCovered = async (warning: Locator) =>
+      warning.evaluate((element) => {
+        const summary = document.querySelector('[data-testid="leave-return-summary"]');
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const boxes = [...range.getClientRects()].filter((box) => box.width > 0 && box.height > 0);
+        if (boxes.length === 0) return true;
+        if (!summary) return false;
+        const summaryBox = summary.getBoundingClientRect();
+        return boxes.some(
+          (box) =>
+            box.bottom > summaryBox.top + 1 &&
+            box.top < summaryBox.bottom - 1 &&
+            box.right > summaryBox.left + 1 &&
+            box.left < summaryBox.right - 1,
+        );
       });
-      expect(coversWarning, 'ボスの警告の先頭を復帰通知で隠さない').toBe(false);
-    }
+    await expect(hint).toHaveText(
+      '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。',
+    );
+    expect(await warningCovered(hint), 'ボスの警告の全文を復帰の要約で覆わない').toBe(false);
     await expect(setup.getByTestId('leave-return-status')).toHaveText(speech);
     await expect(setup.getByRole('alert')).toHaveCount(0);
     const liveLog = await page.evaluate(
@@ -481,6 +466,21 @@ for (const viewport of [
     expect(liveLog[0], '編成画面は空の読み上げ領域で開く').toBe('');
     expect(liveLog.filter((entry) => entry.length > 0)).toEqual([speech]);
     expect(await positions(setup), '通知の有無で開始と編成の位置を変えない').toEqual(before);
+    if (viewport.width !== 320) return;
+    const eliteWarning =
+      '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。';
+    const elitePlain = await openSetup(withKind(raw, 'elite', false), 'elite-plain');
+    const eliteBefore = await positions(elitePlain);
+    const eliteSetup = await openSetup(withKind(raw, 'elite', true), 'elite-return');
+    const eliteHint = eliteSetup.locator('.formation-setup-copy .formation-setup-hint');
+    await expect(eliteHint).toHaveText(eliteWarning);
+    expect(await warningCovered(eliteHint), '高負荷の警告の全文を復帰の要約で覆わない').toBe(false);
+    const eliteFit = await eliteSetup.locator('.formation-setup-copy').evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    }));
+    expect(eliteFit.scrollHeight).toBeLessThanOrEqual(eliteFit.clientHeight);
+    expect(await positions(eliteSetup), '高負荷前も通知で開始位置を変えない').toEqual(eliteBefore);
   });
 }
 

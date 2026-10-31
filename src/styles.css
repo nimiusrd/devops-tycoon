@@ -6773,6 +6773,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   right: 0;
   bottom: 0;
   left: 0;
+  display: flex;
   height: 1.45em;
   margin: 0;
   overflow: hidden;
@@ -6781,9 +6782,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-weight: 800;
   line-height: 1.45;
   white-space: nowrap;
-  text-overflow: ellipsis;
   pointer-events: none;
   background: var(--panel);
+}
+.leave-return-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.leave-return-tail {
+  flex: none;
 }
 .leave-return-slot {
   position: absolute;

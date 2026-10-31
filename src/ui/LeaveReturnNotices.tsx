@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { leaveReturnSpeech, leaveReturnSummary } from '../render/leaveReturnNoticeView';
+import { leaveReturnSpeech, leaveReturnSummaryParts } from '../render/leaveReturnNoticeView';
 import { planLeaveReturnNotices } from '../sim/member';
 import type { LeaveReturnNotice } from '../sim/member/types';
 import {
@@ -22,7 +22,8 @@ export function LeaveReturnNotices({
 }) {
   const unique = planLeaveReturnNotices(notices, []);
   const speech = leaveReturnSpeech(unique);
-  const summary = leaveReturnSummary(unique);
+  const summary = leaveReturnSummaryParts(unique);
+  const copyRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLParagraphElement>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [spoken, setSpoken] = useState(() =>
@@ -31,14 +32,17 @@ export function LeaveReturnNotices({
 
   useLayoutEffect(() => {
     const hintEl = hintRef.current;
-    if (!hintEl || unique.length === 0) {
+    const copyEl = copyRef.current;
+    if (!hintEl || !copyEl || unique.length === 0) {
       setShowSummary(false);
       return;
     }
     const lineHeight = Number.parseFloat(getComputedStyle(hintEl).lineHeight);
-    // 下端の1行を通知に使っても、警告の先頭行が残るときだけ重ねる。
-    setShowSummary(Number.isFinite(lineHeight) && hintEl.clientHeight > lineHeight + 1);
-  }, [hint, summary, unique.length]);
+    // 警告の本文に1行を足しても枠へ収まるときだけ、要約を出す。
+    setShowSummary(
+      Number.isFinite(lineHeight) && hintEl.scrollHeight + lineHeight <= copyEl.clientHeight + 1,
+    );
+  }, [hint, summary?.name, summary?.tail, unique.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,13 +69,14 @@ export function LeaveReturnNotices({
   }, [speech]);
 
   return (
-    <div className="formation-setup-copy">
+    <div ref={copyRef} className="formation-setup-copy">
       <p ref={hintRef} className="formation-setup-hint">
         {hint}
       </p>
       {showSummary && (
         <p className="leave-return-summary" data-testid="leave-return-summary" aria-hidden="true">
-          {summary}
+          <span className="leave-return-name">{summary.name}</span>
+          <span className="leave-return-tail">{summary.tail}</span>
         </p>
       )}
       <div

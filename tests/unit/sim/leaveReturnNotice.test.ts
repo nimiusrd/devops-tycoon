@@ -88,7 +88,7 @@ describe('休職復帰の通知計画', () => {
     expect(planLeaveReturnNotices(returned, ['m0', 'm1'])).toEqual([]);
     const visible = planLeaveReturnNotices(returned, []);
     expect(leaveReturnSummary(visible)).toBe('アオイほか1人がベンチに復帰しました');
-    expect(leaveReturnSummary(visible.slice(0, 1))).toBe('アオイが復帰しました（ベンチ）');
+    expect(leaveReturnSummary(visible.slice(0, 1))).toBe('アオイがベンチに復帰しました');
     expect(leaveReturnSpeech(visible)).toBe(
       'アオイが復帰しました（ベンチ）ハルキが復帰しました（ベンチ）',
     );

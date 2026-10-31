@@ -17,12 +17,20 @@ export function leaveReturnNoticeText(name: string): string {
   return leaveReturnNoticePhrases(name).join('');
 }
 
-/** 見た目用。複数人は先頭の名前と人数だけを1行にする。 */
-export function leaveReturnSummary(notices: readonly LeaveReturnNotice[]): string {
+/** 見た目用。省略してよいのは名前だけで、文は「ベンチに復帰しました」で終わる。 */
+export function leaveReturnSummaryParts(
+  notices: readonly LeaveReturnNotice[],
+): { name: string; tail: string } | null {
   const first = notices[0];
-  if (!first) return '';
-  if (notices.length === 1) return leaveReturnNoticeText(first.name);
-  return `${first.name}ほか${notices.length - 1}人がベンチに復帰しました`;
+  if (!first) return null;
+  if (notices.length === 1) return { name: first.name, tail: 'がベンチに復帰しました' };
+  return { name: first.name, tail: `ほか${notices.length - 1}人がベンチに復帰しました` };
+}
+
+/** 見た目用の1行。複数人は先頭の名前と人数だけにする。 */
+export function leaveReturnSummary(notices: readonly LeaveReturnNotice[]): string {
+  const parts = leaveReturnSummaryParts(notices);
+  return parts ? `${parts.name}${parts.tail}` : '';
 }
 
 /** 読み上げ用。戻った人すべての名前を一度ずつ含める。 */

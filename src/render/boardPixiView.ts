@@ -110,12 +110,46 @@ export function boardDotPreviewRing(size: TaskSize, scale: number) {
 export const DOT_HIT_MARGIN = VISUAL_TOKENS.dimensions.sprint.dotHitMargin;
 
 /**
+ * 小さい粒の画面上直径が最小値を下回るとき、粒と山の間隔へかける倍率。
+ * 広い盤面（contain-fit 0.5 以上）では 1 で、構える前の配置を変えない。
+ */
+export function boardDotReadabilityMagnification(cssScale: number): number {
+  if (!Number.isFinite(cssScale) || cssScale <= 0) return 1;
+  const minCss = VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter;
+  const natural = VISUAL_TOKENS.dimensions.sprint.taskDiameter.small * cssScale;
+  if (natural >= minCss) return 1;
+  return minCss / natural;
+}
+
+/** 画面上の粒直径。倍率 1 のときは設計直径×縮尺のまま。 */
+export function boardDotCssDiameter(size: TaskSize, cssScale: number): number {
+  return TASK_DIAMETER[size] * cssScale * boardDotReadabilityMagnification(cssScale);
+}
+
+/**
+ * 見分けの倍率で、山（またはフロー）の基準点から粒を広げた座標。
+ * 倍率 1 のときは同じオブジェクトを返す。
+ */
+export function presentBoardDot(dot: BoardDotPlan, cssScale: number): BoardDotPlan {
+  const magnification = boardDotReadabilityMagnification(cssScale);
+  if (magnification === 1) return dot;
+  const anchorX = dot.clusterX ?? dot.x;
+  const anchorY = dot.clusterY ?? dot.y;
+  return {
+    ...dot,
+    x: anchorX + (dot.x - anchorX) * magnification,
+    y: anchorY + (dot.y - anchorY) * magnification,
+  };
+}
+
+/**
  * 設計座標の点から、掴めるタスク粒を特定する（RI-30 のドラッグ開始判定）。
  *
  * 粒半径＋設計マージンを保ちつつ、各軸で画面上24px以上の操作領域を確保する。
  * 実際の円内なら後から描かれた粒を優先する。円外の拡張領域だけが重なった場合は
  * 画面上の中心距離が最短の粒、同距離なら後から描かれた粒を返す。
  * scale は設計座標から CSS px への軸ごとの縮尺。
+ * 縮小盤面では描画と同じ倍率で中心と見た目の半径を広げる。
  */
 export function hitTestBoardDot(
   pt: BoardPoint,
@@ -126,15 +160,21 @@ export function hitTestBoardDot(
   if (!Number.isFinite(scale.x) || !Number.isFinite(scale.y) || scale.x <= 0 || scale.y <= 0) {
     return null;
   }
+  // 実盤面は等方の contain-fit。軸が違う矩形は実機の盤面ではないので拡大しない。
+  const minor = Math.min(scale.x, scale.y);
+  const major = Math.max(scale.x, scale.y);
+  const cssScale = major <= minor * 1.05 ? minor : 1;
+  const magnification = boardDotReadabilityMagnification(cssScale);
   const minimumRadius = VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter / 2;
   let nearestId: number | null = null;
   let nearestDistance = Infinity;
   for (let i = dots.length - 1; i >= 0; i -= 1) {
     const dot = dots[i];
     if (!draggableIds.has(dot.id)) continue;
-    const visibleRadius = TASK_DIAMETER[dot.size] / 2;
-    const designDx = pt.x - dot.x;
-    const designDy = pt.y - dot.y;
+    const presented = presentBoardDot(dot, cssScale);
+    const visibleRadius = (TASK_DIAMETER[dot.size] / 2) * magnification;
+    const designDx = pt.x - presented.x;
+    const designDy = pt.y - presented.y;
     if (designDx * designDx + designDy * designDy <= visibleRadius * visibleRadius) {
       return dot.id;
     }

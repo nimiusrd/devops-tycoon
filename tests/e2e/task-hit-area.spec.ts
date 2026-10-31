@@ -1,5 +1,6 @@
 import { beginPublicSprint, expect, test } from './fixtures';
 import { BOARD_STATION_CENTERS, BOARD_VIEW, planBoardScene } from '../../src/render/boardScene';
+import { boardDotReadabilityMagnification, presentBoardDot } from '../../src/render/boardPixiView';
 import { TASK_DIAMETER } from '../../src/render/taskView';
 import { assignableTasks, splitPrCandidates } from '../../src/sim/assignTask';
 
@@ -30,7 +31,11 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       const box = await board.boundingBox();
       if (!sprint || !box) throw new Error('盤面の状態と位置を取得できない');
       const candidates = new Set(splitPrCandidates(sprint).map((task) => task.id));
-      const dots = planBoardScene(sprint.tasks).dots.filter((dot) => candidates.has(dot.id));
+      const cssScale = Math.min(box.width / BOARD_VIEW.w, box.height / BOARD_VIEW.h);
+      const magnification = boardDotReadabilityMagnification(cssScale);
+      const dots = planBoardScene(sprint.tasks)
+        .dots.filter((dot) => candidates.has(dot.id))
+        .map((dot) => presentBoardDot(dot, cssScale));
       const front = dots.find((dot) => dot.id === viewport.frontId)!;
       const behind = dots.find((dot) => dot.id === viewport.behindId)!;
       expect(front).toBeDefined();
@@ -42,14 +47,16 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
         y: front.y + (behind.y - front.y) * 0.51,
       };
       expect(Math.hypot(point.x - front.x, point.y - front.y)).toBeLessThan(
-        TASK_DIAMETER[front.size] / 2,
+        (TASK_DIAMETER[front.size] / 2) * magnification,
       );
       expect(Math.hypot(point.x - behind.x, point.y - behind.y)).toBeLessThan(
         Math.hypot(point.x - front.x, point.y - front.y),
       );
       expect(
         dots.findLast(
-          (dot) => Math.hypot(point.x - dot.x, point.y - dot.y) <= TASK_DIAMETER[dot.size] / 2,
+          (dot) =>
+            Math.hypot(point.x - dot.x, point.y - dot.y) <=
+            (TASK_DIAMETER[dot.size] / 2) * magnification,
         )?.id,
       ).toBe(front.id);
       const x = box.x + (point.x / BOARD_VIEW.w) * box.width;
@@ -90,8 +97,10 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
           (task) => task.id,
         ),
       );
+      const cssScale = Math.min(box.width / BOARD_VIEW.w, box.height / BOARD_VIEW.h);
       const dots = planBoardScene(sprint.tasks)
         .dots.filter((dot) => candidates.has(dot.id))
+        .map((dot) => presentBoardDot(dot, cssScale))
         .map((dot) => ({
           id: dot.id,
           x: box.x + (dot.x / BOARD_VIEW.w) * box.width,

@@ -2196,9 +2196,26 @@ body:has(.overlay-contained) {
   background: #ffd45c22;
   color: #ffd45c;
 }
-/* 対象一覧は武装中だけ全幅へ折り返す。平常時の nowrap 契約は維持する。 */
-.actionbar:has(.action-target-picker) {
+/*
+ * 狭幅では武装中の対象一覧を全幅の段にする。広幅はアクションバーの上に重ね、
+ * 盤面の高さを奪わない（#918）。平常時の nowrap 契約は維持する。
+ */
+.actionbar[data-responsive-width='narrow']:has(.action-target-picker) {
   flex-wrap: wrap;
+}
+.actionbar[data-responsive-width='wide']:has(.action-target-picker) {
+  position: relative;
+  /* 盤面の最前面より上、結果オーバーレイより下。 */
+  z-index: var(--visual-layer-sprint-action-bar-armed);
+}
+.actionbar[data-responsive-width='wide'] .action-target-picker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* SprintLayout の段間 gap と同じ 8px。盤面側へ重ね、バーの高さは変えない。 */
+  bottom: calc(100% + 8px);
+  z-index: 1;
+  flex: none;
 }
 .action-target-picker {
   flex: 1 1 100%;

@@ -18,6 +18,7 @@ import {
   BOARD_PIXI_LAYER_ORDER,
   BOARD_RENDER_BUDGETS,
 } from '../../../src/render/boardRenderBudget';
+import { presentBoardDot } from '../../../src/render/boardPixiView';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import type { Task } from '../../../src/sim/types';
 
@@ -599,8 +600,10 @@ describe('Pixi スプリント盤面レンダラー', () => {
     const groups = layer(app, 'dots').children;
     const candidate = groups[0];
     const preview = groups[1];
-    expect(preview.position.x).toBe(scene.dots[0].x);
-    expect(candidate.position.x).toBe(scene.dots[1].x);
+    const narrowScale = 0.208;
+    expect(preview.position.x).toBe(presentBoardDot(scene.dots[0], narrowScale).x);
+    expect(candidate.position.x).toBe(presentBoardDot(scene.dots[1], narrowScale).x);
+    expect(sprite(preview).scale.x).toBeGreaterThan(1);
     expect(drawCalls(graphics(candidate, 1), 'stroke')).toHaveLength(1);
     const rings = graphics(preview, 1);
     const strokes = drawCalls(rings, 'stroke').map(([stroke]) => stroke);
@@ -618,6 +621,12 @@ describe('Pixi スプリント盤面レンダラー', () => {
     }
     expect(latest().previewTaskId).toBe(1);
     expect(scene.dots).toEqual(original);
+
+    renderer.resize(BOARD_VIEW.w, BOARD_VIEW.h);
+    renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]), previewTaskId: 1 }));
+    const restored = layer(app, 'dots').children;
+    expect(restored[1].position.x).toBe(scene.dots[0].x);
+    expect(sprite(restored[1]).scale.x).toBe(1);
 
     renderer.render(input({ scene, previewTaskId: 999 }));
     expect(latest().previewTaskId).toBeNull();

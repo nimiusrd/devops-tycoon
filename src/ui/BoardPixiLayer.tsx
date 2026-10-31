@@ -21,6 +21,7 @@ declare global {
       freezeForScreenshot(): void;
       getMetrics(): { base: BoardRenderMetrics; effects: BoardRenderMetrics };
       getAtmosphereMetrics(): BoardAtmosphereMetrics;
+      getDotReadability(): { scale: number; magnification: number };
     };
     /** Playwright が WebGL 初期化失敗を決定論的に注入するためのフック。 */
     __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
@@ -207,6 +208,7 @@ export function BoardPixiLayer({
             },
             getMetrics: () => ({ base: baseMetrics, effects: effectMetrics }),
             getAtmosphereMetrics: () => baseRenderer.getAtmosphereMetrics(),
+            getDotReadability: () => baseRenderer.getDotReadability(),
           };
         }
       })

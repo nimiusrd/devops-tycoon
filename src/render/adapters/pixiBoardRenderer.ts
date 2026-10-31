@@ -31,12 +31,14 @@ import {
   actorTextureKey,
   boardAnimationElapsedMs,
   boardDotPreviewRing,
+  boardDotReadabilityMagnification,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
   flowDriftOffset,
   lineDashSegments,
   planBoardDotsForRender,
+  presentBoardDot,
 } from '../boardPixiView';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
 import { BoardTaskMotion, shipmentParticle, TASK_MOTION } from '../boardTaskMotion';
@@ -257,6 +259,7 @@ function getDotParts(group: Container): DotParts {
 
 function resetDotContainer(group: Container): void {
   const parts = getDotParts(group);
+  parts.sprite.scale.set(1);
   parts.ring.clear();
   parts.flame.visible = false;
   group.rotation = 0;
@@ -785,6 +788,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   /** 直近 render の入力（resize 後の再描画用）。 */
   getLastInput(): BoardPixiInput | null {
     return this.lastInput;
+  }
+
+  /** 粒の contain-fit 縮尺と、見分けのための拡大倍率。 */
+  getDotReadability(): { scale: number; magnification: number } {
+    const scale = this.root.scale.x;
+    return { scale, magnification: boardDotReadabilityMagnification(scale) };
   }
 
   /** dev/E2E が必要な時だけ読み、毎フレーム DOM を更新しない。 */
@@ -1339,20 +1348,24 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const pinned = new Set(draggableIds);
     if (dragTaskId !== null) pinned.add(dragTaskId);
     if (previewTaskId !== null) pinned.add(previewTaskId);
+    const cssScale = this.root.scale.x;
+    const magnification = boardDotReadabilityMagnification(cssScale);
+    const presentedDots = renderPlan.dots.map((dot) => presentBoardDot(dot, cssScale));
     this.taskMotion.sync(
-      renderPlan.dots,
+      presentedDots,
       this.elapsedMs,
       this.reducedMotion || this.frozen || this.loopPaused,
       pinned,
     );
 
-    for (const dot of renderPlan.dots) {
+    for (const dot of presentedDots) {
       const group = pool.acquire();
       if (!group) break;
       const parts = getDotParts(group);
       const d = TASK_DIAMETER[dot.size];
 
       parts.sprite.texture = this.dotTexture(dot.variant, dot.size);
+      parts.sprite.scale.set(magnification);
       group.position.set(dot.x, dot.y);
 
       const draggable = draggableIds.has(dot.id);
@@ -1371,7 +1384,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         });
       } else if (draggable || dragging) {
         // CSS `.task-dot.draggable` の outline（2px シアン / ドラッグ中は金色）。
-        parts.ring.circle(0, 0, d / 2 + 3).stroke({
+        parts.ring.circle(0, 0, (d / 2) * magnification + 3).stroke({
           color: dragging ? VISUAL_TOKENS.colors.sun : VISUAL_TOKENS.colors.interaction.drag,
           width: 2,
           alpha: dragging ? 1 : 0.67,
@@ -1383,7 +1396,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         // CSS `.flame`: font-size 0.75〜1.1em を焼き込みサイズ比で近似。
         const scale = urgency !== undefined ? 0.75 + (1 - urgency) * 0.35 : 0.9;
         parts.flame.scale.set(scale);
-        parts.flame.position.set(0, -d / 2 + 3);
+        parts.flame.position.set(0, (-d / 2) * magnification + 3);
         parts.flame.visible = true;
       }
 

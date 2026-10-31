@@ -46,6 +46,8 @@ export const VISUAL_TOKENS = {
       pixiEffects: 14,
       interventionEffects: 14,
       interventionParticle: 15,
+      /** 武装中の操作バー。盤面の最前面（15）より上、結果オーバーレイ（20）より下。 */
+      actionBarArmed: 16,
     },
   },
   colors: {
@@ -240,6 +242,15 @@ export const VISUAL_TOKENS = {
       dotHitMinCssDiameter: 24,
       /** 確定前の対象リングは縮小盤面でも径・二重輪郭を CSS px で保つ。 */
       dotPreview: { minCssDiameter: 24, strokeCssWidth: 2, outlineCssWidth: 1 },
+      /**
+       * 小さいタスク粒の画面上の最小直径（CSS px）。
+       *
+       * ポインター対象の 24px は `dotHitMinCssDiameter` が担い、見た目はそれより
+       * 小さくてよい（DS-08）。見分けは、山の間隔 22 と小さい粒の直径 16 の差
+       * 6 設計pxが画面上で 3px 以上開くこと。6 × (8 / 16) = 3。
+       * contain-fit が 0.5 以上の広い盤面では拡大せず、構える前の見た目を保つ。
+       */
+      taskDotMinCssDiameter: 8,
       taskDiameter: { small: 16, medium: 26, large: 34 },
       reviewEffects: {
         heatField: {
@@ -559,6 +570,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-layer-sprint-pixi-effects': String(layers.sprint.pixiEffects),
     '--visual-layer-sprint-intervention-effects': String(layers.sprint.interventionEffects),
     '--visual-layer-sprint-intervention-particle': String(layers.sprint.interventionParticle),
+    '--visual-layer-sprint-action-bar-armed': String(layers.sprint.actionBarArmed),
     '--visual-point-pop-bottom': `${dimensions.pointPops.bottomRatio * 100}%`,
     '--visual-point-pop-line-height': `${dimensions.pointPops.reducedLineHeight}px`,
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,

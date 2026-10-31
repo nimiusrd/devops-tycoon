@@ -2,6 +2,7 @@
 import type { Page } from '@playwright/test';
 import { beginPublicSprint, expect, test } from './fixtures';
 import { BOARD_VIEW, planBoardScene, type BoardDotPlan } from '../../src/render/boardScene';
+import { boardDotReadabilityMagnification, presentBoardDot } from '../../src/render/boardPixiView';
 import { TASK_DIAMETER } from '../../src/render/taskView';
 import { splitPrCandidates } from '../../src/sim/assignTask';
 
@@ -53,7 +54,10 @@ async function readTargetPoints(page: Page): Promise<{
   const box = await board.boundingBox();
   if (!sprint || !box) throw new Error('盤面の状態と位置を取得できない');
   const candidates = new Set(splitPrCandidates(sprint).map((task) => task.id));
-  const dots = planBoardScene(sprint.tasks).dots.filter((dot) => candidates.has(dot.id));
+  const planned = planBoardScene(sprint.tasks).dots.filter((dot) => candidates.has(dot.id));
+  const cssScale = Math.min(box.width / BOARD_VIEW.w, box.height / BOARD_VIEW.h);
+  const magnification = boardDotReadabilityMagnification(cssScale);
+  const dots = planned.map((dot) => presentBoardDot(dot, cssScale));
   const front = dots.find((dot) => dot.id === 6);
   const behind = dots.find((dot) => dot.id === 5);
   if (!front || !behind) throw new Error('重なった Review の粒がない');
@@ -66,7 +70,10 @@ async function readTargetPoints(page: Page): Promise<{
   );
   // 中心が近い奥の小粒より、実体が重なる手前の粒が選ばれる位置を独立に確かめる。
   const frontmost = (at: { x: number; y: number }): BoardDotPlan | undefined =>
-    dots.findLast((dot) => Math.hypot(at.x - dot.x, at.y - dot.y) <= TASK_DIAMETER[dot.size] / 2);
+    dots.findLast(
+      (dot) =>
+        Math.hypot(at.x - dot.x, at.y - dot.y) <= (TASK_DIAMETER[dot.size] / 2) * magnification,
+    );
   expect(frontmost(point)?.id).toBe(front.id);
   const toClient = (at: { x: number; y: number }, id: number): TargetPoint => ({
     x: box.x + (at.x / BOARD_VIEW.w) * box.width,

@@ -225,6 +225,8 @@ function planFlowingDot(task: Task, lane: Lane, spread: Point): BoardDotPlan | n
     lane,
     x: x + spread.x,
     y: y + spread.y,
+    clusterX: x,
+    clusterY: y,
     variant: taskVariant(task),
     size: taskSize(task),
     fire: task.incident,
@@ -306,6 +308,12 @@ export interface BoardDotPlan {
   burnUrgency?: number;
   /** 設定時は工程間フロー上を流れている（山ではなくレーン間移動中）。 */
   motion?: BoardDotMotion;
+  /**
+   * 見分け拡大の基準点（山の中心、またはフロー上の散らす前の点）。
+   * 省略時は粒自身を基準にし、位置を動かさない。
+   */
+  clusterX?: number;
+  clusterY?: number;
 }
 
 /** 盤面 1 フレームの描画計画。 */
@@ -572,6 +580,8 @@ export function planBoardScene(
         lane: layout.lane,
         x: layout.pile.x + off.x,
         y: layout.pile.y + off.y,
+        clusterX: layout.pile.x,
+        clusterY: layout.pile.y,
         variant: taskVariant(t),
         size: taskSize(t),
         fire: t.incident,

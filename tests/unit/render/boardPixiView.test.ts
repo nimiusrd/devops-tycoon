@@ -9,7 +9,9 @@ import {
   actorTextureKey,
   boardAnimationElapsedMs,
   boardDotLayer,
+  boardDotCssDiameter,
   boardDotPreviewRing,
+  boardDotReadabilityMagnification,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
@@ -19,6 +21,7 @@ import {
   hitTestBoardDot,
   lineDashSegments,
   planBoardDotsForRender,
+  presentBoardDot,
 } from '../../../src/render/boardPixiView';
 import type { BoardDotPlan } from '../../../src/render/boardScene';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
@@ -115,6 +118,42 @@ describe('boardDotPreviewRing', () => {
         tokens.outlineCssWidth,
       );
     }
+  });
+});
+
+describe('boardDotReadability', () => {
+  const pile = { clusterX: 840, clusterY: 315 };
+
+  it('広い盤面では倍率 1 で位置を変えず、狭い盤面では最小直径と 3px の隙間を確保する', () => {
+    const dots = [
+      dot({ id: 1, size: 'small', x: 840, y: 315, ...pile }),
+      dot({ id: 2, size: 'small', x: 862, y: 315, ...pile }),
+      dot({ id: 3, size: 'medium', x: 884, y: 315, ...pile }),
+    ];
+    expect(boardDotReadabilityMagnification(0.68)).toBe(1);
+    expect(boardDotReadabilityMagnification(0.5)).toBe(1);
+    expect(dots.map((entry) => presentBoardDot(entry, 0.68))).toEqual(dots);
+
+    const narrowScale = 0.208;
+    const magnification = boardDotReadabilityMagnification(narrowScale);
+    expect(magnification).toBeGreaterThan(1);
+    expect(boardDotCssDiameter('small', narrowScale)).toBeCloseTo(
+      VISUAL_TOKENS.dimensions.sprint.taskDotMinCssDiameter,
+    );
+    expect(boardDotCssDiameter('medium', narrowScale)).toBeGreaterThan(
+      boardDotCssDiameter('small', narrowScale),
+    );
+    const presented = dots.map((entry) => presentBoardDot(entry, narrowScale));
+    const spacing = (presented[1].x - presented[0].x) * narrowScale;
+    const smallGap = spacing - boardDotCssDiameter('small', narrowScale);
+    expect(smallGap).toBeCloseTo(3);
+    expect(presented[0].x).toBe(840);
+    expect(presented[1].x).toBeGreaterThan(862);
+  });
+
+  it('基準点がない粒は拡大しても中心を動かさない', () => {
+    const entry = dot({ id: 1, size: 'small', x: 100, y: 80 });
+    expect(presentBoardDot(entry, 0.208)).toMatchObject({ x: 100, y: 80 });
   });
 });
 

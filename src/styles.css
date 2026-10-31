@@ -5532,6 +5532,10 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   word-break: keep-all;
   line-height: 1.2;
 }
+/* 高さ変数は俯瞰の戻る導線に使う。スプリント盤面の余白には使わない。 */
+:root:has(.persistence-notice[data-layout='overlay']) .app-sprint-layout {
+  padding-top: 0;
+}
 @media (prefers-reduced-motion: reduce) {
   .persistence-notice {
     animation: none;

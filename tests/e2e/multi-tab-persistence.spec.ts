@@ -13,6 +13,7 @@ type TabGameWindow = Window & {
     startRun(difficulty?: string, trials?: string[], seed?: string): unknown;
     beginSetupSprint(): unknown;
     pause(): void;
+    zoomTo(level: string): unknown;
     clearRunSave(): void;
     getPersistenceStatus(): unknown;
   };
@@ -211,6 +212,9 @@ test('320px の競合案内は盤面を動かさず、書き出しと再読込�
   await expect
     .poll(async () => (await sprintBoardBox(other))?.boardHeight ?? 0)
     .toBeGreaterThan(40);
+  await other.evaluate(() => (window as TabGameWindow).game?.zoomTo('company'));
+  await expect(other.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  await expect(other.getByTestId('crumb-team')).toBeVisible();
 
   const before = await sprintBoardBox(other);
   expect(before).not.toBeNull();
@@ -232,16 +236,24 @@ test('320px の競合案内は盤面を動かさず、書き出しと再読込�
   expect(Math.abs(after!.stageY - before!.stageY)).toBeLessThan(0.5);
   expect(Math.abs(after!.stageHeight - before!.stageHeight)).toBeLessThan(0.5);
 
-  const reserved = await other.evaluate(() =>
-    getComputedStyle(document.documentElement)
-      .getPropertyValue('--persistence-banner-height')
-      .trim(),
-  );
-  expect(reserved === '' || reserved === '0px').toBe(true);
-
+  const reserved = await other.evaluate(() => {
+    const app = document.querySelector('.app-sprint-layout');
+    return {
+      height: getComputedStyle(document.documentElement)
+        .getPropertyValue('--persistence-banner-height')
+        .trim(),
+      paddingTop: app instanceof HTMLElement ? getComputedStyle(app).paddingTop : '',
+    };
+  });
   const bannerBox = await banner.boundingBox();
   expect(bannerBox).not.toBeNull();
   expect(bannerBox!.height).toBeLessThanOrEqual(136);
+  expect(Math.abs(Number.parseFloat(reserved.height) - bannerBox!.height)).toBeLessThan(2);
+  expect(Number.parseFloat(reserved.paddingTop)).toBe(0);
+  const crumb = await other.getByTestId('crumb-team').boundingBox();
+  expect(crumb).not.toBeNull();
+  expect(crumb!.y).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height - 1);
+  expect(crumb!.height).toBeGreaterThan(0);
   await other.screenshot({
     path: '/opt/cursor/artifacts/tab-conflict-board-320.png',
     fullPage: true,
@@ -259,6 +271,14 @@ test('320px の競合案内は盤面を動かさず、書き出しと再読込�
   const withError = await banner.boundingBox();
   expect(withError).not.toBeNull();
   expect(withError!.height).toBeLessThanOrEqual(136);
+  await expect
+    .poll(async () => {
+      const errorBox = await banner.boundingBox();
+      const crumbBox = await other.getByTestId('crumb-team').boundingBox();
+      if (!errorBox || !crumbBox) return -1;
+      return crumbBox.y - (errorBox.y + errorBox.height);
+    })
+    .toBeGreaterThanOrEqual(-1);
   const afterError = await sprintBoardBox(other);
   expect(Math.abs(afterError!.boardY - before!.boardY)).toBeLessThan(0.5);
   expect(Math.abs(afterError!.stageHeight - before!.stageHeight)).toBeLessThan(0.5);

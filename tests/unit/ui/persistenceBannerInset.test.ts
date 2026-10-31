@@ -56,11 +56,10 @@ describe('persistenceBannerInset', () => {
     clearPersistenceBannerHeight(root);
   });
 
-  it('別タブの競合案内は盤面を押さず、高さ変数を空ける', () => {
+  it('別タブの競合案内も俯瞰の戻る導線用に高さを残す', () => {
     const { props, root } = createRoot();
-    applyPersistenceBannerHeight(96, root);
-    const stop = observePersistenceBannerHeight(banner(140, true, 'overlay'), root);
-    expect(props[PERSISTENCE_BANNER_HEIGHT_VAR]).toBeUndefined();
+    const stop = observePersistenceBannerHeight(banner(118, true, 'overlay'), root);
+    expect(props[PERSISTENCE_BANNER_HEIGHT_VAR]).toBe('118px');
     stop();
     expect(props[PERSISTENCE_BANNER_HEIGHT_VAR]).toBeUndefined();
   });

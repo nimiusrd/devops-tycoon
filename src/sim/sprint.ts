@@ -474,7 +474,8 @@ function isDrained(sprint: SprintState): boolean {
 }
 
 /**
- * RI-75: minCompleteTick 待ち（盤面枯渇後のパディング）か。
+ * RI-75: minCompleteTick 待ちか。
+ * 盤面が枯渇したあとのパディングと、コーダー不在で Backlog だけが残る停滞の両方。
  * 介入・カード・組織レバーは時間調整だけの区間で結果を書き換えない。
  * minCompleteTick 未設定の合成盤面では false（単体テスト互換）。
  */
@@ -482,7 +483,7 @@ export function isAwaitingMinCompleteTick(sprint: SprintState): boolean {
   if (sprint.complete) return false;
   const minTick = sprint.config.minCompleteTick ?? 0;
   if (minTick <= 0) return false;
-  return isDrained(sprint);
+  return isDrained(sprint) || isStalled(sprint);
 }
 
 /**
@@ -502,9 +503,10 @@ function completeDrainedSprint(sprint: SprintState): void {
 }
 
 /**
- * stalled / maxTicks 到達時、未完了タスクを盤面から畳む。
- * 出荷・完了数は計上しない（未着手のまま畳む／時間切れの水増しを防ぐ。RI-75）。
- * 炎上中のタスクは鎮火扱い（autoContain）して畳む。
+ * stalled / maxTicks 到達時、未完了タスクをそのレーンに残して打ち切る。
+ * 出荷・完了数は計上しない（未着手の水増しと時間切れの出荷を防ぐ。RI-75）。
+ * 炎上中のタスクは鎮火扱い（autoContain）する。出荷には数えない。
+ * Done の件数と +N は、出荷で Done になったタスクだけが対象になる。
  */
 function abandonInFlight(sprint: SprintState, tick: number): void {
   const m = sprint.metrics;
@@ -521,7 +523,6 @@ function abandonInFlight(sprint: SprintState, tick: number): void {
         hpCost: 0,
       });
     }
-    task.lane = 'done';
     task.incident = false;
   }
 }
@@ -578,7 +579,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
     const minTick = sprint.config.minCompleteTick ?? 0;
     if (tick >= minTick) completeDrainedSprint(sprint);
   } else if (tick >= sprint.config.maxTicks) {
-    // RI-75: 時間切れは出荷なしで畳み、打ち切り印を付けてボス突破を失敗させる。
+    // RI-75: 時間切れは出荷せず打ち切り、打ち切り印を付けてボス突破を失敗させる。
     abandonInFlight(sprint, tick);
     sprint.metrics.timedOut = true;
     sprint.complete = true;

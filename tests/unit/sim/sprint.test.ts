@@ -24,6 +24,7 @@ import {
   stepSprint,
   summarizeSprint,
 } from '../../../src/sim/sprint';
+import { planBoardScene } from '../../../src/render/boardScene';
 import { makeSprint, makeTask } from '../helpers/sprintFixtures';
 
 /** スプリントを最後まで自動進行させ、リザルトを返す。 */
@@ -203,7 +204,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       stepSprint(sprint, org, () => 0.5, 0);
 
       expect(sprint.complete).toBe(true);
-      expect(task.lane).toBe('done');
+      expect(task.lane).toBe('rework');
       expect(task.incident).toBe(false);
       expect(sprint.metrics.contained).toBe(1);
       expect(sprint.metrics.autoContainCount).toBe(1);
@@ -226,7 +227,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       stepSprint(sprint, org, () => 0.5, 0);
 
       expect(sprint.complete).toBe(true);
-      expect(task.lane).toBe('done');
+      expect(task.lane).toBe('coding');
       expect(sprint.metrics.contained).toBe(0);
       expect(sprint.metrics.autoContainCount).toBe(0);
       expect(sprint.metrics.doneCount).toBe(0);
@@ -246,7 +247,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       stepSprint(sprint, org, () => 0.5, 0);
 
       expect(sprint.complete).toBe(true);
-      expect(task.lane).toBe('done');
+      expect(task.lane).toBe('backlog');
       expect(sprint.metrics.doneCount).toBe(0);
       expect(sprint.metrics.completedCount).toBe(0);
       expect(sprint.metrics.delivered).toBe(0);
@@ -295,6 +296,87 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(sprint.metrics.doneCount).toBe(0);
       expect(sprint.metrics.completedCount).toBe(0);
       expect(sprint.metrics.aiAssistedCompleted).toBe(0);
+      expect(assisted.lane).toBe('coding');
+      expect(plain.lane).toBe('coding');
+    });
+  });
+
+  describe('未出荷は Done の山に入らない', () => {
+    function doneStation(tasks: SprintState['tasks']) {
+      const station = planBoardScene(tasks).stations.find((s) => s.lane === 'done');
+      if (!station) throw new Error('Done ステーションが無い');
+      return station;
+    }
+
+    it('出荷 0 の打ち切りでは Done 0 で +N を出さず、完了件数と出荷ポイントは 0 のまま', () => {
+      const org = createOrgState('default', false);
+      org.deliveryScore = 4;
+      // Easy の通常タスク床と同じ 58 件。以前は Done 58 / +44 になっていた。
+      const tasks = Array.from({ length: 58 }, (_, id) => makeTask(id, { lane: 'backlog' }));
+      const sprint = makeSprint(org, tasks);
+      sprint.config.codingSlots = 0;
+      const before = summarizeSprint(sprint, org);
+
+      stepSprint(sprint, org, () => 0.5, 0);
+
+      expect(sprint.complete).toBe(true);
+      expect(tasks.every((task) => task.lane === 'backlog')).toBe(true);
+      const done = doneStation(sprint.tasks);
+      expect(done.count).toBe(0);
+      expect(done.overflow).toBe(0);
+      expect(done.mood).toBe('neutral');
+      const after = summarizeSprint(sprint, org);
+      expect(after.done).toBe(0);
+      expect(after.delivered).toBe(0);
+      expect(after.done).toBe(before.done);
+      expect(after.delivered).toBe(before.delivered);
+      expect(after.grade).toBe(before.grade);
+      expect(org.deliveryScore).toBe(4);
+    });
+
+    it('下限 tick まで待っても未出荷は Done に入らない', () => {
+      const org = createOrgState('default', false);
+      const tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'backlog' }));
+      const sprint = makeSprint(org, tasks);
+      sprint.config.codingSlots = 0;
+      sprint.config.minCompleteTick = 3;
+
+      for (let tick = 0; tick <= 3; tick += 1) stepSprint(sprint, org, () => 0.5, tick);
+
+      expect(sprint.complete).toBe(true);
+      expect(tasks.every((task) => task.lane === 'backlog')).toBe(true);
+      expect(doneStation(sprint.tasks).count).toBe(0);
+      expect(doneStation(sprint.tasks).overflow).toBe(0);
+      expect(summarizeSprint(sprint, org).done).toBe(0);
+      expect(summarizeSprint(sprint, org).delivered).toBe(0);
+    });
+
+    it('出荷した件数だけを Done と +N に数え、結果の完了件数と出荷ポイントは変えない', () => {
+      const org = createOrgState('default', false);
+      const shipped = Array.from({ length: 15 }, (_, id) => makeTask(id, { lane: 'review' }));
+      const unshipped = Array.from({ length: 43 }, (_, id) =>
+        makeTask(100 + id, { lane: 'backlog' }),
+      );
+      const sprint = makeSprint(org, [...shipped, ...unshipped]);
+      for (const task of shipped) forceShipReviewTask(task, sprint, org);
+      const before = summarizeSprint(sprint, org);
+      sprint.config.codingSlots = 0;
+
+      stepSprint(sprint, org, () => 0.5, 0);
+
+      expect(unshipped.every((task) => task.lane === 'backlog')).toBe(true);
+      expect(shipped.every((task) => task.lane === 'done')).toBe(true);
+      const done = doneStation(sprint.tasks);
+      const shippedOnly = doneStation(shipped);
+      expect(done.count).toBe(shipped.length);
+      expect(done.count).toBe(before.done);
+      expect(done.overflow).toBe(shippedOnly.overflow);
+      expect(done.overflow).toBeGreaterThan(0);
+      const after = summarizeSprint(sprint, org);
+      expect(after.done).toBe(before.done);
+      expect(after.delivered).toBe(before.delivered);
+      expect(after.grade).toBe(before.grade);
+      expect(org.deliveryScore).toBe(before.delivered);
     });
   });
 

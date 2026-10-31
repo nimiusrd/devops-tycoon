@@ -17,7 +17,10 @@ vi.mock('react', async (importOriginal) => {
     useMemo: (factory: () => unknown) => factory(),
     useState(initial: unknown) {
       const index = hooks.cursor++;
-      hooks.values[index] ??= initial;
+      if (!(index in hooks.values)) {
+        hooks.values[index] =
+          typeof initial === 'function' ? (initial as () => unknown)() : initial;
+      }
       return [
         hooks.values[index],
         (update: unknown) => {
@@ -45,6 +48,7 @@ vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
 import { getBoss } from '../../../src/data/bosses';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
+import { resetLeaveReturnSpeech } from '../../../src/ui/leaveReturnSpeech';
 import { SetupScreen, type SetupScreenProps } from '../../../src/ui/SetupScreen';
 import { useDialogOverlayLock } from '../../../src/ui/useDialogOverlayLock';
 import { directRoster } from '../helpers/whatIfFixtures';
@@ -329,7 +333,7 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.props.onBegin).not.toHaveBeenCalled();
   });
 
-  it('復帰通知は名前を一度ずつ出し、alert ではなく既存の polite で読む', () => {
+  it('復帰通知は空の領域に後から名前を一度ずつ入れ、alert は使わない', async () => {
     const state = makeState({
       leaveReturns: [
         { id: 'm1', name: 'アオイ' },
@@ -337,31 +341,35 @@ describe('SetupScreen の次スプリント案内と編成', () => {
         { id: 'm1', name: 'アオイ' },
       ],
     });
+    resetLeaveReturnSpeech();
     const screen = mountSetup({ state });
-    const items = elements(screen.find('leave-return-notices')).filter((node) =>
-      String(node.props['data-testid'] ?? '').startsWith('leave-return-m'),
+    const statusBefore = elements(screen.find('leave-return-slot')).find(
+      (node) => node.props.role === 'status',
     );
-    expect(items.map((node) => node.props['data-testid'])).toEqual([
-      'leave-return-m1',
-      'leave-return-m2',
-    ]);
-    expect(content(screen.find('leave-return-m1'))).toBe('アオイが復帰しました（ベンチ）');
-    expect(content(screen.find('leave-return-m2'))).toBe('ハルキが復帰しました（ベンチ）');
+    expect(content(statusBefore)).toBe('');
+    await Promise.resolve();
+    screen.update({});
     const status = elements(screen.find('leave-return-slot')).find(
       (node) => node.props.role === 'status',
     );
+    expect(content(status)).toBe('アオイが復帰しました（ベンチ）ハルキが復帰しました（ベンチ）');
     expect(status?.props).toMatchObject({
       role: 'status',
       'aria-live': 'polite',
       'aria-atomic': 'true',
     });
     expect(elements(screen.find('setup')).some((node) => node.props.role === 'alert')).toBe(false);
-    expect(screen.find('leave-return-slot').props.className).toBe('leave-return-slot');
     const copy = elements(screen.find('setup')).find(
       (node) => node.props.className === 'formation-setup-copy',
     );
     expect(content(copy)).toContain('誰に配るかこのタイミングで見直そう');
     expect(elements(copy).some((node) => node.props['data-testid'] === 'begin-sprint')).toBe(false);
+    screen.update({});
+    expect(
+      content(
+        elements(screen.find('leave-return-slot')).find((node) => node.props.role === 'status'),
+      ),
+    ).toBe('アオイが復帰しました（ベンチ）ハルキが復帰しました（ベンチ）');
   });
 
   it('復帰が無いときも読み上げ領域だけ残し、通知の本文は出さない', () => {

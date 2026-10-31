@@ -1,37 +1,87 @@
-import { Fragment } from 'react';
-import { leaveReturnNoticePhrases } from '../render/leaveReturnNoticeView';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { leaveReturnSpeech, leaveReturnSummary } from '../render/leaveReturnNoticeView';
 import { planLeaveReturnNotices } from '../sim/member';
 import type { LeaveReturnNotice } from '../sim/member/types';
+import {
+  noteAnnouncedLeaveReturnSpeech,
+  readAnnouncedLeaveReturnSpeech,
+} from './leaveReturnSpeech';
 
 /**
- * 復帰したスプリントの編成画面に、名前ごとの一文を一度ずつ出す。
- * ヒント枠へ重ねるので、出ても開始ボタンの位置は変わらない。
- * role=status の polite だけを使い、role=alert との二重読み上げはしない。
- * 領域自体は空のときも残し、文が乗った更新を 1 回だけ読み上げる。
+ * 編成ヒントと、休職復帰の通知。
+ * 通知の見た目はヒント枠の下端1行だけ。枠はヒントの高さのままにする。
+ * 1行を足すと警告が隠れるときは見た目を出さず、読み上げだけにする。
+ * live region は空でマウントし、その後に文を入れる。読み上げは1回。
  */
-export function LeaveReturnNotices({ notices }: { notices: readonly LeaveReturnNotice[] }) {
+export function LeaveReturnNotices({
+  hint,
+  notices,
+}: {
+  hint: string;
+  notices: readonly LeaveReturnNotice[];
+}) {
   const unique = planLeaveReturnNotices(notices, []);
+  const speech = leaveReturnSpeech(unique);
+  const summary = leaveReturnSummary(unique);
+  const hintRef = useRef<HTMLParagraphElement>(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [spoken, setSpoken] = useState(() =>
+    speech !== '' && readAnnouncedLeaveReturnSpeech() === speech ? speech : '',
+  );
+
+  useLayoutEffect(() => {
+    const hintEl = hintRef.current;
+    if (!hintEl || unique.length === 0) {
+      setShowSummary(false);
+      return;
+    }
+    const lineHeight = Number.parseFloat(getComputedStyle(hintEl).lineHeight);
+    // 下端の1行を通知に使っても、警告の先頭行が残るときだけ重ねる。
+    setShowSummary(Number.isFinite(lineHeight) && hintEl.clientHeight > lineHeight + 1);
+  }, [hint, summary, unique.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const publish = () => {
+      if (cancelled) return;
+      if (!speech) {
+        setSpoken('');
+        return;
+      }
+      if (readAnnouncedLeaveReturnSpeech() !== speech) noteAnnouncedLeaveReturnSpeech(speech);
+      setSpoken(speech);
+    };
+    if (typeof requestAnimationFrame !== 'function') {
+      queueMicrotask(publish);
+      return () => {
+        cancelled = true;
+      };
+    }
+    const frame = requestAnimationFrame(publish);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [speech]);
+
   return (
-    <div
-      className="leave-return-slot"
-      data-testid="leave-return-slot"
-      data-empty={unique.length === 0 ? 'true' : undefined}
-    >
-      <div role="status" aria-live="polite" aria-atomic="true">
-        {unique.length > 0 && (
-          <ul className="leave-return-notices" data-testid="leave-return-notices">
-            {unique.map((notice) => (
-              <li key={notice.id} data-testid={`leave-return-${notice.id}`}>
-                {leaveReturnNoticePhrases(notice.name).map((phrase, index) => (
-                  <Fragment key={`${notice.id}-${index}`}>
-                    {index > 0 && <wbr />}
-                    <span className="setup-text-phrase">{phrase}</span>
-                  </Fragment>
-                ))}
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="formation-setup-copy">
+      <p ref={hintRef} className="formation-setup-hint">
+        {hint}
+      </p>
+      {showSummary && (
+        <p className="leave-return-summary" data-testid="leave-return-summary" aria-hidden="true">
+          {summary}
+        </p>
+      )}
+      <div
+        className="leave-return-slot"
+        data-testid="leave-return-slot"
+        data-empty={spoken ? undefined : 'true'}
+      >
+        <div role="status" aria-live="polite" aria-atomic="true" data-testid="leave-return-status">
+          {spoken}
+        </div>
       </div>
     </div>
   );

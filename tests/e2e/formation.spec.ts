@@ -334,18 +334,78 @@ for (const viewport of [
     await page.goto('/?renderer=pixi&tutorial=off&seed=leave-return-notice');
     await page.getByTestId('difficulty-easy').click();
     await page.getByTestId('start-run').click();
-    const setup = page.getByTestId('setup');
-    const forecast = setup.getByTestId('formation-forecast');
-    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
-    await page.evaluate(() => document.fonts.ready);
-    const liveStatus = await setup
-      .getByTestId('leave-return-slot')
-      .getByRole('status')
-      .elementHandle();
-    if (!liveStatus) throw new Error('復帰が無いときも読み上げ領域を残す');
-    await expect(setup.getByTestId('leave-return-notices')).toHaveCount(0);
+    const draft = page.getByTestId('setup');
+    await expect(draft.getByTestId('formation-forecast')).toHaveAttribute(
+      'data-what-if-status',
+      'ready',
+      { timeout: 15_000 },
+    );
+    const raw = await page.evaluate(() => {
+      const text = (window as GameWindow).game!.exportRunSaveText();
+      if (!text) throw new Error('準備画面のセーブを取得できない');
+      return text;
+    });
+    const withBoss = (saved: string, returns: boolean) => {
+      const save = JSON.parse(saved) as RunSave;
+      save.state.pendingSprintKind = 'boss';
+      const teamId = save.state.extras.activeTeamId;
+      if (!teamId) throw new Error('選択中チームがない');
+      if (returns) {
+        save.state.extras.pendingLeaveReturns = {
+          [teamId]: save.state.roster.members.slice(0, 3).map((member) => ({
+            id: member.id,
+            name: member.name,
+          })),
+        };
+      } else {
+        delete save.state.extras.pendingLeaveReturns;
+      }
+      return JSON.stringify(save);
+    };
+    const names = (JSON.parse(withBoss(raw, true)) as RunSave).state.roster.members
+      .slice(0, 3)
+      .map((member) => member.name);
+    const speech = names.map((name) => `${name}が復帰しました（ベンチ）`).join('');
 
-    const positions = () =>
+    const openSetup = async (saved: string, boot: string, watchSpeech = false) => {
+      await page.goto(`/?renderer=pixi&tutorial=off&seed=leave-return-notice&boot=${boot}`);
+      await page.getByTestId('difficulty-easy').waitFor();
+      if (watchSpeech) {
+        await page.evaluate(() => {
+          const log: string[] = [];
+          const mark = () => {
+            const status = document.querySelector('[data-testid="leave-return-status"]');
+            if (!status) return;
+            const text = status.textContent ?? '';
+            if (log.length === 0 || log[log.length - 1] !== text) log.push(text);
+          };
+          new MutationObserver(mark).observe(document.documentElement, {
+            subtree: true,
+            childList: true,
+            characterData: true,
+          });
+          (window as unknown as { __leaveReturnLiveLog: string[] }).__leaveReturnLiveLog = log;
+        });
+      }
+      await page.evaluate(async (text) => {
+        const game = (window as GameWindow).game!;
+        const result = await game.importRunSaveText(text);
+        if (!result.ok || game.resumeRun()?.phase !== 'setup') {
+          throw new Error('ボス前の準備画面を開けない');
+        }
+        game.pause();
+      }, saved);
+      const setup = page.getByTestId('setup');
+      await expect(setup).toBeVisible();
+      await expect(setup.getByTestId('formation-forecast')).toHaveAttribute(
+        'data-what-if-status',
+        'ready',
+        { timeout: 15_000 },
+      );
+      await page.evaluate(() => document.fonts.ready);
+      return setup;
+    };
+    const positions = (setup: Locator) =>
       setup.locator('.formation-panel').evaluate((panel) => {
         const panelBounds = panel.getBoundingClientRect();
         return [
@@ -361,67 +421,66 @@ for (const viewport of [
           };
         });
       });
-    const before = await positions();
-    const raw = await page.evaluate(() => {
-      const text = (window as GameWindow).game!.exportRunSaveText();
-      if (!text) throw new Error('準備画面のセーブを取得できない');
-      return text;
-    });
-    await page.evaluate(async (saved) => {
-      const game = (window as GameWindow).game!;
-      const save = JSON.parse(saved) as RunSave;
-      const teamId = save.state.extras.activeTeamId;
-      if (!teamId) throw new Error('選択中チームがない');
-      const members = save.state.roster.members.slice(0, 2);
-      save.state.extras.pendingLeaveReturns = {
-        [teamId]: [
-          { id: members[0]!.id, name: members[0]!.name },
-          { id: members[1]!.id, name: members[1]!.name },
-          { id: members[0]!.id, name: members[0]!.name },
-        ],
-      };
-      const result = await game.importRunSaveText(JSON.stringify(save));
-      if (!result.ok || game.resumeRun()?.phase !== 'setup') {
-        throw new Error('復帰通知のある準備画面を再開できない');
-      }
-      game.pause();
-    }, raw);
 
-    await expect(forecast).toHaveAttribute('data-what-if-status', 'ready', { timeout: 15_000 });
-    const notices = setup.getByTestId('leave-return-notices');
-    await expect(notices).toBeVisible();
-    await expect(notices.getByRole('listitem')).toHaveCount(2);
-    const texts = await notices.locator('[data-testid^="leave-return-m"]').allTextContents();
-    expect(texts).toHaveLength(2);
-    expect(new Set(texts).size).toBe(2);
-    for (const text of texts) {
-      expect(text).toMatch(/^.+が復帰しました（ベンチ）$/);
-    }
-    await expect(setup.getByTestId('leave-return-slot').getByRole('status')).toHaveAttribute(
-      'aria-live',
-      'polite',
+    const withoutNotice = await openSetup(withBoss(raw, false), 'plain');
+    await expect(withoutNotice.locator('.formation-setup-hint')).toContainText('次はボス');
+    const before = await positions(withoutNotice);
+
+    const setup = await openSetup(withBoss(raw, true), 'return', true);
+    const hint = setup.locator('.formation-setup-copy .formation-setup-hint');
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText('次はボス');
+    const fit = await setup.locator('.formation-setup-copy').evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    }));
+    expect(fit.scrollHeight, '復帰通知でヒント枠をスクロールさせない').toBeLessThanOrEqual(
+      fit.clientHeight,
     );
-    await expect(setup.getByRole('alert')).toHaveCount(0);
-    expect(
-      await liveStatus.evaluate((element) => element.isConnected),
-      '既存のlive regionを更新する',
-    ).toBe(true);
-    expect(await positions(), '通知の有無で開始と編成の位置を変えない').toEqual(before);
-    const overlay = await setup.getByTestId('leave-return-slot').evaluate((element) => {
-      const slot = element.getBoundingClientRect();
-      const copy = element.parentElement?.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      return {
-        position: style.position,
-        top: slot.top,
-        height: slot.height,
-        copyTop: copy?.top ?? Number.NaN,
-        copyHeight: copy?.height ?? Number.NaN,
-      };
+    const hintLines = await hint.evaluate((element) => {
+      const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight);
+      return element.clientHeight / lineHeight;
     });
-    expect(overlay.position).toBe('absolute');
-    expect(overlay.top).toBeCloseTo(overlay.copyTop, 0);
-    expect(overlay.height).toBeCloseTo(overlay.copyHeight, 0);
+    if (hintLines > 1.5) {
+      const summary = setup.getByTestId('leave-return-summary');
+      await expect(summary).toBeVisible();
+      await expect(summary).toHaveText(`${names[0]}ほか2人がベンチに復帰しました`);
+      const summaryFit = await summary.evaluate((element) => ({
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+      }));
+      expect(summaryFit.scrollHeight).toBeLessThanOrEqual(summaryFit.clientHeight);
+      const coversWarning = await page.evaluate(() => {
+        const warning = document.querySelector('.formation-setup-copy .formation-setup-hint');
+        const line = document.querySelector('[data-testid="leave-return-summary"]');
+        if (!warning || !line) return true;
+        const walker = document.createTreeWalker(warning, NodeFilter.SHOW_TEXT);
+        const label = '次はボス';
+        let node = walker.nextNode();
+        while (node) {
+          const index = node.textContent?.indexOf(label) ?? -1;
+          if (index >= 0) {
+            const range = document.createRange();
+            range.setStart(node, index);
+            range.setEnd(node, index + label.length);
+            const textBox = range.getBoundingClientRect();
+            const summaryBox = line.getBoundingClientRect();
+            return !(textBox.bottom <= summaryBox.top + 1 || textBox.top >= summaryBox.bottom - 1);
+          }
+          node = walker.nextNode();
+        }
+        return true;
+      });
+      expect(coversWarning, 'ボスの警告の先頭を復帰通知で隠さない').toBe(false);
+    }
+    await expect(setup.getByTestId('leave-return-status')).toHaveText(speech);
+    await expect(setup.getByRole('alert')).toHaveCount(0);
+    const liveLog = await page.evaluate(
+      () => (window as unknown as { __leaveReturnLiveLog?: string[] }).__leaveReturnLiveLog ?? [],
+    );
+    expect(liveLog[0], '編成画面は空の読み上げ領域で開く').toBe('');
+    expect(liveLog.filter((entry) => entry.length > 0)).toEqual([speech]);
+    expect(await positions(setup), '通知の有無で開始と編成の位置を変えない').toEqual(before);
   });
 }
 

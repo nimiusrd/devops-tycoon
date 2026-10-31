@@ -10,7 +10,11 @@ import type { LeaveReturnNotice, Member, RosterState } from '../../../src/sim/me
 import { HOME_TEAM_ID } from '../../../src/sim/orgscale/teamState';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { GrowthOutcome } from '../../../src/sim/run/types';
-import { leaveReturnNoticeText } from '../../../src/render/leaveReturnNoticeView';
+import {
+  leaveReturnNoticeText,
+  leaveReturnSpeech,
+  leaveReturnSummary,
+} from '../../../src/render/leaveReturnNoticeView';
 import { completeSprint, makeOrg, zeroTotals } from '../helpers/runEngineFixtures';
 
 function member(overrides: Partial<Member> = {}): Member {
@@ -82,6 +86,15 @@ describe('休職復帰の通知計画', () => {
     ]);
     expect(planLeaveReturnNotices(returned, ['m0'])).toEqual([{ id: 'm1', name: 'ハルキ' }]);
     expect(planLeaveReturnNotices(returned, ['m0', 'm1'])).toEqual([]);
+    const visible = planLeaveReturnNotices(returned, []);
+    expect(leaveReturnSummary(visible)).toBe('アオイほか1人がベンチに復帰しました');
+    expect(leaveReturnSummary(visible.slice(0, 1))).toBe('アオイが復帰しました（ベンチ）');
+    expect(leaveReturnSpeech(visible)).toBe(
+      'アオイが復帰しました（ベンチ）ハルキが復帰しました（ベンチ）',
+    );
+    expect(leaveReturnSummary([...visible, { id: 'm2', name: 'ミナ' }])).toBe(
+      'アオイほか2人がベンチに復帰しました',
+    );
   });
 });
 

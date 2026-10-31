@@ -6760,7 +6760,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   line-height: 1.45;
   color: var(--muted, #9aa3b5);
 }
-/* #937: 復帰通知は常にあるヒント枠へ重ねる。行を足すと 320 で開始ボタンがずれる（#928 / #931）。 */
+/* #937: 復帰はヒント枠の下端1行だけ。枠の高さはヒントのまま。スクロールはしない。 */
 .formation-setup-copy {
   position: relative;
   margin: 0 0 0.75rem;
@@ -6768,26 +6768,29 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .formation-setup-copy .formation-setup-hint {
   margin: 0;
 }
-.leave-return-slot {
+.leave-return-summary {
   position: absolute;
-  inset: 0;
-  z-index: 1;
-  min-width: 0;
-  overflow: auto;
-  pointer-events: none;
-}
-.leave-return-slot:has(.leave-return-notices) {
-  pointer-events: auto;
-  background: var(--panel);
-}
-.leave-return-notices {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1.45em;
   margin: 0;
-  padding: 0;
-  list-style: none;
+  overflow: hidden;
   color: var(--mint);
   font-size: 0.85rem;
   font-weight: 800;
   line-height: 1.45;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  background: var(--panel);
+}
+.leave-return-slot {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .formation-close {
   flex: 0 0 auto;

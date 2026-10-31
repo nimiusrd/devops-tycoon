@@ -222,16 +222,16 @@ export function SetupScreen({
               {heading}
             </h2>
             <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
-            <div className="formation-setup-copy">
-              <p className="formation-setup-hint">
-                {bossPending
+            <LeaveReturnNotices
+              hint={
+                bossPending
                   ? '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。'
                   : elitePending
                     ? '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。'
-                    : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'}
-              </p>
-              <LeaveReturnNotices notices={state.leaveReturns ?? []} />
-            </div>
+                    : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'
+              }
+              notices={state.leaveReturns ?? []}
+            />
             <div className="setup-term-tips" data-testid="setup-term-tips">
               <TermTip termId="pr" revealOnOpen />
               <TermTip termId="aiLiteracy" revealOnOpen />

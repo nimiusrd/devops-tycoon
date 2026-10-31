@@ -186,7 +186,7 @@ body {
 .hud-compact-chip {
   position: relative;
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 3px;
   max-width: 100%;
@@ -228,9 +228,18 @@ body {
   color: var(--text-dim);
   font-size: 10px;
   font-weight: 800;
+  white-space: nowrap;
+  word-break: keep-all;
+  line-break: strict;
 }
 .hud-compact-chip-value {
+  /* 桁の増減で幅を変えない。文字数は compactValueSlot（#975）。 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: end;
+  word-break: keep-all;
 }
 .hud-compact-chip-warn,
 .hud-compact-chip-risk {
@@ -238,6 +247,8 @@ body {
   border-radius: 999px;
   font-size: 9px;
   font-weight: 800;
+  white-space: nowrap;
+  word-break: keep-all;
   background: #00000044;
 }
 .hud-compact-chip-risk.risk-MED {
@@ -554,6 +565,7 @@ body {
 
 /* Subbar */
 .subbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -563,6 +575,18 @@ body {
   background: var(--panel);
   border: 2px solid var(--line);
   box-shadow: 0 4px 0 #1d1640;
+}
+/* 読み上げ専用。グリッドの行や p の余白で状態枠を伸ばさない（#975）。 */
+.subbar > .visually-hidden {
+  position: absolute;
+  margin: 0;
+}
+/* Review Hell は行を足さず、状態枠の面と内側の影で知らせる（#975）。 */
+.subbar[data-review-hell='true'] {
+  background: var(--visual-color-banner-hell-bg);
+  box-shadow:
+    inset 0 0 0 2px var(--visual-color-banner-hell-border),
+    0 4px 0 #1d1640;
 }
 .speed-controls {
   display: inline-flex;
@@ -724,12 +748,41 @@ body {
   white-space: nowrap;
 }
 .meter {
+  position: relative;
   width: 170px;
   height: 14px;
   border-radius: 999px;
   background: #1b1438;
   border: 2px solid var(--line);
   overflow: hidden;
+}
+/* 渋滞バーの中に重ねる。件数・ラベルの外へ出して行を増やさない（#975）。 */
+.jam-alert {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15em;
+  max-width: 100%;
+  padding: 0 4px;
+  border: 1px solid var(--visual-color-banner-hell-border);
+  border-radius: 999px;
+  background: var(--visual-color-banner-hell-tag-bg);
+  color: var(--visual-color-banner-hell-tag-text);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.jam-alert .visual-icon {
+  width: 1em;
+  height: 1em;
+  color: inherit;
 }
 .meter > i {
   display: block;
@@ -2029,9 +2082,21 @@ body:has(.overlay-contained) {
 }
 [data-sprint-slot='status'] .event-ticker[data-expanded='false'] {
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px 10px;
+}
+/* 1件目の要約を見出しと同じ高さに収め、状態枠を伸ばさない（#975）。 */
+[data-sprint-slot='status']
+  .event-ticker[data-expanded='false']:not([data-feedback-held='true'])
+  .event-ticker-summary {
+  box-sizing: border-box;
+  height: 24px;
+  min-height: 0;
+  max-height: 24px;
+  padding-block: 0;
+  line-height: 22px;
+  overflow: hidden;
 }
 [data-sprint-slot='status'] .event-ticker-summary {
   flex: 1 1 12rem;
@@ -4900,8 +4965,20 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  height: 16px;
+  min-height: 0;
+  max-height: 16px;
+  overflow: hidden;
   font-size: 12px;
+  line-height: 16px;
   white-space: nowrap;
+}
+/* 「0」と「炎上 99」で行高も幅も変えない（#975）。 */
+.meter-wrap-fire .meter-count-value {
+  display: inline-block;
+  min-width: 8ch;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
 }
 /* 進化ツリー
  * 5列×3行の購入判断（効果・説明・コスト・ペナルティ）が、オーバーレイ余白で

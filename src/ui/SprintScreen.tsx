@@ -24,6 +24,7 @@ import {
 } from '../render/sprintEventView';
 import type { DraggableActionId } from '../render/boardDragPlan';
 import { planBossSlowMotion } from '../render/juicyEffects';
+import { reviewHellLiveMessage } from '../render/reviewHellAlert';
 import { liveComboCount } from '../render/sprintComboView';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
@@ -70,6 +71,18 @@ const IDLE_ATTENTION: AttentionPausePlan = {
   title: '',
   meter: null,
 };
+
+/** 渋滞が Review Hell に入った／出たときだけ読み上げを更新する。 */
+function useReviewHellAnnouncement(active: boolean): string {
+  const previous = useRef<boolean | null>(null);
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    const next = reviewHellLiveMessage(previous.current, active);
+    previous.current = active;
+    if (next) setMessage(next);
+  }, [active]);
+  return message;
+}
 
 const SPEED_OPTIONS: { speed: PlaybackSpeed; label: string; testId: string }[] = [
   { speed: 0, label: '❚❚', testId: 'speed-pause' },
@@ -410,6 +423,10 @@ export function SprintScreen({
     [eventTickerExpandedProp, onEventTickerExpandedChange],
   );
 
+  const reviewQueue = sprint ? reviewQueueLength(sprint.tasks) : 0;
+  const reviewHell = reviewQueue >= 12;
+  const reviewHellAnnouncement = useReviewHellAnnouncement(reviewHell);
+
   if (!sprint) return null;
 
   const kind = state.currentSprintKind;
@@ -419,7 +436,7 @@ export function SprintScreen({
   const overlayFrozen = state.phase === 'evolution';
 
   const liveCombo = liveComboCount(sprint);
-  const queue = reviewQueueLength(sprint.tasks);
+  const queue = reviewQueue;
   const jamPct = Math.min(100, (queue / 18) * 100);
   const burning = sprint.tasks.filter((t) => t.lane === 'rework' && t.incident);
   const incidents = burning.length;
@@ -455,7 +472,20 @@ export function SprintScreen({
       header={header}
       status={
         <>
-          <div className="subbar" data-testid="sprint-subbar">
+          <div
+            className="subbar"
+            data-testid="sprint-subbar"
+            data-review-hell={reviewHell ? 'true' : 'false'}
+          >
+            <p
+              className="visually-hidden"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              data-testid="review-hell-announcement"
+            >
+              {reviewHellAnnouncement}
+            </p>
             <span className={`pill node-tag node-${kind}`} data-testid="sprint-kind">
               {isBoss ? (
                 `★ ボス: ${boss?.name ?? ''}`
@@ -497,20 +527,23 @@ export function SprintScreen({
             <div
               className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'jam' ? ' attention' : ''}`}
               data-testid="jam-meter"
+              aria-label={
+                reviewHell ? `渋滞メーター ${queue}。Review Hell` : `渋滞メーター ${queue}`
+              }
             >
               <span className="meter-label">渋滞メーター</span>
-              <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
+              <div className={`meter${reviewHell ? ' jam' : ''}`}>
                 <i style={{ width: `${jamPct}%` }} />
+                {reviewHell && (
+                  <span className="jam-alert" data-testid="jam-alert" aria-hidden="true">
+                    <VisualIcon name="reviewHell" size="hud" />
+                    {healthTag('reviewHell')}
+                  </span>
+                )}
               </div>
               <span className="meter-count" data-testid="jam-count">
                 {queue}
               </span>
-              {queue >= 12 && (
-                <span className="pill pill-compact tone-hell" data-testid="jam-alert">
-                  <VisualIcon name="reviewHell" size="hud" />
-                  {healthTag('reviewHell')}
-                </span>
-              )}
             </div>
             <div
               className={`meter-wrap meter-wrap-fire${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
@@ -524,7 +557,9 @@ export function SprintScreen({
               </div>
               <span className="meter-count" data-testid="fire-count" data-count={incidents}>
                 <VisualIcon name="fire" size="hud" />
-                {incidents > 0 ? `炎上 ${incidents}` : incidents}
+                <span className="meter-count-value">
+                  {incidents > 0 ? `炎上 ${incidents}` : incidents}
+                </span>
               </span>
               <ComboBadge
                 combo={liveCombo}

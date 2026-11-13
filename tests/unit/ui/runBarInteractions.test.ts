@@ -447,7 +447,6 @@ describe('RunBar の表示と操作', () => {
       (element) => element.props['data-testid'] === 'org-lever-hint',
     );
     expect(content(hint)).toBe('予算は組織レバーで使えます');
-    expect(hint?.props['aria-hidden']).toBe('true');
     expect(hint?.props.role).toBeUndefined();
     props = { eligible: false, dismissed: false };
     flush();

@@ -581,7 +581,7 @@ body {
   position: absolute;
   margin: 0;
 }
-.subbar > .org-lever-hint-live {
+.org-lever-hint-a11y-portal {
   position: absolute;
   margin: 0;
   width: 1px;

@@ -6,7 +6,7 @@ import { ORG_LEVER_HINT_MESSAGE } from '../render/orgLeverHintView';
  * 開いている途中で条件が揃っても行は足さない。
  * 消すのは、レバーを開いたときか予算が 0 になったときだけ。
  *
- * 読み上げ用の live region は RunBar に1つだけ置く（#1019）。
+ * 読み上げ用 live region は RunBar から body へ1つだけ出す（#1019）。
  */
 export function OrgLeverHintRow({
   eligible,
@@ -18,7 +18,7 @@ export function OrgLeverHintRow({
   const [includedAtOpen] = useState(eligible);
   if (!includedAtOpen || dismissed) return null;
   return (
-    <p className="org-lever-hint" data-testid="org-lever-hint" aria-hidden="true">
+    <p className="org-lever-hint" data-testid="org-lever-hint">
       {ORG_LEVER_HINT_MESSAGE}
     </p>
   );

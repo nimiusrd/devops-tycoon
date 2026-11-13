@@ -5,6 +5,7 @@
  * 常時表示し、ラン全体の文脈を示す（第4.7 のパンくずの簡易版）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
 import { diagnosisTheme } from '../render/diagnosisTheme';
@@ -252,175 +253,186 @@ export function RunBar({
     </>
   );
 
-  return (
-    <div
-      className={`subbar runbar${compact ? ' runbar-compact' : ''}`}
-      data-testid="runbar"
-      data-compact={compact ? 'true' : 'false'}
-    >
-      <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
-        スプリント{' '}
-        <b>
-          {sprintView.current}/{sprintView.total}
-        </b>
-        {sprintView.bossNext && <span className="boss-next"> ★次が山場</span>}
-      </span>
-      <span
-        className={`pill run-metric-pill tone-${budgetCopy.tone}${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}
-        data-testid="budget"
-        title={budgetHudTitle(budgetCopy.detail, state.trials, resolveTrial)}
-        data-tone={budgetCopy.tone}
-      >
-        💰<b>{state.budget}</b>
-        {budgetCopy.warningChip && (
-          <span className={`runbar-warning tone-${budgetCopy.tone}`} data-testid="budget-warning">
-            {budgetCopy.warningChip}
-          </span>
-        )}
-        {budgetFeedback && <RunFeedbackPop feedbacks={[budgetFeedback]} />}
-      </span>
-      {trialViews.length > 0 && (
-        <div className="trial-bar" data-testid="run-trials">
-          {trialViews.map((trial) => (
-            <span
-              key={trial.id}
-              className="pill"
-              data-testid={`run-trial-${trial.id}`}
-              title={trial.description}
-              aria-label={`試練 ${trial.label}`}
-            >
-              {trial.label}
-            </span>
-          ))}
-        </div>
-      )}
-      <span
-        className={`pill run-metric-pill trust-pill tone-${trustCopy.tone}${trustFeedbacks.length > 0 ? ` run-feedback flash-${trustFeedbackTone}` : ''}`}
-        data-testid="stakeholder-trust"
-        title={`ステークホルダー信頼（経営 / 顧客 / チーム）。${trustCopy.detail}`}
-        data-tone={trustCopy.tone}
-      >
-        🤝
-        <b>
-          {state.stakeholderTrust.management}/{state.stakeholderTrust.customers}/
-          {state.stakeholderTrust.team}
-        </b>
-        {trustCopy.warningChip && (
-          <span className={`runbar-warning tone-${trustCopy.tone}`} data-testid="trust-warning">
-            {trustCopy.warningChip}
-          </span>
-        )}
-        {trustFeedbacks.length > 0 && <RunFeedbackPop feedbacks={trustFeedbacks} />}
-      </span>
-      {carryoverCopy.warningChip && (
-        <span
-          className={`pill run-metric-pill tone-${carryoverCopy.tone}`}
-          data-testid="goal-carryover"
-          title={carryoverCopy.detail}
-          data-tone={carryoverCopy.tone}
-        >
-          修正
-          <span
-            className={`runbar-warning tone-${carryoverCopy.tone}`}
-            data-testid="goal-carryover-warning"
-          >
-            {carryoverCopy.warningChip}
-          </span>
-        </span>
-      )}
-      {onOpenFormation ? (
-        <button
-          type="button"
-          className="pill roster-pill"
-          data-testid="open-formation"
-          disabled={readOnly}
-          onClick={onOpenFormation}
-          title={
-            readOnly
-              ? 'リプレイ閲覧中は編成を開けません'
-              : `稼働 ${roster.active} / 休職 ${roster.onLeave}（コーダー${roster.coders}・レビュー${roster.reviewers}）`
-          }
-        >
-          <span className="roster-faces" data-testid="roster-faces">
-            {state.roster.members.map((m) => (
-              <span key={m.id}>{FACE[memberExpression(m)]}</span>
-            ))}
-          </span>
-          編成
-        </button>
-      ) : (
-        <span className="pill" data-testid="roster-count">
-          👥<b>{roster.active}</b>
-          {roster.onLeave > 0 && <span className="roster-leave"> 😴{roster.onLeave}</span>}
-        </span>
-      )}
-      {onOpenOrg && showOrgLeverHint && (
+  const orgLeverHintA11y =
+    onOpenOrg && showOrgLeverHint ? (
+      <div className="org-lever-hint-a11y-portal" data-testid="org-lever-hint-portal">
         <span id={ORG_LEVER_HINT_DESCRIPTION_ID} className="visually-hidden">
           {ORG_LEVER_HINT_MESSAGE}
         </span>
-      )}
-      {onOpenOrg && <OrgLeverHintLiveAnnouncer active={showOrgLeverHint} />}
-      {onOpenOrg && (
-        <button
-          type="button"
-          className="pill org-pill"
-          data-testid="open-org"
-          data-org-lever-hint={showOrgLeverHint ? 'true' : 'false'}
-          disabled={readOnly}
-          aria-describedby={showOrgLeverHint ? ORG_LEVER_HINT_DESCRIPTION_ID : undefined}
-          onClick={(event) => {
-            dismissOrgLeverHint(runEpoch);
-            setOrgLeverHintDismissedEpoch(runEpoch);
-            onOpenOrg(event.currentTarget);
-          }}
-          title={
-            readOnly
-              ? 'リプレイ閲覧中は全社マップを開けません'
-              : '組織レバー。全社マップを開いて予算を使います'
-          }
+        <OrgLeverHintLiveAnnouncer active />
+      </div>
+    ) : null;
+  const orgLeverHintPortal =
+    orgLeverHintA11y && typeof document !== 'undefined' && document.body
+      ? createPortal(orgLeverHintA11y, document.body)
+      : orgLeverHintA11y;
+
+  return (
+    <>
+      {orgLeverHintPortal}
+      <div
+        className={`subbar runbar${compact ? ' runbar-compact' : ''}`}
+        data-testid="runbar"
+        data-compact={compact ? 'true' : 'false'}
+      >
+        <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
+          スプリント{' '}
+          <b>
+            {sprintView.current}/{sprintView.total}
+          </b>
+          {sprintView.bossNext && <span className="boss-next"> ★次が山場</span>}
+        </span>
+        <span
+          className={`pill run-metric-pill tone-${budgetCopy.tone}${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}
+          data-testid="budget"
+          title={budgetHudTitle(budgetCopy.detail, state.trials, resolveTrial)}
+          data-tone={budgetCopy.tone}
         >
-          <span aria-hidden="true">🗺</span>
-          {ORG_LEVER_BUTTON_LABEL}
-          {showOrgLeverHint && (
-            <span
-              className="org-lever-hint-mark"
-              data-testid="org-lever-hint-mark"
-              aria-hidden="true"
-            />
+          💰<b>{state.budget}</b>
+          {budgetCopy.warningChip && (
+            <span className={`runbar-warning tone-${budgetCopy.tone}`} data-testid="budget-warning">
+              {budgetCopy.warningChip}
+            </span>
           )}
-        </button>
-      )}
-      {showSessionMenu && onOpenHelp && onToggleSoundMuted && (
-        <RunSessionMenu
-          soundMuted={soundMuted}
-          onOpenHelp={onOpenHelp}
-          onToggleSoundMuted={onToggleSoundMuted}
-          menuButtonRef={menuButtonRef}
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-        />
-      )}
-      {compact ? (
-        <>
+          {budgetFeedback && <RunFeedbackPop feedbacks={[budgetFeedback]} />}
+        </span>
+        {trialViews.length > 0 && (
+          <div className="trial-bar" data-testid="run-trials">
+            {trialViews.map((trial) => (
+              <span
+                key={trial.id}
+                className="pill"
+                data-testid={`run-trial-${trial.id}`}
+                title={trial.description}
+                aria-label={`試練 ${trial.label}`}
+              >
+                {trial.label}
+              </span>
+            ))}
+          </div>
+        )}
+        <span
+          className={`pill run-metric-pill trust-pill tone-${trustCopy.tone}${trustFeedbacks.length > 0 ? ` run-feedback flash-${trustFeedbackTone}` : ''}`}
+          data-testid="stakeholder-trust"
+          title={`ステークホルダー信頼（経営 / 顧客 / チーム）。${trustCopy.detail}`}
+          data-tone={trustCopy.tone}
+        >
+          🤝
+          <b>
+            {state.stakeholderTrust.management}/{state.stakeholderTrust.customers}/
+            {state.stakeholderTrust.team}
+          </b>
+          {trustCopy.warningChip && (
+            <span className={`runbar-warning tone-${trustCopy.tone}`} data-testid="trust-warning">
+              {trustCopy.warningChip}
+            </span>
+          )}
+          {trustFeedbacks.length > 0 && <RunFeedbackPop feedbacks={trustFeedbacks} />}
+        </span>
+        {carryoverCopy.warningChip && (
+          <span
+            className={`pill run-metric-pill tone-${carryoverCopy.tone}`}
+            data-testid="goal-carryover"
+            title={carryoverCopy.detail}
+            data-tone={carryoverCopy.tone}
+          >
+            修正
+            <span
+              className={`runbar-warning tone-${carryoverCopy.tone}`}
+              data-testid="goal-carryover-warning"
+            >
+              {carryoverCopy.warningChip}
+            </span>
+          </span>
+        )}
+        {onOpenFormation ? (
           <button
             type="button"
-            className="pill runbar-details-toggle"
-            data-testid="runbar-details-toggle"
-            aria-expanded={detailsExpanded}
-            aria-controls="runbar-details"
-            onClick={() => setDetailsExpanded((expanded) => !expanded)}
+            className="pill roster-pill"
+            data-testid="open-formation"
+            disabled={readOnly}
+            onClick={onOpenFormation}
+            title={
+              readOnly
+                ? 'リプレイ閲覧中は編成を開けません'
+                : `稼働 ${roster.active} / 休職 ${roster.onLeave}（コーダー${roster.coders}・レビュー${roster.reviewers}）`
+            }
           >
-            {detailsExpanded ? '詳細を閉じる' : 'ラン詳細'}
+            <span className="roster-faces" data-testid="roster-faces">
+              {state.roster.members.map((m) => (
+                <span key={m.id}>{FACE[memberExpression(m)]}</span>
+              ))}
+            </span>
+            編成
           </button>
-          {detailsExpanded && (
-            <div className="runbar-details" id="runbar-details" data-testid="runbar-details">
-              {secondaryDetails}
-            </div>
-          )}
-        </>
-      ) : (
-        secondaryDetails
-      )}
-    </div>
+        ) : (
+          <span className="pill" data-testid="roster-count">
+            👥<b>{roster.active}</b>
+            {roster.onLeave > 0 && <span className="roster-leave"> 😴{roster.onLeave}</span>}
+          </span>
+        )}
+        {onOpenOrg && (
+          <button
+            type="button"
+            className="pill org-pill"
+            data-testid="open-org"
+            data-org-lever-hint={showOrgLeverHint ? 'true' : 'false'}
+            disabled={readOnly}
+            aria-describedby={showOrgLeverHint ? ORG_LEVER_HINT_DESCRIPTION_ID : undefined}
+            onClick={(event) => {
+              dismissOrgLeverHint(runEpoch);
+              setOrgLeverHintDismissedEpoch(runEpoch);
+              onOpenOrg(event.currentTarget);
+            }}
+            title={
+              readOnly
+                ? 'リプレイ閲覧中は全社マップを開けません'
+                : '組織レバー。全社マップを開いて予算を使います'
+            }
+          >
+            <span aria-hidden="true">🗺</span>
+            {ORG_LEVER_BUTTON_LABEL}
+            {showOrgLeverHint && (
+              <span
+                className="org-lever-hint-mark"
+                data-testid="org-lever-hint-mark"
+                aria-hidden="true"
+              />
+            )}
+          </button>
+        )}
+        {showSessionMenu && onOpenHelp && onToggleSoundMuted && (
+          <RunSessionMenu
+            soundMuted={soundMuted}
+            onOpenHelp={onOpenHelp}
+            onToggleSoundMuted={onToggleSoundMuted}
+            menuButtonRef={menuButtonRef}
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
+          />
+        )}
+        {compact ? (
+          <>
+            <button
+              type="button"
+              className="pill runbar-details-toggle"
+              data-testid="runbar-details-toggle"
+              aria-expanded={detailsExpanded}
+              aria-controls="runbar-details"
+              onClick={() => setDetailsExpanded((expanded) => !expanded)}
+            >
+              {detailsExpanded ? '詳細を閉じる' : 'ラン詳細'}
+            </button>
+            {detailsExpanded && (
+              <div className="runbar-details" id="runbar-details" data-testid="runbar-details">
+                {secondaryDetails}
+              </div>
+            )}
+          </>
+        ) : (
+          secondaryDetails
+        )}
+      </div>
+    </>
   );
 }

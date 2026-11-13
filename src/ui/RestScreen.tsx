@@ -3,7 +3,7 @@
  *
  * シニアHP+個体スタミナ回復 / 技術的負債返済 / カード強化 / 採用 のいずれかを選ぶ。
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { canRecruit, RECRUIT_COST } from '../sim/member';
 import { playCost } from '../sim/cards';
 import { foldPassives } from '../sim/run/effects';
@@ -13,6 +13,8 @@ import { spendRiskView, spendStatusText } from '../render/spendRiskView';
 import { CardView } from './CardView';
 import { EffectTagList } from './EffectTagList';
 import { SpendConfirm } from './SpendConfirm';
+import { ResultOverlay } from './ResultOverlay';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { useReplayContent } from './replayContent';
 
 export interface RestScreenProps {
@@ -21,6 +23,8 @@ export interface RestScreenProps {
 }
 
 export function RestScreen({ state, onChoose }: RestScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef);
   const [choosingUpgrade, setChoosingUpgrade] = useState(false);
   const [confirmingRecruit, setConfirmingRecruit] = useState(false);
   const { resolveCard, resolveRelic } = useReplayContent();
@@ -43,35 +47,52 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
   };
   const restHealBonus = foldPassives(state.relics, resolveRelic).restHealBonus;
   const healTags = formatRestOptionTags('heal', { restHealBonus });
+
   if (choosingUpgrade) {
     return (
-      <div className="result-overlay" data-testid="rest" role="dialog" aria-label="Rest">
+      <ResultOverlay
+        ref={overlayRef}
+        className="overlay-contained"
+        data-testid="rest"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Rest"
+        tabIndex={-1}
+      >
         <div className="rest-panel">
-          <p className="result-eyebrow">REST / UPGRADE</p>
-          <h2 className="draft-title">強化する施策を選ぶ</h2>
-          <p className="rest-desc">
-            選んだカードを1段強化します。強化後の効果量はカード上のタグに反映されます。
-          </p>
-          <div className="rest-upgrade-grid" data-testid="rest-upgrade-cards">
-            {state.deck.map((card, index) => {
-              const def = resolveCard(card.defId);
-              return (
-                <button
-                  type="button"
-                  key={`${card.defId}-${index}`}
-                  className="rest-upgrade-card"
-                  data-testid={`rest-upgrade-card-${card.defId}-${index}`}
-                  onClick={() => onChoose('upgrade', index)}
-                >
-                  <CardView
-                    def={def}
-                    level={card.level}
-                    playCost={playCost(def.focusCost, card.level + 1)}
-                  />
-                  <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>
-                </button>
-              );
-            })}
+          <div
+            className="overlay-scroll"
+            data-testid="rest-upgrade-scroll"
+            role="region"
+            aria-label="強化する施策"
+            tabIndex={0}
+          >
+            <p className="result-eyebrow">REST / UPGRADE</p>
+            <h2 className="draft-title">強化する施策を選ぶ</h2>
+            <p className="rest-desc">
+              選んだカードを1段強化します。強化後の効果量はカード上のタグに反映されます。
+            </p>
+            <div className="rest-upgrade-grid" data-testid="rest-upgrade-cards">
+              {state.deck.map((card, index) => {
+                const def = resolveCard(card.defId);
+                return (
+                  <button
+                    type="button"
+                    key={`${card.defId}-${index}`}
+                    className="rest-upgrade-card"
+                    data-testid={`rest-upgrade-card-${card.defId}-${index}`}
+                    onClick={() => onChoose('upgrade', index)}
+                  >
+                    <CardView
+                      def={def}
+                      level={card.level}
+                      playCost={playCost(def.focusCost, card.level + 1)}
+                    />
+                    <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <button
             type="button"
@@ -82,11 +103,20 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             ← 休息メニューへ戻る
           </button>
         </div>
-      </div>
+      </ResultOverlay>
     );
   }
+
   return (
-    <div className="result-overlay" data-testid="rest" role="dialog" aria-label="Rest">
+    <ResultOverlay
+      ref={overlayRef}
+      className="overlay-contained"
+      data-testid="rest"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Rest"
+      tabIndex={-1}
+    >
       <div className="rest-panel">
         <p className="result-eyebrow">REST</p>
         <h2 className="draft-title">小休止。組織を整える。</h2>
@@ -99,79 +129,87 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             onCancel={() => setConfirmingRecruit(false)}
           />
         ) : null}
-        <div className="rest-options">
-          <button
-            type="button"
-            className="rest-option"
-            data-testid="rest-heal"
-            disabled={confirmingRecruit}
-            onClick={() => onChoose('heal')}
-          >
-            <span className="rest-icon">🛌</span>
-            <div className="rest-body">
-              <span className="rest-name">チームを休ませる</span>
-              <EffectTagList tags={healTags} testId="rest-tags-heal" />
-              <span className="rest-desc">
-                シニア体力とメンバーのスタミナを回復し、士気も少し上がる
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            className="rest-option"
-            data-testid="rest-repay"
-            disabled={confirmingRecruit}
-            onClick={() => onChoose('repay')}
-          >
-            <span className="rest-icon">🧹</span>
-            <div className="rest-body">
-              <span className="rest-name">技術的負債を返済</span>
-              <EffectTagList tags={formatRestOptionTags('repay')} testId="rest-tags-repay" />
-              <span className="rest-desc">
-                Tech Debt を一部返済し、次スプリントの手戻りを抑える
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            className="rest-option"
-            data-testid="rest-upgrade"
-            disabled={!canUpgrade || confirmingRecruit}
-            onClick={() => setChoosingUpgrade(true)}
-          >
-            <span className="rest-icon">🔧</span>
-            <div className="rest-body">
-              <span className="rest-name">施策を強化</span>
-              <EffectTagList tags={formatRestOptionTags('upgrade')} testId="rest-tags-upgrade" />
-              <span className="rest-desc">
-                {canUpgrade
-                  ? '選択したカードを1段強化し、次スプリントの集中力上限を増やす'
-                  : 'デッキが空です'}
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            className={`rest-option${recruitRisk.endsRun ? ' is-spend-risk' : ''}`}
-            data-testid="rest-recruit"
-            disabled={!canHire || confirmingRecruit}
-            onClick={requestRecruit}
-          >
-            <span className="rest-icon">🙋</span>
-            <div className="rest-body">
-              <span className="rest-name">メンバーを採用（💰{RECRUIT_COST}）</span>
-              <EffectTagList tags={formatRestOptionTags('recruit')} testId="rest-tags-recruit" />
-              <span className="rest-desc">
-                {spendStatusText(
-                  recruitRisk,
-                  recruitReady,
-                  recruitRisk.blocked === 'rosterFull' ? 'ロスターが満員です' : undefined,
-                )}
-              </span>
-            </div>
-          </button>
+        <div
+          className="overlay-scroll"
+          data-testid="rest-scroll"
+          role="region"
+          aria-label="休息の選択肢"
+          tabIndex={0}
+        >
+          <div className="rest-options">
+            <button
+              type="button"
+              className="rest-option"
+              data-testid="rest-heal"
+              disabled={confirmingRecruit}
+              onClick={() => onChoose('heal')}
+            >
+              <span className="rest-icon">🛌</span>
+              <div className="rest-body">
+                <span className="rest-name">チームを休ませる</span>
+                <EffectTagList tags={healTags} testId="rest-tags-heal" />
+                <span className="rest-desc">
+                  シニア体力とメンバーのスタミナを回復し、士気も少し上がる
+                </span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className="rest-option"
+              data-testid="rest-repay"
+              disabled={confirmingRecruit}
+              onClick={() => onChoose('repay')}
+            >
+              <span className="rest-icon">🧹</span>
+              <div className="rest-body">
+                <span className="rest-name">技術的負債を返済</span>
+                <EffectTagList tags={formatRestOptionTags('repay')} testId="rest-tags-repay" />
+                <span className="rest-desc">
+                  Tech Debt を一部返済し、次スプリントの手戻りを抑える
+                </span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className="rest-option"
+              data-testid="rest-upgrade"
+              disabled={!canUpgrade || confirmingRecruit}
+              onClick={() => setChoosingUpgrade(true)}
+            >
+              <span className="rest-icon">🔧</span>
+              <div className="rest-body">
+                <span className="rest-name">施策を強化</span>
+                <EffectTagList tags={formatRestOptionTags('upgrade')} testId="rest-tags-upgrade" />
+                <span className="rest-desc">
+                  {canUpgrade
+                    ? '選択したカードを1段強化し、次スプリントの集中力上限を増やす'
+                    : 'デッキが空です'}
+                </span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`rest-option${recruitRisk.endsRun ? ' is-spend-risk' : ''}`}
+              data-testid="rest-recruit"
+              disabled={!canHire || confirmingRecruit}
+              onClick={requestRecruit}
+            >
+              <span className="rest-icon">🙋</span>
+              <div className="rest-body">
+                <span className="rest-name">メンバーを採用（💰{RECRUIT_COST}）</span>
+                <EffectTagList tags={formatRestOptionTags('recruit')} testId="rest-tags-recruit" />
+                <span className="rest-desc">
+                  {spendStatusText(
+                    recruitRisk,
+                    recruitReady,
+                    recruitRisk.blocked === 'rosterFull' ? 'ロスターが満員です' : undefined,
+                  )}
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </ResultOverlay>
   );
 }

@@ -34,7 +34,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /tab-conflict-modal|org-lever-spend-risk/,
+      testIgnore: /tab-conflict-modal|org-lever-spend-risk|rest-overlay-modal/,
     },
     {
       name: 'chromium-conflict-modal',
@@ -60,6 +60,11 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
       testMatch: /sprint-result-quarter-goal/,
+    },
+    {
+      name: 'webkit-rest-overlay-modal',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /rest-overlay-modal/,
     },
   ],
   webServer: {

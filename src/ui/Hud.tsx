@@ -213,7 +213,11 @@ function CompactChip({
       <span
         className="hud-compact-chip-value"
         data-value-slot={valueSlot.slot}
-        style={{ minWidth: `${valueSlot.glyphs}ch` }}
+        style={{
+          flex: `0 0 ${valueSlot.glyphs}ch`,
+          width: `${valueSlot.glyphs}ch`,
+          minWidth: `${valueSlot.glyphs}ch`,
+        }}
       >
         {valueText}
       </span>

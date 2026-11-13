@@ -6,7 +6,8 @@ export type CompactValueSlot = 'delivery' | 'percent' | 'points' | 'grade' | 'ri
 /**
  * 数字スロットの最大文字数。
  *
- * 出荷はラン累計の 6 桁と単位 `pt`。百分率は `100%`。単位なしの点数は 4 桁。
+ * 出荷はラン累計の 6 桁と単位 `pt`。百分率は `100%`（`ch` 4 だと 3 桁が収まらないので 4.4）。
+ * 単位なしの点数は 4 桁。
  * グレードは 1 文字、炎上リスクは `HIGH`。
  */
 export function compactValueSlot(metric: { id: string; unit?: string; value: string | number }): {
@@ -16,7 +17,7 @@ export function compactValueSlot(metric: { id: string; unit?: string; value: str
   if (metric.id === 'delivery') return { slot: 'delivery', glyphs: 8 };
   if (metric.id === 'fireRisk') return { slot: 'risk', glyphs: 4 };
   if (typeof metric.value === 'string') return { slot: 'grade', glyphs: 1 };
-  if (metric.unit === '%') return { slot: 'percent', glyphs: 4 };
+  if (metric.unit === '%') return { slot: 'percent', glyphs: 4.4 };
   return { slot: 'points', glyphs: 4 };
 }
 

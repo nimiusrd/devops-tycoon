@@ -2,4 +2,5 @@
 
 declare module 'virtual:webgl-modules' {
   export const webglModuleUrls: Record<'board' | 'company' | 'department', string>;
+  export const quarterReviewScreenUrl: string;
 }

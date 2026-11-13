@@ -21,9 +21,9 @@ export function webglModulesPlugin(): Plugin {
     },
     load(id) {
       if (id !== resolvedId) return;
-      const entries = Object.entries(scenes).map(([key, name]) => {
+      const chunkUrl = (name: string) => {
         const path = `/src/ui/${name}.tsx`;
-        const url = build
+        return build
           ? `import.meta.ROLLUP_FILE_URL_${this.emitFile({
               type: 'chunk',
               preserveSignature: 'strict',
@@ -31,9 +31,12 @@ export function webglModulesPlugin(): Plugin {
               name,
             })}`
           : JSON.stringify(path);
-        return `${JSON.stringify(key)}: ${url}`;
+      };
+      const entries = Object.entries(scenes).map(([key, name]) => {
+        return `${JSON.stringify(key)}: ${chunkUrl(name)}`;
       });
-      return `export const webglModuleUrls = {${entries.join(',')}};`;
+      const quarterReviewScreenUrl = chunkUrl('QuarterReviewScreen');
+      return `export const webglModuleUrls = {${entries.join(',')}};export const quarterReviewScreenUrl = ${quarterReviewScreenUrl};`;
     },
   };
 }

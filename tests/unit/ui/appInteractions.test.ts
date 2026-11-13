@@ -212,6 +212,11 @@ vi.mock('../../../src/ui/QuarterReviewScreen', () => ({
     return null;
   },
 }));
+vi.mock('../../../src/ui/QuarterReviewLazyMount', () => ({
+  QuarterReviewLazyMount: function QuarterReviewLazyMount() {
+    return null;
+  },
+}));
 vi.mock('../../../src/ui/RecruitScreen', () => ({
   RecruitScreen: function RecruitScreen() {
     return null;
@@ -1070,7 +1075,7 @@ describe('App のフェーズとオーバーレイ', () => {
     ['rest', 'RestScreen', 'onChoose', 'restChoose'],
     ['recruit', 'RecruitScreen', 'onChoose', 'recruitChoose'],
     ['evolution', 'EvolutionScreen', 'onFinish', 'finishEvolution'],
-    ['quarterReview', 'QuarterReviewScreen', 'onAcknowledge', 'acknowledgeQuarterReview'],
+    ['quarterReview', 'QuarterReviewLazyMount', 'onAcknowledge', 'acknowledgeQuarterReview'],
   ] as const)('%s は %s に状態と操作を渡す', (phase, name, callback, method) => {
     const screen = mountApp();
     screen.phase(phase);

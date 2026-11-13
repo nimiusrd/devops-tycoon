@@ -111,7 +111,10 @@ export function DeckBar({
                     playCost={cost}
                     actionLabel={isExchangeMode ? '交換' : '発動'}
                     disabled={!canAct}
-                    gated={!canAct && !!disabledReason}
+                    gated={
+                      !!cardInteractionBlockedReason &&
+                      disabledReason === cardInteractionBlockedReason
+                    }
                     disabledReason={disabledReason}
                     onPlay={() => (isExchangeMode ? onExchange?.(deckIndex) : onPlay(deckIndex))}
                   />

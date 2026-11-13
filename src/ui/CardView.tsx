@@ -171,7 +171,10 @@ export function CardView({
           })()}
       </div>
       {((disabled && disabledReason) || (compact && onPlay)) && (
-        <span className="card-disabled-reason" data-testid="card-disabled-reason">
+        <span
+          className={`card-disabled-reason${gated ? ' is-gate-reason' : ''}`}
+          data-testid="card-disabled-reason"
+        >
           {disabled ? disabledReason : undefined}
         </span>
       )}

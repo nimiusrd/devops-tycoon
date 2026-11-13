@@ -631,7 +631,15 @@ export function ActionBar({
                         {paused ? '武装中（停止中）' : '武装中'}
                       </span>
                     ) : !ready && availability.blockMessage ? (
-                      <span className="action-block-reason" data-testid={`action-reason-${a.id}`}>
+                      <span
+                        className={`action-block-reason${
+                          availability.blockReason === 'padding-stall' ||
+                          availability.blockReason === 'padding-wait'
+                            ? ' is-padding-gate'
+                            : ''
+                        }`}
+                        data-testid={`action-reason-${a.id}`}
+                      >
                         {availability.blockMessage}
                       </span>
                     ) : (

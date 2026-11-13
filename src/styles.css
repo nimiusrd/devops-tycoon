@@ -2977,13 +2977,17 @@ body:has(.overlay-contained) {
   color: inherit;
   font-weight: 800;
 }
-.action-block-reason,
-.interaction-block-reason {
-  font-size: 11px;
+.action-block-reason {
+  font-size: 9px;
   font-weight: 800;
   color: var(--sun);
   line-height: 1.2;
   max-width: 100%;
+  white-space: normal;
+}
+.action-block-reason.is-padding-gate,
+.interaction-block-reason {
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3396,10 +3400,13 @@ body:has(.overlay-contained) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   line-height: 1.2;
   color: var(--visual-color-banner-hell-text);
+}
+.card-disabled-reason.is-gate-reason {
+  font-size: 11px;
 }
 .card.card-disabled.is-gated .card-face {
   opacity: 0.45;

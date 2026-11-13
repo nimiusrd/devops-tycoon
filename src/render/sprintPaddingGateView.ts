@@ -20,7 +20,9 @@ export const SPRINT_PADDING_GATE_MESSAGES: Record<SprintPaddingGateKind, string>
   waiting: 'スプリント時間の待機中',
 };
 
-export function sprintPaddingGateMessage(sprint: SprintState | undefined): string | undefined {
+export function sprintPaddingGateMessage(
+  sprint: SprintState | null | undefined,
+): string | undefined {
   if (!sprint) return undefined;
   const kind = resolveSprintPaddingGate(sprint);
   return kind ? SPRINT_PADDING_GATE_MESSAGES[kind] : undefined;

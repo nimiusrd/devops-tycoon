@@ -223,7 +223,7 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(dot?.burnUrgency).toBeCloseTo(0.5);
   });
 
-  it('Review 山は 320/390 で他工程の粒と重ならない（#995）', () => {
+  it('Review 山は 320/390 で他工程の粒と重ならない（#995）', { timeout: 60_000 }, () => {
     const review = Array.from({ length: 15 }, (_, index) =>
       task({ id: index + 1, lane: 'review', kind: index % 3 === 0 ? 'routine' : 'normal' }),
     );

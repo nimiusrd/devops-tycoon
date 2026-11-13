@@ -80,8 +80,9 @@ interface BoardGesture {
 function blocksBoardTarget(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
-    target.closest('.st-label, .board-flow-summary, .bubble, .board-legend, .pile-overflow') !==
-      null
+    target.closest(
+      '.st-label, .board-flow-summary, .bubble, .board-legend, .pile-overflow, .board-overflow-picker',
+    ) !== null
   );
 }
 
@@ -272,6 +273,24 @@ export function Board({
   const [gesture, setGesture] = useState<BoardGesture | null>(null);
   const [confirmedTarget, setConfirmedTarget] = useState('');
   const [overflowPickerLane, setOverflowPickerLane] = useState<Lane | null>(null);
+  const overflowTriggerRefs = useRef<Partial<Record<Lane, HTMLButtonElement | null>>>({});
+  const overflowPickerCloseRef = useRef<HTMLButtonElement | null>(null);
+
+  const closeOverflowPicker = useCallback(
+    (lane?: Lane | null) => {
+      const returnLane = lane ?? overflowPickerLane;
+      setOverflowPickerLane(null);
+      if (returnLane) {
+        window.requestAnimationFrame(() => overflowTriggerRefs.current[returnLane]?.focus());
+      }
+    },
+    [overflowPickerLane],
+  );
+
+  useEffect(() => {
+    if (!overflowPickerLane) return;
+    overflowPickerCloseRef.current?.focus();
+  }, [overflowPickerLane]);
   const overflowHiddenIds = useMemo(
     () =>
       overflowPickerLane ? boardOverflowHiddenTaskIds(tasks, overflowPickerLane) : ([] as number[]),
@@ -590,10 +609,15 @@ export function Board({
         .map((s) => (
           <button
             key={`of-${s.lane}`}
+            ref={(element) => {
+              overflowTriggerRefs.current[s.lane] = element;
+            }}
             type="button"
             className="pile-overflow"
             data-testid={`overflow-${s.lane}`}
             aria-label={boardOverflowAriaLabel(s.lane, s.overflow)}
+            aria-haspopup="dialog"
+            aria-expanded={overflowPickerLane === s.lane}
             style={{ left: pct(s.overflowX, VIEW_W), top: pct(s.overflowY, VIEW_H) }}
             onClick={(event) => {
               event.stopPropagation();
@@ -609,19 +633,33 @@ export function Board({
           className="board-overflow-picker"
           data-testid={`board-overflow-picker-${overflowPickerLane}`}
           role="dialog"
+          aria-modal="true"
           aria-label={`${boardOverflowAriaLabel(overflowPickerLane, overflowHiddenIds.length)}の一覧`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.stopPropagation();
+              closeOverflowPicker(overflowPickerLane);
+            }
+          }}
         >
           <div className="board-overflow-picker-header">
             <span>{boardOverflowAriaLabel(overflowPickerLane, overflowHiddenIds.length)}</span>
             <button
+              ref={overflowPickerCloseRef}
               type="button"
               className="board-overflow-picker-close"
               data-testid="board-overflow-picker-close"
-              onClick={() => setOverflowPickerLane(null)}
+              onClick={() => closeOverflowPicker(overflowPickerLane)}
             >
               閉じる
             </button>
           </div>
+          {!armedAction && (
+            <p className="board-overflow-picker-hint" data-testid="board-overflow-picker-hint">
+              介入・分割アクション選択中のみ選べます
+            </p>
+          )}
           <ul className="board-overflow-picker-list">
             {overflowHiddenIds.map((taskId) => {
               const task = tasks.find((entry) => entry.id === taskId);
@@ -655,7 +693,7 @@ export function Board({
                         );
                       }
                       onDragComplete(target);
-                      setOverflowPickerLane(null);
+                      closeOverflowPicker(overflowPickerLane);
                     }}
                   >
                     <span className="board-overflow-option-label">タスク #{taskId}</span>

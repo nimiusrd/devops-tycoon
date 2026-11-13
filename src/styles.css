@@ -1147,11 +1147,13 @@ body {
 
 .board-overflow-picker {
   position: absolute;
-  right: 12px;
-  top: 52px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  top: auto;
   z-index: var(--visual-layer-sprint-foreground);
-  width: min(240px, 72vw);
-  max-height: min(220px, 40vh);
+  width: auto;
+  max-height: min(104px, calc(100% - 16px));
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1172,9 +1174,16 @@ body {
   color: var(--cream);
 }
 
+.board-overflow-picker-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--cream) 85%, transparent);
+}
+
 .board-overflow-picker-close {
   min-width: 44px;
-  min-height: 28px;
+  min-height: 44px;
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);

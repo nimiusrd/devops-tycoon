@@ -561,7 +561,7 @@ export function planBoardScene(
       bubble,
       overflow,
       overflowX: layout.pile.x,
-      overflowY: layout.pile.y + apexDy - 26,
+      overflowY: layout.pile.y + apexDy - 56,
     });
 
     const offsets = pileOffsets(shown.length, layout.perRow);
@@ -607,7 +607,7 @@ export function planBoardScene(
       const rows = Math.ceil(shown / reviewCap.perRow);
       const apexDy = rows > 0 ? -(rows - 1) * DOT_DY : 0;
       reviewStation.overflowX = reviewPile.clusterX;
-      reviewStation.overflowY = reviewPile.clusterY + apexDy - 26;
+      reviewStation.overflowY = reviewPile.clusterY + apexDy - 56;
     }
   }
 

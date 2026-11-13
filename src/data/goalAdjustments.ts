@@ -94,7 +94,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'extend_deadline',
     label: '期限延長',
-    description: '品質と士気を守って再挑戦する。経営の patience を消費し、予算も使う。',
+    description: '品質と士気を守って再挑戦する。経営信頼を消費し、予算も使う。',
     negotiator: 'management',
     trustDelta: { management: -12 },
     budgetDelta: -10,
@@ -173,8 +173,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'stakeholder_care',
     label: 'ステークホルダーケア',
-    description:
-      '説明責任と期待調整で信頼を戻す。予算と次期 Delivery 目標の上積みを払う（RI-79）。',
+    description: '説明責任と期待調整で信頼を戻す。予算と次期 Delivery 目標の上積みを払う。',
     negotiator: 'all',
     trustDelta: { management: 12, customers: 10, team: 8 },
     budgetDelta: -12,

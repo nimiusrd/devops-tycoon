@@ -2685,6 +2685,12 @@ body:has(.overlay-contained) {
 .sprint-layout[data-sprint-bottom-rail='deck'] .actionbar:not(:has(.action-target-picker)) .pips {
   display: none;
 }
+body[data-tutorial-step='combo-gauge']
+  .sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .combo-gauge {
+  display: block;
+}
 .sprint-layout[data-sprint-bottom-rail='deck']
   .actionbar:not(:has(.action-target-picker))
   .focus-energy {

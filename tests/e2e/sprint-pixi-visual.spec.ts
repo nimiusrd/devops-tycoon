@@ -245,9 +245,11 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await freezePixiForScreenshot(page);
 
     // 盤面全体（DOM ラベル・凡例＋Pixi canvas の合成）で回帰を見る。
+    // 工程要約の列名レイアウトは board-flow-column-labels-1005 で検証する。
     await expect(page.getByTestId('board')).toHaveScreenshot('sprint-pixi-board.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
+      mask: [page.locator('.board-flow-summary')],
     });
   });
 

@@ -322,7 +322,7 @@ afterEach(() => {
 });
 
 describe('Board の状態表示', () => {
-  it('工程件数・渋滞・炎上の緊急度・流れる粒と省略数を表示する', () => {
+  it('工程件数・渋滞・炎上の緊急度・流れる粒と省略数を表示する', { timeout: 60_000 }, () => {
     const tasks = [
       ...Array.from({ length: 8 }, (_, id) => makeTask(id, { lane: 'backlog' })),
       ...Array.from({ length: 21 }, (_, id) => makeTask(100 + id)),

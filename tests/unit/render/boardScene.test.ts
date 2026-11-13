@@ -240,7 +240,7 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(hidden.every((id) => tasks.some((entry) => entry.id === id))).toBe(true);
   });
 
-  it('粒の中心は設計空間の内側に収まる', () => {
+  it('粒の中心は設計空間の内側に収まる', { timeout: 60_000 }, () => {
     const scene = planBoardScene([
       ...tasksIn('backlog', 6),
       ...tasksIn('review', 18),

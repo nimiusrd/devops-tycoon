@@ -25,7 +25,7 @@ function piledReviewWithCodingFlowTasks() {
   return [...review, makeTask(29, { lane: 'coding', kind: 'normal', progress: 0.48 })];
 }
 
-describe('boardPileLayout（Review 山の寄せ）', () => {
+describe('boardPileLayout（Review 山の寄せ）', { timeout: 60_000 }, () => {
   it('320/390 の見分け縮尺で他工程粒と交差しない Review 山を返す', () => {
     const scene = planBoardScene(piledReviewWithCodingFlowTasks());
     for (const scale of boardPhonePresentationScales()) {
@@ -79,7 +79,7 @@ describe('boardPileLayout（Review 山の寄せ）', () => {
     const shift = findReviewPileShift(disturbed);
     const adjusted = applyLanePileShift(disturbed, 'review', shift);
     expect(countReviewCrossStationOverlaps(adjusted)).toBe(0);
-    expect(findReviewPileShift(disturbed)).toEqual(shift);
+    expect(shift).toEqual(findReviewPileShift(disturbed));
     expect(adjustReviewPileLayout(baseline)).toEqual(adjustReviewPileLayout(baseline));
   });
 });

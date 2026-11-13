@@ -96,6 +96,7 @@ for (const viewport of viewports) {
       return game.getState().deck;
     });
     await expect(page.getByTestId('draft')).toBeVisible();
+    await page.getByTestId('draft-details-auto-test').locator('summary').click();
     const explanation = page.getByTestId('card-company-guidance-auto-test');
     await expect(explanation).toContainText('配置対象なし');
     await expect(explanation).toContainText('予算不足');

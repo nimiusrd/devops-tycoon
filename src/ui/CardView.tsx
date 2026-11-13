@@ -116,32 +116,55 @@ export function CardView({
           {def.name}
           {stars && <span className="card-stars">{stars}</span>}
         </div>
-        {!compact && (
-          <>
-            <EffectTagList
-              tags={formatCardTagsAtLevel(def, level)}
-              testId={`card-effect-tags-${def.id}`}
-            />
-            <ul className="card-effects">
-              {def.description.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
-            {companyGuidance && (
-              <p className="card-company-guidance" data-testid={`card-company-guidance-${def.id}`}>
-                {companyGuidance}
-              </p>
-            )}
-            {(whatIfPreview || whatIfComputing) && (
+        {!compact &&
+          (() => {
+            const effectDetails = (
+              <>
+                <EffectTagList
+                  tags={formatCardTagsAtLevel(def, level)}
+                  testId={`card-effect-tags-${def.id}`}
+                />
+                <ul className="card-effects">
+                  {def.description.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+                {companyGuidance && (
+                  <p
+                    className="card-company-guidance"
+                    data-testid={`card-company-guidance-${def.id}`}
+                  >
+                    {companyGuidance}
+                  </p>
+                )}
+              </>
+            );
+            const whatIfBlock = (whatIfPreview || whatIfComputing) && (
               <WhatIfPreview
                 preview={whatIfPreview}
                 computing={whatIfComputing && !whatIfPreview}
                 compact
                 testId={`what-if-card-${def.id}`}
               />
-            )}
-          </>
-        )}
+            );
+            if (onPick) {
+              return (
+                <>
+                  <details className="card-draft-details" data-testid={`draft-details-${def.id}`}>
+                    <summary>効果・説明</summary>
+                    {effectDetails}
+                  </details>
+                  {whatIfBlock}
+                </>
+              );
+            }
+            return (
+              <>
+                {effectDetails}
+                {whatIfBlock}
+              </>
+            );
+          })()}
       </div>
       {((disabled && disabledReason) || (compact && onPlay)) && (
         <span className="card-disabled-reason" data-testid="card-disabled-reason">
@@ -169,11 +192,15 @@ export function CardView({
 
   if (onPick) {
     return (
-      <div className={className} title={title} data-testid={`draft-option-${def.id}`}>
+      <div
+        className={className}
+        title={title ?? formatCardTooltip(def, level)}
+        data-testid={`draft-option-${def.id}`}
+      >
         {inner}
         <button
           type="button"
-          className="btn"
+          className="btn btn-primary"
           onClick={onPick}
           disabled={disabled}
           title={title}

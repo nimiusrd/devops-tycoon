@@ -1061,6 +1061,23 @@ describe('RI-26 採用の入口拡張', () => {
     expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team);
   });
 
+  it('店頭で買える品がないときは shop-offer を抽選しない', () => {
+    const engine = new RunEngine({ seed: 'ri1018-no-shop-offer', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as ShopRecruitInternals & {
+      advanceBeat: () => void;
+      budget: number;
+    };
+    internals.budget = 3;
+    for (let i = 0; i < 40; i += 1) {
+      internals.phase = 'evolution';
+      internals.advanceBeat();
+      const beat = engine.snapshot().beat;
+      if (!beat) continue;
+      expect(beat.eventId).not.toBe('shop-offer');
+    }
+  });
+
   it('採用不能時は採用系ビートを抽選しない', () => {
     const engine = new RunEngine({ seed: 'ri26-no-hire-pool', difficulty: 'easy' });
     engine.startRun();

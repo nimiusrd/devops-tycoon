@@ -480,7 +480,7 @@
   padding-bottom: 2px;
 }
 
-.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail]:has(
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
     :global(.hud.hud-compact)
   )
   .statusSlot

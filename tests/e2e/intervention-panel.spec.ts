@@ -239,6 +239,7 @@ for (const viewport of VIEWPORTS) {
     await page.getByTestId('action-inspect-toggle').click();
 
     await beginPublicSprint(page, { seed: 'ops', difficulty: 'normal' });
+    await expandSprintInterventionsIfCollapsed(page);
     const reviewCount = await advanceCurrentSprintToReviewQueue(page, 4);
     await expect(page.getByTestId('action-target-interruptReview')).toContainText(
       `${reviewCount}件`,
@@ -251,6 +252,7 @@ for (const viewport of VIEWPORTS) {
     await page.getByTestId('action-inspect-toggle').click();
 
     await beginPublicSprint(page, { seed: 'ri34-burn', difficulty: 'hard' });
+    await expandSprintInterventionsIfCollapsed(page);
     const burning = await advanceCurrentSprintToBurning(page);
     await expect(page.getByTestId('action-target-firefight')).toContainText(
       `炎上 ${burning.length}件`,

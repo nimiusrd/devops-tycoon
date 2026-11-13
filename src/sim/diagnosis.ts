@@ -42,7 +42,8 @@ const META: Record<DiagnosisType, { label: string; description: string }> = {
   },
   reviewHell: {
     label: 'Review Hell 型',
-    description: 'AI で PR は増えましたが、レビュー工程が崩壊しかけています。容量の増強を。',
+    description:
+      'AI で PR は増えましたが、レビュー工程が崩壊しかけています。レビュー容量の増強が急務です。',
   },
   aiOverproduction: {
     label: 'AI Overproduction 型',
@@ -50,7 +51,7 @@ const META: Record<DiagnosisType, { label: string; description: string }> = {
   },
   reworkSpiral: {
     label: 'Rework Spiral 型',
-    description: 'AI 出力の検証不足で手戻りが連鎖しています。品質とリテラシーの底上げを。',
+    description: 'AI 出力の検証不足で手戻りが連鎖しています。品質とリテアシーの底上げが急務です。',
   },
   seniorSacrifice: {
     label: 'Senior Sacrifice 型',

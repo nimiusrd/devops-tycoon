@@ -35,12 +35,12 @@ const THEMES: Record<DiagnosisType, DiagnosisTheme> = {
   ]),
   reworkSpiral: diagnosisThemeEntry('tone-rework-spiral', 'reworkSpiral', [
     '手戻りが連鎖しています。',
-    '品質投資を',
+    '品質投資が急務です。',
   ]),
   seniorSacrifice: diagnosisThemeEntry('tone-senior-sacrifice', 'seniorSacrifice', [
     'シニアがすべてを',
-    '背負っています。',
-    '負荷分散を',
+    '背負い、負荷分散が',
+    '急務です。',
   ]),
   documentationKingdom: diagnosisThemeEntry('tone-documentation-kingdom', 'documentationKingdom', [
     '盤石の基盤で',

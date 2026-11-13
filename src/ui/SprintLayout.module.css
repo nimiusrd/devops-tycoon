@@ -23,7 +23,20 @@
   :global(.app).appShell
   .headerSlot {
   margin-top: var(--persistence-banner-height, 0px);
-  margin-bottom: calc(-1 * var(--persistence-banner-height, 0px));
+}
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .statusSlot,
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .deckSlot,
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .stageSlot,
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .controlsSlot {
+  transform: translateY(calc(-1 * var(--persistence-banner-height, 0px)));
 }
 
 .root {

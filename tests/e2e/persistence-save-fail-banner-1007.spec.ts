@@ -151,4 +151,18 @@ test('320 で保存失敗バナーは語の途中で折り返さず、盤面を�
   expect(hudTop).not.toBeNull();
   expect(hudTop!.hudY).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height - 1);
   expect(hudTop!.toggleY).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height - 1);
+  const overlaps = await page.evaluate(() => {
+    const hud = document.querySelector('[data-testid="hud"]');
+    const subbar = document.querySelector('.subbar');
+    if (!(hud instanceof HTMLElement) || !(subbar instanceof HTMLElement)) return null;
+    const a = hud.getBoundingClientRect();
+    const b = subbar.getBoundingClientRect();
+    return (
+      a.left < b.right - 0.5 &&
+      a.right > b.left + 0.5 &&
+      a.top < b.bottom - 0.5 &&
+      a.bottom > b.top + 0.5
+    );
+  });
+  expect(overlaps, 'HUD と subbar の重なり').toBe(false);
 });

@@ -75,6 +75,7 @@ import {
   persistenceExportMessages,
 } from './ui/downloadTextFile';
 import { PersistenceNotice, PersistenceQuietChip } from './ui/PersistenceNotice';
+import { TabConflictAcknowledgedChip } from './ui/TabConflictNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -628,59 +629,67 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
 
   const quietInline =
     phase !== 'title' && phase !== 'won' && phase !== 'lost' && phase !== 'quarterReview';
+  const exportPersistence = useCallback(() => {
+    const runText = run.exportRunSaveText();
+    const replays = run.exportPendingReplayFiles();
+    if (!runText && replays.length === 0) {
+      setExportMessage(persistenceExportMessage(null, false));
+      return;
+    }
+    if (runText && replays.length === 0) {
+      setExportMessage(
+        persistenceExportMessage(
+          runText,
+          downloadTextFile('devops-tycoon-run-save.json', runText),
+          'run',
+        ),
+      );
+      return;
+    }
+    if (!runText && replays.length === 1) {
+      const file = replays[0];
+      if (!file) return;
+      setExportMessage(
+        persistenceExportMessage(file.text, downloadTextFile(file.filename, file.text), 'replay'),
+      );
+      return;
+    }
+    const backup = serializePersistenceBackup({
+      runSave: runText,
+      replays: replays.map((file) => file.text),
+    });
+    const downloaded = downloadTextFile('devops-tycoon-persistence-backup.json', backup);
+    const included = [
+      ...(runText ? [{ text: runText, downloaded, kind: 'run' as const }] : []),
+      ...(replays.length > 0
+        ? [{ text: replays[0]?.text ?? '', downloaded, kind: 'replay' as const }]
+        : []),
+    ];
+    setExportMessage(persistenceExportMessages(included));
+  }, [run]);
+  const tabConflictAcknowledgedChip = run.tabConflict && !run.tabConflictModalOpen && (
+    <div className="persistence-quiet-slot" data-testid="tab-conflict-quiet-slot">
+      <TabConflictAcknowledgedChip
+        onTakeOver={run.takeOverForeignTab}
+        showExport={run.persistenceStatus.showExport}
+        onExport={exportPersistence}
+      />
+    </div>
+  );
   const persistenceNotice = (
     <PersistenceNotice
       notice={run.persistenceStatus}
       quietPlacement={quietInline ? 'inline' : 'overlay'}
       exportMessage={exportMessage}
       tabConflict={run.tabConflict}
+      tabConflictModalOpen={run.tabConflictModalOpen}
+      onAcknowledgeTabConflict={run.acknowledgeTabConflict}
       onTakeOver={run.takeOverForeignTab}
       onRetry={() => {
         setExportMessage(null);
         void run.retryPersistence();
       }}
-      onExport={() => {
-        const runText = run.exportRunSaveText();
-        const replays = run.exportPendingReplayFiles();
-        if (!runText && replays.length === 0) {
-          setExportMessage(persistenceExportMessage(null, false));
-          return;
-        }
-        if (runText && replays.length === 0) {
-          setExportMessage(
-            persistenceExportMessage(
-              runText,
-              downloadTextFile('devops-tycoon-run-save.json', runText),
-              'run',
-            ),
-          );
-          return;
-        }
-        if (!runText && replays.length === 1) {
-          const file = replays[0];
-          if (!file) return;
-          setExportMessage(
-            persistenceExportMessage(
-              file.text,
-              downloadTextFile(file.filename, file.text),
-              'replay',
-            ),
-          );
-          return;
-        }
-        const backup = serializePersistenceBackup({
-          runSave: runText,
-          replays: replays.map((file) => file.text),
-        });
-        const downloaded = downloadTextFile('devops-tycoon-persistence-backup.json', backup);
-        const included = [
-          ...(runText ? [{ text: runText, downloaded, kind: 'run' as const }] : []),
-          ...(replays.length > 0
-            ? [{ text: replays[0]?.text ?? '', downloaded, kind: 'replay' as const }]
-            : []),
-        ];
-        setExportMessage(persistenceExportMessages(included));
-      }}
+      onExport={exportPersistence}
     />
   );
 
@@ -688,6 +697,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   if (phase === 'title') {
     phaseBody = (
       <>
+        {tabConflictAcknowledgedChip}
         <SceneScrollReset>
           <TitleScreen
             seed={state.seed}
@@ -731,37 +741,37 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             }}
           />
         </SceneScrollReset>
-        {helpOpen && (
+        {helpOpen && !run.tabConflictModalOpen && (
           <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
             <HowToPlayScreen onClose={closeHelp} />
           </Suspense>
         )}
         <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeNonHelpTitleModals} />}>
-          {metaShopOpen && (
+          {metaShopOpen && !run.tabConflictModalOpen && (
             <MetaShopScreen
               meta={meta}
               onPurchase={(id) => run.purchaseMetaUnlock(id)}
               onClose={closeMetaShop}
             />
           )}
-          {deckPolicyOpen && (
+          {deckPolicyOpen && !run.tabConflictModalOpen && (
             <DeckPolicyScreen
               meta={meta}
               onChange={(ids) => run.setPreferredCardIds(ids)}
               onClose={() => setDeckPolicyOpen(false)}
             />
           )}
-          {cardCollectionOpen && (
+          {cardCollectionOpen && !run.tabConflictModalOpen && (
             <CardCollectionScreen
               meta={meta}
               onChangePreferred={(ids) => run.setPreferredCardIds(ids)}
               onClose={closeCardCollection}
             />
           )}
-          {achievementsOpen && (
+          {achievementsOpen && !run.tabConflictModalOpen && (
             <AchievementCollectionScreen meta={meta} onClose={() => setAchievementsOpen(false)} />
           )}
-          {replayListOpen && (
+          {replayListOpen && !run.tabConflictModalOpen && (
             <ReplayListScreen
               replays={run.replays}
               onOpen={openReplay}
@@ -916,6 +926,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         onExpandedChange={setHudExpanded}
       />
       <PersistenceQuietChip notice={run.persistenceStatus} active={quietInline} />
+      {tabConflictAcknowledgedChip}
       <RunBar
         state={state}
         onOpenFormation={() => setFormationOpen(true)}
@@ -1141,7 +1152,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           )}
         </div>
         <Suspense fallback={null}>
-          {formationOpen && (
+          {formationOpen && !run.tabConflictModalOpen && (
             <FormationScreen
               state={state}
               onAssign={run.assignMember}
@@ -1153,7 +1164,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           )}
         </Suspense>
         {helpOpen && <RunHelpSimPause game={game} />}
-        {helpOpen && (
+        {helpOpen && !run.tabConflictModalOpen && (
           <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
             <HowToPlayScreen onClose={closeHelp} />
           </Suspense>

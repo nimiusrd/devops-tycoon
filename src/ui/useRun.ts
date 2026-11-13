@@ -66,6 +66,8 @@ export interface UseRun {
   retryPersistence: () => Promise<void>;
   /** 別タブが先に記録を更新し、このタブからの保存を止めている。 */
   tabConflict: boolean;
+  tabConflictModalOpen: boolean;
+  acknowledgeTabConflict: () => void;
   /** ラン完了の保存に失敗し、再試行まで次のランを始められない。 */
   finishSaveBlocksNewRun: boolean;
   /** 最新の記録を読み直して操作を引き継ぐ。 */
@@ -170,6 +172,9 @@ export function useRun(game: GameHandle): UseRun {
     game.getPersistenceStatus(),
   );
   const [tabConflict, setTabConflict] = useState(() => game.hasTabConflict());
+  const [tabConflictModalOpen, setTabConflictModalOpen] = useState(() =>
+    game.hasTabConflictModalOpen(),
+  );
   const [finishSaveBlocksNewRun, setFinishSaveBlocksNewRun] = useState(() =>
     game.finishSaveBlocksNewRun(),
   );
@@ -261,6 +266,7 @@ export function useRun(game: GameHandle): UseRun {
       setRunSaveIssue(game.getRunSaveIssue());
       setPersistenceStatus(game.getPersistenceStatus());
       setTabConflict(game.hasTabConflict());
+      setTabConflictModalOpen(game.hasTabConflictModalOpen());
       setFinishSaveBlocksNewRun(game.finishSaveBlocksNewRun());
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
@@ -417,6 +423,7 @@ export function useRun(game: GameHandle): UseRun {
   const setSoundMuted = useCallback((muted: boolean) => void game.setSoundMuted(muted), [game]);
   const retryPersistence = useCallback(() => game.retryPersistence(), [game]);
   const takeOverForeignTab = useCallback(() => game.takeOverForeignTab(), [game]);
+  const acknowledgeTabConflict = useCallback(() => game.acknowledgeTabConflict(), [game]);
 
   useEffect(() => {
     setAnnouncedLiveMessage(persistenceStatus.liveMessage);
@@ -447,6 +454,8 @@ export function useRun(game: GameHandle): UseRun {
     persistenceStatus: { ...persistenceStatus, liveMessage: announcedLiveMessage },
     retryPersistence,
     tabConflict,
+    tabConflictModalOpen,
+    acknowledgeTabConflict,
     finishSaveBlocksNewRun,
     takeOverForeignTab,
     runEpoch,

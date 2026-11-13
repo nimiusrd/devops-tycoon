@@ -30,7 +30,23 @@ export default defineConfig({
       ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM } }
       : {}),
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /tab-conflict-modal/,
+    },
+    {
+      name: 'chromium-conflict-modal',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /tab-conflict-modal/,
+    },
+    {
+      name: 'webkit-conflict-modal',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /tab-conflict-modal/,
+    },
+  ],
   webServer: {
     command: `npm run ${process.env.PLAYWRIGHT_PREVIEW === '1' ? 'preview' : 'dev'} -- --host ${HOST} --port ${PORT} --strictPort`,
     url: baseURL,

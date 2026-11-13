@@ -121,11 +121,13 @@ test('古いタブの音切替では購入を巻き戻さず、競合を案内�
 
   await other.evaluate(() => (window as TabGameWindow).game?.setSoundMuted(false));
   await expect(other.getByTestId('tab-conflict-notice')).toBeVisible();
+  await expect(other.getByTestId('tab-conflict-continue')).toBeVisible();
   await expect(other.getByTestId('tab-conflict-reload')).toBeVisible();
+  await expect(other.locator('#root')).toHaveJSProperty('inert', true);
   const banner = other.getByTestId('tab-conflict-notice');
   const bannerBox = await banner.boundingBox();
   expect(bannerBox).not.toBeNull();
-  expect(bannerBox!.height).toBeLessThanOrEqual(136);
+  expect(bannerBox!.height).toBeLessThanOrEqual(172);
   await expect(banner).not.toHaveAttribute('role', 'alert');
   expect(await banner.getAttribute('aria-live')).toBeNull();
   const liveCount = await other.evaluate(() => {
@@ -247,7 +249,7 @@ test('320px の競合案内は盤面を動かさず、書き出しと再読込�
   });
   const bannerBox = await banner.boundingBox();
   expect(bannerBox).not.toBeNull();
-  expect(bannerBox!.height).toBeLessThanOrEqual(136);
+  expect(bannerBox!.height).toBeLessThanOrEqual(172);
   expect(Math.abs(Number.parseFloat(reserved.height) - bannerBox!.height)).toBeLessThan(2);
   expect(Number.parseFloat(reserved.paddingTop)).toBe(0);
   const crumb = await other.getByTestId('crumb-team').boundingBox();
@@ -270,7 +272,7 @@ test('320px の競合案内は盤面を動かさず、書き出しと再読込�
   });
   const withError = await banner.boundingBox();
   expect(withError).not.toBeNull();
-  expect(withError!.height).toBeLessThanOrEqual(136);
+  expect(withError!.height).toBeLessThanOrEqual(198);
   await expect
     .poll(async () => {
       const errorBox = await banner.boundingBox();

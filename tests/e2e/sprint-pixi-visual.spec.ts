@@ -148,7 +148,7 @@ async function exposeResultCardForScreenshot(page: import('@playwright/test').Pa
         flex: none !important;
       }
       .result-overlay > .sprint-result-card {
-        min-height: 528px !important;
+        min-height: 1679px !important;
       }
       .overlay-scroll {
         overflow: visible !important;

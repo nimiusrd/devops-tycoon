@@ -173,7 +173,7 @@ export function CardView({
         {inner}
         <button
           type="button"
-          className="btn"
+          className="btn btn-primary"
           onClick={onPick}
           disabled={disabled}
           title={title}

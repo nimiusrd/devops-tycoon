@@ -716,7 +716,9 @@ test('リプレイの「カードドラフトへ」で次のドラフトキー�
   const draftCard = page.getByTestId('draft-card-copilot');
   await expect(draftCard).toBeVisible();
   await expect(draftCard).toBeDisabled();
-  await expect(page.getByTestId('draft-option-copilot')).toHaveCSS('width', '220px');
+  const draftOptionBox = await page.getByTestId('draft-option-copilot').boundingBox();
+  expect(draftOptionBox?.width).toBeGreaterThan(100);
+  expect((await draftCard.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await assertReadOnlyDraftA11y(page);
   await page.getByTestId('draft-exit-replay').click();
   await expect(page.getByTestId('title')).toBeVisible();
@@ -967,14 +969,14 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
   await expect(copilot).toBeVisible();
   await expect(copilot).toBeDisabled();
   await expect.poll(async () => copilot.evaluate((el) => el.tagName)).toBe('BUTTON');
-  // カードの幅は従来どおり維持し、その内側の取得ボタンも縮退させない。
+  // #1009: 3列コンパクトでも取得ボタンのタップ領域を維持する。
   await expect
     .poll(async () =>
       page
         .getByTestId('draft-option-copilot')
         .evaluate((el) => Math.round(el.getBoundingClientRect().width)),
     )
-    .toBeGreaterThanOrEqual(180);
+    .toBeGreaterThanOrEqual(48);
   expect((await copilot.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
   const layout = await page.evaluate(() => {

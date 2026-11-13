@@ -112,7 +112,7 @@ export function DraftScreen({
         <div className="draft-actions overlay-actions">
           <button
             type="button"
-            className="btn"
+            className="btn btn-draft-secondary"
             onClick={onMulligan}
             disabled={readOnly || !canMulligan}
             data-testid="draft-mulligan"
@@ -130,7 +130,7 @@ export function DraftScreen({
           </button>
           <button
             type="button"
-            className="btn"
+            className="btn btn-draft-secondary"
             onClick={onSkip}
             disabled={readOnly}
             title={readOnly ? readOnlyTitle : undefined}

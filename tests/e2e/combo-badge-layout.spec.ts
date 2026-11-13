@@ -155,7 +155,8 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
   for (const viewport of PHONE_VIEWPORTS) {
     test(`${viewport.name}: 出現・更新・途切れで盤面が 0px`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await beginPublicSprint(page, { seed: `combo-layout-${viewport.width}`, renderer: 'pixi' });
+      const seed = viewport.width === 320 ? 'qa-seed-1031' : `combo-layout-${viewport.width}`;
+      await beginPublicSprint(page, { seed, renderer: 'pixi' });
       await page.evaluate(() => document.fonts.ready);
 
       const initial = await readLayout(page);
@@ -230,8 +231,8 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
           );
           return { fire: fireBox.width, visible: fireBox.width - overlap };
         });
-        expect(cover.visible, '炎上バーの半分以上が見える').toBeGreaterThanOrEqual(
-          cover.fire / 2 - 0.5,
+        expect(cover.visible, '炎上バーの 62% 以上が見える（#997）').toBeGreaterThanOrEqual(
+          cover.fire * 0.62 - 0.5,
         );
         const badgeTop = Math.min(...badges.map((badge) => badge.y));
         const badgeBottom = Math.max(...badges.map((badge) => badge.y + badge.height));
@@ -336,9 +337,9 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
           0,
           Math.min(innerBox.right, fireBox.right) - Math.max(innerBox.left, fireBox.left),
         );
-        return fireBox.width - overlap >= fireBox.width / 2 - 0.5;
+        return fireBox.width - overlap >= fireBox.width * 0.62 - 0.5;
       });
-      expect(crowdedCover, '渋滞・炎上中も炎上バーの半分以上が見える').toBe(true);
+      expect(crowdedCover, '渋滞・炎上中も炎上バーの 62% 以上が見える（#997）').toBe(true);
     });
   }
 });

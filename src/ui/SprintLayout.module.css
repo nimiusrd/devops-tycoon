@@ -606,6 +606,18 @@
     :global(.meter-label) {
     grid-column: 1;
     grid-row: 1;
+    /* 「炎上タイマー」を「炎上」に短縮し、バー列に幅を戻す（#997 / #967）。 */
+    font-size: 0;
+    line-height: 0;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.meter-wrap-fire)
+    :global(.meter-label)::before {
+    content: '炎上';
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--text-dim);
   }
 
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.meter.fire) {
@@ -629,7 +641,8 @@
     align-items: baseline;
     column-gap: 4px;
     width: max-content;
-    max-width: 50%;
+    /* バーが広がってもコンボが半分を超えて被らない（#997）。 */
+    max-width: min(38%, 3.25rem);
     margin: 0;
     pointer-events: none;
     white-space: nowrap;

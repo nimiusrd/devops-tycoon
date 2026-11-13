@@ -113,6 +113,20 @@ class QuarterReviewRenderBoundary extends Component<
   }
 }
 
+function QuarterReviewLoadedFocusLock({ children }: { children: ReactNode }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef);
+  return (
+    <div
+      ref={overlayRef}
+      className="quarter-review-loaded-shell"
+      data-testid="quarter-review-shell"
+    >
+      {children}
+    </div>
+  );
+}
+
 class QuarterReviewLazyScreen extends Component<{
   screenProps: QuarterReviewScreenProps;
   onRenderError: () => void;
@@ -131,7 +145,11 @@ class QuarterReviewLazyScreen extends Component<{
   render() {
     return (
       <QuarterReviewRenderBoundary onError={this.props.onRenderError}>
-        <Suspense fallback={null}>{createElement(this.Screen, this.props.screenProps)}</Suspense>
+        <Suspense fallback={null}>
+          <QuarterReviewLoadedFocusLock>
+            {createElement(this.Screen, this.props.screenProps)}
+          </QuarterReviewLoadedFocusLock>
+        </Suspense>
       </QuarterReviewRenderBoundary>
     );
   }

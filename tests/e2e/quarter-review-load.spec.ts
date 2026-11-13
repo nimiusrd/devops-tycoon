@@ -86,8 +86,6 @@ test('四半期レビューの chunk 取得失敗でも HUD を残し、再試�
   page,
 }) => {
   test.setTimeout(120_000);
-  await pauseAtBossResult(page, E2E_MISSED_ADJUSTABLE_SEED);
-
   let available = false;
   await page.route(
     /\/(?:src\/ui\/QuarterReviewScreen\.tsx(?:\?.*)?|assets\/QuarterReviewScreen-[^/]+\.js(?:\?.*)?)$/,
@@ -96,6 +94,8 @@ test('四半期レビューの chunk 取得失敗でも HUD を残し、再試�
       else await route.abort('failed');
     },
   );
+
+  await pauseAtBossResult(page, E2E_MISSED_ADJUSTABLE_SEED);
 
   await page.getByTestId('result-continue').click();
   await expect(page.getByTestId('quarter-review-load-failed')).toHaveText('読み込めませんでした');

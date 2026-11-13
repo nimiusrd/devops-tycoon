@@ -50,5 +50,19 @@ for (const viewport of VIEWPORTS) {
     for (const label of FLOW_LABELS) {
       await assertFlowNameNotEllipsized(page, label, viewport.width);
     }
+
+    const columnBoxes = await page.locator('.board-flow-list > li').evaluateAll((items) =>
+      items.map((item) => {
+        const box = item.getBoundingClientRect();
+        return { lane: item.getAttribute('data-lane') ?? '', right: box.right, left: box.left };
+      }),
+    );
+    expect(columnBoxes).toHaveLength(FLOW_LABELS.length);
+    for (let i = 0; i < columnBoxes.length - 1; i += 1) {
+      expect(
+        columnBoxes[i].right,
+        `${columnBoxes[i].lane} と ${columnBoxes[i + 1].lane} の列が重なっている`,
+      ).toBeLessThanOrEqual(columnBoxes[i + 1].left + 1);
+    }
   });
 }

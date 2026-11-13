@@ -194,9 +194,19 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
 }
 
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。閉じる操作は DS-08 の名前付き button。 */
-function TitleModalLoadingFallback({ onDismiss }: { onDismiss: () => void }) {
+function TitleModalLoadingFallback({
+  onDismiss,
+  focusLockActive = true,
+}: {
+  onDismiss: () => void;
+  focusLockActive?: boolean;
+}) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss });
+  useDialogOverlayLock(overlayRef, {
+    restoreFocus: true,
+    onDismiss,
+    enabled: focusLockActive,
+  });
 
   return (
     <ResultOverlay
@@ -741,7 +751,14 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           />
         </SceneScrollReset>
         {helpOpen && (
-          <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
+          <Suspense
+            fallback={
+              <TitleModalLoadingFallback
+                onDismiss={closeHelp}
+                focusLockActive={!run.tabConflictModalOpen}
+              />
+            }
+          >
             <HowToPlayScreen onClose={closeHelp} focusLockActive={!run.tabConflictModalOpen} />
           </Suspense>
         )}
@@ -1190,7 +1207,14 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         </Suspense>
         {helpOpen && <RunHelpSimPause game={game} />}
         {helpOpen && (
-          <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
+          <Suspense
+            fallback={
+              <TitleModalLoadingFallback
+                onDismiss={closeHelp}
+                focusLockActive={!run.tabConflictModalOpen}
+              />
+            }
+          >
             <HowToPlayScreen onClose={closeHelp} focusLockActive={!run.tabConflictModalOpen} />
           </Suspense>
         )}

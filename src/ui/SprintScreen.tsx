@@ -56,7 +56,7 @@ import {
   type PlaybackSpeed,
   type PlayingSpeed,
 } from './sprintTempo';
-import { useResponsiveMode } from './responsiveMode';
+import { RESPONSIVE_BREAKPOINTS, useResponsiveMode } from './responsiveMode';
 import { TutorialGuide } from './TutorialGuide';
 import { VisualIcon } from './VisualIcon';
 import { healthTag } from '../render/teamHealthTheme';
@@ -130,6 +130,14 @@ export function SprintScreen({
   onEventTickerExpandedChange,
 }: SprintScreenProps) {
   const responsiveMode = useResponsiveMode();
+  const [layoutViewportWidth, setLayoutViewportWidth] = useState(() =>
+    typeof window === 'undefined' ? 1440 : window.innerWidth,
+  );
+  useEffect(() => {
+    const onResize = () => setLayoutViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
   const [suppressExtinguishTaskIds, setSuppressExtinguishTaskIds] = useState<ReadonlySet<number>>(
@@ -192,7 +200,10 @@ export function SprintScreen({
     [state.currentSprintId],
   );
 
-  const narrowShort = responsiveMode.width === 'narrow' && responsiveMode.height === 'short';
+  const narrowShort =
+    responsiveMode.width === 'narrow' &&
+    responsiveMode.height === 'short' &&
+    layoutViewportWidth <= RESPONSIVE_BREAKPOINTS.actionDeckLayoutMaxWidth;
   const [bottomRailPreference, setBottomRailPreference] = useState<'deck' | 'controls'>('deck');
   const bottomRail = narrowShort
     ? armedId

@@ -1,4 +1,11 @@
-import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
+import {
+  Children,
+  cloneElement,
+  createElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const hookState = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0 }));
@@ -24,6 +31,22 @@ vi.mock('react', async (importOriginal) => ({
   useEffect: vi.fn(),
 }));
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
+vi.mock('../../../src/ui/ResultOverlay', () => ({
+  ResultOverlay: function ResultOverlay({
+    children,
+    className,
+    ...props
+  }: {
+    children?: ReactNode;
+    className?: string;
+  }) {
+    return createElement(
+      'div',
+      { ...props, className: `result-overlay ${className ?? ''}`.trim() },
+      children,
+    );
+  },
+}));
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
   return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };

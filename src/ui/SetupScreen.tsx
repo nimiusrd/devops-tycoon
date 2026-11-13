@@ -248,10 +248,11 @@ export function SetupScreen({
             </h2>
             {!setupHintAtTop ? setupOrgLeverHint : null}
             <LeaveReturnNotices
-              key={`${runEpoch}:${state.activeTeamId}`}
+              key={`${runEpoch}:${sprintKey}`}
               hint={formationHint}
               notices={state.leaveReturns ?? []}
               runEpoch={runEpoch}
+              setupScope={sprintKey}
               teamId={state.activeTeamId}
             />
             <div className="setup-term-tips" data-testid="setup-term-tips">

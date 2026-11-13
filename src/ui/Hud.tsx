@@ -21,7 +21,7 @@ import {
 } from '../render/status';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
-import { formatSigned } from './formatSigned';
+import { formatSigned, formatSignedHudFeedback } from './formatSigned';
 import { PhraseText } from './PhraseText';
 import { compactValueSlot, pickCompactMetrics } from './hudCompact';
 import { useResponsiveMode } from './responsiveMode';
@@ -53,11 +53,12 @@ function FeedbackPop({
         <motion.span
           key={feedback.id}
           className={`hud-feedback-pop feedback-${feedback.tone}`}
+          title={formatSigned(feedback.delta)}
           initial={reducedMotion ? false : { opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: reducedMotion ? 0 : 0.18, ease: 'easeOut' }}
         >
-          {formatSigned(feedback.delta)}
+          {formatSignedHudFeedback(feedback.delta)}
         </motion.span>
       ) : (
         fallback
@@ -212,7 +213,11 @@ function CompactChip({
       <span
         className="hud-compact-chip-value"
         data-value-slot={valueSlot.slot}
-        style={{ minWidth: `${valueSlot.glyphs}ch` }}
+        style={{
+          flex: `0 0 ${valueSlot.glyphs}ch`,
+          width: `${valueSlot.glyphs}ch`,
+          minWidth: `${valueSlot.glyphs}ch`,
+        }}
       >
         {valueText}
       </span>

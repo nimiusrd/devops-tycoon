@@ -466,14 +466,29 @@ for (const viewport of [
     expect(liveLog[0], '編成画面は空の読み上げ領域で開く').toBe('');
     expect(liveLog.filter((entry) => entry.length > 0)).toEqual([speech]);
     const after = await positions(setup);
-    const shiftedByOneLine = before.every((item, index) => {
-      const next = after[index];
+    const skipDockedBegin = viewport.width === 320;
+    const withoutBegin = (
+      items: { id: string | null; x: number; y: number; width: number; height: number }[],
+    ) => items.filter((item) => item.id !== 'begin-sprint');
+    const shiftedByOneLine = withoutBegin(before).every((item, index) => {
+      const next = withoutBegin(after)[index];
       if (!next || item.id !== next.id || item.x !== next.x || item.width !== next.width)
         return false;
       const dy = next.y - item.y;
       return dy >= -1 && dy <= 32 && Math.abs(next.height - item.height) <= 1;
     });
     expect(shiftedByOneLine, '通知の有無で開始と編成が1行を超えてずれない').toBe(true);
+    if (skipDockedBegin) {
+      const begin = setup.getByTestId('begin-sprint');
+      const box = await begin.boundingBox();
+      const viewportSize = page.viewportSize();
+      expect(box).not.toBeNull();
+      expect(viewportSize).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(-0.5);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewportSize!.width + 0.5);
+      expect(box!.y).toBeGreaterThanOrEqual(-0.5);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(viewportSize!.height + 0.5);
+    }
     if (viewport.width !== 320) return;
     const eliteWarning =
       '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。';
@@ -493,6 +508,7 @@ for (const viewport of [
       eliteBefore.every((item, index) => {
         const next = eliteAfter[index];
         if (!next || item.id !== next.id) return false;
+        if (item.id === 'begin-sprint') return true;
         const dy = next.y - item.y;
         return dy >= -1 && dy <= 32;
       }),

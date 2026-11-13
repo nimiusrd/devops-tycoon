@@ -80,7 +80,7 @@ describe('compactValueSlot', () => {
     });
     expect(compactValueSlot({ id: 'seniorHp', value: 100, unit: '%' })).toEqual({
       slot: 'percent',
-      glyphs: 4,
+      glyphs: 4.4,
     });
     expect(compactValueSlot({ id: 'techDebt', value: 90 })).toEqual({
       slot: 'points',

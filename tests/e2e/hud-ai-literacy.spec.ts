@@ -79,9 +79,13 @@ for (const viewport of VIEWPORTS) {
 
     const aria = await card.getAttribute('aria-label');
     expect(aria, `${viewport.name} の読み上げに Literacy が残る`).not.toMatch(/Literacy/);
-    expect(aria, `${viewport.name} の読み上げが画面と同じ AIリテラシーを使う`).toContain('AIリテラシー');
+    expect(aria, `${viewport.name} の読み上げが画面と同じ AIリテラシーを使う`).toContain(
+      'AIリテラシー',
+    );
     expect(aria, `${viewport.name} の読み上げが前提度ではなく依存を使う`).toContain('依存だけ高く');
-    expect(aria, `${viewport.name} の読み上げが敗北閾値を示す`).toContain(`${dependencyCap}%に達すると敗北`);
+    expect(aria, `${viewport.name} の読み上げが敗北閾値を示す`).toContain(
+      `${dependencyCap}%に達すると敗北`,
+    );
 
     await assertUnbrokenPhrases(detail, viewport.name);
 

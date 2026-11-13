@@ -2632,6 +2632,7 @@ body:has(.overlay-contained) {
 .actionbar[data-responsive-width='narrow']:has(.action-target-picker) .action-target-picker-list {
   min-height: 0;
   max-height: 72px;
+  pointer-events: auto;
 }
 .actionbar[data-responsive-width='wide']:has(.action-target-picker) {
   position: relative;

@@ -2923,13 +2923,15 @@ body[data-tutorial-step='combo-gauge']
   min-height: 0;
   max-height: var(--visual-action-target-picker-list-max-height);
 }
-.actionbar[data-responsive-height='short']:has(.action-target-picker) .action-target-picker {
+.actionbar[data-responsive-width='wide'][data-responsive-height='short']:has(.action-target-picker)
+  .action-target-picker {
   max-height: var(--visual-action-target-picker-shell-max-height-short);
 }
-.actionbar[data-responsive-height='short']:has(.action-target-picker)
+.actionbar[data-responsive-width='wide'][data-responsive-height='short']:has(.action-target-picker)
   .action-target-picker
   .scroll-overflow-host,
-.actionbar[data-responsive-height='short']:has(.action-target-picker) .action-target-picker-list {
+.actionbar[data-responsive-width='wide'][data-responsive-height='short']:has(.action-target-picker)
+  .action-target-picker-list {
   max-height: var(--visual-action-target-picker-list-max-height-short);
 }
 .action-target-picker .scroll-overflow-host {

@@ -234,6 +234,14 @@ export const VISUAL_TOKENS = {
       peekPx: 24,
       fadeWidthPx: 24,
     },
+    /** 武装中の対象ピッカー（#918 / #981）。 */
+    actionTargetPicker: {
+      shellMaxHeightPx: 148,
+      listMaxHeightPx: 72,
+      /** 短い viewport で 19 件以上でも盤面の粒と輪を覆わない一覧高さ。 */
+      shortViewportListMaxHeightPx: 62,
+      shortViewportShellMaxHeightPx: 138,
+    },
     pointPops: {
       bottomRatio: 0.18,
       reducedLineHeight: 28,
@@ -599,6 +607,10 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-layer-sprint-action-bar-armed': String(layers.sprint.actionBarArmed),
     '--visual-scroll-overflow-peek': `${dimensions.scrollOverflow.peekPx}px`,
     '--visual-scroll-overflow-fade-width': `${dimensions.scrollOverflow.fadeWidthPx}px`,
+    '--visual-action-target-picker-shell-max-height': `${dimensions.actionTargetPicker.shellMaxHeightPx}px`,
+    '--visual-action-target-picker-list-max-height': `${dimensions.actionTargetPicker.listMaxHeightPx}px`,
+    '--visual-action-target-picker-shell-max-height-short': `${dimensions.actionTargetPicker.shortViewportShellMaxHeightPx}px`,
+    '--visual-action-target-picker-list-max-height-short': `${dimensions.actionTargetPicker.shortViewportListMaxHeightPx}px`,
     '--visual-point-pop-bottom': `${dimensions.pointPops.bottomRatio * 100}%`,
     '--visual-point-pop-line-height': `${dimensions.pointPops.reducedLineHeight}px`,
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,

@@ -207,7 +207,7 @@ async function assertCandidateDotsAndRingsUncovered(page: Page): Promise<void> {
   const taskIds = await page
     .locator('[data-action-target-option]')
     .evaluateAll((nodes) => nodes.map((node) => Number((node as HTMLElement).dataset.taskId)));
-  expect(taskIds).toHaveLength(16);
+  expect(taskIds.length).toBeGreaterThanOrEqual(16);
   const sprint = await page.evaluate(() => (window as PublicGameWindow).game?.getState().sprint);
   if (!sprint) throw new Error('スプリントがない');
   const planned = planBoardScene(sprint.tasks).dots;
@@ -344,4 +344,16 @@ test('短い広幅でも武装後に状態要約と主操作が見える（#918�
   await page.getByTestId('board').screenshot({
     path: '/opt/cursor/artifacts/armed-board-1024x720-candidates-16.png',
   });
+});
+
+test('1024×720 で qa-seed-1030・候補 19 件でも粒と輪を覆わない（#981） @pixi', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 720 });
+  await beginPublicSprint(page, { seed: 'qa-seed-1030', difficulty: 'easy', renderer: 'pixi' });
+  await advanceToSplitCandidateCount(page, 19);
+  await page.getByTestId('action-splitPr').click();
+  await expect(page.getByTestId('action-target-picker')).toBeVisible();
+  await expect(page.locator('[data-action-target-option]')).toHaveCount(19);
+  await assertCandidateDotsAndRingsUncovered(page);
+  await assertReviewDotUncovered(page);
+  await assertControlsUncovered(page);
 });

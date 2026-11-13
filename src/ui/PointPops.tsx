@@ -60,10 +60,11 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
         reservedBottoms.push(summary.getBoundingClientRect().bottom - bounds.top);
       }
       const attention = stage?.querySelector('[data-testid="attention-pause"]');
-      if (attention && typeof attention.getBoundingClientRect === 'function') {
-        const opacity = Number(getComputedStyle(attention).opacity);
-        if (opacity > 0.05) {
-          reservedBottoms.push(attention.getBoundingClientRect().bottom - bounds.top);
+      if (attention && Number(getComputedStyle(attention).opacity) > 0.05) {
+        for (const part of attention.querySelectorAll('.juicy-attention-label, strong, small')) {
+          if (typeof part.getBoundingClientRect === 'function') {
+            reservedBottoms.push(part.getBoundingClientRect().bottom - bounds.top);
+          }
         }
       }
       const topInset =

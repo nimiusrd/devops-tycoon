@@ -375,6 +375,31 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     ).toBe('アオイが復帰しました（ベンチ）ハルキが復帰しました（ベンチ）');
   });
 
+  it('次のスプリントに進むと復帰が無くても余白を持ち越さない', () => {
+    const screen = mountSetup({
+      state: makeState({
+        leaveReturns: [
+          { id: 'm1', name: 'アオイ' },
+          { id: 'm2', name: 'ハルキ' },
+        ],
+      }),
+    });
+    const copy = () =>
+      elements(screen.find('setup')).find(
+        (node) => node.props.className === 'formation-setup-copy',
+      );
+    expect(copy()?.props['data-reserve']).toBe('true');
+    const state = screen.props.state;
+    screen.update({
+      state: {
+        ...state,
+        sprintIndexInQuarter: state.sprintIndexInQuarter + 1,
+        leaveReturns: [],
+      },
+    });
+    expect(copy()?.props['data-reserve']).toBeUndefined();
+  });
+
   it('別チームへ移ると、そのチームの復帰者で要約の余白を取り直す', () => {
     const screen = mountSetup();
     const copy = () =>

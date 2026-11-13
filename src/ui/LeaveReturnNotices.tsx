@@ -17,12 +17,15 @@ export function LeaveReturnNotices({
   hint,
   notices,
   runEpoch,
+  setupScope,
   teamId,
 }: {
   hint: string;
   notices: readonly LeaveReturnNotice[];
   /** startRun ごとの世代。別ランの同じ文は、空の領域から読み上げ直す。 */
   runEpoch: number;
+  /** 四半期・スプリント・チームの編成画面単位。余白と読み上げをスプリントごとに切り替える。 */
+  setupScope: string;
   /** 入り込み先。チームが変わったら、そのチームの復帰者で余白を取り直す。 */
   teamId: string;
 }) {
@@ -33,7 +36,7 @@ export function LeaveReturnNotices({
   const hintRef = useRef<HTMLParagraphElement>(null);
   const [showSummary, setShowSummary] = useState(false);
   // 余白を足すかは、このチームの編成画面を開いたときの復帰者で決める。
-  const reserveKey = `${runEpoch}:${teamId}`;
+  const reserveKey = `${runEpoch}:${setupScope}:${teamId}`;
   const [reserved, setReserved] = useState({ key: reserveKey, line: notices.length > 0 });
   if (reserved.key !== reserveKey) {
     setReserved({ key: reserveKey, line: notices.length > 0 });

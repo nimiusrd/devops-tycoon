@@ -308,6 +308,18 @@ describe('Hud のスナップショットと差分フィードバック', () => 
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('出荷の +1200 増分は HUD ポップを +1.2k に縮める（#954）', () => {
+    const screen = mountHud({ org: { ...createOrgState('default', true), deliveryScore: 10_000 } });
+    screen.changeOrg({ deliveryScore: 11_200 });
+    expect(screen.feedback('hud-compact-delivery')).toEqual(['+1.2k']);
+  });
+
+  it('品質改善ピボット相当の -1000 は HUD ポップを -1.0k に縮める（#954）', () => {
+    const screen = mountHud({ org: { ...createOrgState('default', true), deliveryScore: 10_000 } });
+    screen.changeOrg({ deliveryScore: 9000 });
+    expect(screen.feedback('hud-compact-delivery')).toEqual(['-1k']);
+  });
+
   it('再マウント時の比較元との差分を要約にも表示し、1000msで消す', () => {
     const getInitialPreviousSnapshot = vi.fn(() => ({
       deliveryScore: 0,

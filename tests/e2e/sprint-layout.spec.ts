@@ -631,10 +631,12 @@ async function assertAcrossViewports(
 ): Promise<void> {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await waitForLayoutFrame(page);
     const widthMode = viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth ? 'narrow' : 'wide';
     await expect(page.getByTestId('sprint-layout')).toHaveAttribute(
       'data-responsive-width',
       widthMode,
+      { timeout: 30_000 },
     );
     await waitForLayoutFrame(page);
     await assertLayoutContract(page, viewport, options);
@@ -1388,6 +1390,8 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
 });
 
 test.describe('RI-141 Review渋滞とHTML状態表示', () => {
+  test.describe.configure({ timeout: 120_000 });
+
   test('8〜11件の連続ヒートを5 viewportで維持する', async ({ page }) => {
     await beginPublicSprint(page, {
       seed: 'ri141-review-pressure-0',

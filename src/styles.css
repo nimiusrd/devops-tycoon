@@ -7506,6 +7506,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-weight: 800;
   line-height: 1.45;
 }
+/* 短い狭幅（例: 320×568）では SETUP 見出しの下だと画面外になるため、バナーより上へ置く（#1017）。 */
+:root[data-responsive-width='narrow'] .run-setup-org-lever-hint .org-lever-hint {
+  margin: 0;
+}
 
 /* 全社・部署画面はオーバーレイ内で盤面へ残りの高さを配分する。 */
 .org-screen,

@@ -25,6 +25,8 @@ export interface DeckBarProps {
   exchangeCost?: number;
   maxExchanges?: number;
   exchangeUnavailableReason?: string;
+  /** minCompleteTick 待ちなど、カード発動を止める理由（#972）。 */
+  cardInteractionBlockedReason?: string;
   playable?: boolean;
   /** プレイヤー Pause 中。手札は見せたまま発動だけ止める。 */
   paused?: boolean;
@@ -45,6 +47,7 @@ export function DeckBar({
   exchangeCost = 2,
   maxExchanges = 2,
   exchangeUnavailableReason,
+  cardInteractionBlockedReason,
   playable = false,
   paused = false,
   onPlay,
@@ -87,14 +90,18 @@ export function DeckBar({
                 if (!inst) return null;
                 const def = resolveCard(inst.defId);
                 const cost = isExchangeMode ? exchangeCost : playCost(def.focusCost, inst.level);
-                const canAct = isExchangeMode ? !exchangeDisabledReason : !paused && focus >= cost;
+                const canAct = isExchangeMode
+                  ? !exchangeDisabledReason
+                  : !paused && !cardInteractionBlockedReason && focus >= cost;
                 const disabledReason = isExchangeMode
                   ? exchangeDisabledReason
                   : paused
                     ? ACTION_BLOCK_MESSAGES.paused
-                    : focus < cost
-                      ? ACTION_BLOCK_MESSAGES['no-focus']
-                      : undefined;
+                    : cardInteractionBlockedReason
+                      ? cardInteractionBlockedReason
+                      : focus < cost
+                        ? ACTION_BLOCK_MESSAGES['no-focus']
+                        : undefined;
                 return (
                   <CardView
                     key={`hand-${deckIndex}`}
@@ -104,6 +111,7 @@ export function DeckBar({
                     playCost={cost}
                     actionLabel={isExchangeMode ? '交換' : '発動'}
                     disabled={!canAct}
+                    gated={!canAct && !!disabledReason}
                     disabledReason={disabledReason}
                     onPlay={() => (isExchangeMode ? onExchange?.(deckIndex) : onPlay(deckIndex))}
                   />

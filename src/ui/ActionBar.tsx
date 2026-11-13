@@ -522,6 +522,7 @@ export function ActionBar({
               ? Math.round((modRing.remaining / modRing.total) * 100)
               : 0;
             const tone = a.tone ? ` ${a.tone}` : '';
+            const gated = !ready && !!availability.blockReason;
             const blockClass =
               availability.blockReason === 'no-target'
                 ? ' notarget'
@@ -566,12 +567,13 @@ export function ActionBar({
                   ref={(node) => {
                     actionButtonRefs.current[a.id] = node;
                   }}
-                  className={`action${tone}${ready ? ' ready' : ''}${armed ? ' armed' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
+                  className={`action${tone}${ready ? ' ready' : ''}${armed ? ' armed' : ''}${blockClass}${gated ? ' is-gated' : ''}${shakingId === a.id ? ' shake' : ''}`}
                   data-testid={`action-${a.id}`}
                   data-role={presentation.role}
                   data-block-reason={availability.blockReason ?? ''}
                   data-armed={armed ? 'true' : undefined}
                   disabled={!ready}
+                  aria-disabled={!ready ? true : undefined}
                   onClick={() => handleAction(a.id)}
                   onFocus={() => {
                     focusedActionRef.current = a.id;

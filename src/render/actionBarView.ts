@@ -19,9 +19,15 @@ import {
 } from '../sim/actions';
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, Lane, OrgState, SprintState } from '../sim/types';
+import {
+  resolveSprintPaddingGate,
+  SPRINT_PADDING_GATE_MESSAGES,
+  type SprintPaddingGateKind,
+} from './sprintPaddingGateView';
 import type { IconKey } from './visualIcons';
 
-export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'paused';
+export type ActionBlockReason =
+  'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'padding-stall' | 'padding-wait' | 'paused';
 export type ActionBarDisabledReason = Extract<ActionBlockReason, 'complete' | 'paused'>;
 
 /** 1 アクションの利用可否と表示メタデータ。 */
@@ -233,8 +239,27 @@ export const ACTION_BLOCK_MESSAGES: Record<ActionBlockReason, string> = {
   'no-focus': '集中力不足',
   'no-target': '対象なし',
   complete: 'スプリント終了',
+  'padding-stall': SPRINT_PADDING_GATE_MESSAGES.stalled,
+  'padding-wait': SPRINT_PADDING_GATE_MESSAGES.waiting,
   paused: '一時停止中',
 };
+
+const PADDING_BLOCK_REASON: Record<
+  SprintPaddingGateKind,
+  Extract<ActionBlockReason, 'padding-stall' | 'padding-wait'>
+> = {
+  stalled: 'padding-stall',
+  waiting: 'padding-wait',
+};
+
+function resolvePaddingActionBlock(
+  sprint: SprintState,
+): { blockReason: ActionBlockReason; blockMessage: string } | undefined {
+  const kind = resolveSprintPaddingGate(sprint);
+  if (!kind) return undefined;
+  const blockReason = PADDING_BLOCK_REASON[kind];
+  return { blockReason, blockMessage: SPRINT_PADDING_GATE_MESSAGES[kind] };
+}
 
 /** 1 アクションの利用可否を導出する。 */
 export function deriveActionAvailability(
@@ -262,6 +287,20 @@ export function deriveActionAvailability(
   // org 省略時は対象判定に org を使わない（canApplyAction は org 非依存）。
   const gate = canApplyAction(id, sprint, org ?? ({} as OrgState), tick);
   if (!gate.ok) {
+    if (gate.reason === 'complete' && !sprint.complete) {
+      const padding = resolvePaddingActionBlock(sprint);
+      if (padding) {
+        return {
+          actionId: id,
+          canActivate: false,
+          blockReason: padding.blockReason,
+          blockMessage: padding.blockMessage,
+          targetCount,
+          targetBadge: badge.text,
+          targetBadgeIcon: badge.icon,
+        };
+      }
+    }
     // assignTask: canApplyAction は Coding に自動選択対象がある場合のみ ok を返すが、
     // アクションバーの武装表示は Backlog から昇格可能なタスクがあれば有効とする。
     // apply 時（target なし）は依然として Coding 自動選択に従うため、厳密性は保たれる。

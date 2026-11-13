@@ -483,14 +483,15 @@ export function isAwaitingMinCompleteTick(sprint: SprintState): boolean {
   if (sprint.complete) return false;
   const minTick = sprint.config.minCompleteTick ?? 0;
   if (minTick <= 0) return false;
-  return isDrained(sprint) || isStalled(sprint);
+  return isDrained(sprint) || isSprintStalled(sprint);
 }
 
 /**
  * これ以上は永遠に進まない状態か。流入枠が 0（コーダー不在）で、稼働中の工程
  * （coding/review/rework）にタスクが 1 件も無ければ、Backlog は二度と流れない。
  */
-function isStalled(sprint: SprintState): boolean {
+/** コーダー不在で Backlog だけが残り、これ以上進まない停滞（RI-75 / #972）。 */
+export function isSprintStalled(sprint: SprintState): boolean {
   if (sprint.config.codingSlots > 0) return false;
   return !sprint.tasks.some(
     (t) => t.lane === 'coding' || t.lane === 'review' || t.lane === 'rework',
@@ -545,7 +546,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら完了させる。
   // そうしないと Backlog が流れず isDrained も成立せず、maxTicks まで何も起きない画面を待つ。
   // RI-75: ただし絶対下限 tick 未満なら待機（空回り）し、短尺スプリントを防ぐ。
-  if (isStalled(sprint)) {
+  if (isSprintStalled(sprint)) {
     abandonInFlight(sprint, tick);
     const minTick = sprint.config.minCompleteTick ?? 0;
     if (tick >= minTick) sprint.complete = true;

@@ -28,6 +28,8 @@ export interface CardViewProps {
   disabled?: boolean;
   /** disabled のときプレイヤーへ示す理由。 */
   disabledReason?: string;
+  /** minCompleteTick 待ちなど、押せない見た目を強める（#972）。 */
+  gated?: boolean;
   /** リプレイ閲覧など。操作は disabled でもカード全体は減光しない（DS-08）。 */
   readOnly?: boolean;
   /** カード全体の title（読み取り専用ドラフトの理由など）。 */
@@ -62,6 +64,7 @@ export function CardView({
   playCost: playCostValue,
   disabled = false,
   disabledReason,
+  gated = false,
   readOnly = false,
   compact = false,
   title,
@@ -75,6 +78,7 @@ export function CardView({
     `card-${def.rarity}`,
     compact ? 'card-compact' : '',
     disabled && !readOnly ? 'card-disabled' : '',
+    disabled && !readOnly && gated ? 'is-gated' : '',
     readOnly ? 'card-readonly' : '',
     onPlay ? 'card-playable' : '',
   ]
@@ -181,9 +185,14 @@ export function CardView({
         className={className}
         onClick={onPlay}
         disabled={disabled}
+        aria-disabled={disabled ? true : undefined}
         data-testid={`hand-card-${def.id}`}
         title={handCardTitle(def, level, playCostValue, disabledReason, actionLabel)}
-        aria-label={`${def.name}を${actionLabel}（集中力 ${playCostValue ?? '?'}）`}
+        aria-label={
+          disabled && disabledReason
+            ? `${def.name}を${actionLabel}できません。${disabledReason}`
+            : `${def.name}を${actionLabel}（集中力 ${playCostValue ?? '?'}）`
+        }
       >
         {inner}
       </button>

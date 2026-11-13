@@ -29,7 +29,7 @@ import { liveComboCount } from '../render/sprintComboView';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
 import { HAND_EXCHANGE_POLICY } from '../sim/cards';
-import { isAwaitingMinCompleteTick } from '../sim/sprint';
+import { sprintPaddingGateMessage } from '../render/sprintPaddingGateView';
 import type {
   ActionId,
   ActionTarget,
@@ -617,9 +617,8 @@ export function SprintScreen({
           exchangesUsed={sprint.metrics.handExchanges ?? sprint.cardPiles.discard.length}
           exchangeCost={HAND_EXCHANGE_POLICY.focusCost}
           maxExchanges={HAND_EXCHANGE_POLICY.maxExchanges}
-          exchangeUnavailableReason={
-            isAwaitingMinCompleteTick(sprint) ? 'スプリント終了処理中です' : undefined
-          }
+          exchangeUnavailableReason={sprintPaddingGateMessage(sprint)}
+          cardInteractionBlockedReason={sprintPaddingGateMessage(sprint)}
           exchangeMode={isExchangeMode}
           onExchangeModeChange={(active) => setExchangeMode({ sprintKey, active })}
           playable={!sprint.complete}

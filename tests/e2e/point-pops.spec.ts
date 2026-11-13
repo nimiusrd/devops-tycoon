@@ -436,3 +436,68 @@ for (const viewport of [
     expect(Math.abs(after.slotWidth - before.slotWidth)).toBeLessThanOrEqual(0.5);
   });
 }
+
+test('品質改善ピボットの大きな出荷減も HUD 増減枠に収まる（#954）', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await beginPublicSprint(page, { seed: 'hud-pivot-delta-954', renderer: 'pixi' });
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => {
+    const game = (window as PublicGameWindow).game;
+    if (!game) throw new Error('window.game が公開されていない');
+    const engine = (
+      game as unknown as {
+        engine: {
+          org: { deliveryScore: number };
+          totals: { delivered: number };
+          phase: string;
+          quarterReview: unknown;
+        };
+      }
+    ).engine;
+    const state = game.getState();
+    engine.org.deliveryScore = 10_000;
+    engine.totals.delivered = 10_000;
+    engine.phase = 'quarterReview';
+    engine.quarterReview = {
+      goal: state.quarterGoal,
+      outcome: 'missed_adjustable',
+      trust: state.stakeholderTrust,
+      progress: [],
+      missedReasons: [],
+      availableAdjustments: ['quality_pivot', 'cut_scope'],
+      bossCleared: false,
+    };
+    game.pause();
+    game.step(0);
+  });
+  const chip = page.getByTestId('hud-compact-delivery');
+  await expect(chip).toContainText('10000pt');
+  await page.waitForTimeout(1_100);
+  await expect(page.getByTestId('quarter-review')).toBeVisible();
+  await page.locator('[data-adjustment="quality_pivot"]').click();
+  const pop = chip.locator('.hud-feedback-pop');
+  await expect(pop).toHaveText('-1k');
+  const layout = await chip.evaluate((element) => {
+    const popEl = element.querySelector('.hud-feedback-pop');
+    const slot = element.querySelector('.hud-feedback-slot');
+    const label = element.querySelector('.hud-compact-chip-label');
+    if (
+      !(popEl instanceof HTMLElement) ||
+      !(slot instanceof HTMLElement) ||
+      !(label instanceof HTMLElement)
+    ) {
+      throw new Error('HUD チップ要素が無い');
+    }
+    const popRect = popEl.getBoundingClientRect();
+    const slotRect = slot.getBoundingClientRect();
+    const labelRect = label.getBoundingClientRect();
+    return {
+      popWidth: popRect.width,
+      slotWidth: slotRect.width,
+      labelGap: labelRect.left - popRect.right,
+    };
+  });
+  expect(layout.popWidth).toBeLessThanOrEqual(layout.slotWidth + 0.5);
+  expect(layout.labelGap).toBeGreaterThanOrEqual(-0.5);
+});

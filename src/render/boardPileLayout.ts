@@ -283,12 +283,16 @@ function reviewPileShiftCacheKey(dots: readonly BoardDotPlan[]): string {
   const review = dots.filter((dot) => dot.lane === 'review' && !dot.motion);
   if (review.length === 0) return '';
   const anchor = review[0];
-  const othersSignature = dots
-    .filter((dot) => dot.lane !== 'review')
-    .map((dot) => `${dot.id}@${Math.round(dot.x)},${Math.round(dot.y)}`)
+  const reviewSignature = review
+    .map((dot) => `${dot.id}:${dot.size}@${Math.round(dot.x)},${Math.round(dot.y)}`)
     .sort()
     .join(';');
-  return `${review.length}:${anchor.clusterX}:${anchor.clusterY}:${othersSignature}`;
+  const othersSignature = dots
+    .filter((dot) => dot.lane !== 'review')
+    .map((dot) => `${dot.id}:${dot.size}@${Math.round(dot.x)},${Math.round(dot.y)}`)
+    .sort()
+    .join(';');
+  return `${review.length}:${anchor.clusterX}:${anchor.clusterY}:${reviewSignature}|${othersSignature}`;
 }
 
 const reviewPileShiftCache = new Map<string, BoardPileShift>();
@@ -299,10 +303,12 @@ export function adjustReviewPileLayout(dots: readonly BoardDotPlan[]): BoardDotP
   if (reviewPileDots.length === 0) return [...dots];
   if (countReviewCrossStationOverlaps(dots) === 0) return [...dots];
   const cacheKey = reviewPileShiftCacheKey(dots);
-  let shift = reviewPileShiftCache.get(cacheKey);
-  if (!shift) {
-    shift = findReviewPileShift(dots);
-    reviewPileShiftCache.set(cacheKey, shift);
+  const cached = reviewPileShiftCache.get(cacheKey);
+  if (cached) {
+    const shifted = applyLanePileShift(dots, 'review', cached);
+    if (countReviewCrossStationOverlaps(shifted) === 0) return shifted;
   }
+  const shift = findReviewPileShift(dots);
+  reviewPileShiftCache.set(cacheKey, shift);
   return applyLanePileShift(dots, 'review', shift);
 }

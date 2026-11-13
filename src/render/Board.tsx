@@ -53,6 +53,7 @@ import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 import { describeTaskTarget } from './actionTargetPickerView';
+import { useDialogOverlayLock } from '../ui/useDialogOverlayLock';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const BoardPixiLayer = lazyWebgl<BoardPixiLayerProps>(() =>
@@ -274,7 +275,7 @@ export function Board({
   const [confirmedTarget, setConfirmedTarget] = useState('');
   const [overflowPickerLane, setOverflowPickerLane] = useState<Lane | null>(null);
   const overflowTriggerRefs = useRef<Partial<Record<Lane, HTMLButtonElement | null>>>({});
-  const overflowPickerCloseRef = useRef<HTMLButtonElement | null>(null);
+  const overflowPickerRef = useRef<HTMLDivElement | null>(null);
 
   const closeOverflowPicker = useCallback(
     (lane?: Lane | null) => {
@@ -287,10 +288,10 @@ export function Board({
     [overflowPickerLane],
   );
 
-  useEffect(() => {
-    if (!overflowPickerLane) return;
-    overflowPickerCloseRef.current?.focus();
-  }, [overflowPickerLane]);
+  useDialogOverlayLock(overflowPickerRef, {
+    restoreFocus: true,
+    onDismiss: () => closeOverflowPicker(),
+  });
   const overflowHiddenIds = useMemo(
     () =>
       overflowPickerLane ? boardOverflowHiddenTaskIds(tasks, overflowPickerLane) : ([] as number[]),
@@ -630,23 +631,18 @@ export function Board({
 
       {overflowPickerLane && overflowHiddenIds.length > 0 && (
         <div
+          ref={overflowPickerRef}
           className="board-overflow-picker"
           data-testid={`board-overflow-picker-${overflowPickerLane}`}
           role="dialog"
           aria-modal="true"
           aria-label={`${boardOverflowAriaLabel(overflowPickerLane, overflowHiddenIds.length)}の一覧`}
+          tabIndex={-1}
           onPointerDown={(event) => event.stopPropagation()}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.stopPropagation();
-              closeOverflowPicker(overflowPickerLane);
-            }
-          }}
         >
           <div className="board-overflow-picker-header">
             <span>{boardOverflowAriaLabel(overflowPickerLane, overflowHiddenIds.length)}</span>
             <button
-              ref={overflowPickerCloseRef}
               type="button"
               className="board-overflow-picker-close"
               data-testid="board-overflow-picker-close"

@@ -124,7 +124,7 @@ describe('OrgLeverList の支払リスク', () => {
     expect(screen.onApply).toHaveBeenCalledExactlyOnceWith('recruitDraft');
     screen.update({ budget: 20 });
     const firefighters = screen.find('lever-firefighters');
-    expect(content(firefighters)).toContain('支払後の残高 💰0');
+    expect(content(firefighters)).toContain('💰20→0');
     expect(content(firefighters)).toContain('予算枯渇でランが終了する');
     screen.click('lever-firefighters');
     expect(screen.onApply).toHaveBeenCalledTimes(1);

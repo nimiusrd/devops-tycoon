@@ -137,7 +137,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
   {
     id: 'ai-2',
     branch: 'ai',
-    name: 'AI Literacy 逓増',
+    name: 'AIリテラシー逓増',
     description: 'リテラシーを底上げし、エージェント基盤の利用コストも抑える',
     cost: 9,
     requires: 'ai-1',

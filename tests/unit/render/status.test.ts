@@ -260,8 +260,10 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       expect(copy.detail).toContain(`AIリテラシー${AI_LITERACY_UNSAFE_CAP}以下`);
     }
 
-    expect(AI_DEPENDENCY_HELP).toContain(`リテラシーが${AI_LITERACY_UNSAFE_CAP}以下`);
-    expect(AI_DEPENDENCY_HELP).toContain(`${AI_DEPENDENCY_CAP}に達すると敗北`);
+    expect(AI_DEPENDENCY_HELP).toContain(`AIリテラシーが${AI_LITERACY_UNSAFE_CAP}以下`);
+    expect(AI_DEPENDENCY_HELP).toContain(`${AI_DEPENDENCY_CAP}%に達すると敗北`);
+    expect(AI_DEPENDENCY_HELP).not.toMatch(/Literacy/);
+    expect(AI_DEPENDENCY_HELP).not.toMatch(/前提度/);
     expect(GLOSSARY.aiLiteracy.definition).toContain(`リテラシー${AI_LITERACY_UNSAFE_CAP}以下`);
     expect(GLOSSARY.aiLiteracy.definition).toContain(`依存${AI_DEPENDENCY_CAP}%以上で敗北`);
     const nextAction = loseNextActionView('aiDependency').nextAction;

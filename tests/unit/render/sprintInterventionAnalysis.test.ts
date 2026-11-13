@@ -154,7 +154,7 @@ describe('sprintInterventionAnalysis（RI-54）', () => {
       }),
     );
     expect(view.tip).toContain('集中力を 5 残して終了');
-    expect(view.tip).toContain('Review待ちが最大 9 PR');
+    expect(view.tip).toContain('レビュー待ちが最大 9 PR');
   });
 
   it('Review 渋滞で割り込み未使用の Tip', () => {
@@ -174,7 +174,7 @@ describe('sprintInterventionAnalysis（RI-54）', () => {
         ],
       }),
     );
-    expect(view.tip).toContain('Review待ちが最大 10 PR');
+    expect(view.tip).toContain('レビュー待ちが最大 10 PR');
     expect(view.tip).toContain('割り込みレビュー');
   });
 });

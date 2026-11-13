@@ -83,14 +83,14 @@ export function formatInterventionFeedback(feedback: SprintInterventionFeedback)
     ? [
         ['シニアHP', observed.seniorHp],
         ['士気', observed.morale],
-        ['AI Literacy', observed.aiLiteracy],
+        ['AIリテラシー', observed.aiLiteracy],
         ['集中力', observed.focus],
       ]
     : [
         // hpCost はレビューで失う HP を含まない追加コスト。総消費とは区別する。
         ['追加シニアHP', -(effect?.hpCost ?? 0)],
         ['士気', -(effect?.moraleCost ?? 0)],
-        ['AI Literacy', effect?.literacyGain ?? 0],
+        ['AIリテラシー', effect?.literacyGain ?? 0],
         ['集中力', -(effect?.focusCost ?? 0)],
         ['集中力', effect?.focusRefund ?? 0],
       ];
@@ -203,7 +203,7 @@ function formatIntervention(
     parts.push(`士気 -${Math.round(effect.moraleCost)}`);
   }
   if (effect.literacyGain != null && effect.literacyGain > 0) {
-    parts.push(`AI Literacy +${Math.round(effect.literacyGain)}`);
+    parts.push(`AIリテラシー +${Math.round(effect.literacyGain)}`);
   }
   if (effect.focusRefund != null && effect.focusRefund > 0) {
     parts.push(`集中力 +${effect.focusRefund}`);

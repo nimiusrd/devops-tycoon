@@ -26,7 +26,9 @@ export function SprintTimelineChart({ timeline, events }: SprintTimelineChartPro
   return (
     <div className="sprint-timeline" data-testid="sprint-timeline">
       <p className="result-section-label">タイムライン</p>
-      <p className="sprint-timeline-hint">折れ線＝Review待ち / 炎上 / コンボ / シニアHP。▼＝介入</p>
+      <p className="sprint-timeline-hint">
+        折れ線＝レビュー待ち / 炎上 / コンボ / シニアHP。▼＝介入
+      </p>
       <ul className="sprint-timeline-legend" aria-hidden="true">
         {view.series.map((s) => (
           <li key={s.key} className={`legend-${s.tone}`}>

@@ -77,6 +77,11 @@ for (const viewport of VIEWPORTS) {
     await expect(detail).toContainText(`AIリテラシー${literacyCap}以下`);
     await expect(detail).toContainText(`依存${dependencyCap}%以上`);
 
+    const aria = await card.getAttribute('aria-label');
+    expect(aria, `${viewport.name} の読み上げに Literacy が残る`).not.toMatch(/Literacy/);
+    expect(aria, `${viewport.name} の読み上げが画面と同じ AIリテラシーを使う`).toContain('AIリテラシー');
+    expect(aria, `${viewport.name} の読み上げが画面と同じ依存を使う`).toContain(`依存${dependencyCap}%`);
+
     await assertUnbrokenPhrases(detail, viewport.name);
 
     const overflow = await page.evaluate(() => {

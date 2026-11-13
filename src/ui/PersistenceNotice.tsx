@@ -22,8 +22,9 @@ export interface PersistenceNoticeProps {
    * ここでは読み上げと常駐バナーだけを残す。
    */
   quietPlacement?: 'inline' | 'overlay';
-  /** 別タブが記録を更新した。再試行バナーの代わりに再読込案内を出す。 */
-  tabConflict?: boolean;
+  /** 別タブ競合のモーダル案内を出す。 */
+  tabConflictModalOpen?: boolean;
+  onAcknowledgeTabConflict?: () => void;
   onTakeOver?: () => void;
 }
 
@@ -88,19 +89,20 @@ export function PersistenceNotice({
   onExport,
   exportMessage = null,
   quietPlacement = 'overlay',
-  tabConflict = false,
+  tabConflictModalOpen = false,
+  onAcknowledgeTabConflict,
   onTakeOver,
 }: PersistenceNoticeProps) {
   const conflictText = notice.showExport
     ? '別のタブが記録を更新しました。このタブの変更は保存していません。未保存のデータは破棄されます。残す場合は先に書き出してください。'
     : '別のタブが記録を更新しました。このタブの変更は保存していません。再読込して引き継げます。';
-  const liveText = tabConflict
+  const liveText = tabConflictModalOpen
     ? [conflictText, exportMessage].filter((part) => part).join(' ')
     : exportMessage
       ? `${notice.liveMessage} ${exportMessage}`.trim()
       : notice.liveMessage;
   const showBanner =
-    !tabConflict &&
+    !tabConflictModalOpen &&
     showsPersistenceBanner(notice) &&
     !(quietPlacement === 'inline' && showsInlineRecoveryChip(notice));
   const content = (
@@ -113,8 +115,9 @@ export function PersistenceNotice({
       >
         {liveText}
       </span>
-      {tabConflict && onTakeOver ? (
+      {tabConflictModalOpen && onAcknowledgeTabConflict && onTakeOver ? (
         <TabConflictNotice
+          onAcknowledge={onAcknowledgeTabConflict}
           onTakeOver={onTakeOver}
           bannerRef={bindPersistentBanner}
           showExport={notice.showExport}

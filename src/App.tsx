@@ -631,7 +631,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       notice={run.persistenceStatus}
       quietPlacement={quietInline ? 'inline' : 'overlay'}
       exportMessage={exportMessage}
-      tabConflict={run.tabConflict}
+      tabConflictModalOpen={run.tabConflictModalOpen}
+      onAcknowledgeTabConflict={run.acknowledgeTabConflict}
       onTakeOver={run.takeOverForeignTab}
       onRetry={() => {
         setExportMessage(null);

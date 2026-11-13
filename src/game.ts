@@ -260,6 +260,10 @@ export interface GameHandle {
   clearRunSave(): void;
   /** 別タブが先に記録を更新し、このタブからの保存を止めている。 */
   hasTabConflict(): boolean;
+  /** 競合モーダルが開いており、背面操作と自動進行を止めている。 */
+  hasTabConflictModalOpen(): boolean;
+  /** 競合モーダルを閉じ、背面操作を再開する（記録の競合状態は維持）。 */
+  acknowledgeTabConflict(): void;
   /** ラン完了の保存に失敗し、再試行まで次のランを始められない。 */
   finishSaveBlocksNewRun(): boolean;
   /** 最新の記録を読み直して操作を引き継ぐ。 */
@@ -416,6 +420,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let runRevisionAtSession = 0;
   /** 別タブが先に記録を更新した。このタブからは上書きも削除もしない。 */
   let tabConflict = false;
+  /** 競合モーダル表示中。閉じても tabConflict は維持する。 */
+  let tabConflictModalOpen = false;
+  /** 競合モーダルが acquire した自動進行停止。 */
+  let tabConflictPauseHeld = false;
   /** ラン完了の報酬と途中セーブ破棄が、まだ端末で確定していない。 */
   let finishCommitPending = false;
   /** 完了トランザクションへ後で載せるメタ変更。独立した保存はしない。 */
@@ -483,6 +491,23 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** 状態を変えた可能性のある操作の後に版番号を進める。 */
   const bump = (): void => {
     revision += 1;
+  };
+
+  /**
+   * 別タブとの競合を表面化する。モーダル表示と自動進行停止を伴う。
+   * 競合表示中は背面を操作できないため、バナー下に隠れた HUD 部分は許容する（#996）。
+   */
+  const signalTabConflict = (remoteMeta?: MetaState): void => {
+    tabConflict = true;
+    if (remoteMeta) meta = structuredClone(remoteMeta);
+    if (!tabConflictModalOpen) {
+      tabConflictModalOpen = true;
+      if (!tabConflictPauseHeld) {
+        pauseHolds += 1;
+        tabConflictPauseHeld = true;
+      }
+      bump();
+    }
   };
 
   const clearWhatIfCache = (): void => {
@@ -789,7 +814,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     return storage.compareAndSave(next).then((result) => {
       if (!result.ok) {
-        tabConflict = true;
+        signalTabConflict();
         throw new TabConflictError();
       }
     });
@@ -812,8 +837,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       finishExpectedRunGeneration = expectedRun;
       const result = await metas.compareAndSave(structuredClone(meta), expectedRun);
       if (!result.ok) {
-        if (result.current) meta = structuredClone(result.current);
-        tabConflict = true;
+        signalTabConflict(result.current ?? undefined);
         finishCommitPending = false;
         metaFollowsFinish = false;
         finishExpectedRunGeneration = null;
@@ -840,8 +864,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (!(storage instanceof IndexedDbMetaStorage)) return storage.save(snapshot);
     return storage.compareAndSave(snapshot, expectedRunGeneration).then((result) => {
       if (!result.ok) {
-        if (result.current) meta = structuredClone(result.current);
-        tabConflict = true;
+        signalTabConflict(result.current ?? undefined);
         throw new TabConflictError();
       }
     });
@@ -2157,6 +2180,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     hasTabConflict() {
       return tabConflict;
     },
+    hasTabConflictModalOpen() {
+      return tabConflict && tabConflictModalOpen;
+    },
+    acknowledgeTabConflict() {
+      if (!tabConflictModalOpen) return;
+      tabConflictModalOpen = false;
+      if (tabConflictPauseHeld) {
+        pauseHolds = Math.max(0, pauseHolds - 1);
+        tabConflictPauseHeld = false;
+      }
+      bump();
+    },
     finishSaveBlocksNewRun() {
       return isFinishSaveBlockingNewRun();
     },
@@ -2328,8 +2363,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         await write;
       } catch (error) {
         if (isTabConflict(error)) {
-          tabConflict = true;
-          bump();
+          signalTabConflict();
         }
         if (priorDurable !== undefined) await restoreImportedRun();
         return {

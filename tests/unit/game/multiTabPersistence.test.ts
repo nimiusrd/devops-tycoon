@@ -142,7 +142,13 @@ describe('複数タブの保存（RI-144）', () => {
     gameB.setSoundMuted(false);
     await waitFor(async () => {
       expect(gameB.hasTabConflict()).toBe(true);
+      expect(gameB.hasTabConflictModalOpen()).toBe(true);
     });
+    expect(gameB.isPaused()).toBe(true);
+    gameB.acknowledgeTabConflict();
+    expect(gameB.hasTabConflictModalOpen()).toBe(false);
+    expect(gameB.hasTabConflict()).toBe(true);
+    expect(gameB.isPaused()).toBe(false);
     expect(await reader.load()).toMatchObject({
       points: 50,
       unlockedCards: ['devin'],

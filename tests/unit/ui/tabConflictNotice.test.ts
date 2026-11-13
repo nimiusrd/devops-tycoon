@@ -2,13 +2,14 @@ import { Children, createElement, isValidElement, type ReactElement, type ReactN
 import { describe, expect, it, vi } from 'vitest';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../../../src/state/persistenceStatus';
 import { PersistenceNotice } from '../../../src/ui/PersistenceNotice';
-import { TabConflictNotice } from '../../../src/ui/TabConflictNotice';
+import { TabConflictNotice, TabConflictNoticePanel } from '../../../src/ui/TabConflictNotice';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
 
 function expand(node: ReactNode): ReactNode {
   if (!isValidElement<Props>(node)) return node;
   if (typeof node.type === 'function') {
+    if (node.type === TabConflictNotice) return node;
     return expand((node.type as (props: Props) => ReactNode)(node.props));
   }
   return node;
@@ -21,13 +22,17 @@ function elements(node: ReactNode): ReactElement<Props>[] {
 }
 
 describe('別タブ競合の案内', () => {
-  it('理由と再読込を出し、再試行では書き戻さない', () => {
+  it('理由と操作を出し、再試行では書き戻さない', () => {
+    const onAcknowledge = vi.fn();
     const onTakeOver = vi.fn();
-    const node = createElement(TabConflictNotice, { onTakeOver });
+    const node = createElement(TabConflictNoticePanel, { onAcknowledge, onTakeOver });
     const notice = elements(node).find(
       (element) => element.props['data-testid'] === 'tab-conflict-notice',
     );
-    const button = elements(node).find(
+    const continueButton = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-continue',
+    );
+    const reload = elements(node).find(
       (element) => element.props['data-testid'] === 'tab-conflict-reload',
     );
     expect(notice?.props['data-tone']).toBe('warn');
@@ -35,9 +40,13 @@ describe('別タブ競合の案内', () => {
     expect(notice?.props['data-layout']).toBe('overlay');
     expect(notice?.props.role).toBeUndefined();
     expect(notice?.props['aria-live']).toBeUndefined();
+    expect(notice?.props['data-overlay-lock-exempt']).toBeUndefined();
     expect(elements(node).some((element) => element.props.children === '再試行')).toBe(false);
-    expect(button?.type).toBe('button');
-    (button?.props.onClick as () => void)();
+    expect(continueButton?.type).toBe('button');
+    (continueButton?.props.onClick as () => void)();
+    expect(onAcknowledge).toHaveBeenCalledOnce();
+    expect(reload?.type).toBe('button');
+    (reload?.props.onClick as () => void)();
     expect(onTakeOver).toHaveBeenCalledOnce();
   });
 
@@ -56,26 +65,17 @@ describe('別タブ競合の案内', () => {
       notice,
       onRetry: vi.fn(),
       onExport: vi.fn(),
-      tabConflict: true,
+      tabConflictModalOpen: true,
+      onAcknowledgeTabConflict: vi.fn(),
       onTakeOver: vi.fn(),
     });
-    const conflict = elements(node).find(
-      (element) => element.props['data-testid'] === 'tab-conflict-notice',
-    );
-    expect(conflict?.props['data-persistent']).toBe('true');
-    expect(conflict?.props['data-layout']).toBe('overlay');
-    expect(conflict?.props.role).toBeUndefined();
-    expect(conflict?.props.ref).toEqual(expect.any(Function));
+    const conflict = elements(node).find((element) => element.type === TabConflictNotice);
+    expect(conflict?.props.bannerRef).toEqual(expect.any(Function));
+    expect(conflict?.props.showExport).toBe(true);
     expect(
       elements(node).some((element) => element.props['data-testid'] === 'persistence-retry'),
     ).toBe(false);
-    const exporter = elements(node).find(
-      (element) => element.props['data-testid'] === 'tab-conflict-export',
-    );
-    expect(exporter?.type).toBe('button');
-    expect(String(elements(node).map((element) => element.props.children))).toContain(
-      '未保存のデータは破棄',
-    );
+    expect(conflict?.props.onExport).toEqual(expect.any(Function));
   });
 
   it('書き出し失敗の一文を競合案内と読み上げに残す', () => {
@@ -94,7 +94,8 @@ describe('別タブ競合の案内', () => {
       onRetry: vi.fn(),
       onExport: vi.fn(),
       exportMessage: 'ファイルを書き出せませんでした。',
-      tabConflict: true,
+      tabConflictModalOpen: true,
+      onAcknowledgeTabConflict: vi.fn(),
       onTakeOver: vi.fn(),
     });
     const live = elements(node).find(
@@ -103,18 +104,7 @@ describe('別タブ競合の案内', () => {
     expect(live?.props['aria-live']).toBe('polite');
     expect(String(live?.props.children)).toContain('ファイルを書き出せませんでした。');
     expect(String(live?.props.children)).toContain('別のタブが記録を更新しました');
-    const conflict = elements(node).find(
-      (element) => element.props['data-testid'] === 'tab-conflict-notice',
-    );
-    expect(conflict?.props.role).toBeUndefined();
-    expect(conflict?.props['aria-live']).toBeUndefined();
-    expect(elements(conflict).some((element) => element.props['aria-live'] !== undefined)).toBe(
-      false,
-    );
-    expect(
-      elements(node).some(
-        (element) => element.props['data-testid'] === 'tab-conflict-export-error',
-      ),
-    ).toBe(true);
+    const conflict = elements(node).find((element) => element.type === TabConflictNotice);
+    expect(conflict?.props.exportMessage).toBe('ファイルを書き出せませんでした。');
   });
 });

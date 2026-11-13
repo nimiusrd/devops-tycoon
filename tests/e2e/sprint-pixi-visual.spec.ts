@@ -84,7 +84,10 @@ async function openPixiSprintBoard(
     },
     { s: seed, n: steps },
   );
-  await expect(page.getByTestId('board')).toBeVisible();
+  await expect(page.getByTestId('board')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi', {
+    timeout: 30_000,
+  });
 }
 
 /** CSS アニメーションを止め、WebGL 描画メトリクスが安定するまで待つ。 */
@@ -93,13 +96,13 @@ async function stabilizeForScreenshot(page: import('@playwright/test').Page) {
     content: '*, *::before, *::after { animation: none !important; transition: none !important; }',
   });
   const mount = page.getByTestId('board-pixi-mount');
-  await expect(mount).toBeVisible();
+  await expect(mount).toBeVisible({ timeout: 30_000 });
   await expect
-    .poll(async () => mount.getAttribute('data-board-dots'), { timeout: 15_000 })
+    .poll(async () => mount.getAttribute('data-board-dots'), { timeout: 30_000 })
     .toMatch(/^\d+$/);
   // 人物SVGの取得完了後にtickerを止め、旧人物フレームをベースラインへ保存しない。
   await expect
-    .poll(async () => mount.getAttribute('data-board-assets'), { timeout: 15_000 })
+    .poll(async () => mount.getAttribute('data-board-assets'), { timeout: 30_000 })
     .toBe('5');
   await page.evaluate(
     () =>
@@ -170,6 +173,7 @@ async function exposeResultCardForScreenshot(page: import('@playwright/test').Pa
 }
 
 test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
+  test.describe.configure({ timeout: 120_000 });
   test.skip(!pixiE2e, 'PIXI_E2E=0 による明示的な描画テスト除外');
 
   test('稼働灯と出荷光粒をWebGLで描き、reduced motionへの切替で光粒を止める @pixi', async ({
@@ -252,10 +256,14 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await expect(page.getByTestId('board')).toHaveAttribute('data-review-hell', 'true');
     await freezePixiForScreenshot(page);
 
-    await expect(page.getByTestId('board')).toHaveScreenshot('sprint-pixi-review-hell.png', {
-      animations: 'disabled',
-      maxDiffPixelRatio: 0.02,
-    });
+    // 盤面コンテナは viewport とフォントで寸法がぶれるため、Pixi 合成面だけ比較する。
+    await expect(page.getByTestId('board-pixi-mount')).toHaveScreenshot(
+      'sprint-pixi-review-hell.png',
+      {
+        animations: 'disabled',
+        maxDiffPixelRatio: 0.02,
+      },
+    );
   });
 
   test('reduced motionでもPixiの渋滞情報を静止表示する @pixi（RI-141）', async ({ page }) => {

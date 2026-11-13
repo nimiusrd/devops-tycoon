@@ -8,12 +8,8 @@
  * contain-fit は部署ビューと同じ `containFitTransform`（deptPixiView.ts）を使う。
  */
 import type { Lane } from '../sim/types';
-import {
-  BOARD_STATION_CENTERS,
-  type BoardDotPlan,
-  type BoardReviewTrailPlan,
-  type StationMood,
-} from './boardScene';
+import { BOARD_STATION_CENTERS } from './boardStationCenters';
+import type { BoardDotPlan, BoardReviewTrailPlan, StationMood } from './boardScene';
 import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import type { TaskSize, TaskVariant } from './taskView';
 import { TASK_DIAMETER } from './taskView';
@@ -516,6 +512,23 @@ export function presentBoardDots(dots: readonly BoardDotPlan[], cssScale: number
   const presented = dots.map((dot) => presentBoardDot(dot, cssScale));
   if (boardDotReadabilityMagnification(cssScale) === 1) return presented;
   separatePulledPileDots(presented, dots, cssScale);
+  return presented;
+}
+
+/**
+ * Review 山のシフト探索用。計画済みの粒列に対し、非 Review の表示は流用して Review 静止粒だけ再提示する。
+ */
+export function presentBoardDotsWithShiftedReview(
+  planned: readonly BoardDotPlan[],
+  basePresented: readonly BoardDotPlan[],
+  cssScale: number,
+): BoardDotPlan[] {
+  const presented = basePresented.map((dot, index) => {
+    const plan = planned[index];
+    return plan.lane === 'review' && !plan.motion ? presentBoardDot(plan, cssScale) : dot;
+  });
+  if (boardDotReadabilityMagnification(cssScale) === 1) return presented;
+  separatePulledPileDots(presented, planned, cssScale);
   return presented;
 }
 

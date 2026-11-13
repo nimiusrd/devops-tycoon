@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOARD_VIEW,
+  boardOverflowAriaLabel,
+  boardOverflowHiddenTaskIds,
   findBoardFlow,
   flowPointAt,
   REVIEW_TRAIL_BUDGET,
@@ -9,6 +11,7 @@ import {
   planBoardScene,
   reviewHeat,
 } from '../../../src/render/boardScene';
+import { countReviewCrossStationOverlaps } from '../../../src/render/boardPileLayout';
 import { BURN_TICKS } from '../../../src/sim/model';
 import type { Lane, Task } from '../../../src/sim/types';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
@@ -220,7 +223,24 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(dot?.burnUrgency).toBeCloseTo(0.5);
   });
 
-  it('粒の中心は設計空間の内側に収まる', () => {
+  it('Review 山は 320/390 で他工程の粒と重ならない（#995）', { timeout: 60_000 }, () => {
+    const review = Array.from({ length: 15 }, (_, index) =>
+      task({ id: index + 1, lane: 'review', kind: index % 3 === 0 ? 'routine' : 'normal' }),
+    );
+    const scene = planBoardScene([...review, task({ id: 29, lane: 'coding', progress: 0.48 })]);
+    expect(countReviewCrossStationOverlaps(scene.dots)).toBe(0);
+    expect(scene.stations.find((s) => s.lane === 'review')!.overflow).toBe(0);
+  });
+
+  it('+N の aria-label と溢れタスク ID を返す', () => {
+    const tasks = tasksIn('review', 24);
+    expect(boardOverflowAriaLabel('review', 4)).toBe('レビューにあと4件');
+    const hidden = boardOverflowHiddenTaskIds(tasks, 'review');
+    expect(hidden.length).toBe(4);
+    expect(hidden.every((id) => tasks.some((entry) => entry.id === id))).toBe(true);
+  });
+
+  it('粒の中心は設計空間の内側に収まる', { timeout: 60_000 }, () => {
     const scene = planBoardScene([
       ...tasksIn('backlog', 6),
       ...tasksIn('review', 18),

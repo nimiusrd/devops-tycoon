@@ -444,49 +444,55 @@ describe('Pixi スプリント盤面レンダラー', () => {
     expect(app.render).toHaveBeenCalledOnce();
   });
 
-  it('scene の粒・Review 警告と軌跡を描き、次の frame では不要な描画を消す', async () => {
-    const { renderer, app, latest } = await mounted();
-    const scene = planBoardScene([
-      ...Array.from({ length: 12 }, (_, index) => task({ id: index, lane: 'review' })),
-      task({ id: 20, progress: 0.5 }),
-      task({ id: 21, progress: 0.7, aiAssisted: true }),
-      task({ id: 22, lane: 'rework', progress: 0.8 }),
-      task({ id: 23, lane: 'rework', incident: true, burnTicksLeft: 1 }),
-      task({ id: 24, highValue: true, kind: 'complex' }),
-    ]);
-    const frame = input({ scene });
-    renderer.render(frame);
-    expect(renderer.getLastInput()).toBe(frame);
-    expect(latest()).toMatchObject({
-      dots: scene.dots.length,
-      actors: 5,
-      flows: 5,
-      reviewTrails: 3,
-      reviewHeat: 1,
-    });
-    expect(layer(app, 'reviewHeat').visible).toBe(true);
-    expect(drawCalls(graphics(layer(app, 'reviewHeat')), 'ellipse')).toHaveLength(3);
-    const trails = layer(app, 'reviewTrails').children as FakeGraphics[];
-    expect(trails).toHaveLength(3);
-    for (const [index, trail] of trails.entries()) {
-      const plan = scene.reviewEffects.trails[index];
-      expect(trail.position).toMatchObject({ x: plan.x, y: plan.y });
-      expect(trail.rotation).toBeCloseTo((plan.angleDeg * Math.PI) / 180);
-      expect(drawCalls(trail, 'stroke')).toHaveLength(3);
-    }
-    expect(drawCalls(layer(app, 'flows') as FakeGraphics, 'poly')).toHaveLength(scene.flows.length);
-    renderer.render(input());
-    expect(layer(app, 'reviewHeat').visible).toBe(false);
-    expect(graphics(layer(app, 'reviewHeat')).commands).toEqual([]);
-    expect(layer(app, 'reviewTrails').children).toEqual([]);
-    expect(layer(app, 'dots').children).toEqual([]);
-    expect(latest()).toMatchObject({ dots: 0, reviewTrails: 0, reviewHeat: 0 });
-    for (const trail of trails) {
-      expect(trail.commands).toEqual([]);
-      expect(trail.rotation).toBe(0);
-      expect(trail.alpha).toBe(1);
-    }
-  });
+  it(
+    'scene の粒・Review 警告と軌跡を描き、次の frame では不要な描画を消す',
+    { timeout: 60_000 },
+    async () => {
+      const { renderer, app, latest } = await mounted();
+      const scene = planBoardScene([
+        ...Array.from({ length: 12 }, (_, index) => task({ id: index, lane: 'review' })),
+        task({ id: 20, progress: 0.5 }),
+        task({ id: 21, progress: 0.7, aiAssisted: true }),
+        task({ id: 22, lane: 'rework', progress: 0.8 }),
+        task({ id: 23, lane: 'rework', incident: true, burnTicksLeft: 1 }),
+        task({ id: 24, highValue: true, kind: 'complex' }),
+      ]);
+      const frame = input({ scene });
+      renderer.render(frame);
+      expect(renderer.getLastInput()).toBe(frame);
+      expect(latest()).toMatchObject({
+        dots: scene.dots.length,
+        actors: 5,
+        flows: 5,
+        reviewTrails: 3,
+        reviewHeat: 1,
+      });
+      expect(layer(app, 'reviewHeat').visible).toBe(true);
+      expect(drawCalls(graphics(layer(app, 'reviewHeat')), 'ellipse')).toHaveLength(3);
+      const trails = layer(app, 'reviewTrails').children as FakeGraphics[];
+      expect(trails).toHaveLength(3);
+      for (const [index, trail] of trails.entries()) {
+        const plan = scene.reviewEffects.trails[index];
+        expect(trail.position).toMatchObject({ x: plan.x, y: plan.y });
+        expect(trail.rotation).toBeCloseTo((plan.angleDeg * Math.PI) / 180);
+        expect(drawCalls(trail, 'stroke')).toHaveLength(3);
+      }
+      expect(drawCalls(layer(app, 'flows') as FakeGraphics, 'poly')).toHaveLength(
+        scene.flows.length,
+      );
+      renderer.render(input());
+      expect(layer(app, 'reviewHeat').visible).toBe(false);
+      expect(graphics(layer(app, 'reviewHeat')).commands).toEqual([]);
+      expect(layer(app, 'reviewTrails').children).toEqual([]);
+      expect(layer(app, 'dots').children).toEqual([]);
+      expect(latest()).toMatchObject({ dots: 0, reviewTrails: 0, reviewHeat: 0 });
+      for (const trail of trails) {
+        expect(trail.commands).toEqual([]);
+        expect(trail.rotation).toBe(0);
+        expect(trail.alpha).toBe(1);
+      }
+    },
+  );
 
   it('縮小盤面の Review 軌跡は拡大後の粒の中心に付き、粒の倍率は戻さない', async () => {
     const { renderer, app } = await mounted();

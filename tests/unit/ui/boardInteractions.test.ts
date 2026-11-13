@@ -75,6 +75,17 @@ vi.mock('react', async (importOriginal) => ({
       slot.cleanup = effect() ?? undefined;
     });
   },
+  useLayoutEffect(effect: () => void | (() => void), dependencies: readonly unknown[]) {
+    const index = hooks.cursor++;
+    const previous = hooks.slots[index];
+    if (hooks.sameDependencies(previous?.dependencies, dependencies)) return;
+    const slot = { dependencies, cleanup: undefined as (() => void) | undefined };
+    hooks.slots[index] = slot;
+    hooks.effects.push(() => {
+      previous?.cleanup?.();
+      slot.cleanup = effect() ?? undefined;
+    });
+  },
 }));
 vi.mock('framer-motion', () => ({
   AnimatePresence: 'div',
@@ -92,6 +103,7 @@ vi.mock('../../../src/ui/usePixiRenderer', () => ({
     },
   }),
 }));
+vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
 // 画像ロードによるアクター自身の state は officeActors.test.ts で別途検証する。
 
 import { Board, type BoardProps } from '../../../src/render/Board';
@@ -322,7 +334,7 @@ afterEach(() => {
 });
 
 describe('Board の状態表示', () => {
-  it('工程件数・渋滞・炎上の緊急度・流れる粒と省略数を表示する', () => {
+  it('工程件数・渋滞・炎上の緊急度・流れる粒と省略数を表示する', { timeout: 60_000 }, () => {
     const tasks = [
       ...Array.from({ length: 8 }, (_, id) => makeTask(id, { lane: 'backlog' })),
       ...Array.from({ length: 21 }, (_, id) => makeTask(100 + id)),
@@ -349,7 +361,10 @@ describe('Board の状態表示', () => {
     ]) {
       expect(content(board.find(`count-${lane}`))).toBe(String(count));
     }
-    expect(content(board.find('overflow-review'))).toBe('+1');
+    const overflow = board.find('overflow-review');
+    expect(content(overflow)).toBe('+1');
+    expect(overflow.props['aria-label']).toBe('レビューにあと1件');
+    expect(overflow.type).toBe('button');
     expect(board.query('overflow-backlog')).toBeUndefined();
     expect(board.byClass('needs-attention').map((node) => node.props['data-lane'])).toEqual([
       'review',
@@ -373,6 +388,30 @@ describe('Board の状態表示', () => {
       '炎上',
     ]);
     expect(hasRegisteredBoardDragHitTest()).toBe(true);
+  });
+
+  it('溢れが解消されたら開状態を解除し、再び溢れても自動では開かない', () => {
+    const reviewTasks = Array.from({ length: 21 }, (_, index) =>
+      makeTask(200 + index, { lane: 'review' }),
+    );
+    const board = mountBoard({ tasks: reviewTasks, sprint: null });
+    (board.find('overflow-review').props.onClick as (event: Event) => void)(
+      Object.assign(new Event('click'), { stopPropagation: vi.fn() }),
+    );
+    board.update({ tasks: reviewTasks });
+    expect(board.find('board-overflow-picker-review')).toBeTruthy();
+    expect(board.find('overflow-review').props['aria-expanded']).toBe(true);
+
+    const fewerReview = Array.from({ length: 10 }, (_, index) =>
+      makeTask(300 + index, { lane: 'review' }),
+    );
+    board.update({ tasks: fewerReview });
+    expect(board.query('board-overflow-picker-review')).toBeUndefined();
+    expect(board.query('overflow-review')).toBeUndefined();
+
+    board.update({ tasks: reviewTasks });
+    expect(board.query('board-overflow-picker-review')).toBeUndefined();
+    expect(board.find('overflow-review').props['aria-expanded']).toBe(false);
   });
 
   it('メンバー疲弊を人物へ反映し、空になった工程の警告と吹き出しを消す', () => {

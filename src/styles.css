@@ -1192,16 +1192,110 @@ body {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: var(--visual-layer-sprint-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 1px 7px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #1f1942e6;
+  box-shadow: 0 2px 0 #00000055;
   font-size: 11px;
   font-weight: 900;
   color: var(--cream);
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: #1f1942e6;
-  border: 1.5px solid var(--line);
-  box-shadow: 0 2px 0 #00000055;
   white-space: nowrap;
-  pointer-events: none;
+  cursor: pointer;
+}
+
+.board-overflow-picker {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  top: auto;
+  z-index: var(--visual-layer-sprint-foreground);
+  width: auto;
+  max-height: min(104px, calc(100% - 16px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  box-shadow: 0 10px 24px #00000055;
+}
+
+.board-overflow-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.board-overflow-picker-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--cream) 85%, transparent);
+}
+
+.board-overflow-picker-close {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  font-size: 11px;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.board-overflow-picker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.board-overflow-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  color: var(--cream);
+  text-align: left;
+  cursor: pointer;
+}
+
+.board-overflow-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.board-overflow-option-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.board-overflow-option-detail {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--cream) 76%, transparent);
 }
 
 /* 粒の凡例は初期状態を要約にし、必要なときだけ展開する。 */

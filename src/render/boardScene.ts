@@ -7,12 +7,16 @@
  * スプリント状態から導出する。座標は固定の設計空間（1404×573）で返し、
  * DOM/SVGとPixiJSのレンダラはそれを読んで描くだけにする（第22.2）。
  */
+import { adjustReviewPileLayout } from './boardPileLayout';
+import { BOARD_STATION_CENTERS } from './boardStationCenters';
 import { BURN_TICKS } from '../sim/model';
 import type { Lane, Task } from '../sim/types';
 import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 import type { TaskSize, TaskVariant } from './taskView';
 import { taskSize, taskVariant } from './taskView';
+
+export { BOARD_STATION_CENTERS } from './boardStationCenters';
 
 /** 設計座標空間（旧モック main-screen の viewBox 由来）。 */
 export const BOARD_VIEW = DESIGN_SPACES.sprint;
@@ -59,18 +63,6 @@ interface StationLayout {
   /** 表示する粒の上限（超過は +N で集約）。 */
   cap: number;
 }
-
-/**
- * 工程の人物中心。盤面描画とドラッグ判定が同じ位置を参照する。
- * Backlog / Coding / Review は滞留の山を読み分けられる間隔を確保する。
- */
-export const BOARD_STATION_CENTERS = {
-  backlog: { x: 380, y: 220 },
-  coding: { x: 620, y: 260 },
-  review: { x: 840, y: 300 },
-  rework: { x: 1006, y: 229 },
-  done: { x: 1075, y: 370 },
-} as const satisfies Record<Lane, Point>;
 
 /**
  * 5 工程のステーション配置（旧モック main-screen の station 座標由来）。
@@ -569,7 +561,7 @@ export function planBoardScene(
       bubble,
       overflow,
       overflowX: layout.pile.x,
-      overflowY: layout.pile.y + apexDy - 26,
+      overflowY: layout.pile.y + apexDy - 56,
     });
 
     const offsets = pileOffsets(shown.length, layout.perRow);
@@ -603,11 +595,54 @@ export function planBoardScene(
     });
   }
 
+  const adjustedDots = adjustReviewPileLayout(dots);
+  const reviewPile = adjustedDots.find(
+    (dot) => dot.lane === 'review' && !dot.motion && dot.clusterX !== undefined,
+  );
+  if (reviewPile?.clusterX !== undefined && reviewPile.clusterY !== undefined) {
+    const reviewStation = stations.find((station) => station.lane === 'review');
+    if (reviewStation) {
+      const reviewCap = STATIONS.find((layout) => layout.lane === 'review')!;
+      const shown = adjustedDots.filter((dot) => dot.lane === 'review' && !dot.motion).length;
+      const rows = Math.ceil(shown / reviewCap.perRow);
+      const apexDy = rows > 0 ? -(rows - 1) * DOT_DY : 0;
+      reviewStation.overflowX = reviewPile.clusterX;
+      reviewStation.overflowY = reviewPile.clusterY + apexDy - 56;
+    }
+  }
+
   return {
     view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h },
     stations,
-    dots,
+    dots: adjustedDots,
     flows: FLOWS,
-    reviewEffects: planBoardReviewEffects(stations, dots),
+    reviewEffects: planBoardReviewEffects(stations, adjustedDots),
   };
+}
+
+const STATION_ARIA_LABEL: Record<Lane, string> = {
+  backlog: '待機',
+  coding: '実装',
+  review: 'レビュー',
+  rework: '手戻り',
+  done: '完了',
+};
+
+/** `+N` バッジの aria-label（例:「レビューにあと2件」）。 */
+export function boardOverflowAriaLabel(lane: Lane, overflow: number): string {
+  return `${STATION_ARIA_LABEL[lane]}にあと${overflow}件`;
+}
+
+/** 山の cap で描画されなかった静止タスク ID（決定論的に昇順）。 */
+export function boardOverflowHiddenTaskIds(tasks: readonly Task[], lane: Lane): number[] {
+  const scene = planBoardScene(tasks);
+  if (scene.stations.find((station) => station.lane === lane)?.overflow === 0) return [];
+  const drawn = new Set(
+    scene.dots.filter((dot) => dot.lane === lane && !dot.motion).map((dot) => dot.id),
+  );
+  return tasks
+    .filter((task) => task.lane === lane && !isFlowingTask(lane, task))
+    .filter((task) => !drawn.has(task.id))
+    .map((task) => task.id)
+    .sort((a, b) => a - b);
 }

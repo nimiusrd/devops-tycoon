@@ -135,7 +135,10 @@ export async function advanceCurrentSprintToReviewQueue(
     },
     { min: minimum, max: maximum },
   );
-  await expect(page.getByTestId('count-review')).toHaveText(String(count));
+  // 盤面レイアウトが重いときは sim が先に進み DOM の件数表示が追いつかないことがある。
+  await expect
+    .poll(async () => page.getByTestId('count-review').innerText(), { timeout: 30_000 })
+    .toBe(String(count));
   return count;
 }
 

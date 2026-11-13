@@ -39,12 +39,21 @@ import { OfficeRoom } from '../ui/OfficeRoom';
 import { usePixiRenderer } from '../ui/usePixiRenderer';
 import { useBoardEffects } from '../ui/useBoardEffects';
 import { deriveMemberMoodOverrides } from './memberMood';
-import { BOARD_VIEW, planBoardScene, type BoardStationPlan, type BoardDotPlan } from './boardScene';
+import {
+  BOARD_VIEW,
+  boardOverflowAriaLabel,
+  boardOverflowHiddenTaskIds,
+  planBoardScene,
+  type BoardStationPlan,
+  type BoardDotPlan,
+} from './boardScene';
+import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 import { describeTaskTarget } from './actionTargetPickerView';
+import { useDialogOverlayLock } from '../ui/useDialogOverlayLock';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const BoardPixiLayer = lazyWebgl<BoardPixiLayerProps>(() =>
@@ -72,8 +81,9 @@ interface BoardGesture {
 function blocksBoardTarget(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
-    target.closest('.st-label, .board-flow-summary, .bubble, .board-legend, .pile-overflow') !==
-      null
+    target.closest(
+      '.st-label, .board-flow-summary, .bubble, .board-legend, .pile-overflow, .board-overflow-picker',
+    ) !== null
   );
 }
 
@@ -200,6 +210,102 @@ const LEGEND: { variant: BoardDotPlan['variant']; label: string }[] = [
   { variant: 'incident', label: '炎上' },
 ];
 
+function BoardOverflowPicker({
+  lane,
+  hiddenIds,
+  tasks,
+  sprint,
+  armedAction,
+  assignAssignee,
+  onDragComplete,
+  onPickTarget,
+  onClose,
+}: {
+  lane: Lane;
+  hiddenIds: readonly number[];
+  tasks: readonly Task[];
+  sprint: SprintState | null | undefined;
+  armedAction: DraggableActionId | null | undefined;
+  assignAssignee?: 'ai' | 'senior';
+  onDragComplete?: (target: ActionTarget) => void;
+  onPickTarget: (label: string) => void;
+  onClose: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: onClose });
+
+  return (
+    <div
+      ref={dialogRef}
+      className="board-overflow-picker"
+      data-testid={`board-overflow-picker-${lane}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${boardOverflowAriaLabel(lane, hiddenIds.length)}の一覧`}
+      tabIndex={-1}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <div className="board-overflow-picker-header">
+        <span>{boardOverflowAriaLabel(lane, hiddenIds.length)}</span>
+        <button
+          type="button"
+          className="board-overflow-picker-close"
+          data-testid="board-overflow-picker-close"
+          onClick={onClose}
+        >
+          閉じる
+        </button>
+      </div>
+      {!armedAction && (
+        <p className="board-overflow-picker-hint" data-testid="board-overflow-picker-hint">
+          介入・分割アクション選択中のみ選べます
+        </p>
+      )}
+      <ul className="board-overflow-picker-list">
+        {hiddenIds.map((taskId) => {
+          const task = tasks.find((entry) => entry.id === taskId);
+          const candidate = sprint
+            ? armedAction === 'assignTask'
+              ? assignableTasks(sprint).some((entry) => entry.id === taskId)
+              : armedAction === 'splitPr'
+                ? splitPrCandidates(sprint).some((entry) => entry.id === taskId)
+                : false
+            : false;
+          return (
+            <li key={taskId}>
+              <button
+                type="button"
+                data-testid={`board-overflow-option-${taskId}`}
+                className="board-overflow-option"
+                disabled={!candidate || !onDragComplete}
+                onClick={() => {
+                  if (!armedAction || !onDragComplete || !candidate) return;
+                  const target: ActionTarget =
+                    armedAction === 'assignTask'
+                      ? {
+                          taskId,
+                          lane: 'coding',
+                          ...(assignAssignee ? { assignee: assignAssignee } : {}),
+                        }
+                      : { taskId };
+                  if (task) onPickTarget(`対象を確定: ${describeTaskTarget(task)}（#${task.id}）`);
+                  onDragComplete(target);
+                  onClose();
+                }}
+              >
+                <span className="board-overflow-option-label">タスク #{taskId}</span>
+                {task && (
+                  <span className="board-overflow-option-detail">{describeTaskTarget(task)}</span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export function Board({
   tasks,
   metrics,
@@ -263,6 +369,44 @@ export function Board({
   const [pointer, setPointer] = useState<BoardPointerPosition | null>(null);
   const [gesture, setGesture] = useState<BoardGesture | null>(null);
   const [confirmedTarget, setConfirmedTarget] = useState('');
+  const [overflowPickerLane, setOverflowPickerLane] = useState<Lane | null>(null);
+  const [overflowPickerSuppressedLane, setOverflowPickerSuppressedLane] = useState<Lane | null>(
+    null,
+  );
+  const overflowTriggerRefs = useRef<Partial<Record<Lane, HTMLButtonElement | null>>>({});
+
+  const closeOverflowPicker = useCallback(
+    (lane?: Lane | null) => {
+      const returnLane = lane ?? overflowPickerLane;
+      if (returnLane) {
+        setOverflowPickerSuppressedLane(returnLane);
+      }
+      setOverflowPickerLane(null);
+      if (returnLane) {
+        window.requestAnimationFrame(() => overflowTriggerRefs.current[returnLane]?.focus());
+      }
+    },
+    [overflowPickerLane],
+  );
+  const overflowHiddenIds = useMemo(
+    () =>
+      overflowPickerLane ? boardOverflowHiddenTaskIds(tasks, overflowPickerLane) : ([] as number[]),
+    [overflowPickerLane, tasks],
+  );
+  const overflowPickerOverflow =
+    overflowPickerLane === null
+      ? 0
+      : (scene.stations.find((station) => station.lane === overflowPickerLane)?.overflow ?? 0);
+  const overflowPickerStale =
+    overflowPickerLane !== null && (overflowHiddenIds.length === 0 || overflowPickerOverflow === 0);
+  if (overflowPickerStale && overflowPickerSuppressedLane !== overflowPickerLane) {
+    setOverflowPickerSuppressedLane(overflowPickerLane);
+  }
+  const overflowPickerVisible =
+    overflowPickerLane !== null &&
+    overflowPickerLane !== overflowPickerSuppressedLane &&
+    overflowHiddenIds.length > 0 &&
+    overflowPickerOverflow > 0;
   const interactive = usePixi && armedAction !== null && onDragComplete != null && dragPlan != null;
   // 元のsceneで逆引きし、強調による前面化が次のヒット順を変えないようにする。
   const previewTaskId =
@@ -574,15 +718,41 @@ export function Board({
       {scene.stations
         .filter((s) => s.overflow > 0)
         .map((s) => (
-          <div
+          <button
             key={`of-${s.lane}`}
+            ref={(element) => {
+              overflowTriggerRefs.current[s.lane] = element;
+            }}
+            type="button"
             className="pile-overflow"
             data-testid={`overflow-${s.lane}`}
+            aria-label={boardOverflowAriaLabel(s.lane, s.overflow)}
+            aria-haspopup="dialog"
+            aria-expanded={overflowPickerVisible && overflowPickerLane === s.lane}
             style={{ left: pct(s.overflowX, VIEW_W), top: pct(s.overflowY, VIEW_H) }}
+            onClick={(event) => {
+              event.stopPropagation();
+              setOverflowPickerSuppressedLane(null);
+              setOverflowPickerLane(s.lane);
+            }}
           >
             +{s.overflow}
-          </div>
+          </button>
         ))}
+
+      {overflowPickerVisible && (
+        <BoardOverflowPicker
+          lane={overflowPickerLane}
+          hiddenIds={overflowHiddenIds}
+          tasks={tasks}
+          sprint={sprint}
+          armedAction={armedAction}
+          assignAssignee={assignAssignee}
+          onDragComplete={onDragComplete}
+          onPickTarget={setConfirmedTarget}
+          onClose={() => closeOverflowPicker(overflowPickerLane)}
+        />
+      )}
 
       <details className="board-legend">
         <summary>粒の見方</summary>

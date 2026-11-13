@@ -516,6 +516,23 @@ export function presentBoardDots(dots: readonly BoardDotPlan[], cssScale: number
 }
 
 /**
+ * Review 山のシフト探索用。計画済みの粒列に対し、非 Review の表示は流用して Review 静止粒だけ再提示する。
+ */
+export function presentBoardDotsWithShiftedReview(
+  planned: readonly BoardDotPlan[],
+  basePresented: readonly BoardDotPlan[],
+  cssScale: number,
+): BoardDotPlan[] {
+  const presented = basePresented.map((dot, index) => {
+    const plan = planned[index];
+    return plan.lane === 'review' && !plan.motion ? presentBoardDot(plan, cssScale) : dot;
+  });
+  if (boardDotReadabilityMagnification(cssScale) === 1) return presented;
+  separatePulledPileDots(presented, planned, cssScale);
+  return presented;
+}
+
+/**
  * 演出が保存した計画座標を、今の粒と同じ表示位置へ移す。
  * 押し離しは入力順に依存するため、描画順へ並べ替える前の scene 順で求めた結果を渡す。
  * 倍率 1、または山から離れたフロー上の点は、計画のまま返す。

@@ -6,7 +6,11 @@
  */
 import type { Lane } from '../sim/types';
 import type { BoardDotPlan } from './boardScene';
-import { presentBoardDots, presentedDotRadius } from './boardPixiView';
+import {
+  presentBoardDots,
+  presentBoardDotsWithShiftedReview,
+  presentedDotRadius,
+} from './boardPixiView';
 import { DESIGN_SPACES, designToHostTransform } from './visualTokens';
 
 const BOARD_VIEW = DESIGN_SPACES.sprint;
@@ -40,6 +44,48 @@ function circlesOverlap(
   return Math.hypot(ax - bx, ay - by) < ar + br - 0.01;
 }
 
+interface ReviewOverlapCache {
+  scale: number;
+  basePresented: BoardDotPlan[];
+  others: Array<{ x: number; y: number; size: BoardDotPlan['size'] }>;
+  reviewIndexes: number[];
+}
+
+function buildReviewOverlapCaches(
+  dots: readonly BoardDotPlan[],
+  scales: readonly number[],
+): ReviewOverlapCache[] {
+  return scales.map((scale) => {
+    const basePresented = presentBoardDots(dots, scale);
+    const reviewIndexes: number[] = [];
+    const others: ReviewOverlapCache['others'] = [];
+    dots.forEach((dot, index) => {
+      if (dot.lane === 'review' && !dot.motion) reviewIndexes.push(index);
+      else if (dot.lane !== 'review') {
+        const presented = basePresented[index];
+        others.push({ x: presented.x, y: presented.y, size: presented.size });
+      }
+    });
+    return { scale, basePresented, others, reviewIndexes };
+  });
+}
+
+function countOverlapsFromPresented(
+  reviewDots: readonly BoardDotPlan[],
+  others: ReviewOverlapCache['others'],
+  scale: number,
+): number {
+  let count = 0;
+  for (const left of reviewDots) {
+    const lr = presentedDotRadius(left.size, scale);
+    for (const right of others) {
+      const rr = presentedDotRadius(right.size, scale);
+      if (circlesOverlap(left.x, left.y, lr, right.x, right.y, rr)) count += 1;
+    }
+  }
+  return count;
+}
+
 /**
  * 提示縮尺ごとに、Review 静止粒と他工程粒（フロー含む）の円交差の組数を数える。
  */
@@ -47,18 +93,19 @@ export function countReviewCrossStationOverlaps(
   dots: readonly BoardDotPlan[],
   scales: readonly number[] = boardPhonePresentationScales(),
 ): number {
+  const caches = buildReviewOverlapCaches(dots, scales);
+  return countReviewCrossStationOverlapsWithCaches(dots, caches);
+}
+
+function countReviewCrossStationOverlapsWithCaches(
+  dots: readonly BoardDotPlan[],
+  caches: readonly ReviewOverlapCache[],
+): number {
   let count = 0;
-  for (const scale of scales) {
-    const presented = presentBoardDots(dots, scale);
-    const review = presented.filter((dot) => dot.lane === 'review' && !dot.motion);
-    const others = presented.filter((dot) => dot.lane !== 'review');
-    for (const left of review) {
-      const lr = presentedDotRadius(left.size, scale);
-      for (const right of others) {
-        const rr = presentedDotRadius(right.size, scale);
-        if (circlesOverlap(left.x, left.y, lr, right.x, right.y, rr)) count += 1;
-      }
-    }
+  for (const cache of caches) {
+    const presented = presentBoardDotsWithShiftedReview(dots, cache.basePresented, cache.scale);
+    const review = cache.reviewIndexes.map((index) => presented[index]);
+    count += countOverlapsFromPresented(review, cache.others, cache.scale);
   }
   return count;
 }
@@ -92,14 +139,16 @@ export function applyLanePileShift(
   });
 }
 
-/** 移動後も設計盤面の内側に粒の中心が収まるか。 */
-function pilesStayOnBoard(dots: readonly BoardDotPlan[], scales: readonly number[]): boolean {
+function pilesStayOnBoardWithCaches(
+  dots: readonly BoardDotPlan[],
+  caches: readonly ReviewOverlapCache[],
+): boolean {
   const { w, h } = DESIGN_SPACES.sprint;
-  for (const scale of scales) {
-    const presented = presentBoardDots(dots, scale);
-    for (const dot of presented) {
-      if (dot.lane !== 'review' || dot.motion) continue;
-      const radius = presentedDotRadius(dot.size, scale);
+  for (const cache of caches) {
+    const presented = presentBoardDotsWithShiftedReview(dots, cache.basePresented, cache.scale);
+    for (const index of cache.reviewIndexes) {
+      const dot = presented[index];
+      const radius = presentedDotRadius(dot.size, cache.scale);
       if (
         dot.x - radius < -0.5 ||
         dot.y - radius < -0.5 ||
@@ -145,14 +194,15 @@ function pickBetterShift(
 function findReviewPileShiftInRange(
   dots: readonly BoardDotPlan[],
   scales: readonly number[],
+  caches: readonly ReviewOverlapCache[],
   range: { dxMin: number; dxMax: number; dyMin: number; dyMax: number; step: number },
 ): BoardPileShift | null {
   let best: (BoardPileShift & { dist: number }) | null = null;
   for (let dx = range.dxMin; dx <= range.dxMax; dx += range.step) {
     for (let dy = range.dyMin; dy <= range.dyMax; dy += range.step) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
-      if (!pilesStayOnBoard(shifted, scales)) continue;
-      if (countReviewCrossStationOverlaps(shifted, scales) > 0) continue;
+      if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
+      if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       best = pickBetterShift(best, dx, dy);
     }
   }
@@ -163,6 +213,7 @@ function findReviewPileShiftInRange(
 function refineReviewPileShift(
   dots: readonly BoardDotPlan[],
   scales: readonly number[],
+  caches: readonly ReviewOverlapCache[],
   coarse: BoardPileShift,
 ): BoardPileShift {
   let best = pickBetterShift(null, coarse.dx, coarse.dy)!;
@@ -177,8 +228,8 @@ function refineReviewPileShift(
       dy += 2
     ) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
-      if (!pilesStayOnBoard(shifted, scales)) continue;
-      if (countReviewCrossStationOverlaps(shifted, scales) > 0) continue;
+      if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
+      if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       best = pickBetterShift(best, dx, dy)!;
     }
   }
@@ -193,13 +244,14 @@ export function findReviewPileShift(
   dots: readonly BoardDotPlan[],
   scales: readonly number[] = boardPhonePresentationScales(),
 ): BoardPileShift {
-  if (countReviewCrossStationOverlaps(dots, scales) === 0) {
+  const caches = buildReviewOverlapCaches(dots, scales);
+  if (countReviewCrossStationOverlapsWithCaches(dots, caches) === 0) {
     return { dx: 0, dy: 0 };
   }
-  const compact = findReviewPileShiftInRange(dots, scales, REVIEW_SHIFT_COMPACT);
+  const compact = findReviewPileShiftInRange(dots, scales, caches, REVIEW_SHIFT_COMPACT);
   if (compact) return compact;
-  const coarse = findReviewPileShiftInRange(dots, scales, REVIEW_SHIFT_EXTENDED_COARSE);
-  if (coarse) return refineReviewPileShift(dots, scales, coarse);
+  const coarse = findReviewPileShiftInRange(dots, scales, caches, REVIEW_SHIFT_EXTENDED_COARSE);
+  if (coarse) return refineReviewPileShift(dots, scales, caches, coarse);
   return { dx: 0, dy: 0 };
 }
 

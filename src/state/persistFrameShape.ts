@@ -48,6 +48,18 @@ export function isPersistFrameShape(value: unknown): boolean {
     if (!isObject(value.extras.teamRosters)) return false;
     if (!Object.values(value.extras.teamRosters).every(isRosterShape)) return false;
   }
+  if (
+    value.extras.pendingLeaveReturns !== undefined &&
+    !isPendingLeaveReturns(value.extras.pendingLeaveReturns)
+  ) {
+    return false;
+  }
+  if (
+    value.extras.announcedLeaveReturnKeys !== undefined &&
+    !isStringArray(value.extras.announcedLeaveReturnKeys)
+  ) {
+    return false;
+  }
   if (value.pendingShopHandIndices !== undefined && !Array.isArray(value.pendingShopHandIndices)) {
     return false;
   }
@@ -400,6 +412,13 @@ function isGrowthPromotionShape(value: unknown): boolean {
 function isGrowthLeaveShape(value: unknown): boolean {
   if (!isObject(value)) return false;
   return typeof value.id === 'string' && typeof value.name === 'string';
+}
+
+function isPendingLeaveReturns(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return Object.values(value).every(
+    (entry) => Array.isArray(entry) && entry.every(isGrowthLeaveShape),
+  );
 }
 
 /** BeatScreen が getEvent(eventId) する前に、既知イベントと種別を拒否する。 */

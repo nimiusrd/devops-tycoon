@@ -93,3 +93,9 @@ export interface GrowthOutcome {
   /** ドキュメント魔などが積んだドキュメント量（org へ反映）。 */
   docGain: number;
 }
+
+/** 休職が解けてベンチへ戻ったメンバー（編成画面で一度だけ知らせる）。 */
+export interface LeaveReturnNotice {
+  id: string;
+  name: string;
+}

@@ -614,6 +614,15 @@ async function exposeResultCardForScreenshot(page: Page): Promise<void> {
         min-height: 0 !important;
         flex: none !important;
       }
+      .sprint-result-footer {
+        flex: none !important;
+      }
+      .sprint-result-footer .result-actions {
+        flex-wrap: nowrap !important;
+      }
+      .sprint-result-footer .btn {
+        white-space: nowrap !important;
+      }
       .result-overlay::before,
       .result-overlay::after {
         content: none !important;

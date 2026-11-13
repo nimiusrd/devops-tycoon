@@ -1,3 +1,5 @@
+import { quarterReviewScreenUrl } from 'virtual:webgl-modules';
+
 export const QUARTER_REVIEW_LOAD_SLOW_MS = 150;
 export const QUARTER_REVIEW_LOAD_TIMEOUT_MS = 10_000;
 
@@ -25,10 +27,7 @@ function loadTimeoutMs(): number {
 }
 
 function quarterReviewModuleUrl(): string {
-  const url = new URL(
-    new URL('./QuarterReviewScreen.tsx', import.meta.url).href,
-    window.location.href,
-  );
+  const url = new URL(quarterReviewScreenUrl, window.location.href);
   if (loadAttempt > 0) url.searchParams.set('quarter-review-attempt', String(loadAttempt));
   return url.href;
 }
@@ -37,7 +36,10 @@ function importQuarterReviewScreen(): Promise<typeof import('./QuarterReviewScre
   const block = typeof window !== 'undefined' ? window.__blockQuarterReviewChunk : undefined;
   if (block?.hang) return new Promise(() => {});
   const delayMs = typeof window !== 'undefined' ? window.__delayQuarterReviewChunkMs : undefined;
-  const load = () => import(/* @vite-ignore */ quarterReviewModuleUrl());
+  const load = () =>
+    quarterReviewScreenUrl.startsWith('/src/')
+      ? import('./QuarterReviewScreen')
+      : import(/* @vite-ignore */ quarterReviewModuleUrl());
   if (typeof delayMs === 'number' && Number.isFinite(delayMs) && delayMs > 0) {
     return new Promise((resolve, reject) => {
       setTimeout(() => {

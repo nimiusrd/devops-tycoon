@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('virtual:webgl-modules', () => ({
+  quarterReviewScreenUrl: '/src/ui/QuarterReviewScreen.tsx',
+}));
 import {
   loadQuarterReviewScreenModule,
   resetQuarterReviewScreenChunk,

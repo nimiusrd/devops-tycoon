@@ -631,6 +631,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       notice={run.persistenceStatus}
       quietPlacement={quietInline ? 'inline' : 'overlay'}
       exportMessage={exportMessage}
+      tabConflict={run.tabConflict}
       tabConflictModalOpen={run.tabConflictModalOpen}
       onAcknowledgeTabConflict={run.acknowledgeTabConflict}
       onTakeOver={run.takeOverForeignTab}
@@ -730,37 +731,37 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             }}
           />
         </SceneScrollReset>
-        {helpOpen && (
+        {helpOpen && !run.tabConflictModalOpen && (
           <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
             <HowToPlayScreen onClose={closeHelp} />
           </Suspense>
         )}
         <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeNonHelpTitleModals} />}>
-          {metaShopOpen && (
+          {metaShopOpen && !run.tabConflictModalOpen && (
             <MetaShopScreen
               meta={meta}
               onPurchase={(id) => run.purchaseMetaUnlock(id)}
               onClose={closeMetaShop}
             />
           )}
-          {deckPolicyOpen && (
+          {deckPolicyOpen && !run.tabConflictModalOpen && (
             <DeckPolicyScreen
               meta={meta}
               onChange={(ids) => run.setPreferredCardIds(ids)}
               onClose={() => setDeckPolicyOpen(false)}
             />
           )}
-          {cardCollectionOpen && (
+          {cardCollectionOpen && !run.tabConflictModalOpen && (
             <CardCollectionScreen
               meta={meta}
               onChangePreferred={(ids) => run.setPreferredCardIds(ids)}
               onClose={closeCardCollection}
             />
           )}
-          {achievementsOpen && (
+          {achievementsOpen && !run.tabConflictModalOpen && (
             <AchievementCollectionScreen meta={meta} onClose={() => setAchievementsOpen(false)} />
           )}
-          {replayListOpen && (
+          {replayListOpen && !run.tabConflictModalOpen && (
             <ReplayListScreen
               replays={run.replays}
               onOpen={openReplay}
@@ -1124,7 +1125,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           )}
         </div>
         <Suspense fallback={null}>
-          {formationOpen && (
+          {formationOpen && !run.tabConflictModalOpen && (
             <FormationScreen
               state={state}
               onAssign={run.assignMember}
@@ -1136,7 +1137,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           )}
         </Suspense>
         {helpOpen && <RunHelpSimPause game={game} />}
-        {helpOpen && (
+        {helpOpen && !run.tabConflictModalOpen && (
           <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
             <HowToPlayScreen onClose={closeHelp} />
           </Suspense>

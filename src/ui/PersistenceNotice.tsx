@@ -9,7 +9,7 @@
 import { createPortal } from 'react-dom';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../state/persistenceStatus';
 import { observePersistenceBannerHeight } from './persistenceBannerInset';
-import { TabConflictNotice } from './TabConflictNotice';
+import { TabConflictAcknowledgedChip, TabConflictNotice } from './TabConflictNotice';
 
 export interface PersistenceNoticeProps {
   notice: PersistenceNoticeModel;
@@ -22,6 +22,8 @@ export interface PersistenceNoticeProps {
    * ここでは読み上げと常駐バナーだけを残す。
    */
   quietPlacement?: 'inline' | 'overlay';
+  /** 別タブが先に記録を更新し、このタブは保存を止めている。 */
+  tabConflict?: boolean;
   /** 別タブ競合のモーダル案内を出す。 */
   tabConflictModalOpen?: boolean;
   onAcknowledgeTabConflict?: () => void;
@@ -89,6 +91,7 @@ export function PersistenceNotice({
   onExport,
   exportMessage = null,
   quietPlacement = 'overlay',
+  tabConflict = false,
   tabConflictModalOpen = false,
   onAcknowledgeTabConflict,
   onTakeOver,
@@ -103,6 +106,7 @@ export function PersistenceNotice({
       : notice.liveMessage;
   const showBanner =
     !tabConflictModalOpen &&
+    !tabConflict &&
     showsPersistenceBanner(notice) &&
     !(quietPlacement === 'inline' && showsInlineRecoveryChip(notice));
   const content = (
@@ -124,6 +128,9 @@ export function PersistenceNotice({
           onExport={onExport}
           exportMessage={exportMessage}
         />
+      ) : null}
+      {tabConflict && !tabConflictModalOpen && onTakeOver ? (
+        <TabConflictAcknowledgedChip onTakeOver={onTakeOver} />
       ) : null}
       {showBanner ? (
         <div

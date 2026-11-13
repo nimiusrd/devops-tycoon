@@ -10,6 +10,31 @@ import { ResultOverlay } from './ResultOverlay';
 import { listFocusable } from './dialogOverlayLock';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
+/** モーダルを閉じたあとも、保存停止中であることを盤面を動かさず示す。 */
+export function TabConflictAcknowledgedChip({ onTakeOver }: { onTakeOver: () => void }) {
+  return (
+    <div
+      className="persistence-notice persistence-notice-quiet tab-conflict-quiet"
+      data-testid="tab-conflict-quiet"
+      data-state="conflict"
+      data-tone="warn"
+      data-layout="overlay"
+      data-overlay-lock-exempt="true"
+    >
+      <p className="persistence-notice-headline">別タブが先に記録を更新しました</p>
+      <p className="persistence-notice-detail">このタブでは端末へ保存しません。</p>
+      <button
+        type="button"
+        className="btn btn-secondary"
+        data-testid="tab-conflict-reload"
+        onClick={onTakeOver}
+      >
+        再読込して引き継ぐ
+      </button>
+    </div>
+  );
+}
+
 export interface TabConflictNoticeProps {
   onAcknowledge: () => void;
   onTakeOver: () => void;
@@ -60,7 +85,7 @@ export function TabConflictNoticePanel({
           <>
             <button
               type="button"
-              className="btn"
+              className="btn btn-primary"
               data-testid="tab-conflict-export"
               onClick={onExport}
             >
@@ -87,19 +112,11 @@ export function TabConflictNoticePanel({
         )}
         <button
           type="button"
-          className="btn"
+          className="btn btn-secondary"
           data-testid="tab-conflict-continue"
           onClick={onAcknowledge}
         >
           このタブで続ける
-        </button>
-        <button
-          type="button"
-          className="btn"
-          data-testid="tab-conflict-dismiss"
-          onClick={onAcknowledge}
-        >
-          閉じる
         </button>
       </div>
     </div>

@@ -87,7 +87,6 @@ for (const width of [320, 390, 1280] as const) {
     if (titleOnly) await page.close();
     await expect(other.getByTestId('tab-conflict-overlay')).toBeVisible();
     await expect(other.getByTestId('tab-conflict-continue')).toBeVisible();
-    await expect(other.getByTestId('tab-conflict-dismiss')).toBeVisible();
     await expect(other.locator('#root')).toHaveJSProperty('inert', true);
     await expect
       .poll(() => other.evaluate(() => (window as TabGameWindow).game?.isPaused() ?? false))
@@ -110,15 +109,8 @@ for (const width of [320, 390, 1280] as const) {
     }
 
     const continueBox = await other.getByTestId('tab-conflict-continue').boundingBox();
-    const dismissBox = await other.getByTestId('tab-conflict-dismiss').boundingBox();
     expect(continueBox).not.toBeNull();
-    expect(dismissBox).not.toBeNull();
     expect(continueBox!.width).toBeLessThanOrEqual(320);
-    expect(dismissBox!.width).toBeLessThanOrEqual(320);
-
-    if (width >= 1280) {
-      expect(dismissBox!.x).toBeGreaterThanOrEqual(continueBox!.x);
-    }
 
     const hudTestId = titleOnly
       ? 'difficulty-normal'
@@ -133,9 +125,10 @@ for (const width of [320, 390, 1280] as const) {
     if (titleOnly) {
       await other.evaluate(() => (window as TabGameWindow).game?.acknowledgeTabConflict());
     } else {
-      await other.getByTestId('tab-conflict-dismiss').click();
+      await other.getByTestId('tab-conflict-continue').click();
     }
     await expect(other.getByTestId('tab-conflict-overlay')).toHaveCount(0);
+    await expect(other.getByTestId('tab-conflict-quiet')).toBeVisible();
     await expect(other.locator('#root')).toHaveJSProperty('inert', false);
     await expect
       .poll(() => other.evaluate(() => (window as TabGameWindow).game?.hasTabConflict() ?? false))

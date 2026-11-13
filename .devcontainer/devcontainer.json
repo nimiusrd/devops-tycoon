@@ -5,7 +5,7 @@
     "ghcr.io/devcontainers/features/github-cli": {}
   },
   "forwardPorts": [5174],
-  "postCreateCommand": "npm ci && npx playwright install --with-deps chromium",
+  "postCreateCommand": "npm ci && npx playwright install --with-deps chromium webkit",
   "customizations": {
     "vscode": {
       "extensions": [

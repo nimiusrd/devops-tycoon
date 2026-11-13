@@ -159,15 +159,14 @@ export function OrgLeverList({
           >
             <span className="org-lever-head">
               <b>{lever.name}</b>
-              <span className="org-lever-cost">💰{lever.cost}</span>
+              <span className="org-lever-cost">
+                {risk.blocked === null ? `💰${lever.cost}→${risk.balanceAfter}` : `💰${lever.cost}`}
+              </span>
+              {risk.warningLabel ? (
+                <span className="spend-risk-warning org-lever-warning">{risk.warningLabel}</span>
+              ) : null}
             </span>
             <EffectTagList tags={formatLeverDefTags(lever)} testId={`lever-tags-${lever.id}`} />
-            {risk.balanceLabel ? (
-              <span className="spend-risk-note">{risk.balanceLabel}</span>
-            ) : null}
-            {risk.warningLabel ? (
-              <span className="spend-risk-warning">{risk.warningLabel}</span>
-            ) : null}
           </button>
         );
       })}

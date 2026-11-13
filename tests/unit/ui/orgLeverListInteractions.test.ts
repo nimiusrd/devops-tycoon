@@ -111,7 +111,7 @@ describe('OrgLeverList の支払リスク', () => {
   it('常に支払後残高を示し、枯渇しない操作はその場で適用する', () => {
     const screen = mountList({ budget: 61 });
     const lever = screen.find('lever-firefighters');
-    expect(content(lever)).toContain('支払後の残高 💰41');
+    expect(content(lever)).toContain('💰20→41');
     expect(content(lever)).not.toContain('予算枯渇でランが終了する');
     screen.click('lever-firefighters');
     expect(screen.onApply).toHaveBeenCalledExactlyOnceWith('firefighters');

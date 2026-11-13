@@ -38,7 +38,7 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId('org-levers')).toBeVisible();
 
     const recruit = page.getByTestId('lever-recruitDraft');
-    await expect(recruit).toContainText('支払後の残高');
+    await expect(recruit).toContainText('💰40→20');
     // WebKit では Pixi 更新直後に renderer が落ちることがあるため、初回だけ API で適用する。
     await page.evaluate(() => {
       const game = (window as PublicGameWindow).game;
@@ -50,7 +50,7 @@ for (const viewport of VIEWPORTS) {
       .toBe(20);
 
     const firefighters = page.getByTestId('lever-firefighters');
-    await expect(firefighters).toContainText('支払後の残高 💰0');
+    await expect(firefighters).toContainText('💰20→0');
     await expect(firefighters).toContainText('予算枯渇でランが終了する');
     await firefighters.click();
 

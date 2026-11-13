@@ -71,8 +71,13 @@ async function setLiveCombo(page: Page, combo: number): Promise<void> {
     game.step(0);
   }, combo);
   const badge = page.getByTestId('combo');
-  if (combo >= 2) await expect(badge).toContainText(`COMBO ×${combo}`);
-  else await expect(badge).not.toContainText('COMBO');
+  if (combo >= 2) {
+    await expect(badge).toHaveAttribute('data-combo', String(combo));
+    await expect(badge).toContainText(`×${combo}`);
+  } else {
+    await expect(badge).toHaveAttribute('data-combo', '0');
+    await expect(badge).not.toContainText('×');
+  }
 }
 
 async function readLayout(page: Page): Promise<LayoutSnapshot> {
@@ -97,7 +102,9 @@ async function readLayout(page: Page): Promise<LayoutSnapshot> {
     const subbar = document.querySelector('[data-testid="sprint-subbar"]');
     if (!subbar) throw new Error('sprint-subbar が無い');
     const texts = [
-      ...subbar.querySelectorAll('.meter-label, .meter-count, .combo-x, .combo-mult'),
+      ...subbar.querySelectorAll(
+        '.meter-label, .meter-count, .combo-fused-narrow .combo-label-short',
+      ),
     ].map((element) => {
       const box = boxOf(element);
       if (!box) throw new Error('メーター文字の box が無い');
@@ -176,18 +183,29 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
           continue;
         }
 
-        expect(layout.innerPosition, '電話幅のバッジはバーに重なる').toBe('absolute');
+        expect(layout.comboPosition, '電話幅のバッジは炎上バーに重なる').toBe('absolute');
+        expect(layout.innerPosition).toBe('static');
         expect(badges.map((item) => item.text).join(' ')).toContain(`×${combo}`);
         const shortText = (await page.locator('.combo-label-short').allTextContents()).map((text) =>
           text.trim(),
         );
-        expect(shortText[0]).toBe(`コンボ×${combo}`);
-        expect(shortText[1]).toMatch(/^倍率\d+\.\dx$/);
-        for (const line of ['.combo-x .combo-label-short', '.combo-mult .combo-label-short']) {
+        expect(shortText[0]).toBe(`×${combo}`);
+        expect(shortText[1]).toMatch(/^\d+\.\dx$/);
+        const visualCombo = await page.getByTestId('combo-x').evaluate((element) => {
+          const before = getComputedStyle(element, '::before').content.replaceAll('"', '');
+          return `${before}${element.textContent ?? ''}`;
+        });
+        const visualMult = await page.getByTestId('combo-mult').evaluate((element) => {
+          const before = getComputedStyle(element, '::before').content.replaceAll('"', '');
+          return `${before}${element.textContent ?? ''}`;
+        });
+        expect(visualCombo).toBe(`コンボ×${combo}`);
+        expect(visualMult).toMatch(/^倍率\d+\.\dx$/);
+        for (const testId of ['combo-x', 'combo-mult'] as const) {
           const clipped = await page
-            .locator(line)
+            .getByTestId(testId)
             .evaluate((element) => element.scrollWidth > element.clientWidth + 1);
-          expect(clipped, `${line} が切れている`).toBe(false);
+          expect(clipped, `${testId} が切れている`).toBe(false);
         }
         const cover = await page.evaluate(() => {
           const fire = document.querySelector('[data-testid="fire-meter"]');
@@ -332,7 +350,7 @@ test.describe('広い幅の COMBO はインラインのまま（#967）', () => 
       expect(Math.abs(shown.board.y - initial.board.y)).toBeLessThan(0.5);
       expect(Math.abs(hidden.board.y - initial.board.y)).toBeLessThan(0.5);
       expect(Math.abs(shown.status.height - initial.status.height)).toBeLessThan(0.5);
-      expect(shown.comboPosition).toBe('static');
+      expect(shown.comboPosition).toBe('absolute');
       expect(shown.innerPosition).toBe('static');
       for (const badge of badgeTexts(shown)) {
         expect(badge.fontSize, badge.text).toBeGreaterThanOrEqual(11);

@@ -8,6 +8,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { isComboHudVisible } from '../render/sprintComboView';
 import { deliveryComboMultiplier } from '../sim/model';
+import { RESPONSIVE_BREAKPOINTS, resolveResponsiveMode } from './responsiveMode';
 
 export interface ComboBadgeProps {
   /** 現在のコンボ段数（終了済みスプリントでは 0）。 */
@@ -16,10 +17,22 @@ export interface ComboBadgeProps {
   stabilized?: boolean;
 }
 
+const STACK_COMBO_MEDIA = `(max-width: ${RESPONSIVE_BREAKPOINTS.stackMaxWidth}px)`;
+
+function readFusedComboLabels(): boolean {
+  if (typeof window === 'undefined') return false;
+  const { width } = resolveResponsiveMode(window.innerWidth, window.innerHeight);
+  if (width !== 'narrow') return false;
+  if (typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(STACK_COMBO_MEDIA).matches;
+}
+
 export function ComboBadge({ combo, stabilized = false }: ComboBadgeProps) {
   const visible = isComboHudVisible(combo);
   const reduceMotion = useReducedMotion();
   const mult = deliveryComboMultiplier(combo, stabilized);
+  const fusedLabels = readFusedComboLabels();
+
   return (
     <div
       className="combo-badge"
@@ -37,18 +50,42 @@ export function ComboBadge({ combo, stabilized = false }: ComboBadgeProps) {
             reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 18 }
           }
         >
-          <div className="combo-x" data-testid="combo-x">
-            <span className="combo-label-full">COMBO ×{combo}</span>
-            <span className="combo-label-short" aria-label={`COMBO ×${combo}`}>
-              コンボ×{combo}
-            </span>
-          </div>
-          <div className="combo-mult" data-testid="combo-mult">
-            <span className="combo-label-full">出荷倍率 {mult.toFixed(1)}x</span>
-            <span className="combo-label-short" aria-label={`出荷倍率 ${mult.toFixed(1)}x`}>
-              倍率{mult.toFixed(1)}x
-            </span>
-          </div>
+          {fusedLabels ? (
+            <p className="combo-fused-narrow">
+              <span
+                className="combo-label-short combo-x"
+                data-testid="combo-x"
+                aria-label={`COMBO ×${combo}`}
+              >
+                ×{combo}
+              </span>
+              <span className="combo-fused-sep" aria-hidden="true">
+                ·
+              </span>
+              <span
+                className="combo-label-short combo-mult"
+                data-testid="combo-mult"
+                aria-label={`出荷倍率 ${mult.toFixed(1)}x`}
+              >
+                {mult.toFixed(1)}x
+              </span>
+            </p>
+          ) : (
+            <div className="combo-wide-lines">
+              <div className="combo-x" data-testid="combo-x">
+                <span className="combo-label-full">COMBO ×{combo}</span>
+                <span className="combo-label-short" aria-label={`COMBO ×${combo}`}>
+                  ×{combo}
+                </span>
+              </div>
+              <div className="combo-mult" data-testid="combo-mult">
+                <span className="combo-label-full">出荷倍率 {mult.toFixed(1)}x</span>
+                <span className="combo-label-short" aria-label={`出荷倍率 ${mult.toFixed(1)}x`}>
+                  {mult.toFixed(1)}x
+                </span>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
     </div>

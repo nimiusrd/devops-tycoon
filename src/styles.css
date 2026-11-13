@@ -183,11 +183,9 @@ body {
   min-width: 0;
   padding-right: 78px;
 }
-:root[data-responsive-width='narrow'] .hud-compact-row {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
+/* 狭幅で KPI が 2 行になっても HUD 高さが変わらず盤面を押さない（#986）。 */
+:root[data-responsive-width='narrow'] .hud.hud-compact {
+  min-height: calc(2 * (11px * 1.2 + 8px) + 6px);
 }
 .hud-compact-chip {
   position: relative;

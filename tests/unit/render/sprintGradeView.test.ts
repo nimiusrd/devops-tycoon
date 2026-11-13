@@ -248,6 +248,11 @@ describe('sprintGradeView', () => {
     ]);
   });
 
+  it('captionPhrases を連結すると caption と一致する', () => {
+    const view = planSprintGradeView(makeResult({ grade: 'A', gradeRatio: 0.97, incidents: 1 }));
+    expect(view.captionPhrases.join('')).toBe(view.caption);
+  });
+
   it('健全比が S 境界以上でも炎上があると S ではないと説明する', () => {
     const view = planSprintGradeView(
       withRecordedGrade({

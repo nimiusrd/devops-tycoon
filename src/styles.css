@@ -1861,6 +1861,10 @@ body:has(.overlay-contained) {
   line-height: 1.45;
   font-weight: 700;
   color: var(--text-dim);
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  word-break: auto-phrase;
 }
 .reward-ceremony {
   position: relative;
@@ -2309,6 +2313,10 @@ body:has(.overlay-contained) {
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  word-break: auto-phrase;
 }
 .result-title-value {
   display: inline-flex;

@@ -1123,6 +1123,25 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/*
+ * 1024 / 1280 など wide では工程名を省略せず読めるようにする（#1005）。
+ * 列幅が足りないときは 11px まで縮め、単語の途中改行はしない。
+ */
+:root[data-responsive-width='wide'] .board-flow-summary {
+  width: min(700px, 58%);
+}
+:root[data-responsive-width='wide'] .board-flow-list {
+  grid-template-columns: repeat(5, minmax(0, max-content));
+}
+:root[data-responsive-width='wide'] .board-flow-list li {
+  grid-template-columns: auto max-content auto;
+  font-size: clamp(11px, 0.82vw, 11px);
+}
+:root[data-responsive-width='wide'] .board-flow-name {
+  overflow: visible;
+  text-overflow: unset;
+}
 .board-flow-list strong {
   font-size: 1.1em;
   font-variant-numeric: tabular-nums;

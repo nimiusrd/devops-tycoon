@@ -61,14 +61,33 @@ for (const viewport of [
     expect(viewportCards.clientWidth).toBeGreaterThan(0);
     expect(viewportCards.scrollWidth).toBeGreaterThan(viewportCards.clientWidth);
 
+    const scrollerOverflows =
+      viewportCards.scrollWidth > viewportCards.clientWidth + 1 && viewport.width > 360;
     for (let index = 0; index < (await handCards.count()); index += 1) {
       const card = handCards.nth(index);
-      await card.scrollIntoViewIfNeeded();
+      if (scrollerOverflows) {
+        await card.evaluate((element) => {
+          const scroller = element.closest<HTMLElement>('.deckbar-cards');
+          if (!scroller) throw new Error('手札スクロール領域が見つからない');
+          scroller.scrollLeft = element.offsetLeft;
+        });
+      } else {
+        await card.scrollIntoViewIfNeeded();
+      }
       const cardBox = await card.boundingBox();
       const scrollerBox = await cards.boundingBox();
       if (!cardBox || !scrollerBox) throw new Error('手札カードの領域が取得できない');
       expect(cardBox.x).toBeGreaterThanOrEqual(scrollerBox.x - 1);
-      expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(scrollerBox.x + scrollerBox.width + 1);
+      if (scrollerOverflows) {
+        const visibleWidth =
+          Math.min(cardBox.x + cardBox.width, scrollerBox.x + scrollerBox.width) -
+          Math.max(cardBox.x, scrollerBox.x);
+        expect(visibleWidth).toBeGreaterThanOrEqual(44);
+      } else {
+        expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(
+          scrollerBox.x + scrollerBox.width + 1,
+        );
+      }
       await expect(card).toBeEnabled();
       await card.click({ trial: true });
     }

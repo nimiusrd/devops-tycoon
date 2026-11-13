@@ -3,7 +3,7 @@
  *
  * 支払後に予算が尽きる操作はショップと同じ SpendConfirm で一度だけ確定させる（RI-147 / #1016）。
  */
-import { useCallback, useRef, useState, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { LeverDef } from '../sim/orgscale/types';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
@@ -120,10 +120,10 @@ export function OrgLeverList({
     setTimeout(() => focusByTestId(returnTestId), 0);
   };
   const [blockedToast, setBlockedToast] = useState<string | null>(null);
-  const flashBlockedToast = useCallback((message: string) => {
+  const flashBlockedToast = (message: string) => {
     setBlockedToast(message);
     window.setTimeout(() => setBlockedToast(null), 1_000);
-  }, []);
+  };
 
   const requestLever = (lever: LeverDef) => {
     if (sprintInteractionBlockedReason) {

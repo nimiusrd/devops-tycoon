@@ -465,6 +465,7 @@
 .root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.speed-controls) {
   grid-column: 2;
   grid-row: 1;
+  gap: 14px;
 }
 
 .root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.speed-btn) {
@@ -506,6 +507,7 @@
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.speed-controls) {
     grid-column: 2;
     grid-row: 1;
+    gap: 14px;
   }
 
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.boss-goal),

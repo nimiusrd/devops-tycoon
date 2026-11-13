@@ -62,6 +62,11 @@ export default defineConfig({
       testMatch: /sprint-result-quarter-goal/,
     },
     {
+      name: 'webkit-speed-hit-target',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /speed-button-hit-target/,
+    },
+    {
       name: 'webkit-rest-overlay-modal',
       use: { ...devices['Desktop Safari'] },
       testMatch: /rest-overlay-modal/,

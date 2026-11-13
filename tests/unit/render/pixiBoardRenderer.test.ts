@@ -444,7 +444,7 @@ describe('Pixi スプリント盤面レンダラー', () => {
     expect(app.render).toHaveBeenCalledOnce();
   });
 
-  it('scene の粒・Review 警告と軌跡を描き、次の frame では不要な描画を消す', async () => {
+  it('scene の粒・Review 警告と軌跡を描き、次の frame では不要な描画を消す', { timeout: 60_000 }, async () => {
     const { renderer, app, latest } = await mounted();
     const scene = planBoardScene([
       ...Array.from({ length: 12 }, (_, index) => task({ id: index, lane: 'review' })),

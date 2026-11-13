@@ -108,6 +108,10 @@ test('320 で保存失敗バナーは語の途中で折り返さず、盤面を�
   );
   const withBanner = await boardY(page);
   expect(Math.abs(withBanner - baselineFromOk)).toBeLessThan(0.5);
+  const boardBox = await page.getByTestId('board').boundingBox();
+  expect(boardBox).not.toBeNull();
+  expect(boardBox!.height).toBeGreaterThan(40);
+  expect(boardBox!.width).toBeGreaterThan(40);
 
   for (const viewport of CHECK_VIEWPORTS) {
     await page.setViewportSize(viewport);

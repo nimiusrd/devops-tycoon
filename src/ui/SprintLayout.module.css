@@ -14,12 +14,16 @@
   padding: 0;
   padding-top: var(--persistence-banner-height, 0px);
 }
-/* 保存失敗は HUD をバナー下へ残し、盤面だけ上へ戻す（#1007 / DS-06）。 */
+/* 保存失敗は shell 余白を打ち消し、HUD だけ下げて盤面の配置は維持する（#1007 / DS-06）。 */
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell {
+  padding-top: 0;
+}
 :root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
   :global(.app).appShell
-  .stageSlot
-  > :global(.board-wrap) {
-  transform: translateY(calc(-1 * var(--persistence-banner-height, 0px)));
+  .headerSlot {
+  margin-top: var(--persistence-banner-height, 0px);
+  margin-bottom: calc(-1 * var(--persistence-banner-height, 0px));
 }
 
 .root {

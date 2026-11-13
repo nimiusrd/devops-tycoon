@@ -370,11 +370,17 @@ export function Board({
   const [gesture, setGesture] = useState<BoardGesture | null>(null);
   const [confirmedTarget, setConfirmedTarget] = useState('');
   const [overflowPickerLane, setOverflowPickerLane] = useState<Lane | null>(null);
+  const [overflowPickerSuppressedLane, setOverflowPickerSuppressedLane] = useState<Lane | null>(
+    null,
+  );
   const overflowTriggerRefs = useRef<Partial<Record<Lane, HTMLButtonElement | null>>>({});
 
   const closeOverflowPicker = useCallback(
     (lane?: Lane | null) => {
       const returnLane = lane ?? overflowPickerLane;
+      if (returnLane) {
+        setOverflowPickerSuppressedLane(returnLane);
+      }
       setOverflowPickerLane(null);
       if (returnLane) {
         window.requestAnimationFrame(() => overflowTriggerRefs.current[returnLane]?.focus());
@@ -387,6 +393,20 @@ export function Board({
       overflowPickerLane ? boardOverflowHiddenTaskIds(tasks, overflowPickerLane) : ([] as number[]),
     [overflowPickerLane, tasks],
   );
+  const overflowPickerOverflow =
+    overflowPickerLane === null
+      ? 0
+      : (scene.stations.find((station) => station.lane === overflowPickerLane)?.overflow ?? 0);
+  const overflowPickerStale =
+    overflowPickerLane !== null && (overflowHiddenIds.length === 0 || overflowPickerOverflow === 0);
+  if (overflowPickerStale && overflowPickerSuppressedLane !== overflowPickerLane) {
+    setOverflowPickerSuppressedLane(overflowPickerLane);
+  }
+  const overflowPickerVisible =
+    overflowPickerLane !== null &&
+    overflowPickerLane !== overflowPickerSuppressedLane &&
+    overflowHiddenIds.length > 0 &&
+    overflowPickerOverflow > 0;
   const interactive = usePixi && armedAction !== null && onDragComplete != null && dragPlan != null;
   // 元のsceneで逆引きし、強調による前面化が次のヒット順を変えないようにする。
   const previewTaskId =
@@ -708,10 +728,11 @@ export function Board({
             data-testid={`overflow-${s.lane}`}
             aria-label={boardOverflowAriaLabel(s.lane, s.overflow)}
             aria-haspopup="dialog"
-            aria-expanded={overflowPickerLane === s.lane}
+            aria-expanded={overflowPickerVisible && overflowPickerLane === s.lane}
             style={{ left: pct(s.overflowX, VIEW_W), top: pct(s.overflowY, VIEW_H) }}
             onClick={(event) => {
               event.stopPropagation();
+              setOverflowPickerSuppressedLane(null);
               setOverflowPickerLane(s.lane);
             }}
           >
@@ -719,7 +740,7 @@ export function Board({
           </button>
         ))}
 
-      {overflowPickerLane && overflowHiddenIds.length > 0 && (
+      {overflowPickerVisible && (
         <BoardOverflowPicker
           lane={overflowPickerLane}
           hiddenIds={overflowHiddenIds}

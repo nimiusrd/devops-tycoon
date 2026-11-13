@@ -6,7 +6,7 @@ const INTERVENTION_ONLY_PHRASES = [
   'AIスロットルは新規タスクをAIなしに',
   '点火の抑制はリテラシーが低いときだけ',
   '手戻りの抑制はワークフローが未熟なときだけ',
-  '前提度が高く成熟しているときは工程ずれ',
+  '依存が高く成熟しているときは工程ずれ',
 ] as const;
 
 describe('遊び方ヘルプの節分担（#362）', () => {
@@ -20,6 +20,8 @@ describe('遊び方ヘルプの節分担（#362）', () => {
       expect(intervention?.body).toContain(phrase);
       expect(seniorHp?.body).not.toContain(phrase);
     }
+    expect(intervention?.body).toContain('AIリテラシー');
+    expect(intervention?.body).not.toMatch(/Literacy/);
   });
 
   it('体力節は抽象値・燃え尽き敗北・自動鎮火・休息に絞る', () => {

@@ -71,11 +71,11 @@ export function AgentDatCapacityPreview({
     selected.createdPrs === 0 || selected.completedTasks > 0
       ? null
       : selected.waitingRework > 0 && selected.waitingReview > 0
-        ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。Review待ち${selected.waitingReview}件と手戻り修正待ち${selected.waitingRework}件があるため、Reviewer作業予算とAuthor作業予算の両方を確認してください。`
+        ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。レビュー待ち${selected.waitingReview}件と手戻り修正待ち${selected.waitingRework}件があるため、Reviewer作業予算とAuthor作業予算の両方を確認してください。`
         : selected.waitingRework > 0
           ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。手戻り修正待ち${selected.waitingRework}件を進めるにはAuthor作業予算を増やしてください。`
           : selected.waitingReview > 0
-            ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。Review待ち${selected.waitingReview}件を減らすにはReviewer作業予算または投入タスク数を調整してください。`
+            ? `PRを${selected.createdPrs}件作成しましたが完了は0件です。レビュー待ち${selected.waitingReview}件を減らすにはReviewer作業予算または投入タスク数を調整してください。`
             : null;
 
   return (
@@ -242,7 +242,7 @@ export function AgentDatCapacityPreview({
               <th scope="col">承認</th>
               <th scope="col">PR作成</th>
               <th scope="col">完了</th>
-              <th scope="col">Review待ち</th>
+              <th scope="col">レビュー待ち</th>
               <th scope="col">Rework待ち</th>
               <th scope="col">Coding途中</th>
               <th scope="col">未着手</th>

@@ -80,7 +80,7 @@
 | `action.overtime.gaugeGain` | 残業号令連携ゲージ | `0.15` | `ratio` | `0〜1` | — | 残業号令成功時に増える連携ゲージの割合。 | action, overtime, gauge | いいえ |
 | `action.overtime.moraleCost` | 残業号令士気コスト | `8` | `points` | `0〜100（整数）` | — | 残業号令で消費する士気。 | action, overtime, morale, side-effect | いいえ |
 | `action.overtime.seniorHpCost` | 残業号令シニアHPコスト | `6` | `points` | `0〜100（整数）` | — | 残業号令で消費するシニアHP。 | action, overtime, senior-hp, side-effect | いいえ |
-| `action.pairReview.aiLiteracyGain` | ペアレビューAI Literacy増加 | `6` | `points` | `0〜100（整数）` | — | ペアレビュー成功時に増えるAI Literacy。 | action, pairReview, ai-literacy | いいえ |
+| `action.pairReview.aiLiteracyGain` | ペアレビューAIリテラシー増加 | `6` | `points` | `0〜100（整数）` | — | ペアレビュー成功時に増えるAIリテラシー。 | action, pairReview, ai-literacy | いいえ |
 | `action.pairReview.cooldownTicks` | ペアレビュークールダウン | `60` | `ticks` | `0〜1000（整数）` | — | ペアレビューの発動後に待つtick数。 | action, pairReview, cooldown | いいえ |
 | `action.pairReview.focusCost` | ペアレビュー集中力コスト | `2` | `points` | `0〜20（整数）` | — | ペアレビューを1回発動するために消費する集中力。 | action, pairReview, focus | いいえ |
 | `action.pairReview.gaugeGain` | ペアレビュー連携ゲージ | `0.3` | `ratio` | `0〜1` | — | ペアレビュー成功時に増える連携ゲージの割合。 | action, pairReview, gauge | いいえ |
@@ -401,7 +401,7 @@
 | `outcome.warning.reviewFreeze.dangerOffset` | Review freeze 危険オフセット | `4` | `count` | `0〜100（整数）` | Math.round(`outcome.lose.reviewFreezePeak` × `outcome.warning.reviewFreeze.watchRatio`) < `outcome.lose.reviewFreezePeak` - `outcome.warning.reviewFreeze.dangerOffset` < `outcome.lose.reviewFreezePeak` | Review freeze 敗北ピークから HUD 危険帯を前倒しする値。 | outcome, warning, review, threshold | いいえ |
 | `outcome.warning.reviewFreeze.watchRatio` | Review freeze 警告比率 | `0.75` | `ratio` | `0〜1` | Math.round(`outcome.lose.reviewFreezePeak` × `outcome.warning.reviewFreeze.watchRatio`) < `outcome.lose.reviewFreezePeak` - `outcome.warning.reviewFreeze.dangerOffset` < `outcome.lose.reviewFreezePeak` | Review freeze 敗北ピークに対する HUD・danger report 警告比率。 | outcome, warning, review, threshold | いいえ |
 | `outcome.win.aiSuccess.aiPctMin` | AI 成功勝利の AI 利用率下限 | `0.55` | `ratio` | `0〜1` | — | AI 成功勝利に必要な AI 利用率の下限。 | outcome, win, ai, threshold | いいえ |
-| `outcome.win.aiSuccess.literacyMin` | AI 成功勝利の Literacy 下限 | `40` | `points` | `0〜100（整数）` | — | AI 成功勝利に必要な AI Literacy の下限。 | outcome, win, ai, threshold | いいえ |
+| `outcome.win.aiSuccess.literacyMin` | AI 成功勝利の AIリテラシー下限 | `40` | `points` | `0〜100（整数）` | — | AI 成功勝利に必要な AIリテラシーの下限。 | outcome, win, ai, threshold | いいえ |
 | `outcome.win.aiSuccess.reworkMax` | AI 成功勝利の手戻り率上限 | `0.22` | `ratio` | `0〜1` | — | AI 成功勝利に許容する手戻り率の上限（未満）。 | outcome, win, ai, threshold | いいえ |
 | `outcome.win.aiSuccess.securityMin` | AI 成功勝利の Security 下限 | `50` | `points` | `0〜100（整数）` | — | AI 成功勝利に必要な Security の下限。 | outcome, win, ai, threshold | いいえ |
 | `outcome.win.chaos.deliveredMin` | カオス勝利の Delivery 下限 | `250` | `points` | `0〜10000（整数）` | — | 残差カオス勝利に必要な累計 Delivery。 | outcome, win, chaos, threshold | いいえ |

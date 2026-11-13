@@ -103,7 +103,7 @@ const NUMERIC_LABELS: Record<(typeof NUMERIC_OUTCOME_KEYS)[number], string> = {
   budget: '予算',
   quality: '品質',
   testCoverage: 'Test Coverage',
-  aiLiteracy: 'AI Literacy',
+  aiLiteracy: 'AIリテラシー',
   aiDependency: 'AI依存度',
 };
 
@@ -293,7 +293,7 @@ const CARD_MUL_EFFECTS = [
 /** 加算系カード効果の表示ラベル（0 で無効果）。 */
 const CARD_ADD_EFFECTS = [
   { key: 'reworkRateAdd' as const, label: '手戻り率', percent: true, inverse: true },
-  { key: 'aiLiteracyAdd' as const, label: 'AI Literacy' },
+  { key: 'aiLiteracyAdd' as const, label: 'AIリテラシー' },
   { key: 'aiDependencyAdd' as const, label: 'AI依存度', inverse: true },
   { key: 'qualityAdd' as const, label: '品質' },
   { key: 'testCoverageAdd' as const, label: 'Test Coverage' },
@@ -754,7 +754,7 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       break;
     case 'pairReview':
       pushTag(tags, `Review 最大${PAIR_REVIEW_COUNT}件処理`, 'positive');
-      pushTag(tags, `AI Literacy +${PAIR_LITERACY_GAIN}`, 'positive');
+      pushTag(tags, `AIリテラシー +${PAIR_LITERACY_GAIN}`, 'positive');
       break;
     case 'overtime':
       pushTag(tags, `スループット↑ ${OVERTIME_TICKS}tick`, 'positive');

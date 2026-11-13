@@ -145,7 +145,7 @@ export function planSprintTimeline(
   const series: TimelineSeriesPath[] = [
     {
       key: 'reviewQueue',
-      label: 'Review待ち',
+      label: 'レビュー待ち',
       d: buildPolyline(timeline, 'reviewQueue', queueMax, width, height, pad),
       tone: 'queue',
     },

@@ -26,7 +26,7 @@ describe('スプリントティッカーの効果と履歴', () => {
     ).toEqual({
       key: '12:intervention:pairReview:0,3',
       icon: 'pairReview',
-      text: 'ペアレビュー: PR2件処理 / AI Literacy +2 / 集中力 +2',
+      text: 'ペアレビュー: PR2件処理 / AIリテラシー +2 / 集中力 +2',
       tone: 'info',
     });
   });

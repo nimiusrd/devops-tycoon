@@ -152,6 +152,12 @@ describe('visual tokens', () => {
     expect(values['--visual-color-banner-hell-text']).toBe(
       VISUAL_TOKENS.colors.bannerTone.hell.text,
     );
+    expect(values['--visual-color-banner-hell-subbar-pill-border']).toBe(
+      VISUAL_TOKENS.colors.bannerTone.hell.subbar.pillBorder,
+    );
+    expect(values['--visual-color-banner-hell-subbar-event-summary-bg']).toBe(
+      VISUAL_TOKENS.colors.bannerTone.hell.subbar.eventSummaryBg,
+    );
     expect(values['--visual-color-banner-warn-border-alpha']).toBe('100%');
     expect(values['--visual-color-banner-warn-text']).toBe(
       VISUAL_TOKENS.colors.bannerTone.warn.text,

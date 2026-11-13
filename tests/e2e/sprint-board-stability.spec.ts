@@ -1,5 +1,5 @@
 /**
- * Review Hell・出来事・KPI・炎上ラベルが出ても盤面が動かない（#975）。
+ * Review Hell・出来事・KPI・炎上ラベルが出ても盤面が動かない（#975 / #986）。
  */
 import type { Page } from '@playwright/test';
 import { beginPublicSprint, expect, test } from './fixtures';
@@ -45,6 +45,8 @@ function contrast(foreground: string, background: string): number {
   const darker = Math.min(luminance(parse(foreground)), luminance(parse(background)));
   return (lighter + 0.05) / (darker + 0.05);
 }
+
+const HELL_CLIP_VIEWPORTS = new Set([320, 390]);
 
 async function boardY(page: Page): Promise<number> {
   return page.evaluate(() => {
@@ -172,10 +174,42 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
         expect(Math.abs(chip.width - chipsBefore[index].width), `${chip.id} の幅`).toBeLessThan(
           0.5,
         );
-        expect(chip.fontFamily.toLowerCase(), `${chip.id} の数字`).toMatch(/mono/);
+        expect(chip.fontFamily.toLowerCase(), `${chip.id} の数字`).not.toMatch(/mono/);
         expect(chip.whiteSpace, `${chip.id} の折返し`).toBe('nowrap');
         expect(chip.labelLines, `${chip.id} のラベル行`).toBe(1);
         expect(chip.valueLines, `${chip.id} の数字行`).toBe(1);
+      }
+      if (viewport.width === 320) {
+        const chipOverflow = await page.evaluate(() => {
+          const row = document.querySelector('[data-testid="hud-compact"]');
+          if (!(row instanceof HTMLElement)) throw new Error('KPI 行が無い');
+          const rowRect = row.getBoundingClientRect();
+          return {
+            rowRight: rowRect.right,
+            viewport: window.innerWidth,
+            html: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            lines: [...row.querySelectorAll('.hud-compact-chip')].map((chip) => {
+              const label = chip.querySelector('.hud-compact-chip-label');
+              const value = chip.querySelector('.hud-compact-chip-value');
+              if (!(chip instanceof HTMLElement)) throw new Error('KPI チップが無い');
+              return {
+                id: chip.getAttribute('data-testid'),
+                chip: chip.scrollWidth - chip.clientWidth,
+                label:
+                  label instanceof HTMLElement ? label.scrollWidth - label.clientWidth : Number.NaN,
+                value:
+                  value instanceof HTMLElement ? value.scrollWidth - value.clientWidth : Number.NaN,
+              };
+            }),
+          };
+        });
+        expect(chipOverflow.rowRight, 'KPI 行が画面外にはみ出す').toBeLessThanOrEqual(
+          chipOverflow.viewport + 1,
+        );
+        expect(chipOverflow.html, 'ページ横スクロール').toBeLessThanOrEqual(1);
+        for (const chip of chipOverflow.lines) {
+          expect(chip.chip, `${chip.id} の横はみ出し`).toBeLessThanOrEqual(1);
+        }
       }
 
       await page.evaluate(() => {
@@ -210,7 +244,12 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
       const presentation = await page.evaluate(() => {
         const alertEl = document.querySelector('[data-testid="jam-alert"]');
         const meter = alertEl?.closest('.meter');
-        if (!(alertEl instanceof HTMLElement) || !(meter instanceof HTMLElement)) {
+        const subbar = document.querySelector('[data-testid="sprint-subbar"]');
+        if (
+          !(alertEl instanceof HTMLElement) ||
+          !(meter instanceof HTMLElement) ||
+          !(subbar instanceof HTMLElement)
+        ) {
           throw new Error('Review Hell 表示が無い');
         }
         const boxOf = (element: Element) => {
@@ -229,13 +268,72 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
           ['出来事', document.querySelector('[data-testid="event-ticker"]')],
           ['炎上バー', document.querySelector('[data-testid="fire-meter"]')],
         ] as const;
+        const effectiveBackground = (element: HTMLElement) => {
+          let node: HTMLElement | null = element;
+          while (node) {
+            const bg = getComputedStyle(node).backgroundColor;
+            if (bg && !/^rgba?\(0,\s*0,\s*0(,| |\))/.test(bg)) return bg;
+            node = node.parentElement;
+          }
+          throw new Error('背景色を決められない');
+        };
+        const contrastTargets: Array<[string, Element | null]> = [
+          ['Review Hell', alertEl],
+          ['渋滞ラベル', label ?? null],
+          ['渋滞件数', document.querySelector('[data-testid="jam-count"]')],
+          ['炎上件数', document.querySelector('[data-testid="fire-count"]')],
+          ['炎上ラベル', document.querySelector('.meter-wrap-fire .meter-label')],
+          ['速度', document.querySelector('[data-testid="speed-controls"] .speed-btn.active')],
+          ['速度（停止）', document.querySelector('[data-testid="speed-controls"] .speed-btn')],
+        ];
+        const statusEventTicker = subbar
+          .closest('[data-sprint-slot="status"]')
+          ?.querySelector('[data-testid="event-ticker"]');
+        if (statusEventTicker) {
+          contrastTargets.push(
+            [
+              '出来事見出し',
+              statusEventTicker.querySelector('[data-testid="event-ticker-heading"]'),
+            ],
+            ['出来事要約', statusEventTicker.querySelector('[data-testid="event-ticker-summary"]')],
+          );
+        }
+        const clipTargets = [
+          ['jam-alert', alertEl],
+          ['渋滞バー', meter],
+          ['渋滞ラベル', label],
+          ['渋滞件数', document.querySelector('[data-testid="jam-count"]')],
+        ] as const;
         return {
           fontSize: Number.parseFloat(style.fontSize),
           color: style.color,
           background: style.backgroundColor,
           alert: boxOf(alertEl),
           meter: boxOf(meter),
+          meterWidth: Math.round(meter.getBoundingClientRect().width),
+          meterHeight: meter.getBoundingClientRect().height,
+          subbarShadow: getComputedStyle(subbar).boxShadow,
+          subbarBackground: getComputedStyle(subbar).backgroundColor,
+          subbarBorder: getComputedStyle(subbar).borderColor,
           clipped: alertEl.scrollWidth > alertEl.clientWidth + 1,
+          clips: clipTargets.map(([name, element]) => {
+            if (!(element instanceof HTMLElement)) throw new Error(`${name} が無い`);
+            return {
+              name,
+              scrollWidth: element.scrollWidth,
+              clientWidth: element.clientWidth,
+              clipped: element.scrollWidth > element.clientWidth + 1,
+            };
+          }),
+          contrasts: contrastTargets.map(([name, element]) => {
+            if (!(element instanceof HTMLElement)) throw new Error(`${name} が無い`);
+            const elementStyle = getComputedStyle(element);
+            return {
+              name,
+              color: elementStyle.color,
+              background: effectiveBackground(element),
+            };
+          }),
           targets: targets.map(([name, element]) => {
             if (!element) throw new Error(`${name} が無い`);
             return { name, box: boxOf(element) };
@@ -246,6 +344,12 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
       });
       expect(presentation.fontSize, 'Review Hell の文字').toBeGreaterThanOrEqual(11);
       expect(presentation.clipped, 'Review Hell の文字が切れている').toBe(false);
+      expect(presentation.meterHeight, '渋滞バーの高さ').toBeGreaterThanOrEqual(16);
+      expect(presentation.subbarShadow, 'Hell 枠の inset').toMatch(/0px 0px 0px 3px inset/);
+      expect(
+        contrast('rgb(255, 95, 87)', 'rgb(74, 61, 122)'),
+        'Hell 枠線と外枠',
+      ).toBeGreaterThanOrEqual(3);
       expect(presentation.alert.x).toBeGreaterThanOrEqual(presentation.meter.x - 0.5);
       expect(presentation.alert.x + presentation.alert.width).toBeLessThanOrEqual(
         presentation.meter.x + presentation.meter.width + 0.5,
@@ -256,13 +360,28 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
       );
       expect(
         contrast(presentation.color, presentation.background),
-        'Review Hell のコントラスト',
-      ).toBeGreaterThanOrEqual(3);
+        'Review Hell タグのコントラスト',
+      ).toBeGreaterThanOrEqual(4.5);
+      for (const sample of presentation.contrasts) {
+        expect(
+          contrast(sample.color, sample.background),
+          `${sample.name} のコントラスト`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
       for (const target of presentation.targets) {
         expect(
           overlaps(presentation.alert, target.box),
           `Review Hell が${target.name}に重なる`,
         ).toBe(false);
+      }
+      if (HELL_CLIP_VIEWPORTS.has(viewport.width)) {
+        for (const clip of presentation.clips) {
+          expect(clip.clipped, `${clip.name} が切れている`).toBe(false);
+          expect(clip.scrollWidth, `${clip.name} の scrollWidth`).toBeLessThanOrEqual(
+            clip.clientWidth + 1,
+          );
+        }
+        expect(presentation.meterWidth, 'SprintLayout の渋滞バー幅').toBe(140);
       }
       expect(presentation.scrollWidth, 'ページの横スクロール').toBeLessThanOrEqual(
         presentation.clientWidth + 1,

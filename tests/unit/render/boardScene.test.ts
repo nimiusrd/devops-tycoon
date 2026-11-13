@@ -175,6 +175,15 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(review.overflow).toBe(30 - drawn);
   });
 
+  it('pinDotIds で overflow 中の粒を一時的に描画へ含める（#1020）', () => {
+    const tasks = tasksIn('review', 25);
+    const hidden = planBoardScene(tasks);
+    expect(hidden.dots.some((dot) => dot.id === 25)).toBe(false);
+    const pinned = planBoardScene(tasks, undefined, { pinDotIds: new Set([25]) });
+    expect(pinned.dots.some((dot) => dot.id === 25)).toBe(true);
+    expect(pinned.dots.filter((dot) => dot.lane === 'review').length).toBeLessThanOrEqual(20);
+  });
+
   it('上限内なら overflow は 0（+N を出さない）', () => {
     const scene = planBoardScene(tasksIn('done', 5));
     expect(scene.stations.find((s) => s.lane === 'done')!.overflow).toBe(0);

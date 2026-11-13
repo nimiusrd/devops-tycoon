@@ -251,6 +251,14 @@ export const VISUAL_TOKENS = {
       dotHitMinCssDiameter: 24,
       /** 確定前の対象リングは縮小盤面でも径・二重輪郭を CSS px で保つ。 */
       dotPreview: { minCssDiameter: 24, strokeCssWidth: 2, outlineCssWidth: 1 },
+      /** PR 分割直後の粒強調（#1020）。150〜200ms・レイアウト不変の inset 輪郭。 */
+      dotSplitConfirm: {
+        durationMs: 175,
+        minCssDiameter: 24,
+        strokeCssWidth: 2,
+        outlineCssWidth: 1,
+        insetCssWidth: 2,
+      },
       /**
        * 小さいタスク粒の画面上の最小直径（CSS px）。
        *

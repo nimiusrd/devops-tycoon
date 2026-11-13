@@ -196,6 +196,14 @@ export function SprintScreen({
   const [bottomRailPreference, setBottomRailPreference] = useState<'deck' | 'controls'>('deck');
   const bottomRail = narrowShort ? (armedId ? 'controls' : bottomRailPreference) : undefined;
 
+  const handleBottomRailChange = useCallback(
+    (rail: 'deck' | 'controls') => {
+      setBottomRailPreference(rail);
+      if (rail === 'deck' && armedId) setArmedId(null);
+    },
+    [armedId, setArmedId],
+  );
+
   useEffect(
     () => () => {
       if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
@@ -616,7 +624,7 @@ export function SprintScreen({
       deck={
         <DeckBar
           sprintBottomRail={narrowShort ? bottomRail : null}
-          onSprintBottomRailChange={narrowShort ? setBottomRailPreference : undefined}
+          onSprintBottomRailChange={narrowShort ? handleBottomRailChange : undefined}
           deck={state.deck}
           hand={sprint.cardPiles.hand}
           focus={sprint.focus}
@@ -637,7 +645,7 @@ export function SprintScreen({
       controls={
         <ActionBar
           sprintBottomRail={narrowShort ? bottomRail : null}
-          onSprintBottomRailChange={narrowShort ? setBottomRailPreference : undefined}
+          onSprintBottomRailChange={narrowShort ? handleBottomRailChange : undefined}
           sprint={sprint}
           org={state.org}
           sprintTick={state.sprintTick}

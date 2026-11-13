@@ -2763,7 +2763,7 @@ body:has(.overlay-contained) {
   padding: 4px 8px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: #1f1942;
+  background: var(--panel);
   color: var(--text);
   font-size: 10px;
   font-weight: 800;

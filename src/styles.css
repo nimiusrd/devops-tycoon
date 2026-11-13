@@ -5299,6 +5299,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   outline-offset: 2px;
 }
 .event-choice.is-spend-risk,
+.org-lever.is-spend-risk,
 .rest-option.is-spend-risk,
 .shop-card.is-spend-risk {
   border-color: var(--visual-color-spend-risk-border);

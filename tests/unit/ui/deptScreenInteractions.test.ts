@@ -223,7 +223,7 @@ describe('DeptScreen のレバーとチーム描画', () => {
       expect(content(screen.find(`lever-tags-${lever.id}`))).not.toBe('');
       screen.click(id);
       expect(screen.props.onApplyLever).not.toHaveBeenCalled();
-      screen.update({ budget: lever.cost });
+      screen.update({ budget: lever.cost + 1 });
       expect(screen.find(id).props.disabled).toBe(false);
       screen.click(id);
       expect(screen.props.onApplyLever).toHaveBeenCalledExactlyOnceWith(

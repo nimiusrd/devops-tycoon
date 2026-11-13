@@ -34,7 +34,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /tab-conflict-modal/,
+      testIgnore: /tab-conflict-modal|org-lever-spend-risk/,
     },
     {
       name: 'chromium-conflict-modal',
@@ -45,6 +45,11 @@ export default defineConfig({
       name: 'webkit-conflict-modal',
       use: { ...devices['Desktop Safari'] },
       testMatch: /tab-conflict-modal/,
+    },
+    {
+      name: 'webkit-org-lever-spend',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /org-lever-spend-risk/,
     },
   ],
   webServer: {

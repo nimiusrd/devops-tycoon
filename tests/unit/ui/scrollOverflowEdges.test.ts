@@ -50,4 +50,41 @@ describe('applyScrollOverflowEdgeState', () => {
     expect(host.dataset.scrollOverflowStart).toBe('false');
     expect(host.dataset.scrollOverflowEnd).toBe('true');
   });
+
+  it('縦オーバーフローが無いとき data 属性を消す', () => {
+    const scroller = {
+      scrollHeight: 120,
+      clientHeight: 120,
+      scrollTop: 0,
+    } as HTMLElement;
+    const host = createHost({
+      scrollOverflow: 'y',
+      scrollOverflowStart: 'false',
+      scrollOverflowEnd: 'false',
+    });
+
+    applyScrollOverflowEdgeState(scroller, host, 'y');
+
+    expect(host.dataset.scrollOverflow).toBeUndefined();
+    expect(host.dataset.scrollOverflowStart).toBeUndefined();
+    expect(host.dataset.scrollOverflowEnd).toBeUndefined();
+  });
+
+  it('縦の端位置に応じて start/end を付ける', () => {
+    const host = createHost();
+    const atStart = {
+      scrollHeight: 320,
+      clientHeight: 200,
+      scrollTop: 0,
+    } as HTMLElement;
+    applyScrollOverflowEdgeState(atStart, host, 'y');
+    expect(host.dataset.scrollOverflow).toBe('y');
+    expect(host.dataset.scrollOverflowStart).toBe('true');
+    expect(host.dataset.scrollOverflowEnd).toBe('false');
+
+    const atEnd = { ...atStart, scrollTop: 120 } as HTMLElement;
+    applyScrollOverflowEdgeState(atEnd, host, 'y');
+    expect(host.dataset.scrollOverflowStart).toBe('false');
+    expect(host.dataset.scrollOverflowEnd).toBe('true');
+  });
 });

@@ -28,6 +28,7 @@ import type {
 } from '../sim/types';
 import { ManagerPortrait } from './ManagerPortrait';
 import { useResponsiveMode } from './responsiveMode';
+import { ScrollOverflowColumn } from './ScrollOverflowColumn';
 import { TermTip } from './TermTip';
 import { VisualIcon, VisualIconText } from './VisualIcon';
 
@@ -518,7 +519,7 @@ export function ActionBar({
               取消
             </button>
           </div>
-          <ul className="action-target-picker-list" aria-labelledby="action-target-picker-title">
+          <ScrollOverflowColumn aria-labelledby="action-target-picker-title">
             {targetPicker.options.map((option) => {
               const status = option.blockMessage ? `利用不可: ${option.blockMessage}。` : '';
               return (
@@ -547,7 +548,7 @@ export function ActionBar({
                 </li>
               );
             })}
-          </ul>
+          </ScrollOverflowColumn>
         </div>
       )}
       <div className="action-panel">

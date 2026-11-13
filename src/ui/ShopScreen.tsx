@@ -146,22 +146,24 @@ export function ShopScreen({
                     ))}
                   </ul>
                   <span className="shop-card-cost">
-                    {offer.bought ? '購入済み' : `💰${offer.cost}`}
+                    <span className="shop-card-price-line">
+                      {offer.bought ? '購入済み' : `💰${offer.cost}`}
+                      <span className="shop-card-focus-cost">
+                        {' '}
+                        / 発動 ⚡{playCost(def.focusCost, 1)}
+                        {offer.bought
+                          ? ''
+                          : shop.introSupportGranted
+                            ? ' / 次スプ手札'
+                            : ' / 次スプ手札・導入支援'}
+                      </span>
+                    </span>
                     {risk.balanceLabel ? (
                       <span className="spend-risk-note">{risk.balanceLabel}</span>
                     ) : null}
                     {risk.warningLabel ? (
                       <span className="spend-risk-warning">{risk.warningLabel}</span>
                     ) : null}
-                    <span className="shop-card-focus-cost">
-                      {' '}
-                      / 発動 ⚡{playCost(def.focusCost, 1)}
-                      {offer.bought
-                        ? ''
-                        : shop.introSupportGranted
-                          ? ' / 次スプ手札'
-                          : ' / 次スプ手札・導入支援'}
-                    </span>
                   </span>
                 </button>
               );
@@ -194,7 +196,9 @@ export function ShopScreen({
                 />
                 <p className="shop-card-desc">{relic.description}</p>
                 <span className="shop-card-cost">
-                  {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}
+                  <span className="shop-card-price-line">
+                    {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}
+                  </span>
                   {relicRisk.balanceLabel ? (
                     <span className="spend-risk-note">{relicRisk.balanceLabel}</span>
                   ) : null}
@@ -238,7 +242,9 @@ export function ShopScreen({
                   )}
                 </p>
                 <span className="shop-card-cost">
-                  {recruit.bought ? '購入済み' : `💰${recruit.cost}`}
+                  <span className="shop-card-price-line">
+                    {recruit.bought ? '購入済み' : `💰${recruit.cost}`}
+                  </span>
                   {recruitRisk.balanceLabel ? (
                     <span className="spend-risk-note">{recruitRisk.balanceLabel}</span>
                   ) : null}

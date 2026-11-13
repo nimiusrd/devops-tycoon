@@ -5802,13 +5802,26 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   padding-left: 16px;
 }
 .shop-card-cost {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  align-self: flex-end;
+  width: 100%;
   font-weight: 800;
   color: var(--sun);
-  align-self: flex-end;
+  text-align: right;
+}
+.shop-card-price-line {
+  width: 100%;
+  text-align: right;
 }
 .shop-card-focus-cost {
   color: var(--sky);
   white-space: nowrap;
+}
+.shop-card-cost .spend-risk-note,
+.shop-card-cost .spend-risk-warning {
+  text-align: right;
 }
 .shop-relic {
   border-color: var(--lav);

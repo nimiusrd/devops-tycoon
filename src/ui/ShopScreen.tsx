@@ -196,9 +196,7 @@ export function ShopScreen({
                 />
                 <p className="shop-card-desc">{relic.description}</p>
                 <span className="shop-card-cost">
-                  <span className="shop-card-price-line">
-                    {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}
-                  </span>
+                  {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}
                   {relicRisk.balanceLabel ? (
                     <span className="spend-risk-note">{relicRisk.balanceLabel}</span>
                   ) : null}
@@ -242,9 +240,7 @@ export function ShopScreen({
                   )}
                 </p>
                 <span className="shop-card-cost">
-                  <span className="shop-card-price-line">
-                    {recruit.bought ? '購入済み' : `💰${recruit.cost}`}
-                  </span>
+                  {recruit.bought ? '購入済み' : `💰${recruit.cost}`}
                   {recruitRisk.balanceLabel ? (
                     <span className="spend-risk-note">{recruitRisk.balanceLabel}</span>
                   ) : null}

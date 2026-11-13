@@ -5709,6 +5709,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   padding: 12px 14px;
   border-radius: 14px;
   background: #211a44;
@@ -5802,18 +5803,16 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   padding-left: 16px;
 }
 .shop-card-cost {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  align-self: flex-end;
-  width: 100%;
   font-weight: 800;
   color: var(--sun);
-  text-align: right;
+  align-self: flex-end;
 }
 .shop-card-price-line {
-  width: 100%;
-  text-align: right;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  max-width: 100%;
 }
 .shop-card-focus-cost {
   color: var(--sky);
@@ -5821,6 +5820,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 }
 .shop-card-cost .spend-risk-note,
 .shop-card-cost .spend-risk-warning {
+  margin-top: 0;
+  box-sizing: border-box;
+  max-width: 100%;
   text-align: right;
 }
 .shop-relic {

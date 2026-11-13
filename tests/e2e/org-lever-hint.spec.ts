@@ -110,6 +110,35 @@ async function sprintFrame(page: Page): Promise<{
   });
 }
 
+for (const viewport of [
+  { name: '320', width: 320, height: 568 },
+  { name: '390', width: 390, height: 844 },
+] as const) {
+  test(`セットアップで組織レバー案内が最初から画面内にある (${viewport.name})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await startQ1(page);
+
+    const setupHint = page.getByTestId('setup').getByTestId('org-lever-hint');
+    await expect(setupHint).toBeVisible();
+
+    if (viewport.name === '320') {
+      await expect(setupHint).toBeInViewport({ ratio: 1 });
+      const hintBox = await setupHint.boundingBox();
+      const viewportSize = page.viewportSize();
+      expect(hintBox).not.toBeNull();
+      expect(viewportSize).not.toBeNull();
+      expect(hintBox!.y).toBeGreaterThanOrEqual(0);
+      expect(hintBox!.y + hintBox!.height).toBeLessThanOrEqual(viewportSize!.height + 1);
+      await expect(page.getByTestId('run-setup-org-lever-hint-slot')).toBeVisible();
+    } else {
+      await expect(setupHint).toBeInViewport();
+      await expect(page.getByTestId('run-setup-org-lever-hint-slot')).toHaveCount(0);
+    }
+  });
+}
+
 test('組織レバー案内の role=status は1つで、ボタン説明にヒントが入る (320)', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await startQ1(page);
@@ -145,6 +174,7 @@ for (const viewport of VIEWPORTS) {
     await expect(opener).toContainText('組織レバー');
     await expect(opener).toHaveAttribute('data-org-lever-hint', 'true');
     await expect(setupHint).toHaveText('予算は組織レバーで使えます');
+    await expect(setupHint).toBeInViewport();
     await expect(page.getByTestId('org-lever-hint-mark')).toBeVisible();
     expect(await fontSize(opener)).toBeGreaterThanOrEqual(11);
     expect(await fontSize(setupHint)).toBeGreaterThanOrEqual(11);

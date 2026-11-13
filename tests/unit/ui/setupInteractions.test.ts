@@ -40,6 +40,9 @@ vi.mock('react', async (importOriginal) => {
   };
 });
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
+vi.mock('../../../src/ui/responsiveMode', () => ({
+  useResponsiveMode: () => ({ width: 'wide', height: 'normal' }),
+}));
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
   return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };

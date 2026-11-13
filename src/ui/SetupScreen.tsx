@@ -21,6 +21,7 @@ import { OrgLeverHintRow } from './OrgLeverHintRow';
 import { resolveOrgLeverHint } from './orgLeverHintSession';
 import { QuarterOkr } from './QuarterOkr';
 import { TermTip } from './TermTip';
+import { useResponsiveMode } from './responsiveMode';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface SetupScreenProps {
@@ -190,6 +191,12 @@ export function SetupScreen({
     budget: state.budget,
     readOnly,
   });
+  const responsiveMode = useResponsiveMode();
+  // 320×568 のように縦が短いと見出し下の案内が画面外になる。390×844 では従来位置のまま（#1017）。
+  const setupHintAtTop = responsiveMode.width === 'narrow' && responsiveMode.height === 'short';
+  const setupOrgLeverHint = (
+    <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
+  );
   const heading = bossPending
     ? '編成 — ボススプリントの前に配置とAIを決める'
     : elitePending
@@ -204,6 +211,11 @@ export function SetupScreen({
       role="main"
       aria-labelledby="setup-heading"
     >
+      {setupHintAtTop ? (
+        <div className="run-setup-org-lever-hint" data-testid="run-setup-org-lever-hint-slot">
+          {setupOrgLeverHint}
+        </div>
+      ) : null}
       <div className="map-banner">
         <span className="pill">第{state.quarterNumber}四半期</span>
         <span className="pill" data-testid="setup-next-sprint">
@@ -234,7 +246,7 @@ export function SetupScreen({
             <h2 ref={headingRef} tabIndex={-1} className="draft-title" id="setup-heading">
               {heading}
             </h2>
-            <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
+            {!setupHintAtTop ? setupOrgLeverHint : null}
             <LeaveReturnNotices
               key={`${runEpoch}:${state.activeTeamId}`}
               hint={formationHint}

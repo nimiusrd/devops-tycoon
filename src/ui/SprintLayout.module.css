@@ -555,10 +555,17 @@
     width: max-content;
     max-width: 50%;
     margin: 0;
-    border-radius: 8px;
-    background: var(--panel);
     pointer-events: none;
     white-space: nowrap;
+  }
+
+  /* 炎上バー上のフューズ表示は内容幅いっぱいに不透明背景（DS-08 / #1012）。 */
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.meter.fire)
+    :global(.combo-fused-narrow) {
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--panel);
   }
 
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-x),

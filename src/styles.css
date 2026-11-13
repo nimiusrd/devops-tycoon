@@ -1691,12 +1691,21 @@ body:has(.overlay-contained) {
     margin-bottom: 0.55rem;
   }
 }
+:root[data-responsive-width='narrow'] .result-overlay.overlay-contained {
+  padding: 0.75rem 0.5rem;
+}
+:root[data-responsive-width='narrow'] .overlay-contained .result-card,
+:root[data-responsive-width='narrow'] .overlay-contained .draft-card-panel {
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
 :root[data-responsive-height='short'] .result-overlay.overlay-contained {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.5rem;
 }
 :root[data-responsive-height='short'] .overlay-contained .result-card,
 :root[data-responsive-height='short'] .overlay-contained .draft-card-panel {
-  padding: 1rem 1.25rem 1rem;
+  padding: 1rem 0.75rem 1rem;
 }
 :root[data-responsive-height='short'] .overlay-contained .result-grade {
   font-size: 3rem;

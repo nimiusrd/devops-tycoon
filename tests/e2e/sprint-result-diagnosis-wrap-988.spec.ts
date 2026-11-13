@@ -7,6 +7,7 @@ import type { Page } from '@playwright/test';
 
 const VIEWPORTS = [
   { label: '320×568', width: 320, height: 568 },
+  { label: '320×800', width: 320, height: 800 },
   { label: '390×844', width: 390, height: 844 },
 ] as const;
 

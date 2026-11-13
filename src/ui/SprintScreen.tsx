@@ -46,6 +46,7 @@ import {
   planSplitPrConfirmFromEffect,
   splitPrConfirmDurationMs,
 } from '../render/splitPrConfirmView';
+import { SplitPrConfirmAnnouncer } from './SplitPrConfirmAnnouncer';
 import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
@@ -612,6 +613,7 @@ export function SprintScreen({
             data-testid="board-stage"
           >
             <PointPops deliveryScore={state.org.deliveryScore} teamId={state.activeTeamId} />
+            <SplitPrConfirmAnnouncer cue={liveSplitConfirm} />
             <Board
               tasks={sprint.tasks}
               metrics={sprint.metrics}

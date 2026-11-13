@@ -53,7 +53,6 @@ import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 import { describeTaskTarget } from './actionTargetPickerView';
-import { SplitPrConfirmAnnouncer } from '../ui/SplitPrConfirmAnnouncer';
 import { useDialogOverlayLock } from '../ui/useDialogOverlayLock';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
@@ -715,8 +714,6 @@ export function Board({
       >
         {targetAnnouncement}
       </span>
-      <SplitPrConfirmAnnouncer cue={splitConfirm} />
-
       {scene.stations.map((s) => (
         <Station
           key={s.lane}

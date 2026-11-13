@@ -232,6 +232,21 @@ async function assertLayoutContract(
   viewport: (typeof VIEWPORTS)[number],
   options: LayoutContractOptions = {},
 ) {
+  if (
+    options.glanceCopy &&
+    viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth &&
+    viewport.height <= RESPONSIVE_BREAKPOINTS.shortMaxHeight
+  ) {
+    const expand = page.getByTestId('sprint-bottom-rail-expand-interventions');
+    if (await expand.isVisible()) {
+      await expand.click();
+      await expect(page.getByTestId('sprint-layout')).toHaveAttribute(
+        'data-sprint-bottom-rail',
+        'controls',
+      );
+    }
+  }
+
   const subbar = page.getByTestId('sprint-subbar');
   const board = page.getByTestId('board');
   const deck = page.getByTestId('deck');

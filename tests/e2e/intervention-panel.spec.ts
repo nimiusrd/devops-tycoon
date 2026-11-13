@@ -10,6 +10,7 @@ import {
   advanceCurrentSprintToBurning,
   advanceCurrentSprintToReviewQueue,
   beginPublicSprint,
+  expandSprintInterventionsIfCollapsed,
   expect,
   test,
   type PublicGameHandle,
@@ -198,6 +199,7 @@ for (const viewport of VIEWPORTS) {
     test.setTimeout(120_000);
     await page.setViewportSize(viewport);
     await beginPublicSprint(page, { seed: 'issue-536-panel-normal', difficulty: 'normal' });
+    await expandSprintInterventionsIfCollapsed(page);
     const measurements = [await assertPanelContract(page, '平常')];
 
     const beforeArm = await readResources(page);

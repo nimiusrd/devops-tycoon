@@ -812,6 +812,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       className={`replay-mode-banner${reviewHellReplay ? ' replay-mode-banner-review-hell' : ''}`}
       data-testid="replay-mode-banner"
       data-review-hell={reviewHellReplay ? 'true' : undefined}
+      data-overlay-lock-exempt="true"
     >
       <span>
         {reviewHellReplay

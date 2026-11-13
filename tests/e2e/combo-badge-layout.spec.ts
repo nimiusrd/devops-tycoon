@@ -181,10 +181,14 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
         const shortText = (await page.locator('.combo-label-short').allTextContents()).map((text) =>
           text.trim(),
         );
-        expect(shortText[0]).toBe(`×${combo}`);
-        expect(shortText[1]).toMatch(/^\d+\.\dx$/);
-        expect(shortText.join('')).not.toContain('COMBO');
-        expect(shortText.join('')).not.toContain('出荷倍率');
+        expect(shortText[0]).toBe(`コンボ×${combo}`);
+        expect(shortText[1]).toMatch(/^倍率\d+\.\dx$/);
+        for (const line of ['.combo-x .combo-label-short', '.combo-mult .combo-label-short']) {
+          const clipped = await page
+            .locator(line)
+            .evaluate((element) => element.scrollWidth > element.clientWidth + 1);
+          expect(clipped, `${line} が切れている`).toBe(false);
+        }
         const cover = await page.evaluate(() => {
           const fire = document.querySelector('[data-testid="fire-meter"]');
           const inner = document.querySelector('.combo-inner');
@@ -225,10 +229,12 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
           Math.abs(layout.fire.y + layout.fire.height - badgeBottom),
           'バッジの下端が炎上バーの下端',
         ).toBeLessThan(4);
-        const clipped = await page
-          .locator('.combo-inner')
-          .evaluate((element) => element.scrollWidth > element.clientWidth + 1);
-        expect(clipped, 'バッジの文字が切れている').toBe(false);
+        const clippedLabels = await page
+          .locator('.combo-label-short')
+          .evaluateAll((elements) =>
+            elements.some((element) => element.scrollWidth > element.clientWidth + 1),
+          );
+        expect(clippedLabels, 'バッジの文字が切れている').toBe(false);
 
         if (combo === 2) {
           await page.screenshot({

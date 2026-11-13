@@ -2235,6 +2235,7 @@ body:has(.overlay-contained) {
 .combo-x {
   font-size: 17px;
   font-weight: 900;
+  font-variant-numeric: tabular-nums;
   color: var(--sun);
   text-shadow:
     0 0 14px #ffd45c99,
@@ -2244,6 +2245,7 @@ body:has(.overlay-contained) {
   /* 状態バッジの文字は 11px 以上（#967）。 */
   font-size: 11px;
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
   color: var(--lav);
   letter-spacing: 0.06em;
 }

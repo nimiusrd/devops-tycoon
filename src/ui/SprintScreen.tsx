@@ -42,6 +42,10 @@ import type {
 import type { GameHandle, PauseBrieflyClear } from '../game';
 import type { RunState } from '../sim/run/types';
 import type { InterventionTrigger } from '../render/interventionEffects';
+import {
+  planSplitPrConfirmFromEffect,
+  splitPrConfirmDurationMs,
+} from '../render/splitPrConfirmView';
 import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
@@ -166,6 +170,13 @@ export function SprintScreen({
     [state.currentSprintId],
   );
   const triggerKey = useRef(0);
+  const splitConfirmNonce = useRef(0);
+  const splitConfirmTimer = useRef<number | null>(null);
+  const [splitConfirm, setSplitConfirm] = useState<{
+    sprintId: string;
+    taskId: number;
+    nonce: number;
+  } | null>(null);
   const slowMoTimer = useRef<number | null>(null);
   const attentionTimer = useRef<number | null>(null);
   const clearPauseBriefly = useRef<PauseBrieflyClear | null>(null);
@@ -196,6 +207,7 @@ export function SprintScreen({
     () => () => {
       if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
       if (attentionTimer.current != null) window.clearTimeout(attentionTimer.current);
+      if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
       clearPauseBriefly.current?.();
       clearPauseBriefly.current = null;
     },
@@ -341,6 +353,20 @@ export function SprintScreen({
           currentTick: state.sprintTick,
           key: triggerKey.current,
         });
+        splitConfirmNonce.current += 1;
+        const confirmCue = planSplitPrConfirmFromEffect(
+          id,
+          outcome.effect,
+          splitConfirmNonce.current,
+        );
+        if (confirmCue) {
+          setSplitConfirm({ ...confirmCue, sprintId: state.currentSprintId });
+          if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
+          splitConfirmTimer.current = window.setTimeout(() => {
+            setSplitConfirm(null);
+            splitConfirmTimer.current = null;
+          }, splitPrConfirmDurationMs());
+        }
         if (outcome.effect.containedTaskId != null) {
           setSuppressExtinguishTaskIds(new Set([outcome.effect.containedTaskId]));
           window.setTimeout(() => setSuppressExtinguishTaskIds(new Set()), 700);
@@ -446,6 +472,10 @@ export function SprintScreen({
   const dockTickerOffBoard = responsiveMode.width === 'narrow';
   const inspectedId =
     inspectedAction.sprintId === state.currentSprintId ? inspectedAction.id : null;
+  const liveSplitConfirm =
+    splitConfirm?.sprintId === state.currentSprintId
+      ? { taskId: splitConfirm.taskId, nonce: splitConfirm.nonce }
+      : null;
   const actionInspection = inspectedId
     ? {
         label: getAction(inspectedId)!.label,
@@ -597,6 +627,7 @@ export function SprintScreen({
               onDragComplete={handleDragComplete}
               animationsPaused={overlayFrozen}
               actionInspection={actionInspection}
+              splitConfirm={liveSplitConfirm}
             />
             {slowMoKey > 0 && (
               <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />

@@ -53,6 +53,7 @@ import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 import { describeTaskTarget } from './actionTargetPickerView';
+import { SplitPrConfirmAnnouncer } from '../ui/SplitPrConfirmAnnouncer';
 import { useDialogOverlayLock } from '../ui/useDialogOverlayLock';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
@@ -199,6 +200,8 @@ export interface BoardProps {
   animationsPaused?: boolean;
   /** 情報確認中の介入と作用先。HTML工程要約だけを強調し、発動や盤面操作は変えない。 */
   actionInspection?: { label: string; targetLanes: readonly Lane[] };
+  /** PR 分割直後の短い粒強調（#1020）。 */
+  splitConfirm?: { taskId: number; nonce: number } | null;
 }
 
 /** 凡例（dot 凡例）。 */
@@ -321,6 +324,7 @@ export function Board({
   onDragComplete,
   animationsPaused = false,
   actionInspection,
+  splitConfirm = null,
 }: BoardProps) {
   // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
   const moodOverrides = useMemo(
@@ -430,6 +434,7 @@ export function Board({
     dragIds.has(gesture.taskId)
       ? gesture.taskId
       : null;
+  const splitConfirmTaskId = splitConfirm?.taskId ?? null;
   const selectedTask = gesture?.announce ? tasks.find((task) => task.id === previewTaskId) : null;
   const targetAnnouncement = selectedTask
     ? `対象: ${describeTaskTarget(selectedTask)}（#${selectedTask.id}）`
@@ -659,6 +664,7 @@ export function Board({
       data-testid="board"
       data-armed={armedAction ?? undefined}
       data-preview-task-id={previewTaskId ?? undefined}
+      data-split-confirm-task-id={splitConfirmTaskId ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
       data-effect-renderer={gpuEffectsActive ? 'pixi' : 'loading'}
@@ -684,6 +690,7 @@ export function Board({
           draggableTaskIds={dragIds}
           dragTaskId={dragTaskId}
           previewTaskId={previewTaskId}
+          splitConfirmTaskId={splitConfirmTaskId}
           effects={boardEffects.effects}
           auras={activeAuras}
           onWebglError={onWebglError}
@@ -701,6 +708,7 @@ export function Board({
       >
         {targetAnnouncement}
       </span>
+      <SplitPrConfirmAnnouncer cue={splitConfirm} />
 
       {scene.stations.map((s) => (
         <Station

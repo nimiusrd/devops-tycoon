@@ -627,6 +627,53 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
 
   const quietInline =
     phase !== 'title' && phase !== 'won' && phase !== 'lost' && phase !== 'quarterReview';
+  const exportPersistence = useCallback(() => {
+    const runText = run.exportRunSaveText();
+    const replays = run.exportPendingReplayFiles();
+    if (!runText && replays.length === 0) {
+      setExportMessage(persistenceExportMessage(null, false));
+      return;
+    }
+    if (runText && replays.length === 0) {
+      setExportMessage(
+        persistenceExportMessage(
+          runText,
+          downloadTextFile('devops-tycoon-run-save.json', runText),
+          'run',
+        ),
+      );
+      return;
+    }
+    if (!runText && replays.length === 1) {
+      const file = replays[0];
+      if (!file) return;
+      setExportMessage(
+        persistenceExportMessage(file.text, downloadTextFile(file.filename, file.text), 'replay'),
+      );
+      return;
+    }
+    const backup = serializePersistenceBackup({
+      runSave: runText,
+      replays: replays.map((file) => file.text),
+    });
+    const downloaded = downloadTextFile('devops-tycoon-persistence-backup.json', backup);
+    const included = [
+      ...(runText ? [{ text: runText, downloaded, kind: 'run' as const }] : []),
+      ...(replays.length > 0
+        ? [{ text: replays[0]?.text ?? '', downloaded, kind: 'replay' as const }]
+        : []),
+    ];
+    setExportMessage(persistenceExportMessages(included));
+  }, [run]);
+  const tabConflictAcknowledgedChip = run.tabConflict && !run.tabConflictModalOpen && (
+    <div className="persistence-quiet-slot" data-testid="tab-conflict-quiet-slot">
+      <TabConflictAcknowledgedChip
+        onTakeOver={run.takeOverForeignTab}
+        showExport={run.persistenceStatus.showExport}
+        onExport={exportPersistence}
+      />
+    </div>
+  );
   const persistenceNotice = (
     <PersistenceNotice
       notice={run.persistenceStatus}
@@ -640,48 +687,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         setExportMessage(null);
         void run.retryPersistence();
       }}
-      onExport={() => {
-        const runText = run.exportRunSaveText();
-        const replays = run.exportPendingReplayFiles();
-        if (!runText && replays.length === 0) {
-          setExportMessage(persistenceExportMessage(null, false));
-          return;
-        }
-        if (runText && replays.length === 0) {
-          setExportMessage(
-            persistenceExportMessage(
-              runText,
-              downloadTextFile('devops-tycoon-run-save.json', runText),
-              'run',
-            ),
-          );
-          return;
-        }
-        if (!runText && replays.length === 1) {
-          const file = replays[0];
-          if (!file) return;
-          setExportMessage(
-            persistenceExportMessage(
-              file.text,
-              downloadTextFile(file.filename, file.text),
-              'replay',
-            ),
-          );
-          return;
-        }
-        const backup = serializePersistenceBackup({
-          runSave: runText,
-          replays: replays.map((file) => file.text),
-        });
-        const downloaded = downloadTextFile('devops-tycoon-persistence-backup.json', backup);
-        const included = [
-          ...(runText ? [{ text: runText, downloaded, kind: 'run' as const }] : []),
-          ...(replays.length > 0
-            ? [{ text: replays[0]?.text ?? '', downloaded, kind: 'replay' as const }]
-            : []),
-        ];
-        setExportMessage(persistenceExportMessages(included));
-      }}
+      onExport={exportPersistence}
     />
   );
 
@@ -689,11 +695,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   if (phase === 'title') {
     phaseBody = (
       <>
-        {run.tabConflict && !run.tabConflictModalOpen ? (
-          <div className="persistence-quiet-slot" data-testid="tab-conflict-quiet-slot">
-            <TabConflictAcknowledgedChip onTakeOver={run.takeOverForeignTab} />
-          </div>
-        ) : null}
+        {tabConflictAcknowledgedChip}
         <SceneScrollReset>
           <TitleScreen
             seed={state.seed}
@@ -907,11 +909,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         onExpandedChange={setHudExpanded}
       />
       <PersistenceQuietChip notice={run.persistenceStatus} active={quietInline} />
-      {run.tabConflict && !run.tabConflictModalOpen ? (
-        <div className="persistence-quiet-slot" data-testid="tab-conflict-quiet-slot">
-          <TabConflictAcknowledgedChip onTakeOver={run.takeOverForeignTab} />
-        </div>
-      ) : null}
+      {tabConflictAcknowledgedChip}
       <RunBar
         state={state}
         onOpenFormation={() => setFormationOpen(true)}

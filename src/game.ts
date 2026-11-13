@@ -95,6 +95,11 @@ import {
   type RunSaveShareResult,
 } from './state/runSaveShare';
 import { createRunDiagnosticInfo, type RunDiagnosticInfo } from './state/diagnosticInfo';
+import {
+  dismissOrgLeverHint,
+  hydrateOrgLeverHintFromExtras,
+  mergeOrgLeverHintDismissedIntoExtras,
+} from './ui/orgLeverHintSession';
 
 export interface ActiveReplayInfo {
   ruleset: ReplayRulesetIdentity | null;
@@ -150,6 +155,8 @@ export interface GameHandle {
    * `currentSprintId` はランを跨いで再利用されるため、ガイド再表示判定にはこちらを使う。
    */
   getRunEpoch(): number;
+  /** 組織レバー案内の消去を記録し、途中セーブへ反映する（#1015）。 */
+  persistOrgLeverHintDismissal(): void;
   /** 編成フェーズ（setup / setup-pre）から次スプリントを開始する。 */
   beginSetupSprint(): RunState;
   /** 提示中ビートを解決する（判定は引数なし、選択は index）。 */
@@ -790,6 +797,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (replayMode || !runStorage) return;
     const exported = engine.exportPersistState();
     if (!exported) return;
+    mergeOrgLeverHintDismissedIntoExtras(exported.extras, runEpoch);
     // 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する。
     const save = toRunSave(exported, Date.now(), keyframes, activeHypothesisStartId);
     resumableSave = save;
@@ -1710,6 +1718,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getRunEpoch() {
       return runEpoch;
     },
+    persistOrgLeverHintDismissal() {
+      if (replayMode || !runStorage) return;
+      dismissOrgLeverHint(runEpoch);
+      const phase = engine.currentPhase();
+      if (phase === 'sprint' || phase === 'title' || phase === 'won' || phase === 'lost') return;
+      persistSaveableSnapshot();
+    },
     hypothesisStartId() {
       return activeHypothesisStartId;
     },
@@ -2146,6 +2161,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         Array.isArray(save.state.extras.preferredCardIds) ? save.state.extras.preferredCardIds : [],
       );
       engine.hydratePersistState(save.state);
+      hydrateOrgLeverHintFromExtras(save.state.extras, runEpoch);
       activeHypothesisStartId = save.hypothesisStartId ?? null;
       bump();
       return after();

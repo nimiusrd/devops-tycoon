@@ -75,3 +75,24 @@ export function resolveOrgLeverHint(input: {
 export function resetOrgLeverHintSession(): void {
   session = null;
 }
+
+/** 途中セーブ用 extras に、ラン内の案内消去を反映する。 */
+export function mergeOrgLeverHintDismissedIntoExtras(
+  extras: { orgLeverHintDismissed?: boolean },
+  epoch: number,
+): void {
+  if (extras.orgLeverHintDismissed === true) return;
+  if (readOrgLeverHintSession(epoch).dismissed) {
+    extras.orgLeverHintDismissed = true;
+  }
+}
+
+/** 続きから再開時に、保存済みの消去状態をセッションへ戻す。 */
+export function hydrateOrgLeverHintFromExtras(
+  extras: { orgLeverHintDismissed?: boolean } | undefined,
+  epoch: number,
+): void {
+  if (extras?.orgLeverHintDismissed === true) {
+    dismissOrgLeverHint(epoch);
+  }
+}

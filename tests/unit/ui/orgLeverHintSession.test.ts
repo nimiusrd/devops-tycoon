@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { MIN_ORG_LEVER_BUDGET } from '../../../src/render/orgLeverHintView';
 import {
   dismissOrgLeverHint,
+  hydrateOrgLeverHintFromExtras,
+  mergeOrgLeverHintDismissedIntoExtras,
   noteOrgLeverBudgetDepleted,
   readOrgLeverHintSession,
   resetOrgLeverHintSession,
@@ -57,5 +59,30 @@ describe('組織レバー案内の消去', () => {
     expect(visible(3, 0, true).dismissed).toBe(false);
     expect(readOrgLeverHintSession(3).dismissed).toBe(false);
     expect(visible(3, MIN_ORG_LEVER_BUDGET).show).toBe(true);
+  });
+
+  it('extras へ消去を書き出し、再開時に同じ世代へ戻す', () => {
+    const extras: { orgLeverHintDismissed?: boolean } = {};
+    mergeOrgLeverHintDismissedIntoExtras(extras, 5);
+    expect(extras.orgLeverHintDismissed).toBeUndefined();
+
+    dismissOrgLeverHint(5);
+    mergeOrgLeverHintDismissedIntoExtras(extras, 5);
+    expect(extras.orgLeverHintDismissed).toBe(true);
+
+    resetOrgLeverHintSession();
+    hydrateOrgLeverHintFromExtras(extras, 5);
+    expect(readOrgLeverHintSession(5).dismissed).toBe(true);
+    expect(visible(5, MIN_ORG_LEVER_BUDGET).show).toBe(false);
+
+    resetOrgLeverHintSession();
+    expect(visible(6, MIN_ORG_LEVER_BUDGET).show).toBe(true);
+  });
+
+  it('予算 0 で消したあとも extras に残す', () => {
+    noteOrgLeverBudgetDepleted(8, 0, false);
+    const extras: { orgLeverHintDismissed?: boolean } = {};
+    mergeOrgLeverHintDismissedIntoExtras(extras, 8);
+    expect(extras.orgLeverHintDismissed).toBe(true);
   });
 });

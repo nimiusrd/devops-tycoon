@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { beginCurrentSetupSprint, expect, test, type PublicGameWindow } from './fixtures';
+import { seedMeta } from './seedMeta';
 
 const VIEWPORTS = [
   { name: '320', width: 320, height: 568 },
@@ -26,6 +27,34 @@ async function startQ1(page: Page): Promise<void> {
 
 async function fontSize(locator: Locator): Promise<number> {
   return locator.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+}
+
+async function storedOrgLeverHintDismissed(page: Page): Promise<boolean | null> {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('devops-tycoon');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (![...db.objectStoreNames].includes('runSave')) {
+      db.close();
+      return null;
+    }
+    const value = await new Promise<unknown>((resolve, reject) => {
+      const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const extras = (value as { state?: { extras?: { orgLeverHintDismissed?: boolean } } }).state
+      ?.extras;
+    return extras?.orgLeverHintDismissed === true
+      ? true
+      : extras?.orgLeverHintDismissed === false
+        ? false
+        : null;
+  });
 }
 
 /** 組織レバー以外のランバーボタン。案内の出入りで位置が変わらない契約。 */
@@ -179,3 +208,33 @@ for (const viewport of VIEWPORTS) {
     expectSamePositions(beforeButtons, await otherRunbarButtons(page, 'runbar'));
   });
 }
+
+test('レバーを開いたあとリロードして再開しても案内と点が出ない', async ({ page }) => {
+  await seedMeta(page, { points: 1 });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/?seed=org-lever-hint-reload');
+  await expect(page.getByTestId('title')).toBeVisible();
+  await page.evaluate(() => {
+    const game = (window as PublicGameWindow).game;
+    if (!game) throw new Error('window.game が公開されていない');
+    game.startRun('easy', [], 'org-lever-hint-reload');
+  });
+  await expect(page.getByTestId('setup')).toBeVisible();
+
+  const opener = page.getByTestId('open-org');
+  await opener.click();
+  await expect(page.getByTestId('org-levers')).toBeVisible();
+  await page.getByTestId('crumb-team').click();
+  await expect(page.getByTestId('setup')).toBeVisible();
+  await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
+  await expect(page.getByTestId('org-lever-hint-mark')).toHaveCount(0);
+  await expect.poll(() => storedOrgLeverHintDismissed(page)).toBe(true);
+
+  await page.reload();
+  await expect(page.getByTestId('resume-run')).toBeVisible();
+  await page.getByTestId('resume-run').click();
+  await expect(page.getByTestId('setup')).toBeVisible();
+  await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
+  await expect(page.getByTestId('org-lever-hint-mark')).toHaveCount(0);
+  await expect(opener).toHaveAttribute('data-org-lever-hint', 'false');
+});

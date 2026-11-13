@@ -60,6 +60,12 @@ export function isPersistFrameShape(value: unknown): boolean {
   ) {
     return false;
   }
+  if (
+    value.extras.orgLeverHintDismissed !== undefined &&
+    typeof value.extras.orgLeverHintDismissed !== 'boolean'
+  ) {
+    return false;
+  }
   if (value.pendingShopHandIndices !== undefined && !Array.isArray(value.pendingShopHandIndices)) {
     return false;
   }

@@ -359,7 +359,7 @@ export function SprintScreen({
           outcome.effect,
           splitConfirmNonce.current,
         );
-        if (confirmCue) {
+        if (confirmCue && state.currentSprintId) {
           setSplitConfirm({ ...confirmCue, sprintId: state.currentSprintId });
           if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
           splitConfirmTimer.current = window.setTimeout(() => {

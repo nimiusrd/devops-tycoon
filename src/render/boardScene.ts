@@ -530,7 +530,13 @@ function includePinnedStationaryTasks(
   const next = [...shownNormals];
   for (const task of pinned) {
     while (next.length + shownIncidents.length >= cap) {
-      const evict = next.findLastIndex((candidate) => !pinDotIds.has(candidate.id));
+      let evict = -1;
+      for (let index = next.length - 1; index >= 0; index -= 1) {
+        if (!pinDotIds.has(next[index]!.id)) {
+          evict = index;
+          break;
+        }
+      }
       if (evict < 0) break;
       next.splice(evict, 1);
     }

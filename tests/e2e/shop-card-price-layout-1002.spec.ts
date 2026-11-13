@@ -85,6 +85,8 @@ for (const viewport of SHOP_VIEWPORTS) {
         noteBelowPriceLine: !noteRect || noteRect.top >= priceRect.bottom - 1,
         priceLineHasBoth: priceLineText.includes('💰') && priceLineText.includes('発動'),
         noLeadingSlashLine: lines.every((line) => !line.startsWith('/')),
+        priceLineInsideCard:
+          priceRect.left >= cardRect.left - 1 && priceRect.right <= cardRect.right + 1,
         costAlignedRight: Math.abs(costRect.right - cardRect.right) <= 16,
         focusNotBelowNote: !noteRect || focusRect.top <= noteRect.top + 1,
       };
@@ -95,6 +97,7 @@ for (const viewport of SHOP_VIEWPORTS) {
     expect(layout.noteBelowPriceLine).toBe(true);
     expect(layout.priceLineHasBoth).toBe(true);
     expect(layout.noLeadingSlashLine).toBe(true);
+    expect(layout.priceLineInsideCard).toBe(true);
     expect(layout.costAlignedRight).toBe(true);
     expect(layout.focusNotBelowNote).toBe(true);
   });

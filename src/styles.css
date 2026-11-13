@@ -820,6 +820,26 @@ body {
   border: 2px solid var(--line);
   overflow: hidden;
 }
+/* COMBO は炎上バー上に重ねる。バーは隠すがバッジ文字ははみ出してよい（#967 / #1012）。 */
+.meter.fire:has(.combo-inner) {
+  overflow: visible;
+}
+.meter.fire .combo-badge {
+  position: absolute;
+  inset: 0 0 auto auto;
+  max-width: 100%;
+  overflow: clip;
+  pointer-events: none;
+  z-index: 1;
+}
+/* 広幅で炎上バー上の COMBO は読み取り用パネル背景を足す（DS-08 / Codex）。 */
+@media (min-width: 561px) {
+  .meter.fire.burning .combo-wide-lines {
+    padding: 0 4px;
+    border-radius: 6px;
+    background: var(--panel);
+  }
+}
 /* 渋滞バーの中に重ねる。件数・ラベルの外へ出して行を増やさない（#975）。 */
 .jam-alert {
   position: absolute;
@@ -1045,6 +1065,7 @@ body {
   top: 12px;
   left: 14px;
   z-index: var(--visual-layer-sprint-summary);
+  isolation: isolate;
   width: min(700px, 52%);
   color: var(--cream);
   pointer-events: none;
@@ -2322,6 +2343,33 @@ body:has(.overlay-contained) {
   align-items: flex-start;
   line-height: 1;
 }
+.combo-wide-lines {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+.combo-fused-narrow {
+  display: none;
+  align-items: baseline;
+  gap: 2px;
+  margin: 0;
+  line-height: 1;
+}
+
+@media (max-width: 560px) {
+  .combo-wide-lines {
+    display: none;
+  }
+  .combo-fused-narrow {
+    display: inline-flex;
+  }
+}
+.combo-fused-sep {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
 /* 560px 以下の短い表示。それより広い幅では出さない（#967）。 */
 .combo-label-short {
   display: none;
@@ -2329,6 +2377,7 @@ body:has(.overlay-contained) {
 .combo-x {
   font-size: 17px;
   font-weight: 900;
+  font-variant-numeric: tabular-nums;
   color: var(--sun);
   text-shadow:
     0 0 14px #ffd45c99,
@@ -2338,6 +2387,7 @@ body:has(.overlay-contained) {
   /* 状態バッジの文字は 11px 以上（#967）。 */
   font-size: 11px;
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
   color: var(--lav);
   letter-spacing: 0.06em;
 }
@@ -2348,7 +2398,8 @@ body:has(.overlay-contained) {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 6;
+  z-index: var(--visual-layer-sprint-station);
+  clip-path: inset(var(--point-pop-reserved-top, 0px) 0 0 0);
 }
 .point-pop {
   position: absolute;
@@ -5842,6 +5893,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   padding: 12px 14px;
   border-radius: 14px;
   background: #211a44;
@@ -5939,9 +5991,25 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   color: var(--sun);
   align-self: flex-end;
 }
+.shop-card-price-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+}
 .shop-card-focus-cost {
   color: var(--sky);
-  white-space: nowrap;
+  white-space: normal;
+}
+.shop-card-cost .spend-risk-note,
+.shop-card-cost .spend-risk-warning {
+  margin-top: 0;
+  box-sizing: border-box;
+  max-width: 100%;
+  text-align: right;
 }
 .shop-relic {
   border-color: var(--lav);
@@ -9199,13 +9267,15 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
  * Setup専用の局所レイアウト寸法。長文の非表示予約やline-clampには依存しない。 */
 .setup-observation-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  width: fit-content;
+  max-width: 100%;
   height: 100%;
   min-width: 0;
 }
 .setup-observation-content > [role='status'] {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
 }
 .setup-observation-content .formation-setup-hint {

@@ -54,6 +54,7 @@ import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 import { describeTaskTarget } from './actionTargetPickerView';
 import { useDialogOverlayLock } from '../ui/useDialogOverlayLock';
+import { PointPops } from '../ui/PointPops';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const BoardPixiLayer = lazyWebgl<BoardPixiLayerProps>(() =>
@@ -199,6 +200,12 @@ export interface BoardProps {
   animationsPaused?: boolean;
   /** 情報確認中の介入と作用先。HTML工程要約だけを強調し、発動や盤面操作は変えない。 */
   actionInspection?: { label: string; targetLanes: readonly Lane[] };
+  /** PR 分割直後の短い粒強調（#1020）。 */
+  splitConfirm?: { taskId: number; nonce: number } | null;
+  /** 出荷スコア（得点ポップ用）。 */
+  deliveryScore?: number;
+  /** 選択中チーム（得点ポップの切替リセット用）。 */
+  activeTeamId?: string;
 }
 
 /** 凡例（dot 凡例）。 */
@@ -321,13 +328,24 @@ export function Board({
   onDragComplete,
   animationsPaused = false,
   actionInspection,
+  splitConfirm = null,
+  deliveryScore = 0,
+  activeTeamId,
 }: BoardProps) {
   // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
   const moodOverrides = useMemo(
     () => (roster ? deriveMemberMoodOverrides(roster) : undefined),
     [roster],
   );
-  const scene = planBoardScene(tasks, moodOverrides);
+  const splitConfirmTaskId = splitConfirm?.taskId ?? null;
+  const pinDotIds = useMemo(
+    () => (splitConfirmTaskId != null ? new Set([splitConfirmTaskId]) : undefined),
+    [splitConfirmTaskId],
+  );
+  const scene = useMemo(
+    () => planBoardScene(tasks, moodOverrides, pinDotIds ? { pinDotIds } : undefined),
+    [tasks, moodOverrides, pinDotIds],
+  );
   // 盤面の常駐物と連続演出を WebGL で描くか（RI-11 / RI-142。ラベルは DOM 共通）。
   const { usePixi, onWebglError } = usePixiRenderer();
   const [pixiReady, setPixiReady] = useState(false);
@@ -659,6 +677,7 @@ export function Board({
       data-testid="board"
       data-armed={armedAction ?? undefined}
       data-preview-task-id={previewTaskId ?? undefined}
+      data-split-confirm-task-id={splitConfirmTaskId ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
       data-effect-renderer={gpuEffectsActive ? 'pixi' : 'loading'}
@@ -684,6 +703,7 @@ export function Board({
           draggableTaskIds={dragIds}
           dragTaskId={dragTaskId}
           previewTaskId={previewTaskId}
+          splitConfirmTaskId={splitConfirmTaskId}
           effects={boardEffects.effects}
           auras={activeAuras}
           onWebglError={onWebglError}
@@ -701,7 +721,6 @@ export function Board({
       >
         {targetAnnouncement}
       </span>
-
       {scene.stations.map((s) => (
         <Station
           key={s.lane}
@@ -710,6 +729,7 @@ export function Board({
           hover={hoverLane === s.lane}
         />
       ))}
+      <PointPops deliveryScore={deliveryScore} teamId={activeTeamId} />
       <BoardFlowSummary stations={scene.stations} actionInspection={actionInspection} />
       {scene.stations.map((s) => (
         <Bubble key={`b-${s.lane}`} s={s} />

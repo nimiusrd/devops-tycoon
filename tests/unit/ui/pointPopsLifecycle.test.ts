@@ -117,10 +117,38 @@ function mountPops(initial: PointPopsProps) {
   };
 }
 
+function mockLayer(initialHeight: number, summaryBottom = 0) {
+  const box = { height: initialHeight, summaryBottom };
+  return {
+    getBoundingClientRect: () => ({
+      height: box.height,
+      top: 0,
+      bottom: box.height,
+      left: 0,
+      right: 400,
+      width: 400,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }),
+    parentElement: {
+      querySelector: () =>
+        box.summaryBottom > 0
+          ? { getBoundingClientRect: () => ({ bottom: box.summaryBottom }) }
+          : null,
+    },
+    closest: () => null,
+    style: { setProperty: vi.fn() },
+    setHeight(height: number) {
+      box.height = height;
+    },
+  };
+}
+
 beforeEach(() => {
   hooks.playSfx = vi.fn();
   hooks.reducedMotion = false;
-  hooks.layer = undefined;
+  hooks.layer = mockLayer(389.4);
   hooks.resize = undefined;
   vi.stubGlobal(
     'ResizeObserver',
@@ -149,11 +177,8 @@ afterEach(() => {
 describe('PointPops の増分とライフサイクル', () => {
   it('狭い盤面では古い得点から消し、リサイズ後も収まる最新の得点だけを残す', () => {
     hooks.reducedMotion = true;
-    let height = 151.9;
-    hooks.layer = {
-      getBoundingClientRect: () => ({ height, top: 0 }),
-      parentElement: { querySelector: () => ({ getBoundingClientRect: () => ({ bottom: 32 }) }) },
-    };
+    const layer = mockLayer(151.9, 32);
+    hooks.layer = layer;
     const screen = mountPops({ deliveryScore: 0 });
     let score = 0;
     for (let amount = 1; amount <= 6; amount++) {
@@ -161,7 +186,7 @@ describe('PointPops の増分とライフサイクル', () => {
       screen.update({ deliveryScore: score });
     }
     expect(screen.all().map(content)).toEqual(['+4', '+5', '+6']);
-    height = 119.2;
+    layer.setHeight(119.2);
     hooks.resize?.();
     screen.update({});
     expect(screen.all().map(content)).toEqual(['+5', '+6']);
@@ -170,7 +195,7 @@ describe('PointPops の増分とライフサイクル', () => {
     expect(new Set(screen.all().map((node) => (node.props.animate as { y: number }).y)).size).toBe(
       2,
     );
-    height = 0;
+    layer.setHeight(0);
     hooks.resize?.();
     screen.update({ deliveryScore: score + 8 });
     expect(screen.all()).toHaveLength(0);

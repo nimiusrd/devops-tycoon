@@ -69,7 +69,7 @@ export const ACTION_CONTENT_DEFS = [
     label: 'ペアレビュー',
     icon: 'pairReview',
     stabilizesFlow: true,
-    description: '詰まったPRをペアで処理。AI Literacy が上がる',
+    description: '詰まったPRをペアで処理。AIリテラシーが上がる',
     sideEffect: '集中力を消費し、再使用まで待ち時間がある',
   },
   {

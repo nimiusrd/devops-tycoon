@@ -42,11 +42,15 @@ import type {
 import type { GameHandle, PauseBrieflyClear } from '../game';
 import type { RunState } from '../sim/run/types';
 import type { InterventionTrigger } from '../render/interventionEffects';
+import {
+  planSplitPrConfirmFromEffect,
+  splitPrConfirmDurationMs,
+} from '../render/splitPrConfirmView';
+import { SplitPrConfirmAnnouncer } from './SplitPrConfirmAnnouncer';
 import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
-import { PointPops } from './PointPops';
 import { AspectStage } from './AspectStage';
 import { SprintLayout } from './SprintLayout';
 import { AttentionOverlay, SlowMotionOverlay } from './JuicyEffects';
@@ -174,6 +178,13 @@ export function SprintScreen({
     [state.currentSprintId],
   );
   const triggerKey = useRef(0);
+  const splitConfirmNonce = useRef(0);
+  const splitConfirmTimer = useRef<number | null>(null);
+  const [splitConfirm, setSplitConfirm] = useState<{
+    sprintId: string;
+    taskId: number;
+    nonce: number;
+  } | null>(null);
   const slowMoTimer = useRef<number | null>(null);
   const attentionTimer = useRef<number | null>(null);
   const clearPauseBriefly = useRef<PauseBrieflyClear | null>(null);
@@ -225,6 +236,7 @@ export function SprintScreen({
     () => () => {
       if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
       if (attentionTimer.current != null) window.clearTimeout(attentionTimer.current);
+      if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
       clearPauseBriefly.current?.();
       clearPauseBriefly.current = null;
     },
@@ -370,6 +382,20 @@ export function SprintScreen({
           currentTick: state.sprintTick,
           key: triggerKey.current,
         });
+        splitConfirmNonce.current += 1;
+        const confirmCue = planSplitPrConfirmFromEffect(
+          id,
+          outcome.effect,
+          splitConfirmNonce.current,
+        );
+        if (confirmCue && state.currentSprintId) {
+          setSplitConfirm({ ...confirmCue, sprintId: state.currentSprintId });
+          if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
+          splitConfirmTimer.current = window.setTimeout(() => {
+            setSplitConfirm(null);
+            splitConfirmTimer.current = null;
+          }, splitPrConfirmDurationMs());
+        }
         if (outcome.effect.containedTaskId != null) {
           setSuppressExtinguishTaskIds(new Set([outcome.effect.containedTaskId]));
           window.setTimeout(() => setSuppressExtinguishTaskIds(new Set()), 700);
@@ -475,6 +501,10 @@ export function SprintScreen({
   const dockTickerOffBoard = responsiveMode.width === 'narrow';
   const inspectedId =
     inspectedAction.sprintId === state.currentSprintId ? inspectedAction.id : null;
+  const liveSplitConfirm =
+    splitConfirm?.sprintId === state.currentSprintId
+      ? { taskId: splitConfirm.taskId, nonce: splitConfirm.nonce }
+      : null;
   const actionInspection = inspectedId
     ? {
         label: getAction(inspectedId)!.label,
@@ -516,6 +546,7 @@ export function SprintScreen({
             >
               {reviewHellAnnouncement}
             </p>
+            <SplitPrConfirmAnnouncer cue={liveSplitConfirm} />
             <span className={`pill node-tag node-${kind}`} data-testid="sprint-kind">
               {isBoss ? (
                 `★ ボス: ${boss?.name ?? ''}`
@@ -588,6 +619,10 @@ export function SprintScreen({
                 data-testid="fire-meter"
               >
                 <i style={{ width: `${burnPct}%` }} />
+                <ComboBadge
+                  combo={liveCombo}
+                  stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
+                />
               </div>
               <span className="meter-count" data-testid="fire-count" data-count={incidents}>
                 <VisualIcon name="fire" size="hud" />
@@ -595,10 +630,6 @@ export function SprintScreen({
                   {incidents > 0 ? `炎上 ${incidents}` : incidents}
                 </span>
               </span>
-              <ComboBadge
-                combo={liveCombo}
-                stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
-              />
             </div>
           </div>
           {dockTickerOffBoard ? eventTicker : null}
@@ -611,7 +642,6 @@ export function SprintScreen({
             className="board-stage"
             data-testid="board-stage"
           >
-            <PointPops deliveryScore={state.org.deliveryScore} teamId={state.activeTeamId} />
             <Board
               tasks={sprint.tasks}
               metrics={sprint.metrics}
@@ -627,6 +657,9 @@ export function SprintScreen({
               onDragComplete={handleDragComplete}
               animationsPaused={overlayFrozen}
               actionInspection={actionInspection}
+              splitConfirm={liveSplitConfirm}
+              deliveryScore={state.org.deliveryScore}
+              activeTeamId={state.activeTeamId}
             />
             {slowMoKey > 0 && (
               <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />

@@ -51,8 +51,10 @@ describe('介入結果の出来事表示（#536）', () => {
       }),
       resourceChanges: { focus: -2, seniorHp: -1.5, morale: 0, aiLiteracy: 0.4 },
     });
-    expect(row.text).toBe('ペアレビュー: PR2件処理 / シニアHP -1.5 / AI Literacy +0.4 / 集中力 -2');
-    expect(row.text).not.toContain('AI Literacy +2');
+    expect(row.text).toBe(
+      'ペアレビュー: PR2件処理 / シニアHP -1.5 / AIリテラシー +0.4 / 集中力 -2',
+    );
+    expect(row.text).not.toContain('AIリテラシー +2');
   });
 
   it('資源の clamp 後の差分がゼロなら効果定義のコストや増分を補わない', () => {
@@ -82,7 +84,7 @@ describe('介入結果の出来事表示（#536）', () => {
       resourceChanges: { focus: 1, seniorHp: 0.5, morale: 0.3, aiLiteracy: 0.4 },
     });
     expect(row.text).toBe(
-      '割り込みレビュー: PR2件処理 / シニアHP +0.5 / 士気 +0.3 / AI Literacy +0.4 / 集中力 +1',
+      '割り込みレビュー: PR2件処理 / シニアHP +0.5 / 士気 +0.3 / AIリテラシー +0.4 / 集中力 +1',
     );
   });
 
@@ -98,8 +100,8 @@ describe('介入結果の出来事表示（#536）', () => {
         focusRefund: 1,
       }),
     );
-    expect(row.text).toBe('ペアレビュー: PR0件処理 / AI Literacy +0.4 / 集中力 -2 / 集中力 +1');
-    expect(row.text).not.toContain('AI Literacy +2');
+    expect(row.text).toBe('ペアレビュー: PR0件処理 / AIリテラシー +0.4 / 集中力 -2 / 集中力 +1');
+    expect(row.text).not.toContain('AIリテラシー +2');
   });
 
   it.each([

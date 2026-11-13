@@ -44,6 +44,7 @@ import {
   presentedDotRadius,
 } from '../boardPixiView';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
+import { boardDotSplitConfirmRing } from '../splitPrConfirmView';
 import { BoardTaskMotion, shipmentParticle, TASK_MOTION } from '../boardTaskMotion';
 import { officeActorMotion, officeLight } from '../officeAtmosphere';
 import { containFitTransform } from '../deptPixiView';
@@ -135,6 +136,8 @@ export interface BoardRenderMetrics {
   dots: number;
   /** 実際にリングを描いた確定前対象。予算・scene外の入力は公開しない。 */
   previewTaskId: number | null;
+  /** PR 分割直後に inset 輪郭を描いた粒（#1020）。 */
+  splitConfirmTaskId: number | null;
   actors: number;
   flows: number;
   reviewTrails: number;
@@ -172,6 +175,7 @@ export function emptyBoardRenderMetrics(): BoardRenderMetrics {
   return {
     dots: 0,
     previewTaskId: null,
+    splitConfirmTaskId: null,
     actors: 0,
     flows: 0,
     reviewTrails: 0,
@@ -197,6 +201,8 @@ export interface BoardPixiInput {
   dragTaskId?: number | null;
   /** 確定前の対象（静止した金色の二重リング・候補より前面）。 */
   previewTaskId?: number | null;
+  /** PR 分割直後の短い強調（#1020）。 */
+  splitConfirmTaskId?: number | null;
   /** 一時演出の時刻付きタイムライン。 */
   effects: readonly TimedBoardEffect[];
   /** 進行中モディファイアの常駐オーラ。 */
@@ -577,6 +583,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private actors: ActorEntry[] = [];
   private dotEntries: DotEntry[] = [];
   private previewTaskId: number | null = null;
+  private splitConfirmTaskId: number | null = null;
   private reviewTrailEntries: ReviewTrailEntry[] = [];
   private effectEntries: EffectEntry[] = [];
   private activeAuras: readonly BoardAuraPlan[] = [];
@@ -777,6 +784,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         input.draggableTaskIds ?? new Set(),
         input.dragTaskId ?? null,
         input.previewTaskId ?? null,
+        input.splitConfirmTaskId ?? null,
       );
       this.syncAuras(input.auras);
     }
@@ -1280,6 +1288,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.opts.onRenderMetrics?.({
       dots: this.dotEntries.length,
       previewTaskId: this.previewTaskId,
+      splitConfirmTaskId: this.splitConfirmTaskId,
       actors: this.actors.length,
       flows: this.lastFlows.length,
       assets: this.actors.filter((actor) => actor.assetLoaded).length,
@@ -1347,6 +1356,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     draggableIds: ReadonlySet<number>,
     dragTaskId: number | null,
     previewTaskId: number | null,
+    splitConfirmTaskId: number | null,
   ): void {
     const pool = this.pool;
     if (!pool) return;
@@ -1354,18 +1364,21 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     pool.releaseAll();
     this.dotEntries = [];
     this.previewTaskId = null;
+    this.splitConfirmTaskId = null;
     const renderPlan = planBoardDotsForRender(
       dots,
       draggableIds,
       dragTaskId,
       BOARD_RENDER_BUDGETS.dots,
       previewTaskId,
+      splitConfirmTaskId,
     );
     this.dotRequestedCount = renderPlan.requested;
     this.dotDroppedCount = renderPlan.dropped;
     const pinned = new Set(draggableIds);
     if (dragTaskId !== null) pinned.add(dragTaskId);
     if (previewTaskId !== null) pinned.add(previewTaskId);
+    if (splitConfirmTaskId !== null) pinned.add(splitConfirmTaskId);
     const cssScale = this.root.scale.x;
     const magnification = boardDotReadabilityMagnification(cssScale);
     // 押し離しは入力順に依存する。ヒット判定と同じ scene 順で位置を確定してから描画順へ並べる。
@@ -1393,6 +1406,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       const draggable = draggableIds.has(dot.id);
       const dragging = dot.id === dragTaskId;
       if (dot.id === previewTaskId) this.previewTaskId = dot.id;
+      if (dot.id === splitConfirmTaskId) this.splitConfirmTaskId = dot.id;
       if (dot.id === previewTaskId && !dragging) {
         const ring = boardDotPreviewRing(dot.size, this.root.scale.x);
         // 太い暗色の外周と大きな二重リングで、色に加えて形でも候補と区別する。
@@ -1402,6 +1416,18 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         });
         parts.ring.circle(0, 0, ring.radius).stroke({
           color: VISUAL_TOKENS.colors.sun,
+          width: ring.strokeWidth,
+        });
+      } else if (dot.id === splitConfirmTaskId && !dragging) {
+        const ring = boardDotSplitConfirmRing(dot.size, this.root.scale.x);
+        const splitTone = VISUAL_TOKENS.colors.boardEffects.splitText;
+        parts.ring.circle(0, 0, ring.radius).stroke({
+          color: VISUAL_TOKENS.colors.board.contactShadow,
+          width: ring.outlineWidth,
+          alpha: 0.9,
+        });
+        parts.ring.circle(0, 0, ring.radius).stroke({
+          color: splitTone,
           width: ring.strokeWidth,
         });
       } else if (draggable || dragging) {

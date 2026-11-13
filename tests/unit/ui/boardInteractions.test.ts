@@ -104,6 +104,7 @@ vi.mock('../../../src/ui/usePixiRenderer', () => ({
   }),
 }));
 vi.mock('../../../src/ui/useDialogOverlayLock', () => ({ useDialogOverlayLock: vi.fn() }));
+vi.mock('../../../src/ui/PointPops', () => ({ PointPops: () => null }));
 // 画像ロードによるアクター自身の state は officeActors.test.ts で別途検証する。
 
 import { Board, type BoardProps } from '../../../src/render/Board';

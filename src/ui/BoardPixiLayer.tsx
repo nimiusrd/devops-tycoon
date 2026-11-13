@@ -44,6 +44,7 @@ export function BoardPixiLayer({
   draggableTaskIds,
   dragTaskId,
   previewTaskId,
+  splitConfirmTaskId,
   effects,
   auras,
   onWebglError,
@@ -60,6 +61,7 @@ export function BoardPixiLayer({
     draggableTaskIds,
     dragTaskId,
     previewTaskId,
+    splitConfirmTaskId,
     effects,
     auras,
     reducedMotion,
@@ -88,11 +90,21 @@ export function BoardPixiLayer({
       draggableTaskIds,
       dragTaskId,
       previewTaskId,
+      splitConfirmTaskId,
       effects,
       auras,
       reducedMotion,
     };
-  }, [scene, draggableTaskIds, dragTaskId, previewTaskId, effects, auras, reducedMotion]);
+  }, [
+    scene,
+    draggableTaskIds,
+    dragTaskId,
+    previewTaskId,
+    splitConfirmTaskId,
+    effects,
+    auras,
+    reducedMotion,
+  ]);
 
   useLayoutEffect(() => {
     const mount = mountRef.current;
@@ -108,6 +120,8 @@ export function BoardPixiLayer({
       el.dataset.boardDots = String(baseMetrics.dots);
       if (baseMetrics.previewTaskId === null) delete el.dataset.previewTaskId;
       else el.dataset.previewTaskId = String(baseMetrics.previewTaskId);
+      if (baseMetrics.splitConfirmTaskId === null) delete el.dataset.splitConfirmTaskId;
+      else el.dataset.splitConfirmTaskId = String(baseMetrics.splitConfirmTaskId);
       el.dataset.boardActors = String(baseMetrics.actors);
       el.dataset.boardAssets = String(baseMetrics.assets);
       el.dataset.boardReviewTrails = String(baseMetrics.reviewTrails);
@@ -249,13 +263,23 @@ export function BoardPixiLayer({
       draggableTaskIds,
       dragTaskId,
       previewTaskId,
+      splitConfirmTaskId,
       effects,
       auras,
       reducedMotion,
     };
     baseRenderer.render(input);
     effectsRenderer.render(input);
-  }, [scene, draggableTaskIds, dragTaskId, previewTaskId, effects, auras, reducedMotion]);
+  }, [
+    scene,
+    draggableTaskIds,
+    dragTaskId,
+    previewTaskId,
+    splitConfirmTaskId,
+    effects,
+    auras,
+    reducedMotion,
+  ]);
 
   return (
     <>

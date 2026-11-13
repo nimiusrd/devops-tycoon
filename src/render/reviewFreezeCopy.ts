@@ -72,7 +72,7 @@ export function reviewFreezePeakHudCopy(reviewQueuePeak: number): {
   const peakWatch = reviewQueuePeak >= reviewFreezeWatchPeak();
   const peakDanger = reviewQueuePeak >= reviewFreezeDangerPeak();
   if (!peakWatch) {
-    return { tone: 'good', detail: `Review待ちピーク ${Math.round(reviewQueuePeak)}` };
+    return { tone: 'good', detail: `レビュー待ちピーク ${Math.round(reviewQueuePeak)}` };
   }
   if (peakDanger) {
     return {

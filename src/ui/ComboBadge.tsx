@@ -20,6 +20,7 @@ export function ComboBadge({ combo, stabilized = false }: ComboBadgeProps) {
   const visible = isComboHudVisible(combo);
   const reduceMotion = useReducedMotion();
   const mult = deliveryComboMultiplier(combo, stabilized);
+
   return (
     <div
       className="combo-badge"
@@ -37,18 +38,33 @@ export function ComboBadge({ combo, stabilized = false }: ComboBadgeProps) {
             reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 18 }
           }
         >
-          <div className="combo-x">
-            <span className="combo-label-full">COMBO ×{combo}</span>
-            <span className="combo-label-short" aria-hidden="true">
+          <div className="combo-wide-lines">
+            <div className="combo-x" data-testid="combo-x-wide">
+              <span className="combo-label-full">COMBO ×{combo}</span>
+            </div>
+            <div className="combo-mult" data-testid="combo-mult-wide">
+              <span className="combo-label-full">出荷倍率 {mult.toFixed(1)}x</span>
+            </div>
+          </div>
+          <p className="combo-fused-narrow">
+            <span
+              className="combo-label-short combo-x"
+              data-testid="combo-x"
+              aria-label={`COMBO ×${combo}`}
+            >
               ×{combo}
             </span>
-          </div>
-          <div className="combo-mult">
-            <span className="combo-label-full">出荷倍率 {mult.toFixed(1)}x</span>
-            <span className="combo-label-short" aria-hidden="true">
+            <span className="combo-fused-sep" aria-hidden="true">
+              ·
+            </span>
+            <span
+              className="combo-label-short combo-mult"
+              data-testid="combo-mult"
+              aria-label={`出荷倍率 ${mult.toFixed(1)}x`}
+            >
               {mult.toFixed(1)}x
             </span>
-          </div>
+          </p>
         </motion.div>
       )}
     </div>

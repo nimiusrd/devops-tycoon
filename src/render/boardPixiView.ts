@@ -32,10 +32,11 @@ export function boardDotLayer(
   draggable: boolean,
   dragging: boolean,
   preview = false,
+  splitConfirm = false,
 ): number {
   const layers = VISUAL_TOKENS.layers.sprint;
   if (dragging) return layers.dragging;
-  if (preview) return layers.targetPreview;
+  if (preview || splitConfirm) return layers.targetPreview;
   if (draggable) return layers.dragCandidate;
   if (dot.motion || dot.fire) return layers.foreground;
   return layers.task;
@@ -52,9 +53,10 @@ function dotRetentionPriority(
   draggable: boolean,
   dragging: boolean,
   preview: boolean,
+  splitConfirm: boolean,
 ): number {
   if (dragging) return 6;
-  if (preview) return 5;
+  if (preview || splitConfirm) return 5;
   if (dot.fire) return 4;
   if (draggable) return 3;
   if (dot.motion) return 2;
@@ -71,17 +73,19 @@ export function planBoardDotsForRender(
   dragTaskId: number | null = null,
   budget = BOARD_RENDER_BUDGETS.dots,
   previewTaskId: number | null = null,
+  splitConfirmTaskId: number | null = null,
 ): BoardDotRenderPlan {
   const capacity = Math.max(0, Math.floor(budget));
   const annotated = dots.map((dot, index) => {
     const draggable = draggableIds.has(dot.id);
     const dragging = dot.id === dragTaskId;
     const preview = dot.id === previewTaskId;
+    const splitConfirm = dot.id === splitConfirmTaskId;
     return {
       dot,
       index,
-      layer: boardDotLayer(dot, draggable, dragging, preview),
-      priority: dotRetentionPriority(dot, draggable, dragging, preview),
+      layer: boardDotLayer(dot, draggable, dragging, preview, splitConfirm),
+      priority: dotRetentionPriority(dot, draggable, dragging, preview, splitConfirm),
     };
   });
   const selected = annotated

@@ -8,7 +8,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useAudio } from '../audio/useAudio';
-import { MAX_POINT_POPS, reducedPointPopCapacity } from '../render/pointPopLayout';
+import {
+  MAX_POINT_POPS,
+  POINT_POP_RESERVED_PAD,
+  pointPopMaxRise,
+  reducedPointPopCapacity,
+} from '../render/pointPopLayout';
 import { VISUAL_TOKENS } from '../render/visualTokens';
 
 interface Pop {
@@ -37,32 +42,75 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
   const nextId = useRef(0);
   const timers = useRef(new Set<number>());
   const [pops, setPops] = useState<Pop[]>([]);
+  const [reservedTopPx, setReservedTopPx] = useState(0);
+  const [layerHeight, setLayerHeight] = useState(0);
+  const measureLayout = useRef<(() => void) | null>(null);
   const { playSfx } = useAudio();
 
   useEffect(() => {
     const layer = layerRef.current;
     if (!layer) return;
     const summary = layer.parentElement?.querySelector('[data-testid="board-flow-summary"]');
+    const stage = layer.closest('[data-testid="board-stage"]');
     const measure = () => {
       const bounds = layer.getBoundingClientRect();
-      // 工程要約の背景や下の影に得点を重ねない（余白はこの演出だけの局所値）。
-      const topInset = summary
-        ? Math.max(0, summary.getBoundingClientRect().bottom - bounds.top + 4)
-        : 0;
+      setLayerHeight((current) => (current === bounds.height ? current : bounds.height));
+      const reservedBottoms: number[] = [];
+      if (summary && typeof summary.getBoundingClientRect === 'function') {
+        reservedBottoms.push(summary.getBoundingClientRect().bottom - bounds.top);
+      }
+      const attention = stage?.querySelector('[data-testid="attention-pause"]');
+      if (attention && Number(getComputedStyle(attention).opacity) > 0.05) {
+        for (const part of attention.querySelectorAll('.juicy-attention-label, strong, small')) {
+          if (typeof part.getBoundingClientRect === 'function') {
+            reservedBottoms.push(part.getBoundingClientRect().bottom - bounds.top);
+          }
+        }
+      }
+      const topInset =
+        reservedBottoms.length > 0
+          ? Math.max(0, Math.max(...reservedBottoms) + POINT_POP_RESERVED_PAD)
+          : 0;
+      setReservedTopPx((current) => (current === topInset ? current : topInset));
+      layer.style.setProperty('--point-pop-reserved-top', `${topInset}px`);
       const next = reducedMotion
         ? reducedPointPopCapacity(bounds.height, topInset)
         : MAX_POINT_POPS;
-      if (next === capacity.current) return;
-      capacity.current = next;
-      // リサイズで段数が減ったときも新しい得点を残す。
-      setPops((cur) => (next === 0 ? [] : cur.slice(-next).map((pop, row) => ({ ...pop, row }))));
+      if (next !== capacity.current) {
+        capacity.current = next;
+        // リサイズで段数が減ったときも新しい得点を残す。
+        setPops((cur) => (next === 0 ? [] : cur.slice(-next).map((pop, row) => ({ ...pop, row }))));
+      }
     };
+    measureLayout.current = measure;
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(layer);
-    if (summary) observer.observe(summary);
-    return () => observer.disconnect();
+    if (summary) observer.observe(summary as Element);
+    if (stage) observer.observe(stage as Element);
+    return () => {
+      observer.disconnect();
+      measureLayout.current = null;
+    };
   }, [reducedMotion]);
+
+  // 得点表示中は注意オーバーレイのフェードに合わせて短時間だけ計測を増やす。
+  useEffect(() => {
+    if (pops.length === 0) return;
+    measureLayout.current?.();
+    if (typeof window.requestAnimationFrame !== 'function') return;
+    let sample = 0;
+    let frame = 0;
+    const tick = () => {
+      measureLayout.current?.();
+      sample += 1;
+      if (sample < 80) frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [pops.length, deliveryScore]);
 
   // 得点・チームの更新では消去予約を取り消さず、各ポップ自身の寿命を守る。
   useEffect(() => {
@@ -100,6 +148,10 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
     timers.current.add(timer);
   }, [deliveryScore, teamId, playSfx]);
 
+  const riseLimit = pointPopMaxRise(layerHeight, reservedTopPx);
+  const popRise = Math.min(POP_LAYOUT.baseOffset, riseLimit);
+  const popExitY = -Math.min(70, popRise + 28);
+
   return (
     <div
       ref={layerRef}
@@ -118,9 +170,9 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
             animate={
               reducedMotion
                 ? { y: 0 - p.row * POP_LAYOUT.rowGap, opacity: 1, scale: 1 }
-                : { y: -POP_LAYOUT.baseOffset, opacity: 1, scale: 1 }
+                : { y: -popRise, opacity: 1, scale: 1 }
             }
-            exit={reducedMotion ? { opacity: 0 } : { y: -70, opacity: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: popExitY, opacity: 0 }}
             transition={{ duration: reducedMotion ? 0 : 1, ease: 'easeOut' }}
           >
             +{p.amount}

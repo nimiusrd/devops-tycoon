@@ -64,13 +64,13 @@ function deriveTip(result: SprintResult, reviewedPr: number, firefightSaves: num
   if (focusRemaining >= Math.max(3, Math.ceil(focusMax * 0.4))) {
     const peakQueue = reviewQueueMax;
     if (peakQueue >= 6) {
-      return `集中力を ${focusRemaining} 残して終了 → Review待ちが最大 ${peakQueue} PR のとき、割り込みレビュー（集中力 3）の余地があった。`;
+      return `集中力を ${focusRemaining} 残して終了 → レビュー待ちが最大 ${peakQueue} PR のとき、割り込みレビュー（集中力 3）の余地があった。`;
     }
     return `集中力を ${focusRemaining} 残して終了 → 渋滞ピーク時に割り込みの余地があった。次はピーク前に集中力を使おう。`;
   }
 
   if (reviewQueueMax >= 8 && (actionCounts.interruptReview ?? 0) === 0) {
-    return `Review待ちが最大 ${reviewQueueMax} PR に達した。割り込みレビューで渋滞を先に捌くと出荷が伸びやすい。`;
+    return `レビュー待ちが最大 ${reviewQueueMax} PR に達した。割り込みレビューで渋滞を先に捌くと出荷が伸びやすい。`;
   }
 
   if (reviewedPr >= 6) {

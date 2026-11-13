@@ -9066,13 +9066,15 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
  * Setup専用の局所レイアウト寸法。長文の非表示予約やline-clampには依存しない。 */
 .setup-observation-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  width: fit-content;
+  max-width: 100%;
   height: 100%;
   min-width: 0;
 }
 .setup-observation-content > [role='status'] {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
 }
 .setup-observation-content .formation-setup-hint {

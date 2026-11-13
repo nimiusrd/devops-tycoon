@@ -6492,6 +6492,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .quarter-review-load-card .result-actions {
   justify-content: center;
 }
+.quarter-review-retry {
+  min-height: 44px;
+  min-width: 44px;
+}
 
 .quarter-review-card {
   max-width: 640px;

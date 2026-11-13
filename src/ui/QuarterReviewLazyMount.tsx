@@ -11,17 +11,14 @@ import {
 } from 'react';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { QuarterReviewScreenProps } from './QuarterReviewScreen';
+import { ResultOverlay } from './ResultOverlay';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 import {
   QUARTER_REVIEW_LOAD_SLOW_MS,
   loadQuarterReviewScreenModule,
   resetQuarterReviewScreenChunk,
   waitForQuarterReviewScreenModule,
 } from './quarterReviewChunk';
-import {
-  noteAnnouncedQuarterReviewLoadSpeech,
-  readAnnouncedQuarterReviewLoadSpeech,
-} from './quarterReviewLoadSpeech';
-
 export interface QuarterReviewLazyMountProps {
   state: RunState;
   onAcknowledge: () => void;
@@ -31,51 +28,16 @@ export interface QuarterReviewLazyMountProps {
 
 const FAILURE_MESSAGE = '読み込めませんでした';
 
-function QuarterReviewFailureSpeech({ speechKey }: { speechKey: string }) {
-  const [spoken, setSpoken] = useState(() =>
-    readAnnouncedQuarterReviewLoadSpeech(speechKey) === FAILURE_MESSAGE ? FAILURE_MESSAGE : '',
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    const publish = () => {
-      if (cancelled) return;
-      if (readAnnouncedQuarterReviewLoadSpeech(speechKey) !== FAILURE_MESSAGE) {
-        noteAnnouncedQuarterReviewLoadSpeech(speechKey, FAILURE_MESSAGE);
-      }
-      setSpoken(FAILURE_MESSAGE);
-    };
-    if (typeof requestAnimationFrame !== 'function') {
-      queueMicrotask(publish);
-      return () => {
-        cancelled = true;
-      };
-    }
-    const frame = requestAnimationFrame(publish);
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(frame);
-    };
-  }, [speechKey]);
-
-  return (
-    <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
-      {spoken}
-    </p>
-  );
-}
-
 function QuarterReviewLoadStatus({
   mode,
-  runEpoch,
   onRetry,
 }: {
   mode: 'loading' | 'failed';
-  runEpoch: number;
   onRetry: () => void;
 }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
   const failureRef = useRef<HTMLParagraphElement>(null);
-  const speechKey = `quarter-review-chunk:${runEpoch}`;
+  useDialogOverlayLock(overlayRef, { onDismiss: () => {} });
 
   useLayoutEffect(() => {
     if (mode !== 'failed') return;
@@ -83,14 +45,25 @@ function QuarterReviewLoadStatus({
   }, [mode]);
 
   return (
-    <div
-      className="result-overlay overlay-contained quarter-review-load"
+    <ResultOverlay
+      ref={overlayRef}
+      className="overlay-contained quarter-review-load"
       data-testid="quarter-review-load"
       data-mode={mode}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={
+        mode === 'failed' ? 'quarter-review-load-failed' : 'quarter-review-load-message'
+      }
+      tabIndex={-1}
     >
       <div className="result-card quarter-review-load-card">
         {mode === 'loading' ? (
-          <p role="status" data-testid="quarter-review-load-message">
+          <p
+            id="quarter-review-load-message"
+            role="status"
+            data-testid="quarter-review-load-message"
+          >
             四半期レビューを読み込み中…
           </p>
         ) : (
@@ -103,11 +76,10 @@ function QuarterReviewLoadStatus({
             >
               {FAILURE_MESSAGE}
             </p>
-            <QuarterReviewFailureSpeech key={speechKey} speechKey={speechKey} />
             <div className="result-actions">
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-primary quarter-review-retry"
                 data-testid="quarter-review-retry"
                 onClick={onRetry}
               >
@@ -117,7 +89,7 @@ function QuarterReviewLoadStatus({
           </>
         )}
       </div>
-    </div>
+    </ResultOverlay>
   );
 }
 
@@ -167,14 +139,14 @@ class QuarterReviewLazyScreen extends Component<{
 
 function QuarterReviewLoadAttempt({
   screenProps,
-  runEpoch,
+  loadGeneration,
   onRetry,
 }: {
   screenProps: QuarterReviewScreenProps;
-  runEpoch: number;
+  loadGeneration: number;
   onRetry: () => void;
 }) {
-  const [showSlowLoading, setShowSlowLoading] = useState(false);
+  const [showSlowLoading, setShowSlowLoading] = useState(loadGeneration > 0);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
   const onRenderError = () => setLoadState('failed');
 
@@ -193,13 +165,11 @@ function QuarterReviewLoadAttempt({
   }, []);
 
   if (loadState === 'failed') {
-    return <QuarterReviewLoadStatus mode="failed" runEpoch={runEpoch} onRetry={onRetry} />;
+    return <QuarterReviewLoadStatus mode="failed" onRetry={onRetry} />;
   }
 
   if (loadState === 'loading') {
-    return showSlowLoading ? (
-      <QuarterReviewLoadStatus mode="loading" runEpoch={runEpoch} onRetry={onRetry} />
-    ) : null;
+    return showSlowLoading ? <QuarterReviewLoadStatus mode="loading" onRetry={onRetry} /> : null;
   }
 
   return <QuarterReviewLazyScreen screenProps={screenProps} onRenderError={onRenderError} />;
@@ -209,7 +179,6 @@ export function QuarterReviewLazyMount({
   state,
   onAcknowledge,
   onChooseAdjustment,
-  runEpoch,
 }: QuarterReviewLazyMountProps) {
   const [attempt, setAttempt] = useState(0);
   const retry = () => {
@@ -226,7 +195,7 @@ export function QuarterReviewLazyMount({
     <QuarterReviewLoadAttempt
       key={attempt}
       screenProps={screenProps}
-      runEpoch={runEpoch}
+      loadGeneration={attempt}
       onRetry={retry}
     />
   );

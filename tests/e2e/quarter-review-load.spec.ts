@@ -90,7 +90,7 @@ test('四半期レビューの chunk 取得失敗でも HUD を残し、再試�
 
   let available = false;
   await page.route(
-    /\/(?:src\/ui\/QuarterReviewScreen\.tsx|assets\/QuarterReviewScreen-[^/]+\.js)(?:\?.*)?$/,
+    /\/(?:src\/ui\/QuarterReviewScreen\.tsx(?:\?.*)?|assets\/QuarterReviewScreen-[^/]+\.js(?:\?.*)?)$/,
     async (route) => {
       if (available) await route.continue();
       else await route.abort('failed');

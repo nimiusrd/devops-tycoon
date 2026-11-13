@@ -6438,8 +6438,8 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 html:has(.tab-conflict-overlay) {
   scroll-padding-top: var(--persistence-banner-height, 0px);
 }
-/* 高さ変数は俯瞰の戻る導線に使う。スプリント盤面の余白には使わない。 */
-:root:has(.persistence-notice[data-layout='overlay']) .app-sprint-layout {
+/* 高さ変数は俯瞰の戻る導線に使う。競合 overlay だけスプリント余白を打ち消す。 */
+:root:has(.persistence-notice[data-state='conflict'][data-layout='overlay']) .app-sprint-layout {
   padding-top: 0;
 }
 @media (prefers-reduced-motion: reduce) {

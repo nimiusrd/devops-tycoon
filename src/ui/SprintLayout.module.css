@@ -14,9 +14,12 @@
   padding: 0;
   padding-top: var(--persistence-banner-height, 0px);
 }
-/* 保存失敗・別タブ競合の overlay 案内は重ねるだけ。余白変数は他導線用。 */
-:root:has(:global(.persistence-notice)[data-layout='overlay']) :global(.app).appShell {
-  padding-top: 0;
+/* 保存失敗は HUD をバナー下へ残し、盤面だけ上へ戻す（#1007 / DS-06）。 */
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .stageSlot
+  > :global(.board-wrap) {
+  transform: translateY(calc(-1 * var(--persistence-banner-height, 0px)));
 }
 
 .root {

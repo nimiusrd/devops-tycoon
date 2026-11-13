@@ -134,9 +134,17 @@ test('320 で保存失敗バナーは語の途中で折り返さず、盤面を�
     expect(exportBox!.height).toBeGreaterThanOrEqual(44);
   }
 
-  const sprintPadding = await page.evaluate(() => {
-    const app = document.querySelector('.app-sprint-layout');
-    return app instanceof HTMLElement ? getComputedStyle(app).paddingTop : '';
+  const bannerBox = await notice.boundingBox();
+  expect(bannerBox).not.toBeNull();
+  const hudTop = await page.evaluate(() => {
+    const hud = document.querySelector('[data-testid="hud"]');
+    const toggle = document.querySelector('[data-testid="hud-toggle"]');
+    if (!(hud instanceof HTMLElement) || !(toggle instanceof HTMLElement)) return null;
+    const hudBox = hud.getBoundingClientRect();
+    const toggleBox = toggle.getBoundingClientRect();
+    return { hudY: hudBox.y, toggleY: toggleBox.y };
   });
-  expect(Number.parseFloat(sprintPadding)).toBe(0);
+  expect(hudTop).not.toBeNull();
+  expect(hudTop!.hudY).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height - 1);
+  expect(hudTop!.toggleY).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height - 1);
 });

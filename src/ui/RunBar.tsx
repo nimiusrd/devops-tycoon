@@ -26,7 +26,12 @@ import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { formatSigned } from './formatSigned';
-import { ORG_LEVER_BUTTON_LABEL } from '../render/orgLeverHintView';
+import {
+  ORG_LEVER_BUTTON_LABEL,
+  ORG_LEVER_HINT_DESCRIPTION_ID,
+  ORG_LEVER_HINT_MESSAGE,
+} from '../render/orgLeverHintView';
+import { OrgLeverHintLiveAnnouncer } from './OrgLeverHintRow';
 import { useReplayContent } from './replayContent';
 import { RunSessionMenu } from './RunSessionMenu';
 import { PhraseText } from './PhraseText';
@@ -349,6 +354,12 @@ export function RunBar({
           {roster.onLeave > 0 && <span className="roster-leave"> 😴{roster.onLeave}</span>}
         </span>
       )}
+      {onOpenOrg && showOrgLeverHint && (
+        <span id={ORG_LEVER_HINT_DESCRIPTION_ID} className="visually-hidden">
+          {ORG_LEVER_HINT_MESSAGE}
+        </span>
+      )}
+      {onOpenOrg && <OrgLeverHintLiveAnnouncer active={showOrgLeverHint} />}
       {onOpenOrg && (
         <button
           type="button"
@@ -356,6 +367,7 @@ export function RunBar({
           data-testid="open-org"
           data-org-lever-hint={showOrgLeverHint ? 'true' : 'false'}
           disabled={readOnly}
+          aria-describedby={showOrgLeverHint ? ORG_LEVER_HINT_DESCRIPTION_ID : undefined}
           onClick={(event) => {
             dismissOrgLeverHint(runEpoch);
             setOrgLeverHintDismissedEpoch(runEpoch);

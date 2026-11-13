@@ -581,6 +581,15 @@ body {
   position: absolute;
   margin: 0;
 }
+.subbar > .org-lever-hint-live {
+  position: absolute;
+  margin: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
 /* Review Hell は行を足さず、状態枠の面と内側の影で知らせる（#975）。 */
 .subbar[data-review-hell='true'] {
   background: var(--visual-color-banner-hell-bg);

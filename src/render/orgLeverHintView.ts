@@ -12,6 +12,8 @@ export const MIN_ORG_LEVER_BUDGET = Math.min(...LEVER_DEFS.map((lever) => lever.
 
 export const ORG_LEVER_BUTTON_LABEL = '組織レバー';
 export const ORG_LEVER_HINT_MESSAGE = '予算は組織レバーで使えます';
+/** 組織レバーボタンの aria-describedby 先（RunBar 上の非表示説明）。 */
+export const ORG_LEVER_HINT_DESCRIPTION_ID = 'org-lever-hint-description';
 
 export interface OrgLeverHintDecisionInput {
   quarterNumber: number;

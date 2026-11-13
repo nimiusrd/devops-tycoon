@@ -1763,7 +1763,35 @@ body:has(.overlay-contained) {
   margin-bottom: 0.65rem;
 }
 .overlay-contained .sprint-result-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
+}
+.overlay-contained .sprint-result-card > .overlay-scroll {
+  padding-bottom: 0.25rem;
+}
+.overlay-contained .sprint-result-card > .sprint-result-footer {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 0.65rem 0 0;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--visual-color-panel));
+}
+:root[data-responsive-width='narrow']
+  .overlay-contained
+  .sprint-result-card
+  > .sprint-result-footer {
+  padding-top: 0.55rem;
+}
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn {
+  min-height: 44px;
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
 }
 .sprint-result-card .result-eyebrow {
   letter-spacing: 0.08em;

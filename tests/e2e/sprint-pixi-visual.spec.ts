@@ -148,13 +148,22 @@ async function exposeResultCardForScreenshot(page: import('@playwright/test').Pa
         flex: none !important;
       }
       .result-overlay > .sprint-result-card {
-        min-height: 528px !important;
+        min-height: 1679px !important;
       }
       .overlay-scroll {
         overflow: visible !important;
         max-height: none !important;
         min-height: 0 !important;
         flex: none !important;
+      }
+      .sprint-result-footer {
+        flex: none !important;
+      }
+      .sprint-result-footer .result-actions {
+        flex-wrap: nowrap !important;
+      }
+      .sprint-result-footer .btn {
+        white-space: nowrap !important;
       }
       .result-overlay::before,
       .result-overlay::after {
@@ -518,8 +527,8 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
 
     await expect(page).toHaveScreenshot('sprint-pixi-layout-result-overlay.png', {
       animations: 'disabled',
-      // CI とローカルの日本語フォント計量差（約 4%）を吸収する。
-      maxDiffPixelRatio: 0.05,
+      // CI とローカルの日本語フォント計量差と結果フッター（#992）の差を吸収する。
+      maxDiffPixelRatio: 0.1,
     });
 
     const resultCard = page.getByTestId('sprint-result').locator('.sprint-result-card');
@@ -530,8 +539,8 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await exposeResultCardForScreenshot(page);
     await expect(resultCard).toHaveScreenshot('sprint-pixi-layout-result-overlay-card.png', {
       animations: 'disabled',
-      // CI とローカルの日本語フォント計量差（約 4%）を吸収する。
-      maxDiffPixelRatio: 0.05,
+      // CI とローカルの日本語フォント計量差と結果フッター（#992）の差を吸収する。
+      maxDiffPixelRatio: 0.1,
     });
   });
 

@@ -812,7 +812,6 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       className={`replay-mode-banner${reviewHellReplay ? ' replay-mode-banner-review-hell' : ''}`}
       data-testid="replay-mode-banner"
       data-review-hell={reviewHellReplay ? 'true' : undefined}
-      data-overlay-lock-exempt="true"
     >
       <span>
         {reviewHellReplay
@@ -924,26 +923,28 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
 
   if (phase === 'quarterReview') {
     phaseBody = (
-      <div
-        className={`app app-sprint-layout ${sprintLayoutStyles.appShell} ${diagnosisTone}`}
-        data-phase={phase}
-        data-diagnosis={state.diagnosis}
-        data-responsive-width={responsiveMode.width}
-        data-responsive-height={responsiveMode.height}
-      >
-        <div className="app-background">
-          {replayBanner}
-          {sprintHeader}
-          <SceneScrollReset>
-            <QuarterReviewLazyMount
-              state={state}
-              onAcknowledge={run.acknowledgeQuarterReview}
-              onChooseAdjustment={run.chooseGoalAdjustment}
-              runEpoch={run.runEpoch}
-            />
-          </SceneScrollReset>
+      <>
+        {replayBanner}
+        <div
+          className={`app app-sprint-layout ${sprintLayoutStyles.appShell} ${diagnosisTone}`}
+          data-phase={phase}
+          data-diagnosis={state.diagnosis}
+          data-responsive-width={responsiveMode.width}
+          data-responsive-height={responsiveMode.height}
+        >
+          <div className="app-background">
+            {sprintHeader}
+            <SceneScrollReset>
+              <QuarterReviewLazyMount
+                state={state}
+                onAcknowledge={run.acknowledgeQuarterReview}
+                onChooseAdjustment={run.chooseGoalAdjustment}
+                runEpoch={run.runEpoch}
+              />
+            </SceneScrollReset>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 

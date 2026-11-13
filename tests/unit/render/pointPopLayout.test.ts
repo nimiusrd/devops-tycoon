@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reducedPointPopCapacity } from '../../../src/render/pointPopLayout';
+import { pointPopMaxRise, reducedPointPopCapacity } from '../../../src/render/pointPopLayout';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 
 describe('静止した得点ポップの可視段数', () => {
@@ -17,5 +17,14 @@ describe('静止した得点ポップの可視段数', () => {
         height * (1 - bottomRatio) - (expected - 1) * rowGap - reducedLineHeight,
       ).toBeGreaterThanOrEqual(topInset);
     }
+  });
+});
+
+describe('通常モーション得点ポップの上昇量', () => {
+  it('工程要約の下に収まるよう上昇量を抑える', () => {
+    const rise = pointPopMaxRise(200, 48);
+    expect(rise).toBeGreaterThan(0);
+    expect(Math.min(42, rise)).toBe(42);
+    expect(pointPopMaxRise(120, 80)).toBe(0);
   });
 });

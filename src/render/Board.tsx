@@ -54,6 +54,7 @@ import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 import { describeTaskTarget } from './actionTargetPickerView';
 import { useDialogOverlayLock } from '../ui/useDialogOverlayLock';
+import { PointPops } from '../ui/PointPops';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const BoardPixiLayer = lazyWebgl<BoardPixiLayerProps>(() =>
@@ -201,6 +202,10 @@ export interface BoardProps {
   actionInspection?: { label: string; targetLanes: readonly Lane[] };
   /** PR 分割直後の短い粒強調（#1020）。 */
   splitConfirm?: { taskId: number; nonce: number } | null;
+  /** 出荷スコア（得点ポップ用）。 */
+  deliveryScore?: number;
+  /** 選択中チーム（得点ポップの切替リセット用）。 */
+  activeTeamId?: string;
 }
 
 /** 凡例（dot 凡例）。 */
@@ -324,6 +329,8 @@ export function Board({
   animationsPaused = false,
   actionInspection,
   splitConfirm = null,
+  deliveryScore = 0,
+  activeTeamId,
 }: BoardProps) {
   // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
   const moodOverrides = useMemo(
@@ -722,6 +729,7 @@ export function Board({
           hover={hoverLane === s.lane}
         />
       ))}
+      <PointPops deliveryScore={deliveryScore} teamId={activeTeamId} />
       <BoardFlowSummary stations={scene.stations} actionInspection={actionInspection} />
       {scene.stations.map((s) => (
         <Bubble key={`b-${s.lane}`} s={s} />

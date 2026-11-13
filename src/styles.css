@@ -1065,6 +1065,7 @@ body {
   top: 12px;
   left: 14px;
   z-index: var(--visual-layer-sprint-summary);
+  isolation: isolate;
   width: min(700px, 52%);
   color: var(--cream);
   pointer-events: none;
@@ -2397,7 +2398,8 @@ body:has(.overlay-contained) {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 6;
+  z-index: var(--visual-layer-sprint-station);
+  clip-path: inset(var(--point-pop-reserved-top, 0px) 0 0 0);
 }
 .point-pop {
   position: absolute;

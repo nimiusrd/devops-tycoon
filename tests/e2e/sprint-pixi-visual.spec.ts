@@ -84,7 +84,10 @@ async function openPixiSprintBoard(
     },
     { s: seed, n: steps },
   );
-  await expect(page.getByTestId('board')).toBeVisible();
+  await expect(page.getByTestId('board')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi', {
+    timeout: 30_000,
+  });
 }
 
 /** CSS アニメーションを止め、WebGL 描画メトリクスが安定するまで待つ。 */

@@ -42,6 +42,24 @@ function focusWithoutScroll(element: HTMLElement | null | undefined): void {
   }
 }
 
+function revealPickerOptionInList(button: HTMLButtonElement): void {
+  const list = button.closest<HTMLElement>('.action-target-picker-list');
+  if (!list) return;
+  const listRect = list.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
+  if (buttonRect.top < listRect.top) {
+    list.scrollTop -= listRect.top - buttonRect.top;
+  } else if (buttonRect.bottom > listRect.bottom) {
+    list.scrollTop += buttonRect.bottom - listRect.bottom;
+  }
+}
+
+/** 候補一覧内だけスクロールし、sprint-layout の位置は動かさない（#980）。 */
+function focusPickerOption(button: HTMLButtonElement): void {
+  focusWithoutScroll(button);
+  revealPickerOptionInList(button);
+}
+
 /** 編成ダイアログや全社マップなど、前面 UI が Escape を使う状態か。 */
 function escapeOwnedByFrontOverlay(): boolean {
   if (typeof document === 'undefined') return false;
@@ -303,7 +321,7 @@ export function ActionBar({
         'button[data-action-target-option]:not([disabled])',
       );
       if (next) {
-        focusWithoutScroll(next);
+        focusPickerOption(next);
       } else {
         focusWithoutScroll(actionButtonRefs.current[armedId]);
         focusedOptionIdRef.current = null;
@@ -509,8 +527,9 @@ export function ActionBar({
                     disabled={!option.canSelect || paused}
                     title={option.blockMessage ?? option.detail}
                     aria-label={`${option.label}。${option.detail}。${status}選ぶと実行。`}
-                    onFocus={() => {
+                    onFocus={(event) => {
                       focusedOptionIdRef.current = option.taskId;
+                      revealPickerOptionInList(event.currentTarget);
                     }}
                     onClick={() => confirmTarget(option.target)}
                   >

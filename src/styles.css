@@ -2819,6 +2819,14 @@ body:has(.overlay-contained) {
   font-size: 12px;
   line-height: 1.2;
 }
+/* 読み上げ専用。表示用ステータスと分離する（#1024）。 */
+.deckbar-exchange-live {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
 .deckbar-exchange-toggle {
   min-width: 6em;
   min-height: 32px;

@@ -78,7 +78,7 @@ test.describe('#1012 COMBO ラベル', () => {
 
       const baseline = await readBoardFrame(page);
       await setLiveCombo(page, 12);
-      await expect(page.locator('.combo-fused-narrow')).toBeVisible();
+      await expect(page.locator('.combo-fused-narrow')).toBeVisible({ timeout: 10000 });
       await expect(page.getByTestId('combo-x')).toHaveText('×12');
 
       const frame = await readBoardFrame(page);

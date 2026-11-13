@@ -2246,11 +2246,20 @@ body:has(.overlay-contained) {
   line-height: 1;
 }
 .combo-fused-narrow {
-  display: inline-flex;
+  display: none;
   align-items: baseline;
   gap: 2px;
   margin: 0;
   line-height: 1;
+}
+
+@media (max-width: 560px) {
+  .combo-wide-lines {
+    display: none;
+  }
+  .combo-fused-narrow {
+    display: inline-flex;
+  }
 }
 .combo-fused-sep {
   font-size: 11px;

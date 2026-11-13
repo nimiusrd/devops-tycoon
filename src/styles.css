@@ -1777,7 +1777,7 @@ body:has(.overlay-contained) {
   margin-top: 0;
   padding: 0.65rem 0 0;
   border-top: 1px solid var(--line);
-  background: linear-gradient(180deg, #332a5e, #251d49);
+  background: linear-gradient(180deg, var(--panel), var(--visual-color-panel));
 }
 :root[data-responsive-width='narrow']
   .overlay-contained

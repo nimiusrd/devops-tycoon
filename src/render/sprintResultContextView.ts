@@ -4,7 +4,9 @@
  */
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { measureGoalProgress } from '../sim/run/quarterReview';
-import type { OrgState, QuarterGoal, RunTotals, TeamRunState } from '../sim/run/types';
+import type { QuarterGoal, RunTotals } from '../sim/run/types';
+import type { OrgState } from '../sim/types';
+import type { TeamRunState } from '../sim/orgscale/types';
 import { planQuarterGoalProgressLine } from './quarterGoalProgressCopy';
 import {
   planReviewFreezeRiskLine,

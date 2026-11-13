@@ -547,6 +547,29 @@ describe('useDialogOverlayLock', () => {
     expect(documentStub.activeElement).toBe(dialogButton);
   });
 
+  it('strictModal ではロック免除の保存案内を inert にし、aria-modal を維持する', () => {
+    const retry = button();
+    const notice = new ElementStub().append(retry);
+    notice.zIndex = '50';
+    notice.box = { top: 0, left: 0, right: 320, bottom: 72, width: 320, height: 72 };
+    notice.setAttribute('data-overlay-lock-exempt', 'true');
+    notice.setAttribute('data-testid', 'persistence-notice');
+    const dialogButton = button();
+    const dialog = new ElementStub().append(dialogButton);
+    dialog.zIndex = '210';
+    dialog.box = { top: 72, left: 0, right: 320, bottom: 568, width: 320, height: 496 };
+    dialog.setAttribute('aria-modal', 'true');
+    documentStub.body.append(notice, dialog);
+    mountLock(dialog, { strictModal: true });
+
+    expect(notice.inert).toBe(true);
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    retry.focus();
+    expect(documentStub.activeElement).toBe(dialogButton);
+    expect(keyDown('Tab').defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(dialogButton);
+  });
+
   it('ダイアログがまだ無い場合はフォーカスもキー操作も変更しない', () => {
     const trigger = button();
     documentStub.body.append(trigger);

@@ -66,6 +66,11 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
       testMatch: /rest-overlay-modal/,
     },
+    {
+      name: 'webkit-how-to-play-modal',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /how-to-play-modal/,
+    },
   ],
   webServer: {
     command: `npm run ${process.env.PLAYWRIGHT_PREVIEW === '1' ? 'preview' : 'dev'} -- --host ${HOST} --port ${PORT} --strictPort`,

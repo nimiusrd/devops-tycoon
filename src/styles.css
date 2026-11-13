@@ -6319,8 +6319,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
-/* 別タブの競合は上へ重ねる。文は句点でのみ折り返し、書き出しと再読込は一段に置く。 */
-.persistence-notice[data-state='conflict'] {
+/* 別タブの競合と保存失敗は上へ重ねる。文は句点でのみ折り返し、操作は一段に置く。 */
+.persistence-notice[data-state='conflict'],
+.persistence-notice[data-state='failed'] {
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: stretch;
@@ -6334,7 +6335,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   min-width: 0;
 }
 .persistence-notice[data-state='conflict'] .persistence-notice-headline,
-.persistence-notice[data-state='conflict'] .persistence-notice-detail {
+.persistence-notice[data-state='conflict'] .persistence-notice-detail,
+.persistence-notice[data-state='failed'] .persistence-notice-headline,
+.persistence-notice[data-state='failed'] .persistence-notice-detail {
   flex: none;
   width: auto;
   font-size: 12px;
@@ -6343,7 +6346,8 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   overflow-wrap: normal;
   line-break: strict;
 }
-.persistence-notice[data-state='conflict'] .persistence-notice-headline {
+.persistence-notice[data-state='conflict'] .persistence-notice-headline,
+.persistence-notice[data-state='failed'] .persistence-notice-headline {
   font-size: 13px;
   font-weight: 800;
 }
@@ -6364,14 +6368,16 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   word-break: keep-all;
   line-height: 1.2;
 }
-.persistence-notice[data-state='conflict'] .persistence-notice-actions {
+.persistence-notice[data-state='conflict'] .persistence-notice-actions,
+.persistence-notice[data-state='failed'] .persistence-notice-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, max-content));
   justify-content: end;
   justify-items: end;
   width: auto;
 }
-.persistence-notice[data-state='conflict'] .persistence-notice-actions .btn {
+.persistence-notice[data-state='conflict'] .persistence-notice-actions .btn,
+.persistence-notice[data-state='failed'] .persistence-notice-actions .btn {
   flex: 0 1 auto;
   max-width: 320px;
   width: max-content;
@@ -6383,6 +6389,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 }
 :root[data-responsive-width='wide']
   .persistence-notice[data-state='conflict']
+  .persistence-notice-actions,
+:root[data-responsive-width='wide']
+  .persistence-notice[data-state='failed']
   .persistence-notice-actions {
   display: flex;
   flex-flow: row wrap;

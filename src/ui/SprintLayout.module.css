@@ -14,6 +14,10 @@
   padding: 0;
   padding-top: var(--persistence-banner-height, 0px);
 }
+/* 保存失敗・別タブ競合の overlay 案内は重ねるだけ。余白変数は他導線用。 */
+:root:has(:global(.persistence-notice)[data-layout='overlay']) :global(.app).appShell {
+  padding-top: 0;
+}
 
 .root {
   display: flex;

@@ -14,6 +14,7 @@ import type { CardExchangeOutcome, CardInstance, CardPlayOutcome } from '../sim/
 import { CardView } from './CardView';
 import { HandExchangeStatusAnnouncer } from './HandExchangeStatusAnnouncer';
 import { useReplayContent } from './replayContent';
+import { ScrollOverflowRow } from './ScrollOverflowRow';
 
 export interface DeckBarProps {
   deck: CardInstance[];
@@ -99,7 +100,7 @@ export function DeckBar({
           {hand.length === 0 ? (
             <span className="deckbar-empty">手札がありません</span>
           ) : (
-            <div className="deckbar-cards">
+            <ScrollOverflowRow className="deckbar-cards-scroll" scrollerClassName="deckbar-cards">
               {hand.map((deckIndex) => {
                 const inst = deck[deckIndex];
                 if (!inst) return null;
@@ -135,7 +136,7 @@ export function DeckBar({
                   />
                 );
               })}
-            </div>
+            </ScrollOverflowRow>
           )}
         </div>
         <div className="deckbar-actions">

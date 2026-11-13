@@ -229,6 +229,11 @@ export const VISUAL_TOKENS = {
     },
   },
   dimensions: {
+    /** 横スクロール列のぞき幅と端フェード（#981 / #1010）。 */
+    scrollOverflow: {
+      peekPx: 24,
+      fadeWidthPx: 24,
+    },
     pointPops: {
       bottomRatio: 0.18,
       reducedLineHeight: 28,
@@ -592,6 +597,8 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-layer-sprint-intervention-effects': String(layers.sprint.interventionEffects),
     '--visual-layer-sprint-intervention-particle': String(layers.sprint.interventionParticle),
     '--visual-layer-sprint-action-bar-armed': String(layers.sprint.actionBarArmed),
+    '--visual-scroll-overflow-peek': `${dimensions.scrollOverflow.peekPx}px`,
+    '--visual-scroll-overflow-fade-width': `${dimensions.scrollOverflow.fadeWidthPx}px`,
     '--visual-point-pop-bottom': `${dimensions.pointPops.bottomRatio * 100}%`,
     '--visual-point-pop-line-height': `${dimensions.pointPops.reducedLineHeight}px`,
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,

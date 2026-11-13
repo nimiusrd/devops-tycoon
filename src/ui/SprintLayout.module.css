@@ -167,6 +167,11 @@
   min-width: 0;
 }
 
+.root :global(.deckbar-hand) :global(.scroll-overflow-host) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .root :global(.deckbar-cards) {
   flex: 1;
   min-width: 0;

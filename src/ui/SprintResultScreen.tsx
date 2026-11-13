@@ -217,38 +217,6 @@ export function SprintResultScreen({
                 </ul>
               </div>
             )}
-            <div className="result-actions overlay-actions">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={onContinue}
-                disabled={continueDisabled}
-                title={continueDisabledReason}
-                data-testid="result-continue"
-              >
-                {continueLabel}
-              </button>
-              {onAbandon && (
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={onAbandon}
-                  data-testid="result-restart"
-                  title={
-                    replayMode
-                      ? undefined
-                      : '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません'
-                  }
-                >
-                  {resolvedAbandonLabel}
-                </button>
-              )}
-            </div>
-            {continueDisabled && continueDisabledReason ? (
-              <p className="result-continue-hint" data-testid="result-continue-hint">
-                {continueDisabledReason}
-              </p>
-            ) : null}
             {burnLog.showSection && (
               <div className="result-burn-cause" data-testid="result-burn-cause">
                 <p className="result-section-label">なぜ燃えたか</p>
@@ -338,6 +306,40 @@ export function SprintResultScreen({
             <SprintTimelineChart timeline={result.timeline} events={result.events} />
             <BaselineComparisonChart result={result} />
           </details>
+        </div>
+        <div className="sprint-result-footer overlay-actions">
+          <div className="result-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onContinue}
+              disabled={continueDisabled}
+              title={continueDisabledReason}
+              data-testid="result-continue"
+            >
+              {continueLabel}
+            </button>
+            {onAbandon && (
+              <button
+                type="button"
+                className="btn"
+                onClick={onAbandon}
+                data-testid="result-restart"
+                title={
+                  replayMode
+                    ? undefined
+                    : '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません'
+                }
+              >
+                {resolvedAbandonLabel}
+              </button>
+            )}
+          </div>
+          {continueDisabled && continueDisabledReason ? (
+            <p className="result-continue-hint" data-testid="result-continue-hint">
+              {continueDisabledReason}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

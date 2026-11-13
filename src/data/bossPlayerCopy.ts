@@ -11,7 +11,7 @@ import {
   SENIOR_HP_LOSE_MAX,
   TECH_DEBT_CAP,
 } from '../sim/outcome';
-import type { DifficultyId } from '../sim/types';
+import type { DifficultyId } from '../sim/run/types';
 
 const BOSS_FLAVOR: Record<string, string> = {
   'big-release': 'タスク量が多い大型リリースの山場。',

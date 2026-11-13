@@ -4,7 +4,7 @@
  */
 import { planBossPlayerDescription } from './bossPlayerCopy';
 import { BOSS_TEMPLATES, type BossDef } from './bosses';
-import type { DifficultyId } from '../sim/types';
+import type { DifficultyId } from '../sim/run/types';
 
 const BY_ID = new Map(BOSS_TEMPLATES.map((boss) => [boss.id, boss]));
 

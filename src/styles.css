@@ -1848,6 +1848,32 @@ body:has(.overlay-contained) {
   line-height: 1.5;
   color: var(--text-dim);
 }
+.result-context-line {
+  margin: 0 0 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+}
+.result-context-line.tone-watch {
+  border-color: var(--visual-color-banner-warn-border);
+  background: var(--visual-color-banner-warn-bg);
+  color: var(--visual-color-banner-warn-text);
+}
+.result-context-line.tone-danger {
+  border-color: var(--visual-color-banner-hell-border);
+  background: var(--visual-color-banner-hell-bg);
+  color: var(--visual-color-banner-hell-text);
+}
+.result-context-badge {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  background: var(--visual-color-banner-hell-tag-bg);
+  color: var(--visual-color-banner-hell-tag-text);
+}
 .result-baseline-caption {
   margin: 0.15rem 0 0.55rem;
   color: var(--text-dim);

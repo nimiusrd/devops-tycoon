@@ -23,6 +23,9 @@ import type { DifficultyId, QuarterOutcome } from './types';
 
 export const E2E_MISSED_ADJUSTABLE_SEED = 'ri134-ma2-52';
 
+/** Easy Q1 スプリント5で四半期 KPI 未達が危険行に出る seed（#1014）。 */
+export const E2E_QUARTER_GOAL_DANGER_SEED = 'qa-seed-1031c';
+
 /**
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。

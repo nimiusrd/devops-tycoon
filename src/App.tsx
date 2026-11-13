@@ -803,16 +803,26 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const sprintResultContextLine = useMemo(() => {
     if (phase !== 'result' || !state.lastResult) return { show: false as const };
     return planSprintResultContextLine({
+      quarterNumber: state.quarterNumber,
       sprintIndexInQuarter: state.sprintIndexInQuarter,
       sprintsPerQuarter: state.sprintsPerQuarter,
+      quarterGoal: state.quarterGoal,
+      quarterTotals: state.quarterTotals,
+      org: state.org,
+      teams: state.teams,
       runReviewQueuePeak: state.totals.reviewQueuePeak ?? 0,
       sprintReviewQueueMax: state.lastResult.reviewQueueMax,
     });
   }, [
     phase,
     state.lastResult,
+    state.quarterNumber,
     state.sprintIndexInQuarter,
     state.sprintsPerQuarter,
+    state.quarterGoal,
+    state.quarterTotals,
+    state.org,
+    state.teams,
     state.totals.reviewQueuePeak,
   ]);
   const replayResultContinueMissing =

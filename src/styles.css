@@ -3683,6 +3683,12 @@ body[data-tutorial-step='combo-gauge']
     transparent 100%
   );
 }
+@media (prefers-reduced-motion: reduce) {
+  .scroll-overflow-host::before,
+  .scroll-overflow-host::after {
+    transition: none;
+  }
+}
 @media (min-width: 361px) and (max-width: 900px) {
   .scroll-overflow-host[data-scroll-overflow='x']::before,
   .scroll-overflow-host[data-scroll-overflow='x']::after {

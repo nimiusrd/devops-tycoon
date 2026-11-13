@@ -517,6 +517,7 @@ export function SprintScreen({
             >
               {reviewHellAnnouncement}
             </p>
+            <SplitPrConfirmAnnouncer cue={liveSplitConfirm} />
             <span className={`pill node-tag node-${kind}`} data-testid="sprint-kind">
               {isBoss ? (
                 `★ ボス: ${boss?.name ?? ''}`
@@ -613,7 +614,6 @@ export function SprintScreen({
             data-testid="board-stage"
           >
             <PointPops deliveryScore={state.org.deliveryScore} teamId={state.activeTeamId} />
-            <SplitPrConfirmAnnouncer cue={liveSplitConfirm} />
             <Board
               tasks={sprint.tasks}
               metrics={sprint.metrics}

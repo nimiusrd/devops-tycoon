@@ -61,6 +61,9 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(page.getByTestId('action-target-picker')).toHaveCount(0);
 
     const announce = formatSplitPrConfirmAnnouncement(taskId);
+    await expect
+      .poll(() => page.getByTestId('board').getAttribute('data-split-confirm-task-id'))
+      .toBe(String(taskId));
     await expect(page.getByTestId('split-pr-confirm-announce')).toHaveText(announce, {
       timeout: 3_000,
     });

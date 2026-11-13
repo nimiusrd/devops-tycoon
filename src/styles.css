@@ -237,7 +237,9 @@ body {
   line-break: strict;
 }
 .hud-compact-chip-value {
-  /* 桁の増減で幅を変えない。文字数は compactValueSlot（#975 / #986）。 */
+  /* 桁の増減で幅を変えない。文字数は compactValueSlot（#975 / #986 / #953）。 */
+  flex-shrink: 0;
+  box-sizing: content-box;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   white-space: nowrap;

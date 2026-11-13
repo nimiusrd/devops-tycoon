@@ -38,6 +38,7 @@ export interface DeptScreenProps {
   onFocusTeam: (id: string) => void;
   onEnterTeam: (id: string) => void;
   onApplyLever: (leverId: string, deptId?: string, teamId?: string) => void;
+  spendConfirmEnabled?: boolean;
 }
 
 export function DeptScreen({
@@ -51,6 +52,7 @@ export function DeptScreen({
   onFocusTeam,
   onEnterTeam,
   onApplyLever,
+  spendConfirmEnabled = true,
 }: DeptScreenProps) {
   const { usePixi, onWebglError } = usePixiRenderer();
   // 部署内に無い古い選択 ID は無視し、未選択時はアクティブチームへフォールバックする。
@@ -180,6 +182,7 @@ export function DeptScreen({
             leverAriaLabel={(lever) =>
               `${selected.name}へ「${lever.name}」を適用。コスト ${lever.cost}`
             }
+            spendConfirmEnabled={spendConfirmEnabled}
           />
         </div>
       )}
@@ -194,6 +197,7 @@ export function DeptScreen({
         leverAriaLabel={(lever) =>
           `${dept.def.name}へ「${lever.name}」を適用。コスト ${lever.cost}`
         }
+        spendConfirmEnabled={spendConfirmEnabled}
       />
     </div>
   );

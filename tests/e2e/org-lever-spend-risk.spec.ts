@@ -56,7 +56,16 @@ for (const viewport of VIEWPORTS) {
 
     const confirm = page.getByTestId('spend-confirm');
     await expect(confirm).toBeVisible();
+    await expect(page.getByTestId('org-lever-spend-dialog')).toHaveCSS('z-index', '40');
     await expect(page.getByTestId('spend-confirm-cancel')).toBeFocused();
+    const topControl = await page.evaluate((id) => {
+      const target = document.querySelector(`[data-testid="${id}"]`);
+      if (!(target instanceof HTMLElement)) return null;
+      const rect = target.getBoundingClientRect();
+      const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return top?.closest('[data-testid]')?.getAttribute('data-testid') ?? null;
+    }, 'spend-confirm-cancel');
+    expect(topControl).toBe('spend-confirm-cancel');
     await expect
       .poll(() => page.locator('.app').evaluate((element) => (element as HTMLElement).inert))
       .toBe(true);

@@ -39,6 +39,7 @@ export interface OrgScreenProps {
   onFocusDept: (id: string) => void;
   onFocusTeam: (id: string) => void;
   onApplyLever: (leverId: string) => void;
+  spendConfirmEnabled?: boolean;
 }
 
 export function OrgScreen({
@@ -49,6 +50,7 @@ export function OrgScreen({
   onFocusDept,
   onFocusTeam,
   onApplyLever,
+  spendConfirmEnabled = true,
 }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
   const { usePixi, onWebglError } = usePixiRenderer();
@@ -185,6 +187,7 @@ export function OrgScreen({
         regionLabel="全社レバー"
         title="全社レバー"
         onApply={onApplyLever}
+        spendConfirmEnabled={spendConfirmEnabled}
       />
     </div>
   );

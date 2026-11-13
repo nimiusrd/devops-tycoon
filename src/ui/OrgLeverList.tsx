@@ -27,6 +27,8 @@ export interface OrgLeverListProps {
   title: string;
   onApply: (leverId: string) => void;
   leverAriaLabel?: (lever: LeverDef) => string;
+  /** タブ競合モーダルなど、別ダイアログが背面ロックを担う間は確認を出さない。 */
+  spendConfirmEnabled?: boolean;
 }
 
 function OrgLeverSpendGate({
@@ -94,8 +96,20 @@ export function OrgLeverList({
   title,
   onApply,
   leverAriaLabel,
+  spendConfirmEnabled = true,
 }: OrgLeverListProps) {
-  const [pending, setPending] = useState<PendingLeverSpend | null>(null);
+  const confirmGateKey = spendConfirmEnabled ? 'enabled' : 'blocked';
+  const [confirmState, setConfirmState] = useState({
+    gateKey: confirmGateKey,
+    pending: null as PendingLeverSpend | null,
+  });
+  if (confirmState.gateKey !== confirmGateKey) {
+    setConfirmState({ gateKey: confirmGateKey, pending: null });
+  }
+  const pending = confirmState.pending;
+  const setPending = (value: PendingLeverSpend | null) => {
+    setConfirmState({ gateKey: confirmGateKey, pending: value });
+  };
   const dismissConfirm = () => {
     if (!pending) return;
     const returnTestId = pending.returnTestId;
@@ -107,6 +121,7 @@ export function OrgLeverList({
     if (risk.blocked !== null) return;
     const returnTestId = `lever-${lever.id}`;
     if (risk.requiresConfirm) {
+      if (!spendConfirmEnabled) return;
       setPending({ lever, risk, returnTestId });
       return;
     }

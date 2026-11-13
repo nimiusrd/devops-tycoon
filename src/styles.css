@@ -7934,6 +7934,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--sun);
   font-size: 12px;
 }
+.org-lever-spend-overlay {
+  z-index: 40;
+}
 
 /* 部署ビュー */
 .dept-field {

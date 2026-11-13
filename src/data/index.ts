@@ -13,7 +13,8 @@ export type { AchievementDef } from './achievements';
 export { RELIC_DEFS, getRelic } from './relics';
 export { EVENT_DEFS, getEvent, effectiveKind } from './events';
 export type { EventDef, EventChoice, EventOutcome } from './events';
-export { BOSS_DEFS, getBoss } from './bosses';
+export { BOSS_DEFS } from './bosses';
+export { getBoss, getBossPlayerDescription } from './bossDisplay';
 export { FALLBACK_OKR_TEMPLATE_ID, getOkrTemplateByBossId, OKR_TEMPLATES } from './okrTemplates';
 export { EVOLUTION_NODES, getEvolutionNode, BRANCH_LABEL } from './evolution';
 export {

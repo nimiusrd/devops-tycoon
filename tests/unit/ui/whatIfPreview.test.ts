@@ -62,7 +62,7 @@ describe('次スプリント予測', () => {
     ['seniorBurnout', 'シニア燃え尽き'],
     ['techDebt', '技術的負債の崩壊'],
     ['moraleCollapse', 'チーム崩壊'],
-    ['reviewFreeze', 'PR 凍結'],
+    ['reviewFreeze', 'レビュー凍結'],
     ['incidentCascade', '障害連鎖'],
     ['aiDependency', 'AI 依存の限界'],
     ['budgetExhausted', '予算枯渇'],

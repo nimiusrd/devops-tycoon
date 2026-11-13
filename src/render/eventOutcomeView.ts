@@ -66,6 +66,7 @@ import {
 import type { CardEffects, CardDef } from '../sim/types';
 import type { LeverDef, OrgAdjust } from '../sim/orgscale/types';
 import type { LoseReason, RunPassives, SprintModifierDelta } from '../sim/run/types';
+import { REVIEW_FREEZE_LOSE_EVENT_PHRASE } from './reviewFreezeCopy';
 import { scaleEffects } from '../sim/cards';
 
 export type EffectTagTone = 'positive' | 'negative' | 'neutral';
@@ -116,7 +117,7 @@ const LOSE_LABELS: Record<LoseReason, string> = {
   seniorBurnout: 'シニア燃え尽きでラン終了',
   techDebt: 'Tech Debt 限界でラン終了',
   moraleCollapse: '士気崩壊でラン終了',
-  reviewFreeze: 'レビュー停止でラン終了',
+  reviewFreeze: REVIEW_FREEZE_LOSE_EVENT_PHRASE,
   incidentCascade: '障害連鎖でリリース停止',
   aiDependency: 'AI 依存過多でラン終了',
   budgetExhausted: '予算枯渇でラン終了',

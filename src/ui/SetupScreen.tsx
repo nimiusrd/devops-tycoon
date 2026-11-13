@@ -7,7 +7,8 @@
  * 今四半期の OKR はコンパクト表示する（RI-129）。詳細な目標値は四半期レビューが正。
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
-import { getBoss } from '../data/bosses';
+import { getBoss, getBossPlayerDescription } from '../data/bossDisplay';
+import { planReviewFreezeRiskLine } from '../render/reviewFreezeCopy';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { setupObservation } from '../render/companyGuidanceView';
 import { runBarSprintView } from '../render/runBarView';
@@ -171,6 +172,18 @@ export function SetupScreen({
   // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
   const bossPending = state.pendingSprintKind === 'boss' || nextIndex >= total;
   const elitePending = !bossPending && state.pendingSprintKind === 'elite';
+  const bossDescription =
+    getBossPlayerDescription(state.bossId, state.difficulty) ?? boss?.description ?? '';
+  const preBossFreeze = bossPending
+    ? planReviewFreezeRiskLine(state.totals.reviewQueuePeak ?? 0)
+    : { show: false as const };
+  const formationHint = bossPending
+    ? preBossFreeze.show
+      ? preBossFreeze.text
+      : '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。'
+    : elitePending
+      ? '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。'
+      : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。';
   const orgLeverHint = resolveOrgLeverHint({
     epoch: runEpoch,
     quarterNumber: state.quarterNumber,
@@ -211,7 +224,7 @@ export function SetupScreen({
           <span className="visually-hidden">ボス: </span>
           {boss?.name ?? 'ボス'}
         </b>
-        <span className="boss-desc">{boss?.description}</span>
+        <span className="boss-desc">{bossDescription}</span>
       </div>
       <QuarterOkr variant="setup" bossId={state.bossId} goal={state.quarterGoal} />
       <div className="formation-panel">
@@ -224,13 +237,7 @@ export function SetupScreen({
             <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
             <LeaveReturnNotices
               key={`${runEpoch}:${state.activeTeamId}`}
-              hint={
-                bossPending
-                  ? '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。'
-                  : elitePending
-                    ? '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。'
-                    : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'
-              }
+              hint={formationHint}
               notices={state.leaveReturns ?? []}
               runEpoch={runEpoch}
               teamId={state.activeTeamId}

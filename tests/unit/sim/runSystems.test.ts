@@ -13,7 +13,7 @@ import {
   evaluateWinType,
   TECH_DEBT_CAP,
 } from '../../../src/sim/outcome';
-import { getBoss } from '../../../src/data/bosses';
+import { getBoss } from '../../../src/data/bossDisplay';
 import type { EvolutionState } from '../../../src/sim/run/types';
 import type { SprintResult } from '../../../src/sim/types';
 import { org, totals } from '../helpers/orgFixtures';

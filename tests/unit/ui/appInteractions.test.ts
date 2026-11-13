@@ -82,6 +82,14 @@ vi.mock('react', async (importOriginal) => ({
     }
     return frame.slots[index].value;
   },
+  useMemo(factory: () => unknown, dependencies: readonly unknown[]) {
+    const frame = harness.current;
+    const index = frame.cursor++;
+    if (!harness.sameDependencies(frame.slots[index]?.dependencies, dependencies)) {
+      frame.slots[index] = { value: factory(), dependencies };
+    }
+    return frame.slots[index].value;
+  },
   useEffect: harness.effect,
   useLayoutEffect: harness.effect,
 }));

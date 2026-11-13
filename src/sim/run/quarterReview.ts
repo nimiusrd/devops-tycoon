@@ -4,7 +4,8 @@
  * ボス突破可否・KPI 達成度・信頼・継続リソースから outcome を決定論で算出し、
  * 目標修正の効果・代償を純関数で適用する。
  */
-import { getBoss, type BossDef } from '../../data/bosses';
+import type { BossDef } from '../../data/bosses';
+import { getBoss } from '../../data/bossDisplay';
 import { OUTCOME_BALANCE } from '../../data/balance';
 import {
   allGoalAdjustmentIds,

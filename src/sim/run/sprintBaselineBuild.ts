@@ -3,7 +3,7 @@
  *
  * RunEngine インスタンスに依存しない純関数なので、Web Worker からも呼べる。
  */
-import { getBoss } from '../../data/bosses';
+import { getBoss } from '../../data/bossDisplay';
 import { PACING_BALANCE } from '../../data/balance/pacing';
 import { RUN_BALANCE } from '../../data/balance/run';
 import { combineEffects, deckEffects } from '../cards';

@@ -84,11 +84,11 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     expect(reviewFreezeHudCopy(0).warningChip).toBeUndefined();
     expect(reviewFreezeHudCopy(REVIEW_FREEZE_WATCH_PEAK)).toMatchObject({
       tone: 'watch',
-      warningChip: '凍結注意',
+      warningChip: 'レビュー凍結注意',
     });
     expect(reviewFreezeHudCopy(REVIEW_FREEZE_DANGER_PEAK)).toMatchObject({
       tone: 'danger',
-      warningChip: 'PR凍結危険',
+      warningChip: 'レビュー凍結危険',
     });
   });
 
@@ -97,7 +97,7 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     org.seniorHp = 80;
     const metrics = deriveHudMetrics(org, [], null, REVIEW_FREEZE_WATCH_PEAK);
     expect(metrics.find((m) => m.id === 'reviewCapacity')).toMatchObject({
-      warningChip: '凍結注意',
+      warningChip: 'レビュー凍結注意',
       tone: 'watch',
     });
   });
@@ -112,7 +112,7 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
       deriveHudMetrics(org, [], null, REVIEW_FREEZE_WATCH_PEAK).find(
         (m) => m.id === 'reviewCapacity',
       ),
-    ).toMatchObject({ warningChip: '凍結注意', tone: 'watch' });
+    ).toMatchObject({ warningChip: 'レビュー凍結注意', tone: 'watch' });
   });
 
   it('reviewFreezeWarningPeak は非選択チームの現在キューも畳み込む', () => {

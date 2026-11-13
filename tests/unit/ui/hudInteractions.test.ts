@@ -219,7 +219,7 @@ describe('Hud の表示と展開操作', () => {
     expect(screen.find('hud-fire-risk-value').props.className).toContain('fire-risk-HIGH');
     expect(screen.find('hud-seniorHp').props['data-tone']).toBe('danger');
     expect(content(screen.find('senior-burnout-warning'))).toContain('燃え尽き');
-    expect(content(screen.find('review-freeze-warning'))).toBe('PR凍結危険');
+    expect(content(screen.find('review-freeze-warning'))).toBe('レビュー凍結危険');
     expect(screen.has('security-warning')).toBe(true);
     expect(screen.has('morale-warning')).toBe(true);
     expect(

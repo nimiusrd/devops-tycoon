@@ -448,11 +448,11 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     expect(reviewFreezeHudCopy(0).warningChip).toBeUndefined();
     expect(reviewFreezeHudCopy(REVIEW_FREEZE_WATCH_PEAK)).toMatchObject({
       tone: 'watch',
-      warningChip: '凍結注意',
+      warningChip: 'レビュー凍結注意',
     });
     expect(reviewFreezeHudCopy(REVIEW_FREEZE_DANGER_PEAK)).toMatchObject({
       tone: 'danger',
-      warningChip: 'PR凍結危険',
+      warningChip: 'レビュー凍結危険',
     });
     // 低HPだけでは凍結チップを出さない（燃え尽き側の警告に任せる）。
     expect(
@@ -466,7 +466,23 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       REVIEW_FREEZE_WATCH_PEAK,
     );
     expect(metrics.find((m) => m.id === 'reviewCapacity')).toMatchObject({
-      warningChip: '凍結注意',
+      warningChip: 'レビュー凍結注意',
+    });
+  });
+
+  it('ライブキューが警告域なら残り件数を HUD に出す（#1011）', () => {
+    const org = withOrg({ seniorHp: 80 }).org;
+    const base = withOrg({}).sprint.tasks[0]!;
+    const tasks = Array.from({ length: 36 }, (_, i) => ({
+      ...base,
+      id: i,
+      lane: 'review' as const,
+      incident: false,
+    }));
+    expect(
+      deriveHudMetrics(org, tasks, null, 0).find((m) => m.id === 'reviewCapacity'),
+    ).toMatchObject({
+      detail: 'あと 12 件でレビュー凍結',
     });
   });
 });

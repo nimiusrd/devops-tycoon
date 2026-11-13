@@ -1,11 +1,12 @@
 import type { LoseReason } from '../sim/run/types';
+import { REVIEW_FREEZE_LOSE_NAME } from './reviewFreezeCopy';
 
 export const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
   seniorBurnout: { label: 'シニア燃え尽き', desc: 'レビューがシニアに集中し、体力が尽きました。' },
   techDebt: { label: '技術的負債の崩壊', desc: '負債が上限を超え、開発が立ち行かなくなりました。' },
   moraleCollapse: { label: 'チーム崩壊', desc: '士気が尽き、チームが機能しなくなりました。' },
   reviewFreeze: {
-    label: 'PR 凍結',
+    label: REVIEW_FREEZE_LOSE_NAME,
     desc: 'レビュー待ち行列が限界に達し、出荷ラインが止まりました。',
   },
   incidentCascade: {

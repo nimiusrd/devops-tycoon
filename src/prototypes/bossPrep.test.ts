@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getBoss } from '../data/bosses';
+import { getBoss } from '../data/bossDisplay';
 import {
   applyBossPrep as apply,
   chooseBossPrepAction,

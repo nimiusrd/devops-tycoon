@@ -1,9 +1,28 @@
-import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { Children, createElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { DeckBar, type DeckBarProps } from '../../../src/ui/DeckBar';
 
+const { scrollOverflowRowStub } = vi.hoisted(() => ({
+  scrollOverflowRowStub: ({
+    children,
+    scrollerClassName,
+  }: {
+    children: ReactNode;
+    scrollerClassName?: string;
+  }) =>
+    createElement(
+      'div',
+      { className: 'scroll-overflow-host' },
+      createElement('div', { className: scrollerClassName }, children),
+    ),
+}));
+
 vi.mock('../../../src/ui/HandExchangeStatusAnnouncer', () => ({
   HandExchangeStatusAnnouncer: () => null,
+}));
+
+vi.mock('../../../src/ui/ScrollOverflowRow', () => ({
+  ScrollOverflowRow: scrollOverflowRowStub,
 }));
 
 // リプレイ Context のみ代行し、カード定義・発動コスト・CardView は実装を通す。

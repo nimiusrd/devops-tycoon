@@ -6484,6 +6484,15 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 
 /* ===== Phase 8: 四半期レビュー ===== */
 
+.quarter-review-load-card {
+  max-width: 420px;
+  margin-inline: auto;
+  text-align: center;
+}
+.quarter-review-load-card .result-actions {
+  justify-content: center;
+}
+
 .quarter-review-card {
   max-width: 640px;
 }

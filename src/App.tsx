@@ -76,6 +76,8 @@ import {
 } from './ui/downloadTextFile';
 import { PersistenceNotice, PersistenceQuietChip } from './ui/PersistenceNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
+import { QuarterReviewLazyMount } from './ui/QuarterReviewLazyMount';
+import { prefetchQuarterReviewScreen } from './ui/quarterReviewChunk';
 
 const AchievementCollectionScreen = lazy(() =>
   import('./ui/AchievementCollectionScreen').then((m) => ({
@@ -112,9 +114,6 @@ const ReplayListScreen = lazy(() =>
   import('./ui/ReplayListScreen').then((m) => ({ default: m.ReplayListScreen })),
 );
 const OrgScreen = lazy(() => import('./ui/OrgScreen').then((m) => ({ default: m.OrgScreen })));
-const QuarterReviewScreen = lazy(() =>
-  import('./ui/QuarterReviewScreen').then((m) => ({ default: m.QuarterReviewScreen })),
-);
 const RecruitScreen = lazy(() =>
   import('./ui/RecruitScreen').then((m) => ({ default: m.RecruitScreen })),
 );
@@ -787,6 +786,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   // 四半期末はレビュー集計済みで結果を出す。次の操作はそのレビューであり、ドラフトではない。
   const resultContinuesToQuarterReview = state.quarterReview !== null;
   const resultReplayPhase = resultContinuesToQuarterReview ? 'quarterReview' : 'draft';
+  useEffect(() => {
+    if (phase !== 'result' || !resultContinuesToQuarterReview) return;
+    prefetchQuarterReviewScreen();
+  }, [phase, resultContinuesToQuarterReview]);
   const sprintResultContextLine = useMemo(() => {
     if (phase !== 'result' || !state.lastResult) return { show: false as const };
     return planSprintResultContextLine({
@@ -864,23 +867,6 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       </>
     );
   }
-  if (phase === 'quarterReview') {
-    phaseBody = (
-      <>
-        {replayBanner}
-        <Suspense fallback={null}>
-          <SceneScrollReset>
-            <QuarterReviewScreen
-              state={state}
-              onAcknowledge={run.acknowledgeQuarterReview}
-              onChooseAdjustment={run.chooseGoalAdjustment}
-            />
-          </SceneScrollReset>
-        </Suspense>
-      </>
-    );
-  }
-
   const tasks = state.sprint?.tasks ?? [];
   const showSprint =
     state.sprint !== null &&
@@ -934,6 +920,31 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       />
     </>
   );
+
+  if (phase === 'quarterReview') {
+    phaseBody = (
+      <div
+        className={`app app-sprint-layout ${sprintLayoutStyles.appShell} ${diagnosisTone}`}
+        data-phase={phase}
+        data-diagnosis={state.diagnosis}
+        data-responsive-width={responsiveMode.width}
+        data-responsive-height={responsiveMode.height}
+      >
+        <div className="app-background">
+          {replayBanner}
+          {sprintHeader}
+          <SceneScrollReset>
+            <QuarterReviewLazyMount
+              state={state}
+              onAcknowledge={run.acknowledgeQuarterReview}
+              onChooseAdjustment={run.chooseGoalAdjustment}
+              runEpoch={run.runEpoch}
+            />
+          </SceneScrollReset>
+        </div>
+      </div>
+    );
+  }
 
   if (phase !== 'title' && phase !== 'won' && phase !== 'lost' && phase !== 'quarterReview') {
     phaseBody = (

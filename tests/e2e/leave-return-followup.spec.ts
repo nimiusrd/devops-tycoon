@@ -97,6 +97,10 @@ test('320×568 で警告と復帰があるとき開始ボタンが画面内に�
   expect(viewport).not.toBeNull();
   expect(box!.y).toBeGreaterThanOrEqual(-0.5);
   expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 0.5);
+  expect(box!.x).toBeGreaterThanOrEqual(-0.5);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 0.5);
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(viewport!.width + 1);
 });
 
 test('復帰が無いとき開始ボタンは復帰余白導入前と 0.5px 以内で一致する（#1031）', async ({

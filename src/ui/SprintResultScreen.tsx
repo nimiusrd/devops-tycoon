@@ -125,12 +125,22 @@ export function SprintResultScreen({
             <p className="result-eyebrow">スプリント結果</p>
             {contextLine.show ? (
               <p
-                className="result-analysis-tip"
+                className={`result-analysis-tip result-context-line${
+                  contextLine.tone === 'neutral' ? '' : ` tone-${contextLine.tone}`
+                }`}
                 data-testid="sprint-result-context-line"
-                data-tone={contextLine.tone}
+                data-tone={contextLine.tone === 'neutral' ? undefined : contextLine.tone}
+                data-kind={contextLine.kind}
                 role="status"
               >
-                {contextLine.text}
+                {contextLine.tone === 'danger' ? (
+                  <>
+                    <span className="result-context-badge">危険</span>
+                    <span>{contextLine.text}</span>
+                  </>
+                ) : (
+                  contextLine.text
+                )}
               </p>
             ) : null}
             {hellSummary.show ? (
@@ -312,7 +322,7 @@ export function SprintResultScreen({
               ))}
             </dl>
             <div className="result-grade-breakdown" data-testid="result-grade-breakdown">
-              <p className="result-section-label">評価の内訳</p>
+              <p className="result-section-label">スプリント評価</p>
               <dl className="result-rows result-analysis-rows">
                 {gradeView.rows.map((row) => (
                   <div className="result-row" key={row.label}>

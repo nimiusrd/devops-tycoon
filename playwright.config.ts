@@ -57,6 +57,11 @@ export default defineConfig({
       testMatch: /org-lever-hint/,
     },
     {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /sprint-result-quarter-goal/,
+    },
+    {
       name: 'webkit-rest-overlay-modal',
       use: { ...devices['Desktop Safari'] },
       testMatch: /rest-overlay-modal/,

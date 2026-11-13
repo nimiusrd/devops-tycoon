@@ -13,6 +13,7 @@ import {
   advanceCurrentResultToDraft,
   beginCurrentSetupSprint,
   beginPublicSprint,
+  expandSprintInterventionsIfCollapsed,
   openSprintResultDetails,
   type PublicGameWindow,
 } from './fixtures';
@@ -232,6 +233,21 @@ async function assertLayoutContract(
   viewport: (typeof VIEWPORTS)[number],
   options: LayoutContractOptions = {},
 ) {
+  if (
+    options.glanceCopy &&
+    viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth &&
+    viewport.height <= RESPONSIVE_BREAKPOINTS.shortMaxHeight
+  ) {
+    const expand = page.getByTestId('sprint-bottom-rail-expand-interventions');
+    if (await expand.isVisible()) {
+      await expand.click();
+      await expect(page.getByTestId('sprint-layout')).toHaveAttribute(
+        'data-sprint-bottom-rail',
+        'controls',
+      );
+    }
+  }
+
   const subbar = page.getByTestId('sprint-subbar');
   const board = page.getByTestId('board');
   const deck = page.getByTestId('deck');
@@ -1490,6 +1506,7 @@ async function injectSpreadTickerEvents(page: Page): Promise<void> {
 
 /** 1行サマリーから履歴リストを開く（#471）。 */
 async function expandEventTicker(page: Page): Promise<void> {
+  await expandSprintInterventionsIfCollapsed(page);
   const heading = page.getByTestId('event-ticker-heading');
   const ticker = page.getByTestId('event-ticker');
   const list = page.getByTestId('event-ticker-list');
@@ -2205,6 +2222,7 @@ test.describe('延焼文言の DOM レイアウト', () => {
   test('スプリント中の全社画面では背面ティッカーがホイールを奪わない', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await beginPublicSprint(page, { seed: 'spread-copy-ticker-zoom-0' });
+    await expandSprintInterventionsIfCollapsed(page);
     await injectSpreadTickerEvents(page);
     await expect(page.getByTestId('event-ticker')).toBeVisible();
 
@@ -2574,6 +2592,7 @@ test.describe('狭幅オーバーレイと盤面ヒット（#529）', () => {
     const guideBox = await guide.boundingBox();
     if (!guideBox) throw new Error('初回ガイドの box が無い');
     expect(guideBox.y).toBeGreaterThanOrEqual(72);
+    await expandSprintInterventionsIfCollapsed(page);
     const actionBar = page.getByTestId('action-bar');
     await actionBar.scrollIntoViewIfNeeded();
     await assertCenterNotCoveredByOverlay(page, 'action-firefight');

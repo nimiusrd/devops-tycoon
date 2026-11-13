@@ -10,6 +10,8 @@ export const RESPONSIVE_BREAKPOINTS = {
    */
   stackMaxWidth: 560,
   shortMaxHeight: 720,
+  /** #904 の下端入れ替えを有効にする幅上限（320×568 系）。 */
+  actionDeckLayoutMaxWidth: 360,
 } as const;
 
 export type ResponsiveWidthMode = 'wide' | 'narrow';

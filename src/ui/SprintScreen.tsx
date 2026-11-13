@@ -60,7 +60,7 @@ import {
   type PlaybackSpeed,
   type PlayingSpeed,
 } from './sprintTempo';
-import { useResponsiveMode } from './responsiveMode';
+import { RESPONSIVE_BREAKPOINTS, useResponsiveMode } from './responsiveMode';
 import { TutorialGuide } from './TutorialGuide';
 import { VisualIcon } from './VisualIcon';
 import { healthTag } from '../render/teamHealthTheme';
@@ -134,6 +134,14 @@ export function SprintScreen({
   onEventTickerExpandedChange,
 }: SprintScreenProps) {
   const responsiveMode = useResponsiveMode();
+  const [layoutViewportWidth, setLayoutViewportWidth] = useState(() =>
+    typeof window === 'undefined' ? 1440 : window.innerWidth,
+  );
+  useEffect(() => {
+    const onResize = () => setLayoutViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
   const [suppressExtinguishTaskIds, setSuppressExtinguishTaskIds] = useState<ReadonlySet<number>>(
@@ -201,6 +209,27 @@ export function SprintScreen({
       if (id !== 'assignTask') setAssignAssignee(undefined);
     },
     [state.currentSprintId],
+  );
+
+  const narrowShort =
+    responsiveMode.width === 'narrow' &&
+    responsiveMode.height === 'short' &&
+    layoutViewportWidth <= RESPONSIVE_BREAKPOINTS.actionDeckLayoutMaxWidth;
+  const [bottomRailPreference, setBottomRailPreference] = useState<'deck' | 'controls'>('deck');
+  const bottomRail = narrowShort
+    ? armedId
+      ? bottomRailPreference === 'controls'
+        ? 'controls'
+        : undefined
+      : bottomRailPreference
+    : undefined;
+
+  const handleBottomRailChange = useCallback(
+    (rail: 'deck' | 'controls') => {
+      setBottomRailPreference(rail);
+      if (rail === 'deck' && armedId) setArmedId(null);
+    },
+    [armedId, setArmedId],
   );
 
   useEffect(
@@ -499,6 +528,7 @@ export function SprintScreen({
 
   return (
     <SprintLayout
+      bottomRail={bottomRail}
       header={header}
       status={
         <>
@@ -643,6 +673,8 @@ export function SprintScreen({
       }
       deck={
         <DeckBar
+          sprintBottomRail={narrowShort ? bottomRail : null}
+          onSprintBottomRailChange={narrowShort ? handleBottomRailChange : undefined}
           deck={state.deck}
           hand={sprint.cardPiles.hand}
           focus={sprint.focus}
@@ -662,6 +694,8 @@ export function SprintScreen({
       }
       controls={
         <ActionBar
+          sprintBottomRail={narrowShort ? bottomRail : null}
+          onSprintBottomRailChange={narrowShort ? handleBottomRailChange : undefined}
           sprint={sprint}
           org={state.org}
           sprintTick={state.sprintTick}

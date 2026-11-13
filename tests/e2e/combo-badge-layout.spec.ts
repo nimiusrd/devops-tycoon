@@ -159,13 +159,15 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
       await page.evaluate(() => document.fonts.ready);
 
       const initial = await readLayout(page);
+      const restingStatusPx = viewport.width === 320 ? 80.39 : RESTING_STATUS_PX;
+      const restingStatusMax = viewport.width === 320 ? 96 : RESTING_STATUS_MAX_PX;
       expect(initial.scrollY, '初期 scrollY').toBe(0);
       expect(initial.layoutScroll, '初期の枠内スクロール').toBe(0);
       expect(
-        Math.abs(initial.status.height - RESTING_STATUS_PX),
+        Math.abs(initial.status.height - restingStatusPx),
         'コンボ前の状態枠',
       ).toBeLessThanOrEqual(RESTING_STATUS_TOLERANCE_PX);
-      expect(initial.status.height).toBeLessThan(RESTING_STATUS_MAX_PX);
+      expect(initial.status.height).toBeLessThan(restingStatusMax);
 
       for (const combo of [2, 3, 12, 0]) {
         await setLiveCombo(page, combo);

@@ -126,6 +126,9 @@ export interface ActionBarProps {
   onAssignAssigneeChange?: (assignee: 'ai' | 'senior' | undefined) => void;
   /** ドラッグ発動など ActionBar 外からの結果フィードバック。 */
   outcomeFeedback?: { id: ActionId; outcome: InterventionOutcome; nonce: number } | null;
+  /** 320×568 で手札と介入バーを入れ替える（#904）。 */
+  sprintBottomRail?: 'deck' | 'controls' | null;
+  onSprintBottomRailChange?: (rail: 'deck' | 'controls') => void;
 }
 
 export function ActionBar({
@@ -141,6 +144,8 @@ export function ActionBar({
   assignAssignee,
   onAssignAssigneeChange,
   outcomeFeedback,
+  sprintBottomRail,
+  onSprintBottomRailChange,
 }: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
   const responsiveMode = useResponsiveMode();
@@ -546,6 +551,16 @@ export function ActionBar({
         </div>
       )}
       <div className="action-panel">
+        {sprintBottomRail === 'deck' && onSprintBottomRailChange && !targetPicker ? (
+          <button
+            type="button"
+            className="sprint-bottom-rail-toggle"
+            data-testid="sprint-bottom-rail-expand-interventions"
+            onClick={() => onSprintBottomRailChange('controls')}
+          >
+            介入をすべて見る
+          </button>
+        ) : null}
         <div className="actions">
           {ACTION_DEFS.map((a) => {
             const presentation = presentationById.get(a.id)!;

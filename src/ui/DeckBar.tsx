@@ -36,6 +36,9 @@ export interface DeckBarProps {
   onExchange?: (deckIndex: number) => CardExchangeOutcome;
   exchangeMode?: boolean;
   onExchangeModeChange?: (active: boolean) => void;
+  /** 320×568 で手札と介入バーを入れ替える（#904）。 */
+  sprintBottomRail?: 'deck' | 'controls' | null;
+  onSprintBottomRailChange?: (rail: 'deck' | 'controls') => void;
 }
 
 export function DeckBar({
@@ -54,6 +57,8 @@ export function DeckBar({
   onExchange,
   exchangeMode = false,
   onExchangeModeChange,
+  sprintBottomRail,
+  onSprintBottomRailChange,
 }: DeckBarProps) {
   const { resolveCard } = useReplayContent();
   const isHandMode = hand !== undefined && playable && onPlay;
@@ -80,6 +85,16 @@ export function DeckBar({
         data-exchange-mode={isExchangeMode ? 'true' : 'false'}
       >
         <div className="deckbar-hand">
+          {sprintBottomRail === 'controls' && onSprintBottomRailChange ? (
+            <button
+              type="button"
+              className="sprint-bottom-rail-toggle"
+              data-testid="sprint-bottom-rail-expand-deck"
+              onClick={() => onSprintBottomRailChange('deck')}
+            >
+              手札を見る
+            </button>
+          ) : null}
           <span className="deckbar-label">手札</span>
           {hand.length === 0 ? (
             <span className="deckbar-empty">手札がありません</span>

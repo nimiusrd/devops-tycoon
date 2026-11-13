@@ -92,6 +92,18 @@ async function openPublicRun(page: Page, options: PublicSprintOptions): Promise<
 }
 
 /** 初期スプリントを公開 GameHandle だけで開始する。 */
+/** 320×568 の手札優先表示から介入の全文表示へ戻す（#904）。 */
+export async function expandSprintInterventionsIfCollapsed(page: Page): Promise<void> {
+  const expand = page.getByTestId('sprint-bottom-rail-expand-interventions');
+  if (await expand.isVisible()) {
+    await expand.click();
+    await expect(page.getByTestId('sprint-layout')).toHaveAttribute(
+      'data-sprint-bottom-rail',
+      'controls',
+    );
+  }
+}
+
 export async function beginPublicSprint(page: Page, options: PublicSprintOptions): Promise<void> {
   await openPublicRun(page, options);
   await page.evaluate(() => {

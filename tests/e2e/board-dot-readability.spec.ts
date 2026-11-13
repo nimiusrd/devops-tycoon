@@ -277,6 +277,10 @@ for (const viewport of [
       await page.setViewportSize(viewport);
       await beginPublicSprint(page, { seed: 'devops-tycoon', renderer: 'pixi' });
       await advanceToSplitCandidateCount(page, candidates);
+      if (viewport.width === 320) {
+        const expand = page.getByTestId('sprint-bottom-rail-expand-interventions');
+        if (await expand.isVisible()) await expand.click();
+      }
 
       const beforeBox = await readBoardBox(page);
       const before = await readDotReadability(page);

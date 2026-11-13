@@ -955,6 +955,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           run.setSoundMuted(!meta.soundMuted);
         }}
         runEpoch={run.runEpoch}
+        onOrgLeverHintDismissed={() => game.persistOrgLeverHintDismissal()}
       />
     </>
   );

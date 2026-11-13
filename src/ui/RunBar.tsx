@@ -40,6 +40,7 @@ import { VisualIcon } from './VisualIcon';
 import {
   dismissOrgLeverHint,
   noteOrgLeverBudgetDepleted,
+  readOrgLeverHintSession,
   resolveOrgLeverHint,
 } from './orgLeverHintSession';
 
@@ -71,6 +72,8 @@ export interface RunBarProps {
   onToggleSoundMuted?: () => void;
   /** startRun ごとの世代。組織レバー案内の一度きりをラン単位で区切る。 */
   runEpoch?: number;
+  /** 案内を消した記録を途中セーブへ反映する（#1015）。 */
+  onOrgLeverHintDismissed?: () => void;
 }
 
 /** 表情演出の絵文字（第12.2）。 */
@@ -118,6 +121,7 @@ export function RunBar({
   onOpenHelp,
   onToggleSoundMuted,
   runEpoch = 0,
+  onOrgLeverHintDismissed,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
   const { resolveRelic, resolveTrial } = useReplayContent();
@@ -174,8 +178,13 @@ export function RunBar({
 
   useEffect(() => {
     // リプレイの予算 0 を同じ runEpoch で覚えると、復帰後の Q1 案内が消える。
+    const wasDismissed = readOrgLeverHintSession(runEpoch).dismissed;
     noteOrgLeverBudgetDepleted(runEpoch, state.budget, readOnly);
-  }, [readOnly, state.budget, runEpoch]);
+    const nowDismissed = readOrgLeverHintSession(runEpoch).dismissed;
+    if (!readOnly && !wasDismissed && nowDismissed) {
+      onOrgLeverHintDismissed?.();
+    }
+  }, [onOrgLeverHintDismissed, readOnly, runEpoch, state.budget]);
   const showOrgLeverHint = resolveOrgLeverHint({
     epoch: runEpoch,
     quarterNumber: state.quarterNumber,
@@ -382,6 +391,7 @@ export function RunBar({
             onClick={(event) => {
               dismissOrgLeverHint(runEpoch);
               setOrgLeverHintDismissedEpoch(runEpoch);
+              onOrgLeverHintDismissed?.();
               onOpenOrg(event.currentTarget);
             }}
             title={

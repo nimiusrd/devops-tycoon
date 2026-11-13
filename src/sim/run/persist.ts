@@ -110,6 +110,11 @@ export interface RunPersistExtras {
    * 旧セーブでは欠落しうる。
    */
   announcedLeaveReturnKeys?: string[];
+  /**
+   * 組織レバー案内をこのランで消した（#969 / #1015）。
+   * レバーを開いたとき、または予算 0 で消えたときに true。旧セーブでは欠落しうる。
+   */
+  orgLeverHintDismissed?: boolean;
 }
 
 /**

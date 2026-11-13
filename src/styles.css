@@ -832,6 +832,14 @@ body {
   pointer-events: none;
   z-index: 1;
 }
+/* 広幅で炎上バー上の COMBO は読み取り用パネル背景を足す（DS-08 / Codex）。 */
+@media (min-width: 561px) {
+  .meter.fire.burning .combo-wide-lines {
+    padding: 0 4px;
+    border-radius: 6px;
+    background: var(--panel);
+  }
+}
 /* 渋滞バーの中に重ねる。件数・ラベルの外へ出して行を増やさない（#975）。 */
 .jam-alert {
   position: absolute;

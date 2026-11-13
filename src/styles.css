@@ -607,23 +607,23 @@ body {
   color: var(--visual-color-banner-hell-text);
 }
 .subbar[data-review-hell='true'] .pill {
-  border-color: #8a3d48;
-  background: #2a1838;
+  border-color: var(--visual-color-banner-hell-subbar-pill-border);
+  background: var(--visual-color-banner-hell-subbar-pill-bg);
   color: var(--visual-color-banner-hell-text);
 }
 .subbar[data-review-hell='true'] .pill b {
   color: var(--visual-color-cream);
 }
 .subbar[data-review-hell='true'] .speed-controls {
-  background: #1a1438;
-  border-color: #8a3d48;
+  background: var(--visual-color-banner-hell-subbar-control-bg);
+  border-color: var(--visual-color-banner-hell-subbar-control-border);
 }
 .subbar[data-review-hell='true'] .speed-btn {
   color: var(--visual-color-banner-hell-text);
 }
 .subbar[data-review-hell='true'] .speed-btn:hover:not(:disabled) {
   color: var(--visual-color-cream);
-  background: #2a2256;
+  background: var(--visual-color-banner-hell-subbar-control-hover-bg);
 }
 .subbar[data-review-hell='true'] .speed-btn.active {
   color: var(--visual-color-ink);
@@ -634,8 +634,8 @@ body {
 }
 [data-sprint-slot='status']:has([data-review-hell='true']) .event-ticker-summary {
   color: var(--visual-color-cream);
-  background: #241018;
-  border-color: #8a3d48;
+  background: var(--visual-color-banner-hell-subbar-event-summary-bg);
+  border-color: var(--visual-color-banner-hell-subbar-control-border);
 }
 .speed-controls {
   display: inline-flex;

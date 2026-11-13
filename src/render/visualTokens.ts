@@ -137,6 +137,15 @@ export const VISUAL_TOKENS = {
         text: '#ffd0cb',
         tagBg: '#5a1410',
         tagText: '#ffb0ac',
+        /** Review Hell 中の状態枠（subbar）上のチップ・速度・出来事要約（#986）。 */
+        subbar: {
+          pillBorder: '#8a3d48',
+          pillBg: '#2a1838',
+          controlBg: '#1a1438',
+          controlBorder: '#8a3d48',
+          controlHoverBg: '#2a2256',
+          eventSummaryBg: '#241018',
+        },
       },
     },
     actor: {
@@ -682,6 +691,14 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-color-banner-hell-text': colors.bannerTone.hell.text,
     '--visual-color-banner-hell-tag-bg': colors.bannerTone.hell.tagBg,
     '--visual-color-banner-hell-tag-text': colors.bannerTone.hell.tagText,
+    '--visual-color-banner-hell-subbar-pill-border': colors.bannerTone.hell.subbar.pillBorder,
+    '--visual-color-banner-hell-subbar-pill-bg': colors.bannerTone.hell.subbar.pillBg,
+    '--visual-color-banner-hell-subbar-control-bg': colors.bannerTone.hell.subbar.controlBg,
+    '--visual-color-banner-hell-subbar-control-border': colors.bannerTone.hell.subbar.controlBorder,
+    '--visual-color-banner-hell-subbar-control-hover-bg':
+      colors.bannerTone.hell.subbar.controlHoverBg,
+    '--visual-color-banner-hell-subbar-event-summary-bg':
+      colors.bannerTone.hell.subbar.eventSummaryBg,
     '--visual-color-interaction-drag': colors.interaction.drag,
     '--visual-color-spend-risk-border': colors.spendRisk.border,
     '--visual-color-spend-risk-warning': colors.spendRisk.warning,

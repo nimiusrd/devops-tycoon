@@ -331,7 +331,15 @@ export function Board({
     () => (roster ? deriveMemberMoodOverrides(roster) : undefined),
     [roster],
   );
-  const scene = planBoardScene(tasks, moodOverrides);
+  const splitConfirmTaskId = splitConfirm?.taskId ?? null;
+  const pinDotIds = useMemo(
+    () => (splitConfirmTaskId != null ? new Set([splitConfirmTaskId]) : undefined),
+    [splitConfirmTaskId],
+  );
+  const scene = useMemo(
+    () => planBoardScene(tasks, moodOverrides, pinDotIds ? { pinDotIds } : undefined),
+    [tasks, moodOverrides, pinDotIds],
+  );
   // 盤面の常駐物と連続演出を WebGL で描くか（RI-11 / RI-142。ラベルは DOM 共通）。
   const { usePixi, onWebglError } = usePixiRenderer();
   const [pixiReady, setPixiReady] = useState(false);
@@ -434,7 +442,6 @@ export function Board({
     dragIds.has(gesture.taskId)
       ? gesture.taskId
       : null;
-  const splitConfirmTaskId = splitConfirm?.taskId ?? null;
   const selectedTask = gesture?.announce ? tasks.find((task) => task.id === previewTaskId) : null;
   const targetAnnouncement = selectedTask
     ? `対象: ${describeTaskTarget(selectedTask)}（#${selectedTask.id}）`

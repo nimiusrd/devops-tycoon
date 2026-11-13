@@ -506,9 +506,43 @@ function deriveMood(
  *   上書きで表情が変わったときは基底の吹き出し（文脈が合わない）を落とす。
  * 純関数・決定論（入力が同じなら同じ計画）。
  */
+export interface BoardScenePlanOptions {
+  /** 山の上限で隠れていても描画へ含める粒（#1020 分割確認など）。 */
+  pinDotIds?: ReadonlySet<number>;
+}
+
+function includePinnedStationaryTasks(
+  normals: readonly Task[],
+  shownIncidents: readonly Task[],
+  normalSlots: number,
+  cap: number,
+  pinDotIds: ReadonlySet<number> | undefined,
+): Task[] {
+  const shownNormals = normals.slice(0, normalSlots);
+  if (!pinDotIds?.size) return shownNormals;
+  const pinned = normals.filter(
+    (task) =>
+      pinDotIds.has(task.id) &&
+      !shownNormals.some((shown) => shown.id === task.id) &&
+      !shownIncidents.some((incident) => incident.id === task.id),
+  );
+  if (pinned.length === 0) return shownNormals;
+  const next = [...shownNormals];
+  for (const task of pinned) {
+    while (next.length + shownIncidents.length >= cap) {
+      const evict = next.findLastIndex((candidate) => !pinDotIds.has(candidate.id));
+      if (evict < 0) break;
+      next.splice(evict, 1);
+    }
+    if (next.length + shownIncidents.length < cap) next.push(task);
+  }
+  return next;
+}
+
 export function planBoardScene(
   tasks: readonly Task[],
   moodOverrides?: StationMoodOverrides,
+  options?: BoardScenePlanOptions,
 ): BoardScenePlan {
   const byLane = new Map<Lane, Task[]>();
   for (const s of STATIONS) byLane.set(s.lane, []);
@@ -536,7 +570,13 @@ export function planBoardScene(
     const normals = stationary.filter((t) => !t.incident);
     const shownIncidents = incidents.slice(0, layout.cap);
     const normalSlots = Math.max(0, layout.cap - shownIncidents.length);
-    const shownNormals = normals.slice(0, normalSlots);
+    const shownNormals = includePinnedStationaryTasks(
+      normals,
+      shownIncidents,
+      normalSlots,
+      layout.cap,
+      options?.pinDotIds,
+    );
     const shown = [...shownNormals, ...shownIncidents];
     const overflow = stationary.length - shown.length;
 

@@ -14,6 +14,8 @@ const SLOT_CLASS_NAMES: Record<SprintLayoutSlot, string> = {
   controls: styles.controlsSlot,
 };
 
+export type SprintBottomRail = 'deck' | 'controls';
+
 export interface SprintLayoutProps {
   header: ReactNode;
   status: ReactNode;
@@ -21,6 +23,8 @@ export interface SprintLayoutProps {
   deck: ReactNode;
   controls: ReactNode;
   overlays?: ReactNode;
+  /** 320×568 などで手札と介入バーを入れ替える（#904）。 */
+  bottomRail?: SprintBottomRail;
 }
 
 function SprintLayoutSlotView({ name, children }: { name: SprintLayoutSlot; children: ReactNode }) {
@@ -42,6 +46,7 @@ export function SprintLayout({
   deck,
   controls,
   overlays,
+  bottomRail,
 }: SprintLayoutProps) {
   const responsiveMode = useResponsiveMode();
   const slots = { header, status, stage, deck, controls } satisfies Record<
@@ -55,6 +60,7 @@ export function SprintLayout({
       data-testid="sprint-layout"
       data-responsive-width={responsiveMode.width}
       data-responsive-height={responsiveMode.height}
+      data-sprint-bottom-rail={bottomRail}
     >
       {SPRINT_LAYOUT_SLOTS.map((name) => (
         <SprintLayoutSlotView key={name} name={name}>

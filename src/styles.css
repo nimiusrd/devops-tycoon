@@ -2634,6 +2634,171 @@ body:has(.overlay-contained) {
   max-height: 72px;
   pointer-events: auto;
 }
+
+/* 320×568: 手札優先時は介入を1段に畳み、集中力と介入ボタンを初期表示へ（#904）。 */
+.sprint-layout[data-sprint-bottom-rail='deck'] .actionbar:not(:has(.action-target-picker)) {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  min-height: 0;
+}
+.sprint-layout[data-sprint-bottom-rail='deck'] .actionbar:not(:has(.action-target-picker)) .focus {
+  flex: 0 1 42%;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  border-bottom: none;
+  border-right: 2px solid var(--line);
+  padding: 2px 6px 2px 2px;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .focus-icon {
+  width: 32px;
+  height: 36px;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .focus-icon
+  .mgr {
+  width: 32px;
+  height: 36px;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .focus-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .focus-label,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .combo-gauge,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .stability-status,
+.sprint-layout[data-sprint-bottom-rail='deck'] .actionbar:not(:has(.action-target-picker)) .pips {
+  display: none;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .focus-energy {
+  font-size: 16px;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-panel {
+  flex: 1 1 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .actions {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  grid-template-columns: unset;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-cell {
+  flex: 0 0 auto;
+}
+.sprint-layout[data-sprint-bottom-rail='deck'] .actionbar:not(:has(.action-target-picker)) .action {
+  flex: 0 0 auto;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 2px;
+  gap: 0;
+}
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-role,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-target,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-summary,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-tradeoff,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-resources,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-state,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action-inspect,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action
+  .name,
+.sprint-layout[data-sprint-bottom-rail='deck']
+  .actionbar:not(:has(.action-target-picker))
+  .action
+  .cd {
+  display: none;
+}
+.sprint-bottom-rail-toggle {
+  flex: 0 0 auto;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #1f1942;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sprint-bottom-rail-toggle:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 2px;
+}
+
+.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-label,
+.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-cards,
+.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-empty {
+  display: none;
+}
+.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  min-height: 36px;
+}
+.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-hand {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-actions {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .actionbar[data-responsive-width='wide']:has(.action-target-picker) {
   position: relative;
   /* 盤面の最前面より上、結果オーバーレイより下。 */

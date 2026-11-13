@@ -428,6 +428,74 @@
   overflow: hidden;
 }
 
+/*
+ * 介入入口と手札を同時に見せる。盤面寸法は変えず、下段の入れ替えと縦余白の圧縮で確保する（#904）。
+ * 武装中の重ね配置（#980）と手札1枚表示（#886）は data-sprint-bottom-rail の各モードで維持する。
+ */
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  ) {
+  gap: 5px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  )
+  .controlsSlot {
+  order: 1;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  )
+  .deckSlot {
+  order: 2;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  )
+  :global(.subbar:has(.boss-goal))
+  :global(.boss-goal) {
+  min-height: calc(2 * 1.35em + 4px);
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  )
+  .stageSlot {
+  flex: 0 0 auto;
+  min-height: 98px;
+  max-height: 100px;
+  aspect-ratio: var(--visual-space-sprint-w) / var(--visual-space-sprint-h);
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  )
+  :global(.subbar:not(.runbar)) {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  )
+  .statusSlot
+  :global(.event-ticker[data-dock='status']) {
+  display: none;
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
+    :global(.hud.hud-compact)
+  )
+  :global(.deckbar) {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
 .root[data-responsive-width='narrow'][data-responsive-height='short'] :global(.runbar-compact) {
   gap: 4px;
 }

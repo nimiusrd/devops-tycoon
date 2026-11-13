@@ -349,7 +349,10 @@ describe('Board の状態表示', () => {
     ]) {
       expect(content(board.find(`count-${lane}`))).toBe(String(count));
     }
-    expect(content(board.find('overflow-review'))).toBe('+1');
+    const overflow = board.find('overflow-review');
+    expect(content(overflow)).toBe('+1');
+    expect(overflow.props['aria-label']).toBe('レビューにあと1件');
+    expect(overflow.type).toBe('button');
     expect(board.query('overflow-backlog')).toBeUndefined();
     expect(board.byClass('needs-attention').map((node) => node.props['data-lane'])).toEqual([
       'review',

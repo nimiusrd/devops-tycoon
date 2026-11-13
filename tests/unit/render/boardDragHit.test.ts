@@ -11,7 +11,7 @@ import {
 import { clientToBoardPoint } from '../../../src/render/boardDragPlan';
 import { BOARD_VIEW, planBoardScene } from '../../../src/render/boardScene';
 import type { BoardDotPlan } from '../../../src/render/boardScene';
-import { presentBoardDots } from '../../../src/render/boardPixiView';
+import { presentBoardDots, presentedDotRadius } from '../../../src/render/boardPixiView';
 import { designToHostTransform } from '../../../src/render/visualTokens';
 import { makeTask } from '../helpers/sprintFixtures';
 
@@ -182,6 +182,23 @@ describe('Review の山と枠線の内側', () => {
           hitTestClientBoardDot(clientX, clientY, host, scene.dots, ids),
           `粒 ${entry.id}`,
         ).toBe(entry.id);
+      }
+      const radius = presentedDotRadius(coding!.size, fit.scale);
+      for (const [dx, dy] of [
+        [0.3, 0],
+        [0, -0.3],
+        [0.22, 0.22],
+      ] as const) {
+        const design = {
+          x: coding!.x + dx * radius,
+          y: coding!.y + dy * radius,
+        };
+        const px = host.left + fit.x + design.x * fit.scale;
+        const py = host.top + fit.y + design.y * fit.scale;
+        expect(
+          hitTestClientBoardDot(px, py, host, scene.dots, ids),
+          `Coding #${coding!.id} の本体 (${dx},${dy})`,
+        ).toBe(coding!.id);
       }
     },
   );

@@ -8,12 +8,8 @@
  * contain-fit は部署ビューと同じ `containFitTransform`（deptPixiView.ts）を使う。
  */
 import type { Lane } from '../sim/types';
-import {
-  BOARD_STATION_CENTERS,
-  type BoardDotPlan,
-  type BoardReviewTrailPlan,
-  type StationMood,
-} from './boardScene';
+import { BOARD_STATION_CENTERS } from './boardStationCenters';
+import type { BoardDotPlan, BoardReviewTrailPlan, StationMood } from './boardScene';
 import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import type { TaskSize, TaskVariant } from './taskView';
 import { TASK_DIAMETER } from './taskView';

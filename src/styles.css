@@ -5709,6 +5709,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   padding: 12px 14px;
   border-radius: 14px;
   background: #211a44;
@@ -5806,9 +5807,25 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   color: var(--sun);
   align-self: flex-end;
 }
+.shop-card-price-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+}
 .shop-card-focus-cost {
   color: var(--sky);
-  white-space: nowrap;
+  white-space: normal;
+}
+.shop-card-cost .spend-risk-note,
+.shop-card-cost .spend-risk-warning {
+  margin-top: 0;
+  box-sizing: border-box;
+  max-width: 100%;
+  text-align: right;
 }
 .shop-relic {
   border-color: var(--lav);

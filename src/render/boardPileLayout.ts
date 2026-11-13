@@ -6,12 +6,20 @@
  */
 import type { Lane } from '../sim/types';
 import type { BoardDotPlan } from './boardScene';
+import { BOARD_STATION_CENTERS } from './boardStationCenters';
 import {
   presentBoardDots,
   presentBoardDotsWithShiftedReview,
+  presentedDotHitsOtherStation,
   presentedDotRadius,
 } from './boardPixiView';
 import { DESIGN_SPACES, designToHostTransform } from './visualTokens';
+
+const BOARD_STATION_MARKERS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
+  lane,
+  x: BOARD_STATION_CENTERS[lane].x,
+  y: BOARD_STATION_CENTERS[lane].y,
+}));
 
 const BOARD_VIEW = DESIGN_SPACES.sprint;
 
@@ -139,6 +147,20 @@ export function applyLanePileShift(
   });
 }
 
+/** 提示後の Review 静止粒が別工程キャラにはみ出さないか（#918 と同じ基準）。 */
+function reviewDotsAvoidOtherStations(
+  dots: readonly BoardDotPlan[],
+  scales: readonly number[],
+): boolean {
+  for (const scale of scales) {
+    for (const dot of dots) {
+      if (dot.lane !== 'review' || dot.motion) continue;
+      if (presentedDotHitsOtherStation(dot, scale, BOARD_STATION_MARKERS)) return false;
+    }
+  }
+  return true;
+}
+
 function pilesStayOnBoardWithCaches(
   dots: readonly BoardDotPlan[],
   caches: readonly ReviewOverlapCache[],
@@ -163,7 +185,7 @@ function pilesStayOnBoardWithCaches(
 }
 
 const REVIEW_SHIFT_COMPACT = {
-  dxMin: -12,
+  dxMin: -40,
   dxMax: 96,
   dyMin: -72,
   dyMax: 12,
@@ -171,9 +193,9 @@ const REVIEW_SHIFT_COMPACT = {
 } as const;
 
 const REVIEW_SHIFT_EXTENDED_COARSE = {
-  dxMin: -12,
+  dxMin: -40,
   dxMax: 148,
-  dyMin: -120,
+  dyMin: -200,
   dyMax: 12,
   step: 4,
 } as const;
@@ -202,6 +224,7 @@ function findReviewPileShiftInRange(
     for (let dy = range.dyMin; dy <= range.dyMax; dy += range.step) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
+      if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       best = pickBetterShift(best, dx, dy);
     }
@@ -229,6 +252,7 @@ function refineReviewPileShift(
     ) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
+      if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       best = pickBetterShift(best, dx, dy)!;
     }
@@ -255,11 +279,30 @@ export function findReviewPileShift(
   return { dx: 0, dy: 0 };
 }
 
+function reviewPileShiftCacheKey(dots: readonly BoardDotPlan[]): string {
+  const review = dots.filter((dot) => dot.lane === 'review' && !dot.motion);
+  if (review.length === 0) return '';
+  const anchor = review[0];
+  const othersSignature = dots
+    .filter((dot) => dot.lane !== 'review')
+    .map((dot) => `${dot.id}@${Math.round(dot.x)},${Math.round(dot.y)}`)
+    .sort()
+    .join(';');
+  return `${review.length}:${anchor.clusterX}:${anchor.clusterY}:${othersSignature}`;
+}
+
+const reviewPileShiftCache = new Map<string, BoardPileShift>();
+
 /** Review 静止山があれば、重なりがあるときだけ基準点を寄せた粒配列を返す。 */
 export function adjustReviewPileLayout(dots: readonly BoardDotPlan[]): BoardDotPlan[] {
   const reviewPileDots = dots.filter((dot) => dot.lane === 'review' && !dot.motion);
   if (reviewPileDots.length === 0) return [...dots];
   if (countReviewCrossStationOverlaps(dots) === 0) return [...dots];
-  const shift = findReviewPileShift(dots);
+  const cacheKey = reviewPileShiftCacheKey(dots);
+  let shift = reviewPileShiftCache.get(cacheKey);
+  if (!shift) {
+    shift = findReviewPileShift(dots);
+    reviewPileShiftCache.set(cacheKey, shift);
+  }
   return applyLanePileShift(dots, 'review', shift);
 }

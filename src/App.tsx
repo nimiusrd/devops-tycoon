@@ -22,6 +22,7 @@ import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
 import { displayedQuarterSprintIndex } from './render/sprintProgressView';
 import { planSprintResultContextLine } from './render/sprintResultContextView';
+import { sprintPaddingGateMessage } from './render/sprintPaddingGateView';
 import {
   reviewFreezeWarningPeak,
   type HudMetricSnapshot,
@@ -548,6 +549,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     phase === 'sprint' &&
     tutorialDismissedEpoch !== run.runEpoch &&
     shouldShowTutorialGuide(meta.seenTutorialVersion, tutorialMode);
+  const sprintInteractionBlockedReason =
+    phase === 'sprint' ? sprintPaddingGateMessage(state.sprint) : undefined;
 
   const closeMetaShop = useCallback(() => setMetaShopOpen(false), []);
   const closeCardCollection = useCallback(() => setCardCollectionOpen(false), []);
@@ -1173,6 +1176,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                     onFocusTeam={run.focusTeam}
                     onApplyLever={run.applyOrgLever}
                     spendConfirmEnabled={!run.tabConflictModalOpen}
+                    sprintInteractionBlockedReason={sprintInteractionBlockedReason}
                   />
                 )}
                 {zoom.level === 'department' && focusedDept && (
@@ -1188,6 +1192,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                     onEnterTeam={run.enterTeam}
                     onApplyLever={run.applyOrgLever}
                     spendConfirmEnabled={!run.tabConflictModalOpen}
+                    sprintInteractionBlockedReason={sprintInteractionBlockedReason}
                   />
                 )}
               </Suspense>

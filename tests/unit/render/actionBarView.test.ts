@@ -173,6 +173,20 @@ describe('deriveActionAvailability（RI-51）', () => {
       blockMessage: '一時停止中',
     });
   });
+
+  it('minCompleteTick 待ちの停滞ではスプリント終了ではなくコーダー理由を出す', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog' })]);
+    sprint.config.codingSlots = 0;
+    sprint.config.minCompleteTick = 5;
+    sprint.focus = 10;
+    const availability = deriveActionAvailability(sprint, 'pairReview');
+    expect(availability).toMatchObject({
+      canActivate: false,
+      blockReason: 'padding-stall',
+      blockMessage: 'コーダー不在で作業停止',
+    });
+  });
 });
 
 describe('planActionBarView（RI-51）', () => {

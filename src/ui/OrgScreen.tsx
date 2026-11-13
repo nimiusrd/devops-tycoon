@@ -40,6 +40,7 @@ export interface OrgScreenProps {
   onFocusTeam: (id: string) => void;
   onApplyLever: (leverId: string) => void;
   spendConfirmEnabled?: boolean;
+  sprintInteractionBlockedReason?: string;
 }
 
 export function OrgScreen({
@@ -51,6 +52,7 @@ export function OrgScreen({
   onFocusTeam,
   onApplyLever,
   spendConfirmEnabled = true,
+  sprintInteractionBlockedReason,
 }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
   const { usePixi, onWebglError } = usePixiRenderer();
@@ -188,6 +190,7 @@ export function OrgScreen({
         title="全社レバー"
         onApply={onApplyLever}
         spendConfirmEnabled={spendConfirmEnabled}
+        sprintInteractionBlockedReason={sprintInteractionBlockedReason}
       />
     </div>
   );

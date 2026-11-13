@@ -2770,6 +2770,9 @@ body:has(.overlay-contained) {
   background: var(--panel);
   box-shadow: none;
 }
+.action:disabled.is-gated {
+  opacity: 0.55;
+}
 .station.drop-target {
   outline: 2px dashed color-mix(in srgb, var(--visual-color-interaction-drag) 53%, transparent);
   outline-offset: 6px;
@@ -2983,6 +2986,13 @@ body:has(.overlay-contained) {
   line-height: 1.2;
   max-width: 100%;
   white-space: normal;
+}
+.action-block-reason.is-padding-gate,
+.interaction-block-reason {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* 詳細は8介入の後に一つだけ置き、元のカード間Tab順を保つ。 */
 .action-inspect {
@@ -3396,6 +3406,12 @@ body:has(.overlay-contained) {
   font-weight: 800;
   line-height: 1.2;
   color: var(--visual-color-banner-hell-text);
+}
+.card-disabled-reason.is-gate-reason {
+  font-size: 11px;
+}
+.card.card-disabled.is-gated .card-face {
+  opacity: 0.45;
 }
 button.card {
   cursor: pointer;
@@ -7522,6 +7538,22 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
+.org-pill.is-gated {
+  opacity: 0.55;
+  cursor: not-allowed;
+  flex-wrap: wrap;
+  max-width: 12em;
+}
+.org-open-block-reason {
+  flex-basis: 100%;
+  text-align: left;
+}
+.runbar-gate-toast {
+  font-size: 11px;
+  color: var(--sun);
+  font-weight: 800;
+  white-space: nowrap;
+}
 .org-pill:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -8219,9 +8251,19 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-lever:hover:not(:disabled) {
   border-color: var(--lav);
 }
-.org-lever:disabled {
+.org-lever:disabled,
+.org-lever.is-gated {
   opacity: 0.45;
   cursor: not-allowed;
+}
+.org-lever.is-gated {
+  pointer-events: auto;
+}
+.org-lever-block-reason {
+  max-width: 14em;
+}
+.org-lever-gate-toast {
+  flex-basis: 100%;
 }
 .org-lever-cost {
   color: var(--sun);

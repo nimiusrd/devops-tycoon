@@ -39,6 +39,7 @@ export interface DeptScreenProps {
   onEnterTeam: (id: string) => void;
   onApplyLever: (leverId: string, deptId?: string, teamId?: string) => void;
   spendConfirmEnabled?: boolean;
+  sprintInteractionBlockedReason?: string;
 }
 
 export function DeptScreen({
@@ -53,6 +54,7 @@ export function DeptScreen({
   onEnterTeam,
   onApplyLever,
   spendConfirmEnabled = true,
+  sprintInteractionBlockedReason,
 }: DeptScreenProps) {
   const { usePixi, onWebglError } = usePixiRenderer();
   // 部署内に無い古い選択 ID は無視し、未選択時はアクティブチームへフォールバックする。
@@ -183,6 +185,7 @@ export function DeptScreen({
               `${selected.name}へ「${lever.name}」を適用。コスト ${lever.cost}`
             }
             spendConfirmEnabled={spendConfirmEnabled}
+            sprintInteractionBlockedReason={sprintInteractionBlockedReason}
           />
         </div>
       )}
@@ -198,6 +201,7 @@ export function DeptScreen({
           `${dept.def.name}へ「${lever.name}」を適用。コスト ${lever.cost}`
         }
         spendConfirmEnabled={spendConfirmEnabled}
+        sprintInteractionBlockedReason={sprintInteractionBlockedReason}
       />
     </div>
   );

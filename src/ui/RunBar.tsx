@@ -35,6 +35,7 @@ import {
 import { OrgLeverHintLiveAnnouncer } from './OrgLeverHintRow';
 import { useReplayContent } from './replayContent';
 import { RunSessionMenu } from './RunSessionMenu';
+import { sprintPaddingGateMessage } from '../render/sprintPaddingGateView';
 import { PhraseText } from './PhraseText';
 import { VisualIcon } from './VisualIcon';
 import {
@@ -128,6 +129,9 @@ export function RunBar({
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const roster = rosterSummary(state.roster);
+  const sprintPaddingBlock =
+    state.phase === 'sprint' ? sprintPaddingGateMessage(state.sprint) : undefined;
+  const [orgGateToast, setOrgGateToast] = useState<string | null>(null);
   const snapshot = useMemo(() => runMetricSnapshot(state), [state]);
   const previousSnapshot = useRef<RunMetricSnapshot | null>(null);
   const nextFeedbackId = useRef(0);
@@ -383,12 +387,19 @@ export function RunBar({
         {onOpenOrg && (
           <button
             type="button"
-            className="pill org-pill"
+            className={`pill org-pill${sprintPaddingBlock && !readOnly ? ' is-gated' : ''}`}
             data-testid="open-org"
             data-org-lever-hint={showOrgLeverHint ? 'true' : 'false'}
+            data-padding-gated={sprintPaddingBlock && !readOnly ? 'true' : undefined}
             disabled={readOnly}
+            aria-disabled={sprintPaddingBlock && !readOnly ? true : undefined}
             aria-describedby={showOrgLeverHint ? ORG_LEVER_HINT_DESCRIPTION_ID : undefined}
             onClick={(event) => {
+              if (sprintPaddingBlock && !readOnly) {
+                setOrgGateToast(sprintPaddingBlock);
+                window.setTimeout(() => setOrgGateToast(null), 1_000);
+                return;
+              }
               dismissOrgLeverHint(runEpoch);
               setOrgLeverHintDismissedEpoch(runEpoch);
               onOrgLeverHintDismissed?.();
@@ -397,7 +408,9 @@ export function RunBar({
             title={
               readOnly
                 ? 'リプレイ閲覧中は全社マップを開けません'
-                : '組織レバー。全社マップを開いて予算を使います'
+                : sprintPaddingBlock
+                  ? sprintPaddingBlock
+                  : '組織レバー。全社マップを開いて予算を使います'
             }
           >
             <span aria-hidden="true">🗺</span>
@@ -409,8 +422,25 @@ export function RunBar({
                 aria-hidden="true"
               />
             )}
+            {sprintPaddingBlock && !readOnly ? (
+              <span
+                className="org-open-block-reason interaction-block-reason"
+                data-testid="open-org-block-reason"
+              >
+                {sprintPaddingBlock}
+              </span>
+            ) : null}
           </button>
         )}
+        {orgGateToast ? (
+          <span
+            className="runbar-gate-toast interaction-block-reason"
+            data-testid="open-org-gate-toast"
+            role="status"
+          >
+            {orgGateToast}
+          </span>
+        ) : null}
         {showSessionMenu && onOpenHelp && onToggleSoundMuted && (
           <RunSessionMenu
             soundMuted={soundMuted}

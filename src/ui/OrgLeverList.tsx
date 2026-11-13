@@ -29,6 +29,8 @@ export interface OrgLeverListProps {
   leverAriaLabel?: (lever: LeverDef) => string;
   /** タブ競合モーダルなど、別ダイアログが背面ロックを担う間は確認を出さない。 */
   spendConfirmEnabled?: boolean;
+  /** minCompleteTick 待ちなど、レバー操作全体を止める理由（#972）。 */
+  sprintInteractionBlockedReason?: string;
 }
 
 function OrgLeverSpendGate({
@@ -97,6 +99,7 @@ export function OrgLeverList({
   onApply,
   leverAriaLabel,
   spendConfirmEnabled = true,
+  sprintInteractionBlockedReason,
 }: OrgLeverListProps) {
   const confirmGateKey = spendConfirmEnabled ? 'enabled' : 'blocked';
   const [confirmState, setConfirmState] = useState({
@@ -116,7 +119,17 @@ export function OrgLeverList({
     setPending(null);
     setTimeout(() => focusByTestId(returnTestId), 0);
   };
+  const [blockedToast, setBlockedToast] = useState<string | null>(null);
+  const flashBlockedToast = (message: string) => {
+    setBlockedToast(message);
+    window.setTimeout(() => setBlockedToast(null), 1_000);
+  };
+
   const requestLever = (lever: LeverDef) => {
+    if (sprintInteractionBlockedReason) {
+      flashBlockedToast(sprintInteractionBlockedReason);
+      return;
+    }
     const risk = spendRiskView({ budget, cost: lever.cost });
     if (risk.blocked !== null) return;
     const returnTestId = `lever-${lever.id}`;
@@ -143,19 +156,35 @@ export function OrgLeverList({
           onCancel={dismissConfirm}
         />
       ) : null}
+      {blockedToast ? (
+        <span
+          className="org-lever-gate-toast interaction-block-reason"
+          data-testid="org-lever-gate-toast"
+          role="status"
+        >
+          {blockedToast}
+        </span>
+      ) : null}
       {levers.map((lever) => {
         const risk = spendRiskView({ budget, cost: lever.cost });
         const leverTestId = `lever-${lever.id}`;
+        const interactionGated = !!sprintInteractionBlockedReason;
+        const budgetBlocked = !interactionGated && (pending !== null || risk.blocked !== null);
         return (
           <button
             type="button"
             key={lever.id}
-            className={`org-lever${risk.endsRun ? ' is-spend-risk' : ''}`}
+            className={`org-lever${risk.endsRun ? ' is-spend-risk' : ''}${interactionGated ? ' is-gated' : ''}`}
             data-testid={leverTestId}
-            disabled={pending !== null || risk.blocked !== null}
-            aria-label={leverAriaLabel?.(lever)}
+            disabled={budgetBlocked}
+            aria-disabled={interactionGated ? true : undefined}
+            aria-label={
+              interactionGated
+                ? `${leverAriaLabel?.(lever) ?? lever.name}。${sprintInteractionBlockedReason}`
+                : leverAriaLabel?.(lever)
+            }
             onClick={() => requestLever(lever)}
-            title={formatLeverTooltip(lever)}
+            title={interactionGated ? sprintInteractionBlockedReason : formatLeverTooltip(lever)}
           >
             <span className="org-lever-head">
               <b>{lever.name}</b>
@@ -167,6 +196,14 @@ export function OrgLeverList({
               ) : null}
             </span>
             <EffectTagList tags={formatLeverDefTags(lever)} testId={`lever-tags-${lever.id}`} />
+            {interactionGated ? (
+              <span
+                className="org-lever-block-reason interaction-block-reason"
+                data-testid={`org-lever-block-${lever.id}`}
+              >
+                {sprintInteractionBlockedReason}
+              </span>
+            ) : null}
           </button>
         );
       })}

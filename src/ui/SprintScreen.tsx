@@ -194,7 +194,8 @@ export function SprintScreen({
 
   const narrowShort = responsiveMode.width === 'narrow' && responsiveMode.height === 'short';
   const [bottomRailPreference, setBottomRailPreference] = useState<'deck' | 'controls'>('deck');
-  const bottomRail = narrowShort ? (armedId ? 'controls' : bottomRailPreference) : undefined;
+  // 武装中は main と同じレイアウト契約に戻し、ピッカー重ねと scrollTop 0 は既存 CSS で維持する。
+  const bottomRail = narrowShort && !armedId ? bottomRailPreference : undefined;
 
   const handleBottomRailChange = useCallback(
     (rail: 'deck' | 'controls') => {

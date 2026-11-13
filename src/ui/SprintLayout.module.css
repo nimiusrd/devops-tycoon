@@ -462,13 +462,23 @@
   min-height: calc(2 * 1.35em + 4px);
 }
 
-.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail]:has(
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='deck']:has(
     :global(.hud.hud-compact)
   )
   .stageSlot {
   flex: 0 0 auto;
   min-height: 98px;
   max-height: 100px;
+  aspect-ratio: var(--visual-space-sprint-w) / var(--visual-space-sprint-h);
+}
+
+.root[data-responsive-width='narrow'][data-responsive-height='short'][data-sprint-bottom-rail='controls']:has(
+    :global(.hud.hud-compact)
+  )
+  .stageSlot {
+  flex: 1 1 0;
+  min-height: clamp(96px, 18vh, 220px);
+  max-height: none;
   aspect-ratio: var(--visual-space-sprint-w) / var(--visual-space-sprint-h);
 }
 

@@ -67,10 +67,6 @@ test.describe('320×568 の下端パネル入れ替え（#904）', () => {
       document.querySelector<HTMLButtonElement>('[data-testid="action-splitPr"]')?.click();
     });
     await expect(page.getByTestId('board')).toHaveAttribute('data-armed', 'splitPr');
-    await expect(page.getByTestId('sprint-layout')).toHaveAttribute(
-      'data-sprint-bottom-rail',
-      'controls',
-    );
     await expect(page.getByTestId('action-target-picker')).toBeVisible();
     await expect(page.getByTestId('sprint-layout')).toHaveJSProperty('scrollTop', 0);
     const visibility = await page.evaluate(() => {

@@ -2782,12 +2782,19 @@ body[data-tutorial-step='combo-gauge']
   outline-offset: 2px;
 }
 
-.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-label,
-.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-cards,
-.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-empty {
+.sprint-layout[data-sprint-bottom-rail='controls']:not(:has([data-testid='board'][data-armed]))
+  .deckbar[data-mode='hand']
+  .deckbar-label,
+.sprint-layout[data-sprint-bottom-rail='controls']:not(:has([data-testid='board'][data-armed]))
+  .deckbar[data-mode='hand']
+  .deckbar-cards,
+.sprint-layout[data-sprint-bottom-rail='controls']:not(:has([data-testid='board'][data-armed]))
+  .deckbar[data-mode='hand']
+  .deckbar-empty {
   display: none;
 }
-.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] {
+.sprint-layout[data-sprint-bottom-rail='controls']:not(:has([data-testid='board'][data-armed]))
+  .deckbar[data-mode='hand'] {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -2795,12 +2802,16 @@ body[data-tutorial-step='combo-gauge']
   padding: 4px 8px;
   min-height: 36px;
 }
-.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-hand {
+.sprint-layout[data-sprint-bottom-rail='controls']:not(:has([data-testid='board'][data-armed]))
+  .deckbar[data-mode='hand']
+  .deckbar-hand {
   flex: 0 1 auto;
   width: auto;
   min-width: 0;
 }
-.sprint-layout[data-sprint-bottom-rail='controls'] .deckbar[data-mode='hand'] .deckbar-actions {
+.sprint-layout[data-sprint-bottom-rail='controls']:not(:has([data-testid='board'][data-armed]))
+  .deckbar[data-mode='hand']
+  .deckbar-actions {
   flex: 1 1 auto;
   min-width: 0;
 }

@@ -51,7 +51,6 @@ import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
-import { PointPops } from './PointPops';
 import { AspectStage } from './AspectStage';
 import { SprintLayout } from './SprintLayout';
 import { AttentionOverlay, SlowMotionOverlay } from './JuicyEffects';
@@ -613,7 +612,6 @@ export function SprintScreen({
             className="board-stage"
             data-testid="board-stage"
           >
-            <PointPops deliveryScore={state.org.deliveryScore} teamId={state.activeTeamId} />
             <Board
               tasks={sprint.tasks}
               metrics={sprint.metrics}
@@ -630,6 +628,8 @@ export function SprintScreen({
               animationsPaused={overlayFrozen}
               actionInspection={actionInspection}
               splitConfirm={liveSplitConfirm}
+              deliveryScore={state.org.deliveryScore}
+              activeTeamId={state.activeTeamId}
             />
             {slowMoKey > 0 && (
               <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />

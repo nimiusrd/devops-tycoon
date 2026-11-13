@@ -70,7 +70,6 @@ vi.mock('../../../src/ui/ActionBar', () => ({ ActionBar: () => null }));
 vi.mock('../../../src/ui/ComboBadge', () => ({ ComboBadge: () => null }));
 vi.mock('../../../src/ui/DeckBar', () => ({ DeckBar: () => null }));
 vi.mock('../../../src/ui/EventTicker', () => ({ EventTicker: () => null }));
-vi.mock('../../../src/ui/PointPops', () => ({ PointPops: () => null }));
 vi.mock('../../../src/ui/AspectStage', () => ({ AspectStage: () => null }));
 vi.mock('../../../src/ui/SprintLayout', () => ({ SprintLayout: () => null }));
 vi.mock('../../../src/ui/JuicyEffects', () => ({
@@ -103,7 +102,6 @@ import { ComboBadge } from '../../../src/ui/ComboBadge';
 import { DeckBar } from '../../../src/ui/DeckBar';
 import { EventTicker } from '../../../src/ui/EventTicker';
 import { AttentionOverlay, SlowMotionOverlay } from '../../../src/ui/JuicyEffects';
-import { PointPops } from '../../../src/ui/PointPops';
 import { SprintLayout } from '../../../src/ui/SprintLayout';
 import { SprintScreen, type SprintScreenProps } from '../../../src/ui/SprintScreen';
 import { TutorialGuide } from '../../../src/ui/TutorialGuide';
@@ -369,9 +367,9 @@ describe('SprintScreen の表示と親子の連携', () => {
     expect(screen.child(EventTicker).expanded).toBe(false);
     screen.child(EventTicker).onExpandedChange?.(true);
     expect(screen.props.onEventTickerExpandedChange).toHaveBeenCalledWith(true);
-    expect(screen.child(PointPops)).toMatchObject({
+    expect(screen.child(Board)).toMatchObject({
       deliveryScore: state.org.deliveryScore,
-      teamId: state.activeTeamId,
+      activeTeamId: state.activeTeamId,
     });
     screen.update({ state: { ...screen.props.state, phase: 'evolution', sprintTick: 5 } });
     expect(screen.child(Board).animationsPaused).toBe(true);

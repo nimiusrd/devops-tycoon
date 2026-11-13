@@ -70,6 +70,13 @@ async function setLiveCombo(page: Page, combo: number): Promise<void> {
     game.engine.sprint.metrics.combo = next;
     game.step(0);
   }, combo);
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
   const badge = page.getByTestId('combo');
   if (combo >= 2) {
     await expect(badge).toHaveAttribute('data-combo', String(combo));

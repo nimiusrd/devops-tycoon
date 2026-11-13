@@ -826,8 +826,9 @@ body {
 }
 .meter.fire .combo-badge {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  inset: 0 0 auto auto;
+  max-width: 100%;
+  overflow: clip;
   pointer-events: none;
   z-index: 1;
 }

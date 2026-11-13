@@ -2605,6 +2605,34 @@ body:has(.overlay-contained) {
  */
 .actionbar[data-responsive-width='narrow']:has(.action-target-picker) {
   flex-wrap: wrap;
+  position: relative;
+  z-index: var(--visual-layer-sprint-action-bar-armed);
+}
+.actionbar[data-responsive-width='narrow']:has(.action-target-picker) .action-target-picker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  flex: none;
+  /*
+   * 320 幅でも一覧を通常フローに載せると sprint-layout が伸び、
+   * 候補フォーカスで盤面が画面外へ飛ぶ（#980）。広幅と同じ重ね配置にする。
+   */
+  max-height: 148px;
+  overflow: hidden;
+  z-index: 1;
+  /* 手札上に重なる余白は盤面クリックを通し、候補だけ掴めるようにする。 */
+  pointer-events: none;
+}
+.actionbar[data-responsive-width='narrow']:has(.action-target-picker)
+  .action-target-picker
+  :is(button, a, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])) {
+  pointer-events: auto;
+}
+.actionbar[data-responsive-width='narrow']:has(.action-target-picker) .action-target-picker-list {
+  min-height: 0;
+  max-height: 72px;
+  pointer-events: auto;
 }
 .actionbar[data-responsive-width='wide']:has(.action-target-picker) {
   position: relative;

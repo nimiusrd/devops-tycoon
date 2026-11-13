@@ -33,6 +33,33 @@ import { VisualIcon, VisualIconText } from './VisualIcon';
 
 const FEEDBACK_TTL_MS = 1000;
 
+function focusWithoutScroll(element: HTMLElement | null | undefined): void {
+  if (!element) return;
+  try {
+    element.focus({ preventScroll: true });
+  } catch {
+    element.focus();
+  }
+}
+
+function revealPickerOptionInList(button: HTMLButtonElement): void {
+  const list = button.closest<HTMLElement>('.action-target-picker-list');
+  if (!list) return;
+  const listRect = list.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
+  if (buttonRect.top < listRect.top) {
+    list.scrollTop -= listRect.top - buttonRect.top;
+  } else if (buttonRect.bottom > listRect.bottom) {
+    list.scrollTop += buttonRect.bottom - listRect.bottom;
+  }
+}
+
+/** 候補一覧内だけスクロールし、sprint-layout の位置は動かさない（#980）。 */
+function focusPickerOption(button: HTMLButtonElement): void {
+  focusWithoutScroll(button);
+  revealPickerOptionInList(button);
+}
+
 /** 編成ダイアログや全社マップなど、前面 UI が Escape を使う状態か。 */
 function escapeOwnedByFrontOverlay(): boolean {
   if (typeof document === 'undefined') return false;
@@ -233,7 +260,7 @@ export function ActionBar({
     onArm(null);
     if (previous) {
       // 取消後は武装したアクションへフォーカスを戻す（DS-08）。
-      queueMicrotask(() => actionButtonRefs.current[previous]?.focus());
+      queueMicrotask(() => focusWithoutScroll(actionButtonRefs.current[previous]));
     }
   }, [armedId, onArm]);
 
@@ -243,7 +270,7 @@ export function ActionBar({
       const outcome = onAction(armedId, target);
       applyOutcomeFeedback(armedId, outcome);
       if (!outcome.ok) return;
-      queueMicrotask(() => actionButtonRefs.current[armedId]?.focus());
+      queueMicrotask(() => focusWithoutScroll(actionButtonRefs.current[armedId]));
     },
     [armedId, applyOutcomeFeedback, onAction, paused],
   );
@@ -256,6 +283,14 @@ export function ActionBar({
       focusedOptionIdRef.current = null;
       return;
     }
+    const layout =
+      typeof document !== 'undefined'
+        ? document.querySelector<HTMLElement>('[data-testid="sprint-layout"]')
+        : null;
+    const savedScroll = {
+      layout: layout?.scrollTop ?? 0,
+      win: typeof window !== 'undefined' ? window.scrollY : 0,
+    };
     const active = typeof document !== 'undefined' ? document.activeElement : null;
     const focusFellOff =
       active == null ||
@@ -263,7 +298,7 @@ export function ActionBar({
       (active instanceof HTMLElement && !active.isConnected);
     if (!targetPicker) {
       if (focusedArmRef.current === armedId && focusFellOff) {
-        actionButtonRefs.current[armedId]?.focus();
+        focusWithoutScroll(actionButtonRefs.current[armedId]);
       }
       focusedArmRef.current = null;
       focusedOptionIdRef.current = null;
@@ -286,12 +321,16 @@ export function ActionBar({
         'button[data-action-target-option]:not([disabled])',
       );
       if (next) {
-        next.focus();
+        focusPickerOption(next);
       } else {
-        actionButtonRefs.current[armedId]?.focus();
+        focusWithoutScroll(actionButtonRefs.current[armedId]);
         focusedOptionIdRef.current = null;
       }
       focusedArmRef.current = armedId;
+      if (layout) layout.scrollTop = savedScroll.layout;
+      if (typeof window !== 'undefined' && window.scrollY !== savedScroll.win) {
+        window.scrollTo(savedScroll.win, 0);
+      }
     });
     return () => window.cancelAnimationFrame(frame);
   }, [armedId, targetPicker]);
@@ -488,8 +527,9 @@ export function ActionBar({
                     disabled={!option.canSelect || paused}
                     title={option.blockMessage ?? option.detail}
                     aria-label={`${option.label}。${option.detail}。${status}選ぶと実行。`}
-                    onFocus={() => {
+                    onFocus={(event) => {
                       focusedOptionIdRef.current = option.taskId;
+                      revealPickerOptionInList(event.currentTarget);
                     }}
                     onClick={() => confirmTarget(option.target)}
                   >

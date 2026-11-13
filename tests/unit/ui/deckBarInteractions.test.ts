@@ -2,6 +2,10 @@ import { Children, isValidElement, type ReactElement, type ReactNode } from 'rea
 import { describe, expect, it, vi } from 'vitest';
 import { DeckBar, type DeckBarProps } from '../../../src/ui/DeckBar';
 
+vi.mock('../../../src/ui/HandExchangeStatusAnnouncer', () => ({
+  HandExchangeStatusAnnouncer: () => null,
+}));
+
 // リプレイ Context のみ代行し、カード定義・発動コスト・CardView は実装を通す。
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
@@ -165,7 +169,7 @@ describe('DeckBar の閲覧と手札発動', () => {
     expect(content(card)).toContain('交換');
     expect(card.props.className).toContain('card-playable');
     expect(content(screen.find('hand-exchange-status'))).toBe('交換するカードを選択');
-    expect(screen.find('hand-exchange-status').props.role).toBe('status');
+    expect(screen.find('hand-exchange-status').props['aria-hidden']).toBe('true');
 
     screen.click('hand-card-docs');
     expect(onExchange).toHaveBeenCalledWith(0);
@@ -187,9 +191,22 @@ describe('DeckBar の閲覧と手札発動', () => {
     expect(content(screen.find('hand-exchange-status'))).toBe(
       '交換不可: 山札に交換できるカードがありません',
     );
-    expect(screen.find('hand-exchange-status').props.role).toBe('status');
+    expect(screen.find('hand-exchange-status').props['aria-hidden']).toBe('true');
     expect(screen.find('hand-exchange-toggle').props.disabled).toBe(true);
     screen.click('hand-exchange-toggle');
     expect(onExchangeModeChange).not.toHaveBeenCalled();
+  });
+
+  it('一時停止中は手札0より交換不可理由を優先して見せる', () => {
+    const screen = mountDeck({
+      deck: [],
+      hand: [],
+      drawCount: 1,
+      playable: true,
+      paused: true,
+      onPlay: vi.fn(() => ({ ok: true })),
+      onExchange: vi.fn(() => ({ ok: true })),
+    });
+    expect(content(screen.find('hand-exchange-status'))).toBe('交換不可: 一時停止中');
   });
 });

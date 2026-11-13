@@ -5,9 +5,14 @@
  * セットアップ等ではデッキコレクションを閲覧表示する。
  */
 import { ACTION_BLOCK_MESSAGES } from '../render/actionBarView';
+import {
+  formatHandExchangeVisibleStatus,
+  resolveHandExchangeDisabledReason,
+} from '../render/handExchangeStatusView';
 import { playCost } from '../sim/cards';
 import type { CardExchangeOutcome, CardInstance, CardPlayOutcome } from '../sim/types';
 import { CardView } from './CardView';
+import { HandExchangeStatusAnnouncer } from './HandExchangeStatusAnnouncer';
 import { useReplayContent } from './replayContent';
 
 export interface DeckBarProps {
@@ -50,24 +55,17 @@ export function DeckBar({
   const { resolveCard } = useReplayContent();
   const isHandMode = hand !== undefined && playable && onPlay;
   const isExchangeMode = exchangeMode && !!onExchange;
-  const exchangeDisabledReason =
-    exchangeUnavailableReason ??
-    (paused
-      ? '一時停止中'
-      : hand?.length === 0
-        ? '手札がありません'
-        : exchangesUsed >= maxExchanges
-          ? 'このスプリントの交換上限です'
-          : drawCount <= 0
-            ? '山札に交換できるカードがありません'
-            : focus < exchangeCost
-              ? `集中力不足（${exchangeCost}必要）`
-              : undefined);
-  const exchangeStatus = exchangeDisabledReason
-    ? `交換不可: ${exchangeDisabledReason}`
-    : isExchangeMode
-      ? '交換するカードを選択'
-      : undefined;
+  const exchangeDisabledReason = resolveHandExchangeDisabledReason({
+    exchangeUnavailableReason,
+    paused,
+    handLength: hand?.length,
+    exchangesUsed,
+    maxExchanges,
+    drawCount,
+    focus,
+    exchangeCost,
+  });
+  const exchangeStatus = formatHandExchangeVisibleStatus(exchangeDisabledReason, isExchangeMode);
 
   if (isHandMode) {
     return (
@@ -125,13 +123,19 @@ export function DeckBar({
             交換 {exchangesUsed}/{maxExchanges}
           </span>
           {onExchange && (
-            <span
-              className="deckbar-exchange-status"
-              data-testid="hand-exchange-status"
-              role="status"
-            >
-              {exchangeStatus}
-            </span>
+            <>
+              <span
+                className="deckbar-exchange-status"
+                data-testid="hand-exchange-status"
+                aria-hidden="true"
+              >
+                {exchangeStatus}
+              </span>
+              <HandExchangeStatusAnnouncer
+                disabledReason={exchangeDisabledReason}
+                isExchangeMode={isExchangeMode}
+              />
+            </>
           )}
           {onExchange && (
             <button

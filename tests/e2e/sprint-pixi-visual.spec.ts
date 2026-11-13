@@ -253,11 +253,14 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await expect(page.getByTestId('board')).toHaveAttribute('data-review-hell', 'true');
     await freezePixiForScreenshot(page);
 
-    await expect(page.getByTestId('board')).toHaveScreenshot('sprint-pixi-review-hell.png', {
-      animations: 'disabled',
-      // #995 の山配置更新で CI/Linux 環境の board 寸法が 2px ずれることがある。
-      maxDiffPixelRatio: 0.05,
-    });
+    // 盤面コンテナは viewport とフォントで寸法がぶれるため、Pixi 合成面だけ比較する。
+    await expect(page.getByTestId('board-pixi-mount')).toHaveScreenshot(
+      'sprint-pixi-review-hell.png',
+      {
+        animations: 'disabled',
+        maxDiffPixelRatio: 0.02,
+      },
+    );
   });
 
   test('reduced motionでもPixiの渋滞情報を静止表示する @pixi（RI-141）', async ({ page }) => {

@@ -9,7 +9,7 @@
 import { createPortal } from 'react-dom';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../state/persistenceStatus';
 import { observePersistenceBannerHeight } from './persistenceBannerInset';
-import { TabConflictAcknowledgedChip, TabConflictNotice } from './TabConflictNotice';
+import { TabConflictNotice } from './TabConflictNotice';
 
 export interface PersistenceNoticeProps {
   notice: PersistenceNoticeModel;
@@ -128,9 +128,6 @@ export function PersistenceNotice({
           onExport={onExport}
           exportMessage={exportMessage}
         />
-      ) : null}
-      {tabConflict && !tabConflictModalOpen && onTakeOver ? (
-        <TabConflictAcknowledgedChip onTakeOver={onTakeOver} />
       ) : null}
       {showBanner ? (
         <div

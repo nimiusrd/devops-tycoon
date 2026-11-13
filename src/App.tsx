@@ -73,6 +73,7 @@ import {
   persistenceExportMessages,
 } from './ui/downloadTextFile';
 import { PersistenceNotice, PersistenceQuietChip } from './ui/PersistenceNotice';
+import { TabConflictAcknowledgedChip } from './ui/TabConflictNotice';
 import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -688,6 +689,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   if (phase === 'title') {
     phaseBody = (
       <>
+        {run.tabConflict && !run.tabConflictModalOpen ? (
+          <div className="persistence-quiet-slot" data-testid="tab-conflict-quiet-slot">
+            <TabConflictAcknowledgedChip onTakeOver={run.takeOverForeignTab} />
+          </div>
+        ) : null}
         <SceneScrollReset>
           <TitleScreen
             seed={state.seed}
@@ -901,6 +907,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         onExpandedChange={setHudExpanded}
       />
       <PersistenceQuietChip notice={run.persistenceStatus} active={quietInline} />
+      {run.tabConflict && !run.tabConflictModalOpen ? (
+        <div className="persistence-quiet-slot" data-testid="tab-conflict-quiet-slot">
+          <TabConflictAcknowledgedChip onTakeOver={run.takeOverForeignTab} />
+        </div>
+      ) : null}
       <RunBar
         state={state}
         onOpenFormation={() => setFormationOpen(true)}

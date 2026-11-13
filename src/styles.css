@@ -5648,12 +5648,11 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   z-index: 80;
 }
 .tab-conflict-quiet {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  z-index: 50;
-  width: max-content;
-  max-width: min(20rem, calc(100vw - 16px));
+  border-color: var(--visual-color-banner-warn-border);
+  background: var(--visual-color-banner-warn-bg);
+  color: var(--visual-color-banner-warn-text);
+}
+.tab-conflict-quiet .btn {
   pointer-events: auto;
 }
 .tab-conflict-overlay.result-overlay::before,

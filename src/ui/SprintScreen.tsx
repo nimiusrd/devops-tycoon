@@ -558,6 +558,10 @@ export function SprintScreen({
                 data-testid="fire-meter"
               >
                 <i style={{ width: `${burnPct}%` }} />
+                <ComboBadge
+                  combo={liveCombo}
+                  stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
+                />
               </div>
               <span className="meter-count" data-testid="fire-count" data-count={incidents}>
                 <VisualIcon name="fire" size="hud" />
@@ -565,10 +569,6 @@ export function SprintScreen({
                   {incidents > 0 ? `炎上 ${incidents}` : incidents}
                 </span>
               </span>
-              <ComboBadge
-                combo={liveCombo}
-                stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
-              />
             </div>
           </div>
           {dockTickerOffBoard ? eventTicker : null}

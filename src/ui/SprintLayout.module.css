@@ -143,7 +143,7 @@
 .root :global(.combo-badge) {
   height: auto;
   max-height: 34px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .root :global(.deckbar) {
@@ -541,62 +541,58 @@
     grid-row: 1;
   }
 
-  .root[data-responsive-width='narrow'][data-responsive-height]
-    :global(.meter-wrap-fire)
-    :global(.combo-badge) {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: stretch;
-    align-self: end;
-    position: relative;
-    width: auto;
-    height: 0;
-    min-height: 0;
-    max-height: none;
-    overflow: visible;
-    pointer-events: none;
-    z-index: 1;
-  }
-
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-inner) {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    /* 不透明のまま、バーの右半分より外側へ出さない。 */
-    max-width: 50%;
     flex-direction: row;
     align-items: baseline;
     column-gap: 4px;
     width: max-content;
+    max-width: 50%;
     margin: 0;
-    border-radius: 8px;
-    background: var(--panel);
     pointer-events: none;
     white-space: nowrap;
   }
 
+  /* 炎上バー上のフューズ表示は内容幅いっぱいに不透明背景（DS-08 / #1012）。 */
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.meter.fire)
+    :global(.combo-fused-narrow) {
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--panel);
+  }
+
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-x),
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-mult) {
-    min-width: 0;
-    overflow: hidden;
+    flex: 0 1 auto;
+    align-self: flex-end;
+    width: max-content;
+    max-width: 100%;
+    overflow: visible;
     font-size: 11px;
+    font-variant-numeric: tabular-nums;
     line-height: 1;
     letter-spacing: 0;
   }
 
-  /* 560 以下は「×12 1.2x」。長い文言はバーの半分で途中まで切れる（#967）。 */
+  /* 560 以下は日本語短縮（#1012）。::before でラベル、値は DOM に残す。 */
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-label-full) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    display: none;
   }
 
   .root[data-responsive-width='narrow'][data-responsive-height] :global(.combo-label-short) {
-    display: inline;
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.combo-fused-narrow)
+    :global(.combo-x.combo-label-short)::before {
+    content: 'コンボ';
+  }
+
+  .root[data-responsive-width='narrow'][data-responsive-height]
+    :global(.combo-fused-narrow)
+    :global(.combo-mult.combo-label-short)::before {
+    content: '倍';
   }
 }

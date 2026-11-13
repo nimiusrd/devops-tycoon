@@ -9,6 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { getBoss } from '../../data/bossDisplay';
+import { hasPurchasableShopItem } from '../../render/shopPurchaseEligibility';
 import { discountedShopPrice } from './shopPrice';
 import { FIXED_STEP_MS } from '../../data/balance/pacing';
 import {
@@ -1296,6 +1297,15 @@ export class RunEngine {
         (d) => !d.choices.some((c) => c.leadsTo === 'recruit' || c.outcome.grantRecruit),
       );
     }
+    // 店頭で 1 点も買えないときは shop-offer を出さない（#1018。判定は ShopScreen と同じ）。
+    const shopPreview = this.buildShop();
+    const canShopNow = hasPurchasableShopItem(
+      { budget: this.budget, roster: this.roster, relics: this.relics },
+      shopPreview,
+    );
+    if (!canShopNow) {
+      pool = pool.filter((d) => d.id !== 'shop-offer');
+    }
     // 組織状態の信号で抽選対象を絞る（minSignal 未達のイベントはプールに入れない）。
     const signals = eventSignals(this.org);
     pool = pool.filter((d) => eventEligible(d, signals));
@@ -1321,6 +1331,11 @@ export class RunEngine {
       this.setPhase('beat');
       this.setPhase('setup');
       return;
+    }
+    if (def.id === 'shop-offer') {
+      this.shop = shopPreview;
+    } else {
+      this.shop = null;
     }
     this.beat = { eventId: def.id, kind: effectiveKind(def) };
     this.setPhase('beat');
@@ -1402,9 +1417,12 @@ export class RunEngine {
 
     const leadsTo = choice.leadsTo ?? 'sprint';
     if (leadsTo === 'shop') {
-      this.shop = this.buildShop();
+      this.shop ??= this.buildShop();
       this.setPhase('shop');
       return;
+    }
+    if (def.id === 'shop-offer') {
+      this.shop = null;
     }
     if (leadsTo === 'rest') {
       this.setPhase('rest');
@@ -1432,6 +1450,7 @@ export class RunEngine {
 
   // --- ショップ ---
 
+  /** 次に開くショップの陳列（ビート先読み・shop フェーズで共有）。 */
   private buildShop(): ShopOffer {
     const key = `${this.seed}:shop:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`;
     const rng = createRng(key);

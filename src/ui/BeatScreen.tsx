@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getEvent, type EventChoice, type EventDef } from '../data/events';
 import { formatEventChoiceTags, formatEventOutcomeTags } from '../render/eventOutcomeView';
+import { shopOfferBeatPrompt } from '../render/shopOfferView';
 import { spendRiskView, spendStatusText, type SpendRiskView } from '../render/spendRiskView';
 import { canRecruit, RECRUIT_COST } from '../sim/member';
 import type { RunState } from '../sim/run/types';
@@ -83,6 +84,7 @@ function DecisionDialog({ event, state, onResolve, onDismiss }: DecisionDialogPr
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
   const { resolveCard, resolveRelic } = useReplayContent();
   const contentResolver = { getCard: resolveCard, getRelic: resolveRelic };
+  const prompt = shopOfferBeatPrompt(event, state);
   useDialogOverlayLock(overlayRef, {
     onDismiss: () => {
       if (confirmIndex !== null) {
@@ -115,7 +117,7 @@ function DecisionDialog({ event, state, onResolve, onDismiss }: DecisionDialogPr
           {event.title}
         </h2>
         <p className="event-prompt" id="decision-prompt">
-          {event.prompt}
+          {prompt}
         </p>
         {confirming && confirmRisk?.requiresConfirm ? (
           <SpendConfirm

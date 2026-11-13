@@ -354,7 +354,7 @@ export interface RunState {
   whatIf: WhatIfState | null;
   /** what-if 試算の進捗。snapshot() では常に idle（UI 経路の getState のみ更新）。 */
   whatIfStatus: WhatIfStatus;
-  /** ショップの陳列（shop フェーズのみ）。 */
+  /** ショップの陳列（shop フェーズ、または shop-offer ビートの先読み）。 */
   shop: ShopOffer | null;
   /** 現在の組織タイプ診断（第13章）。 */
   diagnosis: DiagnosisType;

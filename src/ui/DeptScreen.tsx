@@ -14,10 +14,9 @@ import { DEPT_VIEW } from '../render/deptBoardScene';
 import type { DepartmentState, Team } from '../sim/orgscale/types';
 import type { RunPhase } from '../sim/run/types';
 import { HEALTH_LABEL } from '../render/orgView';
-import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { AspectStage } from './AspectStage';
 import { TeamNavigator } from './TeamNavigator';
-import { EffectTagList } from './EffectTagList';
+import { OrgLeverList } from './OrgLeverList';
 import { usePixiRenderer } from './usePixiRenderer';
 import { Stat } from './Stat';
 import { VisualIcon } from './VisualIcon';
@@ -39,6 +38,7 @@ export interface DeptScreenProps {
   onFocusTeam: (id: string) => void;
   onEnterTeam: (id: string) => void;
   onApplyLever: (leverId: string, deptId?: string, teamId?: string) => void;
+  spendConfirmEnabled?: boolean;
 }
 
 export function DeptScreen({
@@ -52,6 +52,7 @@ export function DeptScreen({
   onFocusTeam,
   onEnterTeam,
   onApplyLever,
+  spendConfirmEnabled = true,
 }: DeptScreenProps) {
   const { usePixi, onWebglError } = usePixiRenderer();
   // 部署内に無い古い選択 ID は無視し、未選択時はアクティブチームへフォールバックする。
@@ -171,56 +172,33 @@ export function DeptScreen({
               {selected.id === activeTeamId ? '現場へ戻る' : '入り込む'}
             </button>
           </div>
-          <div
-            className="dept-levers"
-            data-testid="team-levers"
-            role="region"
-            aria-label="チームレバー"
-          >
-            <span className="org-levers-title">チームレバー</span>
-            {TEAM_LEVERS.map((l) => (
-              <button
-                type="button"
-                key={l.id}
-                className="org-lever"
-                data-testid={`lever-${l.id}`}
-                disabled={budget < l.cost}
-                aria-label={`${selected.name}へ「${l.name}」を適用。コスト ${l.cost}`}
-                onClick={() => onApplyLever(l.id, undefined, selected.id)}
-                title={formatLeverTooltip(l)}
-              >
-                <span className="org-lever-head">
-                  <b>{l.name}</b>
-                  <span className="org-lever-cost">💰{l.cost}</span>
-                </span>
-                <EffectTagList tags={formatLeverDefTags(l)} testId={`lever-tags-${l.id}`} />
-              </button>
-            ))}
-          </div>
+          <OrgLeverList
+            levers={TEAM_LEVERS}
+            budget={budget}
+            regionTestId="team-levers"
+            regionLabel="チームレバー"
+            title="チームレバー"
+            onApply={(leverId) => onApplyLever(leverId, undefined, selected.id)}
+            leverAriaLabel={(lever) =>
+              `${selected.name}へ「${lever.name}」を適用。コスト ${lever.cost}`
+            }
+            spendConfirmEnabled={spendConfirmEnabled}
+          />
         </div>
       )}
 
-      <div className="dept-levers" data-testid="dept-levers" role="region" aria-label="部門レバー">
-        <span className="org-levers-title">部門レバー</span>
-        {DEPARTMENT_LEVERS.map((l) => (
-          <button
-            type="button"
-            key={l.id}
-            className="org-lever"
-            data-testid={`lever-${l.id}`}
-            disabled={budget < l.cost}
-            aria-label={`${dept.def.name}へ「${l.name}」を適用。コスト ${l.cost}`}
-            onClick={() => onApplyLever(l.id, dept.def.id)}
-            title={formatLeverTooltip(l)}
-          >
-            <span className="org-lever-head">
-              <b>{l.name}</b>
-              <span className="org-lever-cost">💰{l.cost}</span>
-            </span>
-            <EffectTagList tags={formatLeverDefTags(l)} testId={`lever-tags-${l.id}`} />
-          </button>
-        ))}
-      </div>
+      <OrgLeverList
+        levers={DEPARTMENT_LEVERS}
+        budget={budget}
+        regionTestId="dept-levers"
+        regionLabel="部門レバー"
+        title="部門レバー"
+        onApply={(leverId) => onApplyLever(leverId, dept.def.id)}
+        leverAriaLabel={(lever) =>
+          `${dept.def.name}へ「${lever.name}」を適用。コスト ${lever.cost}`
+        }
+        spendConfirmEnabled={spendConfirmEnabled}
+      />
     </div>
   );
 }

@@ -5299,6 +5299,7 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   outline-offset: 2px;
 }
 .event-choice.is-spend-risk,
+.org-lever.is-spend-risk,
 .rest-option.is-spend-risk,
 .shop-card.is-spend-risk {
   border-color: var(--visual-color-spend-risk-border);
@@ -7915,8 +7916,14 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .org-lever-head {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
+}
+.org-lever-head .org-lever-balance,
+.org-lever-head .org-lever-warning {
+  font-size: 11px;
+  line-height: 1.2;
 }
 .org-lever .effect-tags {
   margin-top: 0;
@@ -7932,6 +7939,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-lever-cost {
   color: var(--sun);
   font-size: 12px;
+}
+.org-lever-spend-overlay {
+  z-index: 40;
 }
 
 /* 部署ビュー */

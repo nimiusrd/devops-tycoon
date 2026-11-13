@@ -9,15 +9,14 @@ import { lazyWebgl } from './lazyWebgl';
 import { loadWebglModule } from '../render/loadWebglModule';
 import { useCallback, useMemo, useRef, type ComponentProps } from 'react';
 import { PROCESS_BALANCE } from '../data/balance';
-import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import { ORG_VIEW, orgHubTone } from '../render/orgBoardScene';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import type { QuarterTrendSnapshot } from '../sim/run/types';
-import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { AspectStage } from './AspectStage';
-import { EffectTagList } from './EffectTagList';
+import { COMPANY_LEVERS } from '../data/levers';
+import { OrgLeverList } from './OrgLeverList';
 import { TeamNavigator } from './TeamNavigator';
 import { OrgDeptComparison } from './OrgDeptComparison';
 import { OrgTrendHistory } from './OrgTrendHistory';
@@ -40,6 +39,7 @@ export interface OrgScreenProps {
   onFocusDept: (id: string) => void;
   onFocusTeam: (id: string) => void;
   onApplyLever: (leverId: string) => void;
+  spendConfirmEnabled?: boolean;
 }
 
 export function OrgScreen({
@@ -50,6 +50,7 @@ export function OrgScreen({
   onFocusDept,
   onFocusTeam,
   onApplyLever,
+  spendConfirmEnabled = true,
 }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
   const { usePixi, onWebglError } = usePixiRenderer();
@@ -179,26 +180,15 @@ export function OrgScreen({
       </AspectStage>
       <TeamNavigator teams={teams} onFocusTeam={onFocusTeam} />
 
-      <div className="org-levers" data-testid="org-levers">
-        <span className="org-levers-title">全社レバー</span>
-        {COMPANY_LEVERS.map((l) => (
-          <button
-            type="button"
-            key={l.id}
-            className="org-lever"
-            data-testid={`lever-${l.id}`}
-            disabled={budget < l.cost}
-            onClick={() => onApplyLever(l.id)}
-            title={formatLeverTooltip(l)}
-          >
-            <span className="org-lever-head">
-              <b>{l.name}</b>
-              <span className="org-lever-cost">💰{l.cost}</span>
-            </span>
-            <EffectTagList tags={formatLeverDefTags(l)} testId={`lever-tags-${l.id}`} />
-          </button>
-        ))}
-      </div>
+      <OrgLeverList
+        levers={COMPANY_LEVERS}
+        budget={budget}
+        regionTestId="org-levers"
+        regionLabel="全社レバー"
+        title="全社レバー"
+        onApply={onApplyLever}
+        spendConfirmEnabled={spendConfirmEnabled}
+      />
     </div>
   );
 }

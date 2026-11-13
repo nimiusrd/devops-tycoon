@@ -1131,6 +1131,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                     onFocusDept={run.focusDept}
                     onFocusTeam={run.focusTeam}
                     onApplyLever={run.applyOrgLever}
+                    spendConfirmEnabled={!run.tabConflictModalOpen}
                   />
                 )}
                 {zoom.level === 'department' && focusedDept && (
@@ -1145,6 +1146,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                     onFocusTeam={run.focusTeam}
                     onEnterTeam={run.enterTeam}
                     onApplyLever={run.applyOrgLever}
+                    spendConfirmEnabled={!run.tabConflictModalOpen}
                   />
                 )}
               </Suspense>

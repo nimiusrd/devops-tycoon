@@ -4,8 +4,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import { diagnosisTheme } from '../../../src/render/diagnosisTheme';
+import { diagnosisView } from '../../../src/sim/diagnosis';
 import type { DiagnosisType, QuarterOutcome } from '../../../src/sim/run/types';
 import { quarterFailureTheme } from '../../../src/render/quarterFailureTheme';
+
+const INCOMPLETE_COPY_ENDING = /(を|、|\.\.\.|…)$/;
 
 const DIAGNOSIS_TYPES: DiagnosisType[] = [
   'healthyAcceleration',
@@ -31,6 +34,15 @@ describe('診断別の画面演出（RI-21）', () => {
     const toneClasses = DIAGNOSIS_TYPES.map((type) => diagnosisTheme(type).toneClass);
 
     expect(new Set(toneClasses).size).toBe(DIAGNOSIS_TYPES.length);
+  });
+
+  it('組織タイプの説明文が途中で切れていない', () => {
+    for (const type of DIAGNOSIS_TYPES) {
+      const view = diagnosisView(type);
+      const theme = diagnosisTheme(type);
+      expect(view.description, `${type} の説明`).not.toMatch(INCOMPLETE_COPY_ENDING);
+      expect(theme.warning, `${type} の警告文`).not.toMatch(INCOMPLETE_COPY_ENDING);
+    }
   });
 });
 

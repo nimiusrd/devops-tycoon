@@ -81,6 +81,26 @@ async function sprintFrame(page: Page): Promise<{
   });
 }
 
+test('組織レバー案内の role=status は1つで、ボタン説明にヒントが入る (320)', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await startQ1(page);
+
+  const hintStatuses = page.locator('[role="status"]', {
+    hasText: '予算は組織レバーで使えます',
+  });
+  await expect(hintStatuses).toHaveCount(1);
+  await expect(page.getByTestId('open-org')).toHaveAccessibleDescription(
+    /予算は組織レバーで使えます/,
+  );
+
+  await page.getByTestId('open-formation').click();
+  await expect(page.getByTestId('formation')).toBeVisible();
+  await expect(hintStatuses).toHaveCount(1);
+  await expect(page.getByTestId('open-org')).toHaveAccessibleDescription(
+    /予算は組織レバーで使えます/,
+  );
+});
+
 for (const viewport of VIEWPORTS) {
   test(`Q1の編成に案内があり、ボタンの文字は残り、他ボタンは動かない (${viewport.name})`, async ({
     page,

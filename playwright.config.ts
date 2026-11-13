@@ -51,6 +51,11 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
       testMatch: /org-lever-spend-risk/,
     },
+    {
+      name: 'webkit-org-lever-hint',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /org-lever-hint/,
+    },
   ],
   webServer: {
     command: `npm run ${process.env.PLAYWRIGHT_PREVIEW === '1' ? 'preview' : 'dev'} -- --host ${HOST} --port ${PORT} --strictPort`,

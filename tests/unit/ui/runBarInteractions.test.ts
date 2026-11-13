@@ -179,7 +179,18 @@ function mountRunBar(overrides: Partial<RunBarProps> = {}) {
 beforeEach(() => {
   resetOrgLeverHintSession();
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-  vi.stubGlobal('window', { setTimeout, clearTimeout });
+  const requestAnimationFrame = (cb: FrameRequestCallback) => {
+    queueMicrotask(() => cb(0));
+    return 1;
+  };
+  vi.stubGlobal('requestAnimationFrame', requestAnimationFrame);
+  vi.stubGlobal('cancelAnimationFrame', () => undefined);
+  vi.stubGlobal('window', {
+    setTimeout,
+    clearTimeout,
+    requestAnimationFrame,
+    cancelAnimationFrame: () => undefined,
+  });
 });
 
 afterEach(() => {
@@ -301,7 +312,14 @@ describe('RunBar の表示と操作', () => {
     expect(content(screen.find('open-org'))).not.toContain('予算は組織レバーで使えます');
     expect(screen.find('open-org').props).toMatchObject({
       'data-org-lever-hint': 'true',
+      'aria-describedby': 'org-lever-hint-description',
       title: '組織レバー。全社マップを開いて予算を使います',
+    });
+    expect(screen.has('org-lever-hint-status')).toBe(true);
+    expect(screen.find('org-lever-hint-status').props).toMatchObject({
+      role: 'status',
+      'aria-live': 'polite',
+      'aria-atomic': 'true',
     });
     expect(screen.has('org-lever-hint')).toBe(false);
     expect(screen.has('org-lever-hint-mark')).toBe(true);
@@ -425,9 +443,11 @@ describe('RunBar の表示と操作', () => {
       elements(tree).some((element) => element.props['data-testid'] === 'org-lever-hint');
     flush();
     expect(shown()).toBe(true);
-    expect(
-      content(elements(tree).find((element) => element.props['data-testid'] === 'org-lever-hint')),
-    ).toBe('予算は組織レバーで使えます');
+    const hint = elements(tree).find(
+      (element) => element.props['data-testid'] === 'org-lever-hint',
+    );
+    expect(content(hint)).toBe('予算は組織レバーで使えます');
+    expect(hint?.props.role).toBeUndefined();
     props = { eligible: false, dismissed: false };
     flush();
     expect(shown()).toBe(true);

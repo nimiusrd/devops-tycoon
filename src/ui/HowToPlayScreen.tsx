@@ -14,11 +14,18 @@ import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface HowToPlayScreenProps {
   onClose: () => void;
+  /** 前面に別モーダル（競合案内など）があるときは false。 */
+  focusLockActive?: boolean;
 }
 
-export function HowToPlayScreen({ onClose }: HowToPlayScreenProps) {
+export function HowToPlayScreen({ onClose, focusLockActive = true }: HowToPlayScreenProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: onClose });
+  useDialogOverlayLock(dialogRef, {
+    restoreFocus: true,
+    onDismiss: onClose,
+    strictModal: true,
+    enabled: focusLockActive,
+  });
 
   return (
     <ResultOverlay

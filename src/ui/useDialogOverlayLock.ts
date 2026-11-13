@@ -18,15 +18,30 @@ import {
   trapTabTarget,
 } from './dialogOverlayLock';
 
+export interface DialogOverlayLockOptions {
+  restoreFocus?: boolean;
+  onDismiss?: () => void;
+  /**
+   * 保存案内や競合チップを Tab の輪から外し、aria-modal を維持する。
+   * 遊び方など読む専用のモーダル向け。
+   */
+  strictModal?: boolean;
+  /** false のときロックを外し、前面の別モーダルへ譲る。 */
+  enabled?: boolean;
+}
+
 export function useDialogOverlayLock(
   dialogRef: RefObject<HTMLElement | null>,
-  options?: { restoreFocus?: boolean; onDismiss?: () => void },
+  options?: DialogOverlayLockOptions,
 ): void {
   const restoreFocus = options?.restoreFocus === true;
+  const strictModal = options?.strictModal === true;
+  const enabled = options?.enabled !== false;
   const onDismissRef = useRef(options?.onDismiss);
   onDismissRef.current = options?.onDismiss;
 
   useLayoutEffect(() => {
+    if (!enabled) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
 
@@ -40,11 +55,11 @@ export function useDialogOverlayLock(
     if (!dialog.contains(document.activeElement)) {
       dialog.focus({ preventScroll: true });
     }
-    const unlock = lockBackgroundSiblings(dialog);
-    syncAriaModalWithExemptControls(dialog);
+    const unlock = lockBackgroundSiblings(dialog, strictModal ? { inertExempt: true } : undefined);
+    if (!strictModal) syncAriaModalWithExemptControls(dialog);
 
     const onKeyDown = (event: KeyboardEvent) => {
-      syncAriaModalWithExemptControls(dialog);
+      if (!strictModal) syncAriaModalWithExemptControls(dialog);
       if (event.key === 'Escape') {
         const dismiss = onDismissRef.current;
         if (!dismiss) return;
@@ -55,9 +70,9 @@ export function useDialogOverlayLock(
       }
       if (event.key !== 'Tab') return;
       const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const exempt = listOverlayExemptFocusables(dialog).filter(
-        (element) => !dialog.contains(element),
-      );
+      const exempt = strictModal
+        ? []
+        : listOverlayExemptFocusables(dialog).filter((element) => !dialog.contains(element));
       const target = trapTabTarget(listFocusable(dialog), exempt, active, event.shiftKey, dialog);
       if (!target) return;
       event.preventDefault();
@@ -67,13 +82,13 @@ export function useDialogOverlayLock(
     let lastExemptFocus: Node | null = null;
 
     const onFocusIn = (event: FocusEvent) => {
-      syncAriaModalWithExemptControls(dialog);
+      if (!strictModal) syncAriaModalWithExemptControls(dialog);
       const target = event.target;
       if (!(target instanceof Node) || dialog.contains(target)) {
         if (target instanceof Node && dialog.contains(target)) lastExemptFocus = null;
         return;
       }
-      if (isOverlayExemptInFront(target, dialog)) {
+      if (!strictModal && isOverlayExemptInFront(target, dialog)) {
         lastExemptFocus = target;
         return;
       }
@@ -105,7 +120,7 @@ export function useDialogOverlayLock(
     if (typeof MutationObserver === 'function') {
       try {
         observer = new MutationObserver(() => {
-          syncAriaModalWithExemptControls(dialog);
+          if (!strictModal) syncAriaModalWithExemptControls(dialog);
           restoreFocusFromDisconnectedExempt();
         });
         observer.observe(document.body, { childList: true, subtree: true });
@@ -121,5 +136,5 @@ export function useDialogOverlayLock(
       unlock();
       previouslyFocused?.focus({ preventScroll: true });
     };
-  }, [dialogRef, restoreFocus]);
+  }, [dialogRef, restoreFocus, strictModal, enabled]);
 }

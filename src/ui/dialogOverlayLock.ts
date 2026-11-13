@@ -192,8 +192,17 @@ export function trapTabTarget<T extends object>(
   return null;
 }
 
+export interface LockBackgroundOptions {
+  /** true のとき、保存案内などロック免除の兄弟も inert にする（読む専用モーダル向け）。 */
+  inertExempt?: boolean;
+}
+
 /** ダイアログの兄弟を inert / aria-hidden にし、解除関数を返す。 */
-export function lockBackgroundSiblings(dialog: HTMLElement): () => void {
+export function lockBackgroundSiblings(
+  dialog: HTMLElement,
+  options?: LockBackgroundOptions,
+): () => void {
+  const inertExempt = options?.inertExempt === true;
   const parent = dialog.parentElement;
   if (!parent) return () => {};
 
@@ -201,7 +210,7 @@ export function lockBackgroundSiblings(dialog: HTMLElement): () => void {
   const restores = new Map<HTMLElement, () => void>();
 
   const lockTarget = (target: HTMLElement) => {
-    if (restores.has(target) || isOverlayLockExempt(target)) return;
+    if (restores.has(target) || (!inertExempt && isOverlayLockExempt(target))) return;
     const previousInert = target.inert;
     const previousAriaHidden = target.getAttribute('aria-hidden');
     target.inert = true;

@@ -412,6 +412,8 @@ describe('HowToPlayScreen', () => {
     expect(vi.mocked(useDialogOverlayLock)).toHaveBeenCalledWith(expect.any(Object), {
       restoreFocus: true,
       onDismiss: onClose,
+      strictModal: true,
+      enabled: true,
     });
     for (const section of HOW_TO_PLAY_SECTIONS) {
       expect(content(find(tree, `how-to-play-${section.id}`))).toBe(section.title + section.body);

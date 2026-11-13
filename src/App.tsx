@@ -740,9 +740,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             }}
           />
         </SceneScrollReset>
-        {helpOpen && !run.tabConflictModalOpen && (
+        {helpOpen && (
           <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
-            <HowToPlayScreen onClose={closeHelp} />
+            <HowToPlayScreen onClose={closeHelp} focusLockActive={!run.tabConflictModalOpen} />
           </Suspense>
         )}
         <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeNonHelpTitleModals} />}>
@@ -1189,9 +1189,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           )}
         </Suspense>
         {helpOpen && <RunHelpSimPause game={game} />}
-        {helpOpen && !run.tabConflictModalOpen && (
+        {helpOpen && (
           <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
-            <HowToPlayScreen onClose={closeHelp} />
+            <HowToPlayScreen onClose={closeHelp} focusLockActive={!run.tabConflictModalOpen} />
           </Suspense>
         )}
       </div>

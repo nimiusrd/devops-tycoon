@@ -135,9 +135,7 @@ export function SprintResultScreen({
               >
                 {contextLine.tone === 'danger' ? (
                   <>
-                    <span className="result-context-badge" aria-hidden="true">
-                      危険
-                    </span>
+                    <span className="result-context-badge">危険</span>
                     <span>{contextLine.text}</span>
                   </>
                 ) : (

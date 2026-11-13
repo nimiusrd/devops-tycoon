@@ -52,6 +52,11 @@ export default defineConfig({
       testMatch: /org-lever-spend-risk/,
     },
     {
+      name: 'webkit-org-lever-hint',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /org-lever-hint/,
+    },
+    {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
       testMatch: /sprint-result-quarter-goal/,

@@ -113,22 +113,21 @@ function pilesStayOnBoard(dots: readonly BoardDotPlan[], scales: readonly number
   return true;
 }
 
-const REVIEW_SHIFT_RANGES = [
-  {
-    dxMin: -12,
-    dxMax: 96,
-    dyMin: -72,
-    dyMax: 12,
-    step: 2,
-  },
-  {
-    dxMin: -12,
-    dxMax: 148,
-    dyMin: -120,
-    dyMax: 12,
-    step: 2,
-  },
-] as const;
+const REVIEW_SHIFT_COMPACT = {
+  dxMin: -12,
+  dxMax: 96,
+  dyMin: -72,
+  dyMax: 12,
+  step: 2,
+} as const;
+
+const REVIEW_SHIFT_EXTENDED_COARSE = {
+  dxMin: -12,
+  dxMax: 148,
+  dyMin: -120,
+  dyMax: 12,
+  step: 4,
+} as const;
 
 function pickBetterShift(
   best: (BoardPileShift & { dist: number }) | null,
@@ -146,7 +145,7 @@ function pickBetterShift(
 function findReviewPileShiftInRange(
   dots: readonly BoardDotPlan[],
   scales: readonly number[],
-  range: (typeof REVIEW_SHIFT_RANGES)[number],
+  range: { dxMin: number; dxMax: number; dyMin: number; dyMax: number; step: number },
 ): BoardPileShift | null {
   let best: (BoardPileShift & { dist: number }) | null = null;
   for (let dx = range.dxMin; dx <= range.dxMax; dx += range.step) {
@@ -160,6 +159,32 @@ function findReviewPileShiftInRange(
   return best ? { dx: best.dx, dy: best.dy } : null;
 }
 
+/** 粗探索で見つけた解を、2px 刻みでより小さい移動へ寄せる。 */
+function refineReviewPileShift(
+  dots: readonly BoardDotPlan[],
+  scales: readonly number[],
+  coarse: BoardPileShift,
+): BoardPileShift {
+  let best = pickBetterShift(null, coarse.dx, coarse.dy)!;
+  for (
+    let dx = Math.max(REVIEW_SHIFT_COMPACT.dxMin, coarse.dx - 4);
+    dx <= Math.min(REVIEW_SHIFT_EXTENDED_COARSE.dxMax, coarse.dx + 4);
+    dx += 2
+  ) {
+    for (
+      let dy = Math.max(REVIEW_SHIFT_EXTENDED_COARSE.dyMin, coarse.dy - 4);
+      dy <= Math.min(REVIEW_SHIFT_COMPACT.dyMax, coarse.dy + 4);
+      dy += 2
+    ) {
+      const shifted = applyLanePileShift(dots, 'review', { dx, dy });
+      if (!pilesStayOnBoard(shifted, scales)) continue;
+      if (countReviewCrossStationOverlaps(shifted, scales) > 0) continue;
+      best = pickBetterShift(best, dx, dy)!;
+    }
+  }
+  return { dx: best.dx, dy: best.dy };
+}
+
 /**
  * Review 山を他工程と重ならない位置へ寄せる最小シフトを決定論的に探す。
  * 交差ゼロのうち移動量が最小。同距離なら上（-y）・右（+x）を優先してフロー通路を空ける。
@@ -171,10 +196,10 @@ export function findReviewPileShift(
   if (countReviewCrossStationOverlaps(dots, scales) === 0) {
     return { dx: 0, dy: 0 };
   }
-  for (const range of REVIEW_SHIFT_RANGES) {
-    const shift = findReviewPileShiftInRange(dots, scales, range);
-    if (shift) return shift;
-  }
+  const compact = findReviewPileShiftInRange(dots, scales, REVIEW_SHIFT_COMPACT);
+  if (compact) return compact;
+  const coarse = findReviewPileShiftInRange(dots, scales, REVIEW_SHIFT_EXTENDED_COARSE);
+  if (coarse) return refineReviewPileShift(dots, scales, coarse);
   return { dx: 0, dy: 0 };
 }
 

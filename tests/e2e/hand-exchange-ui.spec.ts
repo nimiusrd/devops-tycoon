@@ -87,7 +87,8 @@ for (const viewport of [
 
     await expect(toggle).toBeDisabled();
     const status = page.getByTestId('hand-exchange-status');
-    await expect(status).toHaveAttribute('role', 'status');
+    await expect(status).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.getByTestId('hand-exchange-status-live').getByRole('status')).toBeAttached();
     await expect(status).toHaveText('交換不可: 山札に交換できるカードがありません');
     await expect(status).toBeVisible();
     const statusLayout = await status.evaluate((element) => ({

@@ -47,7 +47,12 @@ export function HandExchangeStatusAnnouncer({
       data-testid="hand-exchange-status-live"
       data-empty={spoken ? undefined : 'true'}
     >
-      <div role="status" aria-live="polite" aria-atomic="true">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="hand-exchange-status-announce"
+      >
         {spoken}
       </div>
     </div>

@@ -8,7 +8,7 @@
  * 挟まり、組織状態で重み付けした判定/選択イベントを seed付き決定論で引く（第22.3）。
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
-import { getBoss } from '../../data/bosses';
+import { getBoss } from '../../data/bossDisplay';
 import { discountedShopPrice } from './shopPrice';
 import { FIXED_STEP_MS } from '../../data/balance/pacing';
 import {

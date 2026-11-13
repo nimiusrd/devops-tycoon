@@ -6,7 +6,7 @@
  * 数値パッシブに畳み込む純TS。カードは手札発動（RI-30）のためここでは含めない。
  * 加算系（aiLiteracyAdd 等）は取得/発動時に組織へ反映する想定（engine 側で適用）。
  */
-import { getBoss } from '../../data/bosses';
+import { getBoss } from '../../data/bossDisplay';
 import { RUN_BALANCE } from '../../data/balance/run';
 import { getDifficulty, getTrial } from '../../data/difficulties';
 import { getEvolutionNode } from '../../data/evolution';

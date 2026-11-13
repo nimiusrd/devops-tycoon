@@ -4,7 +4,7 @@
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
 import { useRef, useState } from 'react';
-import { getBoss } from '../data/bosses';
+import { getBoss } from '../data/bossDisplay';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { loseNextActionView } from '../render/loseNextActionView';
 import { quarterFailureTheme } from '../render/quarterFailureTheme';

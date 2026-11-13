@@ -12,13 +12,19 @@ import {
   FIREFIGHT_STABILITY_BURN_TICKS,
   FIREFIGHT_STABILITY_MIN_BURNING,
 } from '../sim/actions';
-import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, REVIEW_FREEZE_PEAK } from '../sim/outcome';
+import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../sim/outcome';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { resolveNextQuarterEffects } from '../sim/run/quarterReview';
 import { eventMinSignalThreshold } from '../sim/run/events';
 import type { GoalAdjustmentId, StakeholderTrust } from '../sim/run/types';
 import type { OrgState, SimState, Task } from '../sim/types';
 import { clampSeniorHpDisplay } from './seniorHpDisplay';
+import {
+  reviewFreezeDangerPeak,
+  reviewFreezePeakHudCopy,
+  reviewFreezeWatchPeak,
+  reviewQueueHudCopy,
+} from './reviewFreezeCopy';
 import type { IconKey } from './visualIcons';
 
 /** `review-freeze` イベント抽選の資格帯を定義から導出する。 */
@@ -31,12 +37,9 @@ export const REVIEW_FREEZE_EVENT_HP =
     ? 0
     : Math.round(100 * (1 - REVIEW_FREEZE_MIN_SENIOR_HP_LOW));
 /** HUD「凍結注意」のキューピーク閾値（敗北ピークの 75%・playtest 危険域と揃える）。 */
-export const REVIEW_FREEZE_WATCH_PEAK = Math.round(
-  REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value,
-);
-/** HUD「PR凍結危険」のキューピーク閾値。 */
-export const REVIEW_FREEZE_DANGER_PEAK =
-  REVIEW_FREEZE_PEAK - OUTCOME_BALANCE.reviewFreezeDangerOffset.value;
+export const REVIEW_FREEZE_WATCH_PEAK = reviewFreezeWatchPeak();
+/** HUD「レビュー凍結危険」のキューピーク閾値。 */
+export const REVIEW_FREEZE_DANGER_PEAK = reviewFreezeDangerPeak();
 
 const SECURITY_FRAGILITY_THRESHOLD = PROCESS_BALANCE.securityFragilityThreshold.value;
 const SECURITY_DANGER_THRESHOLD = SECURITY_FRAGILITY_THRESHOLD / 2;
@@ -371,23 +374,7 @@ export function reviewFreezeHudCopy(reviewQueuePeak: number): {
   detail: string;
   warningChip?: string;
 } {
-  const peakWatch = reviewQueuePeak >= REVIEW_FREEZE_WATCH_PEAK;
-  const peakDanger = reviewQueuePeak >= REVIEW_FREEZE_DANGER_PEAK;
-  if (!peakWatch) {
-    return { tone: 'good', detail: `Review待ちピーク ${Math.round(reviewQueuePeak)}` };
-  }
-  if (peakDanger) {
-    return {
-      tone: 'danger',
-      detail: '凍結危険・AIスロットルやPR分割でピークを下げる',
-      warningChip: 'PR凍結危険',
-    };
-  }
-  return {
-    tone: 'watch',
-    detail: '凍結注意・渋滞ピークが限界に近い',
-    warningChip: '凍結注意',
-  };
+  return reviewFreezePeakHudCopy(reviewQueuePeak);
 }
 
 /** HUD の表示メタデータを、既存のステータス導出値から組み立てる。 */
@@ -400,7 +387,9 @@ export function deriveHudMetrics(
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const queue = reviewQueueLength(tasks);
   const livePeak = Math.max(reviewQueuePeak, queue);
-  const freezeCopy = reviewFreezeHudCopy(livePeak);
+  const peakCopy = reviewFreezePeakHudCopy(livePeak);
+  const queueCopy = reviewQueueHudCopy(queue);
+  const freezeCopy = peakCopy.warningChip ? peakCopy : queueCopy;
   const burning = tasks.filter((task) => task.incident);
   const minBurnTicksLeft = burning.reduce(
     (min, task) => Math.min(min, task.burnTicksLeft ?? Number.POSITIVE_INFINITY),
@@ -445,7 +434,7 @@ export function deriveHudMetrics(
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
       tone: freezeCopy.warningChip ? freezeCopy.tone : gradeTone(s.reviewCapacity),
-      detail: freezeCopy.warningChip ? freezeCopy.detail : `Review待ち ${queue}`,
+      detail: freezeCopy.detail,
       warningChip: freezeCopy.warningChip,
       help: 'レビュー詰まりへの耐性です。シニア体力が落ちるほど悪化します。',
     },

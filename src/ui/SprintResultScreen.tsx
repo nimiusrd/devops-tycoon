@@ -8,6 +8,7 @@ import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
 import { formatSprintResultSeniorHp } from '../render/seniorHpDisplay';
 import { planReviewHellResultSummary } from '../render/reviewHellReplayView';
+import type { SprintResultContextLine } from '../render/sprintResultContextView';
 import { planBurnCauseLog } from '../render/sprintBurnCauseView';
 import { planSprintGradeView } from '../render/sprintGradeView';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
@@ -74,6 +75,8 @@ export interface SprintResultScreenProps {
   replayMode?: boolean;
   /** ラン診断（リプレイ要約用。RI-34‴）。 */
   diagnosis?: DiagnosisType;
+  /** ボス直前など、結果画面を開いた時点で確定した共有1行（#1011 / #1014）。 */
+  contextLine?: SprintResultContextLine;
 }
 
 /** 成長セクションに出す要素があるか（昇格・休職・レベルアップ）。 */
@@ -94,6 +97,7 @@ export function SprintResultScreen({
   continueDisabledReason,
   replayMode = false,
   diagnosis = 'healthyAcceleration',
+  contextLine = { show: false },
 }: SprintResultScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef);
@@ -119,6 +123,16 @@ export function SprintResultScreen({
         <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={0}>
           <div className="result-hero" data-testid="result-hero">
             <p className="result-eyebrow">スプリント結果</p>
+            {contextLine.show ? (
+              <p
+                className="result-analysis-tip"
+                data-testid="sprint-result-context-line"
+                data-tone={contextLine.tone}
+                role="status"
+              >
+                {contextLine.text}
+              </p>
+            ) : null}
             {hellSummary.show ? (
               <div
                 className="result-review-hell-summary"

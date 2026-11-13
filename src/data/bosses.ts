@@ -25,6 +25,7 @@ export interface BossClearCheck {
 export interface BossDef {
   id: string;
   name: string;
+  /** プレイヤー向け説明（`src/data/bossDisplay.ts` 参照）。 */
   description: string;
   /** タスク量の倍率（大型リリースは 2 倍など）。 */
   taskCountMul: number;
@@ -33,11 +34,12 @@ export interface BossDef {
   clear: BossClearCheck;
 }
 
-export const BOSS_DEFS: BossDef[] = [
+export type BossTemplate = Omit<BossDef, 'description'>;
+
+export const BOSS_TEMPLATES: BossTemplate[] = [
   {
     id: 'big-release',
     name: '大型リリース',
-    description: 'タスク量が普段より多い。期限内に目標出荷を達成し、渋滞を捌き切れ。',
     // RI-75: タスク床で山場の長さを確保し、倍率は難易度横断の上限超過を避ける。
     taskCountMul: 1,
     incidentMul: 1,
@@ -46,7 +48,6 @@ export const BOSS_DEFS: BossDef[] = [
   {
     id: 'major-incident',
     name: '本番大規模障害',
-    description: '複数の炎上が連続発生。緊急対応で鎮火しつつ、延焼を許すな。',
     taskCountMul: 1,
     // RI-75: 炎上長尾を抑えつつ、障害ボスらしい圧は残す。
     incidentMul: 1.1,
@@ -55,7 +56,6 @@ export const BOSS_DEFS: BossDef[] = [
   {
     id: 'security-audit',
     name: 'セキュリティ監査',
-    description: 'Tech Debt が高いほど失点。品質・テストの蓄積が問われる査定戦。',
     taskCountMul: 1,
     incidentMul: 1,
     clear: { maxTechDebt: 40, minQuality: 50 },
@@ -63,16 +63,11 @@ export const BOSS_DEFS: BossDef[] = [
   {
     id: 'exec-review',
     name: '経営レビュー',
-    description: 'AI 利用率と健全性（Morale・Quality）を両立して見せよ。',
     taskCountMul: 1,
     incidentMul: 1,
     clear: { minAiPct: 40, minMorale: 45, minQuality: 45 },
   },
 ];
 
-const BY_ID = new Map(BOSS_DEFS.map((b) => [b.id, b]));
-
-/** ボス定義を ID で取得する（未知は undefined）。 */
-export function getBoss(id: string): BossDef | undefined {
-  return BY_ID.get(id);
-}
+/** 実行系カタログ用。説明文は射影対象外のため空文字。 */
+export const BOSS_DEFS: BossDef[] = BOSS_TEMPLATES.map((boss) => ({ ...boss, description: '' }));

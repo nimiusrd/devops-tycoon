@@ -6,7 +6,7 @@
  * RI-30: assignTask/splitPr は武装→ドラッグ、カードは手札から発動。
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { getBoss } from '../data/bosses';
+import { getBoss, getBossPlayerDescription } from '../data/bossDisplay';
 import { BOARD_VIEW } from '../render/boardScene';
 import {
   ATTENTION_COOLDOWN_MS,
@@ -501,7 +501,11 @@ export function SprintScreen({
                 </>
               )}
             </span>
-            {isBoss && boss && <span className="pill boss-goal">{boss.description}</span>}
+            {isBoss && boss && (
+              <span className="pill boss-goal">
+                {getBossPlayerDescription(state.bossId, state.difficulty) ?? boss.description}
+              </span>
+            )}
             <div
               className="speed-controls"
               role="group"

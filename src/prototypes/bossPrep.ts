@@ -1,6 +1,6 @@
 /** RI-242: 大型リリースの直前に、温存か前倒し整備かを一度だけ選ぶ。 */
 
-import { getBoss } from '../data/bosses';
+import { getBoss } from '../data/bossDisplay';
 
 export type BossPrepBoard = 'small' | 'large' | 'absent';
 export type BossPrepStrategy = 'conserve' | 'advance';

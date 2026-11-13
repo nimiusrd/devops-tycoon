@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BOSS_DEFS, getBoss, type BossDef } from '../../../src/data/bosses';
+import { BOSS_DEFS, type BossDef } from '../../../src/data/bosses';
+import { getBoss } from '../../../src/data/bossDisplay';
 import { OUTCOME_BALANCE } from '../../../src/data/balance';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../../src/data/goalAdjustments';
 import { RunEngine } from '../../../src/sim/run/engine';

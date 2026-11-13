@@ -705,7 +705,7 @@ for (const entry of RI22_TERMINAL_SEEDS) {
       kpiMissed: 'KPI未達の累積',
       moraleCollapse: 'チーム崩壊',
       techDebt: '技術的負債の崩壊',
-      reviewFreeze: 'PR 凍結',
+      reviewFreeze: 'レビュー凍結',
     };
     expect(loseReason).toBeTruthy();
     await expect(page.getByTestId('run-end-status')).toContainText(loseLabels[loseReason!]!);

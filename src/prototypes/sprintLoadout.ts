@@ -1,4 +1,4 @@
-import { getBoss } from '../data/bosses';
+import { getBoss } from '../data/bossDisplay';
 import { dealHand } from '../sim/cards';
 import { createRng } from '../sim/rng';
 import type { CardInstance } from '../sim/types';

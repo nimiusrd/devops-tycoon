@@ -18,7 +18,7 @@ export const SENIOR_HP_LOSE_MAX = OUTCOME_BALANCE.loseSeniorHpMax.value;
 export const MORALE_LOSE_MAX = OUTCOME_BALANCE.loseMoraleMax.value;
 /** 技術的負債がこの値を超えると開発停止＝敗北。 */
 export const TECH_DEBT_CAP = OUTCOME_BALANCE.loseTechDebtCap.value;
-/** Review 待ち行列がこのピークに達すると PR 凍結＝敗北。 */
+/** Review 待ち行列がこのピークに達するとレビュー凍結＝敗北。 */
 export const REVIEW_FREEZE_PEAK = OUTCOME_BALANCE.loseReviewFreezePeak.value;
 /** 延焼を伴う Incident がこの連続スプリント数に達するとリリース停止＝敗北。 */
 export const CONSECUTIVE_INCIDENT_SPRINT_CAP =

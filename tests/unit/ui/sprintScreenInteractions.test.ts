@@ -85,7 +85,7 @@ vi.mock('../../../src/ui/responsiveMode', () => ({
   useResponsiveMode: () => responsive.mode,
 }));
 
-import { getBoss } from '../../../src/data/bosses';
+import { getBossPlayerDescription } from '../../../src/data/bossDisplay';
 import type { GameHandle } from '../../../src/game';
 import { ATTENTION_PAUSE_MS } from '../../../src/render/attentionPause';
 import { Board } from '../../../src/render/Board';
@@ -276,7 +276,7 @@ describe('SprintScreen の表示と親子の連携', () => {
     expect(content(status)).toContain(label);
     const goal = elements(status).find((node) => node.props.className === 'pill boss-goal');
     if (kind === 'boss' && bossId === 'big-release') {
-      expect(content(goal)).toBe(getBoss(bossId)?.description);
+      expect(content(goal)).toBe(getBossPlayerDescription(bossId, 'normal'));
     } else {
       expect(goal).toBeUndefined();
     }

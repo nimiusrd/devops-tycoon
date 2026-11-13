@@ -89,7 +89,7 @@ describe('formatEventOutcomeTags（イベント効果タグ）', () => {
     });
 
     const loseTags = formatEventOutcomeTags({ forceLose: 'reviewFreeze' });
-    expect(loseTags).toEqual([{ label: 'レビュー停止でラン終了', tone: 'negative' }]);
+    expect(loseTags).toEqual([{ label: 'レビュー凍結でラン終了', tone: 'negative' }]);
   });
 
   it('Tech Debt / AI依存度の増加は negative タグにする', () => {

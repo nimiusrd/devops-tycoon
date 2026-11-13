@@ -448,11 +448,11 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     expect(reviewFreezeHudCopy(0).warningChip).toBeUndefined();
     expect(reviewFreezeHudCopy(REVIEW_FREEZE_WATCH_PEAK)).toMatchObject({
       tone: 'watch',
-      warningChip: '凍結注意',
+      warningChip: 'レビュー凍結注意',
     });
     expect(reviewFreezeHudCopy(REVIEW_FREEZE_DANGER_PEAK)).toMatchObject({
       tone: 'danger',
-      warningChip: 'PR凍結危険',
+      warningChip: 'レビュー凍結危険',
     });
     // 低HPだけでは凍結チップを出さない（燃え尽き側の警告に任せる）。
     expect(
@@ -466,7 +466,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       REVIEW_FREEZE_WATCH_PEAK,
     );
     expect(metrics.find((m) => m.id === 'reviewCapacity')).toMatchObject({
-      warningChip: '凍結注意',
+      warningChip: 'レビュー凍結注意',
     });
   });
 });

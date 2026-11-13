@@ -45,7 +45,7 @@ vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   return { ...actual, useReplayContent: () => actual.createReplayContentResolver(null) };
 });
 
-import { getBoss } from '../../../src/data/bosses';
+import { getBoss } from '../../../src/data/bossDisplay';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 import { resetLeaveReturnSpeech } from '../../../src/ui/leaveReturnSpeech';

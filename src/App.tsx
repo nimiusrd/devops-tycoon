@@ -13,6 +13,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -20,6 +21,7 @@ import {
 import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
 import { displayedQuarterSprintIndex } from './render/sprintProgressView';
+import { planSprintResultContextLine } from './render/sprintResultContextView';
 import {
   reviewFreezeWarningPeak,
   type HudMetricSnapshot,
@@ -785,6 +787,21 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   // 四半期末はレビュー集計済みで結果を出す。次の操作はそのレビューであり、ドラフトではない。
   const resultContinuesToQuarterReview = state.quarterReview !== null;
   const resultReplayPhase = resultContinuesToQuarterReview ? 'quarterReview' : 'draft';
+  const sprintResultContextLine = useMemo(() => {
+    if (phase !== 'result' || !state.lastResult) return { show: false as const };
+    return planSprintResultContextLine({
+      sprintsPlayed: state.sprintsPlayed,
+      sprintsPerQuarter: state.sprintsPerQuarter,
+      runReviewQueuePeak: state.totals.reviewQueuePeak ?? 0,
+      sprintReviewQueueMax: state.lastResult.reviewQueueMax,
+    });
+  }, [
+    phase,
+    state.lastResult,
+    state.sprintsPlayed,
+    state.sprintsPerQuarter,
+    state.totals.reviewQueuePeak,
+  ]);
   const replayResultContinueMissing =
     run.isReplayMode && run.findReplayJumpIndex(resultReplayPhase) === null;
   const replayBanner = run.isReplayMode ? (
@@ -1030,6 +1047,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
                   }
                   replayMode={run.isReplayMode}
                   diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
+                  contextLine={sprintResultContextLine}
                 />
               </SceneScrollReset>
             )}

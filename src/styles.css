@@ -638,13 +638,15 @@ body {
 .speed-controls {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   padding: 3px;
   border-radius: 12px;
   background: #1a1438;
   border: 2px solid var(--line);
 }
 .speed-btn {
+  position: relative;
+  z-index: 0;
   min-width: 36px;
   padding: 4px 10px;
   border-radius: 9px;
@@ -656,6 +658,18 @@ body {
   letter-spacing: 0.02em;
   cursor: pointer;
   line-height: 1.2;
+}
+.speed-btn::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--visual-interaction-min-touch-target);
+  height: var(--visual-interaction-min-touch-target);
+  transform: translate(-50%, -50%);
+  border-radius: 9px;
+  background: transparent;
+  z-index: -1;
 }
 .speed-btn:hover:not(:disabled) {
   color: var(--cream);

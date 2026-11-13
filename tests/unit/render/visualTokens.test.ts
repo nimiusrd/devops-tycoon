@@ -205,6 +205,9 @@ describe('visual tokens', () => {
     expect(applied.get('--visual-org-board-compact-max-width')).toBe(
       `${orgBoardCompactMaxWidthPx()}px`,
     );
+    expect(values['--visual-interaction-min-touch-target']).toBe(
+      `${VISUAL_TOKENS.dimensions.interaction.minTouchTargetCss}px`,
+    );
     expect(values['--visual-icon-size-hud']).toBe('16px');
     expect(values['--visual-icon-size-card']).toBe('20px');
     expect(values['--visual-icon-size-header']).toBe('24px');

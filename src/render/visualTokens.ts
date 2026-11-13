@@ -380,6 +380,10 @@ export const VISUAL_TOKENS = {
         baseY: 292,
       },
     },
+    /** モバイル主要操作の最小タップ領域（CSS px）。DS-08。 */
+    interaction: {
+      minTouchTargetCss: 44,
+    },
     /** HTML 判断アイコンの共有寸法。個別 px を増やさず画面役割で選ぶ（#474）。 */
     icon: {
       hud: 16,
@@ -637,6 +641,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-dept-banner-line-gap': `${dimensions.department.banner.lineGap}px`,
     '--visual-dept-banner-tag-padding-x': `${dimensions.department.banner.tagPaddingX}px`,
     '--visual-dept-banner-tag-padding-y': `${dimensions.department.banner.tagPaddingY}px`,
+    '--visual-interaction-min-touch-target': `${dimensions.interaction.minTouchTargetCss}px`,
     '--visual-icon-size-hud': `${dimensions.icon.hud}px`,
     '--visual-icon-size-card': `${dimensions.icon.card}px`,
     '--visual-icon-size-header': `${dimensions.icon.header}px`,

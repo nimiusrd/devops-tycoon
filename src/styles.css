@@ -7470,6 +7470,35 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 :root[data-responsive-width='narrow'] .formation-head .formation-close {
   width: 100%;
 }
+/* #1031: 短い狭幅で復帰行を空けたとき、開始を画面下端へ固定しパネル内スクロールを要さない。 */
+:root[data-responsive-width='narrow'][data-responsive-height='short']
+  .app[data-phase='setup']
+  .formation-panel:has(.formation-setup-copy[data-reserve='true'])
+  .formation-head
+  > .primary-button {
+  position: fixed;
+  right: 18px;
+  bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  left: 18px;
+  z-index: 10;
+  width: auto;
+  box-sizing: border-box;
+}
+:root[data-responsive-width='narrow'][data-responsive-height='short']
+  .app[data-phase='setup']
+  .formation-panel:has(.formation-setup-copy[data-reserve='true'])
+  .formation-head::after {
+  display: block;
+  content: '';
+  flex: 0 0 auto;
+  width: 100%;
+  height: 44px;
+}
+:root[data-responsive-width='narrow'][data-responsive-height='short']
+  .app[data-phase='setup']
+  .formation-panel:has(.formation-setup-copy[data-reserve='true']) {
+  padding-bottom: calc(22px + 44px + 12px);
+}
 :root[data-responsive-width='narrow'] .fm-lane {
   flex: 1 1 calc(50% - 4px);
   min-width: 0;

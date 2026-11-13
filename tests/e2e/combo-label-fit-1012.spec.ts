@@ -97,7 +97,7 @@ test.describe('#1012 COMBO ラベル', () => {
         return `${before}${element.textContent ?? ''}`;
       });
       expect(comboVisual).toBe('コンボ×12');
-      expect(multVisual).toMatch(/^倍率\d+\.\dx$/);
+      expect(multVisual).toMatch(/^倍\d+\.\dx$/);
 
       for (const label of labels) {
         expect(label.fontSize, label.name).toBeGreaterThanOrEqual(11);

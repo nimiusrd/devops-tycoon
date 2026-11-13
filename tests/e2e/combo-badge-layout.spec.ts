@@ -207,7 +207,7 @@ test.describe('電話幅では COMBO が盤面を押し下げない（#967）', 
           return `${before}${element.textContent ?? ''}`;
         });
         expect(visualCombo).toBe(`コンボ×${combo}`);
-        expect(visualMult).toMatch(/^倍率\d+\.\dx$/);
+        expect(visualMult).toMatch(/^倍\d+\.\dx$/);
         for (const testId of ['combo-x', 'combo-mult'] as const) {
           const clipped = await page
             .getByTestId(testId)

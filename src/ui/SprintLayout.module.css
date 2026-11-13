@@ -593,6 +593,6 @@
   .root[data-responsive-width='narrow'][data-responsive-height]
     :global(.combo-fused-narrow)
     :global(.combo-mult.combo-label-short)::before {
-    content: '倍率';
+    content: '倍';
   }
 }

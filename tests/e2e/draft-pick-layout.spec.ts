@@ -70,6 +70,22 @@ for (const viewport of DRAFT_VIEWPORTS) {
       expect(boxes[id]!.height, `${id} のタップ領域`).toBeGreaterThanOrEqual(44);
     }
 
+    for (const id of cardIds) {
+      const headOverflow = await page
+        .getByTestId(`draft-option-${id}`)
+        .locator('.card-head')
+        .evaluate((el) => {
+          const costs = el.querySelector('.card-costs');
+          return {
+            head: el.scrollWidth <= el.clientWidth + 1,
+            costs: costs ? costs.scrollWidth <= costs.clientWidth + 1 : true,
+          };
+        });
+      expect(headOverflow.head, `${id} のヘッダーはみ出し`).toBe(true);
+      expect(headOverflow.costs, `${id} のコストはみ出し`).toBe(true);
+      await expect(page.getByTestId(`draft-details-${id}`)).toBeVisible();
+    }
+
     for (const pick of pickIds) {
       const box = boxes[pick]!;
       expect(box.y, `${pick} の上端`).toBeGreaterThanOrEqual(-1);

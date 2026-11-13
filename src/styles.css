@@ -1401,19 +1401,52 @@ body:has(.overlay-contained) {
   font-size: 0.78rem;
   line-height: 1.25;
 }
+.overlay-contained .draft-options .card-head {
+  flex-wrap: wrap;
+  gap: 4px;
+  row-gap: 2px;
+}
+.overlay-contained .draft-options .card-costs {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.overlay-contained .draft-options .card-focus-cost {
+  white-space: normal;
+  text-align: right;
+}
+.overlay-contained .draft-options .card-draft-details {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+.overlay-contained .draft-options .card-draft-details > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--cream);
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+.overlay-contained .draft-options .card-draft-details > summary::-webkit-details-marker {
+  display: none;
+}
+.overlay-contained .draft-options .card-draft-details[open] > summary {
+  margin-bottom: 6px;
+}
 .overlay-contained .draft-options .card-effects {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
   font-size: 0.68rem;
   line-height: 1.35;
 }
 .overlay-contained .draft-options .card-company-guidance {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
   font-size: 0.68rem;
 }
 .overlay-contained .draft-options .what-if-preview.compact {
@@ -1432,24 +1465,24 @@ body:has(.overlay-contained) {
   z-index: 1;
   margin-top: 0;
   padding: 0.65rem 0 0;
-  border-top: 1px solid #5f548e;
-  background: linear-gradient(180deg, #332a5e, #251d49);
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--visual-color-panel));
 }
 .btn-draft-secondary {
   margin-left: 0;
   min-height: 44px;
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid #6a5f97;
-  background: #241d43;
-  color: #d7cff4;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text-dim);
   font-size: 11px;
   font-weight: 700;
   box-shadow: none;
 }
 .btn-draft-secondary:hover:not(:disabled) {
   filter: brightness(1.08);
-  border-color: #8579b8;
+  color: var(--cream);
 }
 .btn-draft-secondary:active:not(:disabled) {
   transform: translateY(1px);
@@ -1469,14 +1502,6 @@ body:has(.overlay-contained) {
   margin-bottom: 0.45rem;
   font-size: 0.88rem;
 }
-:root[data-responsive-width='narrow'] .overlay-contained .draft-options .card-effects,
-:root[data-responsive-width='narrow'] .overlay-contained .draft-options .card-company-guidance {
-  -webkit-line-clamp: 1;
-}
-:root[data-responsive-width='narrow']
-  .overlay-contained
-  .draft-options
-  [data-testid^='card-effect-tags-'],
 :root[data-responsive-width='narrow']
   .overlay-contained
   .what-if-preview[data-testid='what-if-draft-skip'] {

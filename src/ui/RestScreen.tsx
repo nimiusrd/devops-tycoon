@@ -60,31 +60,39 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
         tabIndex={-1}
       >
         <div className="rest-panel">
-          <p className="result-eyebrow">REST / UPGRADE</p>
-          <h2 className="draft-title">強化する施策を選ぶ</h2>
-          <p className="rest-desc">
-            選んだカードを1段強化します。強化後の効果量はカード上のタグに反映されます。
-          </p>
-          <div className="rest-upgrade-grid" data-testid="rest-upgrade-cards">
-            {state.deck.map((card, index) => {
-              const def = resolveCard(card.defId);
-              return (
-                <button
-                  type="button"
-                  key={`${card.defId}-${index}`}
-                  className="rest-upgrade-card"
-                  data-testid={`rest-upgrade-card-${card.defId}-${index}`}
-                  onClick={() => onChoose('upgrade', index)}
-                >
-                  <CardView
-                    def={def}
-                    level={card.level}
-                    playCost={playCost(def.focusCost, card.level + 1)}
-                  />
-                  <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>
-                </button>
-              );
-            })}
+          <div
+            className="overlay-scroll"
+            data-testid="rest-upgrade-scroll"
+            role="region"
+            aria-label="強化する施策"
+            tabIndex={0}
+          >
+            <p className="result-eyebrow">REST / UPGRADE</p>
+            <h2 className="draft-title">強化する施策を選ぶ</h2>
+            <p className="rest-desc">
+              選んだカードを1段強化します。強化後の効果量はカード上のタグに反映されます。
+            </p>
+            <div className="rest-upgrade-grid" data-testid="rest-upgrade-cards">
+              {state.deck.map((card, index) => {
+                const def = resolveCard(card.defId);
+                return (
+                  <button
+                    type="button"
+                    key={`${card.defId}-${index}`}
+                    className="rest-upgrade-card"
+                    data-testid={`rest-upgrade-card-${card.defId}-${index}`}
+                    onClick={() => onChoose('upgrade', index)}
+                  >
+                    <CardView
+                      def={def}
+                      level={card.level}
+                      playCost={playCost(def.focusCost, card.level + 1)}
+                    />
+                    <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <button
             type="button"

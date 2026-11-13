@@ -276,7 +276,7 @@ describe('SprintScreen の表示と親子の連携', () => {
     expect(content(status)).toContain(label);
     const goal = elements(status).find((node) => node.props.className === 'pill boss-goal');
     if (kind === 'boss' && bossId === 'big-release') {
-      expect(content(goal)).toBe(getBossPlayerDescription(bossId, 'normal'));
+      expect(content(goal)).toBe(getBossPlayerDescription(bossId, screen.props.state.difficulty));
     } else {
       expect(goal).toBeUndefined();
     }

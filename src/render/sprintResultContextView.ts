@@ -9,7 +9,8 @@ import {
 } from './reviewFreezeCopy';
 
 export interface SprintResultContextInput {
-  sprintsPlayed: number;
+  /** 当四半期で直近に完了したスプリント番号（1 起点）。 */
+  sprintIndexInQuarter: number;
   sprintsPerQuarter: number;
   /** ラン通算の Review ピーク（`RunTotals.reviewQueuePeak`）。 */
   runReviewQueuePeak: number;
@@ -36,7 +37,7 @@ export function planSprintResultContextLine(
   input: SprintResultContextInput,
 ): SprintResultContextLine {
   const penultimate = input.sprintsPerQuarter - 1;
-  if (input.sprintsPlayed !== penultimate) return { show: false };
+  if (input.sprintIndexInQuarter !== penultimate) return { show: false };
   const freeze = pickReviewFreezeLine(input);
   if (!freeze.show) return { show: false };
   const peak = Math.max(input.runReviewQueuePeak, input.sprintReviewQueueMax);

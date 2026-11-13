@@ -469,6 +469,22 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       warningChip: 'レビュー凍結注意',
     });
   });
+
+  it('ライブキューが警告域なら残り件数を HUD に出す（#1011）', () => {
+    const org = withOrg({ seniorHp: 80 }).org;
+    const base = withOrg({}).sprint.tasks[0]!;
+    const tasks = Array.from({ length: 36 }, (_, i) => ({
+      ...base,
+      id: i,
+      lane: 'review' as const,
+      incident: false,
+    }));
+    expect(
+      deriveHudMetrics(org, tasks, null, 0).find((m) => m.id === 'reviewCapacity'),
+    ).toMatchObject({
+      detail: 'あと 12 件でレビュー凍結',
+    });
+  });
 });
 
 describe('HUD 指標差分', () => {

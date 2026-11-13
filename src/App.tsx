@@ -790,7 +790,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const sprintResultContextLine = useMemo(() => {
     if (phase !== 'result' || !state.lastResult) return { show: false as const };
     return planSprintResultContextLine({
-      sprintsPlayed: state.sprintsPlayed,
+      sprintIndexInQuarter: state.sprintIndexInQuarter,
       sprintsPerQuarter: state.sprintsPerQuarter,
       runReviewQueuePeak: state.totals.reviewQueuePeak ?? 0,
       sprintReviewQueueMax: state.lastResult.reviewQueueMax,
@@ -798,7 +798,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   }, [
     phase,
     state.lastResult,
-    state.sprintsPlayed,
+    state.sprintIndexInQuarter,
     state.sprintsPerQuarter,
     state.totals.reviewQueuePeak,
   ]);

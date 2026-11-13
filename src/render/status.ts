@@ -389,7 +389,11 @@ export function deriveHudMetrics(
   const livePeak = Math.max(reviewQueuePeak, queue);
   const peakCopy = reviewFreezePeakHudCopy(livePeak);
   const queueCopy = reviewQueueHudCopy(queue);
-  const freezeCopy = peakCopy.warningChip ? peakCopy : queueCopy;
+  const freezeCopy = queueCopy.warningChip
+    ? queueCopy
+    : peakCopy.warningChip
+      ? peakCopy
+      : queueCopy;
   const burning = tasks.filter((task) => task.incident);
   const minBurnTicksLeft = burning.reduce(
     (min, task) => Math.min(min, task.burnTicksLeft ?? Number.POSITIVE_INFINITY),

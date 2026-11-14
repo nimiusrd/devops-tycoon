@@ -63,7 +63,9 @@ export function useDialogOverlayLock(
     const onDialogFocusIn = resumeIntraDialogFocus
       ? (event: FocusEvent) => {
           const target = event.target;
-          if (!(target instanceof HTMLElement) || !dialog.contains(target)) return;
+          if (!(target instanceof HTMLElement) || !dialog.contains(target) || target === dialog) {
+            return;
+          }
           const testId = target.dataset.testid;
           if (testId) lastIntraDialogTestId = testId;
         }
@@ -75,10 +77,9 @@ export function useDialogOverlayLock(
       const target = dialog.querySelector<HTMLElement>(
         `[data-testid="${CSS.escape(suspendedTestId)}"]`,
       );
-      if (target) {
-        target.focus({ preventScroll: true });
-        suspendedIntraDialogFocusRef.current = null;
-      }
+      suspendedIntraDialogFocusRef.current = null;
+      if (target) target.focus({ preventScroll: true });
+      else dialog.focus({ preventScroll: true });
     } else if (!dialog.contains(document.activeElement)) {
       dialog.focus({ preventScroll: true });
     }

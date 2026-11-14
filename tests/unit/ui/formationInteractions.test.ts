@@ -105,7 +105,22 @@ describe('編成画面の配置と AI 配布', () => {
     });
     expect(useDialogOverlayLock).toHaveBeenCalledWith(
       { current: null },
-      { restoreFocus: true, onDismiss: screen.props.onClose },
+      {
+        restoreFocus: true,
+        onDismiss: screen.props.onClose,
+        enabled: true,
+        resumeIntraDialogFocus: true,
+      },
+    );
+    screen.update({ focusLockActive: false });
+    expect(useDialogOverlayLock).toHaveBeenLastCalledWith(
+      { current: null },
+      {
+        restoreFocus: true,
+        onDismiss: screen.props.onClose,
+        enabled: false,
+        resumeIntraDialogFocus: true,
+      },
     );
     expect(screen.find('ai-m1').props).toMatchObject({
       'aria-pressed': true,

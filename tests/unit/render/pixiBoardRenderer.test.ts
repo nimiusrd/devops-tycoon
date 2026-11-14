@@ -716,8 +716,9 @@ describe('Pixi スプリント盤面レンダラー', () => {
     const candidate = groups[0];
     const preview = groups[1];
     const narrowScale = 0.208;
-    expect(preview.position.x).toBe(presentBoardDot(scene.dots[0], narrowScale).x);
-    expect(candidate.position.x).toBe(presentBoardDot(scene.dots[1], narrowScale).x);
+    const presented = presentBoardDots(scene.dots, narrowScale);
+    expect(preview.position.x).toBe(presented[0].x);
+    expect(candidate.position.x).toBe(presented[1].x);
     expect(sprite(preview).scale.x).toBeCloseTo(boardDotReadabilityMagnification(narrowScale));
     expect(sprite(preview).scale.x).toBeGreaterThan(1);
     expect(drawCalls(graphics(candidate, 1), 'stroke')).toHaveLength(1);
@@ -741,7 +742,7 @@ describe('Pixi スプリント盤面レンダラー', () => {
     renderer.resize(BOARD_VIEW.w, BOARD_VIEW.h);
     renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]), previewTaskId: 1 }));
     const restored = layer(app, 'dots').children;
-    expect(restored[1].position.x).toBe(scene.dots[0].x);
+    expect(restored[1].position.x).toBe(presentBoardDots(scene.dots, 1)[0].x);
     expect(sprite(restored[1]).scale.x).toBe(1);
 
     renderer.render(input({ scene, previewTaskId: 999 }));
@@ -769,8 +770,9 @@ describe('Pixi スプリント盤面レンダラー', () => {
       }),
     );
     const groups = layer(app, 'dots').children;
-    expect(groups.at(-2)?.position.x).toBe(previewTaskId);
-    expect(groups.at(-1)?.position.x).toBe(0);
+    const presented = presentBoardDots(dots, 1);
+    expect(groups.at(-2)?.position.x).toBe(presented[previewTaskId].x);
+    expect(groups.at(-1)?.position.x).toBe(presented[0].x);
     expect(latest().previewTaskId).toBe(previewTaskId);
     expect(drawCalls(graphics(groups.at(-1)!, 1), 'stroke')).toEqual([
       [expect.objectContaining({ color: VISUAL_TOKENS.colors.sun, width: 2, alpha: 1 })],

@@ -13,8 +13,8 @@ describe('BoardPilePresentation', () => {
     motion.sync(true, 100, false);
     expect(motion.strengthAt(100)).toBe(0);
     const mid = motion.strengthAt(100 + PILE_PRESENTATION.travelMs / 2);
-    expect(mid).toBeGreaterThan(0.4);
-    expect(mid).toBeLessThan(0.7);
+    expect(mid).toBeGreaterThan(0.7);
+    expect(mid).toBeLessThan(1);
     expect(motion.strengthAt(100 + PILE_PRESENTATION.travelMs)).toBeCloseTo(1, 5);
 
     motion.sync(false, 1000, false);

@@ -214,6 +214,22 @@ export function SprintScreen({
     [],
   );
 
+  // 強調タイマーは描画後に始める。dispatch 直後だと 175ms が DOM 反映前に消費される（#1020 / E2E）。
+  useEffect(() => {
+    if (!splitConfirm) return;
+    if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
+    splitConfirmTimer.current = window.setTimeout(() => {
+      setSplitConfirm(null);
+      splitConfirmTimer.current = null;
+    }, splitPrConfirmDurationMs());
+    return () => {
+      if (splitConfirmTimer.current != null) {
+        window.clearTimeout(splitConfirmTimer.current);
+        splitConfirmTimer.current = null;
+      }
+    };
+  }, [splitConfirm]);
+
   // RI-62③: 自動進行での点火・渋滞・ボスIncident をエッジ検出して短い自動ポーズ。
   useEffect(() => {
     if (!sprint || sprint.complete) {
@@ -361,11 +377,6 @@ export function SprintScreen({
         );
         if (confirmCue && state.currentSprintId) {
           setSplitConfirm({ ...confirmCue, sprintId: state.currentSprintId });
-          if (splitConfirmTimer.current != null) window.clearTimeout(splitConfirmTimer.current);
-          splitConfirmTimer.current = window.setTimeout(() => {
-            setSplitConfirm(null);
-            splitConfirmTimer.current = null;
-          }, splitPrConfirmDurationMs());
         }
         if (outcome.effect.containedTaskId != null) {
           setSuppressExtinguishTaskIds(new Set([outcome.effect.containedTaskId]));

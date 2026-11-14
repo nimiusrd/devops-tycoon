@@ -1694,8 +1694,7 @@ body:has(.overlay-contained) {
 :root[data-responsive-width='narrow'] .result-overlay.overlay-contained {
   padding: 0.75rem 0.5rem;
 }
-:root[data-responsive-width='narrow'] .overlay-contained .result-card,
-:root[data-responsive-width='narrow'] .overlay-contained .draft-card-panel {
+:root[data-responsive-width='narrow'] .overlay-contained .sprint-result-card {
   width: 100%;
   padding-left: 0.75rem;
   padding-right: 0.75rem;

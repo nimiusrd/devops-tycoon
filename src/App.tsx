@@ -1202,7 +1202,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           )}
         </div>
         <Suspense fallback={null}>
-          {formationOpen && !run.tabConflictModalOpen && (
+          {formationOpen && (
             <FormationScreen
               state={state}
               onAssign={run.assignMember}
@@ -1210,6 +1210,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               onClose={() => setFormationOpen(false)}
               readOnly={run.isReplayMode}
               runEpoch={run.runEpoch}
+              focusLockActive={!run.tabConflictModalOpen}
             />
           )}
         </Suspense>

@@ -183,9 +183,24 @@ body {
   min-width: 0;
   padding-right: 78px;
 }
-/* 狭幅で KPI が 2 行になっても HUD 高さが変わらず盤面を押さない（#986）。 */
+/*
+ * 狭幅で KPI の段数が変わっても HUD 高さが変わらず盤面を押さない（#975 / #986）。
+ * チップ 1 段の高さは font-size 11px・line-height 1.2・padding 8px、段間は gap 6px。
+ */
 :root[data-responsive-width='narrow'] .hud.hud-compact {
   min-height: calc(2 * (11px * 1.2 + 8px) + 6px);
+}
+/* 430 以下: 体力注意などで 3 段まで行き来する。 */
+@media (max-width: 430px) {
+  :root[data-responsive-width='narrow'] .hud.hud-compact {
+    min-height: calc(4 * (11px * 1.2 + 8px) + 2 * 6px - 6px);
+  }
+}
+/* 360 以下: 4 枚が折り返して最大 4 段（Chromium 320 の fireRisk 入れ替え）。 */
+@media (max-width: 360px) {
+  :root[data-responsive-width='narrow'] .hud.hud-compact {
+    min-height: calc(5 * (11px * 1.2 + 8px) + 3 * 6px);
+  }
 }
 .hud-compact-chip {
   position: relative;

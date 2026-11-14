@@ -585,6 +585,15 @@ describe('hitTestBoardDot', () => {
     const large = [dot({ id: 1, size: 'large' })]; // 直径 34 → 半径 17 + 6 = 23
     expect(hitTestBoardDot({ x: 722, y: 300 }, large, draggable)).toBe(1);
   });
+
+  it('提示中心から 1px 超でも、円内ならその粒を返す（#978）', () => {
+    const scale = 0.56;
+    const dots = [dot({ id: 23, size: 'large', x: 576.61, y: 325.76 })];
+    const ids = new Set([23]);
+    const presented = presentBoardDots(dots, scale)[0]!;
+    const tap = { x: Math.floor(presented.x), y: Math.floor(presented.y) };
+    expect(hitTestBoardDot(tap, dots, ids, { x: scale, y: scale })).toBe(23);
+  });
 });
 
 describe('flowDriftOffset', () => {

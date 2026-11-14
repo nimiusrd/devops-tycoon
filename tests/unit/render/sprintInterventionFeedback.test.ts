@@ -153,7 +153,7 @@ describe('介入結果の出来事表示（#536）', () => {
   });
 
   it.each([
-    ['no-target', 'Review が空'],
+    ['no-target', 'レビュー待ちなし'],
     ['no-focus', '集中力不足'],
     ['cooldown', 'クールダウン中'],
     ['complete', 'スプリント終了'],

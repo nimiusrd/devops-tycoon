@@ -39,7 +39,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: 'jam-meter',
     targetTestId: 'jam-meter',
     title: 'レビュー渋滞',
-    body: 'Review レーンにタスクが溜まると渋滞メーターが上がります。枠を超える前にレビューを回し、手戻りや士気低下を防ぎましょう。',
+    body: 'レビュー レーンにタスクが溜まると渋滞メーターが上がります。枠を超える前にレビューを回し、手戻りや士気低下を防ぎましょう。',
   },
   {
     id: 'combo-gauge',

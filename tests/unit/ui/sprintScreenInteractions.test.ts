@@ -660,7 +660,10 @@ describe('SprintScreen の自動ポーズと演出の寿命', () => {
     screen.updateSprint({ metrics: { ...screen.sprint.metrics, reviewQueueMax: 11 } });
     expect(screen.props.pauseBriefly).not.toHaveBeenCalled();
     screen.updateSprint({ metrics: { ...screen.sprint.metrics, reviewQueueMax: 12 } });
-    expect(screen.child(AttentionOverlay)).toEqual({ label: 'REVIEW JAM', title: 'Review渋滞!' });
+    expect(screen.child(AttentionOverlay)).toEqual({
+      label: 'レビュー渋滞',
+      title: 'レビュー渋滞!',
+    });
     expect(screen.find('jam-meter').props.className).toContain(' attention');
     expect(screen.props.pauseBriefly).toHaveBeenCalledExactlyOnceWith(ATTENTION_PAUSE_MS);
     screen.advance(ATTENTION_PAUSE_MS - 1);

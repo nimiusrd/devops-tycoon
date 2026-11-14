@@ -183,7 +183,7 @@ describe('sprintEventView（RI-52）', () => {
       }),
     ).toBe('負債 +6 / 士気 -1.5');
     expect(formatSprintEvent({ tick: 8, kind: 'ignite', taskId: 0, source: 'review' }).text).toBe(
-      '点火! Review 落ち PR が炎上',
+      '点火! レビュー落ち PR が炎上',
     );
     expect(formatSprintEvent({ tick: 9, kind: 'ignite', taskId: 1, source: 'spread' }).text).toBe(
       '点火! 延焼で隣の PR が炎上',

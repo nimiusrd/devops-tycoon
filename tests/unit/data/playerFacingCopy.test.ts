@@ -13,8 +13,15 @@ import { LEVER_DEFS } from '../../../src/data/levers';
 import { RELIC_DEFS } from '../../../src/data/relics';
 import { TRAIT_DEFS } from '../../../src/data/traits';
 import { UNLOCK_DEFS } from '../../../src/data/unlocks';
+import { ACTION_DEFS } from '../../../src/data/actions';
+import { formatInterventionFailure } from '../../../src/render/actionBarView';
+import { planAttentionPause } from '../../../src/render/attentionPause';
+import { formatActionDefTags } from '../../../src/render/eventOutcomeView';
 import { planInterventionAnalysis } from '../../../src/render/sprintInterventionAnalysis';
 import { formatSprintEvent } from '../../../src/render/sprintEventView';
+import { fireRiskHudCopy } from '../../../src/render/status';
+import { HOW_TO_PLAY_SECTIONS } from '../../../src/ui/howToPlayContent';
+import { TUTORIAL_STEPS } from '../../../src/ui/tutorial';
 
 const INTERNAL_TICKET_ID = /\bRI-\d+/;
 const ENGLISH_PATIENCE = /\bpatience\b/i;
@@ -31,6 +38,7 @@ const ISSUE_963_FORBIDDEN = [
   /Review キュー/,
   /Review 渋滞/,
   /Review 待ち/,
+  /\bReview\b/,
   /\/ Docs /,
 ] as const;
 
@@ -109,6 +117,46 @@ function collectPlayerFacingCopy(): string[] {
     'CI 0 / 文書 42 / AI 55',
   );
   copy.push(...Object.values(RARITY_LABEL));
+  for (const section of HOW_TO_PLAY_SECTIONS) {
+    copy.push(section.title, section.body);
+  }
+  for (const step of TUTORIAL_STEPS) {
+    copy.push(step.title, step.body);
+  }
+  for (const def of ACTION_DEFS) {
+    for (const tag of formatActionDefTags(def)) {
+      copy.push(tag.label);
+    }
+  }
+  copy.push(
+    formatInterventionFailure('no-target', 'interruptReview'),
+    fireRiskHudCopy('HIGH').detail,
+    fireRiskHudCopy('MED').detail,
+    planAttentionPause({
+      isBoss: false,
+      prevTasks: [],
+      nextTasks: [],
+      prevReviewQueueMax: 0,
+      nextReviewQueueMax: 12,
+      prevIgniteEventCount: 0,
+      nextIgniteEventCount: 0,
+    }).label,
+    planAttentionPause({
+      isBoss: false,
+      prevTasks: [],
+      nextTasks: [],
+      prevReviewQueueMax: 0,
+      nextReviewQueueMax: 12,
+      prevIgniteEventCount: 0,
+      nextIgniteEventCount: 0,
+    }).title,
+    formatSprintEvent({
+      kind: 'ignite',
+      tick: 1,
+      taskId: 0,
+      source: 'review',
+    }).text,
+  );
 
   return copy.filter((text) => text.length > 0);
 }

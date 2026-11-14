@@ -1485,8 +1485,8 @@ type SpreadGameWindow = Window & {
 const SPREAD_TICKER_CHAIN = '延焼! 隣のレビュー待ち PR に連鎖（負債 +6 / 士気 -5）';
 const SPREAD_TICKER_IMPACT = '延焼! 負債 +6 / 士気 -5';
 const SPREAD_RESULT_CHAIN =
-  't12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火';
-const SPREAD_RESULT_IMPACT = 't12: PR#7 が Review 落ちで点火 → t18 延焼（負債 +6 / 士気 -5）';
+  't12: PR#3 が レビュー落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火';
+const SPREAD_RESULT_IMPACT = 't12: PR#7 が レビュー落ちで点火 → t18 延焼（負債 +6 / 士気 -5）';
 
 async function injectSpreadTickerEvents(page: Page): Promise<void> {
   await page.evaluate(() => {

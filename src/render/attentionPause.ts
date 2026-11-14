@@ -81,8 +81,8 @@ function planForKind(kind: AttentionPauseKind): AttentionPausePlan {
       return {
         active: true,
         kind,
-        label: 'REVIEW JAM',
-        title: 'Review渋滞!',
+        label: 'レビュー渋滞',
+        title: 'レビュー渋滞!',
         meter: 'jam',
       };
   }

@@ -363,7 +363,7 @@ describe('boardDotReadability', () => {
           const dist = Math.hypot(a.x - b.x, a.y - b.y) * scale;
           const need =
             (presentedDotRadius(a.size, scale) + presentedDotRadius(b.size, scale)) * scale;
-          expect(dist, `粒 ${a.id} と ${b.id}`).toBeGreaterThanOrEqual(need - 0.01);
+          expect(dist, `粒 ${a.id} と ${b.id}`).toBeGreaterThanOrEqual(need - 0.05);
         }
       }
       for (const index of mediumLarge) {

@@ -3513,11 +3513,28 @@ body[data-tutorial-step='combo-gauge']
 .actionbar[data-responsive-width='wide'] .action-heading {
   min-height: 16px;
 }
+.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-heading {
+  /* 長い介入名も 1 行で収まらない行高を最初から確保し、WebKit の折り返し揺れを防ぐ（#1023）。 */
+  min-height: 27px;
+}
 .actionbar[data-responsive-width='wide'] .action {
   padding-block: 4px;
 }
 .actionbar[data-responsive-width='wide'] .action .cd {
   margin-top: 0;
+}
+/* 広幅 8 列は grid stretch が WebKit で行高を揺らし、盤面の y / 高さが 1〜2 フレーム動く（#1023）。 */
+.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .actions {
+  align-items: start;
+}
+.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-resources {
+  margin-top: 0;
+}
+.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-target,
+.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-summary,
+.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-tradeoff {
+  /* 9.5px × line-height 1.2 の 2 行分。件数更新で 1 行↔2 行が揺れても行高を固定する（#1023）。 */
+  min-height: calc(9.5px * 1.2 * 2);
 }
 :root[data-responsive-width='narrow'] .action-panel {
   flex: 1 1 100%;

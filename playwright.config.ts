@@ -59,7 +59,7 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-      testMatch: /sprint-result-quarter-goal/,
+      testMatch: /sprint-result-quarter-goal|sprint-board-frame-stability-1023/,
     },
     {
       name: 'webkit-speed-hit-target',

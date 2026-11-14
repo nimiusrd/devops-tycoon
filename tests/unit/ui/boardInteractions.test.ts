@@ -478,6 +478,28 @@ describe('Board の座標ドラッグ', () => {
     expect(board.layer().props.previewTaskId).toBeNull();
   });
 
+  it('splitPr は強調と一致しない離し座標では、開始粒が掴めていても確定しない', () => {
+    const board = mountBoard({ armedAction: 'splitPr' });
+    board.downTask(3, { pointerType: 'touch' });
+    board.dispatch('pointermove', board.dot(2));
+    expect(board.layer().props.previewTaskId).toBe(2);
+    board.dispatch('pointerup', board.dot(3));
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    board.downTask(2, { pointerType: 'touch' });
+    board.dispatch('pointerup', board.dot(2));
+    expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 2 });
+  });
+
+  it('splitPr は capture 中でも、離した座標下が装飾なら確定しない', () => {
+    vi.stubGlobal('document', {
+      elementFromPoint: () => new OverlayElement('.bubble'),
+    });
+    const board = mountBoard({ armedAction: 'splitPr' });
+    board.downTask(3, { pointerType: 'touch' });
+    board.dispatch('pointerup', board.dot(3));
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+  });
+
   it('touchは離すまで実行せず、移動で選び直した強調対象だけを確定する（#917）', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
     board.downTask(3, { pointerType: 'touch' });

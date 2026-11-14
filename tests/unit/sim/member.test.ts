@@ -429,6 +429,25 @@ describe('成長・昇格（第12.2）', () => {
     expect(after.members.map((m) => m.stamina)).toEqual([61, 52, 43]);
   });
 
+  it('完了 0 件のスプリントでは経験値もレベルアップも与えない', () => {
+    const nearLevel = member({
+      id: 'a',
+      assignment: 'review',
+      rank: 'middle',
+      level: 1,
+      xp: 50,
+      stamina: 80,
+    });
+    const { roster: after, outcome } = applySprintGrowth(
+      roster([nearLevel]),
+      { delivered: 0, done: 0 },
+      sequenceRng([0.99]),
+    );
+    expect(after.members[0]).toMatchObject({ xp: 50, level: 1 });
+    expect(outcome.leveledUp).toEqual([]);
+    expect(outcome.promotions).toEqual([]);
+  });
+
   it('RI-73 / F-1: 稼働人数が増えると個人スタミナ消費が薄まる', () => {
     expect(staminaDrainShareMul(3)).toBe(1);
     expect(staminaDrainShareMul(5)).toBeCloseTo(0.6, 5);

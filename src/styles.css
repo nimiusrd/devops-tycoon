@@ -8078,6 +8078,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .growth-level {
   color: var(--mint);
 }
+.growth-level-muted {
+  color: var(--text-dim);
+}
 
 :root[data-responsive-width='narrow'] .difficulty-grid,
 :root[data-responsive-width='narrow'] .shop-grid,

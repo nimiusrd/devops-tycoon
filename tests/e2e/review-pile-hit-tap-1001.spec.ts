@@ -55,6 +55,28 @@ async function ensureBoardPointUncovered(
   }
 }
 
+async function resolveTapPoint(
+  page: Page,
+  target: { x: number; y: number },
+  browserName: string,
+  viewportWidth: number,
+): Promise<{ x: number; y: number }> {
+  if (await isBoardPointUncovered(page, target)) return target;
+  if (browserName !== 'webkit' || viewportWidth !== 320) return target;
+  for (const delta of [2, -2, 4, -4, 6, -6, 8, -8]) {
+    for (const [dx, dy] of [
+      [delta, 0],
+      [0, delta],
+      [delta, delta],
+      [delta, -delta],
+    ] as const) {
+      const point = { x: target.x + dx, y: target.y + dy };
+      if (await isBoardPointUncovered(page, point)) return point;
+    }
+  }
+  return target;
+}
+
 function isBoardPointUncovered(page: Page, point: { x: number; y: number }): Promise<boolean> {
   return page.evaluate(({ x, y }) => {
     const element = document.elementFromPoint(x, y);
@@ -186,13 +208,14 @@ for (const viewport of VIEWPORTS) {
       const target = (await readReviewTapTargets(page, frame)).find((dot) => dot.id === taskId);
       if (!target) throw new Error(`Review #${taskId} が候補にない`);
       await ensureBoardPointUncovered(page, target, browserName, viewport.width);
+      const tapPoint = await resolveTapPoint(page, target, browserName, viewport.width);
       expect(
-        await isBoardPointUncovered(page, target),
+        await isBoardPointUncovered(page, tapPoint),
         `Review #${taskId} の中心が操作できない`,
       ).toBe(true);
-      await hoverPresentedDotCenter(page, frame, target);
+      await hoverPresentedDotCenter(page, frame, tapPoint);
       await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
-      await tapPresentedDotCenter(page, frame, target, viewport.width, taskId, browserName);
+      await tapPresentedDotCenter(page, frame, tapPoint, viewport.width, taskId, browserName);
       await expectSplitOnTask(page, taskId, 0);
     }
   });

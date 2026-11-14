@@ -122,8 +122,9 @@ describe('代表確率曲線の生成', () => {
     ).toBe(true);
     expect(svg).toContain('現行モデルのRework確率とIncident確率の代表曲線');
     expect(svg).toContain(
-      `AI Literacy ${BALANCE_CURVE_REPRESENTATIVE.aiLiteracy} / Mastery ${BALANCE_CURVE_REPRESENTATIVE.aiMasteryNorm} / Docs ${BALANCE_CURVE_REPRESENTATIVE.documentation} / Quality ${BALANCE_CURVE_REPRESENTATIVE.quality} / 初回Review / 補正なし`,
+      `AIリテラシー ${BALANCE_CURVE_REPRESENTATIVE.aiLiteracy} / 習熟 ${BALANCE_CURVE_REPRESENTATIVE.aiMasteryNorm} / ドキュメント ${BALANCE_CURVE_REPRESENTATIVE.documentation} / 品質 ${BALANCE_CURVE_REPRESENTATIVE.quality} / 初回レビュー / 補正なし`,
     );
+    expect(svg).not.toMatch(/AI Literacy|初回Review|Mastery |\/ Docs |\/ Quality /);
     expect(svg).toContain('線は現行モデル式から算出した条件付き確率');
     expect(svg).not.toContain('候補');
     expect(svg).not.toContain('交差');

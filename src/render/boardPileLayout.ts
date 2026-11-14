@@ -67,6 +67,21 @@ export function boardPhoneContainmentScales(
     : [...scales, armedScale];
 }
 
+function reviewDotsAvoidOtherStationsWithCaches(
+  dots: readonly BoardDotPlan[],
+  containmentScales: readonly number[],
+): boolean {
+  const strictest = Math.min(...containmentScales);
+  return reviewDotsAvoidOtherStations(dots, [strictest]);
+}
+
+function assertReviewShiftContainment(
+  dots: readonly BoardDotPlan[],
+  containmentScales: readonly number[],
+): boolean {
+  return reviewDotsAvoidOtherStations(dots, containmentScales);
+}
+
 function circlesOverlap(
   ax: number,
   ay: number,
@@ -215,7 +230,7 @@ const REVIEW_SHIFT_COMPACT = {
   dxMax: 96,
   dyMin: -72,
   dyMax: 12,
-  step: 2,
+  step: 4,
 } as const;
 
 const REVIEW_SHIFT_EXTENDED_COARSE = {
@@ -285,19 +300,15 @@ function refineReviewPilePresentedCentering(
   base: BoardPileShift,
 ): BoardPileShift {
   let bestShift = base;
-  let bestOff = reviewPilePresentedCenteringOffset(
-    applyLanePileShift(dots, 'review', base),
-    scales,
-    caches,
-  );
+  let bestOff = reviewPilePlannedCenteringOffset(applyLanePileShift(dots, 'review', base), scales);
   for (let dx = base.dx - 16; dx <= base.dx + 16; dx += 4) {
     for (let dy = base.dy - 8; dy <= base.dy + 8; dy += 4) {
       const shift = { dx, dy };
       const shifted = applyLanePileShift(dots, 'review', shift);
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
-      if (!reviewDotsAvoidOtherStations(shifted, containmentScales)) continue;
+      if (!reviewDotsAvoidOtherStationsWithCaches(shifted, containmentScales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
-      const off = reviewPilePresentedCenteringOffset(shifted, scales, caches);
+      const off = reviewPilePlannedCenteringOffset(shifted, scales);
       const dist = Math.hypot(dx, dy);
       const bestDist = Math.hypot(bestShift.dx, bestShift.dy);
       const better =
@@ -310,7 +321,37 @@ function refineReviewPilePresentedCentering(
       }
     }
   }
-  return bestShift;
+  const presentedOff = reviewPilePresentedCenteringOffset(
+    applyLanePileShift(dots, 'review', bestShift),
+    scales,
+    caches,
+  );
+  if (presentedOff <= 3) return bestShift;
+  let presentedBest = bestShift;
+  let presentedBestOff = presentedOff;
+  for (let dx = bestShift.dx - 8; dx <= bestShift.dx + 8; dx += 4) {
+    for (let dy = bestShift.dy - 4; dy <= bestShift.dy + 4; dy += 4) {
+      const shift = { dx, dy };
+      const shifted = applyLanePileShift(dots, 'review', shift);
+      if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
+      if (!reviewDotsAvoidOtherStationsWithCaches(shifted, containmentScales)) continue;
+      if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
+      const off = reviewPilePresentedCenteringOffset(shifted, scales, caches);
+      if (off < presentedBestOff - 1e-6) {
+        presentedBestOff = off;
+        presentedBest = shift;
+      }
+    }
+  }
+  if (
+    !assertReviewShiftContainment(
+      applyLanePileShift(dots, 'review', presentedBest),
+      containmentScales,
+    )
+  ) {
+    return base;
+  }
+  return presentedBest;
 }
 
 function pickBetterShift(
@@ -342,7 +383,7 @@ function findReviewPileShiftInRange(
     for (let dy = range.dyMin; dy <= range.dyMax; dy += range.step) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
-      if (!reviewDotsAvoidOtherStations(shifted, containmentScales)) continue;
+      if (!reviewDotsAvoidOtherStationsWithCaches(shifted, containmentScales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       const centerOff = reviewPilePlannedCenteringOffset(shifted, scales);
       best = pickBetterShift(best, dx, dy, centerOff);
@@ -376,7 +417,7 @@ function refineReviewPileShift(
     ) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
-      if (!reviewDotsAvoidOtherStations(shifted, containmentScales)) continue;
+      if (!reviewDotsAvoidOtherStationsWithCaches(shifted, containmentScales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
       const centerOff = reviewPilePlannedCenteringOffset(shifted, scales);
       best = pickBetterShift(best, dx, dy, centerOff)!;

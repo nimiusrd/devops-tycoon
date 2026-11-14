@@ -86,6 +86,8 @@ for (const width of [320, 1280] as const) {
     await expect(other.getByTestId('tab-conflict-overlay')).toHaveCount(0);
     await expect(other.getByTestId('formation')).toBeVisible();
 
-    await expect(focused).toBeFocused();
+    await expect
+      .poll(async () => focused.evaluate((button) => button === document.activeElement))
+      .toBe(true);
   });
 }

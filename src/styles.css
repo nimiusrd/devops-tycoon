@@ -2675,10 +2675,12 @@ body:has(.overlay-contained) {
   padding-right: 8px;
   border-right: 2px solid var(--line);
 }
-/* タスク差配武装で担当切替が載ってもバー高さが増えないよう、短い広幅の平常高を下限にする（#1023）。 */
-.actionbar[data-responsive-width='wide'][data-responsive-height='short'] {
-  min-height: 246px;
-  box-sizing: border-box;
+/* 1024 幅かつ低い viewport でタスク差配武装時のバー伸びを吸収する（#1023）。 */
+@media (max-width: 1024px) and (max-height: 800px) {
+  .actionbar[data-responsive-width='wide'] {
+    min-height: 246px;
+    box-sizing: border-box;
+  }
 }
 .assign-assignee-label {
   font-size: 9px;
@@ -3516,8 +3518,7 @@ body[data-tutorial-step='combo-gauge']
   gap: 2px;
 }
 .actionbar[data-responsive-width='wide'] .action-heading {
-  /* 長い介入名も 1 行で収まらない行高を最初から確保し、WebKit の折り返し揺れを防ぐ（#1023）。 */
-  min-height: 27px;
+  min-height: 16px;
 }
 .actionbar[data-responsive-width='wide'] .action {
   padding-block: 4px;
@@ -3525,18 +3526,22 @@ body[data-tutorial-step='combo-gauge']
 .actionbar[data-responsive-width='wide'] .action .cd {
   margin-top: 0;
 }
-/* 広幅 8 列は grid stretch が WebKit で行高を揺らし、盤面の y / 高さが 1〜2 フレーム動く（#1023）。 */
-.actionbar[data-responsive-width='wide'] .actions {
-  align-items: start;
-}
-.actionbar[data-responsive-width='wide'] .action-resources {
-  margin-top: 0;
-}
-.actionbar[data-responsive-width='wide'] .action-target,
-.actionbar[data-responsive-width='wide'] .action-summary,
-.actionbar[data-responsive-width='wide'] .action-tradeoff {
-  /* 9.5px × line-height 1.2 の 2 行分。件数更新で 1 行↔2 行が揺れても行高を固定する（#1023）。 */
-  min-height: calc(9.5px * 1.2 * 2);
+/* 1024×768 付近では grid stretch が WebKit で行高を揺らし盤面が 1〜2 フレーム動く（#1023）。 */
+@media (max-width: 1024px) and (max-height: 800px) {
+  .actionbar[data-responsive-width='wide'] .action-heading {
+    min-height: 27px;
+  }
+  .actionbar[data-responsive-width='wide'] .actions {
+    align-items: start;
+  }
+  .actionbar[data-responsive-width='wide'] .action-resources {
+    margin-top: 0;
+  }
+  .actionbar[data-responsive-width='wide'] .action-target,
+  .actionbar[data-responsive-width='wide'] .action-summary,
+  .actionbar[data-responsive-width='wide'] .action-tradeoff {
+    min-height: calc(9.5px * 1.2 * 2);
+  }
 }
 :root[data-responsive-width='narrow'] .action-panel {
   flex: 1 1 100%;

@@ -549,7 +549,8 @@ export function Board({
 
   const releaseBoardPointerCapture = useCallback((pointerId: number) => {
     const board = boardRef.current;
-    if (!board?.hasPointerCapture(pointerId)) return;
+    if (!board || typeof board.hasPointerCapture !== 'function') return;
+    if (!board.hasPointerCapture(pointerId)) return;
     try {
       board.releasePointerCapture(pointerId);
     } catch {

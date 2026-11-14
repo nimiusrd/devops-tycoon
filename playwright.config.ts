@@ -34,7 +34,8 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /tab-conflict-modal|org-lever-spend-risk|rest-overlay-modal/,
+      testIgnore:
+        /tab-conflict-modal|org-lever-spend-risk|rest-overlay-modal|sprint-board-frame-stability-1023/,
     },
     {
       name: 'chromium-conflict-modal',

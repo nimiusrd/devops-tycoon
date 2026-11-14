@@ -259,7 +259,7 @@ export function FormationScreen({
           <div>
             <p className="result-eyebrow">FORMATION</p>
             <h2 className="draft-title">編成 — 誰をどこに置き、AIを誰に配るか</h2>
-            <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
+            <OrgLeverHintRow eligible={orgLeverHint.show} />
           </div>
           <button
             type="button"

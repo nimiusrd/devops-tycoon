@@ -491,8 +491,11 @@ export function applySprintGrowth(
 
     const traitMods = foldTraitModifiers(m.traits);
 
-    // 経験値と昇格。
-    const baseXp = clamp(XP_GAIN_BASE + ctx.done * XP_GAIN_PER_DONE, XP_GAIN_MIN, XP_GAIN_MAX);
+    // 経験値と昇格。完了 0 件のスプリントではタスク経験を与えない（SPEC 第12章）。
+    const baseXp =
+      ctx.done > 0
+        ? clamp(XP_GAIN_BASE + ctx.done * XP_GAIN_PER_DONE, XP_GAIN_MIN, XP_GAIN_MAX)
+        : 0;
     const gained = Math.round(baseXp * traitMods.xpMul * RANK_LEARN[m.rank]);
     let xp = m.xp + gained;
     const startRank = m.rank;

@@ -257,10 +257,10 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.props.onBegin).not.toHaveBeenCalled();
     const dialog = screen.find('setup-no-coder-confirm');
     expect(dialog.props).toMatchObject({ role: 'dialog', 'aria-modal': 'true', tabIndex: -1 });
-    expect(content(dialog)).toContain('コーダーが0人です');
-    expect(content(screen.find('setup-no-coder-assign'))).toBe('コーダーを割り当てる');
+    expect(content(dialog)).toContain('コーダー0人で始めますか');
+    expect(content(screen.find('setup-no-coder-back'))).toBe('編成に戻る');
     expect(content(screen.find('setup-no-coder-begin'))).toBe('このまま開始');
-    expect(screen.targets.get('setup-no-coder-assign')!.focus).toHaveBeenCalledOnce();
+    expect(screen.targets.get('setup-no-coder-back')!.focus).toHaveBeenCalledOnce();
     expect(useDialogOverlayLock).toHaveBeenLastCalledWith(expect.any(Object), {
       restoreFocus: true,
       onDismiss: expect.any(Function),
@@ -274,22 +274,21 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.has('setup-no-coder-confirm')).toBe(false);
   });
 
-  it('割り当てる導線はベンチの稼働メンバーを優先し、確認画面からも配置を変えずに誘導する', () => {
-    vi.useFakeTimers();
+  it('確認から編成に戻っても配置は変わらず、開始確認だけ閉じる', () => {
     const state = makeState();
     state.roster.members[0].assignment = 'review';
     state.roster.members[1].assignment = 'bench';
     const screen = mountSetup({ state });
-    screen.click('setup-assign-coder');
-    expect(screen.targets.get('assign-m2-coding')!.focus).toHaveBeenCalledOnce();
-    expect(screen.targets.get('assign-m1-coding')!.focus).not.toHaveBeenCalled();
     screen.click('begin-sprint');
-    screen.click('setup-no-coder-assign');
+    screen.click('setup-no-coder-back');
     expect(screen.has('setup-no-coder-confirm')).toBe(false);
-    vi.runAllTimers();
-    expect(screen.targets.get('assign-m2-coding')!.focus).toHaveBeenCalledTimes(2);
     expect(screen.props.onAssign).not.toHaveBeenCalled();
     expect(screen.props.onBegin).not.toHaveBeenCalled();
+    expect(
+      screen.props.state.roster.members.filter((member) => member.assignment === 'coding'),
+    ).toHaveLength(0);
+    screen.click('begin-sprint');
+    expect(screen.has('setup-no-coder-confirm')).toBe(true);
   });
 
   it('確認をEscapeで取り消し、別チームやスプリントへ確認状態を持ち越さない', () => {
@@ -325,15 +324,29 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.find('setup-assign-coder').props.disabled).toBe(true);
     screen.click('begin-sprint');
     expect(content(screen.find('setup-no-coder-confirm'))).toContain(
-      '今は割り当てられるメンバーがいません',
+      '今は割り当てられるメンバーがいません。',
     );
-    expect(content(screen.find('setup-no-coder-assign'))).toBe('編成に戻る');
-    expect(screen.find('setup-no-coder-assign').props.disabled).toBeUndefined();
-    expect(screen.targets.get('setup-no-coder-assign')!.focus).toHaveBeenCalledOnce();
+    expect(content(screen.find('setup-no-coder-back'))).toBe('編成に戻る');
+    expect(screen.find('setup-no-coder-back').props.disabled).toBeUndefined();
+    expect(screen.targets.get('setup-no-coder-back')!.focus).toHaveBeenCalledOnce();
     expect(screen.targets.get('setup-no-coder-begin')!.focus).not.toHaveBeenCalled();
-    screen.click('setup-no-coder-assign');
+    screen.click('setup-no-coder-back');
     expect(screen.has('setup-no-coder-confirm')).toBe(false);
     expect(screen.props.onBegin).not.toHaveBeenCalled();
+  });
+
+  it('このまま開始を選ぶと同じスプリントでは確認を出さず開始だけ通知する', () => {
+    const state = makeState();
+    state.roster.members[0].assignment = 'review';
+    const screen = mountSetup({ state });
+    screen.click('begin-sprint');
+    screen.click('setup-no-coder-begin');
+    expect(screen.props.onBegin).toHaveBeenCalledExactlyOnceWith();
+    expect(screen.has('setup-no-coder-confirm')).toBe(false);
+    screen.update({ state });
+    screen.click('begin-sprint');
+    expect(screen.has('setup-no-coder-confirm')).toBe(false);
+    expect(screen.props.onBegin).toHaveBeenCalledTimes(2);
   });
 
   it('復帰通知は空の領域に後から名前を一度ずつ入れ、alert は使わない', async () => {

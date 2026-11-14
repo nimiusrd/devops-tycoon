@@ -924,24 +924,26 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const diagnosisTone = diagnosisTheme(state.diagnosis).toneClass;
   const sprintHeader = (
     <>
-      <Hud
-        org={state.org}
-        orgScale={state.orgScale}
-        tasks={tasks}
-        // 通算 peak は単調増加で解消後も警告が残るため使わない。
-        // 詳細スプリント peak + 全チーム現在キュー（非選択チーム / スプリント外の持ち越し含む）。
-        // 選択中盤面の現在キュー長は deriveHudMetrics 側で畳み込む。
-        reviewQueuePeak={reviewFreezeWarningPeak(
-          state.sprint?.metrics.reviewQueueMax ?? 0,
-          state.teams.map((team) => team.reviewQueue),
-        )}
-        snapshotScope={hudSnapshotScope}
-        getInitialPreviousSnapshot={getLastHudSnapshot}
-        onSnapshotCaptured={rememberHudSnapshot}
-        expanded={hudExpanded}
-        onExpandedChange={setHudExpanded}
-      />
-      <PersistenceQuietChip notice={run.persistenceStatus} active={quietInline} />
+      <div className="sprint-header-stack" data-testid="sprint-header-stack">
+        <Hud
+          org={state.org}
+          orgScale={state.orgScale}
+          tasks={tasks}
+          // 通算 peak は単調増加で解消後も警告が残るため使わない。
+          // 詳細スプリント peak + 全チーム現在キュー（非選択チーム / スプリント外の持ち越し含む）。
+          // 選択中盤面の現在キュー長は deriveHudMetrics 側で畳み込む。
+          reviewQueuePeak={reviewFreezeWarningPeak(
+            state.sprint?.metrics.reviewQueueMax ?? 0,
+            state.teams.map((team) => team.reviewQueue),
+          )}
+          snapshotScope={hudSnapshotScope}
+          getInitialPreviousSnapshot={getLastHudSnapshot}
+          onSnapshotCaptured={rememberHudSnapshot}
+          expanded={hudExpanded}
+          onExpandedChange={setHudExpanded}
+        />
+        <PersistenceQuietChip notice={run.persistenceStatus} active={quietInline} />
+      </div>
       {tabConflictAcknowledgedChip}
       <RunBar
         state={state}

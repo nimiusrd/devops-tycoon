@@ -8,6 +8,7 @@ import {
   type PixiBoardRendererOptions,
 } from '../../../src/render/adapters/pixiBoardRenderer';
 import { createTimedBoardEffects, type BoardEffectPayload } from '../../../src/render/boardEffects';
+import { PILE_PRESENTATION } from '../../../src/render/boardPilePresentation';
 import { TASK_MOTION } from '../../../src/render/boardTaskMotion';
 import { positionFireEffects } from '../../../src/render/fireEffects';
 import {
@@ -25,6 +26,7 @@ import {
   hitTestBoardDot,
   presentBoardDot,
   presentBoardDots,
+  presentBoardDotsAtStrength,
   presentedDotRadius,
 } from '../../../src/render/boardPixiView';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
@@ -520,13 +522,16 @@ describe('Pixi スプリント盤面レンダラー', () => {
         const plan = scene.reviewEffects.trails[index];
         const source = scene.dots.find((entry) => entry.id === plan.taskId);
         expect(source, `軌跡 ${plan.taskId} の粒`).toBeDefined();
-        const presented = presentBoardDot(source!, scale);
-        expect(trail.position).toMatchObject({ x: presented.x, y: presented.y });
+        const shown = presentBoardDotsAtStrength(scene.dots, scale, 0).find(
+          (entry) => entry.id === plan.taskId,
+        )!;
+        const armed = presentBoardDot(source!, scale);
+        expect(trail.position).toMatchObject({ x: shown.x, y: shown.y });
         const outer = Math.max(
           ...drawCalls(trail, 'moveTo').map((args) => Math.hypot(Number(args[0]), Number(args[1]))),
         );
         expect(outer).toBeGreaterThanOrEqual(presentedDotRadius(source!.size, scale));
-        if (presented.x !== plan.x || presented.y !== plan.y) moved = true;
+        if (armed.x !== shown.x || armed.y !== shown.y) moved = true;
       }
       expect(moved).toBe(true);
 
@@ -545,6 +550,14 @@ describe('Pixi スプリント盤面レンダラー', () => {
     const scale = 0.208;
     const previewId = tasks[17].id;
     renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
+    renderer.render(
+      input({
+        scene,
+        draggableTaskIds: new Set(tasks.map((entry) => entry.id)),
+        previewTaskId: previewId,
+      }),
+    );
+    app.advance(PILE_PRESENTATION.travelMs);
     renderer.render(
       input({
         scene,
@@ -591,14 +604,12 @@ describe('Pixi スプリント盤面レンダラー', () => {
     renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
     renderer.render(input({ scene, effects: [effect] }));
 
-    const presented = presentBoardDots(scene.dots, scale);
-    const shown = presented[scene.dots.indexOf(raw!)];
+    const shown = presentBoardDotsAtStrength(scene.dots, scale, 0).find(
+      (dot) => dot.id === raw!.id,
+    )!;
     const group = layer(app, 'transientEffects').children[0];
     expect(group.position.x).toBeCloseTo(shown.x, 4);
     expect(group.position.y).toBeCloseTo(shown.y, 4);
-    expect(
-      Math.hypot(group.position.x - raw!.x, group.position.y - raw!.y) * scale,
-    ).toBeGreaterThan(10);
   });
 
   it('ドラッグ粒を最前面に描き、再利用後はリングと炎を残さずテクスチャを共有する', async () => {
@@ -715,6 +726,8 @@ describe('Pixi スプリント盤面レンダラー', () => {
     const scene = planBoardScene([task({ id: 1 }), task({ id: 2 })]);
     const original = [...scene.dots];
     renderer.resize(BOARD_VIEW.w * 0.208, BOARD_VIEW.h * 0.208);
+    renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]), previewTaskId: 1 }));
+    app.advance(PILE_PRESENTATION.travelMs);
     renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]), previewTaskId: 1 }));
     const groups = layer(app, 'dots').children;
     const candidate = groups[0];
@@ -1245,6 +1258,36 @@ describe('Pixi スプリント盤面レンダラー', () => {
     expect(renderer.getLastInput()).toBeNull();
     renderer.dispose();
     expect(app.destroy).toHaveBeenCalledOnce();
+  });
+
+  it('武装で山の押し広げを 175ms かけ、構え中は粒の装飾アニメを止める（#982）', async () => {
+    const { renderer, app } = await mounted();
+    const scene = planBoardScene([task({ id: 1 }), task({ id: 2, lane: 'coding' })]);
+    renderer.resize(BOARD_VIEW.w * 0.208, BOARD_VIEW.h * 0.208);
+    const narrowScale = 0.208;
+    renderer.render(input({ scene }));
+    const unarmed = renderer.getDotDisplayPositionsForTest().get(2);
+    const rest = scene.dots.find((dot) => dot.id === 2)!;
+    expect(unarmed?.x).toBeCloseTo(rest.x, 5);
+
+    renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]) }));
+    app.advance(0);
+    const instant = renderer.getDotDisplayPositionsForTest().get(2);
+    expect(instant?.x).toBeCloseTo(rest.x, 5);
+
+    app.advance(PILE_PRESENTATION.travelMs / 2);
+    renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]) }));
+    const mid = renderer.getDotDisplayPositionsForTest().get(2)!;
+    const armedX = presentBoardDotsAtStrength(scene.dots, narrowScale, 1).find(
+      (dot) => dot.id === 2,
+    )!.x;
+    expect(mid.x).toBeGreaterThan(rest.x + 1);
+    expect(mid.x).toBeLessThan(armedX - 1);
+
+    app.advance(PILE_PRESENTATION.travelMs);
+    renderer.render(input({ scene, draggableTaskIds: new Set([1, 2]) }));
+    const armed = renderer.getDotDisplayPositionsForTest().get(2);
+    expect(armed?.x).toBeCloseTo(armedX, 2);
   });
 
   it('点火演出は effects stratum でも粒の移動補間へ追従する（#979）', async () => {

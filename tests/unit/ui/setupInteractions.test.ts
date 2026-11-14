@@ -324,7 +324,7 @@ describe('SetupScreen の次スプリント案内と編成', () => {
     expect(screen.find('setup-assign-coder').props.disabled).toBe(true);
     screen.click('begin-sprint');
     expect(content(screen.find('setup-no-coder-confirm'))).toContain(
-      '今は割り当てられるメンバーがいません',
+      '今は割り当てられるメンバーがいません。',
     );
     expect(content(screen.find('setup-no-coder-back'))).toBe('編成に戻る');
     expect(screen.find('setup-no-coder-back').props.disabled).toBeUndefined();

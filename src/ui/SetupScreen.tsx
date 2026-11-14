@@ -80,16 +80,9 @@ function MissingCoderConfirm({
         <h2 className="draft-title" id="setup-no-coder-title">
           コーダー0人で始めますか
         </h2>
-        <p id="setup-no-coder-description">
-          <SetupPhrases
-            phrases={[
-              '作業が',
-              '進まないまま',
-              'スプリントが',
-              '始まります。',
-              ...(allOnLeave ? ['今は', '割り当てられる', 'メンバーが', 'いません。'] : []),
-            ]}
-          />
+        <p id="setup-no-coder-description" className="setup-coder-confirm-body">
+          作業が進まないままスプリントが始まります。
+          {allOnLeave ? ' 今は割り当てられるメンバーがいません。' : null}
         </p>
         <div className="result-actions setup-coder-confirm-actions">
           <button

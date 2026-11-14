@@ -9568,8 +9568,14 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.setup-coder-confirm-card .setup-text-phrase {
-  white-space: normal;
+.setup-coder-confirm-body {
+  margin: 0 0 1.25rem;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 :root[data-responsive-width='narrow'] .setup-coder-confirm-card {
   padding: 1.1rem 0.85rem 1.25rem;

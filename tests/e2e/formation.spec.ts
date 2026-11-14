@@ -614,7 +614,9 @@ for (const viewport of [
     const dialog = page.getByRole('dialog', { name: 'コーダー0人で始めますか' });
     await setup.getByTestId('begin-sprint').click();
     await expect(dialog).toBeVisible();
-    await assertUnbrokenPhrases(dialog.locator('#setup-no-coder-description'), '開始確認の説明');
+    await expect(dialog.locator('#setup-no-coder-description')).toContainText(
+      '作業が進まないままスプリントが始まります。',
+    );
     await expect(dialog.getByRole('button', { name: '編成に戻る' })).toBeFocused();
     expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
     await page.keyboard.press('Escape');
@@ -658,7 +660,9 @@ for (const viewport of [
     await setup.getByTestId('begin-sprint').click();
     const dialog = page.getByRole('dialog', { name: 'コーダー0人で始めますか' });
     await expect(dialog).toBeVisible();
-    await assertUnbrokenPhrases(dialog.locator('#setup-no-coder-description'), '開始確認の説明');
+    await expect(dialog.locator('#setup-no-coder-description')).toContainText(
+      '作業が進まないままスプリントが始まります。',
+    );
     await expect(dialog.getByRole('button', { name: '編成に戻る' })).toBeFocused();
     expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
     await dialog.getByRole('button', { name: 'このまま開始' }).click();

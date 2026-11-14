@@ -10,7 +10,15 @@
 import { lazyWebgl } from '../ui/lazyWebgl';
 import type { BoardPixiLayerProps } from '../ui/BoardPixiLayer';
 import { loadWebglModule } from './loadWebglModule';
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -531,7 +539,58 @@ export function Board({
     [armedAction],
   );
 
+  const activeGestureRef = useRef<BoardGesture | null>(null);
+  const splitPrHandledRef = useRef(false);
+  const gestureRef = useRef<BoardGesture | null>(null);
   useEffect(() => {
+    gestureRef.current = gesture;
+    activeGestureRef.current = gesture;
+  }, [gesture]);
+
+  const releaseBoardPointerCapture = useCallback((pointerId: number) => {
+    const board = boardRef.current;
+    if (!board?.hasPointerCapture(pointerId)) return;
+    try {
+      board.releasePointerCapture(pointerId);
+    } catch {
+      // 既に解放済み
+    }
+  }, []);
+
+  const confirmSplitPrGesture = useCallback(
+    (event: PointerEvent, currentGesture: BoardGesture, released: BoardPointerPosition | null) => {
+      if (splitPrHandledRef.current) return;
+      const input = currentInput.current;
+      if (
+        !released ||
+        released.blocked ||
+        !input.interactive ||
+        input.armedAction !== currentGesture.action ||
+        !input.dragPlan
+      )
+        return;
+      const taskId = hitTestClientBoardDot(
+        event.clientX,
+        event.clientY,
+        released.rect,
+        input.dots,
+        input.dragIds,
+      );
+      if (taskId !== null && (taskId === input.previewTaskId || taskId === currentGesture.taskId)) {
+        splitPrHandledRef.current = true;
+        const task = input.tasks.find((task) => task.id === taskId);
+        if (task) setConfirmedTarget(`対象を確定: ${describeTaskTarget(task)}（#${task.id}）`);
+        input.onDragComplete?.({ taskId });
+        activeGestureRef.current = null;
+        setGesture(null);
+        setPointer(null);
+        releaseBoardPointerCapture(currentGesture.pointerId);
+      }
+    },
+    [releaseBoardPointerCapture],
+  );
+
+  useLayoutEffect(() => {
     if (!gesture) return;
     let finished = false;
     const matchingPointer = (event: PointerEvent) => (event.pointerId ?? 1) === gesture.pointerId;
@@ -557,6 +616,15 @@ export function Board({
       if (finished || !matchingPointer(event)) return;
       const input = currentInput.current;
       const released = position(event);
+      if (gesture.action === 'splitPr') {
+        confirmSplitPrGesture(event, gesture, released);
+        if (splitPrHandledRef.current) {
+          finished = true;
+          return;
+        }
+        cancel();
+        return;
+      }
       cancel();
       if (
         !released ||
@@ -571,18 +639,6 @@ export function Board({
         if (task) setConfirmedTarget(`対象を確定: ${describeTaskTarget(task)}（#${task.id}）`);
         input.onDragComplete?.(target);
       };
-      if (gesture.action === 'splitPr') {
-        const taskId = hitTestClientBoardDot(
-          event.clientX,
-          event.clientY,
-          released.rect,
-          input.dots,
-          input.dragIds,
-        );
-        // 表示していた対象だけを確定する。消滅やupだけの座標変化は誤発動させない。
-        if (taskId !== null && taskId === input.previewTaskId) confirm({ taskId });
-        return;
-      }
       const { rect } = released;
       if (
         !input.dragIds.has(gesture.taskId) ||
@@ -616,11 +672,12 @@ export function Board({
       window.removeEventListener('pointercancel', onCancel);
       window.removeEventListener('blur', cancel);
     };
-  }, [gesture, readPointer]);
+  }, [confirmSplitPrGesture, gesture, readPointer]);
 
   // スクロール/リサイズ後の古い矩形から対象を表示・確定しない。
   useEffect(() => {
     const clear = () => {
+      if (gestureRef.current) return;
       setPointer(null);
       setGesture(null);
     };
@@ -654,15 +711,36 @@ export function Board({
       event.preventDefault();
       event.stopPropagation();
       setConfirmedTarget('');
-      setPointer(next);
-      setGesture({
+      splitPrHandledRef.current = false;
+      const nextGesture: BoardGesture = {
         pointerId: event.pointerId ?? 1,
         taskId,
         action: armedAction,
         announce: event.pointerType === 'touch' || event.pointerType === 'pen',
-      });
+      };
+      activeGestureRef.current = nextGesture;
+      currentInput.current = { ...currentInput.current, previewTaskId: taskId };
+      setPointer(next);
+      if (armedAction === 'splitPr') {
+        const target = event.currentTarget;
+        if (target instanceof Element && 'setPointerCapture' in target) {
+          target.setPointerCapture(event.pointerId);
+        }
+      }
+      setGesture(nextGesture);
     },
     [interactive, gesture, readPointer, scene.dots, dragIds, armedAction],
+  );
+
+  const handleBoardPointerUp = useCallback(
+    (event: React.PointerEvent) => {
+      const currentGesture = activeGestureRef.current;
+      if (!currentGesture || currentGesture.action !== 'splitPr') return;
+      if (currentGesture.pointerId !== (event.pointerId ?? 1)) return;
+      const released = readPointer(event.clientX, event.clientY, event.target);
+      confirmSplitPrGesture(event.nativeEvent, currentGesture, released);
+    },
+    [confirmSplitPrGesture, readPointer],
   );
 
   const handleBoardPointerMove = useCallback(
@@ -693,6 +771,7 @@ export function Board({
       data-effect-last-sfx={boardEffects.audio.last ?? undefined}
       data-animations-paused={animationsPaused ? 'true' : undefined}
       onPointerDown={usePixi ? handleBoardPointerDown : undefined}
+      onPointerUp={usePixi ? handleBoardPointerUp : undefined}
       onPointerMove={usePixi ? handleBoardPointerMove : undefined}
       onPointerLeave={() => {
         if (!gesture) setPointer(null);

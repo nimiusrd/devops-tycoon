@@ -10,7 +10,7 @@ import {
   expect,
   test,
 } from './fixtures';
-import { designToClient, readBoardCanvasFrame } from './boardCanvasPoint';
+import { designToClient, readBoardCanvasFrame, type BoardCanvasFrame } from './boardCanvasPoint';
 import { planBoardScene } from '../../src/render/boardScene';
 import { presentBoardDots } from '../../src/render/boardPixiView';
 import { splitPrCandidates } from '../../src/sim/assignTask';
@@ -36,15 +36,18 @@ function isBoardPointUncovered(page: Page, point: { x: number; y: number }): Pro
   }, point);
 }
 
-async function readReviewTapTargets(page: Page): Promise<{ id: number; x: number; y: number }[]> {
+async function readReviewTapTargets(
+  page: Page,
+  frame?: BoardCanvasFrame,
+): Promise<{ id: number; x: number; y: number }[]> {
   const sprint = await page.evaluate(() => window.game!.getState().sprint);
-  const frame = await readBoardCanvasFrame(page);
+  const host = frame ?? (await readBoardCanvasFrame(page));
   if (!sprint) throw new Error('スプリントがない');
   const candidates = new Set(splitPrCandidates(sprint).map((task) => task.id));
-  const presented = presentBoardDots(planBoardScene(sprint.tasks).dots, frame.fit.scale);
+  const presented = presentBoardDots(planBoardScene(sprint.tasks).dots, host.fit.scale);
   return presented
     .filter((dot) => dot.lane === 'review' && !dot.motion && candidates.has(dot.id))
-    .map((dot) => ({ id: dot.id, ...designToClient(frame, dot) }));
+    .map((dot) => ({ id: dot.id, ...designToClient(host, dot) }));
 }
 
 async function openReviewPileSprint(page: Page, viewportWidth: number): Promise<void> {
@@ -63,17 +66,33 @@ async function openReviewPileSprint(page: Page, viewportWidth: number): Promise<
   await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-assets', '5');
 }
 
-async function tapBoardPoint(
+function boardHostPosition(frame: BoardCanvasFrame, target: { x: number; y: number }) {
+  return { x: target.x - frame.x, y: target.y - frame.y };
+}
+
+async function hoverPresentedDotCenter(
   page: Page,
-  point: { x: number; y: number },
-  width: number,
-  _browserName: string,
+  frame: BoardCanvasFrame,
+  target: { x: number; y: number },
 ): Promise<void> {
-  if (width <= 390) {
-    await page.touchscreen.tap(point.x, point.y);
+  await page.getByTestId('board').hover({ position: boardHostPosition(frame, target) });
+}
+
+async function tapPresentedDotCenter(
+  page: Page,
+  frame: BoardCanvasFrame,
+  target: { x: number; y: number },
+  width: number,
+  browserName: string,
+): Promise<void> {
+  const position = boardHostPosition(frame, target);
+  const board = page.getByTestId('board');
+  const usePointerClick = width <= 320 && browserName === 'chromium';
+  if (width <= 390 && !usePointerClick) {
+    await board.tap({ position });
     return;
   }
-  await page.mouse.click(point.x, point.y);
+  await board.click({ position });
 }
 
 async function expectSplitOnTask(page: Page, taskId: number, before: number): Promise<void> {
@@ -106,15 +125,16 @@ for (const viewport of VIEWPORTS) {
     const board = page.getByTestId('board');
     for (const taskId of targetIds) {
       await openReviewPileSprint(page, viewport.width);
-      const target = (await readReviewTapTargets(page)).find((dot) => dot.id === taskId);
+      const frame = await readBoardCanvasFrame(page);
+      const target = (await readReviewTapTargets(page, frame)).find((dot) => dot.id === taskId);
       if (!target) throw new Error(`Review #${taskId} が候補にない`);
       expect(
         await isBoardPointUncovered(page, target),
         `Review #${taskId} の中心が操作できない`,
       ).toBe(true);
-      await page.mouse.move(target.x, target.y);
+      await hoverPresentedDotCenter(page, frame, target);
       await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
-      await tapBoardPoint(page, target, viewport.width, browserName);
+      await tapPresentedDotCenter(page, frame, target, viewport.width, browserName);
       await expectSplitOnTask(page, taskId, 0);
     }
   });

@@ -14,17 +14,24 @@ export interface BoardCanvasFrame {
   fit: DesignToHostTransform;
 }
 
-/** Pixi mount の枠。盤面要素の border box ではなく、描画と同じ内側を返す。 */
+/** 盤面の内側。`boardCanvasHostRect` とヒット判定が同じ原点・寸法を使う。 */
 export async function readBoardCanvasFrame(page: Page): Promise<BoardCanvasFrame> {
-  const mount = page.getByTestId('board-pixi-mount');
-  const box = await mount.boundingBox();
-  if (!box) throw new Error('盤面キャンバスの位置を取得できない');
+  const frame = await page.getByTestId('board').evaluate((board) => {
+    const border = board.getBoundingClientRect();
+    const { clientLeft, clientTop, clientWidth, clientHeight } = board;
+    return {
+      x: border.left + clientLeft,
+      y: border.top + clientTop,
+      width: clientWidth,
+      height: clientHeight,
+    };
+  });
+  if (!Number.isFinite(frame.width) || frame.width <= 0) {
+    throw new Error('盤面キャンバスの位置を取得できない');
+  }
   return {
-    x: box.x,
-    y: box.y,
-    width: box.width,
-    height: box.height,
-    fit: designToHostTransform(box.width, box.height, BOARD_VIEW),
+    ...frame,
+    fit: designToHostTransform(frame.width, frame.height, BOARD_VIEW),
   };
 }
 

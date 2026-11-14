@@ -17,6 +17,7 @@ import {
   hitTestBoardDot,
 } from '../../../src/render/boardPixiView';
 import { RunEngine } from '../../../src/sim/run/engine';
+import { splitPrCandidates } from '../../../src/sim/assignTask';
 import { makeTask } from '../helpers/sprintFixtures';
 
 function piledReviewWithCodingFlowTasks() {
@@ -47,6 +48,28 @@ describe('boardPileLayout（Review 山の寄せ）', { timeout: 60_000 }, () => 
           );
         }
       }
+    }
+  });
+
+  it('qa-seed-1030 の Review 分割候補は 320 倍率で各中心がその粒を返す（#1001）', () => {
+    const engine = new RunEngine({ seed: 'qa-seed-1030', difficulty: 'easy' });
+    engine.startRun('easy', [], 'qa-seed-1030');
+    engine.beginSetupSprint();
+    for (let guard = 0; guard < 5000; guard += 1) {
+      const snapshot = engine.snapshot();
+      if (snapshot.phase !== 'sprint') break;
+      if (snapshot.sprint!.tasks.filter((task) => task.lane === 'review').length >= 10) break;
+      engine.step(40);
+    }
+    const sprint = engine.snapshot().sprint!;
+    const dots = planBoardScene(sprint.tasks).dots;
+    const scale = boardPhonePresentationScales()[0];
+    const presented = presentBoardDots(dots, scale);
+    const ids = new Set(splitPrCandidates(sprint).map((task) => task.id));
+    for (const taskId of ids) {
+      const index = dots.findIndex((dot) => dot.id === taskId);
+      const dot = presented[index];
+      expect(hitTestBoardDot(dot, dots, ids, { x: scale, y: scale }), `粒 #${taskId}`).toBe(taskId);
     }
   });
 

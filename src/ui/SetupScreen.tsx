@@ -184,9 +184,7 @@ export function SetupScreen({
   const responsiveMode = useResponsiveMode();
   // 320×568 のように縦が短いと見出し下の案内が画面外になる。390×844 では従来位置のまま（#1017）。
   const setupHintAtTop = responsiveMode.width === 'narrow' && responsiveMode.height === 'short';
-  const setupOrgLeverHint = (
-    <OrgLeverHintRow eligible={orgLeverHint.show} dismissed={orgLeverHint.dismissed} />
-  );
+  const setupOrgLeverHint = <OrgLeverHintRow eligible={orgLeverHint.show} />;
   const heading = bossPending
     ? '編成 — ボススプリントの前に配置とAIを決める'
     : elitePending

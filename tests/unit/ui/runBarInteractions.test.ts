@@ -431,8 +431,8 @@ describe('RunBar の表示と操作', () => {
     expect(screen.find('open-org').props['data-org-lever-hint']).toBe('true');
   });
 
-  it('編成の案内行は開いた時点だけ足し、消すのは dismissed のときだけ', () => {
-    let props = { eligible: true, dismissed: false };
+  it('編成の案内行は開いた時点だけ足し、閉じるまで dismissed で消さない (#985)', () => {
+    let props = { eligible: true };
     let tree: ReactNode = null;
     const flush = () => {
       hooks.cursor = 0;
@@ -448,18 +448,15 @@ describe('RunBar の表示と操作', () => {
     );
     expect(content(hint)).toBe('予算は組織レバーで使えます');
     expect(hint?.props.role).toBeUndefined();
-    props = { eligible: false, dismissed: false };
+    props = { eligible: false };
     flush();
     expect(shown()).toBe(true);
-    props = { eligible: true, dismissed: true };
-    flush();
-    expect(shown()).toBe(false);
 
     hooks.slots = [];
-    props = { eligible: false, dismissed: false };
+    props = { eligible: false };
     flush();
     expect(shown()).toBe(false);
-    props = { eligible: true, dismissed: false };
+    props = { eligible: true };
     flush();
     expect(shown()).toBe(false);
   });

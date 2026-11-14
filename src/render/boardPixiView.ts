@@ -454,11 +454,13 @@ function pilePresentedDotsOverlap(
   presented: readonly BoardDotPlan[],
   planned: readonly BoardDotPlan[],
   cssScale: number,
+  lanes?: readonly BoardDotPlan['lane'][],
 ): boolean {
   const indexesByPile = new Map<string, number[]>();
   for (let i = 0; i < planned.length; i += 1) {
     const dot = planned[i];
     if (dot.motion || !belongsToOwnStationPile(dot)) continue;
+    if (lanes && !lanes.includes(dot.lane)) continue;
     const key = `${dot.lane}:${dot.clusterX}:${dot.clusterY}`;
     const list = indexesByPile.get(key);
     if (list) list.push(i);
@@ -482,11 +484,13 @@ function separateOverlappingPileDots(
   presented: BoardDotPlan[],
   planned: readonly BoardDotPlan[],
   cssScale: number,
+  lanes?: readonly BoardDotPlan['lane'][],
 ): void {
   const indexesByPile = new Map<string, number[]>();
   for (let i = 0; i < planned.length; i += 1) {
     const dot = planned[i];
     if (dot.motion || !belongsToOwnStationPile(dot)) continue;
+    if (lanes && !lanes.includes(dot.lane)) continue;
     const key = `${dot.lane}:${dot.clusterX}:${dot.clusterY}`;
     const list = indexesByPile.get(key);
     if (list) list.push(i);
@@ -556,8 +560,9 @@ export function presentBoardDotsWithShiftedReview(
     const plan = planned[index];
     return plan.lane === 'review' && !plan.motion ? presentBoardDot(plan, cssScale) : dot;
   });
-  if (pilePresentedDotsOverlap(presented, planned, cssScale)) {
-    separateOverlappingPileDots(presented, planned, cssScale);
+  const reviewLanes = ['review'] as const;
+  if (pilePresentedDotsOverlap(presented, planned, cssScale, reviewLanes)) {
+    separateOverlappingPileDots(presented, planned, cssScale, reviewLanes);
   }
   return presented;
 }

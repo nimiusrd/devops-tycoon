@@ -787,9 +787,8 @@ describe('Pixi スプリント盤面レンダラー', () => {
       }),
     );
     const groups = layer(app, 'dots').children;
-    const presented = presentBoardDots(dots, 1);
-    expect(groups.at(-2)?.position.x).toBe(presented[previewTaskId].x);
-    expect(groups.at(-1)?.position.x).toBe(presented[0].x);
+    expect(groups.at(-2)?.position.x).toBe(previewTaskId);
+    expect(groups.at(-1)?.position.x).toBe(0);
     expect(latest().previewTaskId).toBe(previewTaskId);
     expect(drawCalls(graphics(groups.at(-1)!, 1), 'stroke')).toEqual([
       [expect.objectContaining({ color: VISUAL_TOKENS.colors.sun, width: 2, alpha: 1 })],

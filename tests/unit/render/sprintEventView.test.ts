@@ -107,7 +107,7 @@ describe('sprintEventView（RI-52）', () => {
         taskId: 1,
         spreadToTaskId: 3,
       }).text,
-    ).toBe('延焼! 隣の Review 待ち PR に連鎖');
+    ).toBe('延焼! 隣のレビュー待ち PR に連鎖');
     expect(
       formatSprintEvent({
         tick: 7,
@@ -117,7 +117,7 @@ describe('sprintEventView（RI-52）', () => {
         debtGain: 6,
         moraleCost: 5,
       }).text,
-    ).toBe('延焼! 隣の Review 待ち PR に連鎖（負債 +6 / 士気 -5）');
+    ).toBe('延焼! 隣のレビュー待ち PR に連鎖（負債 +6 / 士気 -5）');
     expect(
       formatSprintEvent({
         tick: 8,

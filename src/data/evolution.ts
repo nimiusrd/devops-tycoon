@@ -102,7 +102,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
   {
     id: 'quality-1',
     branch: 'quality',
-    name: 'Test Coverage 効率',
+    name: 'テストカバレッジ効率',
     description: 'テスト資産を増やし、安全性とセキュリティ水準を底上げ',
     cost: 1,
     effects: { testCoverageAdd: 12, securityAdd: 6 },
@@ -119,7 +119,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
   {
     id: 'quality-3',
     branch: 'quality',
-    name: 'Incident 耐性',
+    name: 'インシデント耐性',
     description: '手戻り耐性と品質・セキュリティ文化を底上げ',
     cost: 14,
     requires: 'quality-2',

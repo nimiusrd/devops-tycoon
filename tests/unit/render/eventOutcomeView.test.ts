@@ -94,7 +94,7 @@ describe('formatEventOutcomeTags（イベント効果タグ）', () => {
 
   it('Tech Debt / AI依存度の増加は negative タグにする', () => {
     expect(formatEventOutcomeTags({ techDebt: 5 })).toEqual([
-      { label: 'Tech Debt +5', tone: 'negative' },
+      { label: '技術的負債 +5', tone: 'negative' },
     ]);
     expect(formatEventOutcomeTags({ aiDependency: 12, quality: -6 })).toEqual([
       { label: '品質 -6', tone: 'negative' },
@@ -337,7 +337,7 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
       tone: 'positive',
     });
     expect(formatGoalAdjustmentTags(def)).toContainEqual({
-      label: 'Tech Debt -13',
+      label: '技術的負債 -13',
       tone: 'positive',
     });
     expect(formatGoalAdjustmentTags(def)).toContainEqual({
@@ -388,7 +388,7 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
       tone: 'positive',
     });
     expect(formatGoalAdjustmentTags(def)).toContainEqual({
-      label: '次四半期 Tech Debt -4/スプリント',
+      label: '次四半期 技術的負債 -4/スプリント',
       tone: 'positive',
     });
   });
@@ -530,7 +530,7 @@ describe('formatRestOptionTags（休息タグ / RI-45）', () => {
 
   it('repay / recruit の効果をタグ化する', () => {
     expect(formatRestOptionTags('repay')).toEqual([
-      { label: 'Tech Debt -30', tone: 'positive' },
+      { label: '技術的負債 -30', tone: 'positive' },
       { label: '次スプリント 手戻り率 -8%', tone: 'positive' },
     ]);
     expect(formatRestOptionTags('upgrade')).toEqual([

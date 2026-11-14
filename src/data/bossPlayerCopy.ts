@@ -30,16 +30,16 @@ function formatClearClause(check: BossClearCheck, bossTargetMul: number): string
     lines.push(`延焼 ${check.maxSpread} 回以下`);
   }
   if (check.maxTechDebt !== undefined) {
-    lines.push(`Tech Debt ${check.maxTechDebt} 以下`);
+    lines.push(`技術的負債 ${check.maxTechDebt} 以下`);
   }
   if (check.minAiPct !== undefined) {
     lines.push(`AI 利用率 ${check.minAiPct}% 以上`);
   }
   if (check.minMorale !== undefined) {
-    lines.push(`Morale ${check.minMorale} 以上`);
+    lines.push(`士気 ${check.minMorale} 以上`);
   }
   if (check.minQuality !== undefined) {
-    lines.push(`Quality ${check.minQuality} 以上`);
+    lines.push(`品質 ${check.minQuality} 以上`);
   }
   return lines;
 }
@@ -49,7 +49,7 @@ function formatRunLoseClauses(): string[] {
     `レビュー待ちピーク ${reviewFreezePeakCap()} 件以上で${REVIEW_FREEZE_LOSE_NAME}`,
     `シニア体力 ${SENIOR_HP_LOSE_MAX} 以下でシニア燃え尽き`,
     `士気 ${MORALE_LOSE_MAX} 以下でチーム崩壊`,
-    `Tech Debt ${TECH_DEBT_CAP} 以上で開発停止`,
+    `技術的負債 ${TECH_DEBT_CAP} 以上で開発停止`,
   ];
 }
 

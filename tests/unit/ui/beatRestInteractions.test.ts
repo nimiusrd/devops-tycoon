@@ -156,7 +156,7 @@ describe('BeatScreen のイベント選択', () => {
     expect(message).toContain('"動いているように見える" 障害');
     expect(message).toContain('潜在バグが顕在化し、品質と士気が揺らぐ');
     expect(message).toContain('品質 -8');
-    expect(message).toContain('Tech Debt +6');
+    expect(message).toContain('技術的負債 +6');
     expect(screen.has('beat-choice-0')).toBe(false);
     screen.click('beat-ack');
     expect(onResolve).toHaveBeenCalledExactlyOnceWith();

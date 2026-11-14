@@ -450,6 +450,33 @@ function nudgeOverlappingPair(
   return true;
 }
 
+function pilePresentedDotsOverlap(
+  presented: readonly BoardDotPlan[],
+  planned: readonly BoardDotPlan[],
+  cssScale: number,
+): boolean {
+  const indexesByPile = new Map<string, number[]>();
+  for (let i = 0; i < planned.length; i += 1) {
+    const dot = planned[i];
+    if (dot.motion || !belongsToOwnStationPile(dot)) continue;
+    const key = `${dot.lane}:${dot.clusterX}:${dot.clusterY}`;
+    const list = indexesByPile.get(key);
+    if (list) list.push(i);
+    else indexesByPile.set(key, [i]);
+  }
+  for (const indexes of indexesByPile.values()) {
+    if (indexes.length < 2) continue;
+    for (let left = 0; left < indexes.length; left += 1) {
+      for (let right = left + 1; right < indexes.length; right += 1) {
+        if (presentedDotsOverlap(presented[indexes[left]!], presented[indexes[right]!], cssScale)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 /** 同じ工程の山で、提示後に重なっている粒だけを反復的に離す。 */
 function separateOverlappingPileDots(
   presented: BoardDotPlan[],
@@ -487,7 +514,9 @@ function separateOverlappingPileDots(
  */
 export function presentBoardDots(dots: readonly BoardDotPlan[], cssScale: number): BoardDotPlan[] {
   const presented = dots.map((dot) => presentBoardDot(dot, cssScale));
-  separateOverlappingPileDots(presented, dots, cssScale);
+  if (pilePresentedDotsOverlap(presented, dots, cssScale)) {
+    separateOverlappingPileDots(presented, dots, cssScale);
+  }
   return presented;
 }
 
@@ -503,7 +532,9 @@ export function presentBoardDotsWithShiftedReview(
     const plan = planned[index];
     return plan.lane === 'review' && !plan.motion ? presentBoardDot(plan, cssScale) : dot;
   });
-  separateOverlappingPileDots(presented, planned, cssScale);
+  if (pilePresentedDotsOverlap(presented, planned, cssScale)) {
+    separateOverlappingPileDots(presented, planned, cssScale);
+  }
   return presented;
 }
 

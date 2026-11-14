@@ -363,6 +363,9 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const board = page.getByTestId('board');
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-kinds', /intervention:reviewSweep/);
+    await expect
+      .poll(async () => mount.getAttribute('data-board-effects'), { timeout: 15_000 })
+      .toMatch(/^[1-9]\d*$/);
     await freezePixiForScreenshot(page);
     await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
     await expect(page.locator('.intervention-effects')).toHaveCount(0);
@@ -374,11 +377,15 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     });
     await stabilizeForScreenshot(page);
     await advanceCurrentSprintToBurning(page);
+    const firefightMount = page.getByTestId('board-pixi-mount');
     await page.getByTestId('action-firefight').click();
     await expect(page.getByTestId('board')).toHaveAttribute(
       'data-effect-kinds',
       'intervention:firefight',
     );
+    await expect
+      .poll(async () => firefightMount.getAttribute('data-board-effects'), { timeout: 15_000 })
+      .toMatch(/^[1-9]\d*$/);
     await freezePixiForScreenshot(page);
     await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-effects', '1');
   });

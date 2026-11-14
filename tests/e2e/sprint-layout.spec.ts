@@ -1306,7 +1306,7 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     const overlay = page.getByTestId('sprint-result');
     await expect(overlay).toBeVisible();
     await expect(overlay).toHaveClass(/overlay-contained/);
-    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
+    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '-1');
     await expect(page.getByTestId('result-title')).toBeVisible();
     await expect(page.getByTestId('reward-ceremony-title')).toBeVisible();
     await expect(page.getByTestId('result-diagnosis-text')).toBeVisible();

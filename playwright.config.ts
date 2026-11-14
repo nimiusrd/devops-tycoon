@@ -62,6 +62,16 @@ export default defineConfig({
       testMatch: /sprint-result-quarter-goal/,
     },
     {
+      name: 'webkit-boss-sprint-result',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /boss-sprint-result/,
+    },
+    {
+      name: 'webkit-replay-quarter-review',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /replay-quarter-review-jump/,
+    },
+    {
       name: 'webkit-speed-hit-target',
       use: { ...devices['Desktop Safari'] },
       testMatch: /speed-button-hit-target/,

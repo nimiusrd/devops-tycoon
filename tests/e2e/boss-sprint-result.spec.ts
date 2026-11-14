@@ -178,6 +178,10 @@ test('スプリント6は結果を1回出してから四半期レビューへ進
       await expect(result).toHaveCount(1);
       await expect(page.getByTestId('quarter-review')).toHaveCount(0);
 
+      const resultBody = await page.getByTestId('sprint-result').innerText();
+      expect(resultBody).not.toMatch(/カードドラフト|進化ポイント|組織進化/);
+      await expect(continueButton).not.toHaveText(/カードドラフト/);
+
       await continueButton.scrollIntoViewIfNeeded();
       await continueButton.click();
       const review = page.getByTestId('quarter-review');
@@ -185,6 +189,7 @@ test('スプリント6は結果を1回出してから四半期レビューへ進
       await expect(review).toBeVisible();
       await expect(review).toContainText('Q1');
       await expect(result).toHaveCount(0);
+      await expect(page.getByTestId('quarter-review-title')).toBeFocused();
 
       await page.evaluate(() => {
         const game = (window as { game?: { step(ms: number): void } }).game;

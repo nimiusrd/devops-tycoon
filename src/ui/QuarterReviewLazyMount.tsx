@@ -116,9 +116,6 @@ class QuarterReviewRenderBoundary extends Component<
 function QuarterReviewLoadedFocusLock({ children }: { children: ReactNode }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   useDialogOverlayLock(overlayRef);
-  useLayoutEffect(() => {
-    overlayRef.current?.focus({ preventScroll: true });
-  }, []);
   return (
     <div
       ref={overlayRef}

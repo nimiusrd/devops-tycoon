@@ -1819,9 +1819,11 @@ body:has(.overlay-contained) {
   overflow: hidden;
 }
 .overlay-contained .sprint-result-card > .overlay-scroll {
+  order: 1;
   padding-bottom: 0.25rem;
 }
 .overlay-contained .sprint-result-card > .sprint-result-footer {
+  order: 2;
   position: relative;
   z-index: 1;
   flex: 0 0 auto;

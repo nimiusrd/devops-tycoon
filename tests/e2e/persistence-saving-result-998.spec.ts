@@ -1,0 +1,142 @@
+/**
+ * 結果画面直後の「保存中」が KPI チップと結果本文を隠さないこと（#998）。
+ */
+import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures';
+import { advanceCurrentSprintToResult, beginCurrentSetupSprint } from './fixtures';
+
+const VIEWPORTS = [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+] as const;
+
+type GameWindow = Window & {
+  game?: {
+    pause(): void;
+  };
+};
+
+async function delayRunSavePut(page: Page, delayMs: number): Promise<void> {
+  await page.addInitScript((delay) => {
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (
+      this: IDBObjectStore,
+      value: unknown,
+      key?: IDBValidKey,
+    ) {
+      const request = put.call(this, value, key);
+      if (delay <= 0 || this.name !== 'runSave') return request;
+      const wrap = (listener: EventListener) => (event: Event) => {
+        window.setTimeout(() => listener(event), delay);
+      };
+      const add = request.addEventListener.bind(request);
+      request.addEventListener = function (type, listener, options) {
+        if (type === 'success' && typeof listener === 'function') {
+          return add(type, wrap(listener), options);
+        }
+        return add(type, listener, options);
+      };
+      let onsuccess: ((this: IDBRequest, ev: Event) => unknown) | null = null;
+      Object.defineProperty(request, 'onsuccess', {
+        configurable: true,
+        get: () => onsuccess,
+        set: (handler) => {
+          onsuccess = handler
+            ? function (this: IDBRequest, ev: Event) {
+                window.setTimeout(() => handler.call(this, ev), delay);
+              }
+            : null;
+        },
+      });
+      return request;
+    };
+  }, delayMs);
+}
+
+async function overlapProbe(page: Page) {
+  return page.evaluate(() => {
+    const hits = (a: DOMRect, b: DOMRect) =>
+      a.left < b.right - 0.5 &&
+      a.right > b.left + 0.5 &&
+      a.top < b.bottom - 0.5 &&
+      a.bottom > b.top + 0.5;
+    const noticeEl = document.querySelector(
+      '[data-testid="persistence-notice"][data-state="saving"]',
+    );
+    const hudEl = document.querySelector('[data-testid="hud"]');
+    const toggleEl = document.querySelector('[data-testid="hud-toggle"]');
+    const contentEls = [
+      ...document.querySelectorAll(
+        '[data-testid="result-grade"], [data-testid="result-highlights"], [data-testid="result-title"]',
+      ),
+    ];
+    const chipEls = [...document.querySelectorAll('[data-testid^="hud-compact-"], #hud-seniorHp')];
+    const runbarEl = document.querySelector('[data-testid="runbar"]');
+    if (!(noticeEl instanceof HTMLElement) || !(hudEl instanceof HTMLElement)) {
+      return { ready: false as const };
+    }
+    const noticeBox = noticeEl.getBoundingClientRect();
+    const hudBox = hudEl.getBoundingClientRect();
+    const runbarBox = runbarEl instanceof HTMLElement ? runbarEl.getBoundingClientRect() : null;
+    const hit = (target: Element) => hits(noticeBox, target.getBoundingClientRect());
+    const detail = noticeEl.querySelector('[data-testid="persistence-notice-detail"]');
+    return {
+      ready: true as const,
+      parent: noticeEl.parentElement?.getAttribute('data-testid') ?? '',
+      quietPlacement: noticeEl.getAttribute('data-quiet-placement'),
+      overlapsHud: hit(hudEl),
+      overlapsToggle: toggleEl instanceof HTMLElement ? hit(toggleEl) : false,
+      overlapsChips: chipEls.some((chip) => hit(chip)),
+      overlapsResult: contentEls.some((element) => hit(element)),
+      belowHud: noticeBox.top >= hudBox.bottom - 1,
+      inPortal: noticeEl.parentElement === document.body,
+      runbarY: runbarBox?.y ?? null,
+      detailHidden: !(detail instanceof HTMLElement) || getComputedStyle(detail).display === 'none',
+      narrow: document.documentElement.dataset.responsiveWidth === 'narrow',
+    };
+  });
+}
+
+test('結果画面で保存中が KPI チップと結果を隠さず、RunBar の位置を動かさない', async ({ page }) => {
+  test.setTimeout(120_000);
+  await delayRunSavePut(page, 2_000);
+
+  for (const viewport of VIEWPORTS) {
+    await test.step(`${viewport.width}×${viewport.height}`, async () => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/?seed=qa-seed-1031&tutorial=off');
+      await page.getByTestId('start-run').click();
+      await expect(page.getByTestId('hud')).toBeVisible();
+      await beginCurrentSetupSprint(page);
+      const runbarYBefore = await page
+        .getByTestId('runbar')
+        .evaluate((el) => el.getBoundingClientRect().y);
+      await advanceCurrentSprintToResult(page);
+      await page.evaluate(() => (window as GameWindow).game?.pause());
+      await expect
+        .poll(async () => (await overlapProbe(page)).ready, {
+          timeout: 10_000,
+          message: '保存中の案内が出ない',
+        })
+        .toBe(true);
+
+      const placement = await overlapProbe(page);
+      expect(placement.parent, 'portal ではなく HUD 横の静かな案内').toBe('persistence-quiet-slot');
+      expect(placement.quietPlacement).toBe('inline');
+      expect(placement.inPortal, 'body 直下の固定案内ではない').toBe(false);
+      expect(placement.overlapsHud, `${viewport.width} で HUD と重なる`).toBe(false);
+      expect(placement.overlapsToggle, `${viewport.width} で KPI 詳細と重なる`).toBe(false);
+      expect(placement.overlapsChips, `${viewport.width} で KPI チップと重なる`).toBe(false);
+      expect(placement.overlapsResult, `${viewport.width} で結果と重なる`).toBe(false);
+      expect(placement.belowHud, `${viewport.width} で HUD の下にない`).toBe(true);
+      if (placement.narrow) {
+        expect(placement.detailHidden, `${viewport.width} で詳細を隠す`).toBe(true);
+      }
+
+      const runbarYDuring = await page
+        .getByTestId('runbar')
+        .evaluate((el) => el.getBoundingClientRect().y);
+      expect(Math.abs(runbarYDuring - runbarYBefore)).toBeLessThan(0.5);
+    });
+  }
+});

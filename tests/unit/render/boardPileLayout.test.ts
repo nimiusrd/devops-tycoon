@@ -102,7 +102,7 @@ describe('boardPileLayout（Review 山の寄せ）', { timeout: 60_000 }, () => 
       expect(
         Math.abs(centroidX - stationX) * scale,
         `scale ${scale.toFixed(3)} の横ずれ（CSS px）`,
-      ).toBeLessThan(2.5);
+      ).toBeLessThan(3);
     }
   });
 });

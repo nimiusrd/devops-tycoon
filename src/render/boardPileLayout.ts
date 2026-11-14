@@ -211,6 +211,22 @@ const REVIEW_SHIFT_EXTENDED_COARSE = {
 
 type RankedReviewShift = BoardPileShift & { dist: number; centerOff: number };
 
+/** 山の寄せ探索用。提示計算なしで計画座標の重心から CSS 横ずれを見積もる。 */
+function reviewPilePlannedCenteringOffset(
+  shifted: readonly BoardDotPlan[],
+  scales: readonly number[] = reviewPilePresentationScales(),
+): number {
+  const review = shifted.filter((dot) => dot.lane === 'review' && !dot.motion);
+  if (review.length === 0) return 0;
+  const centroidX = review.reduce((sum, dot) => sum + dot.x, 0) / review.length;
+  const stationX = BOARD_STATION_CENTERS.review.x;
+  let maxOff = 0;
+  for (const scale of scales) {
+    maxOff = Math.max(maxOff, Math.abs(centroidX - stationX) * scale);
+  }
+  return maxOff;
+}
+
 function reviewPilePresentedCentroidX(
   dots: readonly BoardDotPlan[],
   scale: number,
@@ -227,20 +243,53 @@ function reviewPilePresentedCentroidX(
   return shown.reduce((sum, dot) => sum + dot.x, 0) / shown.length;
 }
 
-function reviewPileCenteringOffset(
+/** 提示後の Review 重心とステーション中心との最大 CSS 横ずれ。 */
+function reviewPilePresentedCenteringOffset(
   shifted: readonly BoardDotPlan[],
-  caches: readonly ReviewOverlapCache[],
   scales: readonly number[] = reviewPilePresentationScales(),
 ): number {
   const stationX = BOARD_STATION_CENTERS.review.x;
   let maxOff = 0;
   for (const scale of scales) {
-    const cache = caches.find((entry) => Math.abs(entry.scale - scale) < 1e-9);
-    const centroidX = reviewPilePresentedCentroidX(shifted, scale, cache?.basePresented);
+    const centroidX = reviewPilePresentedCentroidX(shifted, scale);
     if (centroidX === null) continue;
     maxOff = Math.max(maxOff, Math.abs(centroidX - stationX) * scale);
   }
   return maxOff;
+}
+
+function refineReviewPilePresentedCentering(
+  dots: readonly BoardDotPlan[],
+  scales: readonly number[],
+  caches: readonly ReviewOverlapCache[],
+  base: BoardPileShift,
+): BoardPileShift {
+  let bestShift = base;
+  let bestOff = reviewPilePresentedCenteringOffset(
+    applyLanePileShift(dots, 'review', base),
+    scales,
+  );
+  for (let dx = base.dx - 24; dx <= base.dx + 24; dx += 2) {
+    for (let dy = base.dy - 12; dy <= base.dy + 12; dy += 2) {
+      const shift = { dx, dy };
+      const shifted = applyLanePileShift(dots, 'review', shift);
+      if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
+      if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
+      if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
+      const off = reviewPilePresentedCenteringOffset(shifted, scales);
+      const dist = Math.hypot(dx, dy);
+      const bestDist = Math.hypot(bestShift.dx, bestShift.dy);
+      const better =
+        off < bestOff - 1e-6 ||
+        (Math.abs(off - bestOff) <= 1e-6 &&
+          (dist < bestDist - 1e-6 || (Math.abs(dist - bestDist) <= 1e-6 && dy < bestShift.dy)));
+      if (better) {
+        bestOff = off;
+        bestShift = shift;
+      }
+    }
+  }
+  return bestShift;
 }
 
 function pickBetterShift(
@@ -273,7 +322,7 @@ function findReviewPileShiftInRange(
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
       if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
-      const centerOff = reviewPileCenteringOffset(shifted, caches);
+      const centerOff = reviewPilePlannedCenteringOffset(shifted, scales);
       best = pickBetterShift(best, dx, dy, centerOff);
     }
   }
@@ -287,9 +336,9 @@ function refineReviewPileShift(
   caches: readonly ReviewOverlapCache[],
   coarse: BoardPileShift,
 ): BoardPileShift {
-  const coarseOffset = reviewPileCenteringOffset(
+  const coarseOffset = reviewPilePlannedCenteringOffset(
     applyLanePileShift(dots, 'review', coarse),
-    caches,
+    scales,
   );
   let best = pickBetterShift(null, coarse.dx, coarse.dy, coarseOffset)!;
   for (
@@ -306,7 +355,7 @@ function refineReviewPileShift(
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
       if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
-      const centerOff = reviewPileCenteringOffset(shifted, caches);
+      const centerOff = reviewPilePlannedCenteringOffset(shifted, scales);
       best = pickBetterShift(best, dx, dy, centerOff)!;
     }
   }
@@ -325,10 +374,20 @@ export function findReviewPileShift(
   if (countReviewCrossStationOverlapsWithCaches(dots, caches) === 0) {
     return { dx: 0, dy: 0 };
   }
+  const centeringScales = reviewPilePresentationScales(scales);
   const compact = findReviewPileShiftInRange(dots, scales, caches, REVIEW_SHIFT_COMPACT);
-  if (compact) return compact;
+  if (compact) {
+    return refineReviewPilePresentedCentering(dots, centeringScales, caches, compact);
+  }
   const coarse = findReviewPileShiftInRange(dots, scales, caches, REVIEW_SHIFT_EXTENDED_COARSE);
-  if (coarse) return refineReviewPileShift(dots, scales, caches, coarse);
+  if (coarse) {
+    return refineReviewPilePresentedCentering(
+      dots,
+      centeringScales,
+      caches,
+      refineReviewPileShift(dots, scales, caches, coarse),
+    );
+  }
   return { dx: 0, dy: 0 };
 }
 

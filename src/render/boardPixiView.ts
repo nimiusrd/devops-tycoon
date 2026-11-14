@@ -414,7 +414,7 @@ function nudgeOverlappingPair(
 ): boolean {
   const a = presented[i];
   const b = presented[j];
-  const need = presentedDotRadius(a.size, cssScale) + presentedDotRadius(b.size, cssScale) + 0.5;
+  const need = presentedDotRadius(a.size, cssScale) + presentedDotRadius(b.size, cssScale) + 0.75;
   const presentedDx = b.x - a.x;
   const presentedDy = b.y - a.y;
   const presentedDist = Math.hypot(presentedDx, presentedDy);

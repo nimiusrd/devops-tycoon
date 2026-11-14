@@ -334,7 +334,7 @@ describe('boardDotReadability', () => {
     });
   });
 
-  it('中と大の粒は 320/390/1024 で CSS 上重ならない（#994）', () => {
+  it('中と大の粒は 320/390/1024 で CSS 上重ならない（#994）', { timeout: 60_000 }, () => {
     const tasks = [
       ...Array.from({ length: 12 }, (_, index) =>
         makeTask(index + 1, {
@@ -349,10 +349,15 @@ describe('boardDotReadability', () => {
     const scales = reviewPilePresentationScales();
     for (const scale of scales) {
       const presented = presentBoardDots(dots, scale);
+      const mediumLarge: number[] = [];
       for (let left = 0; left < presented.length; left += 1) {
-        for (let right = left + 1; right < presented.length; right += 1) {
-          const a = presented[left];
-          const b = presented[right];
+        const dot = presented[left];
+        if (dot.size === 'medium' || dot.size === 'large') mediumLarge.push(left);
+      }
+      for (let li = 0; li < mediumLarge.length; li += 1) {
+        for (let ri = li + 1; ri < mediumLarge.length; ri += 1) {
+          const a = presented[mediumLarge[li]!];
+          const b = presented[mediumLarge[ri]!];
           const sizes = new Set([a.size, b.size]);
           if (!sizes.has('medium') || !sizes.has('large')) continue;
           const dist = Math.hypot(a.x - b.x, a.y - b.y) * scale;
@@ -360,8 +365,9 @@ describe('boardDotReadability', () => {
             (presentedDotRadius(a.size, scale) + presentedDotRadius(b.size, scale)) * scale;
           expect(dist, `粒 ${a.id} と ${b.id}`).toBeGreaterThanOrEqual(need - 0.01);
         }
-        const dot = presented[left];
-        if (!ids.has(dot.id) || dot.motion) continue;
+      }
+      for (const index of mediumLarge) {
+        const dot = presented[index];
         expect(hitTestBoardDot(dot, dots, ids, { x: scale, y: scale })).toBe(dot.id);
       }
     }

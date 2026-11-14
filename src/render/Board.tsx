@@ -142,11 +142,14 @@ function BoardFlowSummary({
               className={needsAttention ? 'needs-attention' : undefined}
               data-lane={station.lane}
               data-action-target={actionTarget ? 'true' : undefined}
+              aria-label={`${station.label} ${station.count}件`}
             >
               <span className="board-flow-icon" aria-hidden="true">
                 {station.icon}
               </span>
-              <span className="board-flow-name">{station.label}</span>
+              <span className="board-flow-name" title={station.label}>
+                {station.label}
+              </span>
               <strong data-testid={`count-${station.lane}`}>{station.count}</strong>
               {needsAttention && <span className="board-flow-alert">要対応</span>}
               {actionTarget && <span className="board-flow-target">作用先</span>}

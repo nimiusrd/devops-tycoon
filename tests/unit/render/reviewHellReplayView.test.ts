@@ -123,7 +123,7 @@ describe('reviewHellReplayView（RI-34‴）', () => {
       { phase: 'setup', frame: setup, label: '編成' },
       { phase: 'result', frame: low, label: 'Review peak 8' },
       { phase: 'result', frame: high, label: 'Review peak 22' },
-      { phase: 'lost', frame: lost, label: 'Review Hell 型' },
+      { phase: 'lost', frame: lost, label: 'レビュー地獄型' },
     ]);
 
     const view = planReviewHellReplay(blob);
@@ -262,7 +262,7 @@ describe('reviewHellReplayView（RI-34‴）', () => {
     const draft: RunReplayFrame = { ...structuredClone(setup), phase: 'draft', draft: ['docs'] };
     expect(labelForReplayKeyframe(draft)).toBe('カードドラフト');
     const lost: RunReplayFrame = { ...structuredClone(setup), phase: 'lost' };
-    expect(labelForReplayKeyframe(lost, 'reviewHell')).toBe('Review Hell 型');
+    expect(labelForReplayKeyframe(lost, 'reviewHell')).toBe('レビュー地獄型');
   });
 
   it('labelForReplayKeyframe は result・四半期・終端の省略入力へフォールバックする', () => {

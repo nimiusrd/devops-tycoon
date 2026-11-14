@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { renderBalanceCurvesSvg } from '../../../src/data/balance/curves';
 import { ACHIEVEMENT_DEFS } from '../../../src/data/achievements';
 import { ACTION_CONTENT_DEFS } from '../../../src/data/actions';
 import { CARD_DEFS, RARITY_LABEL } from '../../../src/data/cards';
@@ -13,6 +14,8 @@ import { UNLOCK_DEFS } from '../../../src/data/unlocks';
 
 const INTERNAL_TICKET_ID = /\bRI-\d+/;
 const ENGLISH_PATIENCE = /\bpatience\b/i;
+/** #963: 画面・生成図に混在していた英語用語 */
+const ISSUE_963_FORBIDDEN = [/AI Literacy/, /\bLiteracy\b/, /Review待ち/, /初回Review/] as const;
 
 function collectPlayerFacingCopy(): string[] {
   const copy: string[] = [];
@@ -64,6 +67,17 @@ describe('playerFacingCopy', () => {
     for (const text of collectPlayerFacingCopy()) {
       if (INTERNAL_TICKET_ID.test(text) || ENGLISH_PATIENCE.test(text)) {
         violations.push(text);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it('#963: プレイヤー向け文言に AI Literacy 等の英語混在を残さない', () => {
+    const sources = [...collectPlayerFacingCopy(), renderBalanceCurvesSvg()];
+    const violations: string[] = [];
+    for (const text of sources) {
+      if (ISSUE_963_FORBIDDEN.some((pattern) => pattern.test(text))) {
+        violations.push(text.slice(0, 120));
       }
     }
     expect(violations).toEqual([]);

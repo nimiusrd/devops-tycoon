@@ -66,7 +66,7 @@ describe('planTrendHistory (RI-128)', () => {
     const view = planTrendHistory([snap(1, { diagnosis: 'reviewHell' })]);
     expect(view.empty).toBe(false);
     expect(view.quarters).toEqual([
-      { quarterNumber: 1, diagnosis: 'reviewHell', label: 'Review Hell 型' },
+      { quarterNumber: 1, diagnosis: 'reviewHell', label: 'レビュー地獄型' },
     ]);
     expect(view.series.map((s) => s.key)).toEqual([
       'delivery',
@@ -210,7 +210,7 @@ describe('planTrendHistory (RI-128)', () => {
     const product = view.departments.find((dept) => dept.deptId === 'product')!;
     expect(product.healthHistory).toEqual([
       { quarterNumber: 1, health: 'healthy', label: '健全' },
-      { quarterNumber: 3, health: 'reviewHell', label: 'Review Hell' },
+      { quarterNumber: 3, health: 'reviewHell', label: 'レビュー地獄' },
     ]);
     expect(product.healthHistory.map((cell) => cell.quarterNumber)).not.toContain(2);
     expect(view.departments.find((dept) => dept.deptId === 'platform')?.healthHistory).toEqual([

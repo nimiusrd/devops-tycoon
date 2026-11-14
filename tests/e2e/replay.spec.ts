@@ -275,7 +275,7 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
       keyframes: [
         { phase: 'setup', frame: setupFrame, label: '編成' },
         { phase: 'result', frame: resultFrame, label: 'Review peak 21' },
-        { phase: 'lost', frame: lostFrame, label: 'Review Hell 型' },
+        { phase: 'lost', frame: lostFrame, label: 'レビュー地獄型' },
       ],
       ruleset: { version: 1, fingerprint: 'review-hell-e2e-ruleset' },
       contentSnapshot: { cards: [], relics: [] },

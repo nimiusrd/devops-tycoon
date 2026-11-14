@@ -70,7 +70,7 @@ for (const viewport of VIEWPORTS) {
     await page.evaluate(() => document.fonts.ready);
 
     await advanceCurrentSprintToReviewQueue(page, 12);
-    await expect(page.getByTestId('jam-alert')).toContainText('Review Hell');
+    await expect(page.getByTestId('jam-alert')).toContainText('レビュー地獄');
     await expect(page.getByTestId('board')).toHaveAttribute('data-review-hell', 'true');
 
     const initialBoardY = await boardY(page);

@@ -88,7 +88,7 @@ export const DEPT_TREND_METRICS: readonly { key: DeptTrendMetric; label: string 
 const TREND_HEALTH_LABEL: Readonly<Record<TeamHealth, string>> = {
   healthy: '健全',
   congested: '渋滞',
-  reviewHell: 'Review Hell',
+  reviewHell: 'レビュー地獄',
 };
 
 const DEFAULT_WIDTH = 220;

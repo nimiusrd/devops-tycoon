@@ -1142,6 +1142,29 @@ body {
   overflow: visible;
   text-overflow: unset;
 }
+
+/*
+ * 320〜900px（narrow）でも工程列名を省略せず読めるようにする（#963）。
+ * 列幅が足りないときは 8px まで縮め、単語の途中改行はしない。
+ */
+:root[data-responsive-width='narrow'] .board-flow-summary {
+  right: 6px;
+  left: 6px;
+  width: auto;
+}
+:root[data-responsive-width='narrow'] .board-flow-list {
+  grid-template-columns: repeat(5, minmax(0, max-content));
+}
+:root[data-responsive-width='narrow'] .board-flow-list li {
+  grid-template-columns: auto max-content auto;
+  gap: 2px;
+  padding-inline: 2px 4px;
+  font-size: 8px;
+}
+:root[data-responsive-width='narrow'] .board-flow-name {
+  overflow: visible;
+  text-overflow: unset;
+}
 .board-flow-list strong {
   font-size: 1.1em;
   font-variant-numeric: tabular-nums;

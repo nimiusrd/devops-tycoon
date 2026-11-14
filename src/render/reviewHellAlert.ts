@@ -5,8 +5,8 @@
  * 同じ状態の再描画では文言を変えない。
  */
 
-export const REVIEW_HELL_ENTERED_MESSAGE = 'Review Hell に入った';
-export const REVIEW_HELL_EXITED_MESSAGE = 'Review Hell を出た';
+export const REVIEW_HELL_ENTERED_MESSAGE = 'レビュー地獄に入った';
+export const REVIEW_HELL_EXITED_MESSAGE = 'レビュー地獄を出た';
 
 /**
  * 直前の状態から、今回読み上げる文言を返す。変化がなければ null。

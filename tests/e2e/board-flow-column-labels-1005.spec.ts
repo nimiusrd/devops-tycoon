@@ -4,17 +4,19 @@
 import { expect, test } from './fixtures';
 import { beginPublicSprint } from './fixtures';
 
-const FLOW_LABELS = ['Backlog', 'Coding', 'Review', 'Rework', 'Done'] as const;
+const FLOW_LABELS = ['Backlog', 'Coding', 'レビュー', 'Rework', 'Done'] as const;
 
 const VIEWPORTS = [
-  { width: 1024, height: 768 },
-  { width: 1280, height: 800 },
+  { width: 320, height: 568, minFontPx: 8 },
+  { width: 1024, height: 768, minFontPx: 11 },
+  { width: 1280, height: 800, minFontPx: 11 },
 ] as const;
 
 async function assertFlowNameNotEllipsized(
   page: import('@playwright/test').Page,
   label: string,
   viewportWidth: number,
+  minFontPx: number,
 ): Promise<void> {
   const name = page.locator('.board-flow-name', { hasText: label }).first();
   await expect(name, `${label} が表示される`).toHaveText(label);
@@ -35,7 +37,9 @@ async function assertFlowNameNotEllipsized(
   ).toBeLessThanOrEqual(layout.clientWidth + 1);
   expect(layout.textOverflow, `${label} の text-overflow`).not.toBe('ellipsis');
   expect(layout.whiteSpace, `${label} が単語の途中で改行している`).toBe('nowrap');
-  expect(layout.fontSize, `${label} のフォントが 11px 未満`).toBeGreaterThanOrEqual(11);
+  expect(layout.fontSize, `${label} のフォントが ${minFontPx}px 未満`).toBeGreaterThanOrEqual(
+    minFontPx,
+  );
 }
 
 for (const viewport of VIEWPORTS) {
@@ -48,7 +52,7 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId('board-flow-summary')).toBeVisible();
 
     for (const label of FLOW_LABELS) {
-      await assertFlowNameNotEllipsized(page, label, viewport.width);
+      await assertFlowNameNotEllipsized(page, label, viewport.width, viewport.minFontPx);
     }
 
     const columnBoxes = await page.locator('.board-flow-list > li').evaluateAll((items) =>

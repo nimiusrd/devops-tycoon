@@ -182,7 +182,7 @@ describe('OrgScreen の移動と全社レバー', () => {
     expect(stat('炎上中チーム').props.className).toContain('tone-bad');
     expect(content(screen.find('org-onfire'))).toBe('2');
     expect(content(screen.find('org-infra-hub'))).toContain('注意');
-    expect(content(screen.find('org-infra-hub'))).toContain('CI 0 / Docs 42 / AI 55');
+    expect(content(screen.find('org-infra-hub'))).toContain('CI 0 / 文書 42 / AI 55');
     expect(content(screen.find('org-trend-history'))).toBe('記録なし');
     screen.update({
       org: {

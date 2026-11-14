@@ -110,7 +110,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'quality_pivot',
     label: '品質改善ピボット',
-    description: 'Tech Debt / Incident を下げる。短期の出荷評価は下がる。',
+    description: '技術的負債とインシデントを下げる。短期の出荷評価は下がる。',
     negotiator: 'customers',
     trustDelta: { customers: -5 },
     budgetDelta: 0,

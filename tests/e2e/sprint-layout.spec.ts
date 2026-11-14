@@ -1482,7 +1482,7 @@ type SpreadGameWindow = Window & {
   };
 };
 
-const SPREAD_TICKER_CHAIN = '延焼! 隣の Review 待ち PR に連鎖（負債 +6 / 士気 -5）';
+const SPREAD_TICKER_CHAIN = '延焼! 隣のレビュー待ち PR に連鎖（負債 +6 / 士気 -5）';
 const SPREAD_TICKER_IMPACT = '延焼! 負債 +6 / 士気 -5';
 const SPREAD_RESULT_CHAIN =
   't12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火';

@@ -54,7 +54,7 @@ function deriveTip(result: SprintResult, reviewedPr: number, firefightSaves: num
   }
 
   if (!hasInterventions(result)) {
-    return '介入なしで終了。次は Review 渋滞や炎上のタイミングで集中力を試してみよう。';
+    return '介入なしで終了。次はレビュー渋滞や炎上のタイミングで集中力を試してみよう。';
   }
 
   if (firefightSaves >= 2 && autoContainCount === 0 && spread === 0) {

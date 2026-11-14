@@ -254,8 +254,8 @@ function formatSpreadText(event: Extract<SprintEvent, { kind: 'spread' }>): stri
   const impact = formatSpreadImpact(event);
   if (event.spreadToTaskId != null) {
     return impact
-      ? `延焼! 隣の Review 待ち PR に連鎖（${impact}）`
-      : '延焼! 隣の Review 待ち PR に連鎖';
+      ? `延焼! 隣のレビュー待ち PR に連鎖（${impact}）`
+      : '延焼! 隣のレビュー待ち PR に連鎖';
   }
   if (impact) return `延焼! ${impact}`;
   if (event.debtGain == null && event.moraleCost == null) return '延焼! 負債と士気に波及';

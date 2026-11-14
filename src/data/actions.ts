@@ -26,7 +26,7 @@ export const ACTION_CONTENT_DEFS = [
     label: '割り込みレビュー',
     icon: 'interruptReview',
     stabilizesFlow: true,
-    description: 'Review キューから複数 PR を即座に捌く',
+    description: 'レビューキューから複数 PR を即座に捌く',
     sideEffect: 'シニアHPを少量消費',
   },
   {
@@ -78,7 +78,7 @@ export const ACTION_CONTENT_DEFS = [
     icon: 'overtime',
     tone: 'heavy',
     description: '当スプリントのスループットを大幅ブースト',
-    sideEffect: 'Morale・シニアHPが減少',
+    sideEffect: '士気・シニアHPが減少',
   },
   {
     id: 'andon',

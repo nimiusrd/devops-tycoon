@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { renderBalanceCurvesSvg } from '../../../src/data/balance/curves';
 import { ACHIEVEMENT_DEFS } from '../../../src/data/achievements';
 import { ACTION_CONTENT_DEFS } from '../../../src/data/actions';
+import { BOSS_TEMPLATES } from '../../../src/data/bosses';
+import { planBossPlayerDescription } from '../../../src/data/bossPlayerCopy';
 import { CARD_DEFS, RARITY_LABEL } from '../../../src/data/cards';
 import { DIFFICULTY_DEFS } from '../../../src/data/difficulties';
 import { EVOLUTION_NODES } from '../../../src/data/evolution';
@@ -11,11 +13,26 @@ import { LEVER_DEFS } from '../../../src/data/levers';
 import { RELIC_DEFS } from '../../../src/data/relics';
 import { TRAIT_DEFS } from '../../../src/data/traits';
 import { UNLOCK_DEFS } from '../../../src/data/unlocks';
+import { planInterventionAnalysis } from '../../../src/render/sprintInterventionAnalysis';
+import { formatSprintEvent } from '../../../src/render/sprintEventView';
 
 const INTERNAL_TICKET_ID = /\bRI-\d+/;
 const ENGLISH_PATIENCE = /\bpatience\b/i;
 /** #963: 画面・生成図に混在していた英語用語 */
-const ISSUE_963_FORBIDDEN = [/AI Literacy/, /\bLiteracy\b/, /Review待ち/, /初回Review/] as const;
+const ISSUE_963_FORBIDDEN = [
+  /AI Literacy/,
+  /\bLiteracy\b/,
+  /Review待ち/,
+  /初回Review/,
+  /\bTest Coverage\b/,
+  /\bTech Debt\b/,
+  /\bMorale\b/,
+  /\bQuality\b/,
+  /Review キュー/,
+  /Review 渋滞/,
+  /Review 待ち/,
+  /\/ Docs /,
+] as const;
 
 function collectPlayerFacingCopy(): string[] {
   const copy: string[] = [];
@@ -56,6 +73,41 @@ function collectPlayerFacingCopy(): string[] {
   for (const def of ACTION_CONTENT_DEFS) {
     copy.push(def.label, def.description, def.sideEffect ?? '');
   }
+  for (const boss of BOSS_TEMPLATES) {
+    copy.push(planBossPlayerDescription(boss, 'normal'));
+  }
+  copy.push(
+    formatSprintEvent({
+      kind: 'spread',
+      tick: 1,
+      spreadToTaskId: 't1',
+      debtGain: 6,
+      moraleCost: 5,
+    }),
+    planInterventionAnalysis({
+      done: 0,
+      delivered: 0,
+      maxCombo: 0,
+      aiAssistedPct: 0,
+      reviewQueueMax: 0,
+      rework: 0,
+      incidents: 0,
+      contained: 0,
+      spread: 0,
+      seniorHpDelta: 0,
+      actionCounts: {},
+      grade: 'C',
+      title: '',
+      diagnosis: '',
+      timeline: [],
+      events: [],
+      fireEvents: [],
+      focusRemaining: 0,
+      focusMax: 8,
+      autoContainCount: 0,
+    }).tip,
+    'CI 0 / 文書 42 / AI 55',
+  );
   copy.push(...Object.values(RARITY_LABEL));
 
   return copy.filter((text) => text.length > 0);

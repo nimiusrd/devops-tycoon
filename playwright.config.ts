@@ -78,6 +78,11 @@ export default defineConfig({
       testMatch: /speed-button-hit-target/,
     },
     {
+      name: 'webkit-review-pile-hit-tap',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: /review-pile-hit-tap-1001/,
+    },
+    {
       name: 'webkit-rest-overlay-modal',
       use: { ...devices['Desktop Safari'] },
       testMatch: /rest-overlay-modal/,

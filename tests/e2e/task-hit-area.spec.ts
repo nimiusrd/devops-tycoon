@@ -1,4 +1,4 @@
-import { advanceCurrentSprintToReviewQueue, beginPublicSprint, expect, test } from './fixtures';
+import { beginPublicSprint, expect, test } from './fixtures';
 import { designToClient, readBoardCanvasFrame } from './boardCanvasPoint';
 import { BOARD_STATION_CENTERS, planBoardScene } from '../../src/render/boardScene';
 import { boardDotReadabilityMagnification, presentBoardDots } from '../../src/render/boardPixiView';
@@ -160,73 +160,3 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     });
   }
 }
-
-test('320px: Review に 10 個以上積んだ山の中心をタップするとその粒が選ばれる（#978） @pixi', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 320, height: 568 });
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await beginPublicSprint(page, { seed: 'qa-seed-1030' });
-  await advanceCurrentSprintToReviewQueue(page, 10);
-  await page.getByTestId('action-splitPr').click();
-  const board = page.getByTestId('board');
-  await expect(board).toHaveAttribute('data-armed', 'splitPr');
-  await board.scrollIntoViewIfNeeded();
-  await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-assets', '5');
-  await page.evaluate(() => {
-    if (!window.__boardPixiTest) throw new Error('Pixi のテストフックがない');
-    window.__boardPixiTest.freezeForScreenshot();
-  });
-
-  const sprint = await page.evaluate(() => window.game!.getState().sprint);
-  const frame = await readBoardCanvasFrame(page);
-  if (!sprint) throw new Error('スプリントがない');
-  const candidates = new Set(splitPrCandidates(sprint).map((task) => task.id));
-  const presented = presentBoardDots(planBoardScene(sprint.tasks).dots, frame.fit.scale);
-  const review = presented.filter(
-    (dot) => dot.lane === 'review' && !dot.motion && candidates.has(dot.id),
-  );
-  expect(review.length).toBeGreaterThanOrEqual(10);
-  const coding = presented.find(
-    (dot) => dot.lane === 'coding' && !dot.motion && candidates.has(dot.id),
-  );
-
-  const uncovered = (point: { x: number; y: number }) =>
-    page.evaluate(({ x, y }) => {
-      const element = document.elementFromPoint(x, y);
-      return (
-        !!element?.closest('[data-testid="board"]') &&
-        !element.closest(
-          '.st-label, .bubble, .board-legend, .pile-overflow, [data-testid="action-target-picker"]',
-        )
-      );
-    }, point);
-
-  let tapped: { id: number; x: number; y: number } | undefined;
-  for (const dot of review) {
-    const point = designToClient(frame, dot);
-    expect(await uncovered(point), `Review #${dot.id} の中心が操作できない`).toBe(true);
-    await page.mouse.move(point.x, point.y);
-    await expect(board).toHaveAttribute('data-preview-task-id', String(dot.id));
-    tapped = { id: dot.id, ...point };
-  }
-  if (coding) {
-    const point = designToClient(frame, coding);
-    if (await uncovered(point)) {
-      await page.mouse.move(point.x, point.y);
-      await expect(board).toHaveAttribute('data-preview-task-id', String(coding.id));
-    }
-  }
-  if (!tapped) throw new Error('タップする Review の粒がない');
-  const before = sprint.metrics.actionCounts.splitPr ?? 0;
-  await page.touchscreen.tap(tapped.x, tapped.y);
-  await expect
-    .poll(() =>
-      page.evaluate(() => window.game!.getState().sprint?.metrics.actionCounts.splitPr ?? 0),
-    )
-    .toBe(before + 1);
-  const after = await page.evaluate(() => window.game!.getState().sprint);
-  const event = after?.events.findLast((entry) => entry.kind === 'intervention');
-  if (event?.kind !== 'intervention') throw new Error('介入結果が記録されていない');
-  expect(event.effect.affectedTaskIds).toEqual([tapped.id]);
-});

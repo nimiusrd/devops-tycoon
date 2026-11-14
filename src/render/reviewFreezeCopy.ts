@@ -48,7 +48,7 @@ export function reviewQueueHudCopy(liveQueue: number): ReviewQueueHudCopy {
   }
   const nearDanger = remaining <= NEAR_FREEZE_REMAINING_MAX;
   const tone: StatusMetricTone =
-    queue >= reviewFreezeDangerPeak() ? 'danger' : nearDanger ? 'watch' : 'watch';
+    queue >= reviewFreezeDangerPeak() || nearDanger ? 'danger' : 'watch';
   return {
     tone,
     detail: nearDanger

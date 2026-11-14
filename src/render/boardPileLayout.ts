@@ -23,6 +23,15 @@ const BOARD_STATION_MARKERS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map
 
 const BOARD_VIEW = DESIGN_SPACES.sprint;
 
+/** Review 山の横位置合わせで見る提示縮尺（受け入れ 320 / 390 / 1024）。 */
+export function reviewPilePresentationScales(
+  phoneScales: readonly number[] = boardPhonePresentationScales(),
+): number[] {
+  const desktop = designToHostTransform(1024, 409.6, BOARD_VIEW).scale;
+  if (phoneScales.includes(desktop)) return [...phoneScales];
+  return [...phoneScales, desktop];
+}
+
 /** 320 / 390 幅の盤面キャンバス内側（#978 の実測）。 */
 export const BOARD_PHONE_HOST_SIZES = [
   { width: 288, height: 115.2, name: '320' },
@@ -200,17 +209,55 @@ const REVIEW_SHIFT_EXTENDED_COARSE = {
   step: 4,
 } as const;
 
+type RankedReviewShift = BoardPileShift & { dist: number; centerOff: number };
+
+function reviewPilePresentedCentroidX(
+  dots: readonly BoardDotPlan[],
+  scale: number,
+  basePresented?: readonly BoardDotPlan[],
+): number | null {
+  const review = dots.filter((dot) => dot.lane === 'review' && !dot.motion);
+  if (review.length === 0) return null;
+  const presented =
+    basePresented && basePresented.length === dots.length
+      ? presentBoardDotsWithShiftedReview(dots, basePresented, scale)
+      : presentBoardDots(dots, scale);
+  const shown = presented.filter((dot) => dot.lane === 'review' && !dot.motion);
+  if (shown.length === 0) return null;
+  return shown.reduce((sum, dot) => sum + dot.x, 0) / shown.length;
+}
+
+function reviewPileCenteringOffset(
+  shifted: readonly BoardDotPlan[],
+  caches: readonly ReviewOverlapCache[],
+  scales: readonly number[] = reviewPilePresentationScales(),
+): number {
+  const stationX = BOARD_STATION_CENTERS.review.x;
+  let maxOff = 0;
+  for (const scale of scales) {
+    const cache = caches.find((entry) => Math.abs(entry.scale - scale) < 1e-9);
+    const centroidX = reviewPilePresentedCentroidX(shifted, scale, cache?.basePresented);
+    if (centroidX === null) continue;
+    maxOff = Math.max(maxOff, Math.abs(centroidX - stationX) * scale);
+  }
+  return maxOff;
+}
+
 function pickBetterShift(
-  best: (BoardPileShift & { dist: number }) | null,
+  best: RankedReviewShift | null,
   dx: number,
   dy: number,
-): (BoardPileShift & { dist: number }) | null {
+  centerOff: number,
+): RankedReviewShift | null {
   const dist = Math.hypot(dx, dy);
   const better =
     !best ||
-    dist < best.dist - 1e-6 ||
-    (Math.abs(dist - best.dist) <= 1e-6 && (dy < best.dy || (dy === best.dy && dx > best.dx)));
-  return better ? { dx, dy, dist } : best;
+    centerOff < best.centerOff - 1e-6 ||
+    (Math.abs(centerOff - best.centerOff) <= 1e-6 &&
+      (dist < best.dist - 1e-6 ||
+        (Math.abs(dist - best.dist) <= 1e-6 &&
+          (dy < best.dy || (dy === best.dy && dx > best.dx)))));
+  return better ? { dx, dy, dist, centerOff } : best;
 }
 
 function findReviewPileShiftInRange(
@@ -219,14 +266,15 @@ function findReviewPileShiftInRange(
   caches: readonly ReviewOverlapCache[],
   range: { dxMin: number; dxMax: number; dyMin: number; dyMax: number; step: number },
 ): BoardPileShift | null {
-  let best: (BoardPileShift & { dist: number }) | null = null;
+  let best: RankedReviewShift | null = null;
   for (let dx = range.dxMin; dx <= range.dxMax; dx += range.step) {
     for (let dy = range.dyMin; dy <= range.dyMax; dy += range.step) {
       const shifted = applyLanePileShift(dots, 'review', { dx, dy });
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
       if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
-      best = pickBetterShift(best, dx, dy);
+      const centerOff = reviewPileCenteringOffset(shifted, caches);
+      best = pickBetterShift(best, dx, dy, centerOff);
     }
   }
   return best ? { dx: best.dx, dy: best.dy } : null;
@@ -239,7 +287,11 @@ function refineReviewPileShift(
   caches: readonly ReviewOverlapCache[],
   coarse: BoardPileShift,
 ): BoardPileShift {
-  let best = pickBetterShift(null, coarse.dx, coarse.dy)!;
+  const coarseOffset = reviewPileCenteringOffset(
+    applyLanePileShift(dots, 'review', coarse),
+    caches,
+  );
+  let best = pickBetterShift(null, coarse.dx, coarse.dy, coarseOffset)!;
   for (
     let dx = Math.max(REVIEW_SHIFT_COMPACT.dxMin, coarse.dx - 4);
     dx <= Math.min(REVIEW_SHIFT_EXTENDED_COARSE.dxMax, coarse.dx + 4);
@@ -254,7 +306,8 @@ function refineReviewPileShift(
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
       if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
-      best = pickBetterShift(best, dx, dy)!;
+      const centerOff = reviewPileCenteringOffset(shifted, caches);
+      best = pickBetterShift(best, dx, dy, centerOff)!;
     }
   }
   return { dx: best.dx, dy: best.dy };

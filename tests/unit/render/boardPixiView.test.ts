@@ -36,6 +36,8 @@ import {
 } from '../../../src/render/boardScene';
 import type { Lane, Task } from '../../../src/sim/types';
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
+import { reviewPilePresentationScales } from '../../../src/render/boardPileLayout';
+import { makeTask } from '../helpers/sprintFixtures';
 
 const STATIONS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
   lane,
@@ -301,6 +303,39 @@ describe('boardDotReadability', () => {
       expect(presentedDotHitsOtherStation(placed, scale, STATIONS), `粒 ${dots[i].id}`).toBe(false);
       expect(presentedDotLeavesBoard(placed, scale), `粒 ${dots[i].id}`).toBe(false);
       expect(hitTestBoardDot(presented[i], dots, ids, { x: scale, y: scale })).toBe(dots[i].id);
+    }
+  });
+
+  it('中と大の粒は 320/390/1024 で CSS 上重ならない（#994）', () => {
+    const tasks = [
+      ...Array.from({ length: 12 }, (_, index) =>
+        makeTask(index + 1, {
+          lane: 'review',
+          kind: index % 5 === 0 ? 'complex' : index % 3 === 0 ? 'routine' : 'normal',
+        }),
+      ),
+      makeTask(90, { lane: 'coding', kind: 'complex', progress: 0.4 }),
+    ];
+    const { dots } = planBoardScene(tasks);
+    const ids = new Set(dots.map((dot) => dot.id));
+    const scales = reviewPilePresentationScales();
+    for (const scale of scales) {
+      const presented = presentBoardDots(dots, scale);
+      for (let left = 0; left < presented.length; left += 1) {
+        for (let right = left + 1; right < presented.length; right += 1) {
+          const a = presented[left];
+          const b = presented[right];
+          const sizes = new Set([a.size, b.size]);
+          if (!sizes.has('medium') || !sizes.has('large')) continue;
+          const dist = Math.hypot(a.x - b.x, a.y - b.y) * scale;
+          const need =
+            (presentedDotRadius(a.size, scale) + presentedDotRadius(b.size, scale)) * scale;
+          expect(dist, `粒 ${a.id} と ${b.id}`).toBeGreaterThanOrEqual(need - 0.01);
+        }
+        const dot = presented[left];
+        if (!ids.has(dot.id) || dot.motion) continue;
+        expect(hitTestBoardDot(dot, dots, ids, { x: scale, y: scale })).toBe(dot.id);
+      }
     }
   });
 

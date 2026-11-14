@@ -6,7 +6,9 @@ import {
   boardPhonePresentationScales,
   countReviewCrossStationOverlaps,
   findReviewPileShift,
+  reviewPilePresentationScales,
 } from '../../../src/render/boardPileLayout';
+import { BOARD_STATION_CENTERS } from '../../../src/render/boardStationCenters';
 import {
   presentBoardDots,
   presentedDotRadius,
@@ -72,14 +74,35 @@ describe('boardPileLayout（Review 山の寄せ）', { timeout: 60_000 }, () => 
     ).toBe(29);
   });
 
-  it('findReviewPileShift は決定論的で、必要最小の移動を返す', () => {
+  it('findReviewPileShift は決定論的で、交差ゼロかつステーション中央に寄せる', () => {
     const baseline = planBoardScene(piledReviewWithCodingFlowTasks()).dots;
-    const disturbed = applyLanePileShift(baseline, 'review', { dx: -60, dy: 36 });
+    const anchor = baseline.find((dot) => dot.lane === 'review' && dot.clusterX !== undefined)!;
+    const reset = applyLanePileShift(baseline, 'review', {
+      dx: 840 - anchor.clusterX!,
+      dy: 315 - anchor.clusterY!,
+    });
+    const disturbed = applyLanePileShift(reset, 'review', { dx: -60, dy: 0 });
     expect(countReviewCrossStationOverlaps(disturbed)).toBeGreaterThan(0);
     const shift = findReviewPileShift(disturbed);
     const adjusted = applyLanePileShift(disturbed, 'review', shift);
     expect(countReviewCrossStationOverlaps(adjusted)).toBe(0);
     expect(shift).toEqual(findReviewPileShift(disturbed));
     expect(adjustReviewPileLayout(baseline)).toEqual(adjustReviewPileLayout(baseline));
+  });
+
+  it('320/390/1024 で Review 山の提示重心がステーション中央へ近い（#994）', () => {
+    const scene = planBoardScene(piledReviewWithCodingFlowTasks());
+    expect(countReviewCrossStationOverlaps(scene.dots)).toBe(0);
+    const stationX = BOARD_STATION_CENTERS.review.x;
+    for (const scale of reviewPilePresentationScales()) {
+      const presented = presentBoardDots(scene.dots, scale).filter(
+        (dot) => dot.lane === 'review' && !dot.motion,
+      );
+      const centroidX = presented.reduce((sum, dot) => sum + dot.x, 0) / presented.length;
+      expect(
+        Math.abs(centroidX - stationX) * scale,
+        `scale ${scale.toFixed(3)} の横ずれ（CSS px）`,
+      ).toBeLessThan(2.5);
+    }
   });
 });

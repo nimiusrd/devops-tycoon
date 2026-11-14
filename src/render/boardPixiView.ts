@@ -650,21 +650,12 @@ export function presentedDotHitsOtherStation(
 }
 
 /**
- * 描かれた中心へのタップは、重なった手前の円よりその粒を選ぶ。
- * 画面上 1px より離れた重なりは、従来どおり手前の粒を優先する。
- */
-const DOT_CENTER_TAP_CSS_PX = 1;
-
-/**
  * 設計座標の点から、掴めるタスク粒を特定する（RI-30 のドラッグ開始判定）。
  *
- * 粒半径＋設計マージンを保ちつつ、各軸で画面上24px以上の操作領域を確保する。
- * 描かれた中心から画面上 1px 以内ならその粒を返す。山の下になった別工程も、
- * 中心を押せばその粒が選ばれる。
- * それ以外で実際の円内なら後から描かれた粒を優先する。円外の拡張領域だけが重なった場合は
- * 画面上の中心距離が最短の粒、同距離なら後から描かれた粒を返す。
+ * 配置上の提示座標（待機揺れを含まない presentBoardDots）で判定する。
+ * 実際の円が重なるときは後から描かれた手前の粒を優先する（#913）。
+ * 円外の拡張領域だけが重なった場合は、画面上の中心距離が最短の粒を返す。
  * scale は設計座標から CSS px への軸ごとの縮尺。
- * 縮小盤面では描画と同じ倍率で中心と見た目の半径を広げる。
  */
 export function hitTestBoardDot(
   pt: BoardPoint,
@@ -682,20 +673,34 @@ export function hitTestBoardDot(
   const magnification = boardDotReadabilityMagnification(cssScale);
   const minimumRadius = VISUAL_TOKENS.dimensions.sprint.dotHitMinCssDiameter / 2;
   const presentedDots = presentBoardDots(dots, cssScale);
-  let centerId: number | null = null;
-  let centerDistance = Infinity;
+  const nearCenterCssPx = 2;
+  const contained: { id: number; centerDistCss: number; index: number }[] = [];
   for (let i = dots.length - 1; i >= 0; i -= 1) {
     const dot = dots[i];
     if (!draggableIds.has(dot.id)) continue;
     const presented = presentedDots[i];
-    const distance = Math.hypot((pt.x - presented.x) * scale.x, (pt.y - presented.y) * scale.y);
-    // 同距離なら手前（後から描かれた粒）を残す。
-    if (distance <= DOT_CENTER_TAP_CSS_PX && distance < centerDistance) {
-      centerId = dot.id;
-      centerDistance = distance;
+    const visibleRadius = (TASK_DIAMETER[dot.size] / 2) * magnification;
+    const designDx = pt.x - presented.x;
+    const designDy = pt.y - presented.y;
+    if (designDx * designDx + designDy * designDy <= visibleRadius * visibleRadius) {
+      const centerDistCss = Math.hypot(designDx * scale.x, designDy * scale.y);
+      contained.push({ id: dot.id, centerDistCss, index: i });
     }
   }
-  if (centerId !== null) return centerId;
+  if (contained.length === 1) {
+    return contained[0]!.id;
+  }
+  if (contained.length > 1) {
+    const sorted = [...contained].sort((a, b) => a.centerDistCss - b.centerDistCss);
+    const nearest = sorted[0]!;
+    if (
+      nearest.centerDistCss <= nearCenterCssPx &&
+      sorted[1]!.centerDistCss - nearest.centerDistCss > nearCenterCssPx
+    ) {
+      return nearest.id;
+    }
+    return contained[0]!.id;
+  }
 
   let nearestId: number | null = null;
   let nearestDistance = Infinity;
@@ -706,18 +711,15 @@ export function hitTestBoardDot(
     const visibleRadius = (TASK_DIAMETER[dot.size] / 2) * magnification;
     const designDx = pt.x - presented.x;
     const designDy = pt.y - presented.y;
-    if (designDx * designDx + designDy * designDy <= visibleRadius * visibleRadius) {
-      return dot.id;
-    }
     const r = visibleRadius + DOT_HIT_MARGIN;
     const rx = Math.max(r * scale.x, minimumRadius);
     const ry = Math.max(r * scale.y, minimumRadius);
     const dx = designDx * scale.x;
     const dy = designDy * scale.y;
-    const distance = dx * dx + dy * dy;
-    if ((dx / rx) ** 2 + (dy / ry) ** 2 <= 1 && distance < nearestDistance) {
+    const centerDistance = dx * dx + dy * dy;
+    if ((dx / rx) ** 2 + (dy / ry) ** 2 <= 1 && centerDistance < nearestDistance) {
       nearestId = dot.id;
-      nearestDistance = distance;
+      nearestDistance = centerDistance;
     }
   }
   return nearestId;

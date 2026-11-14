@@ -200,35 +200,45 @@ async function expectSplitOnTask(page: Page, taskId: number, before: number): Pr
   await page.waitForTimeout(splitPrConfirmDurationMs() + 40);
 }
 
+const COORD_MODES = ['exact', 'integer'] as const;
+
 for (const viewport of VIEWPORTS) {
-  test(`${viewport.width}px: Review 山の全粒をタップするとその粒が選ばれる（#1001） @pixi`, async ({
-    page,
-    browserName,
-  }) => {
-    test.setTimeout(240_000);
-    test.info().annotations.push({ type: 'browser', description: browserName });
-    await page.setViewportSize(viewport);
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await openReviewPileSprint(page, viewport.width);
-
-    const targetIds = (await readReviewTapTargets(page)).map((dot) => dot.id);
-    expect(targetIds.length).toBeGreaterThanOrEqual(10);
-
-    const board = page.getByTestId('board');
-    for (const taskId of targetIds) {
+  for (const coordMode of COORD_MODES) {
+    test(`${viewport.width}px・${coordMode}: Review 山の全粒をタップするとその粒が選ばれる（#978/#1001） @pixi`, async ({
+      page,
+      browserName,
+    }) => {
+      test.setTimeout(360_000);
+      test.skip(browserName === 'chromium', 'WebKit の 320・390・1024 を主に検証する');
+      test.info().annotations.push({ type: 'browser', description: browserName });
+      test.info().annotations.push({ type: 'coordMode', description: coordMode });
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await openReviewPileSprint(page, viewport.width);
-      await ensureBoardPointUncovered(page, taskId, browserName, viewport.width);
-      const { target } = await readPresentedDotClient(page, taskId);
-      const tapPoint = await resolveTapPoint(page, target, browserName, viewport.width);
-      const frame = await readBoardCanvasFrame(page);
-      expect(
-        await isBoardPointUncovered(page, tapPoint),
-        `Review #${taskId} の中心が操作できない`,
-      ).toBe(true);
-      await hoverPresentedDotCenter(page, frame, tapPoint);
-      await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
-      await tapPresentedDotCenter(page, frame, tapPoint, viewport.width, taskId, browserName);
-      await expectSplitOnTask(page, taskId, 0);
-    }
-  });
+
+      const targetIds = (await readReviewTapTargets(page)).map((dot) => dot.id);
+      expect(targetIds.length).toBeGreaterThanOrEqual(10);
+
+      const board = page.getByTestId('board');
+      for (const taskId of targetIds) {
+        await openReviewPileSprint(page, viewport.width);
+        await ensureBoardPointUncovered(page, taskId, browserName, viewport.width);
+        const { target } = await readPresentedDotClient(page, taskId);
+        const tapPoint = await resolveTapPoint(page, target, browserName, viewport.width);
+        const tapClient = {
+          x: coordMode === 'integer' ? Math.floor(tapPoint.x) : tapPoint.x,
+          y: coordMode === 'integer' ? Math.floor(tapPoint.y) : tapPoint.y,
+        };
+        const frame = await readBoardCanvasFrame(page);
+        expect(
+          await isBoardPointUncovered(page, tapClient),
+          `Review #${taskId} の中心が操作できない（${coordMode}）`,
+        ).toBe(true);
+        await hoverPresentedDotCenter(page, frame, tapClient);
+        await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
+        await tapPresentedDotCenter(page, frame, tapClient, viewport.width, taskId, browserName);
+        await expectSplitOnTask(page, taskId, 0);
+      }
+    });
+  }
 }

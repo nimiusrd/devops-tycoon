@@ -67,9 +67,9 @@ async function tapBoardPoint(
   page: Page,
   point: { x: number; y: number },
   width: number,
-  browserName: string,
+  _browserName: string,
 ): Promise<void> {
-  if (browserName === 'chromium' && width <= 390) {
+  if (width <= 390) {
     await page.touchscreen.tap(point.x, point.y);
     return;
   }

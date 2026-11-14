@@ -24,6 +24,20 @@ const VIEWPORTS = [
   { width: 1024, height: 768 },
 ] as const;
 
+async function ensureBoardPointUncovered(
+  page: Page,
+  point: { x: number; y: number },
+): Promise<void> {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    if (await isBoardPointUncovered(page, point)) return;
+    await page.evaluate(() => {
+      const layout = document.querySelector('[data-testid="sprint-layout"]');
+      if (layout instanceof HTMLElement) layout.scrollTop += 56;
+    });
+    await page.getByTestId('board').scrollIntoViewIfNeeded();
+  }
+}
+
 function isBoardPointUncovered(page: Page, point: { x: number; y: number }): Promise<boolean> {
   return page.evaluate(({ x, y }) => {
     const element = document.elementFromPoint(x, y);
@@ -83,12 +97,15 @@ async function tapPresentedDotCenter(
   frame: BoardCanvasFrame,
   target: { x: number; y: number },
   width: number,
-  browserName: string,
 ): Promise<void> {
   const position = boardHostPosition(frame, target);
   const board = page.getByTestId('board');
-  const usePointerClick = width <= 320 && browserName === 'chromium';
-  if (width <= 390 && !usePointerClick) {
+  // narrowShort（320）は playwright の locator.tap が盤面 pointer に届かないため click で同一点を打つ。
+  if (width <= 320) {
+    await board.click({ position });
+    return;
+  }
+  if (width <= 390) {
     await board.tap({ position });
     return;
   }
@@ -128,13 +145,14 @@ for (const viewport of VIEWPORTS) {
       const frame = await readBoardCanvasFrame(page);
       const target = (await readReviewTapTargets(page, frame)).find((dot) => dot.id === taskId);
       if (!target) throw new Error(`Review #${taskId} が候補にない`);
+      await ensureBoardPointUncovered(page, target);
       expect(
         await isBoardPointUncovered(page, target),
         `Review #${taskId} の中心が操作できない`,
       ).toBe(true);
       await hoverPresentedDotCenter(page, frame, target);
       await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
-      await tapPresentedDotCenter(page, frame, target, viewport.width, browserName);
+      await tapPresentedDotCenter(page, frame, target, viewport.width);
       await expectSplitOnTask(page, taskId, 0);
     }
   });

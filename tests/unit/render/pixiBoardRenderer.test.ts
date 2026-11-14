@@ -8,6 +8,8 @@ import {
   type PixiBoardRendererOptions,
 } from '../../../src/render/adapters/pixiBoardRenderer';
 import { createTimedBoardEffects, type BoardEffectPayload } from '../../../src/render/boardEffects';
+import { TASK_MOTION } from '../../../src/render/boardTaskMotion';
+import { positionFireEffects } from '../../../src/render/fireEffects';
 import {
   BOARD_VIEW,
   planBoardScene,
@@ -1237,6 +1239,46 @@ describe('Pixi スプリント盤面レンダラー', () => {
     expect(renderer.getLastInput()).toBeNull();
     renderer.dispose();
     expect(app.destroy).toHaveBeenCalledOnce();
+  });
+
+  it('点火演出は effects stratum でも粒の移動補間へ追従する（#979）', async () => {
+    const { renderer: base, app: baseApp } = await mounted({ stratum: 'base' });
+    const { renderer: effects, app: effectsApp } = await mounted({ stratum: 'effects' });
+
+    const reviewTasks = [task({ id: 1, lane: 'review' })];
+    const reworkTasks = [task({ id: 1, lane: 'rework', incident: true, burnTicksLeft: 8 })];
+    const reviewScene = planBoardScene(reviewTasks);
+    const reworkScene = planBoardScene(reworkTasks);
+    const positioned = positionFireEffects(
+      [{ kind: 'ignite', taskId: 1 }],
+      reworkTasks,
+      reviewTasks,
+    )[0];
+    expect(positioned.kind).toBe('ignite');
+    const ignite = createTimedBoardEffects([{ source: 'fire', effect: positioned }], 1, 1_000)
+      .effects[0];
+
+    const reviewFrame = input({ scene: reviewScene });
+    base.render(reviewFrame);
+    effects.render(reviewFrame);
+
+    vi.mocked(performance.now).mockReturnValue(1_000);
+    const reworkFrame = input({ scene: reworkScene, effects: [ignite] });
+    base.render(reworkFrame);
+    effects.render(reworkFrame);
+
+    let maxDelta = 0;
+    for (let step = 0; step <= TASK_MOTION.travelMs; step += 15) {
+      vi.mocked(performance.now).mockReturnValue(1_000 + step);
+      baseApp.advance(15);
+      effectsApp.advance(15);
+      for (const ignitePos of effects.getActiveIgniteEffectPositionsForTest()) {
+        const dot = base.getDotDisplayPositionsForTest().get(ignitePos.taskId);
+        if (!dot) continue;
+        maxDelta = Math.max(maxDelta, Math.hypot(dot.x - ignitePos.x, dot.y - ignitePos.y));
+      }
+    }
+    expect(maxDelta).toBeLessThan(2);
   });
 
   it('初期化待ちで破棄された canvas は mount せず、生成済み Application を破棄する', async () => {

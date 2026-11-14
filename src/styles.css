@@ -1710,12 +1710,20 @@ body:has(.overlay-contained) {
     margin-bottom: 0.55rem;
   }
 }
+:root[data-responsive-width='narrow'] .result-overlay.overlay-contained {
+  padding: 0.75rem 0.5rem;
+}
+:root[data-responsive-width='narrow'] .overlay-contained .sprint-result-card {
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
 :root[data-responsive-height='short'] .result-overlay.overlay-contained {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.5rem;
 }
 :root[data-responsive-height='short'] .overlay-contained .result-card,
 :root[data-responsive-height='short'] .overlay-contained .draft-card-panel {
-  padding: 1rem 1.25rem 1rem;
+  padding: 1rem 0.75rem 1rem;
 }
 :root[data-responsive-height='short'] .overlay-contained .result-grade {
   font-size: 3rem;
@@ -2328,6 +2336,13 @@ body:has(.overlay-contained) {
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.5;
+}
+.sprint-result-card .result-grade-caption,
+.sprint-result-card .result-diagnosis [data-testid='result-diagnosis-text'] {
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  word-break: auto-phrase;
 }
 .result-title-value {
   display: inline-flex;
@@ -6416,8 +6431,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   outline: 2px solid var(--visual-color-interaction-drag);
   outline-offset: 2px;
 }
-/* 別タブの競合は上へ重ねる。文は句点でのみ折り返し、書き出しと再読込は一段に置く。 */
-.persistence-notice[data-state='conflict'] {
+/* 別タブの競合と保存失敗は上へ重ねる。文は句点でのみ折り返し、操作は一段に置く。 */
+.persistence-notice[data-state='conflict'],
+.persistence-notice[data-state='failed'] {
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: stretch;
@@ -6431,7 +6447,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   min-width: 0;
 }
 .persistence-notice[data-state='conflict'] .persistence-notice-headline,
-.persistence-notice[data-state='conflict'] .persistence-notice-detail {
+.persistence-notice[data-state='conflict'] .persistence-notice-detail,
+.persistence-notice[data-state='failed'] .persistence-notice-headline,
+.persistence-notice[data-state='failed'] .persistence-notice-detail {
   flex: none;
   width: auto;
   font-size: 12px;
@@ -6440,7 +6458,8 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   overflow-wrap: normal;
   line-break: strict;
 }
-.persistence-notice[data-state='conflict'] .persistence-notice-headline {
+.persistence-notice[data-state='conflict'] .persistence-notice-headline,
+.persistence-notice[data-state='failed'] .persistence-notice-headline {
   font-size: 13px;
   font-weight: 800;
 }
@@ -6461,14 +6480,16 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   word-break: keep-all;
   line-height: 1.2;
 }
-.persistence-notice[data-state='conflict'] .persistence-notice-actions {
+.persistence-notice[data-state='conflict'] .persistence-notice-actions,
+.persistence-notice[data-state='failed'] .persistence-notice-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, max-content));
   justify-content: end;
   justify-items: end;
   width: auto;
 }
-.persistence-notice[data-state='conflict'] .persistence-notice-actions .btn {
+.persistence-notice[data-state='conflict'] .persistence-notice-actions .btn,
+.persistence-notice[data-state='failed'] .persistence-notice-actions .btn {
   flex: 0 1 auto;
   max-width: 320px;
   width: max-content;
@@ -6480,6 +6501,9 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 }
 :root[data-responsive-width='wide']
   .persistence-notice[data-state='conflict']
+  .persistence-notice-actions,
+:root[data-responsive-width='wide']
+  .persistence-notice[data-state='failed']
   .persistence-notice-actions {
   display: flex;
   flex-flow: row wrap;
@@ -6526,8 +6550,8 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 html:has(.tab-conflict-overlay) {
   scroll-padding-top: var(--persistence-banner-height, 0px);
 }
-/* 高さ変数は俯瞰の戻る導線に使う。スプリント盤面の余白には使わない。 */
-:root:has(.persistence-notice[data-layout='overlay']) .app-sprint-layout {
+/* 高さ変数は俯瞰の戻る導線に使う。競合 overlay だけスプリント余白を打ち消す。 */
+:root:has(.persistence-notice[data-state='conflict'][data-layout='overlay']) .app-sprint-layout {
   padding-top: 0;
 }
 @media (prefers-reduced-motion: reduce) {

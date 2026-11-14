@@ -76,6 +76,7 @@ describe('PersistenceNotice', () => {
     expect(find(tree, 'persistence-notice').props).toMatchObject({
       'data-state': 'failed',
       'data-persistent': 'true',
+      'data-layout': 'overlay',
       'data-overlay-lock-exempt': 'true',
     });
     expect(find(tree, 'persistence-notice').props.role).toBeUndefined();

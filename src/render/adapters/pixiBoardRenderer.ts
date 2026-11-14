@@ -266,6 +266,19 @@ function getDotParts(group: Container): DotParts {
   return (group as Container & { dotParts: DotParts }).dotParts;
 }
 
+function taskMotionPinnedIds(
+  draggableIds: ReadonlySet<number>,
+  dragTaskId: number | null,
+  previewTaskId: number | null,
+  splitConfirmTaskId: number | null,
+): ReadonlySet<number> {
+  const pinned = new Set(draggableIds);
+  if (dragTaskId !== null) pinned.add(dragTaskId);
+  if (previewTaskId !== null) pinned.add(previewTaskId);
+  if (splitConfirmTaskId !== null) pinned.add(splitConfirmTaskId);
+  return pinned;
+}
+
 function resetDotContainer(group: Container): void {
   const parts = getDotParts(group);
   parts.sprite.scale.set(1);
@@ -787,6 +800,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         input.splitConfirmTaskId ?? null,
       );
       this.syncAuras(input.auras);
+    } else {
+      this.syncTaskMotionFromScene(scene.dots, input);
     }
     if (this.stratum !== 'base') this.syncEffects(input.effects);
     this.applyAnimations(
@@ -1350,6 +1365,86 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     actor.status.alpha = mood.alpha;
   }
 
+  private syncTaskMotionWithPresented(
+    presentedDots: readonly BoardDotPlan[],
+    pinned: ReadonlySet<number>,
+  ): void {
+    this.taskMotion.sync(
+      presentedDots,
+      this.elapsedMs,
+      this.reducedMotion || this.frozen || this.loopPaused,
+      pinned,
+    );
+  }
+
+  private syncTaskMotionFromScene(
+    dots: readonly BoardDotPlan[],
+    input: Pick<
+      BoardPixiInput,
+      'draggableTaskIds' | 'dragTaskId' | 'previewTaskId' | 'splitConfirmTaskId'
+    >,
+  ): void {
+    const renderPlan = planBoardDotsForRender(
+      dots,
+      input.draggableTaskIds ?? new Set(),
+      input.dragTaskId ?? null,
+      BOARD_RENDER_BUDGETS.dots,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    const pinned = taskMotionPinnedIds(
+      input.draggableTaskIds ?? new Set(),
+      input.dragTaskId ?? null,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    const cssScale = this.root.scale.x;
+    const presentedById = new Map(
+      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    );
+    const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
+    this.syncTaskMotionWithPresented(presentedDots, pinned);
+  }
+
+  /** E2E / dev フック用。粒の表示位置（設計空間、炎シェイク込み）。 */
+  getDotDisplayPositionsForTest(): ReadonlyMap<number, { x: number; y: number }> {
+    const positions = new Map<number, { x: number; y: number }>();
+    for (const entry of this.dotEntries) {
+      positions.set(entry.id, { x: entry.group.position.x, y: entry.group.position.y });
+    }
+    return positions;
+  }
+
+  /** E2E / dev フック用。表示中の点火演出位置（設計空間）。 */
+  getActiveIgniteEffectPositionsForTest(): ReadonlyArray<{
+    taskId: number;
+    x: number;
+    y: number;
+  }> {
+    const out: { taskId: number; x: number; y: number }[] = [];
+    for (const entry of this.effectEntries) {
+      if (!entry.group.visible) continue;
+      if (entry.plan.source !== 'fire' || entry.plan.effect.kind !== 'ignite') continue;
+      const { taskId } = entry.plan.effect;
+      out.push({ taskId, x: entry.group.position.x, y: entry.group.position.y });
+    }
+    return out;
+  }
+
+  /** E2E / dev フック用。表示中の点火と対象粒の最大距離（設計空間 px）。 */
+  getMaxIgniteDotDistanceForTest(): number | null {
+    const ignites = this.getActiveIgniteEffectPositionsForTest();
+    if (ignites.length === 0) return null;
+    const dots = this.getDotDisplayPositionsForTest();
+    let max = 0;
+    for (const ignite of ignites) {
+      const dot = dots.get(ignite.taskId);
+      if (!dot) continue;
+      max = Math.max(max, Math.hypot(dot.x - ignite.x, dot.y - ignite.y));
+    }
+    return max;
+  }
+
   /** タスク粒（Sprite＋輪郭リング＋炎 Text）を plan と同期する。 */
   private syncDots(
     dots: readonly BoardDotPlan[],
@@ -1375,10 +1470,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     );
     this.dotRequestedCount = renderPlan.requested;
     this.dotDroppedCount = renderPlan.dropped;
-    const pinned = new Set(draggableIds);
-    if (dragTaskId !== null) pinned.add(dragTaskId);
-    if (previewTaskId !== null) pinned.add(previewTaskId);
-    if (splitConfirmTaskId !== null) pinned.add(splitConfirmTaskId);
+    this.syncTaskMotionFromScene(dots, {
+      draggableTaskIds: draggableIds,
+      dragTaskId,
+      previewTaskId,
+      splitConfirmTaskId,
+    });
     const cssScale = this.root.scale.x;
     const magnification = boardDotReadabilityMagnification(cssScale);
     // 押し離しは入力順に依存する。ヒット判定と同じ scene 順で位置を確定してから描画順へ並べる。
@@ -1386,12 +1483,6 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
     );
     const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
-    this.taskMotion.sync(
-      presentedDots,
-      this.elapsedMs,
-      this.reducedMotion || this.frozen || this.loopPaused,
-      pinned,
-    );
 
     for (const dot of presentedDots) {
       const group = pool.acquire();
@@ -1618,8 +1709,13 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
             break;
           }
           case 'ignite': {
-            const at = place(effect.x, effect.y);
-            group.position.set(at.x, at.y);
+            const motion = this.taskMotion.position(effect.taskId, this.elapsedMs);
+            if (motion) {
+              group.position.set(motion.x, motion.y);
+            } else {
+              const at = place(effect.x, effect.y);
+              group.position.set(at.x, at.y);
+            }
             group.alpha = pulse;
             group.scale.set(0.4 + pulse * 1.4);
             break;

@@ -22,6 +22,9 @@ declare global {
       getMetrics(): { base: BoardRenderMetrics; effects: BoardRenderMetrics };
       getAtmosphereMetrics(): BoardAtmosphereMetrics;
       getDotReadability(): { scale: number; magnification: number };
+      /** 表示中の点火演出と対象粒の最大距離（設計空間 px）。 */
+      getMaxIgniteDotDistancePx(): number | null;
+      getDotDisplayPositions(): Record<number, { x: number; y: number }>;
     };
     /** Playwright が WebGL 初期化失敗を決定論的に注入するためのフック。 */
     __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
@@ -223,6 +226,20 @@ export function BoardPixiLayer({
             getMetrics: () => ({ base: baseMetrics, effects: effectMetrics }),
             getAtmosphereMetrics: () => baseRenderer.getAtmosphereMetrics(),
             getDotReadability: () => baseRenderer.getDotReadability(),
+            getMaxIgniteDotDistancePx: () => {
+              const ignites = effectsRenderer.getActiveIgniteEffectPositionsForTest();
+              if (ignites.length === 0) return null;
+              const dots = baseRenderer.getDotDisplayPositionsForTest();
+              let max = 0;
+              for (const ignite of ignites) {
+                const dot = dots.get(ignite.taskId);
+                if (!dot) continue;
+                max = Math.max(max, Math.hypot(dot.x - ignite.x, dot.y - ignite.y));
+              }
+              return max;
+            },
+            getDotDisplayPositions: () =>
+              Object.fromEntries(baseRenderer.getDotDisplayPositionsForTest()),
           };
         }
       })

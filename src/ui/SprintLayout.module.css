@@ -14,6 +14,30 @@
   padding: 0;
   padding-top: var(--persistence-banner-height, 0px);
 }
+/* 保存失敗は shell 余白を打ち消し、HUD だけ下げて盤面の配置は維持する（#1007 / DS-06）。 */
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell {
+  padding-top: 0;
+}
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .headerSlot {
+  margin-top: var(--persistence-banner-height, 0px);
+}
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .statusSlot,
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .deckSlot,
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .stageSlot,
+:root:has(:global(.persistence-notice)[data-state='failed'][data-layout='overlay'])
+  :global(.app).appShell
+  .controlsSlot {
+  transform: translateY(calc(-1 * var(--persistence-banner-height, 0px)));
+}
 
 .root {
   display: flex;

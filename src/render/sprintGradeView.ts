@@ -17,6 +17,8 @@ export interface SprintGradeView {
   ratioPct: number | undefined;
   /** 等級のすぐ下に出す一文。 */
   caption: string;
+  /** caption を語中で割らないための文節。連結すると caption になる。 */
+  captionPhrases: readonly string[];
   rows: GradeBreakdownRow[];
   tip: string;
 }
@@ -120,23 +122,50 @@ function captionFor(
   ratio: number | undefined,
   ratioPct: number | undefined,
   majorCrisis: boolean,
-): string {
+): { caption: string; captionPhrases: readonly string[] } {
   const ratioLabel = formatRatioLabel(ratioPct, result.grade);
   if (result.delivered === 0) {
-    return typeof ratioPct === 'number'
-      ? `未出荷のスプリントです（健全比 ${ratioPct}%）`
-      : '未出荷のスプリントです';
+    if (typeof ratioPct === 'number') {
+      return {
+        caption: `未出荷のスプリントです（健全比 ${ratioPct}%）`,
+        captionPhrases: ['未出荷のスプリントです', `（健全比 ${ratioPct}%）`],
+      };
+    }
+    return { caption: '未出荷のスプリントです', captionPhrases: ['未出荷のスプリントです'] };
   }
   if (isSBlockedByCrisis(result, ratio)) {
-    return `出荷は十分でも炎上があるため S ではありません（${ratioLabel}）`;
+    return {
+      caption: `出荷は十分でも炎上があるため S ではありません（${ratioLabel}）`,
+      captionPhrases: [
+        '出荷は十分でも',
+        '炎上があるため ',
+        'S ではありません',
+        `（${ratioLabel}）`,
+      ],
+    };
   }
   if (majorCrisis && isHighGrade(result.grade)) {
-    return `大きな危機を出しつつ出荷した（${ratioLabel}）`;
+    return {
+      caption: `大きな危機を出しつつ出荷した（${ratioLabel}）`,
+      captionPhrases: ['大きな危機を出しつつ', '出荷した', `（${ratioLabel}）`],
+    };
   }
   if (isBelowGradeB(result, ratio)) {
-    return `出荷に対して手戻り・障害・消耗が重い（${ratioLabel}）`;
+    return {
+      caption: `出荷に対して手戻り・障害・消耗が重い（${ratioLabel}）`,
+      captionPhrases: ['出荷に対して', '手戻り・障害・消耗が重い', `（${ratioLabel}）`],
+    };
   }
-  return `出荷に対する${ratioLabel}`;
+  if (typeof ratioPct === 'number') {
+    return {
+      caption: `出荷に対する${ratioLabel}`,
+      captionPhrases: ['出荷に対する', ratioLabel],
+    };
+  }
+  return {
+    caption: `出荷に対する${ratioLabel}`,
+    captionPhrases: ['出荷に対する', ratioLabel],
+  };
 }
 
 function tipFor(
@@ -223,10 +252,12 @@ export function planSprintGradeView(result: SprintResult): SprintGradeView {
   }
 
   const sBlockedByCrisis = isSBlockedByCrisis(result, ratio);
+  const caption = captionFor(result, ratio, ratioPct, majorCrisis);
 
   return {
     ratioPct,
-    caption: captionFor(result, ratio, ratioPct, majorCrisis),
+    caption: caption.caption,
+    captionPhrases: caption.captionPhrases,
     rows,
     tip: tipFor(
       result,

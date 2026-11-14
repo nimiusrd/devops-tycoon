@@ -20,6 +20,7 @@ import {
   type SprintResultScreenProps,
 } from '../../../src/ui/SprintResultScreen';
 import { RewardCeremony } from '../../../src/ui/JuicyEffects';
+import { PhraseText } from '../../../src/ui/PhraseText';
 import { completeSprint, makeOrg } from '../helpers/runEngineFixtures';
 
 type ElementProps = Record<string, unknown> & { children?: ReactNode };
@@ -32,6 +33,9 @@ function elements(node: ReactNode): ReactElement<ElementProps>[] {
 function content(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (!isValidElement<ElementProps>(node)) return '';
+  if (node.type === PhraseText) {
+    return (node.props.phrases as readonly string[]).join('');
+  }
   return Children.toArray(node.props.children).map(content).join('');
 }
 

@@ -10,7 +10,9 @@ import { formatSprintResultSeniorHp } from '../render/seniorHpDisplay';
 import { planReviewHellResultSummary } from '../render/reviewHellReplayView';
 import type { SprintResultContextLine } from '../render/sprintResultContextView';
 import { planBurnCauseLog } from '../render/sprintBurnCauseView';
+import { sprintResultDiagnosisPhrases } from '../render/sprintResultDiagnosisPhrases';
 import { planSprintGradeView } from '../render/sprintGradeView';
+import { PhraseText } from './PhraseText';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { DiagnosisType, GrowthOutcome } from '../sim/run/types';
@@ -160,7 +162,7 @@ export function SprintResultScreen({
               {result.grade}
             </div>
             <p className="result-grade-caption" data-testid="result-grade-caption">
-              {gradeView.caption}
+              <PhraseText phrases={gradeView.captionPhrases} />
             </p>
             {isSpecialGrade(result.grade) && (
               <RewardCeremony
@@ -190,7 +192,9 @@ export function SprintResultScreen({
             </div>
             <div className="result-diagnosis">
               <p className="result-section-label">診断</p>
-              <p data-testid="result-diagnosis-text">{result.diagnosis}</p>
+              <p data-testid="result-diagnosis-text">
+                <PhraseText phrases={sprintResultDiagnosisPhrases(result.diagnosis)} />
+              </p>
             </div>
             {growth && hasGrowthNews(growth) && (
               <div className="result-growth" data-testid="result-growth">

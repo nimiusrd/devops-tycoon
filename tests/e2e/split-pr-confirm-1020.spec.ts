@@ -61,20 +61,25 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(page.getByTestId('action-target-picker')).toHaveCount(0);
 
     const announce = formatSplitPrConfirmAnnouncement(taskId);
+    const taskIdText = String(taskId);
     await expect
-      .poll(() => page.getByTestId('board').getAttribute('data-split-confirm-task-id'))
-      .toBe(String(taskId));
-    await expect(page.getByTestId('split-pr-confirm-announce')).toHaveText(announce, {
-      timeout: 3_000,
-    });
-    await expect(page.getByTestId('board')).toHaveAttribute(
-      'data-split-confirm-task-id',
-      String(taskId),
-    );
-    await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute(
-      'data-split-confirm-task-id',
-      String(taskId),
-    );
+      .poll(
+        async () => {
+          const boardId = await page
+            .getByTestId('board')
+            .getAttribute('data-split-confirm-task-id');
+          const pixiId = await page
+            .getByTestId('board-pixi-mount')
+            .getAttribute('data-split-confirm-task-id');
+          const spoken = (await page.getByTestId('split-pr-confirm-announce').innerText()).trim();
+          return boardId === taskIdText && pixiId === taskIdText && spoken === announce;
+        },
+        {
+          timeout: splitPrConfirmDurationMs() + 3_000,
+          intervals: [16, 32, 48, 64, 96],
+        },
+      )
+      .toBe(true);
 
     const event = await page.evaluate(() => {
       const sprint = (window as GameWindow).game!.getState().sprint;

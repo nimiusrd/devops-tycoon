@@ -34,7 +34,8 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: /tab-conflict-modal|org-lever-spend-risk|rest-overlay-modal/,
+      testIgnore:
+        /tab-conflict-modal|org-lever-spend-risk|rest-overlay-modal|sprint-board-frame-stability-1023/,
     },
     {
       name: 'chromium-conflict-modal',
@@ -59,7 +60,7 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-      testMatch: /sprint-result-quarter-goal/,
+      testMatch: /sprint-result-quarter-goal|sprint-board-frame-stability-1023/,
     },
     {
       name: 'webkit-boss-sprint-result',

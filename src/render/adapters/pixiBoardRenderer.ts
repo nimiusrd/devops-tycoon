@@ -589,6 +589,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private readonly shipmentSprites: Sprite[] = [];
   private readonly taskMotion = new BoardTaskMotion();
   private readonly pilePresentation = new BoardPilePresentation();
+  /** 解除後に strength 0 の座標を ticker で一度だけ同期済みか（#982）。 */
+  private presentationBasesSyncedAtZero = false;
   private targetSelectionActive = false;
   private readonly auraLayer = new Container();
   private readonly auraGfx = new Graphics();
@@ -1003,9 +1005,19 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.reviewTrailEntries = [];
 
     const dotsById = new Map(dots.map((dot) => [dot.id, dot]));
+    const strength = this.pilePresentation.strengthAt(this.elapsedMs);
+    const visualById = new Map(
+      this.dotsAtPresentationStrength(dots, dots, cssScale, strength).map(
+        (dot) => [dot.id, dot] as const,
+      ),
+    );
     for (const source of trails) {
       const sourceDot = dotsById.get(source.taskId);
-      const plan = presentBoardReviewTrail(source, sourceDot, cssScale);
+      let plan = presentBoardReviewTrail(source, sourceDot, cssScale);
+      const visual = sourceDot ? visualById.get(sourceDot.id) : undefined;
+      if (visual) {
+        plan = { ...plan, x: visual.x, y: visual.y };
+      }
       // 軌跡は粒の背後で中心から伸びる。拡大で半径が計画長を超えると全体が隠れるので、
       // 広い盤面で見えていた外側の長さだけ足す。倍率 1 では計画長のまま。
       const designRadius = sourceDot ? TASK_DIAMETER[sourceDot.size] / 2 : 0;
@@ -1455,7 +1467,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.pilePresentation.sync(selectionActive, elapsedMs, immediateMotion);
     const strength = this.pilePresentation.strengthAt(elapsedMs);
     const transitioning = strength > 0 && strength < 1;
-    if (!transitioning && strength <= 0 && this.pilePresentation.targetStrength() === 0) return;
+    const target = this.pilePresentation.targetStrength();
+    if (!transitioning && strength <= 0 && target === 0) {
+      if (this.presentationBasesSyncedAtZero) return;
+    } else {
+      this.presentationBasesSyncedAtZero = false;
+    }
 
     const renderPlan = planBoardDotsForRender(
       input.scene.dots,
@@ -1491,6 +1508,16 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       pinned,
       immediateMotion || selectionActive || transitioning,
     );
+    if (strength <= 0 && target === 0) {
+      this.presentationBasesSyncedAtZero = true;
+    }
+    if (
+      this.stratum !== 'effects' &&
+      input.scene.reviewEffects.trails.length > 0 &&
+      (transitioning || selectionActive)
+    ) {
+      this.syncReviewTrails(input.scene.reviewEffects.trails, input.scene.dots, cssScale);
+    }
   }
 
   /** E2E / dev フック用。粒の表示位置（設計空間、炎シェイク込み）。 */
@@ -1767,21 +1794,10 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const input = this.lastInput;
     const planned = input?.scene.dots ?? [];
     const cssScale = this.root.scale.x;
-    const renderPlan =
-      input &&
-      planBoardDotsForRender(
-        planned,
-        input.draggableTaskIds ?? new Set(),
-        input.dragTaskId ?? null,
-        BOARD_RENDER_BUDGETS.dots,
-        input.previewTaskId ?? null,
-        input.splitConfirmTaskId ?? null,
-      ).dots;
     const strength = input ? this.pilePresentation.strengthAt(this.elapsedMs) : 1;
-    const presented =
-      renderPlan && input
-        ? this.dotsAtPresentationStrength(renderPlan, planned, cssScale, strength)
-        : presentBoardDots(planned, cssScale);
+    const presented = input
+      ? this.dotsAtPresentationStrength(planned, planned, cssScale, strength)
+      : presentBoardDots(planned, cssScale);
     const place = (x: number, y: number) =>
       presentBoardEffectPoint({ x, y }, planned, presented, cssScale);
     for (const entry of this.effectEntries) {
@@ -1906,6 +1922,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.dotEntries = [];
     this.taskMotion.clear();
     this.pilePresentation.clear();
+    this.presentationBasesSyncedAtZero = false;
     this.shipmentSprites.length = 0;
     this.reviewTrailEntries = [];
     this.effectEntries = [];

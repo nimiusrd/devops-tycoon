@@ -519,13 +519,16 @@ describe('Pixi スプリント盤面レンダラー', () => {
       const plan = scene.reviewEffects.trails[index];
       const source = scene.dots.find((entry) => entry.id === plan.taskId);
       expect(source, `軌跡 ${plan.taskId} の粒`).toBeDefined();
-      const presented = presentBoardDot(source!, scale);
-      expect(trail.position).toMatchObject({ x: presented.x, y: presented.y });
+      const shown = presentBoardDotsAtStrength(scene.dots, scale, 0).find(
+        (entry) => entry.id === plan.taskId,
+      )!;
+      const armed = presentBoardDot(source!, scale);
+      expect(trail.position).toMatchObject({ x: shown.x, y: shown.y });
       const outer = Math.max(
         ...drawCalls(trail, 'moveTo').map((args) => Math.hypot(Number(args[0]), Number(args[1]))),
       );
       expect(outer).toBeGreaterThanOrEqual(presentedDotRadius(source!.size, scale));
-      if (presented.x !== plan.x || presented.y !== plan.y) moved = true;
+      if (armed.x !== shown.x || armed.y !== shown.y) moved = true;
     }
     expect(moved).toBe(true);
 

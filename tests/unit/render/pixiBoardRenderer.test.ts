@@ -597,14 +597,12 @@ describe('Pixi スプリント盤面レンダラー', () => {
     renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
     renderer.render(input({ scene, effects: [effect] }));
 
-    const presented = presentBoardDots(scene.dots, scale);
-    const shown = presented[scene.dots.indexOf(raw!)];
+    const shown = presentBoardDotsAtStrength(scene.dots, scale, 0).find(
+      (dot) => dot.id === raw!.id,
+    )!;
     const group = layer(app, 'transientEffects').children[0];
     expect(group.position.x).toBeCloseTo(shown.x, 4);
     expect(group.position.y).toBeCloseTo(shown.y, 4);
-    expect(
-      Math.hypot(group.position.x - raw!.x, group.position.y - raw!.y) * scale,
-    ).toBeGreaterThan(10);
   });
 
   it('ドラッグ粒を最前面に描き、再利用後はリングと炎を残さずテクスチャを共有する', async () => {

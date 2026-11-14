@@ -1437,7 +1437,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       cssScale,
       presentationStrength,
     );
-    this.syncTaskMotionWithPresented(motionDots, pinned, immediateMotion || selectionActive);
+    const transitioning = presentationStrength > 0 && presentationStrength < 1;
+    this.syncTaskMotionWithPresented(
+      motionDots,
+      pinned,
+      immediateMotion || selectionActive || transitioning,
+    );
   }
 
   /** ticker だけでも山の補間が進むよう、描画位置と taskMotion を更新する（#982）。 */
@@ -1449,7 +1454,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const immediateMotion = this.reducedMotion || this.frozen || this.loopPaused;
     this.pilePresentation.sync(selectionActive, elapsedMs, immediateMotion);
     const strength = this.pilePresentation.strengthAt(elapsedMs);
-    if (strength <= 0 && this.pilePresentation.targetStrength() === 0) return;
+    const transitioning = strength > 0 && strength < 1;
+    if (!transitioning && strength <= 0 && this.pilePresentation.targetStrength() === 0) return;
 
     const renderPlan = planBoardDotsForRender(
       input.scene.dots,
@@ -1480,7 +1486,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       input.previewTaskId ?? null,
       input.splitConfirmTaskId ?? null,
     );
-    this.syncTaskMotionWithPresented(visualDots, pinned, immediateMotion || selectionActive);
+    this.syncTaskMotionWithPresented(
+      visualDots,
+      pinned,
+      immediateMotion || selectionActive || transitioning,
+    );
   }
 
   /** E2E / dev フック用。粒の表示位置（設計空間、炎シェイク込み）。 */
@@ -1688,7 +1698,9 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     }
 
     this.refreshPresentationDotBases(elapsedMs);
-    const freezeDots = this.targetSelectionActive;
+    const presentationStrength = this.pilePresentation.strengthAt(elapsedMs);
+    const pileTransitioning = presentationStrength > 0 && presentationStrength < 1;
+    const freezeDots = this.targetSelectionActive || pileTransitioning;
     for (const entry of this.dotEntries) {
       let dx = 0;
       let dy = 0;
@@ -1752,9 +1764,24 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
   /** 時刻付き plan を現在フレームの座標・透明度・拡大率へ写す。 */
   private applyEffectAnimations(nowMs: number): void {
-    const planned = this.lastInput?.scene.dots ?? [];
+    const input = this.lastInput;
+    const planned = input?.scene.dots ?? [];
     const cssScale = this.root.scale.x;
-    const presented = presentBoardDots(planned, cssScale);
+    const renderPlan =
+      input &&
+      planBoardDotsForRender(
+        planned,
+        input.draggableTaskIds ?? new Set(),
+        input.dragTaskId ?? null,
+        BOARD_RENDER_BUDGETS.dots,
+        input.previewTaskId ?? null,
+        input.splitConfirmTaskId ?? null,
+      ).dots;
+    const strength = input ? this.pilePresentation.strengthAt(this.elapsedMs) : 1;
+    const presented =
+      renderPlan && input
+        ? this.dotsAtPresentationStrength(renderPlan, planned, cssScale, strength)
+        : presentBoardDots(planned, cssScale);
     const place = (x: number, y: number) =>
       presentBoardEffectPoint({ x, y }, planned, presented, cssScale);
     for (const entry of this.effectEntries) {

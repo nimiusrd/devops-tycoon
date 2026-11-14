@@ -1836,12 +1836,28 @@ body:has(.overlay-contained) {
   > .sprint-result-footer {
   padding-top: 0.55rem;
 }
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
 :root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
   min-height: 44px;
   font-size: 11px;
   line-height: 1.25;
-  white-space: normal;
   text-align: center;
+}
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn-primary {
+  white-space: nowrap;
+}
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn:not(.btn-primary) {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .sprint-result-card .result-eyebrow {
   letter-spacing: 0.08em;

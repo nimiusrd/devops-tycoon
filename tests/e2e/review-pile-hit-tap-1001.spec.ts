@@ -27,13 +27,19 @@ const VIEWPORTS = [
 async function ensureBoardPointUncovered(
   page: Page,
   point: { x: number; y: number },
+  browserName: string,
 ): Promise<void> {
-  for (let attempt = 0; attempt < 6; attempt += 1) {
+  const attempts = browserName === 'webkit' ? 12 : 6;
+  const step = browserName === 'webkit' ? 72 : 56;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (await isBoardPointUncovered(page, point)) return;
-    await page.evaluate(() => {
-      const layout = document.querySelector('[data-testid="sprint-layout"]');
-      if (layout instanceof HTMLElement) layout.scrollTop += 56;
-    });
+    await page.evaluate(
+      ({ delta }) => {
+        const layout = document.querySelector('[data-testid="sprint-layout"]');
+        if (layout instanceof HTMLElement) layout.scrollTop += delta;
+      },
+      { delta: step },
+    );
     await page.getByTestId('board').scrollIntoViewIfNeeded();
   }
 }
@@ -98,9 +104,14 @@ async function tapPresentedDotCenter(
   target: { x: number; y: number },
   width: number,
   taskId: number,
+  browserName: string,
 ): Promise<void> {
   const board = page.getByTestId('board');
   if (width <= 390) {
+    if (browserName !== 'chromium') {
+      await page.touchscreen.tap(target.x, target.y);
+      return;
+    }
     if (width === 320) {
       // qa-seed-1030 の 320px 密集 Review 山では CDP/touchscreen が pointerdown を盤面へ届けない。390 は下記 CDP。
       await board.click({ position: boardHostPosition(frame, target) });
@@ -163,14 +174,14 @@ for (const viewport of VIEWPORTS) {
       const frame = await readBoardCanvasFrame(page);
       const target = (await readReviewTapTargets(page, frame)).find((dot) => dot.id === taskId);
       if (!target) throw new Error(`Review #${taskId} が候補にない`);
-      await ensureBoardPointUncovered(page, target);
+      await ensureBoardPointUncovered(page, target, browserName);
       expect(
         await isBoardPointUncovered(page, target),
         `Review #${taskId} の中心が操作できない`,
       ).toBe(true);
       await hoverPresentedDotCenter(page, frame, target);
       await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
-      await tapPresentedDotCenter(page, frame, target, viewport.width, taskId);
+      await tapPresentedDotCenter(page, frame, target, viewport.width, taskId, browserName);
       await expectSplitOnTask(page, taskId, 0);
     }
   });

@@ -2675,16 +2675,10 @@ body:has(.overlay-contained) {
   padding-right: 8px;
   border-right: 2px solid var(--line);
 }
-/* 広幅では担当切替をフローから外し、武装しても actionbar 高さを変えない（#1023）。 */
-.actionbar[data-responsive-width='wide'] .assign-assignee {
-  position: absolute;
-  left: 202px;
-  top: 11px;
-  bottom: 11px;
-  z-index: 2;
-  background: linear-gradient(180deg, #332a5e, #251d49);
-  border-radius: 12px;
-  padding: 4px 8px 4px 0;
+/* タスク差配武装で担当切替が載ってもバー高さが増えないよう、短い広幅の平常高を下限にする（#1023）。 */
+.actionbar[data-responsive-width='wide'][data-responsive-height='short'] {
+  min-height: 246px;
+  box-sizing: border-box;
 }
 .assign-assignee-label {
   font-size: 9px;

@@ -24,9 +24,19 @@ const VIEWPORTS = [
   { width: 1024, height: 768 },
 ] as const;
 
+async function readPresentedDotClient(
+  page: Page,
+  taskId: number,
+): Promise<{ frame: BoardCanvasFrame; target: { id: number; x: number; y: number } }> {
+  const frame = await readBoardCanvasFrame(page);
+  const target = (await readReviewTapTargets(page, frame)).find((dot) => dot.id === taskId);
+  if (!target) throw new Error(`Review #${taskId} が候補にない`);
+  return { frame, target };
+}
+
 async function ensureBoardPointUncovered(
   page: Page,
-  point: { x: number; y: number },
+  taskId: number,
   browserName: string,
   viewportWidth: number,
 ): Promise<void> {
@@ -34,7 +44,8 @@ async function ensureBoardPointUncovered(
     browserName === 'webkit' && viewportWidth === 320 ? 18 : browserName === 'webkit' ? 12 : 6;
   const step = browserName === 'webkit' ? 72 : 56;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (await isBoardPointUncovered(page, point)) return;
+    const { target } = await readPresentedDotClient(page, taskId);
+    if (await isBoardPointUncovered(page, target)) return;
     if (browserName === 'webkit' && viewportWidth === 320) {
       await page.evaluate(() => {
         const layout = document.querySelector('[data-testid="sprint-layout"]');
@@ -150,26 +161,28 @@ async function tapPresentedDotCenter(
       await board.click({ position: boardHostPosition(frame, target) });
       return;
     }
-    const box = await board.boundingBox();
-    if (!box) throw new Error('盤面の位置を取得できない');
-    const touchPoint = {
-      x: box.x + boardHostPosition(frame, target).x,
-      y: box.y + boardHostPosition(frame, target).y,
-      id: 1,
-    };
-    const session = await page.context().newCDPSession(page);
-    await session.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [touchPoint],
-    });
-    await session.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [touchPoint],
-    });
-    await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
-    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await session.detach();
-    return;
+    if (width === 390) {
+      const box = await board.boundingBox();
+      if (!box) throw new Error('盤面の位置を取得できない');
+      const touchPoint = {
+        x: box.x + boardHostPosition(frame, target).x,
+        y: box.y + boardHostPosition(frame, target).y,
+        id: 1,
+      };
+      const session = await page.context().newCDPSession(page);
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [touchPoint],
+      });
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [touchPoint],
+      });
+      await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
+      await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await session.detach();
+      return;
+    }
   }
   await board.click({ position: boardHostPosition(frame, target) });
 }
@@ -204,11 +217,10 @@ for (const viewport of VIEWPORTS) {
     const board = page.getByTestId('board');
     for (const taskId of targetIds) {
       await openReviewPileSprint(page, viewport.width);
-      const frame = await readBoardCanvasFrame(page);
-      const target = (await readReviewTapTargets(page, frame)).find((dot) => dot.id === taskId);
-      if (!target) throw new Error(`Review #${taskId} が候補にない`);
-      await ensureBoardPointUncovered(page, target, browserName, viewport.width);
+      await ensureBoardPointUncovered(page, taskId, browserName, viewport.width);
+      const { target } = await readPresentedDotClient(page, taskId);
       const tapPoint = await resolveTapPoint(page, target, browserName, viewport.width);
+      const frame = await readBoardCanvasFrame(page);
       expect(
         await isBoardPointUncovered(page, tapPoint),
         `Review #${taskId} の中心が操作できない`,

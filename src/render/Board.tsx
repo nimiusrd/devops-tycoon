@@ -541,6 +541,7 @@ export function Board({
 
   const activeGestureRef = useRef<BoardGesture | null>(null);
   const splitPrHandledRef = useRef(false);
+  const splitPrReleaseClientRef = useRef<{ x: number; y: number } | null>(null);
   const gestureRef = useRef<BoardGesture | null>(null);
   useEffect(() => {
     gestureRef.current = gesture;
@@ -564,20 +565,57 @@ export function Board({
       const input = currentInput.current;
       if (
         !released ||
-        released.blocked ||
         !input.interactive ||
         input.armedAction !== currentGesture.action ||
         !input.dragPlan
       )
         return;
-      const taskId = hitTestClientBoardDot(
-        event.clientX,
-        event.clientY,
+      let clientX = event.clientX;
+      let clientY = event.clientY;
+      const atPointerUp = hitTestClientBoardDot(
+        clientX,
+        clientY,
         released.rect,
         input.dots,
         input.dragIds,
       );
-      if (taskId !== null && (taskId === input.previewTaskId || taskId === currentGesture.taskId)) {
+      const unreliablePointerUp =
+        !Number.isFinite(event.clientX) ||
+        !Number.isFinite(event.clientY) ||
+        (event.clientX === 0 && event.clientY === 0);
+      if (
+        unreliablePointerUp &&
+        atPointerUp !== input.previewTaskId &&
+        currentGesture.announce &&
+        splitPrReleaseClientRef.current
+      ) {
+        const last = splitPrReleaseClientRef.current;
+        const atLast = hitTestClientBoardDot(
+          last.x,
+          last.y,
+          released.rect,
+          input.dots,
+          input.dragIds,
+        );
+        if (atLast === input.previewTaskId) {
+          clientX = last.x;
+          clientY = last.y;
+        }
+      }
+      const releaseTarget =
+        typeof document === 'undefined'
+          ? event.target
+          : document.elementFromPoint(clientX, clientY);
+      const releasedAtPoint = readPointer(clientX, clientY, releaseTarget);
+      if (!releasedAtPoint || releasedAtPoint.blocked) return;
+      const taskId = hitTestClientBoardDot(
+        clientX,
+        clientY,
+        released.rect,
+        input.dots,
+        input.dragIds,
+      );
+      if (taskId !== null && taskId === input.previewTaskId) {
         splitPrHandledRef.current = true;
         const task = input.tasks.find((task) => task.id === taskId);
         if (task) setConfirmedTarget(`対象を確定: ${describeTaskTarget(task)}（#${task.id}）`);
@@ -588,7 +626,7 @@ export function Board({
         releaseBoardPointerCapture(currentGesture.pointerId);
       }
     },
-    [releaseBoardPointerCapture],
+    [readPointer, releaseBoardPointerCapture],
   );
 
   useLayoutEffect(() => {
@@ -606,11 +644,15 @@ export function Board({
       );
     const cancel = () => {
       finished = true;
+      splitPrReleaseClientRef.current = null;
       setGesture(null);
       setPointer(null);
     };
     const onMove = (event: PointerEvent) => {
       if (finished || !matchingPointer(event)) return;
+      if (gesture.action === 'splitPr') {
+        splitPrReleaseClientRef.current = { x: event.clientX, y: event.clientY };
+      }
       setPointer(position(event));
     };
     const onUp = (event: PointerEvent) => {
@@ -713,6 +755,9 @@ export function Board({
       event.stopPropagation();
       setConfirmedTarget('');
       splitPrHandledRef.current = false;
+      if (armedAction === 'splitPr') {
+        splitPrReleaseClientRef.current = { x: event.clientX, y: event.clientY };
+      }
       const nextGesture: BoardGesture = {
         pointerId: event.pointerId ?? 1,
         taskId,
@@ -738,7 +783,11 @@ export function Board({
       const currentGesture = activeGestureRef.current;
       if (!currentGesture || currentGesture.action !== 'splitPr') return;
       if (currentGesture.pointerId !== (event.pointerId ?? 1)) return;
-      const released = readPointer(event.clientX, event.clientY, event.target);
+      const releaseTarget =
+        typeof document === 'undefined'
+          ? event.target
+          : document.elementFromPoint(event.clientX, event.clientY);
+      const released = readPointer(event.clientX, event.clientY, releaseTarget);
       confirmSplitPrGesture(event.nativeEvent, currentGesture, released);
     },
     [confirmSplitPrGesture, readPointer],

@@ -97,19 +97,37 @@ async function tapPresentedDotCenter(
   frame: BoardCanvasFrame,
   target: { x: number; y: number },
   width: number,
+  taskId: number,
 ): Promise<void> {
-  const position = boardHostPosition(frame, target);
   const board = page.getByTestId('board');
-  // narrowShort（320）は playwright の locator.tap が盤面 pointer に届かないため click で同一点を打つ。
-  if (width <= 320) {
-    await board.click({ position });
-    return;
-  }
   if (width <= 390) {
-    await board.tap({ position });
+    if (width === 320) {
+      // qa-seed-1030 の 320px 密集 Review 山では CDP/touchscreen が pointerdown を盤面へ届けない。390 は下記 CDP。
+      await board.click({ position: boardHostPosition(frame, target) });
+      return;
+    }
+    const box = await board.boundingBox();
+    if (!box) throw new Error('盤面の位置を取得できない');
+    const touchPoint = {
+      x: box.x + boardHostPosition(frame, target).x,
+      y: box.y + boardHostPosition(frame, target).y,
+      id: 1,
+    };
+    const session = await page.context().newCDPSession(page);
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [touchPoint],
+    });
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [touchPoint],
+    });
+    await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await session.detach();
     return;
   }
-  await board.click({ position });
+  await board.click({ position: boardHostPosition(frame, target) });
 }
 
 async function expectSplitOnTask(page: Page, taskId: number, before: number): Promise<void> {
@@ -152,7 +170,7 @@ for (const viewport of VIEWPORTS) {
       ).toBe(true);
       await hoverPresentedDotCenter(page, frame, target);
       await expect(board).toHaveAttribute('data-preview-task-id', String(taskId));
-      await tapPresentedDotCenter(page, frame, target, viewport.width);
+      await tapPresentedDotCenter(page, frame, target, viewport.width, taskId);
       await expectSplitOnTask(page, taskId, 0);
     }
   });

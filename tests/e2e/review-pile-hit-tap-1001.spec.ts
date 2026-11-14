@@ -28,11 +28,22 @@ async function ensureBoardPointUncovered(
   page: Page,
   point: { x: number; y: number },
   browserName: string,
+  viewportWidth: number,
 ): Promise<void> {
-  const attempts = browserName === 'webkit' ? 12 : 6;
+  const attempts =
+    browserName === 'webkit' && viewportWidth === 320 ? 18 : browserName === 'webkit' ? 12 : 6;
   const step = browserName === 'webkit' ? 72 : 56;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (await isBoardPointUncovered(page, point)) return;
+    if (browserName === 'webkit' && viewportWidth === 320) {
+      await page.evaluate(() => {
+        const layout = document.querySelector('[data-testid="sprint-layout"]');
+        const board = document.querySelector('[data-testid="board"]');
+        if (!(layout instanceof HTMLElement) || !(board instanceof HTMLElement)) return;
+        const top = board.getBoundingClientRect().top;
+        layout.scrollTop += top - window.innerHeight * 0.28;
+      });
+    }
     await page.evaluate(
       ({ delta }) => {
         const layout = document.querySelector('[data-testid="sprint-layout"]');
@@ -174,7 +185,7 @@ for (const viewport of VIEWPORTS) {
       const frame = await readBoardCanvasFrame(page);
       const target = (await readReviewTapTargets(page, frame)).find((dot) => dot.id === taskId);
       if (!target) throw new Error(`Review #${taskId} が候補にない`);
-      await ensureBoardPointUncovered(page, target, browserName);
+      await ensureBoardPointUncovered(page, target, browserName, viewport.width);
       expect(
         await isBoardPointUncovered(page, target),
         `Review #${taskId} の中心が操作できない`,

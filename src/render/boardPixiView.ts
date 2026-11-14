@@ -518,7 +518,7 @@ export function presentBoardEffectPoint(
   presented: readonly BoardDotPlan[],
   cssScale: number,
 ): BoardPoint {
-  if (boardDotReadabilityMagnification(cssScale) === 1 || planned.length !== presented.length) {
+  if (planned.length !== presented.length) {
     return point;
   }
   let best = -1;

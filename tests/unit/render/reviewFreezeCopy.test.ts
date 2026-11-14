@@ -35,6 +35,13 @@ describe('reviewFreezeCopy（#1011）', () => {
     });
   });
 
+  it('残り12件以下（36件以上）は tone を danger にそろえる', () => {
+    expect(reviewQueueHudCopy(35).tone).toBe('good');
+    for (const queue of [36, 40, 43, 47]) {
+      expect(reviewQueueHudCopy(queue).tone).toBe('danger');
+    }
+  });
+
   it('watch 未満では凍結予兆行を出さない', () => {
     expect(planReviewFreezeRiskLine(reviewFreezeWatchPeak() - 1)).toEqual({ show: false });
     expect(planReviewFreezeRiskLine(reviewFreezeWatchPeak()).show).toBe(true);

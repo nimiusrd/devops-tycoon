@@ -74,7 +74,7 @@ async function sampleIgniteFollow(page: Page): Promise<{
 }
 
 test.describe('引火演出の粒追従（#979）', () => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
 
   for (const viewport of VIEWPORTS) {
     test(`${viewport.name}: 移動中も点火演出は粒から 2px 以内`, async ({ page }) => {

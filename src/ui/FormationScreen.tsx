@@ -24,6 +24,8 @@ export interface FormationScreenProps {
   readOnly?: boolean;
   /** startRun ごとの世代。組織レバー案内をラン単位で区切る。 */
   runEpoch?: number;
+  /** 前面に別モーダル（競合案内など）があるときは false。 */
+  focusLockActive?: boolean;
 }
 
 /** 編成グリッド（モーダルと setup 画面で共有）。 */
@@ -235,9 +237,15 @@ export function FormationScreen({
   onClose,
   readOnly = false,
   runEpoch = 0,
+  focusLockActive = true,
 }: FormationScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
+  useDialogOverlayLock(overlayRef, {
+    restoreFocus: true,
+    onDismiss: onClose,
+    enabled: focusLockActive,
+    resumeIntraDialogFocus: true,
+  });
   const orgLeverHint = resolveOrgLeverHint({
     epoch: runEpoch,
     quarterNumber: state.quarterNumber,

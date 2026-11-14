@@ -28,6 +28,11 @@ export interface DialogOverlayLockOptions {
   strictModal?: boolean;
   /** false のときロックを外し、前面の別モーダルへ譲る。 */
   enabled?: boolean;
+  /**
+   * enabled の再開時、ロック停止直前のダイアログ内操作へ戻す。
+   * 前面の競合モーダルなどへ一時的に譲るダイアログ向け。
+   */
+  resumeIntraDialogFocus?: boolean;
 }
 
 export function useDialogOverlayLock(
@@ -37,8 +42,10 @@ export function useDialogOverlayLock(
   const restoreFocus = options?.restoreFocus === true;
   const strictModal = options?.strictModal === true;
   const enabled = options?.enabled !== false;
+  const resumeIntraDialogFocus = options?.resumeIntraDialogFocus === true;
   const onDismissRef = useRef(options?.onDismiss);
   onDismissRef.current = options?.onDismiss;
+  const suspendedIntraDialogFocusRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     if (!enabled) return;
@@ -52,7 +59,28 @@ export function useDialogOverlayLock(
         ? document.activeElement
         : null;
 
-    if (!dialog.contains(document.activeElement)) {
+    let lastIntraDialogTestId: string | null = null;
+    const onDialogFocusIn = resumeIntraDialogFocus
+      ? (event: FocusEvent) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement) || !dialog.contains(target) || target === dialog) {
+            return;
+          }
+          const testId = target.dataset.testid;
+          if (testId) lastIntraDialogTestId = testId;
+        }
+      : undefined;
+    if (onDialogFocusIn) dialog.addEventListener('focusin', onDialogFocusIn);
+
+    const suspendedTestId = suspendedIntraDialogFocusRef.current;
+    if (resumeIntraDialogFocus && suspendedTestId) {
+      const target = dialog.querySelector<HTMLElement>(
+        `[data-testid="${CSS.escape(suspendedTestId)}"]`,
+      );
+      suspendedIntraDialogFocusRef.current = null;
+      if (target) target.focus({ preventScroll: true });
+      else dialog.focus({ preventScroll: true });
+    } else if (!dialog.contains(document.activeElement)) {
       dialog.focus({ preventScroll: true });
     }
     const unlock = lockBackgroundSiblings(dialog, strictModal ? { inertExempt: true } : undefined);
@@ -132,9 +160,14 @@ export function useDialogOverlayLock(
       observer?.disconnect();
       document.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('focusin', onFocusIn);
+      if (onDialogFocusIn) dialog.removeEventListener('focusin', onDialogFocusIn);
+      if (resumeIntraDialogFocus) {
+        const preserved = lastIntraDialogTestId ?? suspendedIntraDialogFocusRef.current;
+        if (preserved) suspendedIntraDialogFocusRef.current = preserved;
+      }
       restoreAuthoredAriaModal(dialog);
       unlock();
       previouslyFocused?.focus({ preventScroll: true });
     };
-  }, [dialogRef, restoreFocus, strictModal, enabled]);
+  }, [dialogRef, restoreFocus, strictModal, enabled, resumeIntraDialogFocus]);
 }

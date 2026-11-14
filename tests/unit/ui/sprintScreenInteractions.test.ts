@@ -296,12 +296,12 @@ describe('SprintScreen の表示と親子の連携', () => {
     expect(jam.some((node) => node.props.className === 'meter jam')).toBe(true);
     expect(jam.find((node) => node.type === 'i')?.props.style).toEqual({ width: '100%' });
     expect(content(screen.find('jam-count'))).toBe('20');
-    expect(content(screen.find('jam-alert'))).toContain('Review Hell');
+    expect(content(screen.find('jam-alert'))).toContain('レビュー地獄');
     expect(screen.find('jam-alert').props.className).toBe('jam-alert');
     expect(screen.find('jam-alert').props['aria-hidden']).toBe('true');
     expect(screen.find('sprint-subbar').props['data-review-hell']).toBe('true');
     expect(screen.find('review-hell-announcement').props['aria-live']).toBe('polite');
-    expect(content(screen.find('review-hell-announcement'))).toBe('Review Hell に入った');
+    expect(content(screen.find('review-hell-announcement'))).toBe('レビュー地獄に入った');
     expect(content(screen.find('fire-count'))).toBe('炎上 3');
     expect(screen.find('fire-count').props['data-count']).toBe(3);
     expect(screen.find('fire-meter').props.className).toContain('burning');
@@ -322,7 +322,7 @@ describe('SprintScreen の表示と親子の連携', () => {
     expect(elements(screen.tree).some((node) => node.props['data-testid'] === 'jam-alert')).toBe(
       false,
     );
-    expect(content(screen.find('review-hell-announcement'))).toBe('Review Hell を出た');
+    expect(content(screen.find('review-hell-announcement'))).toBe('レビュー地獄を出た');
   });
 
   it('盤面・手札・演出へ最新の状態を渡し、完了と進化オーバーレイを反映する', () => {

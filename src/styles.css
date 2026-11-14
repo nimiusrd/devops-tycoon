@@ -1142,6 +1142,29 @@ body {
   overflow: visible;
   text-overflow: unset;
 }
+
+/*
+ * 320〜900px（narrow）でも工程列名を省略せず読めるようにする（#963）。
+ * 列幅が足りないときは 8px まで縮め、単語の途中改行はしない。
+ */
+:root[data-responsive-width='narrow'] .board-flow-summary {
+  right: 6px;
+  left: 6px;
+  width: auto;
+}
+:root[data-responsive-width='narrow'] .board-flow-list {
+  grid-template-columns: repeat(5, minmax(0, max-content));
+}
+:root[data-responsive-width='narrow'] .board-flow-list li {
+  grid-template-columns: auto max-content auto;
+  gap: 2px;
+  padding-inline: 2px 4px;
+  font-size: 8px;
+}
+:root[data-responsive-width='narrow'] .board-flow-name {
+  overflow: visible;
+  text-overflow: unset;
+}
 .board-flow-list strong {
   font-size: 1.1em;
   font-variant-numeric: tabular-nums;
@@ -1796,9 +1819,11 @@ body:has(.overlay-contained) {
   overflow: hidden;
 }
 .overlay-contained .sprint-result-card > .overlay-scroll {
+  order: 1;
   padding-bottom: 0.25rem;
 }
 .overlay-contained .sprint-result-card > .sprint-result-footer {
+  order: 2;
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
@@ -1813,12 +1838,28 @@ body:has(.overlay-contained) {
   > .sprint-result-footer {
   padding-top: 0.55rem;
 }
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
 :root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
   min-height: 44px;
   font-size: 11px;
   line-height: 1.25;
-  white-space: normal;
   text-align: center;
+}
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn-primary {
+  white-space: nowrap;
+}
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn:not(.btn-primary) {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .sprint-result-card .result-eyebrow {
   letter-spacing: 0.08em;

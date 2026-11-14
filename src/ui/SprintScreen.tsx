@@ -604,7 +604,7 @@ export function SprintScreen({
               className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'jam' ? ' attention' : ''}`}
               data-testid="jam-meter"
               aria-label={
-                reviewHell ? `渋滞メーター ${queue}。Review Hell` : `渋滞メーター ${queue}`
+                reviewHell ? `渋滞メーター ${queue}。レビュー地獄` : `渋滞メーター ${queue}`
               }
             >
               <span className="meter-label">渋滞メーター</span>

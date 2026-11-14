@@ -41,7 +41,7 @@ const META: Record<DiagnosisType, { label: string; description: string }> = {
       'AI の加速をレビューと品質が受け止め、手戻りも制御できています。理想的な状態です。',
   },
   reviewHell: {
-    label: 'Review Hell 型',
+    label: 'レビュー地獄型',
     description:
       'AI で PR は増えましたが、レビュー工程が崩壊しかけています。レビュー容量の増強が急務です。',
   },

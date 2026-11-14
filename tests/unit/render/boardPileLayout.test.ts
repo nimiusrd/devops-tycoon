@@ -3,13 +3,17 @@ import { planBoardScene } from '../../../src/render/boardScene';
 import {
   adjustReviewPileLayout,
   applyLanePileShift,
+  boardPhoneContainmentScales,
   boardPhonePresentationScales,
   countReviewCrossStationOverlaps,
   findReviewPileShift,
+  reviewPilePresentationScales,
 } from '../../../src/render/boardPileLayout';
+import { BOARD_STATION_CENTERS } from '../../../src/render/boardStationCenters';
 import {
   presentBoardDots,
   presentedDotRadius,
+  presentedDotHitsOtherStation,
   hitTestBoardDot,
 } from '../../../src/render/boardPixiView';
 import { RunEngine } from '../../../src/sim/run/engine';
@@ -72,14 +76,71 @@ describe('boardPileLayout（Review 山の寄せ）', { timeout: 60_000 }, () => 
     ).toBe(29);
   });
 
-  it('findReviewPileShift は決定論的で、必要最小の移動を返す', () => {
-    const baseline = planBoardScene(piledReviewWithCodingFlowTasks()).dots;
-    const disturbed = applyLanePileShift(baseline, 'review', { dx: -60, dy: 36 });
-    expect(countReviewCrossStationOverlaps(disturbed)).toBeGreaterThan(0);
-    const shift = findReviewPileShift(disturbed);
-    const adjusted = applyLanePileShift(disturbed, 'review', shift);
-    expect(countReviewCrossStationOverlaps(adjusted)).toBe(0);
-    expect(shift).toEqual(findReviewPileShift(disturbed));
-    expect(adjustReviewPileLayout(baseline)).toEqual(adjustReviewPileLayout(baseline));
+  it(
+    'findReviewPileShift は決定論的で、交差ゼロかつステーション中央に寄せる',
+    { timeout: 120_000 },
+    () => {
+      const baseline = planBoardScene(piledReviewWithCodingFlowTasks()).dots;
+      const anchor = baseline.find((dot) => dot.lane === 'review' && dot.clusterX !== undefined)!;
+      const reset = applyLanePileShift(baseline, 'review', {
+        dx: 840 - anchor.clusterX!,
+        dy: 315 - anchor.clusterY!,
+      });
+      const disturbed = applyLanePileShift(reset, 'review', { dx: -60, dy: 0 });
+      expect(countReviewCrossStationOverlaps(disturbed)).toBeGreaterThan(0);
+      const shift = findReviewPileShift(disturbed);
+      const adjusted = applyLanePileShift(disturbed, 'review', shift);
+      expect(countReviewCrossStationOverlaps(adjusted)).toBe(0);
+      expect(shift).toEqual(findReviewPileShift(disturbed));
+      expect(adjustReviewPileLayout(baseline)).toEqual(adjustReviewPileLayout(baseline));
+    },
+  );
+
+  it('devops-tycoon・候補16件でも武装時の最大縮尺で工程キャラにはみ出さない（#918）', () => {
+    const engine = new RunEngine({ seed: 'devops-tycoon', difficulty: 'easy' });
+    engine.startRun('easy', [], 'devops-tycoon');
+    engine.beginSetupSprint();
+    const countSplitCandidates = () => {
+      const sprint = engine.snapshot().sprint!;
+      return sprint.tasks.filter(
+        (task) => (task.lane === 'review' || task.lane === 'coding') && !task.split,
+      ).length;
+    };
+    for (let guard = 0; guard < 8000 && engine.snapshot().phase === 'sprint'; guard += 1) {
+      if (countSplitCandidates() === 16) break;
+      engine.step(80);
+    }
+    expect(countSplitCandidates()).toBe(16);
+    const dots = planBoardScene(engine.snapshot().sprint!.tasks).dots;
+    const stations = (Object.keys(BOARD_STATION_CENTERS) as const).map((lane) => ({
+      lane,
+      x: BOARD_STATION_CENTERS[lane].x,
+      y: BOARD_STATION_CENTERS[lane].y,
+    }));
+    for (const scale of boardPhoneContainmentScales()) {
+      for (const dot of dots) {
+        if (dot.motion) continue;
+        expect(
+          presentedDotHitsOtherStation(dot, scale, stations),
+          `粒 ${dot.id}（scale ${scale.toFixed(3)}）`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it('320/390/1024 で Review 山の提示重心がステーション中央へ近い（#994）', () => {
+    const scene = planBoardScene(piledReviewWithCodingFlowTasks());
+    expect(countReviewCrossStationOverlaps(scene.dots)).toBe(0);
+    const stationX = BOARD_STATION_CENTERS.review.x;
+    for (const scale of reviewPilePresentationScales()) {
+      const presented = presentBoardDots(scene.dots, scale).filter(
+        (dot) => dot.lane === 'review' && !dot.motion,
+      );
+      const centroidX = presented.reduce((sum, dot) => sum + dot.x, 0) / presented.length;
+      expect(
+        Math.abs(centroidX - stationX) * scale,
+        `scale ${scale.toFixed(3)} の横ずれ（CSS px）`,
+      ).toBeLessThan(3);
+    }
   });
 });

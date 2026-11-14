@@ -2691,7 +2691,7 @@ body:has(.overlay-contained) {
   border-right: 2px solid var(--line);
 }
 /* 1024 幅かつ低い viewport でタスク差配武装時のバー伸びを吸収する（#1023）。 */
-@media (max-width: 1024px) and (max-height: 800px) {
+@media (max-width: 1024px) and (min-height: 760px) and (max-height: 800px) {
   .actionbar[data-responsive-width='wide'] {
     min-height: 246px;
     box-sizing: border-box;
@@ -3542,7 +3542,7 @@ body[data-tutorial-step='combo-gauge']
   margin-top: 0;
 }
 /* 1024×768 付近では grid stretch が WebKit で行高を揺らし盤面が 1〜2 フレーム動く（#1023）。 */
-@media (max-width: 1024px) and (max-height: 800px) {
+@media (max-width: 1024px) and (min-height: 760px) and (max-height: 800px) {
   .actionbar[data-responsive-width='wide'] .action-heading {
     min-height: 27px;
   }

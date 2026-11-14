@@ -9553,7 +9553,50 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .term-tip-term {
   white-space: nowrap;
 }
-/* 短い確認文でも、狭幅では長い選択肢を全幅へ折り返して読めるようにする。 */
-.setup-coder-confirm .result-actions .btn {
+/* コーダー0人の開始確認: 背面の編成と重ね、狭幅ではボタン全文を折り返す（#990）。 */
+.setup-coder-confirm {
+  padding: 1rem;
+}
+.setup-coder-confirm-card {
+  width: min(100%, 26rem);
+  box-sizing: border-box;
+  overflow: hidden;
+  text-align: left;
+}
+.setup-coder-confirm-card .draft-title {
+  text-wrap: balance;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.setup-coder-confirm-body {
+  margin: 0 0 1.25rem;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+:root[data-responsive-width='narrow'] .setup-coder-confirm-card {
+  padding: 1.1rem 0.85rem 1.25rem;
+}
+:root[data-responsive-width='narrow'] .setup-coder-confirm-card .draft-title {
+  font-size: 0.95rem;
+  margin-bottom: 0.65rem;
+}
+.setup-coder-confirm-actions {
+  flex-wrap: wrap;
+}
+.setup-coder-confirm-actions .btn {
   flex: 1 1 10rem;
+  min-height: 44px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
+}
+:root[data-responsive-width='narrow'] .setup-coder-confirm {
+  padding: 0.75rem;
+}
+:root[data-responsive-width='narrow'][data-responsive-height='short'] .setup-coder-confirm {
+  padding: 0.5rem;
 }

@@ -9,7 +9,7 @@
  */
 import { getBoss, getBossPlayerDescription } from '../data/bossDisplay';
 import { planReviewFreezeRiskLine } from '../render/reviewFreezeCopy';
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { setupObservation } from '../render/companyGuidanceView';
 import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
@@ -49,23 +49,21 @@ function SetupPhrases({ phrases }: { phrases: readonly string[] }) {
 }
 
 function MissingCoderConfirm({
-  canAssign,
-  onAssign,
+  allOnLeave,
   onCancel,
   onBegin,
 }: {
-  canAssign: boolean;
-  onAssign: () => void;
+  allOnLeave: boolean;
   onCancel: () => void;
   onBegin: () => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const assignRef = useRef<HTMLButtonElement>(null);
+  const backRef = useRef<HTMLButtonElement>(null);
   const acceptedRef = useRef(false);
   useDialogOverlayLock(dialogRef, { restoreFocus: true, onDismiss: onCancel });
   useEffect(() => {
-    assignRef.current?.focus();
-  }, [canAssign]);
+    backRef.current?.focus();
+  }, []);
 
   return (
     <div
@@ -78,30 +76,23 @@ function MissingCoderConfirm({
       aria-describedby="setup-no-coder-description"
       tabIndex={-1}
     >
-      <div className="result-card resume-risk-card">
+      <div className="result-card resume-risk-card setup-coder-confirm-card">
         <h2 className="draft-title" id="setup-no-coder-title">
-          コーダーが0人です
+          コーダー0人で始めますか
         </h2>
-        <p id="setup-no-coder-description">
-          <SetupPhrases
-            phrases={[
-              'このまま始めると',
-              '出荷できません。',
-              ...(canAssign
-                ? ['コーダーを', '割り当ててから', '始めますか？']
-                : ['今は', '割り当てられる', 'メンバーがいません。']),
-            ]}
-          />
+        <p id="setup-no-coder-description" className="setup-coder-confirm-body">
+          作業が進まないままスプリントが始まります。
+          {allOnLeave ? ' 今は割り当てられるメンバーがいません。' : null}
         </p>
-        <div className="result-actions">
+        <div className="result-actions setup-coder-confirm-actions">
           <button
-            ref={assignRef}
+            ref={backRef}
             type="button"
             className="btn btn-primary"
-            data-testid="setup-no-coder-assign"
-            onClick={canAssign ? onAssign : onCancel}
+            data-testid="setup-no-coder-back"
+            onClick={onCancel}
           >
-            {canAssign ? 'コーダーを割り当てる' : '編成に戻る'}
+            編成に戻る
           </button>
           <button
             type="button"
@@ -130,6 +121,7 @@ export function SetupScreen({
   runEpoch = 0,
 }: SetupScreenProps) {
   const [dismissedSprintKeys, setDismissedSprintKeys] = useState<string[]>([]);
+  const [acceptedNoCoderSprintKeys, setAcceptedNoCoderSprintKeys] = useState<string[]>([]);
   const setupRef = useRef<HTMLDivElement>(null);
   const beginRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -142,8 +134,6 @@ export function SetupScreen({
   const observation = setupObservation(state);
   const missingCoders = observation?.id === 'coding-staff';
   const confirmationKey = JSON.stringify([sprintKey, missingCoders, readOnly]);
-  const assignmentTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useLayoutEffect(() => () => clearTimeout(assignmentTimerRef.current), [confirmationKey]);
   const [confirmation, setConfirmation] = useState({ key: confirmationKey, open: false });
   // 一時的な確認を別のスプリント・チームや閲覧モードへ持ち越さない。
   if (confirmation.key !== confirmationKey) {
@@ -315,8 +305,15 @@ export function SetupScreen({
             disabled={readOnly}
             onClick={() => {
               if (readOnly) return;
-              if (missingCoders) setConfirmation({ key: confirmationKey, open: true });
-              else onBegin();
+              if (
+                missingCoders &&
+                !acceptedNoCoderSprintKeys.includes(sprintKey) &&
+                !confirmation.open
+              ) {
+                setConfirmation({ key: confirmationKey, open: true });
+                return;
+              }
+              onBegin();
             }}
           >
             スプリント開始 ▶
@@ -332,15 +329,13 @@ export function SetupScreen({
       </div>
       {showConfirmation && !readOnly && missingCoders && (
         <MissingCoderConfirm
-          canAssign={!!assignmentTarget}
+          allOnLeave={!assignmentTarget}
           onCancel={() => setConfirmation({ key: confirmationKey, open: false })}
-          onAssign={() => {
-            setConfirmation({ key: confirmationKey, open: false });
-            // overlay の inert とフォーカス復帰が解除された後で配置操作へ移す。
-            assignmentTimerRef.current = setTimeout(focusCodingAssignment, 0);
-          }}
           onBegin={() => {
             setConfirmation({ key: confirmationKey, open: false });
+            setAcceptedNoCoderSprintKeys((keys) =>
+              keys.includes(sprintKey) ? keys : [...keys, sprintKey],
+            );
             onBegin();
           }}
         />

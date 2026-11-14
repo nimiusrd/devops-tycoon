@@ -43,9 +43,8 @@ export function QuarterReviewScreen({
   const review = state.quarterReview;
 
   useLayoutEffect(() => {
-    if (!review) return;
     titleRef.current?.focus({ preventScroll: true });
-  }, [review]);
+  }, []);
 
   if (!review) return null;
 

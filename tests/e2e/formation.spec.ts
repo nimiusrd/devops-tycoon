@@ -611,20 +611,22 @@ for (const viewport of [
       ),
     ).toBe(0);
 
-    const dialog = page.getByRole('dialog', { name: 'コーダーが0人です' });
+    const dialog = page.getByRole('dialog', { name: 'コーダー0人で始めますか' });
     await setup.getByTestId('begin-sprint').click();
     await expect(dialog).toBeVisible();
     await assertUnbrokenPhrases(dialog.locator('#setup-no-coder-description'), '開始確認の説明');
-    await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: '編成に戻る' })).toBeFocused();
     expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(setup.getByTestId('begin-sprint')).toBeFocused();
 
     await setup.getByTestId('begin-sprint').click();
-    await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
-    await dialog.getByRole('button', { name: 'コーダーを割り当てる' }).click();
+    await expect(dialog.getByRole('button', { name: '編成に戻る' })).toBeFocused();
+    await dialog.getByRole('button', { name: '編成に戻る' }).click();
     await expect(dialog).toHaveCount(0);
+    await expect(setup.getByTestId('begin-sprint')).toBeFocused();
+    await setup.getByRole('button', { name: '割り当てる', exact: true }).click();
     await expect(benchCoding).toBeFocused();
     await benchCoding.click();
     await expect(warning).toHaveCount(0);
@@ -654,10 +656,10 @@ for (const viewport of [
     await expect(setup.getByTestId('assign-m0-coding')).toBeFocused();
     await expect(setup.getByTestId('assign-m0-coding')).toBeInViewport({ ratio: 1 });
     await setup.getByTestId('begin-sprint').click();
-    const dialog = page.getByRole('dialog', { name: 'コーダーが0人です' });
+    const dialog = page.getByRole('dialog', { name: 'コーダー0人で始めますか' });
     await expect(dialog).toBeVisible();
     await assertUnbrokenPhrases(dialog.locator('#setup-no-coder-description'), '開始確認の説明');
-    await expect(dialog.getByRole('button', { name: 'コーダーを割り当てる' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: '編成に戻る' })).toBeFocused();
     expect(await page.evaluate(() => (window as GameWindow).game!.getState().phase)).toBe('setup');
     await dialog.getByRole('button', { name: 'このまま開始' }).click();
     await expect(dialog).toHaveCount(0);

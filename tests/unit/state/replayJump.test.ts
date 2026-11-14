@@ -4,6 +4,7 @@ import type { ReplayKeyframe } from '../../../src/state/replay';
 import {
   findNextReplayKeyframeIndex,
   REPLAY_DRAFT_MISSING_HINT,
+  REPLAY_QUARTER_REVIEW_MISSING_HINT,
 } from '../../../src/state/replayJump';
 
 function kf(phase: ReplayFramePhase, framePhase: ReplayFramePhase = phase) {
@@ -32,6 +33,12 @@ describe('findNextReplayKeyframeIndex', () => {
     expect(findNextReplayKeyframeIndex([kf('result')], 0, 'draft')).toBeNull();
   });
 
+  it('四半期末の result に続く quarterReview を返す', () => {
+    const bossRun = [kf('setup'), kf('result'), kf('quarterReview')];
+    expect(findNextReplayKeyframeIndex(bossRun, 1, 'quarterReview')).toBe(2);
+    expect(findNextReplayKeyframeIndex(bossRun, 0, 'quarterReview')).toBeNull();
+  });
+
   it('hydrate される frame.phase で判定し、ラッパーとの不一致は draft とみなさない', () => {
     const mismatched = [kf('result'), kf('draft', 'result'), kf('draft')];
     expect(findNextReplayKeyframeIndex(mismatched, 0, 'draft')).toBeNull();
@@ -44,6 +51,14 @@ describe('REPLAY_DRAFT_MISSING_HINT', () => {
   it('現在の結果に対応するドラフトが無いことを説明する', () => {
     expect(REPLAY_DRAFT_MISSING_HINT).toBe(
       'この結果に対応するカードドラフトは記録されていません。',
+    );
+  });
+});
+
+describe('REPLAY_QUARTER_REVIEW_MISSING_HINT', () => {
+  it('現在の結果に対応する四半期レビューが無いことを説明する', () => {
+    expect(REPLAY_QUARTER_REVIEW_MISSING_HINT).toBe(
+      'この結果に対応する四半期レビューは記録されていません。',
     );
   });
 });

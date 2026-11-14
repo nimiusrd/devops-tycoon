@@ -9,6 +9,8 @@ vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useState: () => [previewState.value, (value: string | null) => (previewState.value = value)],
   useMemo: (factory: () => unknown) => factory(),
+  useRef: () => ({ current: null }),
+  useLayoutEffect: () => {},
 }));
 vi.mock('../../../src/ui/replayContent', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/ui/replayContent')>();
@@ -139,7 +141,7 @@ describe('QuarterReviewScreen のレビュー結果', () => {
     });
     expect(screen.find('quarter-review').props).toMatchObject({
       role: 'dialog',
-      'aria-label': 'Quarter Review',
+      'aria-labelledby': 'quarter-review-title',
       'data-outcome': outcome,
     });
     expect(content(screen.tree)).toContain(`Q2 四半期レビュー — ${label}`);

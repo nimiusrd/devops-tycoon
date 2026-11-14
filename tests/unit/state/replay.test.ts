@@ -794,6 +794,73 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.phase()).toBe('title');
   });
 
+  it('jumpReplayToPhase は次の四半期レビューキーフレームへ移動する', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-quarter', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-quarter', seed: 'jump-quarter' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    resultFrame.quarterReview = {
+      goal: setup.quarterGoal,
+      outcome: 'missed_adjustable',
+      trust: setup.stakeholderTrust,
+      progress: [],
+      missedReasons: [],
+      availableAdjustments: ['cut_scope'],
+      bossCleared: true,
+    };
+    const reviewFrame = structuredClone(resultFrame);
+    reviewFrame.phase = 'quarterReview';
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+      { phase: 'quarterReview', frame: reviewFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('quarterReview')).toBe(2);
+    const jumped = game.jumpReplayToPhase('quarterReview');
+    expect(jumped?.phase).toBe('quarterReview');
+    expect(jumped?.quarterReview?.outcome).toBe('missed_adjustable');
+    expect(game.isReplayMode()).toBe(true);
+  });
+
+  it('四半期レビューキーフレームが無ければ quarterReview へジャンプしない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-missing-quarter', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-missing-quarter', seed: 'jump-missing-quarter' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    resultFrame.quarterReview = {
+      goal: setup.quarterGoal,
+      outcome: 'missed_adjustable',
+      trust: setup.stakeholderTrust,
+      progress: [],
+      missedReasons: [],
+      availableAdjustments: ['cut_scope'],
+      bossCleared: true,
+    };
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('quarterReview')).toBeNull();
+    expect(game.jumpReplayToPhase('quarterReview')).toBeNull();
+    expect(game.phase()).toBe('result');
+  });
+
   it('jumpReplayToPhase は次のドラフトキーフレームへ移動する', async () => {
     const storage = new MemoryReplayStorage();
     const game = createGame({ seed: 'jump-draft', initialMeta: defaultMeta() });

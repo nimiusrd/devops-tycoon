@@ -3,7 +3,7 @@
  *
  * 勝敗画面ではなくレビュー会議として、OKR・目標達成度・信頼・未達理由・修正選択肢を表示する。
  */
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { getGoalAdjustment } from '../data/goalAdjustments';
 import { OUTCOME_LABELS } from '../sim/run/quarterReview';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
@@ -37,9 +37,15 @@ export function QuarterReviewScreen({
   onAcknowledge,
   onChooseAdjustment,
 }: QuarterReviewScreenProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const [previewAdjustmentId, setPreviewAdjustmentId] = useState<GoalAdjustmentId | null>(null);
   const { resolveRelic } = useReplayContent();
   const review = state.quarterReview;
+
+  useLayoutEffect(() => {
+    titleRef.current?.focus({ preventScroll: true });
+  }, []);
+
   if (!review) return null;
 
   const { outcome, progress, missedReasons, availableAdjustments, trust } = review;
@@ -57,11 +63,17 @@ export function QuarterReviewScreen({
       data-testid="quarter-review"
       data-outcome={outcome}
       role="dialog"
-      aria-label="Quarter Review"
+      aria-labelledby="quarter-review-title"
     >
       <div className="result-card quarter-review-card">
         <p className="result-eyebrow">QUARTER REVIEW</p>
-        <h2 className="quarter-review-title">
+        <h2
+          ref={titleRef}
+          id="quarter-review-title"
+          className="quarter-review-title"
+          data-testid="quarter-review-title"
+          tabIndex={-1}
+        >
           Q{state.quarterNumber} 四半期レビュー — {OUTCOME_LABELS[outcome]}
         </h2>
 

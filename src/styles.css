@@ -2675,6 +2675,17 @@ body:has(.overlay-contained) {
   padding-right: 8px;
   border-right: 2px solid var(--line);
 }
+/* 広幅では担当切替をフローから外し、武装しても actionbar 高さを変えない（#1023）。 */
+.actionbar[data-responsive-width='wide'] .assign-assignee {
+  position: absolute;
+  left: 202px;
+  top: 11px;
+  bottom: 11px;
+  z-index: 2;
+  background: linear-gradient(180deg, #332a5e, #251d49);
+  border-radius: 12px;
+  padding: 4px 8px 4px 0;
+}
 .assign-assignee-label {
   font-size: 9px;
   font-weight: 800;
@@ -3511,9 +3522,6 @@ body[data-tutorial-step='combo-gauge']
   gap: 2px;
 }
 .actionbar[data-responsive-width='wide'] .action-heading {
-  min-height: 16px;
-}
-.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-heading {
   /* 長い介入名も 1 行で収まらない行高を最初から確保し、WebKit の折り返し揺れを防ぐ（#1023）。 */
   min-height: 27px;
 }
@@ -3524,15 +3532,15 @@ body[data-tutorial-step='combo-gauge']
   margin-top: 0;
 }
 /* 広幅 8 列は grid stretch が WebKit で行高を揺らし、盤面の y / 高さが 1〜2 フレーム動く（#1023）。 */
-.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .actions {
+.actionbar[data-responsive-width='wide'] .actions {
   align-items: start;
 }
-.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-resources {
+.actionbar[data-responsive-width='wide'] .action-resources {
   margin-top: 0;
 }
-.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-target,
-.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-summary,
-.actionbar[data-responsive-width='wide']:not(:has(.action-target-picker)) .action-tradeoff {
+.actionbar[data-responsive-width='wide'] .action-target,
+.actionbar[data-responsive-width='wide'] .action-summary,
+.actionbar[data-responsive-width='wide'] .action-tradeoff {
   /* 9.5px × line-height 1.2 の 2 行分。件数更新で 1 行↔2 行が揺れても行高を固定する（#1023）。 */
   min-height: calc(9.5px * 1.2 * 2);
 }

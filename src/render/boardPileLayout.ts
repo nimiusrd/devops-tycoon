@@ -243,40 +243,34 @@ function reviewPilePresentedCentroidX(
   return shown.reduce((sum, dot) => sum + dot.x, 0) / shown.length;
 }
 
-/** 提示後の Review 重心とステーション中心との最大 CSS 横ずれ。 */
-function reviewPilePresentedCenteringOffset(
-  shifted: readonly BoardDotPlan[],
-  scales: readonly number[] = reviewPilePresentationScales(),
-): number {
-  const stationX = BOARD_STATION_CENTERS.review.x;
-  let maxOff = 0;
-  for (const scale of scales) {
-    const centroidX = reviewPilePresentedCentroidX(shifted, scale);
-    if (centroidX === null) continue;
-    maxOff = Math.max(maxOff, Math.abs(centroidX - stationX) * scale);
-  }
-  return maxOff;
-}
-
 function refineReviewPilePresentedCentering(
   dots: readonly BoardDotPlan[],
   scales: readonly number[],
   caches: readonly ReviewOverlapCache[],
   base: BoardPileShift,
 ): BoardPileShift {
+  const stationX = BOARD_STATION_CENTERS.review.x;
+  const centroidAt = (shift: BoardPileShift): number => {
+    const shifted = applyLanePileShift(dots, 'review', shift);
+    let maxOff = 0;
+    for (const scale of scales) {
+      const cache = caches.find((entry) => Math.abs(entry.scale - scale) < 1e-9);
+      const centroidX = reviewPilePresentedCentroidX(shifted, scale, cache?.basePresented);
+      if (centroidX === null) continue;
+      maxOff = Math.max(maxOff, Math.abs(centroidX - stationX) * scale);
+    }
+    return maxOff;
+  };
   let bestShift = base;
-  let bestOff = reviewPilePresentedCenteringOffset(
-    applyLanePileShift(dots, 'review', base),
-    scales,
-  );
-  for (let dx = base.dx - 24; dx <= base.dx + 24; dx += 2) {
-    for (let dy = base.dy - 12; dy <= base.dy + 12; dy += 2) {
+  let bestOff = centroidAt(bestShift);
+  for (let dx = base.dx - 16; dx <= base.dx + 16; dx += 4) {
+    for (let dy = base.dy - 8; dy <= base.dy + 8; dy += 4) {
       const shift = { dx, dy };
       const shifted = applyLanePileShift(dots, 'review', shift);
       if (!pilesStayOnBoardWithCaches(shifted, caches)) continue;
       if (!reviewDotsAvoidOtherStations(shifted, scales)) continue;
       if (countReviewCrossStationOverlapsWithCaches(shifted, caches) > 0) continue;
-      const off = reviewPilePresentedCenteringOffset(shifted, scales);
+      const off = centroidAt(shift);
       const dist = Math.hypot(dx, dy);
       const bestDist = Math.hypot(bestShift.dx, bestShift.dy);
       const better =

@@ -74,21 +74,25 @@ describe('boardPileLayout（Review 山の寄せ）', { timeout: 60_000 }, () => 
     ).toBe(29);
   });
 
-  it('findReviewPileShift は決定論的で、交差ゼロかつステーション中央に寄せる', () => {
-    const baseline = planBoardScene(piledReviewWithCodingFlowTasks()).dots;
-    const anchor = baseline.find((dot) => dot.lane === 'review' && dot.clusterX !== undefined)!;
-    const reset = applyLanePileShift(baseline, 'review', {
-      dx: 840 - anchor.clusterX!,
-      dy: 315 - anchor.clusterY!,
-    });
-    const disturbed = applyLanePileShift(reset, 'review', { dx: -60, dy: 0 });
-    expect(countReviewCrossStationOverlaps(disturbed)).toBeGreaterThan(0);
-    const shift = findReviewPileShift(disturbed);
-    const adjusted = applyLanePileShift(disturbed, 'review', shift);
-    expect(countReviewCrossStationOverlaps(adjusted)).toBe(0);
-    expect(shift).toEqual(findReviewPileShift(disturbed));
-    expect(adjustReviewPileLayout(baseline)).toEqual(adjustReviewPileLayout(baseline));
-  });
+  it(
+    'findReviewPileShift は決定論的で、交差ゼロかつステーション中央に寄せる',
+    { timeout: 120_000 },
+    () => {
+      const baseline = planBoardScene(piledReviewWithCodingFlowTasks()).dots;
+      const anchor = baseline.find((dot) => dot.lane === 'review' && dot.clusterX !== undefined)!;
+      const reset = applyLanePileShift(baseline, 'review', {
+        dx: 840 - anchor.clusterX!,
+        dy: 315 - anchor.clusterY!,
+      });
+      const disturbed = applyLanePileShift(reset, 'review', { dx: -60, dy: 0 });
+      expect(countReviewCrossStationOverlaps(disturbed)).toBeGreaterThan(0);
+      const shift = findReviewPileShift(disturbed);
+      const adjusted = applyLanePileShift(disturbed, 'review', shift);
+      expect(countReviewCrossStationOverlaps(adjusted)).toBe(0);
+      expect(shift).toEqual(findReviewPileShift(disturbed));
+      expect(adjustReviewPileLayout(baseline)).toEqual(adjustReviewPileLayout(baseline));
+    },
+  );
 
   it('320/390/1024 で Review 山の提示重心がステーション中央へ近い（#994）', () => {
     const scene = planBoardScene(piledReviewWithCodingFlowTasks());

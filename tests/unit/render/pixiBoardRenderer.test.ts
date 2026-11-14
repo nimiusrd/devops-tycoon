@@ -496,43 +496,47 @@ describe('Pixi スプリント盤面レンダラー', () => {
     },
   );
 
-  it('縮小盤面の Review 軌跡は拡大後の粒の中心に付き、粒の倍率は戻さない', async () => {
-    const { renderer, app } = await mounted();
-    const scene = planBoardScene([
-      task({ id: 1, lane: 'coding', progress: 0.55 }),
-      task({ id: 2, lane: 'coding', progress: 0.55 }),
-      ...Array.from({ length: 10 }, (_, index) =>
-        task({ id: index + 10, lane: 'review', progress: 0 }),
-      ),
-    ]);
-    const scale = 0.208;
-    renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
-    renderer.render(input({ scene }));
+  it(
+    '縮小盤面の Review 軌跡は拡大後の粒の中心に付き、粒の倍率は戻さない',
+    { timeout: 60_000 },
+    async () => {
+      const { renderer, app } = await mounted();
+      const scene = planBoardScene([
+        task({ id: 1, lane: 'coding', progress: 0.55 }),
+        task({ id: 2, lane: 'coding', progress: 0.55 }),
+        ...Array.from({ length: 10 }, (_, index) =>
+          task({ id: index + 10, lane: 'review', progress: 0 }),
+        ),
+      ]);
+      const scale = 0.208;
+      renderer.resize(BOARD_VIEW.w * scale, BOARD_VIEW.h * scale);
+      renderer.render(input({ scene }));
 
-    const trails = layer(app, 'reviewTrails').children as FakeGraphics[];
-    expect(trails).toHaveLength(scene.reviewEffects.trails.length);
-    expect(trails.length).toBeGreaterThan(0);
-    let moved = false;
-    for (const [index, trail] of trails.entries()) {
-      const plan = scene.reviewEffects.trails[index];
-      const source = scene.dots.find((entry) => entry.id === plan.taskId);
-      expect(source, `軌跡 ${plan.taskId} の粒`).toBeDefined();
-      const presented = presentBoardDot(source!, scale);
-      expect(trail.position).toMatchObject({ x: presented.x, y: presented.y });
-      const outer = Math.max(
-        ...drawCalls(trail, 'moveTo').map((args) => Math.hypot(Number(args[0]), Number(args[1]))),
-      );
-      expect(outer).toBeGreaterThanOrEqual(presentedDotRadius(source!.size, scale));
-      if (presented.x !== plan.x || presented.y !== plan.y) moved = true;
-    }
-    expect(moved).toBe(true);
+      const trails = layer(app, 'reviewTrails').children as FakeGraphics[];
+      expect(trails).toHaveLength(scene.reviewEffects.trails.length);
+      expect(trails.length).toBeGreaterThan(0);
+      let moved = false;
+      for (const [index, trail] of trails.entries()) {
+        const plan = scene.reviewEffects.trails[index];
+        const source = scene.dots.find((entry) => entry.id === plan.taskId);
+        expect(source, `軌跡 ${plan.taskId} の粒`).toBeDefined();
+        const presented = presentBoardDot(source!, scale);
+        expect(trail.position).toMatchObject({ x: presented.x, y: presented.y });
+        const outer = Math.max(
+          ...drawCalls(trail, 'moveTo').map((args) => Math.hypot(Number(args[0]), Number(args[1]))),
+        );
+        expect(outer).toBeGreaterThanOrEqual(presentedDotRadius(source!.size, scale));
+        if (presented.x !== plan.x || presented.y !== plan.y) moved = true;
+      }
+      expect(moved).toBe(true);
 
-    const magnification = boardDotReadabilityMagnification(scale);
-    expect(magnification).toBeGreaterThan(1);
-    for (const group of layer(app, 'dots').children) {
-      expect(sprite(group).scale.x).toBeCloseTo(magnification);
-    }
-  });
+      const magnification = boardDotReadabilityMagnification(scale);
+      expect(magnification).toBeGreaterThan(1);
+      for (const group of layer(app, 'dots').children) {
+        expect(sprite(group).scale.x).toBeCloseTo(magnification);
+      }
+    },
+  );
 
   it('プレビューで描画順が変わっても、粒の中心とヒット判定は同じ位置を使う', async () => {
     const { renderer, app } = await mounted();

@@ -237,8 +237,8 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
       await publish(page);
       const alert = page.getByTestId('jam-alert');
       await expect(alert).toBeVisible();
-      await expect(alert).toContainText('Review Hell');
-      await expect(page.getByTestId('review-hell-announcement')).toHaveText('Review Hell に入った');
+      await expect(alert).toContainText('レビュー地獄');
+      await expect(page.getByTestId('review-hell-announcement')).toHaveText('レビュー地獄に入った');
       expect(Math.abs((await boardY(page)) - initial), 'Review Hell に入った').toBeLessThan(0.5);
 
       const presentation = await page.evaluate(() => {
@@ -278,7 +278,7 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
           throw new Error('背景色を決められない');
         };
         const contrastTargets: Array<[string, Element | null]> = [
-          ['Review Hell', alertEl],
+          ['レビュー地獄', alertEl],
           ['渋滞ラベル', label ?? null],
           ['渋滞件数', document.querySelector('[data-testid="jam-count"]')],
           ['炎上件数', document.querySelector('[data-testid="fire-count"]')],
@@ -401,10 +401,10 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
       });
       await publish(page);
       await expect(page.getByTestId('jam-alert')).toHaveCount(0);
-      await expect(page.getByTestId('review-hell-announcement')).toHaveText('Review Hell を出た');
+      await expect(page.getByTestId('review-hell-announcement')).toHaveText('レビュー地獄を出た');
       expect(Math.abs((await boardY(page)) - initial), 'Review Hell を出た').toBeLessThan(0.5);
       await publish(page);
-      await expect(page.getByTestId('review-hell-announcement')).toHaveText('Review Hell を出た');
+      await expect(page.getByTestId('review-hell-announcement')).toHaveText('レビュー地獄を出た');
 
       if (viewport.width === 390) {
         await page.screenshot({

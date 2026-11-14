@@ -137,36 +137,91 @@ export function PersistenceNotice({
           data-state={notice.state}
           data-tone={notice.tone}
           data-persistent={notice.persistent ? 'true' : 'false'}
+          data-layout={notice.persistent && notice.state === 'failed' ? 'overlay' : undefined}
           data-overlay-lock-exempt="true"
         >
-          <p className="persistence-notice-headline" data-testid="persistence-notice-headline">
-            {notice.headline}
-          </p>
-          {notice.detail ? (
-            <p className="persistence-notice-detail" data-testid="persistence-notice-detail">
-              {notice.detail}
-            </p>
-          ) : null}
-          {notice.showRetry ? (
-            <button type="button" className="btn" data-testid="persistence-retry" onClick={onRetry}>
-              再試行
-            </button>
-          ) : null}
-          {notice.showExport ? (
-            <button
-              type="button"
-              className="btn"
-              data-testid="persistence-export"
-              onClick={onExport}
-            >
-              ファイルに書き出す
-            </button>
-          ) : null}
-          {exportMessage ? (
-            <p className="persistence-notice-detail" data-testid="persistence-export-error">
-              {exportMessage}
-            </p>
-          ) : null}
+          {notice.persistent && notice.state === 'failed' ? (
+            <>
+              <div className="persistence-notice-copy">
+                <p
+                  className="persistence-notice-headline"
+                  data-testid="persistence-notice-headline"
+                >
+                  {notice.headline}
+                </p>
+                {notice.detail ? (
+                  <p className="persistence-notice-detail" data-testid="persistence-notice-detail">
+                    {notice.detail}
+                  </p>
+                ) : null}
+                {exportMessage ? (
+                  <p className="persistence-notice-detail" data-testid="persistence-export-error">
+                    {exportMessage}
+                  </p>
+                ) : null}
+              </div>
+              {notice.showRetry || notice.showExport ? (
+                <div className="persistence-notice-actions">
+                  {notice.showRetry ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      data-testid="persistence-retry"
+                      onClick={onRetry}
+                    >
+                      再試行
+                    </button>
+                  ) : null}
+                  {notice.showExport ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      data-testid="persistence-export"
+                      onClick={onExport}
+                    >
+                      ファイルに書き出す
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <p className="persistence-notice-headline" data-testid="persistence-notice-headline">
+                {notice.headline}
+              </p>
+              {notice.detail ? (
+                <p className="persistence-notice-detail" data-testid="persistence-notice-detail">
+                  {notice.detail}
+                </p>
+              ) : null}
+              {notice.showRetry ? (
+                <button
+                  type="button"
+                  className="btn"
+                  data-testid="persistence-retry"
+                  onClick={onRetry}
+                >
+                  再試行
+                </button>
+              ) : null}
+              {notice.showExport ? (
+                <button
+                  type="button"
+                  className="btn"
+                  data-testid="persistence-export"
+                  onClick={onExport}
+                >
+                  ファイルに書き出す
+                </button>
+              ) : null}
+              {exportMessage ? (
+                <p className="persistence-notice-detail" data-testid="persistence-export-error">
+                  {exportMessage}
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
       ) : null}
     </>

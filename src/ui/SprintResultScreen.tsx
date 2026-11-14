@@ -213,9 +213,19 @@ export function SprintResultScreen({
                     </li>
                   ))}
                   {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
-                    <li className="growth-level">
-                      <VisualIcon name="ceremonyLevelUp" size="hud" />
-                      {growth.leveledUp.length}人がレベルアップ
+                    <li
+                      className={
+                        result.done > 0 ? 'growth-level' : 'growth-level growth-level-muted'
+                      }
+                    >
+                      {result.done > 0 ? (
+                        <>
+                          <VisualIcon name="ceremonyLevelUp" size="hud" />
+                          {growth.leveledUp.length}人がレベルアップ
+                        </>
+                      ) : (
+                        <>レベルが上がった（{growth.leveledUp.length}人）</>
+                      )}
                     </li>
                   )}
                 </ul>

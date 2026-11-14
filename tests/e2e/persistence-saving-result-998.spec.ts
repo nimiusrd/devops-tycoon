@@ -72,6 +72,7 @@ async function overlapProbe(page: Page) {
     ];
     const chipEls = [...document.querySelectorAll('[data-testid^="hud-compact-"], #hud-seniorHp')];
     const runbarEl = document.querySelector('[data-testid="runbar"]');
+    const chipElsRunbar = runbarEl ? [...runbarEl.querySelectorAll('span, button, .pill')] : [];
     if (!(noticeEl instanceof HTMLElement) || !(hudEl instanceof HTMLElement)) {
       return { ready: false as const };
     }
@@ -88,6 +89,9 @@ async function overlapProbe(page: Page) {
       overlapsToggle: toggleEl instanceof HTMLElement ? hit(toggleEl) : false,
       overlapsChips: chipEls.some((chip) => hit(chip)),
       overlapsResult: contentEls.some((element) => hit(element)),
+      overlapsRunbar:
+        (runbarEl instanceof HTMLElement && hit(runbarEl)) ||
+        chipElsRunbar.some((element) => hit(element)),
       belowHud: noticeBox.top >= hudBox.bottom - 1,
       inPortal: noticeEl.parentElement === document.body,
       runbarY: runbarBox?.y ?? null,
@@ -97,7 +101,9 @@ async function overlapProbe(page: Page) {
   });
 }
 
-test('結果画面で保存中が KPI チップと結果を隠さず、RunBar の位置を動かさない', async ({ page }) => {
+test('結果画面で保存中が KPI チップ・RunBar・結果を隠さず、KPI 位置を動かさない', async ({
+  page,
+}) => {
   test.setTimeout(120_000);
   await delayRunSavePut(page, 2_000);
 
@@ -108,9 +114,8 @@ test('結果画面で保存中が KPI チップと結果を隠さず、RunBar �
       await page.getByTestId('start-run').click();
       await expect(page.getByTestId('hud')).toBeVisible();
       await beginCurrentSetupSprint(page);
-      const runbarYBefore = await page
-        .getByTestId('runbar')
-        .evaluate((el) => el.getBoundingClientRect().y);
+      const compactChips = page.locator('[data-testid^="hud-compact-"]');
+      const chipYBefore = await compactChips.first().evaluate((el) => el.getBoundingClientRect().y);
       await advanceCurrentSprintToResult(page);
       await page.evaluate(() => (window as GameWindow).game?.pause());
       await expect
@@ -128,15 +133,14 @@ test('結果画面で保存中が KPI チップと結果を隠さず、RunBar �
       expect(placement.overlapsToggle, `${viewport.width} で KPI 詳細と重なる`).toBe(false);
       expect(placement.overlapsChips, `${viewport.width} で KPI チップと重なる`).toBe(false);
       expect(placement.overlapsResult, `${viewport.width} で結果と重なる`).toBe(false);
+      expect(placement.overlapsRunbar, `${viewport.width} で RunBar と重なる`).toBe(false);
       expect(placement.belowHud, `${viewport.width} で HUD の下にない`).toBe(true);
       if (placement.narrow) {
         expect(placement.detailHidden, `${viewport.width} で詳細を隠す`).toBe(true);
       }
 
-      const runbarYDuring = await page
-        .getByTestId('runbar')
-        .evaluate((el) => el.getBoundingClientRect().y);
-      expect(Math.abs(runbarYDuring - runbarYBefore)).toBeLessThan(0.5);
+      const chipYDuring = await compactChips.first().evaluate((el) => el.getBoundingClientRect().y);
+      expect(Math.abs(chipYDuring - chipYBefore)).toBeLessThan(0.5);
     });
   }
 });

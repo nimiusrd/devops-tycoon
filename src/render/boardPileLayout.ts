@@ -85,8 +85,8 @@ function tightenReviewPileShiftForArmedContainment(
 ): BoardPileShift {
   const shifted = applyLanePileShift(dots, 'review', base);
   if (reviewDotsSatisfyArmedContainment(shifted, containmentScales)) return base;
-  let best = base;
-  const baseOff = reviewPilePlannedCenteringOffset(shifted, scales);
+  let best: BoardPileShift | null = null;
+  let bestOff = Number.POSITIVE_INFINITY;
   for (let dx = base.dx - 16; dx <= base.dx + 16; dx += 4) {
     for (let dy = base.dy - 12; dy <= base.dy + 12; dy += 4) {
       const shift = { dx, dy };
@@ -95,15 +95,24 @@ function tightenReviewPileShiftForArmedContainment(
       if (countReviewCrossStationOverlapsWithCaches(candidate, caches) > 0) continue;
       if (!reviewDotsSatisfyArmedContainment(candidate, containmentScales)) continue;
       const centerOff = reviewPilePlannedCenteringOffset(candidate, scales);
+      const dist = Math.hypot(dx, dy);
+      if (best === null) {
+        best = shift;
+        bestOff = centerOff;
+        continue;
+      }
+      const bestDist = Math.hypot(best.dx, best.dy);
       const better =
-        centerOff < baseOff - 1e-6 ||
-        (Math.abs(centerOff - baseOff) <= 1e-6 &&
-          (Math.hypot(dx, dy) < Math.hypot(best.dx, best.dy) - 1e-6 ||
-            (Math.abs(Math.hypot(dx, dy) - Math.hypot(best.dx, best.dy)) <= 1e-6 && dy < best.dy)));
-      if (better) best = shift;
+        centerOff < bestOff - 1e-6 ||
+        (Math.abs(centerOff - bestOff) <= 1e-6 &&
+          (dist < bestDist - 1e-6 || (Math.abs(dist - bestDist) <= 1e-6 && dy < best.dy)));
+      if (better) {
+        best = shift;
+        bestOff = centerOff;
+      }
     }
   }
-  return best;
+  return best ?? base;
 }
 
 function circlesOverlap(

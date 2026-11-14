@@ -395,27 +395,17 @@ export function presentBoardDot(dot: BoardDotPlan, cssScale: number): BoardDotPl
   return { ...dot, x, y };
 }
 
-function fullSpreadPoint(dot: BoardDotPlan, cssScale: number): BoardPoint {
-  const magnification = boardDotReadabilityMagnification(cssScale);
-  const anchorX = dot.clusterX ?? dot.x;
-  const anchorY = dot.clusterY ?? dot.y;
-  return {
-    x: anchorX + (dot.x - anchorX) * magnification,
-    y: anchorY + (dot.y - anchorY) * magnification,
-  };
-}
-
-/** 別工程や盤面の外を避けて、広げきった位置から戻した粒か。 */
-function wasPulledBack(dot: BoardDotPlan, presented: BoardDotPlan, cssScale: number): boolean {
-  const full = fullSpreadPoint(dot, cssScale);
-  return Math.hypot(presented.x - full.x, presented.y - full.y) > 0.5;
+/** 提示後の 2 粒の円が重なるか（設計 px）。 */
+function presentedDotsOverlap(a: BoardDotPlan, b: BoardDotPlan, cssScale: number): boolean {
+  const dist = Math.hypot(a.x - b.x, a.y - b.y);
+  const need = presentedDotRadius(a.size, cssScale) + presentedDotRadius(b.size, cssScale) - 0.01;
+  return dist < need;
 }
 
 /**
- * 戻した粒を、相手の円の外へ押し出す。
- * 戻した側が動けない分は、収まる相手が引き受ける。
+ * 同じ山で円が重なっている 2 粒を、収まる範囲で中心距離が足りるまで押し離す。
  */
-function nudgePulledPair(
+function nudgeOverlappingPair(
   presented: BoardDotPlan[],
   planned: readonly BoardDotPlan[],
   i: number,
@@ -424,11 +414,7 @@ function nudgePulledPair(
 ): boolean {
   const a = presented[i];
   const b = presented[j];
-  const iPulled = wasPulledBack(planned[i], a, cssScale);
-  const jPulled = wasPulledBack(planned[j], b, cssScale);
-  if (!iPulled && !jPulled) return false;
-  const need =
-    Math.max(presentedDotRadius(a.size, cssScale), presentedDotRadius(b.size, cssScale)) + 0.5;
+  const need = presentedDotRadius(a.size, cssScale) + presentedDotRadius(b.size, cssScale) + 0.75;
   const presentedDx = b.x - a.x;
   const presentedDy = b.y - a.y;
   const presentedDist = Math.hypot(presentedDx, presentedDy);
@@ -451,31 +437,48 @@ function nudgePulledPair(
   const deficit = need - presentedDist;
   const iRoom = maxFitDistance(planned[i], a, -ux, -uy, deficit, cssScale);
   const jRoom = maxFitDistance(planned[j], b, ux, uy, deficit, cssScale);
-  const iCap = iPulled ? iRoom : 0;
-  const jCap = jPulled ? jRoom : 0;
-  let iDist = Math.min(iCap, deficit / 2);
-  let jDist = Math.min(jCap, deficit - iDist);
-  if (iDist + jDist + 0.01 < deficit) iDist = Math.min(iCap, deficit - jDist);
+  let iDist = Math.min(iRoom, deficit / 2);
+  let jDist = Math.min(jRoom, deficit - iDist);
+  if (iDist + jDist + 0.01 < deficit) iDist = Math.min(iRoom, deficit - jDist);
   let remain = deficit - iDist - jDist;
-  if (remain > 0.5 && !iPulled) {
-    const extra = Math.min(iRoom, remain);
-    iDist += extra;
-    remain -= extra;
-  }
-  if (remain > 0.5 && !jPulled) {
-    jDist += Math.min(jRoom, remain);
-  }
+  if (remain > 0.5) jDist += Math.min(jRoom - jDist, remain);
+  remain = deficit - iDist - jDist;
+  if (remain > 0.5) iDist += Math.min(iRoom - iDist, remain);
   if (iDist < 0.5 && jDist < 0.5) return false;
   if (iDist >= 0.5) presented[i] = { ...a, x: a.x - ux * iDist, y: a.y - uy * iDist };
   if (jDist >= 0.5) presented[j] = { ...b, x: b.x + ux * jDist, y: b.y + uy * jDist };
   return true;
 }
 
-/**
- * 同じ山で境界へ戻した粒が、互いの中心を選べなくなっているときだけ押し離す。
- * 広げきった粒は、戻した粒の逃げ場がないときだけ必要分を譲る。
- */
-function separatePulledPileDots(
+function pilePresentedDotsOverlap(
+  presented: readonly BoardDotPlan[],
+  planned: readonly BoardDotPlan[],
+  cssScale: number,
+): boolean {
+  const indexesByPile = new Map<string, number[]>();
+  for (let i = 0; i < planned.length; i += 1) {
+    const dot = planned[i];
+    if (dot.motion || !belongsToOwnStationPile(dot)) continue;
+    const key = `${dot.lane}:${dot.clusterX}:${dot.clusterY}`;
+    const list = indexesByPile.get(key);
+    if (list) list.push(i);
+    else indexesByPile.set(key, [i]);
+  }
+  for (const indexes of indexesByPile.values()) {
+    if (indexes.length < 2) continue;
+    for (let left = 0; left < indexes.length; left += 1) {
+      for (let right = left + 1; right < indexes.length; right += 1) {
+        if (presentedDotsOverlap(presented[indexes[left]!], presented[indexes[right]!], cssScale)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/** 同じ工程の山で、提示後に重なっている粒だけを反復的に離す。 */
+function separateOverlappingPileDots(
   presented: BoardDotPlan[],
   planned: readonly BoardDotPlan[],
   cssScale: number,
@@ -490,17 +493,14 @@ function separatePulledPileDots(
     else indexesByPile.set(key, [i]);
   }
   for (const indexes of indexesByPile.values()) {
-    const pulled = indexes.filter((index) =>
-      wasPulledBack(planned[index], presented[index], cssScale),
-    );
-    if (pulled.length === 0) continue;
     for (let iter = 0; iter < 12; iter += 1) {
       let moved = false;
       for (let left = 0; left < indexes.length; left += 1) {
         for (let right = left + 1; right < indexes.length; right += 1) {
-          if (nudgePulledPair(presented, planned, indexes[left], indexes[right], cssScale)) {
-            moved = true;
-          }
+          const li = indexes[left];
+          const ri = indexes[right];
+          if (!presentedDotsOverlap(presented[li], presented[ri], cssScale)) continue;
+          if (nudgeOverlappingPair(presented, planned, li, ri, cssScale)) moved = true;
         }
       }
       if (!moved) break;
@@ -510,12 +510,13 @@ function separatePulledPileDots(
 
 /**
  * 山の粒を、見分けの倍率で広げてから互いに重ならない中心へ置く。
- * 倍率 1 のときは粒ごとの結果だけを返す。
+ * 中・大などサイズ差で計画座標が重なるときも、提示後の円が交差しないよう離す。
  */
 export function presentBoardDots(dots: readonly BoardDotPlan[], cssScale: number): BoardDotPlan[] {
   const presented = dots.map((dot) => presentBoardDot(dot, cssScale));
-  if (boardDotReadabilityMagnification(cssScale) === 1) return presented;
-  separatePulledPileDots(presented, dots, cssScale);
+  if (pilePresentedDotsOverlap(presented, dots, cssScale)) {
+    separateOverlappingPileDots(presented, dots, cssScale);
+  }
   return presented;
 }
 
@@ -531,8 +532,9 @@ export function presentBoardDotsWithShiftedReview(
     const plan = planned[index];
     return plan.lane === 'review' && !plan.motion ? presentBoardDot(plan, cssScale) : dot;
   });
-  if (boardDotReadabilityMagnification(cssScale) === 1) return presented;
-  separatePulledPileDots(presented, planned, cssScale);
+  if (pilePresentedDotsOverlap(presented, planned, cssScale)) {
+    separateOverlappingPileDots(presented, planned, cssScale);
+  }
   return presented;
 }
 
@@ -547,7 +549,7 @@ export function presentBoardEffectPoint(
   presented: readonly BoardDotPlan[],
   cssScale: number,
 ): BoardPoint {
-  if (boardDotReadabilityMagnification(cssScale) === 1 || planned.length !== presented.length) {
+  if (planned.length !== presented.length) {
     return point;
   }
   let best = -1;

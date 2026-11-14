@@ -112,7 +112,7 @@ import {
   clientPointHitsRegisteredBoardDrag,
   hasRegisteredBoardDragHitTest,
 } from '../../../src/render/boardDragHit';
-import { presentBoardDot } from '../../../src/render/boardPixiView';
+import { presentBoardDots } from '../../../src/render/boardPixiView';
 import { BOARD_STATION_CENTERS, BOARD_VIEW } from '../../../src/render/boardScene';
 import { designToHostTransform, VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import { OVERTIME_TICKS } from '../../../src/sim/actions';
@@ -595,7 +595,9 @@ describe('Board の座標ドラッグ', () => {
 
   it('粒の中心から画面上11px離れても掴め、ティッカーの判定と同じ対象へ一度だけ分割する', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
-    const presented = presentBoardDot(board.dot(3), hostFit.scale);
+    const scene = board.layer().props
+      .scene as import('../../../src/render/boardScene').BoardScenePlan;
+    const presented = presentBoardDots(scene.dots, hostFit.scale).find((dot) => dot.id === 3)!;
     const point = { ...presented, x: presented.x + 11 / hostFit.scale };
     const client = clientPoint(point);
     expect(clientPointHitsRegisteredBoardDrag(client.clientX, client.clientY)).toBe(true);

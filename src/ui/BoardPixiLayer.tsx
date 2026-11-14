@@ -24,6 +24,7 @@ declare global {
       getDotReadability(): { scale: number; magnification: number };
       /** 表示中の点火演出と対象粒の最大距離（設計空間 px）。 */
       getMaxIgniteDotDistancePx(): number | null;
+      getDotDisplayPositions(): Record<number, { x: number; y: number }>;
     };
     /** Playwright が WebGL 初期化失敗を決定論的に注入するためのフック。 */
     __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
@@ -237,6 +238,8 @@ export function BoardPixiLayer({
               }
               return max;
             },
+            getDotDisplayPositions: () =>
+              Object.fromEntries(baseRenderer.getDotDisplayPositionsForTest()),
           };
         }
       })

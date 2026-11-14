@@ -801,13 +801,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       );
       this.syncAuras(input.auras);
     } else {
-      const pinned = taskMotionPinnedIds(
-        input.draggableTaskIds ?? new Set(),
-        input.dragTaskId ?? null,
-        input.previewTaskId ?? null,
-        input.splitConfirmTaskId ?? null,
-      );
-      this.syncTaskMotionWithPresented(presentBoardDots(scene.dots, this.root.scale.x), pinned);
+      this.syncTaskMotionFromScene(scene.dots, input);
     }
     if (this.stratum !== 'base') this.syncEffects(input.effects);
     this.applyAnimations(
@@ -1383,6 +1377,35 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     );
   }
 
+  private syncTaskMotionFromScene(
+    dots: readonly BoardDotPlan[],
+    input: Pick<
+      BoardPixiInput,
+      'draggableTaskIds' | 'dragTaskId' | 'previewTaskId' | 'splitConfirmTaskId'
+    >,
+  ): void {
+    const renderPlan = planBoardDotsForRender(
+      dots,
+      input.draggableTaskIds ?? new Set(),
+      input.dragTaskId ?? null,
+      BOARD_RENDER_BUDGETS.dots,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    const pinned = taskMotionPinnedIds(
+      input.draggableTaskIds ?? new Set(),
+      input.dragTaskId ?? null,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    const cssScale = this.root.scale.x;
+    const presentedById = new Map(
+      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    );
+    const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
+    this.syncTaskMotionWithPresented(presentedDots, pinned);
+  }
+
   /** E2E / dev フック用。粒の表示位置（設計空間、炎シェイク込み）。 */
   getDotDisplayPositionsForTest(): ReadonlyMap<number, { x: number; y: number }> {
     const positions = new Map<number, { x: number; y: number }>();
@@ -1447,7 +1470,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     );
     this.dotRequestedCount = renderPlan.requested;
     this.dotDroppedCount = renderPlan.dropped;
-    const pinned = taskMotionPinnedIds(draggableIds, dragTaskId, previewTaskId, splitConfirmTaskId);
+    this.syncTaskMotionFromScene(dots, {
+      draggableTaskIds: draggableIds,
+      dragTaskId,
+      previewTaskId,
+      splitConfirmTaskId,
+    });
     const cssScale = this.root.scale.x;
     const magnification = boardDotReadabilityMagnification(cssScale);
     // 押し離しは入力順に依存する。ヒット判定と同じ scene 順で位置を確定してから描画順へ並べる。
@@ -1455,7 +1483,6 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
     );
     const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
-    this.syncTaskMotionWithPresented(presentedDots, pinned);
 
     for (const dot of presentedDots) {
       const group = pool.acquire();

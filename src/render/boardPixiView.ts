@@ -520,6 +520,30 @@ export function presentBoardDots(dots: readonly BoardDotPlan[], cssScale: number
 }
 
 /**
+ * 計画座標（strength 0）と武装後の提示座標（strength 1）の間を補間する。
+ * 当たり判定は strength 1 を使い、描画だけが strength を追う（#982）。
+ */
+export function presentBoardDotsAtStrength(
+  dots: readonly BoardDotPlan[],
+  cssScale: number,
+  strength: number,
+): BoardDotPlan[] {
+  const t = Math.max(0, Math.min(1, strength));
+  if (t <= 0) return dots.map((dot) => dot);
+  if (t >= 1) return presentBoardDots(dots, cssScale);
+  const armed = presentBoardDots(dots, cssScale);
+  return dots.map((dot, index) => {
+    const target = armed[index]!;
+    if (Math.hypot(target.x - dot.x, target.y - dot.y) < 0.01) return dot;
+    return {
+      ...dot,
+      x: dot.x + (target.x - dot.x) * t,
+      y: dot.y + (target.y - dot.y) * t,
+    };
+  });
+}
+
+/**
  * Review 山のシフト探索用。計画済みの粒列に対し、非 Review の表示は流用して Review 静止粒だけ再提示する。
  */
 export function presentBoardDotsWithShiftedReview(

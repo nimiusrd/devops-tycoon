@@ -43,6 +43,7 @@ import {
   presentBoardReviewTrail,
   presentedDotRadius,
 } from '../boardPixiView';
+import { BoardPilePresentation } from '../boardPilePresentation';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
 import { boardDotSplitConfirmRing } from '../splitPrConfirmView';
 import { BoardTaskMotion, shipmentParticle, TASK_MOTION } from '../boardTaskMotion';
@@ -267,12 +268,14 @@ function getDotParts(group: Container): DotParts {
 }
 
 function taskMotionPinnedIds(
-  draggableIds: ReadonlySet<number>,
+  dotIds: readonly number[],
+  selectionActive: boolean,
   dragTaskId: number | null,
   previewTaskId: number | null,
   splitConfirmTaskId: number | null,
 ): ReadonlySet<number> {
-  const pinned = new Set(draggableIds);
+  if (selectionActive) return new Set(dotIds);
+  const pinned = new Set<number>();
   if (dragTaskId !== null) pinned.add(dragTaskId);
   if (previewTaskId !== null) pinned.add(previewTaskId);
   if (splitConfirmTaskId !== null) pinned.add(splitConfirmTaskId);
@@ -585,6 +588,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private readonly shipmentsLayer = new Container();
   private readonly shipmentSprites: Sprite[] = [];
   private readonly taskMotion = new BoardTaskMotion();
+  private readonly pilePresentation = new BoardPilePresentation();
+  private targetSelectionActive = false;
   private readonly auraLayer = new Container();
   private readonly auraGfx = new Graphics();
   private readonly effectsLayer = new Container();
@@ -1368,13 +1373,35 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private syncTaskMotionWithPresented(
     presentedDots: readonly BoardDotPlan[],
     pinned: ReadonlySet<number>,
+    immediate = false,
   ): void {
     this.taskMotion.sync(
       presentedDots,
       this.elapsedMs,
-      this.reducedMotion || this.frozen || this.loopPaused,
+      immediate || this.reducedMotion || this.frozen || this.loopPaused,
       pinned,
     );
+  }
+
+  private dotsAtPresentationStrength(
+    planned: readonly BoardDotPlan[],
+    sceneDots: readonly BoardDotPlan[],
+    cssScale: number,
+    strength: number,
+  ): BoardDotPlan[] {
+    const armedById = new Map(
+      presentBoardDots(sceneDots, cssScale).map((dot) => [dot.id, dot] as const),
+    );
+    return planned.map((dot) => {
+      const armed = armedById.get(dot.id) ?? dot;
+      if (strength <= 0) return dot;
+      if (strength >= 1) return armed;
+      return {
+        ...dot,
+        x: dot.x + (armed.x - dot.x) * strength,
+        y: dot.y + (armed.y - dot.y) * strength,
+      };
+    });
   }
 
   private syncTaskMotionFromScene(
@@ -1392,18 +1419,78 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       input.previewTaskId ?? null,
       input.splitConfirmTaskId ?? null,
     );
+    const selectionActive = (input.draggableTaskIds?.size ?? 0) > 0;
     const pinned = taskMotionPinnedIds(
-      input.draggableTaskIds ?? new Set(),
+      renderPlan.dots.map((dot) => dot.id),
+      selectionActive,
       input.dragTaskId ?? null,
       input.previewTaskId ?? null,
       input.splitConfirmTaskId ?? null,
     );
     const cssScale = this.root.scale.x;
-    const presentedById = new Map(
-      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    const immediateMotion = this.reducedMotion || this.frozen || this.loopPaused;
+    this.pilePresentation.sync(selectionActive, this.elapsedMs, immediateMotion);
+    const presentationStrength = this.pilePresentation.strengthAt(this.elapsedMs);
+    const motionDots = this.dotsAtPresentationStrength(
+      renderPlan.dots,
+      dots,
+      cssScale,
+      presentationStrength,
     );
-    const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
-    this.syncTaskMotionWithPresented(presentedDots, pinned);
+    const transitioning = presentationStrength > 0 && presentationStrength < 1;
+    this.syncTaskMotionWithPresented(
+      motionDots,
+      pinned,
+      immediateMotion || selectionActive || transitioning,
+    );
+  }
+
+  /** ticker だけでも山の補間が進むよう、描画位置と taskMotion を更新する（#982）。 */
+  private refreshPresentationDotBases(elapsedMs: number): void {
+    const input = this.lastInput;
+    if (!input) return;
+    const selectionActive = (input.draggableTaskIds?.size ?? 0) > 0;
+    this.targetSelectionActive = selectionActive;
+    const immediateMotion = this.reducedMotion || this.frozen || this.loopPaused;
+    this.pilePresentation.sync(selectionActive, elapsedMs, immediateMotion);
+    const strength = this.pilePresentation.strengthAt(elapsedMs);
+    const transitioning = strength > 0 && strength < 1;
+    if (!transitioning && strength <= 0 && this.pilePresentation.targetStrength() === 0) return;
+
+    const renderPlan = planBoardDotsForRender(
+      input.scene.dots,
+      input.draggableTaskIds ?? new Set(),
+      input.dragTaskId ?? null,
+      BOARD_RENDER_BUDGETS.dots,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    const cssScale = this.root.scale.x;
+    const visualDots = this.dotsAtPresentationStrength(
+      renderPlan.dots,
+      input.scene.dots,
+      cssScale,
+      strength,
+    );
+    const visualById = new Map(visualDots.map((dot) => [dot.id, dot] as const));
+    for (const entry of this.dotEntries) {
+      const visual = visualById.get(entry.id);
+      if (!visual) continue;
+      entry.baseX = visual.x;
+      entry.baseY = visual.y;
+    }
+    const pinned = taskMotionPinnedIds(
+      renderPlan.dots.map((dot) => dot.id),
+      selectionActive,
+      input.dragTaskId ?? null,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    this.syncTaskMotionWithPresented(
+      visualDots,
+      pinned,
+      immediateMotion || selectionActive || transitioning,
+    );
   }
 
   /** E2E / dev フック用。粒の表示位置（設計空間、炎シェイク込み）。 */
@@ -1470,6 +1557,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     );
     this.dotRequestedCount = renderPlan.requested;
     this.dotDroppedCount = renderPlan.dropped;
+    this.targetSelectionActive = draggableIds.size > 0;
     this.syncTaskMotionFromScene(dots, {
       draggableTaskIds: draggableIds,
       dragTaskId,
@@ -1478,11 +1566,13 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     });
     const cssScale = this.root.scale.x;
     const magnification = boardDotReadabilityMagnification(cssScale);
-    // 押し離しは入力順に依存する。ヒット判定と同じ scene 順で位置を確定してから描画順へ並べる。
-    const presentedById = new Map(
-      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    const presentationStrength = this.pilePresentation.strengthAt(this.elapsedMs);
+    const presentedDots = this.dotsAtPresentationStrength(
+      renderPlan.dots,
+      dots,
+      cssScale,
+      presentationStrength,
     );
-    const presentedDots = renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot);
 
     for (const dot of presentedDots) {
       const group = pool.acquire();
@@ -1607,25 +1697,29 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       );
     }
 
+    this.refreshPresentationDotBases(elapsedMs);
+    const presentationStrength = this.pilePresentation.strengthAt(elapsedMs);
+    const pileTransitioning = presentationStrength > 0 && presentationStrength < 1;
+    const freezeDots = this.targetSelectionActive || pileTransitioning;
     for (const entry of this.dotEntries) {
       let dx = 0;
       let dy = 0;
-      if (entry.motion) {
+      if (entry.motion && !freezeDots) {
         // CSS `flowBobDrift`（フロー粒の方向ドリフト＋bob）。
         const drift = flowDriftOffset(entry.motion.angleDeg, entry.motion.speedMul, elapsedMs);
         dx += drift.x;
         dy += drift.y;
-      } else if (!entry.fire) {
+      } else if (!entry.fire && !freezeDots) {
         // CSS `flybob`（静止粒の上下 bob 2.4s）。
         dy += bobOffsetY(elapsedMs, 2400, 3);
       }
-      if (entry.fire) {
+      if (entry.fire && !freezeDots) {
         // CSS `fireShake`（炎上粒のジッタ。緊急度で周期が縮む）。
         const shake = fireShakeOffset(elapsedMs, entry.burnUrgency);
         dx += shake.x;
         dy += shake.y;
       }
-      const position = this.taskMotion.position(entry.id, this.elapsedMs);
+      const position = freezeDots ? undefined : this.taskMotion.position(entry.id, this.elapsedMs);
       entry.group.position.set(
         (position?.x ?? entry.baseX) + dx,
         (position?.y ?? entry.baseY) + dy,
@@ -1670,9 +1764,24 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
   /** 時刻付き plan を現在フレームの座標・透明度・拡大率へ写す。 */
   private applyEffectAnimations(nowMs: number): void {
-    const planned = this.lastInput?.scene.dots ?? [];
+    const input = this.lastInput;
+    const planned = input?.scene.dots ?? [];
     const cssScale = this.root.scale.x;
-    const presented = presentBoardDots(planned, cssScale);
+    const renderPlan =
+      input &&
+      planBoardDotsForRender(
+        planned,
+        input.draggableTaskIds ?? new Set(),
+        input.dragTaskId ?? null,
+        BOARD_RENDER_BUDGETS.dots,
+        input.previewTaskId ?? null,
+        input.splitConfirmTaskId ?? null,
+      ).dots;
+    const strength = input ? this.pilePresentation.strengthAt(this.elapsedMs) : 1;
+    const presented =
+      renderPlan && input
+        ? this.dotsAtPresentationStrength(renderPlan, planned, cssScale, strength)
+        : presentBoardDots(planned, cssScale);
     const place = (x: number, y: number) =>
       presentBoardEffectPoint({ x, y }, planned, presented, cssScale);
     for (const entry of this.effectEntries) {
@@ -1796,6 +1905,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.actors = [];
     this.dotEntries = [];
     this.taskMotion.clear();
+    this.pilePresentation.clear();
     this.shipmentSprites.length = 0;
     this.reviewTrailEntries = [];
     this.effectEntries = [];

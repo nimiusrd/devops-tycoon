@@ -23,6 +23,7 @@ import {
   planBoardDotsForRender,
   presentBoardDot,
   presentBoardDots,
+  presentBoardDotsAtStrength,
   presentBoardEffectPoint,
   presentBoardReviewTrail,
   presentedDotHitsOtherStation,
@@ -181,6 +182,20 @@ describe('boardDotReadability', () => {
   it('基準点がない粒は拡大しても中心を動かさない', () => {
     const entry = dot({ id: 1, size: 'small', x: 100, y: 80 });
     expect(presentBoardDot(entry, 0.208)).toMatchObject({ x: 100, y: 80 });
+  });
+
+  it('presentBoardDotsAtStrength は 0 で計画位置、1 で武装後と一致し、中間を線形補間する（#982）', () => {
+    const narrowScale = 0.208;
+    const dots = [
+      dot({ id: 1, size: 'small', x: 840, y: 315, clusterX: 828, clusterY: 327 }),
+      dot({ id: 2, size: 'small', x: 862, y: 315, clusterX: 828, clusterY: 327 }),
+    ];
+    const armed = presentBoardDots(dots, narrowScale);
+    expect(presentBoardDotsAtStrength(dots, narrowScale, 0)).toEqual(dots);
+    expect(presentBoardDotsAtStrength(dots, narrowScale, 1)).toEqual(armed);
+    const half = presentBoardDotsAtStrength(dots, narrowScale, 0.5);
+    expect(half[0].x).toBeCloseTo((dots[0].x + armed[0].x) / 2, 5);
+    expect(half[1].x).toBeCloseTo((dots[1].x + armed[1].x) / 2, 5);
   });
 
   it('山の中心でも隣の工程に入る大きい粒は、自分の工程の中心へ寄せる', () => {

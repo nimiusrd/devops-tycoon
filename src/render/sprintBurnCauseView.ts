@@ -166,7 +166,7 @@ export function planBurnCauseLog(result: SprintResult): BurnCauseLogView {
           break;
         }
         pendingHandoff = null;
-        const cause = event.source === 'spread' ? '延焼で点火' : 'Review 落ちで点火';
+        const cause = event.source === 'spread' ? '延焼で点火' : 'レビュー落ちで点火';
         openByTask.set(event.taskId, {
           rootTaskId: event.taskId,
           rootTick: event.tick,

@@ -144,7 +144,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'pause_ai_rollout',
     label: 'AI 導入一時停止',
-    description: 'Review / Rework を安定化する。AI Adoption 評価と短期速度が下がる。',
+    description: 'レビュー / Rework を安定化する。AI Adoption 評価と短期速度が下がる。',
     negotiator: 'management',
     trustDelta: { management: -8 },
     budgetDelta: 0,

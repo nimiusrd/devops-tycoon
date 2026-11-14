@@ -415,7 +415,7 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     // 運用安定は要約1タグ。倍率などの内訳はツールチップ側。
     expect(formatActionDefTags(def)).toEqual([
       { label: `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, tone: 'positive' },
-      { label: 'Review 最大4件処理', tone: 'positive' },
+      { label: 'レビュー最大4件処理', tone: 'positive' },
       { label: 'シニアHP -2', tone: 'negative' },
       { label: '連携 +34%', tone: 'positive' },
     ]);
@@ -480,7 +480,7 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     expect(tags.some((t) => t.label.includes('運用安定なし'))).toBe(true);
     expect(tags.some((t) => t.label.includes('士気'))).toBe(true);
     expect(tags.some((t) => t.label.includes('Review未渋滞'))).toBe(false);
-    expect(formatActionTooltip(def)).toContain('Review未渋滞');
+    expect(formatActionTooltip(def)).toContain('レビュー未渋滞');
   });
 
   it.each([
@@ -506,7 +506,7 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
       tone: 'positive',
     });
     expect(formatActionDefTags(def)).toContainEqual({
-      label: 'Review x1.6',
+      label: 'レビュー x1.6',
       tone: 'positive',
     });
   });

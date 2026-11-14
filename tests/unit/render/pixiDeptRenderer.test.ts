@@ -384,7 +384,7 @@ describe('Pixi 部署レンダラー', () => {
     }
     expect(drawn.flows.commands.filter((command) => command.op === 'poly')).toHaveLength(2);
     const reviewLabel = drawn.labels.children[1].children[1] as InstanceType<typeof pixi.Text>;
-    expect(reviewLabel.text).toBe('🔍 Review');
+    expect(reviewLabel.text).toBe('🔍 レビュー');
     expect(reviewLabel.style.fill).toBe(VISUAL_TOKENS.colors.bannerTone.hell.text);
     expect(boundary.loadAsset.mock.calls).toEqual([['platform-architect'], ['qa-alchemist']]);
   });

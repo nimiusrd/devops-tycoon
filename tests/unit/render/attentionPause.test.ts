@@ -118,7 +118,7 @@ describe('planAttentionPause（RI-62③）', () => {
     expect(plan).toMatchObject({
       active: true,
       kind: 'reviewJam',
-      title: 'Review渋滞!',
+      title: 'レビュー渋滞!',
       meter: 'jam',
     });
   });

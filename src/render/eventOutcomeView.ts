@@ -728,7 +728,7 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
 
   switch (def.id) {
     case 'interruptReview':
-      pushTag(tags, `Review 最大${INTERRUPT_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `レビュー最大${INTERRUPT_REVIEW_COUNT}件処理`, 'positive');
       pushTag(tags, `シニアHP -${INTERRUPT_HP_COST}`, 'negative');
       break;
     case 'splitPr':
@@ -753,13 +753,13 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       pushTag(tags, '出荷速度一時低下', 'negative');
       break;
     case 'pairReview':
-      pushTag(tags, `Review 最大${PAIR_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `レビュー最大${PAIR_REVIEW_COUNT}件処理`, 'positive');
       pushTag(tags, `AIリテラシー +${PAIR_LITERACY_GAIN}`, 'positive');
       break;
     case 'overtime':
       pushTag(tags, `スループット↑ ${OVERTIME_TICKS}tick`, 'positive');
       pushTag(tags, `Coding x${OVERTIME_CODING_MUL}`, 'positive');
-      pushTag(tags, `Review x${OVERTIME_REVIEW_MUL}`, 'positive');
+      pushTag(tags, `レビュー x${OVERTIME_REVIEW_MUL}`, 'positive');
       pushTag(tags, `士気 -${OVERTIME_MORALE_COST}`, 'negative');
       pushTag(tags, `シニアHP -${OVERTIME_HP_COST}`, 'negative');
       break;
@@ -848,7 +848,7 @@ function formatActionTooltipExtraTags(def: ActionDef): EffectTag[] {
     case 'andon':
       pushTag(
         tags,
-        `Review未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}・シニアHP -${ANDON_HP_COST}`,
+        `レビュー未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}・シニアHP -${ANDON_HP_COST}`,
         'negative',
       );
       break;

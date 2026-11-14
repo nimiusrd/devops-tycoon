@@ -89,7 +89,7 @@ const ACTION_PRESENTATION_META: Record<
   firefight: {
     role: 'incident',
     targetLanes: ['rework'],
-    effect: '炎上1件鎮火・Reviewへ',
+    effect: '炎上1件鎮火・レビューへ',
     tradeoff: 'シニアHP消費・先消しは割高',
   },
   assignTask: {
@@ -113,7 +113,7 @@ const ACTION_PRESENTATION_META: Record<
   overtime: {
     role: 'flow',
     targetLanes: ['coding', 'review'],
-    effect: '実装・Review加速',
+    effect: '実装・レビュー加速',
     tradeoff: '士気・シニアHP消費',
   },
   andon: {
@@ -227,7 +227,7 @@ function formatTargetBadge(id: ActionId, count: number): { text?: string; icon?:
 }
 
 const NO_TARGET_MESSAGES: Partial<Record<ActionId, string>> = {
-  interruptReview: 'Review が空',
+  interruptReview: 'レビュー待ちなし',
   firefight: '炎上なし',
   splitPr: '分割対象なし',
   assignTask: '差配対象なし',

@@ -158,7 +158,7 @@ describe('SprintResultScreen の結果表示と進行', () => {
     expect(content(screen.find('result-grade-caption'))).toContain('100%');
     expect(screen.row('シニア体力')).toBe('58');
     expect(content(screen.find('result-burn-cause-entry'))).toContain(
-      't10: PR#7 が Review 落ちで点火 → t12 緊急対応で鎮火',
+      't10: PR#7 が レビュー落ちで点火 → t12 緊急対応で鎮火',
     );
     expect(content(screen.find('result-burn-cause-tip'))).toContain(
       '点火した火をすべて緊急対応で鎮火',

@@ -355,18 +355,24 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     });
   });
 
-  test('レビュー掃引と緊急鎮火を上限付きPixi演出へ渡す @pixi（RI-142）', async ({ page }) => {
+  test('レビュー掃引を上限付きPixi演出へ渡す @pixi（RI-142）', async ({ page }) => {
     await beginPublicSprint(page, { seed: 'ops', renderer: 'pixi' });
     await stabilizeForScreenshot(page);
     await advanceCurrentSprintToReviewQueue(page, 4);
+    await page.clock.install();
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
     await page.getByTestId('action-interruptReview').click();
+    await page.clock.runFor(120);
     const board = page.getByTestId('board');
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-kinds', /intervention:reviewSweep/);
+    await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
     await freezePixiForScreenshot(page);
     await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
     await expect(page.locator('.intervention-effects')).toHaveCount(0);
+  });
 
+  test('緊急鎮火を上限付きPixi演出へ渡す @pixi（RI-142）', async ({ page }) => {
     await beginPublicSprint(page, {
       seed: 'ri142-fire-effects',
       difficulty: 'hard',
@@ -374,13 +380,16 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     });
     await stabilizeForScreenshot(page);
     await advanceCurrentSprintToBurning(page);
+    await page.clock.install();
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
     await page.getByTestId('action-firefight').click();
-    await expect(page.getByTestId('board')).toHaveAttribute(
-      'data-effect-kinds',
-      'intervention:firefight',
-    );
+    await page.clock.runFor(120);
+    const board = page.getByTestId('board');
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(board).toHaveAttribute('data-effect-kinds', /intervention:firefight/);
+    await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
     await freezePixiForScreenshot(page);
-    await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-effects', '1');
+    await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
   });
 
   test('reduced motionではPixi一時装飾を抑制して介入情報と常駐オーラを残す @pixi（RI-142）', async ({

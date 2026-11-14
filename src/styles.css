@@ -6361,6 +6361,17 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   background: var(--visual-color-banner-ok-bg);
   color: var(--visual-color-banner-ok-text);
 }
+/* HUD と静かな保存案内をまとめ、保存中は下へ重ねて KPI を隠さない（#998）。 */
+.sprint-header-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+/* 保存中は HUD の次の行へ。狭幅でも RunBar の要約を左で覆わない。 */
+.sprint-header-stack .persistence-quiet-slot[data-quiet-state='saving'] {
+  justify-content: flex-end;
+}
 /* 復旧チップは HUD の操作列を覆わない（#546）。
    広幅はヘッダー右端、狭幅は見出しだけを左へ。いずれも HUD の次の行。
    常駐バナーと違い、タイトル余白用の高さ変数は増やさない。 */

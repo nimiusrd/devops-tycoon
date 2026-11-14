@@ -37,10 +37,16 @@ function showsPersistenceBanner(notice: PersistenceNoticeModel): boolean {
 
 /**
  * HUD の次の行へ置くのは、復旧直後の保存済みだけ。
- * 保存中は固定配置のままにし、書き込みのたびに盤面の高さを変えない。
+ * 保存中は HUD 下へ重ね、KPI チップを隠さない（#998）。
  */
 function showsInlineRecoveryChip(notice: PersistenceNoticeModel): boolean {
   return !notice.persistent && notice.state === 'saved' && showsPersistenceBanner(notice);
+}
+
+/** HUD がある画面では portal ではなくヘッダー内に出す、静かな保存案内。 */
+function showsInlineQuietChip(notice: PersistenceNoticeModel): boolean {
+  if (!notice.persistent && notice.state === 'saving') return true;
+  return showsInlineRecoveryChip(notice);
 }
 
 let releaseBannerInset: (() => void) | undefined;
@@ -60,9 +66,13 @@ export function PersistenceQuietChip({
   notice: PersistenceNoticeModel;
   active: boolean;
 }) {
-  if (!active || !showsInlineRecoveryChip(notice)) return null;
+  if (!active || !showsInlineQuietChip(notice)) return null;
   return (
-    <div className="persistence-quiet-slot" data-testid="persistence-quiet-slot">
+    <div
+      className="persistence-quiet-slot"
+      data-testid="persistence-quiet-slot"
+      data-quiet-state={notice.state}
+    >
       <div
         className="persistence-notice persistence-notice-quiet"
         data-testid="persistence-notice"
@@ -108,7 +118,7 @@ export function PersistenceNotice({
     !tabConflictModalOpen &&
     !tabConflict &&
     showsPersistenceBanner(notice) &&
-    !(quietPlacement === 'inline' && showsInlineRecoveryChip(notice));
+    !(quietPlacement === 'inline' && showsInlineQuietChip(notice));
   const content = (
     <>
       <span

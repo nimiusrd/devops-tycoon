@@ -16,39 +16,49 @@ type GameWindow = Window & {
   };
 };
 
-async function delayRunSavePut(page: Page, delayMs: number): Promise<void> {
+async function delayRunSaveCommit(page: Page, delayMs: number): Promise<void> {
   await page.addInitScript((delay) => {
-    const put = IDBObjectStore.prototype.put;
-    IDBObjectStore.prototype.put = function (
-      this: IDBObjectStore,
-      value: unknown,
-      key?: IDBValidKey,
+    const transaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (
+      this: IDBDatabase,
+      storeNames: string | string[],
+      mode?: IDBTransactionMode,
+      options?: IDBTransactionOptions,
     ) {
-      const request = put.call(this, value, key);
-      if (delay <= 0 || this.name !== 'runSave') return request;
-      const wrap = (listener: EventListener) => (event: Event) => {
-        window.setTimeout(() => listener(event), delay);
-      };
-      const add = request.addEventListener.bind(request);
-      request.addEventListener = function (type, listener, options) {
-        if (type === 'success' && typeof listener === 'function') {
-          return add(type, wrap(listener), options);
+      const tx = transaction.call(this, storeNames, mode, options);
+      if (
+        delay <= 0 ||
+        mode !== 'readwrite' ||
+        ![...(Array.isArray(storeNames) ? storeNames : [storeNames])].includes('runSave')
+      ) {
+        return tx;
+      }
+      const add = tx.addEventListener.bind(tx);
+      tx.addEventListener = function (type, listener, opts) {
+        if (type === 'complete' && typeof listener === 'function') {
+          return add(
+            type,
+            (event: Event) => {
+              window.setTimeout(() => listener.call(tx, event), delay);
+            },
+            opts,
+          );
         }
-        return add(type, listener, options);
+        return add(type, listener, opts);
       };
-      let onsuccess: ((this: IDBRequest, ev: Event) => unknown) | null = null;
-      Object.defineProperty(request, 'onsuccess', {
+      let oncomplete: ((this: IDBTransaction, ev: Event) => unknown) | null = null;
+      Object.defineProperty(tx, 'oncomplete', {
         configurable: true,
-        get: () => onsuccess,
+        get: () => oncomplete,
         set: (handler) => {
-          onsuccess = handler
-            ? function (this: IDBRequest, ev: Event) {
+          oncomplete = handler
+            ? function (this: IDBTransaction, ev: Event) {
                 window.setTimeout(() => handler.call(this, ev), delay);
               }
             : null;
         },
       });
-      return request;
+      return tx;
     };
   }, delayMs);
 }
@@ -105,7 +115,7 @@ test('結果画面で保存中が KPI チップ・RunBar・結果を隠さず、
   page,
 }) => {
   test.setTimeout(120_000);
-  await delayRunSavePut(page, 2_000);
+  await delayRunSaveCommit(page, 2_000);
 
   for (const viewport of VIEWPORTS) {
     await test.step(`${viewport.width}×${viewport.height}`, async () => {

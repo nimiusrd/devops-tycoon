@@ -84,7 +84,7 @@ jobs:
       queue: max
     runs-on: ubuntu-latest
     # ブラウザ準備・2並列の全E2E・本番チャンク復旧検証まで含めた実行枠。
-    timeout-minutes: 25
+    timeout-minutes: 32
     container:
       # 視覚回帰のフォントとOSをDev Containerのベースライン撮影環境に揃える。
       image: mcr.microsoft.com/devcontainers/typescript-node:24-bookworm

@@ -1383,6 +1383,27 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     );
   }
 
+  private dotsAtPresentationStrength(
+    planned: readonly BoardDotPlan[],
+    sceneDots: readonly BoardDotPlan[],
+    cssScale: number,
+    strength: number,
+  ): BoardDotPlan[] {
+    const armedById = new Map(
+      presentBoardDots(sceneDots, cssScale).map((dot) => [dot.id, dot] as const),
+    );
+    return planned.map((dot) => {
+      const armed = armedById.get(dot.id) ?? dot;
+      if (strength <= 0) return dot;
+      if (strength >= 1) return armed;
+      return {
+        ...dot,
+        x: dot.x + (armed.x - dot.x) * strength,
+        y: dot.y + (armed.y - dot.y) * strength,
+      };
+    });
+  }
+
   private syncTaskMotionFromScene(
     dots: readonly BoardDotPlan[],
     input: Pick<
@@ -1410,22 +1431,56 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const immediateMotion = this.reducedMotion || this.frozen || this.loopPaused;
     this.pilePresentation.sync(selectionActive, this.elapsedMs, immediateMotion);
     const presentationStrength = this.pilePresentation.strengthAt(this.elapsedMs);
-    const presentedById = new Map(
-      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    const motionDots = this.dotsAtPresentationStrength(
+      renderPlan.dots,
+      dots,
+      cssScale,
+      presentationStrength,
     );
-    const motionDots = selectionActive
-      ? renderPlan.dots.map((dot) => presentedById.get(dot.id) ?? dot)
-      : renderPlan.dots.map((dot) => {
-          const armed = presentedById.get(dot.id) ?? dot;
-          if (presentationStrength <= 0) return dot;
-          if (presentationStrength >= 1) return armed;
-          return {
-            ...dot,
-            x: dot.x + (armed.x - dot.x) * presentationStrength,
-            y: dot.y + (armed.y - dot.y) * presentationStrength,
-          };
-        });
     this.syncTaskMotionWithPresented(motionDots, pinned, immediateMotion || selectionActive);
+  }
+
+  /** ticker だけでも山の補間が進むよう、描画位置と taskMotion を更新する（#982）。 */
+  private refreshPresentationDotBases(elapsedMs: number): void {
+    const input = this.lastInput;
+    if (!input) return;
+    const selectionActive = (input.draggableTaskIds?.size ?? 0) > 0;
+    this.targetSelectionActive = selectionActive;
+    const immediateMotion = this.reducedMotion || this.frozen || this.loopPaused;
+    this.pilePresentation.sync(selectionActive, elapsedMs, immediateMotion);
+    const strength = this.pilePresentation.strengthAt(elapsedMs);
+    if (strength <= 0 && this.pilePresentation.targetStrength() === 0) return;
+
+    const renderPlan = planBoardDotsForRender(
+      input.scene.dots,
+      input.draggableTaskIds ?? new Set(),
+      input.dragTaskId ?? null,
+      BOARD_RENDER_BUDGETS.dots,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    const cssScale = this.root.scale.x;
+    const visualDots = this.dotsAtPresentationStrength(
+      renderPlan.dots,
+      input.scene.dots,
+      cssScale,
+      strength,
+    );
+    const visualById = new Map(visualDots.map((dot) => [dot.id, dot] as const));
+    for (const entry of this.dotEntries) {
+      const visual = visualById.get(entry.id);
+      if (!visual) continue;
+      entry.baseX = visual.x;
+      entry.baseY = visual.y;
+    }
+    const pinned = taskMotionPinnedIds(
+      renderPlan.dots.map((dot) => dot.id),
+      selectionActive,
+      input.dragTaskId ?? null,
+      input.previewTaskId ?? null,
+      input.splitConfirmTaskId ?? null,
+    );
+    this.syncTaskMotionWithPresented(visualDots, pinned, immediateMotion || selectionActive);
   }
 
   /** E2E / dev フック用。粒の表示位置（設計空間、炎シェイク込み）。 */
@@ -1502,23 +1557,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const cssScale = this.root.scale.x;
     const magnification = boardDotReadabilityMagnification(cssScale);
     const presentationStrength = this.pilePresentation.strengthAt(this.elapsedMs);
-    const armedById = new Map(
-      presentBoardDots(dots, cssScale).map((dot) => [dot.id, dot] as const),
+    const presentedDots = this.dotsAtPresentationStrength(
+      renderPlan.dots,
+      dots,
+      cssScale,
+      presentationStrength,
     );
-    const presentedDots =
-      presentationStrength <= 0
-        ? renderPlan.dots
-        : presentationStrength >= 1
-          ? renderPlan.dots.map((dot) => armedById.get(dot.id) ?? dot)
-          : renderPlan.dots.map((dot) => {
-              const armed = armedById.get(dot.id) ?? dot;
-              if (Math.hypot(armed.x - dot.x, armed.y - dot.y) < 0.01) return dot;
-              return {
-                ...dot,
-                x: dot.x + (armed.x - dot.x) * presentationStrength,
-                y: dot.y + (armed.y - dot.y) * presentationStrength,
-              };
-            });
 
     for (const dot of presentedDots) {
       const group = pool.acquire();
@@ -1643,6 +1687,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       );
     }
 
+    this.refreshPresentationDotBases(elapsedMs);
     const freezeDots = this.targetSelectionActive;
     for (const entry of this.dotEntries) {
       let dx = 0;

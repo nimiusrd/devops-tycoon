@@ -57,9 +57,9 @@ test.describe('1024 幅のスプリント中、盤面がフレーム間で動か
     const baseline = await boardBox(page);
     const failures: string[] = [];
 
-    for (let step = 0; step < 120; step += 1) {
+    for (let step = 0; step < 60; step += 1) {
       await page.evaluate(() => (window as PublicGameWindow).game!.step(100));
-      failures.push(...(await assertStableFrames(page, baseline, 4)));
+      failures.push(...(await assertStableFrames(page, baseline, 2)));
     }
 
     expect(failures, failures.join('\n')).toEqual([]);

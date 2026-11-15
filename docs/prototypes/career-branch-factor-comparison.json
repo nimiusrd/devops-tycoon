@@ -1,0 +1,3077 @@
+{
+  "conditions": {
+    "seed": "RI-201",
+    "roster": [
+      {
+        "id": "aoi",
+        "role": "candidate",
+        "rank": "senior",
+        "level": 1,
+        "review": 8
+      },
+      {
+        "id": "jun",
+        "role": "junior",
+        "rank": "junior",
+        "level": 1,
+        "review": 2
+      },
+      {
+        "id": "mei",
+        "role": "junior",
+        "rank": "junior",
+        "level": 1,
+        "review": 2
+      }
+    ],
+    "scenarios": {
+      "short": {
+        "horizon": 1,
+        "deadline": 8
+      },
+      "long": {
+        "horizon": 3,
+        "deadline": null
+      }
+    },
+    "decision": {
+      "existingPaths": ["specialist", "coach"],
+      "score": "value - penalties"
+    },
+    "baseline": {
+      "specialistOutput": 8,
+      "coachOutput": 3,
+      "growth": 2,
+      "penalty": 6,
+      "juniorOutput": 1,
+      "skilledOutput": 6,
+      "skillThreshold": 4,
+      "skillCap": 6
+    },
+    "held": {
+      "output": "専門家の成果だけを動かす。育成役の成果3、成長幅2、未熟1、熟練6、閾値4、上限6、短い納期の罰6。長い盤面に罰は無い",
+      "growth": "成長幅だけを動かす。1期に後進へ足せるのは上限6までの残り。専門家の成果8、育成役3、短い納期の罰6。長い盤面に罰は無い",
+      "penalty": "短い納期の罰だけを動かす。専門家の成果8、成長幅2。長い盤面は納期が無いので再出力しない"
+    },
+    "omitted": "初回の4行は再出力しない。チームリードは要因の表に入れない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false,
+    "leadSeparate": true
+  },
+  "sweeps": {
+    "output": {
+      "short": [
+        {
+          "axis": "output",
+          "parameter": "2",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 2,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -1,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 4,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 6,
+              "score": -2,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "3",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 3,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "tie",
+          "margin": 0,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "4",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 4,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 1,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 6,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 6,
+              "score": 0,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "6",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 6,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 9,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 8,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 8,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "8",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 11,
+          "sameAsFirstComparison": true,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "9",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 9,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 12,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 11,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 11,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "10",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 10,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 13,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 12,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 12,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "long": [
+        {
+          "axis": "output",
+          "parameter": "2",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 2,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -23,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 12,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 12,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "3",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 3,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -20,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 15,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 15,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "4",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 4,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -17,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 18,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 18,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "6",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 6,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -11,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 24,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 24,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "8",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -5,
+          "sameAsFirstComparison": true,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 30,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 30,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "9",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 9,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -2,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 33,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 33,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "output",
+          "parameter": "10",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 10,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 1,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 36,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 36,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "growth": {
+      "short": [
+        {
+          "axis": "growth",
+          "parameter": "0",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 0,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 11,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 0,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "1",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 1,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 11,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 2,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 3
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 3
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "2",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 11,
+          "sameAsFirstComparison": true,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "3",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 3,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 11,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 6,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 5
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "4",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 4,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 11,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 8,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "long": [
+        {
+          "axis": "growth",
+          "parameter": "0",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 0,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 15,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 30,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 30,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 15,
+              "growth": 0,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 15,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "1",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 1,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 5,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 30,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 30,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 25,
+              "growth": 6,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 25,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 5
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "2",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -5,
+          "sameAsFirstComparison": true,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 30,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 30,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "3",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 3,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -5,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 30,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 30,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "growth",
+          "parameter": "4",
+          "scenario": "long",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 4,
+            "penalty": null,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -5,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 30,
+              "growth": 0,
+              "fatigue": 3,
+              "penalties": 0,
+              "score": 30,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 35,
+              "growth": 8,
+              "fatigue": 6,
+              "penalties": 0,
+              "score": 35,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 6
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "penalty": {
+      "short": [
+        {
+          "axis": "penalty",
+          "parameter": "-6",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": -6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "coach",
+          "margin": -1,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": -6,
+              "score": 11,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "-5",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": -5,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "tie",
+          "margin": 0,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": -5,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "-4",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": -4,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 1,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": -4,
+              "score": 9,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "0",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 0,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 5,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 0,
+              "score": 5,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "6",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 6,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 11,
+          "sameAsFirstComparison": true,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 6,
+              "score": -1,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "12",
+          "scenario": "short",
+          "rules": {
+            "specialistOutput": 8,
+            "coachOutput": 3,
+            "growth": 2,
+            "penalty": 12,
+            "juniorOutput": 1,
+            "skilledOutput": 6,
+            "skillThreshold": 4,
+            "skillCap": 6
+          },
+          "preference": "specialist",
+          "margin": 17,
+          "sameAsFirstComparison": false,
+          "specialist": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "specialist"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "specialist",
+              "rank": "senior",
+              "level": 1,
+              "value": 10,
+              "growth": 0,
+              "fatigue": 1,
+              "penalties": 0,
+              "score": 10,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 2
+                }
+              ]
+            }
+          },
+          "coach": {
+            "inputs": [
+              {
+                "type": "choose",
+                "career": "coach"
+              },
+              {
+                "type": "period"
+              }
+            ],
+            "result": {
+              "career": "coach",
+              "rank": "senior",
+              "level": 1,
+              "value": 5,
+              "growth": 4,
+              "fatigue": 2,
+              "penalties": 12,
+              "score": -7,
+              "juniors": [
+                {
+                  "id": "jun",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                },
+                {
+                  "id": "mei",
+                  "rank": "junior",
+                  "level": 1,
+                  "review": 4
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "reversals": [
+    {
+      "axis": "output",
+      "scenario": "short",
+      "before": {
+        "parameter": "2",
+        "preference": "coach",
+        "specialist": -2,
+        "coach": -1
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "tie",
+        "specialist": -1,
+        "coach": -1
+      }
+    },
+    {
+      "axis": "output",
+      "scenario": "short",
+      "before": {
+        "parameter": "3",
+        "preference": "tie",
+        "specialist": -1,
+        "coach": -1
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "specialist",
+        "specialist": 0,
+        "coach": -1
+      }
+    },
+    {
+      "axis": "output",
+      "scenario": "long",
+      "before": {
+        "parameter": "9",
+        "preference": "coach",
+        "specialist": 33,
+        "coach": 35
+      },
+      "after": {
+        "parameter": "10",
+        "preference": "specialist",
+        "specialist": 36,
+        "coach": 35
+      }
+    },
+    {
+      "axis": "growth",
+      "scenario": "long",
+      "before": {
+        "parameter": "1",
+        "preference": "specialist",
+        "specialist": 30,
+        "coach": 25
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "coach",
+        "specialist": 30,
+        "coach": 35
+      }
+    },
+    {
+      "axis": "penalty",
+      "scenario": "short",
+      "before": {
+        "parameter": "-6",
+        "preference": "coach",
+        "specialist": 10,
+        "coach": 11
+      },
+      "after": {
+        "parameter": "-5",
+        "preference": "tie",
+        "specialist": 10,
+        "coach": 10
+      }
+    },
+    {
+      "axis": "penalty",
+      "scenario": "short",
+      "before": {
+        "parameter": "-5",
+        "preference": "tie",
+        "specialist": 10,
+        "coach": 10
+      },
+      "after": {
+        "parameter": "-4",
+        "preference": "specialist",
+        "specialist": 10,
+        "coach": 9
+      }
+    }
+  ],
+  "lead": {
+    "separateFromSweeps": true,
+    "fixedStrategy": true,
+    "humanPlaytest": false,
+    "rule": {
+      "output": 3,
+      "fatigue": 1,
+      "support": 2,
+      "raisesReview": false,
+      "rankUnchanged": true,
+      "levelUnchanged": true
+    },
+    "rows": [
+      {
+        "scenario": "short",
+        "inputs": [
+          {
+            "type": "choose",
+            "career": "lead"
+          },
+          {
+            "type": "period"
+          }
+        ],
+        "result": {
+          "career": "lead",
+          "rank": "senior",
+          "level": 1,
+          "value": 9,
+          "growth": 0,
+          "fatigue": 1,
+          "penalties": 0,
+          "score": 9,
+          "juniors": [
+            {
+              "id": "jun",
+              "rank": "junior",
+              "level": 1,
+              "review": 2
+            },
+            {
+              "id": "mei",
+              "rank": "junior",
+              "level": 1,
+              "review": 2
+            }
+          ]
+        },
+        "scores": {
+          "lead": 9,
+          "specialist": 10,
+          "coach": -1
+        },
+        "beats": {
+          "specialist": false,
+          "coach": true
+        },
+        "above": ["coach"]
+      },
+      {
+        "scenario": "long",
+        "inputs": [
+          {
+            "type": "choose",
+            "career": "lead"
+          },
+          {
+            "type": "period"
+          },
+          {
+            "type": "period"
+          },
+          {
+            "type": "period"
+          }
+        ],
+        "result": {
+          "career": "lead",
+          "rank": "senior",
+          "level": 1,
+          "value": 27,
+          "growth": 0,
+          "fatigue": 3,
+          "penalties": 0,
+          "score": 27,
+          "juniors": [
+            {
+              "id": "jun",
+              "rank": "junior",
+              "level": 1,
+              "review": 2
+            },
+            {
+              "id": "mei",
+              "rank": "junior",
+              "level": 1,
+              "review": 2
+            }
+          ]
+        },
+        "scores": {
+          "lead": 27,
+          "specialist": 30,
+          "coach": 35
+        },
+        "beats": {
+          "specialist": false,
+          "coach": false
+        },
+        "above": []
+      }
+    ]
+  }
+}

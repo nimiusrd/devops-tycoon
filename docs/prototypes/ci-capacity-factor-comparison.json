@@ -1,0 +1,3693 @@
+{
+  "conditions": {
+    "seed": "RI-161",
+    "horizon": 6,
+    "budget": 20,
+    "jobs": ["a", "b", "c"],
+    "flow": "all",
+    "lateValue": 0,
+    "failOrder": ["b", "c", "a"],
+    "decision": {
+      "keep": 1,
+      "increase": 2,
+      "score": "netValue"
+    },
+    "baseline": {
+      "values": [8, 8, 8],
+      "deadlines": [6, 6, 6],
+      "lateValue": 0,
+      "ciEffort": 2,
+      "failFirstIds": ["b"],
+      "capacityUnitCost": 1,
+      "reviewSlots": 1,
+      "reviewEffort": 0,
+      "reworkSlots": 1
+    },
+    "held": {
+      "jobValue": "a=8,c=8。期限と他の規則は基準",
+      "deadline": "全仕事が同じ期限。価値と他の規則は基準",
+      "jobDeadline": "bの期限だけ。aとcは6。価値と他の規則は基準",
+      "ciEffort": "再実行も同じ工数。他の規則は基準",
+      "failureCount": "失敗はb、c、aの順に足す。他の規則は基準",
+      "capacityUnitCost": "空き枠も同じ単価。予算20のまま",
+      "reviewSlots": "レビュー残0。枠だけを動かす",
+      "reviewSlotsWithWork": "レビュー残は初回のレビュー混雑と同じ3。枠だけを動かす",
+      "reworkSlots": "失敗はbだけ。修正枠だけを動かす"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false
+  },
+  "sweeps": {
+    "jobValue": [
+      {
+        "axis": "jobValue",
+        "parameter": "b=8",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "jobValue",
+        "parameter": "b=7",
+        "rules": {
+          "values": [8, 7, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 1,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 23,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 11,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "jobValue",
+        "parameter": "b=6",
+        "rules": {
+          "values": [8, 6, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "tie",
+        "margin": 0,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 22,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 10,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "jobValue",
+        "parameter": "b=5",
+        "rules": {
+          "values": [8, 5, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -1,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 21,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 9,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "deadline": [
+      {
+        "axis": "deadline",
+        "parameter": "6",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "deadline",
+        "parameter": "5",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [5, 5, 5],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 10,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "deadline",
+        "parameter": "4",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [4, 4, 4],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 10,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "deadline",
+        "parameter": "3",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [3, 3, 3],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 8,
+              "budget": 8,
+              "cost": 12,
+              "netValue": -4,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "deadline",
+        "parameter": "2",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [2, 2, 2],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 8,
+              "budget": 8,
+              "cost": 12,
+              "netValue": -4,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "jobDeadline": [
+      {
+        "axis": "jobDeadline",
+        "parameter": "6/6/6",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "jobDeadline",
+        "parameter": "6/4/6",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 4, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "jobDeadline",
+        "parameter": "6/3/6",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 3, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 16,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 4,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "ciEffort": [
+      {
+        "axis": "ciEffort",
+        "parameter": "1",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 1,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 18,
+              "queueWait": 4,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 1
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 3
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 1,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 1
+              },
+              {
+                "id": "b",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 2
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "ciEffort",
+        "parameter": "2",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "ciEffort",
+        "parameter": "3",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 3,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 10,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 9,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "rework",
+                  "reviewLeft": 0,
+                  "ciLeft": 3
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 3
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 0
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 3
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 3,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 3
+              },
+              {
+                "id": "b",
+                "tick": 6
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "ciEffort",
+        "parameter": "4",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 4,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 10,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 4
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 0
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 8,
+              "cost": 12,
+              "netValue": -4,
+              "queueWait": 4,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "failureCount": [
+      {
+        "axis": "failureCount",
+        "parameter": "0",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": [],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 18,
+              "queueWait": 6,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "failureCount",
+        "parameter": "b",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "failureCount",
+        "parameter": "b+c",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b", "c"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 10,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "rework",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 2
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "failureCount",
+        "parameter": "b+c+a",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b", "c", "a"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 18,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": [],
+              "value": 0,
+              "budget": 14,
+              "cost": 6,
+              "netValue": -6,
+              "queueWait": 12,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "a",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "rework",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": []
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 3,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 2
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 2
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              },
+              {
+                "id": "b",
+                "tick": 6
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "capacityUnitCost": [
+      {
+        "axis": "capacityUnitCost",
+        "parameter": "1",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "capacityUnitCost",
+        "parameter": "2",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 2,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "tie",
+        "margin": 0,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 4,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 0,
+              "cost": 20,
+              "netValue": 4,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "capacityUnitCost",
+        "parameter": "3",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 3,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -8,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 2,
+              "cost": 18,
+              "netValue": -2,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 2,
+              "cost": 18,
+              "netValue": -10,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "reviewSlots": [
+      {
+        "axis": "reviewSlots",
+        "parameter": "1",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "reviewSlots",
+        "parameter": "2",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 2,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "reviewSlotsWithWork": [
+      {
+        "axis": "reviewSlotsWithWork",
+        "parameter": "1",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 3,
+          "reworkSlots": 1
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 0,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "reviewLeft": 3,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 0
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 8,
+              "cost": 12,
+              "netValue": -4,
+              "queueWait": 0,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "reviewLeft": 3,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 0
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "reviewSlotsWithWork",
+        "parameter": "2",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 2,
+          "reviewEffort": 3,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 3,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "rework",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 0
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b"],
+              "value": 16,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 4,
+              "queueWait": 0,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              },
+              {
+                "id": "b",
+                "tick": 6
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "reviewSlotsWithWork",
+        "parameter": "3",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 3,
+          "reviewEffort": 3,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 10,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a"],
+              "value": 8,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 2,
+              "queueWait": 6,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "rework",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 0
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 4
+              },
+              {
+                "id": "b",
+                "tick": 6
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "reworkSlots": [
+      {
+        "axis": "reworkSlots",
+        "parameter": "0",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 0
+        },
+        "preference": "keep",
+        "margin": -6,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 6,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "rework",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 4,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "rework",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "reworkSlots",
+        "parameter": "1",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 1
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "axis": "reworkSlots",
+        "parameter": "2",
+        "rules": {
+          "values": [8, 8, 8],
+          "deadlines": [6, 6, 6],
+          "lateValue": 0,
+          "ciEffort": 2,
+          "failFirstIds": ["b"],
+          "capacityUnitCost": 1,
+          "reviewSlots": 1,
+          "reviewEffort": 0,
+          "reworkSlots": 2
+        },
+        "preference": "increase",
+        "margin": 2,
+        "runs": {
+          "capacity1": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "c"],
+              "value": 16,
+              "budget": 14,
+              "cost": 6,
+              "netValue": 10,
+              "queueWait": 8,
+              "upstreamWait": 0,
+              "pending": [
+                {
+                  "id": "b",
+                  "stage": "queue",
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 1
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "c",
+                "tick": 6
+              }
+            ]
+          },
+          "capacity2": {
+            "inputs": ["all", "all", "all", "all", "all", "all"],
+            "result": {
+              "done": ["a", "b", "c"],
+              "value": 24,
+              "budget": 8,
+              "cost": 12,
+              "netValue": 12,
+              "queueWait": 2,
+              "upstreamWait": 0,
+              "pending": [],
+              "attempts": [
+                {
+                  "id": "a",
+                  "attempts": 1
+                },
+                {
+                  "id": "b",
+                  "attempts": 2
+                },
+                {
+                  "id": "c",
+                  "attempts": 1
+                }
+              ]
+            },
+            "finished": [
+              {
+                "id": "a",
+                "tick": 2
+              },
+              {
+                "id": "b",
+                "tick": 4
+              },
+              {
+                "id": "c",
+                "tick": 4
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "controls": [
+    {
+      "axis": "jobValue",
+      "parameter": "3/8/20",
+      "rules": {
+        "values": [3, 8, 20],
+        "deadlines": [6, 6, 6],
+        "lateValue": 0,
+        "ciEffort": 2,
+        "failFirstIds": ["b"],
+        "capacityUnitCost": 1,
+        "reviewSlots": 1,
+        "reviewEffort": 0,
+        "reworkSlots": 1
+      },
+      "preference": "increase",
+      "margin": 2,
+      "runs": {
+        "capacity1": {
+          "inputs": ["all", "all", "all", "all", "all", "all"],
+          "result": {
+            "done": ["a", "c"],
+            "value": 23,
+            "budget": 14,
+            "cost": 6,
+            "netValue": 17,
+            "queueWait": 8,
+            "upstreamWait": 0,
+            "pending": [
+              {
+                "id": "b",
+                "stage": "queue",
+                "reviewLeft": 0,
+                "ciLeft": 2
+              }
+            ],
+            "attempts": [
+              {
+                "id": "a",
+                "attempts": 1
+              },
+              {
+                "id": "b",
+                "attempts": 1
+              },
+              {
+                "id": "c",
+                "attempts": 1
+              }
+            ]
+          },
+          "finished": [
+            {
+              "id": "a",
+              "tick": 2
+            },
+            {
+              "id": "c",
+              "tick": 6
+            }
+          ]
+        },
+        "capacity2": {
+          "inputs": ["all", "all", "all", "all", "all", "all"],
+          "result": {
+            "done": ["a", "b", "c"],
+            "value": 31,
+            "budget": 8,
+            "cost": 12,
+            "netValue": 19,
+            "queueWait": 2,
+            "upstreamWait": 0,
+            "pending": [],
+            "attempts": [
+              {
+                "id": "a",
+                "attempts": 1
+              },
+              {
+                "id": "b",
+                "attempts": 2
+              },
+              {
+                "id": "c",
+                "attempts": 1
+              }
+            ]
+          },
+          "finished": [
+            {
+              "id": "a",
+              "tick": 2
+            },
+            {
+              "id": "b",
+              "tick": 4
+            },
+            {
+              "id": "c",
+              "tick": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "axis": "deadline",
+      "parameter": "6/6/5",
+      "rules": {
+        "values": [8, 8, 8],
+        "deadlines": [6, 6, 5],
+        "lateValue": 0,
+        "ciEffort": 2,
+        "failFirstIds": ["b"],
+        "capacityUnitCost": 1,
+        "reviewSlots": 1,
+        "reviewEffort": 0,
+        "reworkSlots": 1
+      },
+      "preference": "increase",
+      "margin": 10,
+      "runs": {
+        "capacity1": {
+          "inputs": ["all", "all", "all", "all", "all", "all"],
+          "result": {
+            "done": ["a", "c"],
+            "value": 8,
+            "budget": 14,
+            "cost": 6,
+            "netValue": 2,
+            "queueWait": 8,
+            "upstreamWait": 0,
+            "pending": [
+              {
+                "id": "b",
+                "stage": "queue",
+                "reviewLeft": 0,
+                "ciLeft": 2
+              }
+            ],
+            "attempts": [
+              {
+                "id": "a",
+                "attempts": 1
+              },
+              {
+                "id": "b",
+                "attempts": 1
+              },
+              {
+                "id": "c",
+                "attempts": 1
+              }
+            ]
+          },
+          "finished": [
+            {
+              "id": "a",
+              "tick": 2
+            },
+            {
+              "id": "c",
+              "tick": 6
+            }
+          ]
+        },
+        "capacity2": {
+          "inputs": ["all", "all", "all", "all", "all", "all"],
+          "result": {
+            "done": ["a", "b", "c"],
+            "value": 24,
+            "budget": 8,
+            "cost": 12,
+            "netValue": 12,
+            "queueWait": 2,
+            "upstreamWait": 0,
+            "pending": [],
+            "attempts": [
+              {
+                "id": "a",
+                "attempts": 1
+              },
+              {
+                "id": "b",
+                "attempts": 2
+              },
+              {
+                "id": "c",
+                "attempts": 1
+              }
+            ]
+          },
+          "finished": [
+            {
+              "id": "a",
+              "tick": 2
+            },
+            {
+              "id": "b",
+              "tick": 4
+            },
+            {
+              "id": "c",
+              "tick": 4
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "reversals": [
+    {
+      "axis": "jobValue",
+      "before": {
+        "parameter": "b=7",
+        "preference": "increase",
+        "capacity1": 10,
+        "capacity2": 11
+      },
+      "after": {
+        "parameter": "b=6",
+        "preference": "tie",
+        "capacity1": 10,
+        "capacity2": 10
+      }
+    },
+    {
+      "axis": "jobValue",
+      "before": {
+        "parameter": "b=6",
+        "preference": "tie",
+        "capacity1": 10,
+        "capacity2": 10
+      },
+      "after": {
+        "parameter": "b=5",
+        "preference": "keep",
+        "capacity1": 10,
+        "capacity2": 9
+      }
+    },
+    {
+      "axis": "deadline",
+      "before": {
+        "parameter": "4",
+        "preference": "increase",
+        "capacity1": 2,
+        "capacity2": 12
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "keep",
+        "capacity1": 2,
+        "capacity2": -4
+      }
+    },
+    {
+      "axis": "jobDeadline",
+      "before": {
+        "parameter": "6/4/6",
+        "preference": "increase",
+        "capacity1": 10,
+        "capacity2": 12
+      },
+      "after": {
+        "parameter": "6/3/6",
+        "preference": "keep",
+        "capacity1": 10,
+        "capacity2": 4
+      }
+    },
+    {
+      "axis": "ciEffort",
+      "before": {
+        "parameter": "1",
+        "preference": "keep",
+        "capacity1": 18,
+        "capacity2": 12
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "increase",
+        "capacity1": 10,
+        "capacity2": 12
+      }
+    },
+    {
+      "axis": "ciEffort",
+      "before": {
+        "parameter": "3",
+        "preference": "increase",
+        "capacity1": 2,
+        "capacity2": 12
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "keep",
+        "capacity1": 2,
+        "capacity2": -4
+      }
+    },
+    {
+      "axis": "failureCount",
+      "before": {
+        "parameter": "0",
+        "preference": "keep",
+        "capacity1": 18,
+        "capacity2": 12
+      },
+      "after": {
+        "parameter": "b",
+        "preference": "increase",
+        "capacity1": 10,
+        "capacity2": 12
+      }
+    },
+    {
+      "axis": "capacityUnitCost",
+      "before": {
+        "parameter": "1",
+        "preference": "increase",
+        "capacity1": 10,
+        "capacity2": 12
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "tie",
+        "capacity1": 4,
+        "capacity2": 4
+      }
+    },
+    {
+      "axis": "capacityUnitCost",
+      "before": {
+        "parameter": "2",
+        "preference": "tie",
+        "capacity1": 4,
+        "capacity2": 4
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "keep",
+        "capacity1": -2,
+        "capacity2": -10
+      }
+    },
+    {
+      "axis": "reviewSlotsWithWork",
+      "before": {
+        "parameter": "1",
+        "preference": "keep",
+        "capacity1": 2,
+        "capacity2": -4
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "increase",
+        "capacity1": 2,
+        "capacity2": 4
+      }
+    },
+    {
+      "axis": "reworkSlots",
+      "before": {
+        "parameter": "0",
+        "preference": "keep",
+        "capacity1": 10,
+        "capacity2": 4
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "increase",
+        "capacity1": 10,
+        "capacity2": 12
+      }
+    }
+  ]
+}

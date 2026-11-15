@@ -20,6 +20,24 @@ export interface StandbyIncident {
   mobilized: boolean;
 }
 export type StandbyInput = { type: 'assign'; id: string; lane: StandbyLane } | { type: 'tick' };
+/** 比較で一つずつ足す規則。状態に無いときは初回と同じ（通常作業で体力を使わない）。 */
+export interface StandbyRules {
+  /** 出荷できたtickに、coding/reviewの各人から引く体力。 */
+  normalStaminaCost: number;
+}
+export interface StandbySetup {
+  /** 待機がいないときの招集tick。既定2。 */
+  mobilizationTicks?: number;
+  /** 2件目の到着tick。既定6。1件目は2のまま。 */
+  secondArrivesAt?: number;
+  normalStaminaCost?: number;
+}
+/** 完了したtick数が at のとき、次のtickの前に配置する。0は最初のtickの前。 */
+export interface StandbyAssignment {
+  at: number;
+  id: string;
+  lane: StandbyLane;
+}
 export interface StandbyState {
   version: 1;
   seed: string;
@@ -34,8 +52,16 @@ export interface StandbyState {
   members: StandbyMember[];
   incidents: StandbyIncident[];
   inputs: StandbyInput[];
+  /** 無いときは通常作業で体力を消費しない。初回の比較JSONはこのフィールドを持たない。 */
+  rules?: StandbyRules;
 }
-export function createStandbyPrototype(seed: string, incidents = false): StandbyState {
+export function createStandbyPrototype(
+  seed: string,
+  incidents = false,
+  setup?: StandbySetup,
+): StandbyState {
+  const mobilizationTicks = setup?.mobilizationTicks ?? 2;
+  const arrivals = incidents ? [2, setup?.secondArrivesAt ?? 6] : [];
   return {
     version: 1,
     seed,
@@ -82,17 +108,16 @@ export function createStandbyPrototype(seed: string, incidents = false): Standby
         responseSpent: 0,
       },
     ],
-    incidents: incidents
-      ? [2, 6].map((arrivesAt, index) => ({
-          id: `incident-${index + 1}`,
-          arrivesAt,
-          workLeft: 6,
-          doneTick: null,
-          mobilizationLeft: 2,
-          mobilized: false,
-        }))
-      : [],
+    incidents: arrivals.map((arrivesAt, index) => ({
+      id: `incident-${index + 1}`,
+      arrivesAt,
+      workLeft: 6,
+      doneTick: null,
+      mobilizationLeft: mobilizationTicks,
+      mobilized: false,
+    })),
     inputs: [],
+    ...(setup?.normalStaminaCost ? { rules: { normalStaminaCost: setup.normalStaminaCost } } : {}),
   };
 }
 export function standbyCapacity(state: StandbyState) {
@@ -133,7 +158,7 @@ export function applyStandbyInput(state: StandbyState, input: StandbyInput): Sta
     let responders: StandbyMember[] = [];
     if (standby) responders = [standby];
     else {
-      // 待機なし/疲労枯渇は全体を止め、2tickの招集後に通常担当が復旧する。
+      // 待機なし/疲労枯渇は全体を止め、招集の残時間が終わってから通常担当が復旧する。
       stopped = true;
       if (!incident.mobilized) {
         incident.mobilized = true;
@@ -155,6 +180,14 @@ export function applyStandbyInput(state: StandbyState, input: StandbyInput): Sta
     const capacity = standbyCapacity(next);
     // 毎tickの独立した小仕事。工程バッファ・個別タスクは本試作ではモデル化しない。
     next.value += Math.min(capacity.coding, capacity.review);
+    // 通常消費は出荷できたtickだけ。停止中と待機・benchは対象外。未指定は0。
+    const normalStaminaCost = next.rules?.normalStaminaCost ?? 0;
+    if (normalStaminaCost > 0) {
+      for (const member of next.members) {
+        if (member.lane === 'coding' || member.lane === 'review')
+          member.stamina = Math.max(0, member.stamina - normalStaminaCost);
+      }
+    }
   }
   // benchは応答せず2/tick回復する。待機は通常工程に寄与せず、暇でも疲労を回復しない。
   for (const member of next.members)
@@ -186,6 +219,28 @@ export function summarizeStandby(state: StandbyState) {
     netValue: state.value - state.customerLoss - state.focusSpent - remainingWork,
   };
 }
+export function runStandbyPlan(
+  initial: StandbyState,
+  plan: readonly StandbyAssignment[],
+): StandbyState {
+  const steps = plan.map((step, order) => ({ ...step, order }));
+  steps.sort((a, b) => a.at - b.at || a.order - b.order);
+  let state = initial;
+  let index = 0;
+  const applyDue = () => {
+    while (index < steps.length && steps[index]!.at === state.tick) {
+      const step = steps[index]!;
+      state = applyStandbyInput(state, { type: 'assign', id: step.id, lane: step.lane });
+      index++;
+    }
+  };
+  applyDue();
+  while (state.tick < state.horizon) {
+    state = applyStandbyInput(state, { type: 'tick' });
+    applyDue();
+  }
+  return state;
+}
 export function compareStandbyStrategies(seed: string) {
   return [false, true].flatMap((incidents) =>
     (['none', 'coder', 'ace', 'rotate'] as const).map((strategy) => {
@@ -212,4 +267,104 @@ export function compareStandbyStrategies(seed: string) {
       };
     }),
   );
+}
+function coderAt(at: number): StandbyAssignment {
+  return { at, id: 'coder', lane: 'standby' };
+}
+function rotateAt(at: number): StandbyAssignment[] {
+  return [{ at: 0, id: 'ace', lane: 'standby' }, coderAt(at)];
+}
+function aceRest(length: number, withCoder: boolean): StandbyAssignment[] {
+  return [
+    { at: 0, id: 'ace', lane: 'bench' },
+    ...(withCoder ? [coderAt(0)] : []),
+    { at: length, id: 'ace', lane: 'coding' },
+  ];
+}
+const factorCases: ReadonlyArray<{
+  factor: string;
+  strategy: 'none' | 'coder' | 'reviewer' | 'rotate';
+  setup?: StandbySetup;
+  plan: readonly StandbyAssignment[];
+}> = [
+  { factor: 'baseline', strategy: 'none', plan: [] },
+  { factor: 'baseline', strategy: 'coder', plan: [coderAt(0)] },
+  { factor: 'forecast-1', strategy: 'none', plan: [] },
+  { factor: 'forecast-1', strategy: 'coder', plan: [coderAt(1)] },
+  { factor: 'forecast-0', strategy: 'none', plan: [] },
+  { factor: 'forecast-0', strategy: 'coder', plan: [coderAt(2)] },
+  { factor: 'mobilization-1', strategy: 'none', setup: { mobilizationTicks: 1 }, plan: [] },
+  {
+    factor: 'mobilization-1',
+    strategy: 'coder',
+    setup: { mobilizationTicks: 1 },
+    plan: [coderAt(0)],
+  },
+  { factor: 'mobilization-0', strategy: 'none', setup: { mobilizationTicks: 0 }, plan: [] },
+  {
+    factor: 'mobilization-0',
+    strategy: 'coder',
+    setup: { mobilizationTicks: 0 },
+    plan: [coderAt(0)],
+  },
+  { factor: 'normal-stamina-1', strategy: 'none', setup: { normalStaminaCost: 1 }, plan: [] },
+  {
+    factor: 'normal-stamina-1',
+    strategy: 'coder',
+    setup: { normalStaminaCost: 1 },
+    plan: [coderAt(0)],
+  },
+  { factor: 'normal-stamina-2', strategy: 'none', setup: { normalStaminaCost: 2 }, plan: [] },
+  {
+    factor: 'normal-stamina-2',
+    strategy: 'coder',
+    setup: { normalStaminaCost: 2 },
+    plan: [coderAt(0)],
+  },
+  { factor: 'normal-stamina-3', strategy: 'none', setup: { normalStaminaCost: 3 }, plan: [] },
+  {
+    factor: 'normal-stamina-3',
+    strategy: 'coder',
+    setup: { normalStaminaCost: 3 },
+    plan: [coderAt(0)],
+  },
+  { factor: 'normal-stamina-4', strategy: 'none', setup: { normalStaminaCost: 4 }, plan: [] },
+  {
+    factor: 'normal-stamina-4',
+    strategy: 'coder',
+    setup: { normalStaminaCost: 4 },
+    plan: [coderAt(0)],
+  },
+  { factor: 'reviewer', strategy: 'none', plan: [] },
+  { factor: 'reviewer', strategy: 'reviewer', plan: [{ at: 0, id: 'reviewer', lane: 'standby' }] },
+  { factor: 'rotate-4', strategy: 'none', plan: [] },
+  { factor: 'rotate-4', strategy: 'rotate', plan: rotateAt(4) },
+  { factor: 'rotate-5', strategy: 'none', plan: [] },
+  { factor: 'rotate-5', strategy: 'rotate', plan: rotateAt(5) },
+  { factor: 'rotate-6', strategy: 'none', plan: [] },
+  { factor: 'rotate-6', strategy: 'rotate', plan: rotateAt(6) },
+  { factor: 'rest-1', strategy: 'none', plan: aceRest(1, false) },
+  { factor: 'rest-1', strategy: 'coder', plan: aceRest(1, true) },
+  { factor: 'rest-6', strategy: 'none', plan: aceRest(6, false) },
+  { factor: 'rest-6', strategy: 'coder', plan: aceRest(6, true) },
+  { factor: 'rest-7', strategy: 'none', plan: aceRest(7, false) },
+  { factor: 'rest-7', strategy: 'coder', plan: aceRest(7, true) },
+  { factor: 'rest-8', strategy: 'none', plan: aceRest(8, false) },
+  { factor: 'rest-8', strategy: 'coder', plan: aceRest(8, true) },
+  { factor: 'rest-9', strategy: 'none', plan: aceRest(9, false) },
+  { factor: 'rest-9', strategy: 'coder', plan: aceRest(9, true) },
+  { factor: 'overlap-5', strategy: 'none', setup: { secondArrivesAt: 5 }, plan: [] },
+  { factor: 'overlap-5', strategy: 'coder', setup: { secondArrivesAt: 5 }, plan: [coderAt(0)] },
+  { factor: 'overlap-4', strategy: 'none', setup: { secondArrivesAt: 4 }, plan: [] },
+  { factor: 'overlap-4', strategy: 'coder', setup: { secondArrivesAt: 4 }, plan: [coderAt(0)] },
+  { factor: 'overlap-2', strategy: 'none', setup: { secondArrivesAt: 2 }, plan: [] },
+  { factor: 'overlap-2', strategy: 'coder', setup: { secondArrivesAt: 2 }, plan: [coderAt(0)] },
+];
+/** 初回の反復障害だけ。要因は一つずつ。平穏時は再比較しない。 */
+export function compareStandbyFactorReversals(seed: string) {
+  return factorCases.map(({ factor, strategy, setup, plan }) => {
+    const initial = createStandbyPrototype(seed, true, setup);
+    const state = runStandbyPlan(initial, plan);
+    return { factor, strategy, initial, inputs: state.inputs, result: summarizeStandby(state) };
+  });
 }

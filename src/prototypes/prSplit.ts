@@ -452,7 +452,8 @@ export function runSplitScenario(seed: string, params: SplitScenarioParams) {
     const ids = assignRound(state, params.workers);
     if (ids.length === 0 || !apply({ type: 'round', ids })) break;
   }
-  if (checkpoints.at(-1)?.tick !== state.tick) checkpoints.push(checkpointOf(state, params));
+  const lastCheckpoint = checkpoints[checkpoints.length - 1];
+  if (lastCheckpoint?.tick !== state.tick) checkpoints.push(checkpointOf(state, params));
   return { initial, inputs: state.inputs, result: scoreScenario(state, params, checkpoints) };
 }
 function pairsFrom(rows: SplitScenarioRow[]): SplitFactorPair[] {

@@ -391,7 +391,8 @@ describe('RI-166 一因子の優劣反転', () => {
           });
         }
       }
-      if (checkpoints.at(-1)?.tick !== live.tick) {
+      const lastCheckpoint = checkpoints[checkpoints.length - 1];
+      if (lastCheckpoint?.tick !== live.tick) {
         const summary = summarizeSplit(live);
         checkpoints.push({
           tick: live.tick,

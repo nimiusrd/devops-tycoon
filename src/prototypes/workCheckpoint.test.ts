@@ -433,7 +433,7 @@ describe('RI-175 要因を一つずつ動かした比較', () => {
     slow = apply(slow, { type: 'resume' }, slowRules);
     expect(slow).toMatchObject({ tick: 4, focus: 2, focusSpent: 2 });
     expect(slow.jobs[0]).toMatchObject({ progress: 4, stage: 'coding' });
-    expect(Object.hasOwn(slow, 'resumeLeft')).toBe(false);
+    expect('resumeLeft' in slow).toBe(false);
 
     const freeRules = { ...baselineCheckpointRules, resumeTicks: 0 };
     const opened = apply(create('RI-175', 4, freeRules), { type: 'checkpoint' }, freeRules);

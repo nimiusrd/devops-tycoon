@@ -166,12 +166,32 @@ for (const width of [320, 390, 1280] as const) {
 
     const formationReachable = await other.evaluate(() => {
       const button = document.querySelector('[data-testid="open-formation"]');
-      if (!(button instanceof HTMLElement)) return false;
+      const chip = document.querySelector('[data-testid="tab-conflict-quiet"]');
+      if (!(button instanceof HTMLElement)) return { ok: false, reason: 'missing' };
       const rect = button.getBoundingClientRect();
-      const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      return top instanceof Node && button.contains(top);
+      const points = [
+        [rect.left + rect.width / 2, rect.top + rect.height / 2],
+        [rect.left + 6, rect.top + rect.height / 2],
+        [rect.right - 6, rect.top + rect.height / 2],
+      ];
+      for (const [x, y] of points) {
+        const top = document.elementFromPoint(x, y);
+        if (top instanceof Node && button.contains(top)) return { ok: true };
+        if (chip instanceof HTMLElement && top instanceof Node && chip.contains(top)) {
+          return { ok: false, reason: 'chip' };
+        }
+      }
+      const center = document.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+      );
+      const label =
+        center instanceof HTMLElement
+          ? `${center.tagName}.${center.className} ${center.dataset.testid ?? ''}`
+          : String(center);
+      return { ok: false, reason: label };
     });
-    expect(formationReachable).toBe(true);
+    expect(formationReachable.ok, JSON.stringify(formationReachable)).toBe(true);
     await other.getByTestId('open-formation').evaluate((button) => {
       if (button instanceof HTMLButtonElement) button.click();
     });

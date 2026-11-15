@@ -100,9 +100,10 @@ describe('RI-251 失敗したボスの宿題', () => {
   it('残リスクを得点に入れると11で同点、12以上で宿題が今期目標を上回る', () => {
     const sweep = compareBossHomeworkResidual(residual.conditions.seed);
     expect(sweep).toEqual(residual);
-    expect(sweep.conditions.residualValues[0]).toBeLessThan(12);
-    expect(sweep.conditions.residualValues).toContain(12);
-    expect(sweep.conditions.residualValues.at(-1)).toBeGreaterThan(12);
+    const residualValues = sweep.conditions.residualValues;
+    expect(residualValues[0]).toBeLessThan(12);
+    expect(residualValues).toContain(12);
+    expect(residualValues[residualValues.length - 1]).toBeGreaterThan(12);
     expect(sweep.conditions.recordedResidual).toBe(12);
     expect(sweep.conditions).toMatchObject({
       board: 'exposed',

@@ -126,11 +126,30 @@ describe('OrgLeverList の支払リスク', () => {
     const firefighters = screen.find('lever-firefighters');
     expect(content(firefighters)).toContain('💰20→0');
     expect(content(firefighters)).toContain('予算枯渇でランが終了する');
+    expect(firefighters.props['aria-label']).toBeUndefined();
     screen.click('lever-firefighters');
     expect(screen.onApply).toHaveBeenCalledTimes(1);
     expect(screen.has('spend-confirm')).toBe(true);
     expect(content(screen.find('spend-confirm'))).toContain('予算枯渇でランが終了する');
+    expect(screen.find('spend-confirm').props['aria-label']).toBeUndefined();
+    expect(screen.find('spend-confirm').props.role).toBeUndefined();
+    expect(screen.find('org-lever-spend-dialog').props['aria-label']).toBe('予算枯渇の確認');
     expect(useDialogOverlayLock).toHaveBeenCalled();
+    const dialog = screen.find('org-lever-spend-dialog');
+    (dialog.props.onClick as (event: { target: unknown; currentTarget: unknown }) => void)({
+      target: screen.find('spend-confirm'),
+      currentTarget: dialog,
+    });
+    screen.update({});
+    expect(screen.has('spend-confirm')).toBe(true);
+    (dialog.props.onClick as (event: { target: unknown; currentTarget: unknown }) => void)({
+      target: dialog,
+      currentTarget: dialog,
+    });
+    screen.update({});
+    expect(screen.has('spend-confirm')).toBe(false);
+    expect(screen.onApply).toHaveBeenCalledTimes(1);
+    screen.click('lever-firefighters');
     screen.click('spend-confirm-cancel');
     expect(screen.has('spend-confirm')).toBe(false);
     expect(screen.onApply).toHaveBeenCalledTimes(1);
@@ -138,6 +157,27 @@ describe('OrgLeverList の支払リスク', () => {
     screen.click('spend-confirm-accept');
     expect(screen.onApply).toHaveBeenLastCalledWith('firefighters');
     expect(screen.onApply).toHaveBeenCalledTimes(2);
+  });
+
+  it('部門・チームの名前は支払後残高と枯渇警告を上書きしない', () => {
+    const scope = (lever: { name: string; cost: number }) =>
+      `対象へ「${lever.name}」を適用。コスト ${lever.cost}`;
+    const screen = mountList({
+      budget: 20,
+      leverAriaLabel: scope,
+    });
+    expect(screen.find('lever-firefighters').props['aria-label']).toBe(
+      '対象へ「火消し部隊派遣」を適用。コスト 20。💰20→0。予算枯渇でランが終了する',
+    );
+    expect(screen.find('lever-aiGuideline').props['aria-label']).toBe(
+      '対象へ「全社AIガイドライン」を適用。コスト 25',
+    );
+    screen.update({
+      sprintInteractionBlockedReason: 'スプリント完了待ち',
+    });
+    expect(screen.find('lever-firefighters').props['aria-label']).toBe(
+      '対象へ「火消し部隊派遣」を適用。コスト 20。💰20→0。予算枯渇でランが終了する。スプリント完了待ち',
+    );
   });
 
   it('確認を開いている間は他のレバーを押せない', () => {

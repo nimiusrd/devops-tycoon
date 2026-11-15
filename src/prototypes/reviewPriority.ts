@@ -118,12 +118,14 @@ function applyExtraReview(board: CiState, plan: Map<string, number>) {
 function rejectPriority(state: PriorityState, input: PriorityInput): boolean {
   if (state.board.tick >= state.board.horizon) return true;
   const reviews = reviewsIn(state.board.jobs);
+  const front = reviews[0];
   if (
     input.type === 'promote' &&
     (state.focus < 2 ||
-      reviews[0]?.reviewLeft !== 2 ||
+      !front ||
+      front.reviewLeft !== reviewFull(state, front.id) ||
       !reviews.some((job) => job.id === input.id) ||
-      reviews[0].id === input.id)
+      front.id === input.id)
   )
     return true;
   if (input.type === 'reserve') {

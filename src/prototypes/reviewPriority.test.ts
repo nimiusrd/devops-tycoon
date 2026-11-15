@@ -40,6 +40,19 @@ describe('RI-165 レビュー追い越し', () => {
     expect(state.reviewWait).toEqual({ a: 2, b: 0, c: 3 });
     expect(applyPriorityInput(state, { type: 'promote', id: 'c' })).toBe(state);
   });
+  it('可変工数では着手済みの残工数を未着手と扱わない', () => {
+    const started = applyPriorityInput(
+      createPriorityFactorState(comparison.seed, { ...baselinePriorityRules, effortB: 3 }),
+      { type: 'promote', id: 'b' },
+    );
+    const progressed = applyPriorityInput(started, { type: 'tick' });
+    expect(progressed.board.jobs.find((job) => job.id === 'b')).toMatchObject({
+      stage: 'review',
+      reviewLeft: 2,
+    });
+    expect(applyPriorityInput(progressed, { type: 'promote', id: 'a' })).toBe(progressed);
+    expect(progressed.focusSpent).toBe(2);
+  });
   it('未知対象・Review以外・資源不足・期末を無消費で拒否する', () => {
     const initial = createPriorityPrototype(1, 'b');
     expect(applyPriorityInput(initial, { type: 'promote', id: 'missing' })).toBe(initial);

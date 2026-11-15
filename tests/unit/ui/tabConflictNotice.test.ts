@@ -2,7 +2,11 @@ import { Children, createElement, isValidElement, type ReactElement, type ReactN
 import { describe, expect, it, vi } from 'vitest';
 import type { PersistenceNotice as PersistenceNoticeModel } from '../../../src/state/persistenceStatus';
 import { PersistenceNotice } from '../../../src/ui/PersistenceNotice';
-import { TabConflictNotice, TabConflictNoticePanel } from '../../../src/ui/TabConflictNotice';
+import {
+  TabConflictAcknowledgedChipView,
+  TabConflictNotice,
+  TabConflictNoticePanel,
+} from '../../../src/ui/TabConflictNotice';
 
 type Props = Record<string, unknown> & { children?: ReactNode };
 
@@ -106,5 +110,30 @@ describe('別タブ競合の案内', () => {
     expect(String(live?.props.children)).toContain('別のタブが記録を更新しました');
     const conflict = elements(node).find((element) => element.type === TabConflictNotice);
     expect(conflict?.props.exportMessage).toBe('ファイルを書き出せませんでした。');
+  });
+
+  it('常駐チップは保存停止中を残し、他オーバーレイの免除対象にしない', () => {
+    const onTakeOver = vi.fn();
+    const onExport = vi.fn();
+    const node = createElement(TabConflictAcknowledgedChipView, {
+      onTakeOver,
+      showExport: true,
+      onExport,
+    });
+    const chip = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-quiet',
+    );
+    const detail = elements(node).find((element) =>
+      String(element.props.className ?? '').includes('persistence-notice-detail'),
+    );
+    const exportButton = elements(node).find(
+      (element) => element.props['data-testid'] === 'tab-conflict-export',
+    );
+    expect(chip?.props['data-overlay-lock-exempt']).toBeUndefined();
+    expect(chip?.props.inert).toBeUndefined();
+    expect(detail?.props.children).toContain('保存停止中');
+    expect(exportButton?.type).toBe('button');
+    (exportButton?.props.onClick as () => void)();
+    expect(onExport).toHaveBeenCalledOnce();
   });
 });

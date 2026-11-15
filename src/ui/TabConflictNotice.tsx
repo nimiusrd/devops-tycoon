@@ -2,24 +2,52 @@
  * 別タブが先に記録を更新したときの案内（RI-144）。
  *
  * 競合はモーダルとして扱い、自動進行を止めて背面を inert にする。
- * バナー本体だけが当たり判定を持ち、枠の外ではタップを受けない。
+ * Escape と枠外タップは「このタブで続ける」と同じく案内を閉じ、直前の操作へ戻す。
+ * 閉じたあとの常駐チップはボタン以外のタップを受けない。
+ * 他のオーバーレイが開いている間は、チップを背面にして inert にする。
  * 読み上げは呼び出し側の aria-live に任せ、ここでは role を付けない。
  */
-import { useLayoutEffect, useRef, type Ref } from 'react';
+import { useLayoutEffect, useRef, useState, type MouseEvent, type Ref } from 'react';
 import { ResultOverlay } from './ResultOverlay';
 import { listFocusable } from './dialogOverlayLock';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
-/** モーダルを閉じたあとも、保存停止中であることを盤面を動かさず示す。 */
-export function TabConflictAcknowledgedChip({
-  onTakeOver,
-  showExport = false,
-  onExport,
-}: {
+/** 編成・全社・結果など、常駐チップより前面にすべきオーバーレイ。 */
+const FRONT_OVERLAY_SELECTOR = '.zoom-overlay, .result-overlay:not(.tab-conflict-overlay)';
+
+/** 他オーバーレイが DOM にある間、常駐チップを操作不能にする。 */
+function useInertBehindFrontOverlay(): boolean {
+  const [inert, setInert] = useState(false);
+
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return;
+    const sync = () => {
+      setInert(document.querySelector(FRONT_OVERLAY_SELECTOR) !== null);
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  return inert;
+}
+
+export interface TabConflictAcknowledgedChipProps {
   onTakeOver: () => void;
   showExport?: boolean;
   onExport?: () => void;
-}) {
+  /** 編成や全社などの前面オーバーレイ中は true。 */
+  inert?: boolean;
+}
+
+/** モーダルを閉じたあとも、保存停止中であることを盤面を動かさず示す。 */
+export function TabConflictAcknowledgedChipView({
+  onTakeOver,
+  showExport = false,
+  onExport,
+  inert = false,
+}: TabConflictAcknowledgedChipProps) {
   return (
     <div
       className="persistence-notice persistence-notice-quiet tab-conflict-quiet"
@@ -27,10 +55,10 @@ export function TabConflictAcknowledgedChip({
       data-state="conflict"
       data-tone="warn"
       data-layout="overlay"
-      data-overlay-lock-exempt="true"
+      inert={inert ? true : undefined}
     >
       <p className="persistence-notice-headline">別タブが先に記録を更新しました</p>
-      <p className="persistence-notice-detail">このタブでは端末へ保存しません。</p>
+      <p className="persistence-notice-detail">保存停止中。このタブでは端末へ保存しません。</p>
       <div className="persistence-notice-actions">
         {showExport && onExport ? (
           <button
@@ -53,6 +81,20 @@ export function TabConflictAcknowledgedChip({
       </div>
     </div>
   );
+}
+
+export function TabConflictAcknowledgedChip(props: TabConflictAcknowledgedChipProps) {
+  const inert = useInertBehindFrontOverlay();
+  return <TabConflictAcknowledgedChipView {...props} inert={inert} />;
+}
+
+/** バナー本体以外（スクリム）のタップだけ案内を閉じる。 */
+function acknowledgeTabConflictFromScrim(
+  event: { target: EventTarget | null; currentTarget: EventTarget | null },
+  acknowledge: () => void,
+): void {
+  if (event.target !== event.currentTarget) return;
+  acknowledge();
 }
 
 export interface TabConflictNoticeProps {
@@ -145,7 +187,10 @@ export function TabConflictNoticePanel({
 
 export function TabConflictNotice(props: TabConflictNoticeProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef);
+  useDialogOverlayLock(overlayRef, {
+    restoreFocus: true,
+    onDismiss: props.onAcknowledge,
+  });
 
   useLayoutEffect(() => {
     const overlay = overlayRef.current;
@@ -156,6 +201,10 @@ export function TabConflictNotice(props: TabConflictNoticeProps) {
     else overlay.focus({ preventScroll: true });
   }, []);
 
+  const onScrimClick = (event: MouseEvent<HTMLDivElement>) => {
+    acknowledgeTabConflictFromScrim(event, props.onAcknowledge);
+  };
+
   return (
     <ResultOverlay
       ref={overlayRef}
@@ -165,6 +214,7 @@ export function TabConflictNotice(props: TabConflictNoticeProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="tab-conflict-headline"
+      onClick={onScrimClick}
     >
       <TabConflictNoticePanel {...props} />
     </ResultOverlay>

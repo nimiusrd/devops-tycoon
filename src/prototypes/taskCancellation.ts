@@ -88,6 +88,23 @@ function resolveRules(rules?: Partial<CancellationRules>): CancellationRules {
   return { ...BASE_CANCELLATION_RULES, ...rules };
 }
 
+/** 履歴か activeId にある未完了タスク。先頭IDだけでは占有を外さない。 */
+function occupiedIds(state: CancellationState): string[] {
+  const seen = new Set<string>();
+  if (state.activeId !== null) seen.add(state.activeId);
+  for (const entry of state.board.history) {
+    for (const id of entry.ids) seen.add(id);
+  }
+  return state.board.tasks
+    .filter(
+      (task) =>
+        seen.has(task.id) &&
+        task.completedTick === null &&
+        (task.codingLeft > 0 || task.integrationLeft > 0),
+    )
+    .map((task) => task.id);
+}
+
 function trustCostOf(state: CancellationState, id: string, rules: CancellationRules): number {
   if (!state.contractIds.includes(id)) return 0;
   if (!rules.contractRatio) return 2;
@@ -105,23 +122,19 @@ export function applyCancellationPrototype(
   const resolved = resolveRules(rules);
   if (state.board.tick >= state.board.horizon) return state;
   if (input.kind === 'work') {
-    // 占有中の仕事を外す入力は拒否する。空いている枠へ別の仕事を足すこととは分ける。
-    if (state.activeId !== null && input.ids.length > 0 && !input.ids.includes(state.activeId))
-      return state;
+    // 開始済みの未完了は、並べ替えても入力から外せない。空枠へ足すこととは分ける。
+    const occupied = occupiedIds(state);
+    if (input.ids.length > 0 && occupied.some((id) => !input.ids.includes(id))) return state;
     const board = tickParallelPrototype(state.board, input.ids);
     if (board === state.board) return state;
-    const headId = input.ids[0];
-    const head = headId === undefined ? undefined : board.tasks.find((task) => task.id === headId);
-    return {
+    const worked = {
       ...state,
       board,
-      activeId:
-        input.ids.length === 0
-          ? state.activeId
-          : head !== undefined && head.completedTick === null
-            ? head.id
-            : null,
       inputs: [...state.inputs, { ...input, ids: [...input.ids] }],
+    };
+    return {
+      ...worked,
+      activeId: input.ids.length === 0 ? state.activeId : (occupiedIds(worked)[0] ?? null),
     };
   }
   const task = state.board.tasks.find((candidate) => candidate.id === input.id);
@@ -253,14 +266,10 @@ function openTasks(state: CancellationState): ParallelTask[] {
   );
 }
 
-/** 占有中の仕事を残し、空いている枠だけ他の未完了を足す。 */
+/** 占有中の仕事をすべて残し、空いている枠だけ他の未完了を足す。 */
 function workIds(state: CancellationState): string[] {
-  const open = openTasks(state);
-  const ids: string[] = [];
-  if (state.activeId !== null && open.some((task) => task.id === state.activeId)) {
-    ids.push(state.activeId);
-  }
-  for (const task of open) {
+  const ids = occupiedIds(state);
+  for (const task of openTasks(state)) {
     if (ids.length >= state.board.slots) break;
     if (!ids.includes(task.id)) ids.push(task.id);
   }

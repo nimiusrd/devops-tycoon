@@ -207,6 +207,19 @@ describe('RI-159 途中キャンセル', () => {
     });
     expect(both.board.tasks.map((task) => task.codingLeft)).toEqual([2, 2]);
     expect(both.activeId).toBe('obsolete');
+    const swapped = applyCancellationPrototype(parallel, {
+      kind: 'work',
+      ids: ['needed', 'obsolete'],
+    });
+    expect(swapped.board.tasks.map((task) => task.codingLeft)).toEqual([2, 2]);
+    expect(applyCancellationPrototype(swapped, { kind: 'work', ids: ['needed'] })).toBe(swapped);
+    expect(applyCancellationPrototype(swapped, { kind: 'work', ids: ['obsolete'] })).toBe(swapped);
+    const kept = applyCancellationPrototype(swapped, {
+      kind: 'work',
+      ids: ['needed', 'obsolete'],
+    });
+    expect(kept.board.tasks.map((task) => task.codingLeft)).toEqual([1, 1]);
+    expect(kept.activeId).toBe('obsolete');
     expect(state).toEqual(snapshot);
     const unaffordable = sensitivity.results.find(
       (row) => row.factor === 'contract-ratio' && row.level === 6 && row.strategy === 'cancel',

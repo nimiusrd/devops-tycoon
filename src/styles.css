@@ -6475,6 +6475,13 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 :root[data-responsive-width='narrow'] .persistence-quiet-slot .persistence-notice-detail {
   display: none;
 }
+/* 保存中チップの詳細は狭幅で隠すが、競合後の「保存停止中」は残す（#1008）。 */
+:root[data-responsive-width='narrow']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-detail {
+  display: block;
+}
 .persistence-notice-headline,
 .persistence-notice-detail {
   margin: 0;
@@ -6581,6 +6588,66 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   .persistence-notice-actions
   .btn[data-testid='tab-conflict-reload'] {
   grid-column: auto;
+}
+/*
+ * 常駐チップは文書フローに置き、編成（20）や全社（30）より前面に出さない。
+ * 狭幅は書き出しと再読込を縦に積み、44px 以上を枠内へ収める。1280 では横並び。
+ */
+.persistence-quiet-slot .tab-conflict-quiet {
+  z-index: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+:root[data-responsive-width='narrow'] .persistence-quiet-slot .tab-conflict-quiet {
+  width: 100%;
+}
+:root[data-responsive-width='narrow']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+}
+:root[data-responsive-width='narrow']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions
+  .btn {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: min(320px, 100%);
+  min-width: var(--visual-interaction-min-touch-target);
+  min-height: var(--visual-interaction-min-touch-target);
+  margin: 0;
+}
+:root[data-responsive-width='wide'] .persistence-quiet-slot .tab-conflict-quiet {
+  width: max-content;
+}
+:root[data-responsive-width='wide']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  justify-content: flex-end;
+  width: max-content;
+  max-width: 100%;
+}
+:root[data-responsive-width='wide']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions
+  .btn {
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: 320px;
+  min-width: var(--visual-interaction-min-touch-target);
+  min-height: var(--visual-interaction-min-touch-target);
+  margin: 0;
 }
 /* 競合はモーダル＋コンパクトバナー。スクリムだけ全面、当たり判定はバナー本体に限定。 */
 .tab-conflict-overlay.result-overlay {

@@ -100,6 +100,7 @@ for (const width of [320, 1280] as const) {
     await page.goto(`/?seed=${seedSuffix}-a`);
     await other.goto(`/?seed=${seedSuffix}-b`);
     await expect(page.getByTestId('title')).toBeVisible();
+    await expect(other.getByTestId('title')).toBeVisible();
 
     await triggerMetaConflict(page, other);
     await expect(page.getByTestId('tab-conflict-overlay')).toBeVisible();
@@ -132,6 +133,7 @@ for (const width of [320, 1280] as const) {
     await page.goto(`/?seed=${seedSuffix}-a`);
     await other.goto(`/?seed=${seedSuffix}-b`);
     await expect(page.getByTestId('title')).toBeVisible();
+    await expect(other.getByTestId('title')).toBeVisible();
 
     await page.getByTestId('open-help').click();
     await expect(page.getByTestId('how-to-play')).toBeVisible();

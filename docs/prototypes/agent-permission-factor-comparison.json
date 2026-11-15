@@ -1,0 +1,3818 @@
+{
+  "conditions": {
+    "seed": "RI-193",
+    "scenarios": ["routine", "critical"],
+    "resources": {
+      "routine": {
+        "jobs": 2,
+        "work": 4,
+        "value": 6,
+        "horizon": 6
+      },
+      "critical": {
+        "jobs": 1,
+        "work": 4,
+        "value": 16,
+        "horizon": 8
+      },
+      "readSpeed": 1,
+      "editSpeed": 2
+    },
+    "decision": {
+      "preapprove": "edit",
+      "confirm": "read",
+      "score": "netValue",
+      "margin": "事前の差引 - 都度の差引"
+    },
+    "baseline": {
+      "approvalTicks": 2,
+      "blast": 20
+    },
+    "approvalAppliesTo": "critical の初期 approvalLeft だけ。routine は 0",
+    "blastAppliesTo": "critical を edit で出荷したとき一度。routine には掛けない",
+    "held": {
+      "approvalTicks": "承認tickだけを動かす。影響20。0は待ちなし、8は重要の期末いっぱい",
+      "blast": "影響だけを動かす。承認tickは2。0は同点、15は差引がまだ正、16は差引0、32は価値の2倍"
+    },
+    "scopeConsumesTick": false,
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "approvalTicks": [
+      {
+        "axis": "approvalTicks",
+        "parameter": "0",
+        "rules": {
+          "approvalTicks": 0,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -20,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,read+1",
+                  "t2:c1,read+1",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1,ship:16",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "1",
+        "rules": {
+          "approvalTicks": 1,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -20,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 1
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,read+1",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1,ship:16",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "2",
+        "rules": {
+          "approvalTicks": 2,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -20,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 2
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1,ship:16",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "3",
+        "rules": {
+          "approvalTicks": 3,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -20,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 3
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,approval",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1",
+                  "t7:c1,read+1,ship:16",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "4",
+        "rules": {
+          "approvalTicks": 4,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -20,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 4
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,approval",
+                  "t4:c1,approval",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1",
+                  "t7:c1,read+1",
+                  "t8:c1,read+1,ship:16"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "5",
+        "rules": {
+          "approvalTicks": 5,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -4,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 5
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 0,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,approval",
+                  "t4:c1,approval",
+                  "t5:c1,approval",
+                  "t6:c1,read+1",
+                  "t7:c1,read+1",
+                  "t8:c1,read+1"
+                ],
+                "netValue": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "6",
+        "rules": {
+          "approvalTicks": 6,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -4,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 6
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 0,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,approval",
+                  "t4:c1,approval",
+                  "t5:c1,approval",
+                  "t6:c1,approval",
+                  "t7:c1,read+1",
+                  "t8:c1,read+1"
+                ],
+                "netValue": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "7",
+        "rules": {
+          "approvalTicks": 7,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -4,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 7
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 0,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,approval",
+                  "t4:c1,approval",
+                  "t5:c1,approval",
+                  "t6:c1,approval",
+                  "t7:c1,approval",
+                  "t8:c1,read+1"
+                ],
+                "netValue": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "approvalTicks",
+        "parameter": "8",
+        "rules": {
+          "approvalTicks": 8,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -4,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 8
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 0,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,approval",
+                  "t4:c1,approval",
+                  "t5:c1,approval",
+                  "t6:c1,approval",
+                  "t7:c1,approval",
+                  "t8:c1,approval"
+                ],
+                "netValue": 0
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "blast": [
+      {
+        "axis": "blast",
+        "parameter": "0",
+        "rules": {
+          "approvalTicks": 2,
+          "blast": 0
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "tie",
+            "margin": 0,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 2
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:0",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1,ship:16",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "blast",
+        "parameter": "1",
+        "rules": {
+          "approvalTicks": 2,
+          "blast": 1
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -1,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 1,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 1,
+                    "approvalLeft": 2
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:1",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 15
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1,ship:16",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "blast",
+        "parameter": "15",
+        "rules": {
+          "approvalTicks": 2,
+          "blast": 15
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -15,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 15,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 15,
+                    "approvalLeft": 2
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:15",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 1
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1,ship:16",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "blast",
+        "parameter": "16",
+        "rules": {
+          "approvalTicks": 2,
+          "blast": 16
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -16,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 16,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 16,
+                    "approvalLeft": 2
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:16",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 0
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1,ship:16",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "blast",
+        "parameter": "20",
+        "rules": {
+          "approvalTicks": 2,
+          "blast": 20
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -20,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 20,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 20,
+                    "approvalLeft": 2
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:20",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -4
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1,ship:16",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "blast",
+        "parameter": "32",
+        "rules": {
+          "approvalTicks": 2,
+          "blast": 32
+        },
+        "scenarios": [
+          {
+            "scenario": "routine",
+            "preference": "preapprove",
+            "margin": 6,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "edit",
+                "shippedValue": 12,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,edit+2",
+                  "t2:r1,edit+2,ship:6",
+                  "t3:r2,edit+2",
+                  "t4:r2,edit+2,ship:6",
+                  "t5:idle",
+                  "t6:idle"
+                ],
+                "netValue": 12
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 6,
+                "scope": "read",
+                "shippedValue": 6,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "r1",
+                    "status": "shipped",
+                    "shipped": 6,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  },
+                  {
+                    "id": "r2",
+                    "status": "allowed",
+                    "shipped": null,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:r1,read+1",
+                  "t2:r1,read+1",
+                  "t3:r1,read+1",
+                  "t4:r1,read+1,ship:6",
+                  "t5:r2,read+1",
+                  "t6:r2,read+1"
+                ],
+                "netValue": 6
+              }
+            }
+          },
+          {
+            "scenario": "critical",
+            "preference": "confirm",
+            "margin": -32,
+            "preapprove": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "edit"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "edit",
+                "shippedValue": 16,
+                "loss": 32,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 32,
+                    "approvalLeft": 2
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,edit+2",
+                  "t2:c1,edit+2,ship:16,blast:32",
+                  "t3:idle",
+                  "t4:idle",
+                  "t5:idle",
+                  "t6:idle",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": -16
+              }
+            },
+            "confirm": {
+              "inputs": [
+                {
+                  "type": "scope",
+                  "scope": "read"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "scope": "read",
+                "shippedValue": 16,
+                "loss": 0,
+                "jobs": [
+                  {
+                    "id": "c1",
+                    "status": "shipped",
+                    "shipped": 16,
+                    "blast": 0,
+                    "approvalLeft": 0
+                  }
+                ],
+                "resolutions": [
+                  "t1:c1,approval",
+                  "t2:c1,approval",
+                  "t3:c1,read+1",
+                  "t4:c1,read+1",
+                  "t5:c1,read+1",
+                  "t6:c1,read+1,ship:16",
+                  "t7:idle",
+                  "t8:idle"
+                ],
+                "netValue": 16
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "blast",
+      "scenario": "critical",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "preapprove": 16,
+        "confirm": 16
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "confirm",
+        "preapprove": 15,
+        "confirm": 16
+      }
+    }
+  ]
+}

@@ -181,6 +181,16 @@ describe('RI-163 要因を一つずつ動かした比較', () => {
       auth: 24,
     });
     expect(report.factors.forecastAccuracy.front[1]?.actualMajority).toBe('auth');
+    expect(report.factors.forecastAccuracy.front[2]?.board.domains).toEqual([
+      'auth',
+      'auth',
+      'auth',
+    ]);
+    expect(report.factors.forecastAccuracy.front[3]?.board.domains).toEqual([
+      'auth',
+      'auth',
+      'payment',
+    ]);
     expect(report.factors.forecastAccuracy.tail[1]?.values).toEqual({
       skip: 16,
       payment: 24,

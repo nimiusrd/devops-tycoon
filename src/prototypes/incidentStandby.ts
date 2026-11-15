@@ -179,10 +179,11 @@ export function applyStandbyInput(state: StandbyState, input: StandbyInput): Sta
   else {
     const capacity = standbyCapacity(next);
     // 毎tickの独立した小仕事。工程バッファ・個別タスクは本試作ではモデル化しない。
-    next.value += Math.min(capacity.coding, capacity.review);
-    // 通常消費は出荷できたtickだけ。停止中と待機・benchは対象外。未指定は0。
+    const shipped = Math.min(capacity.coding, capacity.review);
+    next.value += shipped;
+    // 通常消費は出荷できたtickだけ。出荷0、停止中、待機・benchは対象外。未指定は0。
     const normalStaminaCost = next.rules?.normalStaminaCost ?? 0;
-    if (normalStaminaCost > 0) {
+    if (shipped > 0 && normalStaminaCost > 0) {
       for (const member of next.members) {
         if (member.lane === 'coding' || member.lane === 'review')
           member.stamina = Math.max(0, member.stamina - normalStaminaCost);

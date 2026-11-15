@@ -124,6 +124,16 @@ describe('RI-170 障害対応の待機担当', () => {
     standby = applyStandbyInput(standby, { type: 'tick' });
     expect(standby.members.map((member) => member.stamina)).toEqual([12, 7, 11]);
     expect(createStandbyPrototype('RI-170', true).rules).toBeUndefined();
+    let exhausted = applyStandbyInput(
+      createStandbyPrototype('RI-170', true, { normalStaminaCost: 3 }),
+      { type: 'assign', id: 'coder', lane: 'standby' },
+    );
+    for (let i = 0; i < 3; i++) exhausted = applyStandbyInput(exhausted, { type: 'tick' });
+    expect(exhausted.members.map((member) => member.stamina)).toEqual([8, 0, 3]);
+    const idle = applyStandbyInput(exhausted, { type: 'tick' });
+    expect(idle.value).toBe(exhausted.value);
+    expect(idle.members[0]).toMatchObject({ stamina: 6, responseSpent: 6 });
+    expect(idle.members.slice(1).map((member) => member.stamina)).toEqual([0, 3]);
   });
   it('招集0は到着したtickに通常担当が復旧し、そのtickは出荷しない', () => {
     let state = createStandbyPrototype('RI-170', true, { mobilizationTicks: 0 });

@@ -73,11 +73,13 @@ describe('RI-158 最低限使える版', () => {
       { kind: 'work', id: 'urgent' },
       { kind: 'work', id: 'urgent' },
     ];
-    const live = inputs.reduce(tickMinimumReleasePrototype, initial);
-    const partial = inputs.slice(0, 4).reduce(tickMinimumReleasePrototype, initial);
-    const restored = inputs
-      .slice(4)
-      .reduce(tickMinimumReleasePrototype, JSON.parse(JSON.stringify(partial)));
+    const apply = (
+      state: ReturnType<typeof createMinimumReleasePrototype>,
+      input: MinimumReleaseInput,
+    ) => tickMinimumReleasePrototype(state, input);
+    const live = inputs.reduce(apply, initial);
+    const partial = inputs.slice(0, 4).reduce(apply, initial);
+    const restored = inputs.slice(4).reduce(apply, JSON.parse(JSON.stringify(partial)));
     expect(restored).toEqual(live);
     expect(initial).toEqual(snapshot);
     const ended = { ...live, board: { ...live.board, tick: live.board.horizon } };

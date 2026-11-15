@@ -1,0 +1,5915 @@
+{
+  "conditions": {
+    "seed": "RI-165",
+    "urgent": "b",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "productionIntegrated": false,
+    "oneAtATime": true,
+    "incidentLottery": false,
+    "playerTargetLoad": false,
+    "preference": "差引が高い方を上とする。差引が同じなら同点。",
+    "net": "出荷価値 − 集中力消費 × 集中力価値 − レビュー待ち合計 × 待ち罰則。期限超過の出荷は2、未出荷は0。",
+    "strategies": {
+      "keep": "tickのみ",
+      "move": "重要PR bを先頭へ移す。予約待ち0は即時。1以上は予約し、そのtick数のあとで残工数を保ったまま移す。続けて、指定回数だけ先頭を末尾へ回す。"
+    },
+    "baseline": {
+      "assignees": 1,
+      "reserveAfter": 0,
+      "effortB": 2,
+      "deadlineB": 3,
+      "focusValue": 1,
+      "reactRotations": 0,
+      "elapsed": 0,
+      "waitPenalty": 0,
+      "failure": "none"
+    },
+    "unchanged": "焦点の要因以外は、6tick、Reviewの初期順a→b→c、aとcのレビュー2、CI工数2、CI1枠、予算20、集中力6、bの価値12、aとcの価値8、期限超過価値2。",
+    "factorNotes": {
+      "assignees": "1tickにレビューへ配る工数。先頭から1ずつ配り、余りは次の周で先頭へ積む。CI枠は1のまま。",
+      "reserveAfter": "着手前の選択なら0で、初回と同じ即時移動。1以上は進行中の仕事を割り込まず、そのtick数だけ待ってから残工数つきで先頭へ移す。",
+      "effortB": "bのレビュー工数。aとcは2。CI工数は2のまま。",
+      "deadlineB": "bの期限tick。aとcは6。完了tickが期限以下なら価値12、超過して出荷すれば2。",
+      "focusValue": "集中力1を差引で何点と数えるか。初回は1。",
+      "reactRotations": "移動の直後に、待っていたレビューが先頭を末尾へ戻す回数。時間も集中力も消費しない。移さない側には起こらない。",
+      "elapsed": "着手前に過ぎたtick。残工数は減らない。各レビュー待ちに同じ数を足す。",
+      "waitPenalty": "レビュー待ち1点を差引から引く。初回は0で、待ちは記録のみ。",
+      "failure": "初回CIに失敗する仕事。noneは失敗なし。開始前の公開値で、seedから乱数は引かない。失敗後の手戻りは共用CIモデルのまま。"
+    }
+  },
+  "series": [
+    {
+      "factor": "assignees",
+      "points": [
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 2,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 2
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 5
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 2
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 5
+            }
+          }
+        },
+        {
+          "level": 3,
+          "rules": {
+            "assignees": 3,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 6
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 6
+            }
+          }
+        },
+        {
+          "level": 4,
+          "rules": {
+            "assignees": 4,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 18,
+              "netValue": 18,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 2,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 4
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 28,
+              "netValue": 26,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 2,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 4
+            }
+          }
+        },
+        {
+          "level": 5,
+          "rules": {
+            "assignees": 5,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 18,
+              "netValue": 18,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 2,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 5
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 28,
+              "netValue": 26,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 2,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 5
+            }
+          }
+        },
+        {
+          "level": 6,
+          "rules": {
+            "assignees": 6,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 18,
+              "netValue": 18,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 2,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 6
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 28,
+              "netValue": 26,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 0,
+                "b": 0,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 2,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "reserveAfter",
+      "points": [
+        {
+          "level": 0,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 1,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "reserve",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "apply",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 1,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 2
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 2,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "reserve",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "apply",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "effortB",
+      "points": [
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 1,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 3
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 2
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 28,
+              "netValue": 26,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 1,
+                "b": 0,
+                "c": 3
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 2,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 3,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 3,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 5
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 1,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 3,
+                "b": 0,
+                "c": 5
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 1,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 4,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 4,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "netValue": 8,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 6
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 2,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 2,
+              "netValue": 0,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 4,
+                "b": 0,
+                "c": 6
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 2,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "deadlineB",
+      "points": [
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 1,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 2,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 3,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 4,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 4,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 5,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 5,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 20,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 6,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 6,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 20,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "focusValue",
+      "points": [
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 2,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 16,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 3,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 3,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 14,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 4,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 4,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 12,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 5,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 5,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "tie",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 10,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 6,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 6,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "reactRotations",
+      "points": [
+        {
+          "level": 0,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 1,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "rotate"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 16,
+              "netValue": 14,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 0,
+                "b": 4,
+                "c": 2
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 2,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "rotate"
+              },
+              {
+                "type": "rotate"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 4,
+                "b": 2,
+                "c": 0
+              },
+              "jobs": [
+                {
+                  "id": "c",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 3,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 3,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "rotate"
+              },
+              {
+                "type": "rotate"
+              },
+              {
+                "type": "rotate"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "elapsed",
+      "points": [
+        {
+          "level": 0,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 1,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 1,
+                "b": 3,
+                "c": 5
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 1,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 5,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 8,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 3,
+                "b": 1,
+                "c": 5
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 4,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 1,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 5,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 2,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "netValue": 8,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 2,
+                "b": 4,
+                "c": 6
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 2,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 4,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 2,
+              "netValue": 0,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 4,
+                "b": 2,
+                "c": 6
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 2,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 4,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 3,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 3,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "netValue": 8,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 3,
+                "b": 5,
+                "c": 6
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 1,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 2,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 3,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 2,
+              "netValue": 0,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 5,
+                "b": 3,
+                "c": 6
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 6,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 1,
+                  "ciLeft": 2
+                },
+                {
+                  "id": "c",
+                  "stage": "review",
+                  "completedTick": null,
+                  "reviewLeft": 2,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 3,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "waitPenalty",
+      "points": [
+        {
+          "level": 0,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 1,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 1,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 4,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 12,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 2,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 2,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": -2,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 6,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 4,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 4,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": -14,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": -6,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": 8,
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 8,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": -38,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": -30,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "factor": "failure",
+      "points": [
+        {
+          "level": "none",
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "none"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        },
+        {
+          "level": "b",
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "b"
+          },
+          "preference": "keep",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "netValue": 8,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 1
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 2,
+              "netValue": 0,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 3
+            }
+          }
+        },
+        {
+          "level": "a",
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "a"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "netValue": 8,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 3
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 12,
+              "netValue": 10,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                },
+                {
+                  "id": "c",
+                  "stage": "queue",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 2
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 1
+            }
+          }
+        },
+        {
+          "level": "c",
+          "rules": {
+            "assignees": 1,
+            "reserveAfter": 0,
+            "effortB": 2,
+            "deadlineB": 3,
+            "focusValue": 1,
+            "reactRotations": 0,
+            "elapsed": 0,
+            "waitPenalty": 0,
+            "failure": "c"
+          },
+          "preference": "move",
+          "keep": {
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
+              "reviewWait": {
+                "a": 0,
+                "b": 2,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          },
+          "move": {
+            "inputs": [
+              {
+                "type": "promote",
+                "id": "b"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "value": 20,
+              "netValue": 18,
+              "focus": 4,
+              "focusSpent": 2,
+              "reviewWait": {
+                "a": 2,
+                "b": 0,
+                "c": 4
+              },
+              "jobs": [
+                {
+                  "id": "b",
+                  "stage": "done",
+                  "completedTick": 3,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "a",
+                  "stage": "done",
+                  "completedTick": 5,
+                  "reviewLeft": 0,
+                  "ciLeft": 0
+                },
+                {
+                  "id": "c",
+                  "stage": "ci",
+                  "completedTick": null,
+                  "reviewLeft": 0,
+                  "ciLeft": 1
+                }
+              ],
+              "ciCost": 6,
+              "ciWait": 0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "reversals": [
+    {
+      "factor": "reserveAfter",
+      "before": {
+        "level": 0,
+        "preference": "move",
+        "keep": 10,
+        "move": 18
+      },
+      "after": {
+        "level": 1,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      }
+    },
+    {
+      "factor": "effortB",
+      "before": {
+        "level": 2,
+        "preference": "move",
+        "keep": 10,
+        "move": 18
+      },
+      "after": {
+        "level": 3,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      }
+    },
+    {
+      "factor": "deadlineB",
+      "before": {
+        "level": 2,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      },
+      "after": {
+        "level": 3,
+        "preference": "move",
+        "keep": 10,
+        "move": 18
+      }
+    },
+    {
+      "factor": "deadlineB",
+      "before": {
+        "level": 4,
+        "preference": "move",
+        "keep": 10,
+        "move": 18
+      },
+      "after": {
+        "level": 5,
+        "preference": "keep",
+        "keep": 20,
+        "move": 18
+      }
+    },
+    {
+      "factor": "focusValue",
+      "before": {
+        "level": 4,
+        "preference": "move",
+        "keep": 10,
+        "move": 12
+      },
+      "after": {
+        "level": 5,
+        "preference": "tie",
+        "keep": 10,
+        "move": 10
+      }
+    },
+    {
+      "factor": "focusValue",
+      "before": {
+        "level": 5,
+        "preference": "tie",
+        "keep": 10,
+        "move": 10
+      },
+      "after": {
+        "level": 6,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      }
+    },
+    {
+      "factor": "reactRotations",
+      "before": {
+        "level": 1,
+        "preference": "move",
+        "keep": 10,
+        "move": 14
+      },
+      "after": {
+        "level": 2,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      }
+    },
+    {
+      "factor": "reactRotations",
+      "before": {
+        "level": 2,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      },
+      "after": {
+        "level": 3,
+        "preference": "move",
+        "keep": 10,
+        "move": 18
+      }
+    },
+    {
+      "factor": "elapsed",
+      "before": {
+        "level": 0,
+        "preference": "move",
+        "keep": 10,
+        "move": 18
+      },
+      "after": {
+        "level": 1,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      }
+    },
+    {
+      "factor": "failure",
+      "before": {
+        "level": "none",
+        "preference": "move",
+        "keep": 10,
+        "move": 18
+      },
+      "after": {
+        "level": "b",
+        "preference": "keep",
+        "keep": 8,
+        "move": 0
+      }
+    },
+    {
+      "factor": "failure",
+      "before": {
+        "level": "b",
+        "preference": "keep",
+        "keep": 8,
+        "move": 0
+      },
+      "after": {
+        "level": "a",
+        "preference": "move",
+        "keep": 8,
+        "move": 10
+      }
+    }
+  ]
+}

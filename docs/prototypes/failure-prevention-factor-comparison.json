@@ -1,0 +1,3812 @@
+{
+  "conditions": {
+    "seed": "RI-164",
+    "horizon": 12,
+    "jobs": 3,
+    "workTicks": 2,
+    "jobValue": 8,
+    "failureLoss": 4,
+    "failureRepair": 2,
+    "checklistTicks": 2,
+    "checklistInvestment": 2,
+    "protectedRepair": 1,
+    "repeatedFirstComparison": false,
+    "strategies": ["ship", "place"],
+    "excludedStrategies": ["farm"],
+    "held": {
+      "forecastHits": 2,
+      "failurePattern": "2",
+      "residualLoss": 1,
+      "maintenancePerTick": 0,
+      "earlyAccidents": 0,
+      "multiPattern": "0",
+      "opportunityPerTick": 0
+    },
+    "opportunityHeldFailurePattern": "0",
+    "maintenanceSkipsAdoptionTicks": true,
+    "multiCauseLoss": "sum",
+    "multiCauseRepair": "max",
+    "forecastDoesNotAdapt": true,
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "productionIntegration": false,
+    "values": {
+      "forecastHits": [2, 1, 0],
+      "failurePattern": ["2", "1-leading", "1-trailing", "0"],
+      "residualLoss": [0, 1, 2, 3, 4],
+      "maintenancePerTick": [0, 1, 2, 3],
+      "earlyAccidents": [0, 1, 2],
+      "multiPattern": ["0", "1-leading", "1-trailing", "2"],
+      "opportunityPerTick": [0, 1, 2, 3, 4]
+    }
+  },
+  "points": [
+    {
+      "axis": "forecastHits",
+      "level": 2,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 2,
+          "netValue": 16,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 16
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "forecastHits",
+      "level": 1,
+      "factors": {
+        "forecastHits": 1,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 16,
+          "loss": 9,
+          "investment": 2,
+          "netValue": 5,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [
+            {
+              "id": "job-2",
+              "cause": "migration-failure",
+              "stage": "repair",
+              "remaining": 1
+            }
+          ],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 5
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "forecastHits",
+      "level": 0,
+      "factors": {
+        "forecastHits": 0,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "migration-failure",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 16,
+          "loss": 12,
+          "investment": 2,
+          "netValue": 2,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [
+            {
+              "id": "job-2",
+              "cause": "migration-failure",
+              "stage": "repair",
+              "remaining": 2
+            }
+          ],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 2
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "failurePattern",
+      "level": "2",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 2,
+          "netValue": 16,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 16
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "failurePattern",
+      "level": "1-leading",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "1-leading",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 8,
+          "investment": 0,
+          "netValue": 16,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 0,
+          "score": 16
+        },
+        "place": {
+          "value": 24,
+          "loss": 5,
+          "investment": 2,
+          "netValue": 17,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 1,
+          "spareValue": 0,
+          "score": 17
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "failurePattern",
+      "level": "1-trailing",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "1-trailing",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 8,
+          "investment": 0,
+          "netValue": 16,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 0,
+          "score": 16
+        },
+        "place": {
+          "value": 24,
+          "loss": 5,
+          "investment": 2,
+          "netValue": 17,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 1,
+          "spareValue": 0,
+          "score": 17
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "failurePattern",
+      "level": "0",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "0",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": ["work", "work", "work", "work", "checklist", "work", "work", "work", "work"]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 4,
+          "investment": 0,
+          "netValue": 20,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 4,
+          "spareValue": 0,
+          "score": 20
+        },
+        "place": {
+          "value": 24,
+          "loss": 4,
+          "investment": 2,
+          "netValue": 18,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 0,
+          "score": 18
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "residualLoss",
+      "level": 0,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 0,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": [],
+        "residualLoss": 0
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 4,
+          "investment": 2,
+          "netValue": 18,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 0,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 0,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 18
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "residualLoss",
+      "level": 1,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 2,
+          "netValue": 16,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 16
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "residualLoss",
+      "level": 2,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 2,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": [],
+        "residualLoss": 2
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 8,
+          "investment": 2,
+          "netValue": 14,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 2,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 2,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 14
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "residualLoss",
+      "level": 3,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 3,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": [],
+        "residualLoss": 3
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 10,
+          "investment": 2,
+          "netValue": 12,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 3,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 3,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        }
+      },
+      "leaders": ["place", "ship"]
+    },
+    {
+      "axis": "residualLoss",
+      "level": 4,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 4,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": [],
+        "residualLoss": 4
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 12,
+          "investment": 2,
+          "netValue": 10,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 10
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "maintenancePerTick",
+      "level": 0,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 2,
+          "netValue": 16,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 16
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "maintenancePerTick",
+      "level": 1,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 1,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": [],
+        "maintenancePerTick": 1
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 8,
+          "netValue": 10,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 10
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "maintenancePerTick",
+      "level": 2,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 2,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": [],
+        "maintenancePerTick": 2
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 14,
+          "netValue": 4,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 4
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "maintenancePerTick",
+      "level": 3,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 3,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": [],
+        "maintenancePerTick": 3
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 20,
+          "netValue": -2,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": -2
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "earlyAccidents",
+      "level": 0,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 2,
+          "netValue": 16,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 16
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "earlyAccidents",
+      "level": 1,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 1,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "induce-failure",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 16,
+          "loss": 7,
+          "investment": 2,
+          "netValue": 7,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": null,
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": true
+            },
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [
+            {
+              "id": "job-2",
+              "cause": "spec-omission",
+              "stage": "repair",
+              "remaining": 1
+            }
+          ],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 7
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "earlyAccidents",
+      "level": 2,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 2,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "induce-failure",
+          "induce-failure",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 16,
+          "loss": 10,
+          "investment": 2,
+          "netValue": 4,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": null,
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": true
+            },
+            {
+              "jobId": null,
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": true
+            },
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [
+            {
+              "id": "job-2",
+              "cause": "spec-omission",
+              "stage": "work",
+              "remaining": 2
+            }
+          ],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 4
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "multiPattern",
+      "level": "0",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 12,
+          "investment": 0,
+          "netValue": 12,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 12
+        },
+        "place": {
+          "value": 24,
+          "loss": 6,
+          "investment": 2,
+          "netValue": 16,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 16
+        }
+      },
+      "leaders": ["place"]
+    },
+    {
+      "axis": "multiPattern",
+      "level": "1-leading",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "1-leading",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "causes": ["spec-omission", "migration-failure"]
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 16,
+          "investment": 0,
+          "netValue": 8,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 8
+        },
+        "place": {
+          "value": 16,
+          "loss": 10,
+          "investment": 2,
+          "netValue": 4,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            }
+          ],
+          "pending": [
+            {
+              "id": "job-2",
+              "cause": "spec-omission",
+              "stage": "repair",
+              "remaining": 1
+            }
+          ],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 4
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "multiPattern",
+      "level": "1-trailing",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "1-trailing",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "causes": ["spec-omission", "migration-failure"]
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 16,
+          "investment": 0,
+          "netValue": 8,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 8
+        },
+        "place": {
+          "value": 16,
+          "loss": 10,
+          "investment": 2,
+          "netValue": 4,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [
+            {
+              "id": "job-2",
+              "cause": "spec-omission",
+              "stage": "repair",
+              "remaining": 1,
+              "causes": ["spec-omission", "migration-failure"]
+            }
+          ],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 4
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "multiPattern",
+      "level": "2",
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "2",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "2",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "causes": ["spec-omission", "migration-failure"]
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "causes": ["spec-omission", "migration-failure"]
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ],
+        "place": [
+          "work",
+          "work",
+          "work",
+          "work",
+          "checklist",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work",
+          "work"
+        ]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 20,
+          "investment": 0,
+          "netValue": 4,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 4
+        },
+        "place": {
+          "value": 16,
+          "loss": 14,
+          "investment": 2,
+          "netValue": 0,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-1",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "spec-omission",
+              "loss": 1,
+              "induced": false
+            },
+            {
+              "jobId": "job-2",
+              "cause": "migration-failure",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [
+            {
+              "id": "job-2",
+              "cause": "spec-omission",
+              "stage": "repair",
+              "remaining": 2,
+              "causes": ["spec-omission", "migration-failure"]
+            }
+          ],
+          "spareTicks": 0,
+          "spareValue": 0,
+          "score": 0
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "opportunityPerTick",
+      "level": 0,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "0",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 0
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": ["work", "work", "work", "work", "checklist", "work", "work", "work", "work"]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 4,
+          "investment": 0,
+          "netValue": 20,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 4,
+          "spareValue": 0,
+          "score": 20
+        },
+        "place": {
+          "value": 24,
+          "loss": 4,
+          "investment": 2,
+          "netValue": 18,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 0,
+          "score": 18
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "opportunityPerTick",
+      "level": 1,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "0",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 1
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": ["work", "work", "work", "work", "checklist", "work", "work", "work", "work"]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 4,
+          "investment": 0,
+          "netValue": 20,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 4,
+          "spareValue": 4,
+          "score": 24
+        },
+        "place": {
+          "value": 24,
+          "loss": 4,
+          "investment": 2,
+          "netValue": 18,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 2,
+          "score": 20
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "opportunityPerTick",
+      "level": 2,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "0",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 2
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": ["work", "work", "work", "work", "checklist", "work", "work", "work", "work"]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 4,
+          "investment": 0,
+          "netValue": 20,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 4,
+          "spareValue": 8,
+          "score": 28
+        },
+        "place": {
+          "value": 24,
+          "loss": 4,
+          "investment": 2,
+          "netValue": 18,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 4,
+          "score": 22
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "opportunityPerTick",
+      "level": 3,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "0",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 3
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": ["work", "work", "work", "work", "checklist", "work", "work", "work", "work"]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 4,
+          "investment": 0,
+          "netValue": 20,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 4,
+          "spareValue": 12,
+          "score": 32
+        },
+        "place": {
+          "value": 24,
+          "loss": 4,
+          "investment": 2,
+          "netValue": 18,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 6,
+          "score": 24
+        }
+      },
+      "leaders": ["ship"]
+    },
+    {
+      "axis": "opportunityPerTick",
+      "level": 4,
+      "factors": {
+        "forecastHits": 2,
+        "failurePattern": "0",
+        "residualLoss": 1,
+        "maintenancePerTick": 0,
+        "earlyAccidents": 0,
+        "multiPattern": "0",
+        "opportunityPerTick": 4
+      },
+      "initial": {
+        "version": 1,
+        "seed": "RI-164",
+        "tick": 0,
+        "horizon": 12,
+        "prevention": 0,
+        "investment": 0,
+        "loss": 0,
+        "incidents": [],
+        "jobs": [
+          {
+            "id": "job-0",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2
+          },
+          {
+            "id": "job-1",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          },
+          {
+            "id": "job-2",
+            "cause": "spec-omission",
+            "stage": "work",
+            "remaining": 2,
+            "fails": false
+          }
+        ],
+        "inputs": []
+      },
+      "inputs": {
+        "ship": ["work", "work", "work", "work", "work", "work", "work", "work"],
+        "place": ["work", "work", "work", "work", "checklist", "work", "work", "work", "work"]
+      },
+      "results": {
+        "ship": {
+          "value": 24,
+          "loss": 4,
+          "investment": 0,
+          "netValue": 20,
+          "prevention": 0,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 4,
+          "spareValue": 16,
+          "score": 36
+        },
+        "place": {
+          "value": 24,
+          "loss": 4,
+          "investment": 2,
+          "netValue": 18,
+          "prevention": 1,
+          "incidents": [
+            {
+              "jobId": "job-0",
+              "cause": "spec-omission",
+              "loss": 4,
+              "induced": false
+            }
+          ],
+          "pending": [],
+          "spareTicks": 2,
+          "spareValue": 8,
+          "score": 26
+        }
+      },
+      "leaders": ["ship"]
+    }
+  ],
+  "boundaries": [
+    {
+      "axis": "forecastHits",
+      "placeLeads": [2],
+      "ties": [],
+      "shipLeads": [1, 0],
+      "edges": [
+        {
+          "before": 2,
+          "after": 1,
+          "beforeLeaders": ["place"],
+          "afterLeaders": ["ship"]
+        }
+      ],
+      "fractionalTie": {
+        "kind": "endpointWeight",
+        "high": 2,
+        "low": 0,
+        "num": 5,
+        "den": 7
+      }
+    },
+    {
+      "axis": "failurePattern",
+      "placeLeads": ["2", "1-leading", "1-trailing"],
+      "ties": [],
+      "shipLeads": ["0"],
+      "edges": [
+        {
+          "before": "1-trailing",
+          "after": "0",
+          "beforeLeaders": ["place"],
+          "afterLeaders": ["ship"]
+        }
+      ],
+      "fractionalTie": null
+    },
+    {
+      "axis": "residualLoss",
+      "placeLeads": [0, 1, 2],
+      "ties": [3],
+      "shipLeads": [4],
+      "edges": [
+        {
+          "before": 2,
+          "after": 3,
+          "beforeLeaders": ["place"],
+          "afterLeaders": ["place", "ship"]
+        },
+        {
+          "before": 3,
+          "after": 4,
+          "beforeLeaders": ["place", "ship"],
+          "afterLeaders": ["ship"]
+        }
+      ],
+      "fractionalTie": null
+    },
+    {
+      "axis": "maintenancePerTick",
+      "placeLeads": [0],
+      "ties": [],
+      "shipLeads": [1, 2, 3],
+      "edges": [
+        {
+          "before": 0,
+          "after": 1,
+          "beforeLeaders": ["place"],
+          "afterLeaders": ["ship"]
+        }
+      ],
+      "fractionalTie": {
+        "kind": "perTick",
+        "num": 2,
+        "den": 3
+      }
+    },
+    {
+      "axis": "earlyAccidents",
+      "placeLeads": [0],
+      "ties": [],
+      "shipLeads": [1, 2],
+      "edges": [
+        {
+          "before": 0,
+          "after": 1,
+          "beforeLeaders": ["place"],
+          "afterLeaders": ["ship"]
+        }
+      ],
+      "fractionalTie": null
+    },
+    {
+      "axis": "multiPattern",
+      "placeLeads": ["0"],
+      "ties": [],
+      "shipLeads": ["1-leading", "1-trailing", "2"],
+      "edges": [
+        {
+          "before": "0",
+          "after": "1-leading",
+          "beforeLeaders": ["place"],
+          "afterLeaders": ["ship"]
+        }
+      ],
+      "fractionalTie": null
+    },
+    {
+      "axis": "opportunityPerTick",
+      "placeLeads": [],
+      "ties": [],
+      "shipLeads": [0, 1, 2, 3, 4],
+      "edges": [],
+      "fractionalTie": null
+    }
+  ]
+}

@@ -213,16 +213,20 @@ describe('RI-172 原因調査', () => {
       prior = level === 50 ? 50 : factor === 'priorConfigurationPercent' ? level : 50,
     ) => {
       // 6・14・10・50は初回比較の対照。感度JSONには動かした段だけを置く。
-      const source = level === 6 || level === 14 || level === 10 || level === 50 ? original : rows;
-      const from = source === original ? 'original' : 'sensitivity';
-      const selected =
-        source === rows
-          ? source.filter((row) => row.factor === factor && row.level === level)
-          : source;
+      const control = level === 6 || level === 14 || level === 10 || level === 50;
+      if (control) {
+        const scores = {
+          investigate: score(horizon, 'investigate', prior, original, 'original'),
+          guess: score(horizon, 'guess', prior, original, 'original'),
+          rollback: score(horizon, 'rollback', prior, original, 'original'),
+        };
+        return { ...scores, ...rankInvestigationChoice(scores) };
+      }
+      const selected = rows.filter((row) => row.factor === factor && row.level === level);
       const scores = {
-        investigate: score(horizon, 'investigate', prior, selected, from),
-        guess: score(horizon, 'guess', prior, selected, from),
-        rollback: score(horizon, 'rollback', prior, selected, from),
+        investigate: score(horizon, 'investigate', prior, selected, 'sensitivity'),
+        guess: score(horizon, 'guess', prior, selected, 'sensitivity'),
+        rollback: score(horizon, 'rollback', prior, selected, 'sensitivity'),
       };
       return { ...scores, ...rankInvestigationChoice(scores) };
     };

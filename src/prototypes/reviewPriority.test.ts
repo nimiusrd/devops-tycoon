@@ -161,9 +161,17 @@ describe('RI-165 レビュー追い越し', () => {
     expect(cell('reserveAfter', 0).preference).toBe('move');
     expect(cell('reserveAfter', 1)).toMatchObject({
       preference: 'keep',
-      move: { result: { netValue: 8 } },
+      move: { result: { netValue: 8, focusSpent: 2 } },
     });
-    expect(cell('reserveAfter', 2).move.inputs.map((input) => input.type)).toContain('apply');
+    expect(cell('reserveAfter', 1).move.result.jobs).toEqual(
+      cell('reserveAfter', 1).keep.result.jobs,
+    );
+    expect(cell('reserveAfter', 1).move.inputs.map((input) => input.type)).toContain('apply');
+    expect(cell('reserveAfter', 2)).toMatchObject({
+      preference: 'tie',
+      keep: { result: { netValue: 10 } },
+      move: { result: { netValue: 10, focusSpent: 0 } },
+    });
     expect(cell('elapsed', 0).preference).toBe('move');
     expect(cell('elapsed', 1)).toMatchObject({
       preference: 'keep',
@@ -209,6 +217,7 @@ describe('RI-165 レビュー追い越し', () => {
       ]),
     ).toEqual([
       ['reserveAfter', 0, 'move', 1, 'keep'],
+      ['reserveAfter', 1, 'keep', 2, 'tie'],
       ['effortB', 2, 'move', 3, 'keep'],
       ['deadlineB', 2, 'keep', 3, 'move'],
       ['deadlineB', 4, 'move', 5, 'keep'],

@@ -71,6 +71,14 @@ function rulesOf(state: PriorityState): PriorityRules {
 function reviewsIn(jobs: CiJob[]) {
   return jobs.filter((job) => job.stage === 'review');
 }
+function reviewFull(state: PriorityState, id: string) {
+  return id === 'b' ? rulesOf(state).effortB : 2;
+}
+/** 着手済みで未完了のレビューが先頭なら、予約の適用は割り込まない。 */
+function frontReviewInProgress(state: PriorityState) {
+  const front = reviewsIn(state.board.jobs).find((job) => job.reviewLeft > 0);
+  return !!front && front.reviewLeft < reviewFull(state, front.id);
+}
 function reorderReviews(state: PriorityState, nextFrontId: string) {
   const reviews = reviewsIn(state.board.jobs);
   const selected = reviews.find((job) => job.id === nextFrontId);
@@ -124,7 +132,9 @@ function rejectPriority(state: PriorityState, input: PriorityInput): boolean {
   }
   if (
     input.type === 'apply' &&
-    (state.pending !== input.id || !reviews.some((job) => job.id === input.id))
+    (state.pending !== input.id ||
+      !reviews.some((job) => job.id === input.id) ||
+      frontReviewInProgress(state))
   )
     return true;
   if (input.type === 'rotate' && reviews.length < 2) return true;
@@ -263,10 +273,16 @@ function playFixed(seed: string | number, rules: PriorityRules, strategy: 'keep'
     if (rules.reserveAfter === 0) {
       state = applyPriorityInput(state, { type: 'promote', id: 'b' });
     } else {
-      state = applyPriorityInput(state, { type: 'reserve', id: 'b' });
       for (let tick = 0; tick < rules.reserveAfter; tick++)
         state = applyPriorityInput(state, { type: 'tick' });
-      state = applyPriorityInput(state, { type: 'apply', id: 'b' });
+      state = applyPriorityInput(state, { type: 'reserve', id: 'b' });
+      // 進行中のレビューが終わるまで適用しない。未着手の仕事より前へは、その後にだけ移す。
+      while (state.pending === 'b' && frontReviewInProgress(state)) {
+        const next = applyPriorityInput(state, { type: 'tick' });
+        if (next === state) break;
+        state = next;
+      }
+      if (state.pending === 'b') state = applyPriorityInput(state, { type: 'apply', id: 'b' });
     }
     for (let turn = 0; turn < rules.reactRotations; turn++)
       state = applyPriorityInput(state, { type: 'rotate' });
@@ -336,7 +352,7 @@ export function comparePriorityFactorReversals(seed: string | number) {
       net: '出荷価値 − 集中力消費 × 集中力価値 − レビュー待ち合計 × 待ち罰則。期限超過の出荷は2、未出荷は0。',
       strategies: {
         keep: 'tickのみ',
-        move: '重要PR bを先頭へ移す。予約待ち0は即時。1以上は予約し、そのtick数のあとで残工数を保ったまま移す。続けて、指定回数だけ先頭を末尾へ回す。',
+        move: '重要PR bを先頭へ移す。予約待ち0は即時。1以上は先にそのtick数だけ進め、進行中のレビューが終わってから予約を適用する。続けて、指定回数だけ先頭を末尾へ回す。',
       },
       baseline: baselinePriorityRules,
       unchanged:
@@ -345,7 +361,7 @@ export function comparePriorityFactorReversals(seed: string | number) {
         assignees:
           '1tickにレビューへ配る工数。先頭から1ずつ配り、余りは次の周で先頭へ積む。CI枠は1のまま。',
         reserveAfter:
-          '着手前の選択なら0で、初回と同じ即時移動。1以上は進行中の仕事を割り込まず、そのtick数だけ待ってから残工数つきで先頭へ移す。',
+          '着手前なら0で、初回と同じ即時移動。1以上は先にそのtick数だけ進めてから予約し、進行中のレビューが終わるまで適用しない。',
         effortB: 'bのレビュー工数。aとcは2。CI工数は2のまま。',
         deadlineB: 'bの期限tick。aとcは6。完了tickが期限以下なら価値12、超過して出荷すれば2。',
         focusValue: '集中力1を差引で何点と数えるか。初回は1。',

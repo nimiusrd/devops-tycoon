@@ -12,7 +12,7 @@
     "net": "出荷価値 − 集中力消費 × 集中力価値 − レビュー待ち合計 × 待ち罰則。期限超過の出荷は2、未出荷は0。",
     "strategies": {
       "keep": "tickのみ",
-      "move": "重要PR bを先頭へ移す。予約待ち0は即時。1以上は予約し、そのtick数のあとで残工数を保ったまま移す。続けて、指定回数だけ先頭を末尾へ回す。"
+      "move": "重要PR bを先頭へ移す。予約待ち0は即時。1以上は先にそのtick数だけ進め、進行中のレビューが終わってから予約を適用する。続けて、指定回数だけ先頭を末尾へ回す。"
     },
     "baseline": {
       "assignees": 1,
@@ -28,7 +28,7 @@
     "unchanged": "焦点の要因以外は、6tick、Reviewの初期順a→b→c、aとcのレビュー2、CI工数2、CI1枠、予算20、集中力6、bの価値12、aとcの価値8、期限超過価値2。",
     "factorNotes": {
       "assignees": "1tickにレビューへ配る工数。先頭から1ずつ配り、余りは次の周で先頭へ積む。CI枠は1のまま。",
-      "reserveAfter": "着手前の選択なら0で、初回と同じ即時移動。1以上は進行中の仕事を割り込まず、そのtick数だけ待ってから残工数つきで先頭へ移す。",
+      "reserveAfter": "着手前なら0で、初回と同じ即時移動。1以上は先にそのtick数だけ進めてから予約し、進行中のレビューが終わるまで適用しない。",
       "effortB": "bのレビュー工数。aとcは2。CI工数は2のまま。",
       "deadlineB": "bの期限tick。aとcは6。完了tickが期限以下なら価値12、超過して出荷すれば2。",
       "focusValue": "集中力1を差引で何点と数えるか。初回は1。",
@@ -1067,6 +1067,9 @@
           "move": {
             "inputs": [
               {
+                "type": "tick"
+              },
+              {
                 "type": "reserve",
                 "id": "b"
               },
@@ -1088,9 +1091,6 @@
               },
               {
                 "type": "tick"
-              },
-              {
-                "type": "tick"
               }
             ],
             "result": {
@@ -1099,35 +1099,35 @@
               "focus": 4,
               "focusSpent": 2,
               "reviewWait": {
-                "a": 2,
-                "b": 1,
+                "a": 0,
+                "b": 2,
                 "c": 4
               },
               "jobs": [
                 {
-                  "id": "b",
+                  "id": "a",
                   "stage": "done",
-                  "completedTick": 4,
+                  "completedTick": 3,
                   "reviewLeft": 0,
                   "ciLeft": 0
                 },
                 {
-                  "id": "a",
+                  "id": "b",
                   "stage": "done",
-                  "completedTick": 6,
+                  "completedTick": 5,
                   "reviewLeft": 0,
                   "ciLeft": 0
                 },
                 {
                   "id": "c",
-                  "stage": "queue",
+                  "stage": "ci",
                   "completedTick": null,
                   "reviewLeft": 0,
-                  "ciLeft": 2
+                  "ciLeft": 1
                 }
               ],
               "ciCost": 6,
-              "ciWait": 2
+              "ciWait": 0
             }
           }
         },
@@ -1144,7 +1144,7 @@
             "waitPenalty": 0,
             "failure": "none"
           },
-          "preference": "keep",
+          "preference": "tie",
           "keep": {
             "inputs": [
               {
@@ -1206,18 +1206,10 @@
           "move": {
             "inputs": [
               {
-                "type": "reserve",
-                "id": "b"
-              },
-              {
                 "type": "tick"
               },
               {
                 "type": "tick"
-              },
-              {
-                "type": "apply",
-                "id": "b"
               },
               {
                 "type": "tick"
@@ -1234,9 +1226,9 @@
             ],
             "result": {
               "value": 10,
-              "netValue": 8,
-              "focus": 4,
-              "focusSpent": 2,
+              "netValue": 10,
+              "focus": 6,
+              "focusSpent": 0,
               "reviewWait": {
                 "a": 0,
                 "b": 2,
@@ -5759,6 +5751,21 @@
         "preference": "keep",
         "keep": 10,
         "move": 8
+      }
+    },
+    {
+      "factor": "reserveAfter",
+      "before": {
+        "level": 1,
+        "preference": "keep",
+        "keep": 10,
+        "move": 8
+      },
+      "after": {
+        "level": 2,
+        "preference": "tie",
+        "keep": 10,
+        "move": 10
       }
     },
     {

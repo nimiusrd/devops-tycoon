@@ -1,0 +1,4595 @@
+{
+  "board": {
+    "seed": 1,
+    "horizons": [3, 8],
+    "peakStartTick": 4,
+    "baselineDuration": 3,
+    "baselineForeshadowing": 1,
+    "multiplier": 2,
+    "baseThroughput": 1,
+    "permanentAdd": 1,
+    "initialFocus": 2,
+    "activationCost": 1,
+    "reactivationCost": 1,
+    "activationCap": 2,
+    "codingInflowPerTick": 1,
+    "reviewInflowHorizon3": [1, 1, 1],
+    "reviewInflowHorizon8": [1, 1, 1, 4, 4, 4, 1, 1],
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "baselineOrders": {
+      "3": "hold = peak > early",
+      "8": "peak > hold > early"
+    }
+  },
+  "durationSweep": [
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 1,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 1,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 1
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 1,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 1,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1],
+        "netValue": 5
+      },
+      "varied": "duration",
+      "variedValue": 1
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 1,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 1,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 1
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 1,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 1,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "duration",
+      "variedValue": 1
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 1,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 1,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1],
+        "netValue": 20
+      },
+      "varied": "duration",
+      "variedValue": 1
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 1,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 1,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 15,
+        "earnedCoding": 8,
+        "reviewQueue": 2,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [4],
+        "netValue": 22
+      },
+      "varied": "duration",
+      "variedValue": 1
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 2,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 2,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 2
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 2,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 2,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2],
+        "netValue": 5
+      },
+      "varied": "duration",
+      "variedValue": 2
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 2,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 2,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 2
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 2,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 2,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "duration",
+      "variedValue": 2
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 2,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 2,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2],
+        "netValue": 20
+      },
+      "varied": "duration",
+      "variedValue": 2
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 2,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 2,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [4, 5],
+        "netValue": 24
+      },
+      "varied": "duration",
+      "variedValue": 2
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 3
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "duration",
+      "variedValue": 3
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 3
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "duration",
+      "variedValue": 3
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 20
+      },
+      "varied": "duration",
+      "variedValue": 3
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [4, 5, 6],
+        "netValue": 24
+      },
+      "varied": "duration",
+      "variedValue": 3
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 4,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 4,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 4
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 4,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 4,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 1,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "duration",
+      "variedValue": 4
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 4,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 4,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 4
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 4,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 4,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "duration",
+      "variedValue": 4
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 4,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 4,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 15,
+        "earnedCoding": 8,
+        "reviewQueue": 2,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3, 4],
+        "netValue": 22
+      },
+      "varied": "duration",
+      "variedValue": 4
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 4,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 4,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [4, 5, 6, 7],
+        "netValue": 24
+      },
+      "varied": "duration",
+      "variedValue": 4
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 5,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 5,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 5
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 5,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 5,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 2,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "duration",
+      "variedValue": 5
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 5,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 5,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 5
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 5,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 5,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "duration",
+      "variedValue": 5
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 5,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 5,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3, 4, 5],
+        "netValue": 24
+      },
+      "varied": "duration",
+      "variedValue": 5
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 5,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 5,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [4, 5, 6, 7, 8],
+        "netValue": 24
+      },
+      "varied": "duration",
+      "variedValue": 5
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 6,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 6,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 6
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 6,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 6,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 3,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "duration",
+      "variedValue": 6
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 6,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 6,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "duration",
+      "variedValue": 6
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 6,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 6,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "duration",
+      "variedValue": 6
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 6,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 6,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3, 4, 5, 6],
+        "netValue": 24
+      },
+      "varied": "duration",
+      "variedValue": 6
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 6,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 6,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 1,
+        "affectedTicks": [4, 5, 6, 7, 8],
+        "netValue": 24
+      },
+      "varied": "duration",
+      "variedValue": 6
+    }
+  ],
+  "foreshadowingSweep": [
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 0,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "foreshadowing",
+      "variedValue": 0
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 0,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 0
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 0,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "foreshadowing",
+      "variedValue": 0
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 0,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "foreshadowing",
+      "variedValue": 0
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 0,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 20
+      },
+      "varied": "foreshadowing",
+      "variedValue": 0
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 0,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [5, 6, 7],
+        "netValue": 24
+      },
+      "varied": "foreshadowing",
+      "variedValue": 0
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "foreshadowing",
+      "variedValue": 1
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 1
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "foreshadowing",
+      "variedValue": 1
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "foreshadowing",
+      "variedValue": 1
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 20
+      },
+      "varied": "foreshadowing",
+      "variedValue": 1
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 1,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [4, 5, 6],
+        "netValue": 24
+      },
+      "varied": "foreshadowing",
+      "variedValue": 1
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 2,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "foreshadowing",
+      "variedValue": 2
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 2,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 2
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 2,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 2,
+        "affectedTicks": [3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 2
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 2,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "foreshadowing",
+      "variedValue": 2
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 2,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 20
+      },
+      "varied": "foreshadowing",
+      "variedValue": 2
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 2,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [3, 4, 5],
+        "netValue": 24
+      },
+      "varied": "foreshadowing",
+      "variedValue": 2
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 3,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "foreshadowing",
+      "variedValue": 3
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 3,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 3
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 3,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 1,
+        "affectedTicks": [2, 3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 3
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 3,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "foreshadowing",
+      "variedValue": 3
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 3,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 20
+      },
+      "varied": "foreshadowing",
+      "variedValue": 3
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 3,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 15,
+        "earnedCoding": 8,
+        "reviewQueue": 2,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [2, 3, 4],
+        "netValue": 22
+      },
+      "varied": "foreshadowing",
+      "variedValue": 3
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 4,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 6
+      },
+      "varied": "foreshadowing",
+      "variedValue": 4
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 4,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 4
+    },
+    {
+      "horizon": 3,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 4,
+      "reviewInflow": [1, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 3,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 3,
+        "earnedCoding": 3,
+        "reviewQueue": 0,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 5
+      },
+      "varied": "foreshadowing",
+      "variedValue": 4
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "hold",
+      "duration": 3,
+      "foreshadowing": 4,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [],
+        "netValue": 21
+      },
+      "varied": "foreshadowing",
+      "variedValue": 4
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "early",
+      "duration": 3,
+      "foreshadowing": 4,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 20
+      },
+      "varied": "foreshadowing",
+      "variedValue": 4
+    },
+    {
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "peak",
+      "duration": 3,
+      "foreshadowing": 4,
+      "reviewInflow": [1, 1, 1, 4, 4, 4, 1, 1],
+      "codingInflowPerTick": 1,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 2,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 3,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 1,
+        "activations": 1,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3],
+        "netValue": 20
+      },
+      "varied": "foreshadowing",
+      "variedValue": 4
+    }
+  ],
+  "rankings": [
+    {
+      "varied": "duration",
+      "horizon": 3,
+      "value": 1,
+      "duration": 1,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 3,
+      "value": 2,
+      "duration": 2,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 3,
+      "value": 3,
+      "duration": 3,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 3,
+      "value": 4,
+      "duration": 4,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 3,
+      "value": 5,
+      "duration": 5,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 3,
+      "value": 6,
+      "duration": 6,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 8,
+      "value": 1,
+      "duration": 1,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 22
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > hold > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 8,
+      "value": 2,
+      "duration": 2,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > hold > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 8,
+      "value": 3,
+      "duration": 3,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > hold > early",
+      "reversed": false
+    },
+    {
+      "varied": "duration",
+      "horizon": 8,
+      "value": 4,
+      "duration": 4,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 21,
+        "early": 22,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > early > hold",
+      "reversed": true
+    },
+    {
+      "varied": "duration",
+      "horizon": 8,
+      "value": 5,
+      "duration": 5,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 21,
+        "early": 24,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak = early > hold",
+      "reversed": true
+    },
+    {
+      "varied": "duration",
+      "horizon": 8,
+      "value": 6,
+      "duration": 6,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 21,
+        "early": 24,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak = early > hold",
+      "reversed": true
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 3,
+      "value": 0,
+      "duration": 3,
+      "foreshadowing": 0,
+      "peakSignalTick": 4,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 3,
+      "value": 1,
+      "duration": 3,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 6
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 0
+      },
+      "order": "hold = peak > early",
+      "reversed": false
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 3,
+      "value": 2,
+      "duration": 3,
+      "foreshadowing": 2,
+      "peakSignalTick": 2,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 5
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "hold > peak = early",
+      "reversed": true
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 3,
+      "value": 3,
+      "duration": 3,
+      "foreshadowing": 3,
+      "peakSignalTick": 1,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 5
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "hold > peak = early",
+      "reversed": true
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 3,
+      "value": 4,
+      "duration": 3,
+      "foreshadowing": 4,
+      "peakSignalTick": 0,
+      "nets": {
+        "hold": 6,
+        "early": 5,
+        "peak": 5
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "hold > peak = early",
+      "reversed": true
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 8,
+      "value": 0,
+      "duration": 3,
+      "foreshadowing": 0,
+      "peakSignalTick": 4,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > hold > early",
+      "reversed": false
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 8,
+      "value": 1,
+      "duration": 3,
+      "foreshadowing": 1,
+      "peakSignalTick": 3,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > hold > early",
+      "reversed": false
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 8,
+      "value": 2,
+      "duration": 3,
+      "foreshadowing": 2,
+      "peakSignalTick": 2,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 24
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > hold > early",
+      "reversed": false
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 8,
+      "value": 3,
+      "duration": 3,
+      "foreshadowing": 3,
+      "peakSignalTick": 1,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 22
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "peak > hold > early",
+      "reversed": false
+    },
+    {
+      "varied": "foreshadowing",
+      "horizon": 8,
+      "value": 4,
+      "duration": 3,
+      "foreshadowing": 4,
+      "peakSignalTick": 0,
+      "nets": {
+        "hold": 21,
+        "early": 20,
+        "peak": 20
+      },
+      "activations": {
+        "hold": 0,
+        "early": 1,
+        "peak": 1
+      },
+      "order": "hold > peak = early",
+      "reversed": true
+    }
+  ],
+  "reactivation": {
+    "legal": {
+      "seed": 1,
+      "horizon": 8,
+      "duration": 1,
+      "focus": 8,
+      "activateAttempts": 8,
+      "activationCost": 1,
+      "reactivationCost": 1,
+      "activationCap": 2,
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "focus": 8,
+        "focusSpent": 0,
+        "baseThroughput": 1,
+        "permanentAdd": 1,
+        "multiplier": 2,
+        "duration": 1,
+        "activeRemaining": 0,
+        "reviewQueue": 0,
+        "codingQueue": 0,
+        "earnedReview": 0,
+        "earnedCoding": 0,
+        "activations": 0,
+        "affected": [],
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "activate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "earnedReview": 13,
+        "earnedCoding": 8,
+        "reviewQueue": 4,
+        "focusSpent": 2,
+        "activations": 2,
+        "remaining": 0,
+        "affectedTicks": [1, 2],
+        "netValue": 19
+      }
+    },
+    "ungatedAlwaysBoosted": {
+      "legal": false,
+      "seed": 1,
+      "horizon": 8,
+      "result": {
+        "earnedReview": 17,
+        "earnedCoding": 8,
+        "reviewQueue": 0,
+        "focusSpent": 0,
+        "activations": 0,
+        "remaining": 0,
+        "affectedTicks": [1, 2, 3, 4, 5, 6, 7, 8],
+        "netValue": 25
+      }
+    }
+  }
+}

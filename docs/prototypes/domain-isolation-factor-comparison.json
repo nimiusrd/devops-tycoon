@@ -1,0 +1,4240 @@
+{
+  "seed": "RI-171",
+  "resources": {
+    "publishedValue": 20,
+    "focus": 6,
+    "horizon": 8,
+    "domains": ["product", "platform"],
+    "recoveryPerTick": 1,
+    "jobValue": 8,
+    "jobWork": 4,
+    "reserveValue": 4,
+    "isolateFocus": 2,
+    "releaseFocus": 1,
+    "repairFocus": 1
+  },
+  "baselineRules": {
+    "incidentCount": 1,
+    "inflowDuringRecovery": false,
+    "isolationDelay": 0,
+    "publicForecast": false,
+    "domainDependency": false,
+    "recurrenceAfterRelease": false,
+    "spreadProbability": 1,
+    "mitigationRate": 1
+  },
+  "scoring": "20 + shipped - focus - scoredLoss - outstandingImpact",
+  "fixedStrategies": true,
+  "humanPlaytest": false,
+  "productionIntegration": false,
+  "randomDraws": false,
+  "spreadModel": "expectation of a full spread and a full miss",
+  "control": {
+    "matchesFirstComparison": true,
+    "light": {
+      "open": 31,
+      "isolate": 30,
+      "preference": "open"
+    },
+    "severe": {
+      "open": -11,
+      "isolate": 0,
+      "preference": "isolate"
+    }
+  },
+  "factors": [
+    {
+      "factor": "incidentCount",
+      "changed": ["incidentCount"],
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 2,
+            "customerLoss": 8,
+            "spreadTicks": 4,
+            "blockedCapacity": {
+              "product": 4,
+              "platform": 4
+            },
+            "recoveryWork": 4,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 26
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 5,
+            "customerLoss": 4,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 4,
+              "platform": 0
+            },
+            "recoveryWork": 4,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 27
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 2,
+            "customerLoss": 40,
+            "spreadTicks": 8,
+            "blockedCapacity": {
+              "product": 8,
+              "platform": 8
+            },
+            "recoveryWork": 8,
+            "remainingWork": 4,
+            "outstandingImpact": 20,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "coding",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -42
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 32,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 8,
+              "platform": 0
+            },
+            "recoveryWork": 8,
+            "remainingWork": 4,
+            "outstandingImpact": 16,
+            "pausedValue": 8,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -24
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      },
+      "reversed": ["light"]
+    },
+    {
+      "factor": "inflowDuringRecovery",
+      "changed": ["inflowDuringRecovery"],
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "admit",
+              "id": "platform-reserve"
+            },
+            {
+              "type": "admit",
+              "id": "product-reserve"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-reserve",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-reserve",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "admit",
+              "id": "platform-reserve"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 20,
+            "focusSpent": 4,
+            "customerLoss": 2,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 0
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 34
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "admit",
+              "id": "platform-reserve"
+            },
+            {
+              "type": "admit",
+              "id": "product-reserve"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "product-reserve",
+                "stage": "coding",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-reserve",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "admit",
+              "id": "platform-reserve"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 12,
+            "focusSpent": 4,
+            "customerLoss": 24,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 0
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": 4
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      },
+      "reversed": ["light"]
+    },
+    {
+      "factor": "publicForecast",
+      "changed": ["publicForecast"],
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": 4
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 4,
+            "customerLoss": 2,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 0
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 30
+          },
+          "announcedLoss": 2
+        },
+        "preference": "open"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": 30
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 24,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 0
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": 0
+          },
+          "announcedLoss": 24
+        },
+        "preference": "isolate"
+      },
+      "reversed": []
+    },
+    {
+      "factor": "domainDependency",
+      "changed": ["domainDependency"],
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 6
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": 23
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 2,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 6
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": 22
+          },
+          "announcedLoss": null
+        },
+        "preference": "open"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 8
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 4,
+            "customerLoss": 24,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 8
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -8
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      },
+      "reversed": []
+    },
+    {
+      "factor": "recurrenceAfterRelease",
+      "changed": ["recurrenceAfterRelease"],
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 16,
+            "spreadTicks": 8,
+            "blockedCapacity": {
+              "product": 8,
+              "platform": 8
+            },
+            "recoveryWork": 2,
+            "remainingWork": 2,
+            "outstandingImpact": 4,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "coding",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -1
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 4,
+            "customerLoss": 14,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 8,
+              "platform": 6
+            },
+            "recoveryWork": 2,
+            "remainingWork": 2,
+            "outstandingImpact": 4,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "coding",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -2
+          },
+          "announcedLoss": null
+        },
+        "preference": "open"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 40,
+            "spreadTicks": 8,
+            "blockedCapacity": {
+              "product": 8,
+              "platform": 8
+            },
+            "recoveryWork": 6,
+            "remainingWork": 6,
+            "outstandingImpact": 30,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "coding",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -51
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 34,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 8,
+              "platform": 0
+            },
+            "recoveryWork": 6,
+            "remainingWork": 6,
+            "outstandingImpact": 30,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "coding",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -40
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      },
+      "reversed": []
+    }
+  ],
+  "isolationDelay": [
+    {
+      "delay": 0,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 4,
+            "customerLoss": 2,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 0
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 30
+          },
+          "announcedLoss": null
+        },
+        "preference": "open"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 24,
+            "spreadTicks": 0,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 0
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": 0
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      }
+    },
+    {
+      "delay": 1,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 4,
+            "customerLoss": 3,
+            "spreadTicks": 1,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 1
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 29
+          },
+          "announcedLoss": null
+        },
+        "preference": "open"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 25,
+            "spreadTicks": 1,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 1
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -1
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      }
+    },
+    {
+      "delay": 2,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 26,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 2
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -2
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      }
+    },
+    {
+      "delay": 3,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 27,
+            "spreadTicks": 3,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 3
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -3
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      }
+    },
+    {
+      "delay": 4,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "focusSpent": 4,
+            "customerLoss": 28,
+            "spreadTicks": 4,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 4
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -4
+          },
+          "announcedLoss": null
+        },
+        "preference": "isolate"
+      }
+    },
+    {
+      "delay": 5,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "isolate",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "release",
+              "domain": "product"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 4,
+            "customerLoss": 29,
+            "spreadTicks": 5,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 5
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 1
+              }
+            ],
+            "netValue": -13
+          },
+          "announcedLoss": null
+        },
+        "preference": "open"
+      }
+    },
+    {
+      "delay": 6,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      }
+    },
+    {
+      "delay": 7,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      }
+    },
+    {
+      "delay": 8,
+      "light": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 16,
+            "focusSpent": 1,
+            "customerLoss": 4,
+            "spreadTicks": 2,
+            "blockedCapacity": {
+              "product": 2,
+              "platform": 2
+            },
+            "recoveryWork": 2,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [],
+            "netValue": 31
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      },
+      "severe": {
+        "open": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "isolate": {
+          "inputs": [
+            {
+              "type": "repair"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            },
+            {
+              "type": "tick"
+            }
+          ],
+          "result": {
+            "value": 0,
+            "focusSpent": 1,
+            "customerLoss": 30,
+            "spreadTicks": 6,
+            "blockedCapacity": {
+              "product": 6,
+              "platform": 6
+            },
+            "recoveryWork": 6,
+            "remainingWork": 0,
+            "outstandingImpact": 0,
+            "pausedValue": 0,
+            "remaining": [
+              {
+                "id": "product-job",
+                "stage": "review",
+                "workLeft": 2
+              },
+              {
+                "id": "platform-job",
+                "stage": "review",
+                "workLeft": 2
+              }
+            ],
+            "netValue": -11
+          },
+          "announcedLoss": null
+        },
+        "preference": "tie"
+      }
+    }
+  ],
+  "delayReversals": [
+    {
+      "factor": "isolationDelay",
+      "board": "light",
+      "beforeDelay": 1,
+      "afterDelay": 2,
+      "before": "open",
+      "after": "tie",
+      "sameInputs": true
+    },
+    {
+      "factor": "isolationDelay",
+      "board": "severe",
+      "beforeDelay": 4,
+      "afterDelay": 5,
+      "before": "isolate",
+      "after": "open",
+      "sameInputs": false
+    },
+    {
+      "factor": "isolationDelay",
+      "board": "severe",
+      "beforeDelay": 5,
+      "afterDelay": 6,
+      "before": "open",
+      "after": "tie",
+      "sameInputs": true
+    }
+  ],
+  "spreadWorlds": {
+    "light": {
+      "openSpread": {
+        "inputs": [
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 16,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "spreadTicks": 2,
+          "blockedCapacity": {
+            "product": 2,
+            "platform": 2
+          },
+          "recoveryWork": 2,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [],
+          "netValue": 31
+        },
+        "announcedLoss": null
+      },
+      "openMiss": {
+        "inputs": [
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 16,
+          "focusSpent": 1,
+          "customerLoss": 2,
+          "spreadTicks": 0,
+          "blockedCapacity": {
+            "product": 2,
+            "platform": 0
+          },
+          "recoveryWork": 2,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [],
+          "netValue": 33
+        },
+        "announcedLoss": null
+      },
+      "isolateContained": {
+        "inputs": [
+          {
+            "type": "isolate",
+            "domain": "product"
+          },
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "release",
+            "domain": "product"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 16,
+          "focusSpent": 4,
+          "customerLoss": 2,
+          "spreadTicks": 0,
+          "blockedCapacity": {
+            "product": 2,
+            "platform": 0
+          },
+          "recoveryWork": 2,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [],
+          "netValue": 30
+        },
+        "announcedLoss": null
+      },
+      "isolateFailed": {
+        "inputs": [
+          {
+            "type": "isolate",
+            "domain": "product"
+          },
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "release",
+            "domain": "product"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 16,
+          "focusSpent": 4,
+          "customerLoss": 4,
+          "spreadTicks": 2,
+          "blockedCapacity": {
+            "product": 2,
+            "platform": 2
+          },
+          "recoveryWork": 2,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [],
+          "netValue": 28
+        },
+        "announcedLoss": null
+      }
+    },
+    "severe": {
+      "openSpread": {
+        "inputs": [
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 0,
+          "focusSpent": 1,
+          "customerLoss": 30,
+          "spreadTicks": 6,
+          "blockedCapacity": {
+            "product": 6,
+            "platform": 6
+          },
+          "recoveryWork": 6,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [
+            {
+              "id": "product-job",
+              "stage": "review",
+              "workLeft": 2
+            },
+            {
+              "id": "platform-job",
+              "stage": "review",
+              "workLeft": 2
+            }
+          ],
+          "netValue": -11
+        },
+        "announcedLoss": null
+      },
+      "openMiss": {
+        "inputs": [
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 8,
+          "focusSpent": 1,
+          "customerLoss": 24,
+          "spreadTicks": 0,
+          "blockedCapacity": {
+            "product": 6,
+            "platform": 0
+          },
+          "recoveryWork": 6,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [
+            {
+              "id": "product-job",
+              "stage": "review",
+              "workLeft": 2
+            }
+          ],
+          "netValue": 3
+        },
+        "announcedLoss": null
+      },
+      "isolateContained": {
+        "inputs": [
+          {
+            "type": "isolate",
+            "domain": "product"
+          },
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "release",
+            "domain": "product"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 8,
+          "focusSpent": 4,
+          "customerLoss": 24,
+          "spreadTicks": 0,
+          "blockedCapacity": {
+            "product": 6,
+            "platform": 0
+          },
+          "recoveryWork": 6,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [
+            {
+              "id": "product-job",
+              "stage": "review",
+              "workLeft": 2
+            }
+          ],
+          "netValue": 0
+        },
+        "announcedLoss": null
+      },
+      "isolateFailed": {
+        "inputs": [
+          {
+            "type": "isolate",
+            "domain": "product"
+          },
+          {
+            "type": "repair"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "release",
+            "domain": "product"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "result": {
+          "value": 0,
+          "focusSpent": 4,
+          "customerLoss": 30,
+          "spreadTicks": 6,
+          "blockedCapacity": {
+            "product": 6,
+            "platform": 6
+          },
+          "recoveryWork": 6,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "pausedValue": 0,
+          "remaining": [
+            {
+              "id": "product-job",
+              "stage": "review",
+              "workLeft": 2
+            },
+            {
+              "id": "platform-job",
+              "stage": "review",
+              "workLeft": 2
+            }
+          ],
+          "netValue": -14
+        },
+        "announcedLoss": null
+      }
+    }
+  },
+  "thresholds": {
+    "light": {
+      "spreadProbability": {
+        "num": 3,
+        "den": 2
+      },
+      "mitigationRate": {
+        "num": 3,
+        "den": 2
+      }
+    },
+    "severe": {
+      "spreadProbability": {
+        "num": 3,
+        "den": 14
+      },
+      "mitigationRate": {
+        "num": 3,
+        "den": 14
+      }
+    }
+  },
+  "spreadProbability": {
+    "heldMitigationRate": 1,
+    "points": [
+      {
+        "value": {
+          "num": 0,
+          "den": 1
+        },
+        "light": {
+          "open": {
+            "num": 33,
+            "den": 1
+          },
+          "isolate": {
+            "num": 30,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": 3,
+            "den": 1
+          },
+          "isolate": {
+            "num": 0,
+            "den": 1
+          },
+          "preference": "open"
+        }
+      },
+      {
+        "value": {
+          "num": 3,
+          "den": 14
+        },
+        "light": {
+          "open": {
+            "num": 228,
+            "den": 7
+          },
+          "isolate": {
+            "num": 30,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": 0,
+            "den": 1
+          },
+          "isolate": {
+            "num": 0,
+            "den": 1
+          },
+          "preference": "tie"
+        }
+      },
+      {
+        "value": {
+          "num": 1,
+          "den": 4
+        },
+        "light": {
+          "open": {
+            "num": 65,
+            "den": 2
+          },
+          "isolate": {
+            "num": 30,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -1,
+            "den": 2
+          },
+          "isolate": {
+            "num": 0,
+            "den": 1
+          },
+          "preference": "isolate"
+        }
+      },
+      {
+        "value": {
+          "num": 1,
+          "den": 2
+        },
+        "light": {
+          "open": {
+            "num": 32,
+            "den": 1
+          },
+          "isolate": {
+            "num": 30,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -4,
+            "den": 1
+          },
+          "isolate": {
+            "num": 0,
+            "den": 1
+          },
+          "preference": "isolate"
+        }
+      },
+      {
+        "value": {
+          "num": 3,
+          "den": 4
+        },
+        "light": {
+          "open": {
+            "num": 63,
+            "den": 2
+          },
+          "isolate": {
+            "num": 30,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -15,
+            "den": 2
+          },
+          "isolate": {
+            "num": 0,
+            "den": 1
+          },
+          "preference": "isolate"
+        }
+      },
+      {
+        "value": {
+          "num": 1,
+          "den": 1
+        },
+        "light": {
+          "open": {
+            "num": 31,
+            "den": 1
+          },
+          "isolate": {
+            "num": 30,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -11,
+            "den": 1
+          },
+          "isolate": {
+            "num": 0,
+            "den": 1
+          },
+          "preference": "isolate"
+        }
+      }
+    ],
+    "endpoints": {
+      "light": {
+        "atZero": "open",
+        "atOne": "open"
+      },
+      "severe": {
+        "atZero": "open",
+        "atOne": "isolate"
+      }
+    }
+  },
+  "mitigationRate": {
+    "heldSpreadProbability": 1,
+    "points": [
+      {
+        "value": {
+          "num": 0,
+          "den": 1
+        },
+        "light": {
+          "open": {
+            "num": 31,
+            "den": 1
+          },
+          "isolate": {
+            "num": 28,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -11,
+            "den": 1
+          },
+          "isolate": {
+            "num": -14,
+            "den": 1
+          },
+          "preference": "open"
+        }
+      },
+      {
+        "value": {
+          "num": 3,
+          "den": 14
+        },
+        "light": {
+          "open": {
+            "num": 31,
+            "den": 1
+          },
+          "isolate": {
+            "num": 199,
+            "den": 7
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -11,
+            "den": 1
+          },
+          "isolate": {
+            "num": -11,
+            "den": 1
+          },
+          "preference": "tie"
+        }
+      },
+      {
+        "value": {
+          "num": 1,
+          "den": 4
+        },
+        "light": {
+          "open": {
+            "num": 31,
+            "den": 1
+          },
+          "isolate": {
+            "num": 57,
+            "den": 2
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -11,
+            "den": 1
+          },
+          "isolate": {
+            "num": -21,
+            "den": 2
+          },
+          "preference": "isolate"
+        }
+      },
+      {
+        "value": {
+          "num": 1,
+          "den": 2
+        },
+        "light": {
+          "open": {
+            "num": 31,
+            "den": 1
+          },
+          "isolate": {
+            "num": 29,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -11,
+            "den": 1
+          },
+          "isolate": {
+            "num": -7,
+            "den": 1
+          },
+          "preference": "isolate"
+        }
+      },
+      {
+        "value": {
+          "num": 3,
+          "den": 4
+        },
+        "light": {
+          "open": {
+            "num": 31,
+            "den": 1
+          },
+          "isolate": {
+            "num": 59,
+            "den": 2
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -11,
+            "den": 1
+          },
+          "isolate": {
+            "num": -7,
+            "den": 2
+          },
+          "preference": "isolate"
+        }
+      },
+      {
+        "value": {
+          "num": 1,
+          "den": 1
+        },
+        "light": {
+          "open": {
+            "num": 31,
+            "den": 1
+          },
+          "isolate": {
+            "num": 30,
+            "den": 1
+          },
+          "preference": "open"
+        },
+        "severe": {
+          "open": {
+            "num": -11,
+            "den": 1
+          },
+          "isolate": {
+            "num": 0,
+            "den": 1
+          },
+          "preference": "isolate"
+        }
+      }
+    ],
+    "endpoints": {
+      "light": {
+        "atZero": "open",
+        "atOne": "open"
+      },
+      "severe": {
+        "atZero": "open",
+        "atOne": "isolate"
+      }
+    }
+  }
+}

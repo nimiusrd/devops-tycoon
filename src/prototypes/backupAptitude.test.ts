@@ -297,6 +297,19 @@ describe('代打適性の要因を一つずつ動かす', () => {
     expect(data.conditions.normalRun).toBe(false);
   });
 
+  it('事前確認は指定した実績条件を示し、規則が無い状態は基準へ戻る', () => {
+    const state = createBackupAptitudePrototype('RI-207', 'successor', {
+      ...baselineBackupRules,
+      requiredWork: 14,
+      requiredPeriods: 5,
+    });
+    expect(previewBackupAptitude(state)).toMatchObject({ requiredWork: 14, requiredPeriods: 5 });
+    const legacy = { ...state, rules: undefined } as unknown as ReturnType<
+      typeof createBackupAptitudePrototype
+    >;
+    expect(previewBackupAptitude(legacy)).toMatchObject({ requiredWork: 6, requiredPeriods: 2 });
+  });
+
   it('品質を下げた規則もJSONで再開できる', () => {
     let state = createBackupAptitudePrototype('RI-207', 'successor', {
       ...baselineBackupRules,

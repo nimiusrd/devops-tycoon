@@ -120,6 +120,7 @@ export function createBackupAptitudePrototype(
 }
 
 export function previewBackupAptitude(state: BackupAptitudeState) {
+  const rules = state.rules ?? baselineBackupRules;
   return {
     ...previewPlannedAbsence(state.release.handover.mentorship.roster, {
       ...state.release.absence,
@@ -127,8 +128,8 @@ export function previewBackupAptitude(state: BackupAptitudeState) {
     }),
     backupId: state.backupId,
     ability: 'review' as const,
-    requiredWork: 6,
-    requiredPeriods: 2,
+    requiredWork: rules.requiredWork,
+    requiredPeriods: rules.requiredPeriods,
     maximumReviewGain: 10,
     effective: '条件を満たした期の翌期から' as const,
     discovered: state.discovery,

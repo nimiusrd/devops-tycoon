@@ -1,4 +1,4 @@
-/** RI-191: 資料2枠。通常ランのdocumentation指標とは接続しない。 */
+/** RI-191: 既定は資料2枠。感度比較だけ枠と危険の数を変える。通常ランのdocumentation指標とは接続しない。 */
 import {
   applyModelInput,
   createModelBoard,
@@ -17,11 +17,17 @@ export const DOCS = {
 export type DocId = keyof typeof DOCS;
 export type ContextScenario = 'feature' | 'migration';
 export type ContextStrategy = 'empty' | 'example' | 'specHistory' | 'exampleSpec';
+export type ContextWidth = 'narrow' | 'wide';
+export type ContextPreference = ContextWidth | 'tie';
 export type ContextInput =
   { type: 'inspect'; doc: string } | { type: 'set'; docs: string[] } | { type: 'tick' };
 export interface ContextJobSpec {
   id: string;
   kind: JobKind;
+}
+export interface ContextRules {
+  capacity: number;
+  risks: Record<string, string[]>;
 }
 export interface ContextState {
   version: 1;
@@ -31,12 +37,21 @@ export interface ContextState {
   assignedDocs: Record<string, DocId[]>;
   uncovered: Record<string, string[]>;
   inputs: ContextInput[];
+  /** 無いときは枠2。機能は実装1つ、移行は要件と変更。初回の比較JSONは持たない。 */
+  rules?: ContextRules;
 }
 
 const RISKS: Record<string, readonly string[]> = {
   feature: ['implementation'],
   migration: ['requirement', 'change'],
 };
+const FEATURE_DANGER_ORDER = ['implementation', 'requirement', 'change'] as const;
+const MIGRATION_DANGER_ORDER = ['requirement', 'change', 'implementation'] as const;
+const WIDE_ORDER: readonly DocId[] = ['spec', 'history', 'example'];
+const CAPACITY_LEVELS = [1, 2, 3] as const;
+const DANGER_COUNTS = [0, 1, 2, 3] as const;
+const BASELINE_CAPACITY = CONTEXT_CAPACITY;
+const BASELINE_DANGERS = { feature: 1, migration: 2 } as const;
 const STRATEGY_DOCS: Record<ContextStrategy, readonly DocId[]> = {
   empty: [],
   example: ['example'],
@@ -49,8 +64,9 @@ export function createContextBoard(
   scenario: ContextState['scenario'],
   jobs: readonly ContextJobSpec[],
   horizon = 8,
+  rules?: ContextRules,
 ): ContextState {
-  return {
+  const state: ContextState = {
     version: 1,
     scenario,
     board: createModelBoard(
@@ -65,18 +81,22 @@ export function createContextBoard(
     uncovered: {},
     inputs: [],
   };
+  if (rules) state.rules = copyRules(rules);
+  return state;
+}
+
+function prototypeJobs(scenario: ContextScenario): ContextJobSpec[] {
+  if (scenario === 'feature') return [{ id: 'feature', kind: 'simple' }];
+  return [{ id: 'migration', kind: 'complex' }];
 }
 
 export function createContextPrototype(seed: string, scenario: ContextScenario): ContextState {
-  if (scenario === 'feature') {
-    return createContextBoard(seed, scenario, [{ id: 'feature', kind: 'simple' }]);
-  }
-  return createContextBoard(seed, scenario, [{ id: 'migration', kind: 'complex' }]);
+  return createContextBoard(seed, scenario, prototypeJobs(scenario));
 }
 
 export function viewContext(state: ContextState) {
   return {
-    capacity: CONTEXT_CAPACITY,
+    capacity: capacityOf(state),
     loaded: state.loaded,
     assignedDocs: state.assignedDocs,
     uncovered: state.uncovered,
@@ -100,6 +120,37 @@ function sameDocs(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((doc) => right.includes(doc));
 }
 
+function copyRules(rules: ContextRules): ContextRules {
+  return {
+    capacity: rules.capacity,
+    risks: Object.fromEntries(Object.entries(rules.risks).map(([id, risks]) => [id, [...risks]])),
+  };
+}
+
+function capacityOf(state: ContextState): number {
+  return state.rules?.capacity ?? CONTEXT_CAPACITY;
+}
+
+function risksOf(state: ContextState, jobId: string): readonly string[] {
+  if (state.rules) return state.rules.risks[jobId] ?? [];
+  return RISKS[jobId] ?? [];
+}
+
+function docForRisk(risk: string): DocId | undefined {
+  return (Object.keys(DOCS) as DocId[]).find((id) => DOCS[id].covers === risk);
+}
+
+function narrowDocs(risks: readonly string[], capacity: number): DocId[] {
+  const first = risks[0];
+  if (capacity < 1 || first === undefined) return [];
+  const doc = docForRisk(first);
+  return doc ? [doc] : [];
+}
+
+function wideDocs(capacity: number): DocId[] {
+  return WIDE_ORDER.slice(0, Math.max(0, capacity));
+}
+
 export function applyContextInput(state: ContextState, input: ContextInput): ContextState {
   if (input.type === 'inspect') return state;
   if (state.board.tick >= state.board.horizon) return state;
@@ -109,7 +160,7 @@ export function applyContextInput(state: ContextState, input: ContextInput): Con
 
 function setDocs(state: ContextState, docs: string[]): ContextState {
   const job = openJob(state);
-  if (!job || job.progress > 0 || docs.length > CONTEXT_CAPACITY) return state;
+  if (!job || job.progress > 0 || docs.length > capacityOf(state)) return state;
   if (new Set(docs).size !== docs.length || !docs.every(isDoc)) return state;
   if (sameDocs(docs, state.loaded)) return state;
   const next = structuredClone(state);
@@ -130,7 +181,7 @@ function workTick(state: ContextState): ContextState {
     if (before.get(job.id) !== null || job.shipped === null) continue;
     const docs = next.assignedDocs[job.id] ?? [];
     const covered = new Set<string>(docs.map((doc) => DOCS[doc].covers));
-    const missing = (RISKS[job.id] ?? []).filter((risk) => !covered.has(risk));
+    const missing = risksOf(next, job.id).filter((risk) => !covered.has(risk));
     next.uncovered[job.id] = [...missing];
     const listed = docs.join('+') || 'none';
     if (missing.length > 0) {
@@ -195,4 +246,169 @@ export function compareContextStrategies(seed: string) {
       };
     }),
   );
+}
+
+function dangerList(scenario: ContextScenario, count: number): string[] {
+  const order = scenario === 'feature' ? FEATURE_DANGER_ORDER : MIGRATION_DANGER_ORDER;
+  return order.slice(0, count);
+}
+
+function preferenceOf(narrow: number, wide: number): ContextPreference {
+  if (narrow > wide) return 'narrow';
+  if (wide > narrow) return 'wide';
+  return 'tie';
+}
+
+export function chooseContextWidth(state: ContextState, width: ContextWidth): ContextInput {
+  const job = openJob(state);
+  const wanted =
+    width === 'narrow'
+      ? narrowDocs(job ? risksOf(state, job.id) : [], capacityOf(state))
+      : wideDocs(capacityOf(state));
+  if (job && job.progress === 0 && !sameDocs(wanted, state.loaded)) {
+    return { type: 'set', docs: [...wanted] };
+  }
+  return { type: 'tick' };
+}
+
+function runWidth(
+  seed: string,
+  scenario: ContextScenario,
+  width: ContextWidth,
+  capacity: number,
+  dangerCount: number,
+) {
+  const dangers = dangerList(scenario, dangerCount);
+  const initial = createContextBoard(seed, scenario, prototypeJobs(scenario), 8, {
+    capacity,
+    risks: { [scenario]: dangers },
+  });
+  let state = initial;
+  let guard = 0;
+  while (state.board.tick < state.board.horizon) {
+    if (++guard > 40) throw new Error(`${scenario}:${width}:${capacity}:${dangerCount}`);
+    const action = chooseContextWidth(state, width);
+    const next = applyContextInput(state, action);
+    if (next === state) throw new Error(`${scenario}:${width} tick ${state.board.tick}`);
+    state = next;
+  }
+  return {
+    scenario,
+    width,
+    capacity,
+    dangerCount,
+    dangers,
+    initial,
+    inputs: state.inputs,
+    result: summarizeContext(state),
+  };
+}
+
+function widthPoint(
+  seed: string,
+  scenario: ContextScenario,
+  capacity: number,
+  dangerCount: number,
+) {
+  const narrow = runWidth(seed, scenario, 'narrow', capacity, dangerCount);
+  const wide = runWidth(seed, scenario, 'wide', capacity, dangerCount);
+  return {
+    scenario,
+    capacity,
+    dangerCount,
+    dangers: narrow.dangers,
+    narrow: narrow.result.netValue,
+    wide: wide.result.netValue,
+    preference: preferenceOf(narrow.result.netValue, wide.result.netValue),
+    runs: [narrow, wide],
+  };
+}
+
+function reversals(factor: 'capacity' | 'dangerCount', points: ReturnType<typeof widthPoint>[]) {
+  const found = [];
+  for (const scenario of ['feature', 'migration'] as const) {
+    const rows = points.filter((point) => point.scenario === scenario);
+    for (let index = 1; index < rows.length; index += 1) {
+      const before = rows[index - 1];
+      const after = rows[index];
+      if (!before || !after || before.preference === after.preference) continue;
+      found.push({
+        factor,
+        scenario,
+        before: {
+          level: factor === 'capacity' ? before.capacity : before.dangerCount,
+          preference: before.preference,
+          narrow: before.narrow,
+          wide: before.wide,
+        },
+        after: {
+          level: factor === 'capacity' ? after.capacity : after.dangerCount,
+          preference: after.preference,
+          narrow: after.narrow,
+          wide: after.wide,
+        },
+        strict: before.preference !== 'tie' && after.preference !== 'tie',
+      });
+    }
+  }
+  return found;
+}
+
+/** 初回と同じ資源で、枠数と危険の数を一つずつ動かす。固定戦略。 */
+export function compareContextWidthSensitivity(seed = 'RI-191') {
+  const capacityPoints = CAPACITY_LEVELS.flatMap((capacity) =>
+    (['feature', 'migration'] as const).map((scenario) =>
+      widthPoint(seed, scenario, capacity, BASELINE_DANGERS[scenario]),
+    ),
+  );
+  const dangerPoints = DANGER_COUNTS.flatMap((dangerCount) =>
+    (['feature', 'migration'] as const).map((scenario) =>
+      widthPoint(seed, scenario, BASELINE_CAPACITY, dangerCount),
+    ),
+  );
+  return {
+    conditions: {
+      seed,
+      horizon: 8,
+      work: 6,
+      progress: 1,
+      cost: 0,
+      penalty: RISK_PENALTY,
+      featureValue: 10,
+      migrationValue: 18,
+      docs: {
+        spec: DOCS.spec.covers,
+        example: DOCS.example.covers,
+        history: DOCS.history.covers,
+      },
+      narrow: '公開された危険の先頭を1枠だけ覆う。枠が余っても足さない。危険が無ければ空',
+      wide: '危険を見ず、spec、history、exampleの順に枠を埋める',
+      wideOrder: [...WIDE_ORDER],
+      featureDangerOrder: [...FEATURE_DANGER_ORDER],
+      migrationDangerOrder: [...MIGRATION_DANGER_ORDER],
+      capacityLevels: [...CAPACITY_LEVELS],
+      dangerCounts: [...DANGER_COUNTS],
+      baselineCapacity: BASELINE_CAPACITY,
+      baselineDangerCount: {
+        feature: BASELINE_DANGERS.feature,
+        migration: BASELINE_DANGERS.migration,
+      },
+      score: 'netValue。未カバー1つにつき5を出荷時に一度だけ引く',
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionIntegration: false,
+    },
+    capacity: {
+      held: '危険の数は機能1、移行2。枠だけを1、2、3にする',
+      points: capacityPoints,
+      reversals: reversals('capacity', capacityPoints),
+    },
+    dangerCount: {
+      held: '枠は2。危険の数だけを0、1、2、3にする',
+      points: dangerPoints,
+      reversals: reversals('dangerCount', dangerPoints),
+    },
+  };
 }

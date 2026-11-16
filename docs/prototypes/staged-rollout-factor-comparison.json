@@ -1,0 +1,1823 @@
+{
+  "evaluation": "fixed-strategy",
+  "humanPlaytest": false,
+  "productionIntegrated": false,
+  "seeds": [0, 1],
+  "seedDraws": [0.26642920868471265, 0.6270739405881613],
+  "baseline": {
+    "horizon": 6,
+    "impact": 1,
+    "defectRate": 0.5,
+    "signalAtTick": 2,
+    "valuePerHealthyPilotTick": 1,
+    "valuePerHealthyFullTick": 5
+  },
+  "results": [
+    {
+      "factor": "baseline",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 5,
+        "customerLoss": 20,
+        "focusSpent": 1,
+        "netValue": -16
+      }
+    },
+    {
+      "factor": "baseline",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "stopped",
+        "reachPercent": 0,
+        "checkedSignal": "anomaly",
+        "checkedTick": 2,
+        "earnedValue": 1,
+        "customerLoss": 1,
+        "focusSpent": 1,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "baseline",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "baseline",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "healthy",
+        "checkedTick": 2,
+        "earnedValue": 22,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 21
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.2,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.2,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "healthy",
+        "checkedTick": 2,
+        "earnedValue": 22,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 21
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.2,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.2,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "healthy",
+        "checkedTick": 2,
+        "earnedValue": 22,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 21
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 1,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 5,
+        "customerLoss": 20,
+        "focusSpent": 1,
+        "netValue": -16
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 1,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "stopped",
+        "reachPercent": 0,
+        "checkedSignal": "anomaly",
+        "checkedTick": 2,
+        "earnedValue": 1,
+        "customerLoss": 1,
+        "focusSpent": 1,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 1,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 5,
+        "customerLoss": 20,
+        "focusSpent": 1,
+        "netValue": -16
+      }
+    },
+    {
+      "factor": "defectRate",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 1,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "stopped",
+        "reachPercent": 0,
+        "checkedSignal": "anomaly",
+        "checkedTick": 2,
+        "earnedValue": 1,
+        "customerLoss": 1,
+        "focusSpent": 1,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 1,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 1,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 0,
+        "customerLoss": 20,
+        "focusSpent": 1,
+        "netValue": -21
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 1,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 1,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "stopped",
+        "reachPercent": 0,
+        "checkedSignal": "anomaly",
+        "checkedTick": 1,
+        "earnedValue": 0,
+        "customerLoss": 1,
+        "focusSpent": 1,
+        "netValue": -2
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 1,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 1,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 1,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 1,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "healthy",
+        "checkedTick": 1,
+        "earnedValue": 26,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 25
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 3,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 3,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 10,
+        "customerLoss": 20,
+        "focusSpent": 1,
+        "netValue": -11
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 3,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 0,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": true,
+        "signalAtTick": 3,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "stopped",
+        "reachPercent": 0,
+        "checkedSignal": "anomaly",
+        "checkedTick": 3,
+        "earnedValue": 2,
+        "customerLoss": 1,
+        "focusSpent": 1,
+        "netValue": 0
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 3,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 3,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "signalAtTick",
+      "horizon": 6,
+      "impact": 1,
+      "defectRate": 0.5,
+      "signalAtTick": 3,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 1,
+      "seed": 1,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 1,
+        "defect": false,
+        "signalAtTick": 3,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "healthy",
+        "checkedTick": 3,
+        "earnedValue": 18,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 0.5,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 0.5,
+      "seed": 0,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 0.5,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 5,
+        "customerLoss": 10,
+        "focusSpent": 1,
+        "netValue": -6
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 0.5,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 0.5,
+      "seed": 0,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 0.5,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "stopped",
+        "reachPercent": 0,
+        "checkedSignal": "anomaly",
+        "checkedTick": 2,
+        "earnedValue": 1,
+        "customerLoss": 0.5,
+        "focusSpent": 1,
+        "netValue": -0.5
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 0.5,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 0.5,
+      "seed": 1,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 0.5,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 0.5,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 0.5,
+      "seed": 1,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 0.5,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "healthy",
+        "checkedTick": 2,
+        "earnedValue": 22,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 21
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 2,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 2,
+      "seed": 0,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 2,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 5,
+        "customerLoss": 40,
+        "focusSpent": 1,
+        "netValue": -36
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 2,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 2,
+      "seed": 0,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 2,
+        "defect": true,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "stopped",
+        "reachPercent": 0,
+        "checkedSignal": "anomaly",
+        "checkedTick": 2,
+        "earnedValue": 1,
+        "customerLoss": 2,
+        "focusSpent": 1,
+        "netValue": -2
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 2,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 2,
+      "seed": 1,
+      "strategy": "immediate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 2,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "earnedValue": 30,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "impactPerValue",
+      "horizon": 6,
+      "impact": 2,
+      "defectRate": 0.5,
+      "signalAtTick": 2,
+      "valuePerHealthyPilotTick": 1,
+      "valuePerHealthyFullTick": 5,
+      "impactPerValue": 2,
+      "seed": 1,
+      "strategy": "observe-decide",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "impact": 2,
+        "defect": false,
+        "signalAtTick": 2,
+        "signal": "pending",
+        "checkedSignal": "pending",
+        "checkedTick": null,
+        "stage": "pilot",
+        "focus": 2,
+        "focusSpent": 0,
+        "earnedValue": 0,
+        "customerLoss": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "check"
+        },
+        {
+          "type": "expand"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "stage": "full",
+        "reachPercent": 100,
+        "checkedSignal": "healthy",
+        "checkedTick": 2,
+        "earnedValue": 22,
+        "customerLoss": 0,
+        "focusSpent": 1,
+        "netValue": 21
+      }
+    }
+  ]
+}

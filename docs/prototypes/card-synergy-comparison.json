@@ -1,4 +1,20 @@
 {
+  "conditions": {
+    "seed": 1,
+    "horizon": 6,
+    "focus": 2,
+    "inflowPerTick": 4,
+    "requiredCards": ["test", "ai"],
+    "costPerCard": 1,
+    "costForBoth": 2,
+    "autoPerTick": 1,
+    "autoAddsToCoefficient": false,
+    "activeBoard": "routine",
+    "boards": ["routine", "incident", "complex"],
+    "strategies": ["none", "test", "ai", "both"],
+    "fixedStrategy": true,
+    "humanPlaytest": false
+  },
   "results": [
     {
       "board": "routine",
@@ -17,8 +33,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -47,6 +65,7 @@
         "test": false,
         "ai": false,
         "routineCleared": 6,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "focusSpent": 0,
@@ -70,8 +89,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -104,6 +125,7 @@
         "test": true,
         "ai": false,
         "routineCleared": 12,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "focusSpent": 1,
@@ -127,8 +149,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -161,6 +185,7 @@
         "test": false,
         "ai": true,
         "routineCleared": 12,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "focusSpent": 1,
@@ -184,8 +209,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -222,6 +249,7 @@
         "test": true,
         "ai": true,
         "routineCleared": 24,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 6,
         "focusSpent": 2,
@@ -245,8 +273,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -275,6 +305,7 @@
         "test": false,
         "ai": false,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 6,
         "autoCleared": 0,
         "focusSpent": 0,
@@ -298,8 +329,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -332,6 +365,7 @@
         "test": true,
         "ai": false,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 6,
         "autoCleared": 0,
         "focusSpent": 1,
@@ -355,8 +389,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -389,6 +425,7 @@
         "test": false,
         "ai": true,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 6,
         "autoCleared": 0,
         "focusSpent": 1,
@@ -412,8 +449,10 @@
         "test": false,
         "ai": false,
         "routineQueue": 0,
+        "complexQueue": 0,
         "incidentQueue": 0,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 0,
         "autoCleared": 0,
         "inputs": []
@@ -450,11 +489,261 @@
         "test": true,
         "ai": true,
         "routineCleared": 0,
+        "complexCleared": 0,
         "incidentCleared": 6,
         "autoCleared": 0,
         "focusSpent": 2,
         "netValue": 4
       }
+    },
+    {
+      "board": "complex",
+      "seed": 1,
+      "strategy": "none",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "complex",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "complexQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "complexCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": false,
+        "ai": false,
+        "routineCleared": 0,
+        "complexCleared": 6,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "focusSpent": 0,
+        "netValue": 6
+      }
+    },
+    {
+      "board": "complex",
+      "seed": 1,
+      "strategy": "test",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "complex",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "complexQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "complexCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "test"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": true,
+        "ai": false,
+        "routineCleared": 0,
+        "complexCleared": 12,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "focusSpent": 1,
+        "netValue": 11
+      }
+    },
+    {
+      "board": "complex",
+      "seed": 1,
+      "strategy": "ai",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "complex",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "complexQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "complexCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "ai"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": false,
+        "ai": true,
+        "routineCleared": 0,
+        "complexCleared": 12,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "focusSpent": 1,
+        "netValue": 11
+      }
+    },
+    {
+      "board": "complex",
+      "seed": 1,
+      "strategy": "both",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 6,
+        "board": "complex",
+        "focus": 2,
+        "focusSpent": 0,
+        "ownedTest": true,
+        "ownedAi": true,
+        "test": false,
+        "ai": false,
+        "routineQueue": 0,
+        "complexQueue": 0,
+        "incidentQueue": 0,
+        "routineCleared": 0,
+        "complexCleared": 0,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "inputs": []
+      },
+      "inputs": [
+        {
+          "type": "activate",
+          "id": "test"
+        },
+        {
+          "type": "activate",
+          "id": "ai"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "test": true,
+        "ai": true,
+        "routineCleared": 0,
+        "complexCleared": 18,
+        "incidentCleared": 0,
+        "autoCleared": 0,
+        "focusSpent": 2,
+        "netValue": 16
+      }
     }
-  ]
+  ],
+  "split": {
+    "beatsSingleAndNone": ["routine", "complex"],
+    "losesToSingleOrNone": ["incident"],
+    "autoClearedWhenBoth": {
+      "routine": 6,
+      "incident": 0,
+      "complex": 0
+    }
+  }
 }

@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { createRng } from '../sim/rng';
 import {
   applyRolloutInput as apply,
   createRolloutPrototype as create,
+  compareRolloutFactorSensitivity,
   compareRolloutStrategies,
+  ROLLOUT_FACTOR_BASELINE,
+  ROLLOUT_FACTOR_SCENARIOS,
   summarizeRollout,
   viewRollout,
+  type RolloutSensitivityFactor,
 } from './stagedRollout';
 import comparison from '../../docs/prototypes/staged-rollout-comparison.json';
+import factorComparison from '../../docs/prototypes/staged-rollout-factor-comparison.json';
 
 describe('RI-174 段階公開', () => {
   it('seed付き兆候はtickだけで進み、閲覧や確認を重ねても抽選されない', () => {
@@ -98,6 +104,173 @@ describe('RI-174 段階公開', () => {
   });
   it('全入力の再生と毎入力JSON保存再開が一致し、元状態を変えない', () => {
     for (const row of compareRolloutStrategies()) {
+      let live = row.initial;
+      let saved = structuredClone(live);
+      for (const input of row.inputs) {
+        const previous = live;
+        const before = structuredClone(live);
+        live = apply(live, input);
+        saved = apply(JSON.parse(JSON.stringify(saved)), input);
+        expect(previous).toEqual(before);
+        expect(saved).toEqual(live);
+      }
+      expect(summarizeRollout(live)).toEqual(row.result);
+    }
+  });
+  it('不具合率0.3はseed 0/1の不具合有無が0.5と同じなので比較しない', () => {
+    for (const seed of [0, 1]) {
+      expect(create(seed, 6, 1, { defectRate: 0.3 }).defect).toBe(
+        create(seed, 6, 1, { defectRate: 0.5 }).defect,
+      );
+    }
+    expect(create(0, 6, 1, { defectRate: 0.2 }).defect).toBe(false);
+    expect(create(0, 6, 1).defect).toBe(true);
+  });
+  it('要因を一つずつ動かすと即拡大と観察判断の平均優劣が決まった方向で反転する', () => {
+    const rows = compareRolloutFactorSensitivity();
+    expect(factorComparison.evaluation).toBe('fixed-strategy');
+    expect(factorComparison.humanPlaytest).toBe(false);
+    expect(factorComparison.productionIntegrated).toBe(false);
+    expect(createRng(0)()).toBe(factorComparison.seedDraws[0]);
+    expect(createRng(1)()).toBe(factorComparison.seedDraws[1]);
+    expect(rows).toEqual(factorComparison.results);
+    const moved: Record<
+      Exclude<RolloutSensitivityFactor, 'baseline'>,
+      'defectRate' | 'signalAtTick' | 'impact'
+    > = {
+      defectRate: 'defectRate',
+      signalAtTick: 'signalAtTick',
+      impactPerValue: 'impact',
+    };
+    for (const scenario of ROLLOUT_FACTOR_SCENARIOS) {
+      expect(scenario.horizon).toBe(ROLLOUT_FACTOR_BASELINE.horizon);
+      const diffs = (['defectRate', 'signalAtTick', 'impact'] as const).filter(
+        (key) => scenario[key] !== ROLLOUT_FACTOR_BASELINE[key],
+      );
+      expect(diffs).toEqual(scenario.factor === 'baseline' ? [] : [moved[scenario.factor]]);
+      for (const seed of [0, 1]) {
+        const pair = rows.filter(
+          (row) =>
+            row.factor === scenario.factor &&
+            row.defectRate === scenario.defectRate &&
+            row.signalAtTick === scenario.signalAtTick &&
+            row.impact === scenario.impact &&
+            row.seed === seed,
+        );
+        expect(pair.map((row) => row.strategy)).toEqual(['immediate', 'observe-decide']);
+        expect(pair[0].initial).toEqual(pair[1].initial);
+        expect(pair[0].initial).toEqual(
+          create(seed, scenario.horizon, scenario.impact, {
+            defectRate: scenario.defectRate,
+            signalAtTick: scenario.signalAtTick,
+          }),
+        );
+        expect(pair[0].initial).not.toHaveProperty('defectRate');
+        expect(Object.keys(pair[0].initial).sort()).toEqual(Object.keys(create(0)).sort());
+        expect(pair[0].valuePerHealthyPilotTick).toBe(1);
+        expect(pair[0].valuePerHealthyFullTick).toBe(5);
+        expect(pair[0].impactPerValue).toBe(scenario.impact);
+      }
+    }
+    const mean = (
+      match: (row: (typeof rows)[number]) => boolean,
+      strategy: 'immediate' | 'observe-decide',
+    ) => {
+      const found = rows.filter((row) => match(row) && row.strategy === strategy);
+      expect(found.map((row) => row.seed)).toEqual([0, 1]);
+      return found.reduce((sum, row) => sum + row.result.netValue, 0) / 2;
+    };
+    const wins = (
+      match: (row: (typeof rows)[number]) => boolean,
+      leader: 'immediate' | 'observe-decide',
+    ) => {
+      const immediate = mean(match, 'immediate');
+      const observe = mean(match, 'observe-decide');
+      expect(leader === 'immediate' ? immediate : observe).toBeGreaterThan(
+        leader === 'immediate' ? observe : immediate,
+      );
+      return { immediate, observe };
+    };
+    expect(wins((row) => row.factor === 'baseline', 'observe-decide')).toEqual({
+      immediate: 6.5,
+      observe: 10,
+    });
+    expect(
+      wins((row) => row.factor === 'defectRate' && row.defectRate === 0.2, 'immediate'),
+    ).toEqual({
+      immediate: 29,
+      observe: 21,
+    });
+    expect(
+      wins((row) => row.factor === 'defectRate' && row.defectRate === 1, 'observe-decide'),
+    ).toEqual({
+      immediate: -16,
+      observe: -1,
+    });
+    expect(
+      wins((row) => row.factor === 'signalAtTick' && row.signalAtTick === 1, 'observe-decide'),
+    ).toEqual({
+      immediate: 4,
+      observe: 11.5,
+    });
+    expect(
+      wins((row) => row.factor === 'signalAtTick' && row.signalAtTick === 3, 'immediate'),
+    ).toEqual({
+      immediate: 9,
+      observe: 8.5,
+    });
+    expect(
+      wins((row) => row.factor === 'impactPerValue' && row.impact === 0.5, 'immediate'),
+    ).toEqual({
+      immediate: 11.5,
+      observe: 10.25,
+    });
+    expect(
+      wins((row) => row.factor === 'impactPerValue' && row.impact === 2, 'observe-decide'),
+    ).toEqual({
+      immediate: -3.5,
+      observe: 9.5,
+    });
+    const seedPrefersObserve = (match: (row: (typeof rows)[number]) => boolean, seed: number) => {
+      const at = (strategy: 'immediate' | 'observe-decide') =>
+        rows.find((row) => match(row) && row.seed === seed && row.strategy === strategy)!.result
+          .netValue;
+      return at('observe-decide') > at('immediate');
+    };
+    for (const match of [
+      (row: (typeof rows)[number]) => row.factor === 'baseline',
+      (row: (typeof rows)[number]) => row.factor === 'signalAtTick' && row.signalAtTick === 1,
+      (row: (typeof rows)[number]) => row.factor === 'signalAtTick' && row.signalAtTick === 3,
+      (row: (typeof rows)[number]) => row.factor === 'impactPerValue' && row.impact === 0.5,
+      (row: (typeof rows)[number]) => row.factor === 'impactPerValue' && row.impact === 2,
+    ]) {
+      expect(seedPrefersObserve(match, 0)).toBe(true);
+      expect(seedPrefersObserve(match, 1)).toBe(false);
+    }
+    expect(
+      seedPrefersObserve((row) => row.factor === 'defectRate' && row.defectRate === 0.2, 0),
+    ).toBe(false);
+    expect(
+      seedPrefersObserve((row) => row.factor === 'defectRate' && row.defectRate === 0.2, 1),
+    ).toBe(false);
+    expect(
+      seedPrefersObserve((row) => row.factor === 'defectRate' && row.defectRate === 1, 0),
+    ).toBe(true);
+    expect(
+      seedPrefersObserve((row) => row.factor === 'defectRate' && row.defectRate === 1, 1),
+    ).toBe(true);
+    for (const row of rows) {
+      if (row.strategy === 'immediate') {
+        expect(row.inputs.some((input) => input.type === 'check')).toBe(false);
+        expect(row.result.stage).toBe('full');
+      } else {
+        expect(row.result.checkedSignal).toBe(row.initial.defect ? 'anomaly' : 'healthy');
+        expect(row.result.stage).toBe(row.initial.defect ? 'stopped' : 'full');
+      }
+    }
+  });
+  it('要因比較の全入力も再生とJSON保存再開が一致し、元状態を変えない', () => {
+    for (const row of compareRolloutFactorSensitivity()) {
       let live = row.initial;
       let saved = structuredClone(live);
       for (const input of row.inputs) {

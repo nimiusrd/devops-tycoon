@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyHoldInput as apply,
+  baselineHoldRules,
   createHoldPrototype as create,
+  compareHoldFactorReversals,
   compareHoldStrategies,
   summarizeHold,
 } from './reviewHold';
 import comparison from '../../docs/prototypes/review-hold-comparison.json';
+import factors from '../../docs/prototypes/review-hold-factor-comparison.json';
 
 describe('RI-173 危険PRの保留', () => {
   it('保留中は自動レビューと先頭即処理から除外し、Doneに数えない', () => {
@@ -80,6 +83,112 @@ describe('RI-173 危険PRの保留', () => {
         expect(previous).toEqual(before);
         expect(saved).toEqual(live);
       }
+      expect(summarizeHold(live)).toEqual(row.result);
+    }
+  });
+  it('容量・末尾・担当・着手後の中断は規則として効き、未着手の保留は中断費用を払わない', () => {
+    const capacity = create('RI-173', 6, 1, { ...baselineHoldRules, holdCapacity: 2 });
+    const two = apply(apply(capacity, { type: 'hold', id: 'hard' }), {
+      type: 'hold',
+      id: 'easy-a',
+    });
+    expect(two.jobs.filter((job) => job.stage === 'held').map((job) => job.id)).toEqual([
+      'hard',
+      'easy-a',
+    ]);
+    expect(summarizeHold(two)).toMatchObject({
+      heldCount: 2,
+      doneCount: 0,
+      value: 0,
+      unfinishedValue: 24,
+    });
+    const origin = apply(
+      apply(create('RI-173', 6, 1, baselineHoldRules), { type: 'hold', id: 'hard' }),
+      { type: 'resume', id: 'hard' },
+    );
+    expect(apply(origin, { type: 'tick' }).jobs[0]).toMatchObject({ id: 'hard', reviewLeft: 1 });
+    const tail = apply(
+      apply(create('RI-173', 6, 1, { ...baselineHoldRules, returnPosition: 'tail' }), {
+        type: 'hold',
+        id: 'hard',
+      }),
+      { type: 'resume', id: 'hard' },
+    );
+    expect(tail.jobs.map((job) => job.id)).toEqual(['easy-a', 'easy-b', 'hard']);
+    expect(apply(tail, { type: 'tick' }).jobs[0]).toMatchObject({ id: 'easy-a', stage: 'done' });
+    const parallel = apply(create('RI-173', 6, 1, { ...baselineHoldRules, assignees: 2 }), {
+      type: 'tick',
+    });
+    expect(parallel.jobs.map((job) => job.stage)).toEqual(['review', 'done', 'review']);
+    const costly = create('RI-173', 6, 1, { ...baselineHoldRules, interruptCost: 1 });
+    expect(apply(costly, { type: 'hold', id: 'hard' }).focusSpent).toBe(1);
+    const interrupted = apply(apply(costly, { type: 'tick' }), { type: 'hold', id: 'hard' });
+    expect(interrupted.focusSpent).toBe(2);
+    expect(interrupted.jobs[0]).toMatchObject({
+      stage: 'held',
+      reviewLeft: 1,
+      qualityCost: 12,
+      value: 16,
+    });
+  });
+  it('同じ盤面で要因を一つずつ動かしても保留とFIFOの優劣は反転しない', () => {
+    const rows = compareHoldFactorReversals(factors.seed);
+    expect(rows).toEqual(factors.results);
+    const legacy = compareHoldStrategies(factors.seed).find(
+      (row) => row.deadline === 6 && row.recovery === 1 && row.strategy === 'hold-recover',
+    )!;
+    const baseline = rows.find(
+      (row) => row.factor === 'baseline' && row.strategy === 'hold-recover',
+    )!;
+    expect(baseline.inputs).toEqual(legacy.inputs);
+    expect(baseline.result).toEqual(legacy.result);
+    const reversed = [...new Set(rows.map((row) => row.factor))].filter((factor) => {
+      const fifo = rows.find((row) => row.factor === factor && row.strategy === 'fifo')!;
+      const hold = rows.find((row) => row.factor === factor && row.strategy === 'hold-recover')!;
+      return fifo.result.netValue > hold.result.netValue;
+    });
+    expect(reversed).toEqual([]);
+    expect(rows.map((row) => [row.factor, row.strategy, row.result.netValue])).toEqual([
+      ['baseline', 'fifo', 8],
+      ['baseline', 'hold-recover', 18],
+      ['holdCapacity', 'fifo', 8],
+      ['holdCapacity', 'hold-recover', 18],
+      ['returnPosition', 'fifo', 8],
+      ['returnPosition', 'hold-recover', 18],
+      ['assignees', 'fifo', 8],
+      ['assignees', 'hold-recover', 18],
+      ['interruptCost', 'fifo', 8],
+      ['interruptCost', 'hold-recover', 18],
+    ]);
+    const tail = rows.find(
+      (row) => row.factor === 'returnPosition' && row.strategy === 'hold-recover',
+    )!;
+    expect(tail.result.jobs.map((job) => job.id)).toEqual(['easy-a', 'easy-b', 'hard']);
+    for (const row of rows) {
+      expect(row.initial).toMatchObject({ horizon: 6, recoveryPerTick: 1, version: 1 });
+      expect(row.initial.jobs.map((job) => [job.id, job.value, job.reviewLeft])).toEqual([
+        ['hard', 16, 2],
+        ['easy-a', 4, 1],
+        ['easy-b', 4, 1],
+      ]);
+      expect(row.initial.jobs[0].deadline).toBe(6);
+      expect(row.result.heldCount).toBe(0);
+      expect(row.result.unfinishedValue).toBe(0);
+    }
+  });
+  it('要因比較も毎入力JSON保存再開と再生が一致し、期末で止まる', () => {
+    for (const row of compareHoldFactorReversals(factors.seed)) {
+      let live = row.initial;
+      let saved = structuredClone(live);
+      for (const input of row.inputs) {
+        const previous = live;
+        const before = structuredClone(live);
+        live = apply(live, input);
+        saved = apply(JSON.parse(JSON.stringify(saved)), input);
+        expect(previous).toEqual(before);
+        expect(saved).toEqual(live);
+      }
+      expect(live.tick).toBe(live.horizon);
       expect(summarizeHold(live)).toEqual(row.result);
     }
   });

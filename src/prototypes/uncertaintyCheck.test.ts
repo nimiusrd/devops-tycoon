@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   applyUncertaintyInput as apply,
   chooseUncertaintyAction,
+  compareUncertaintyFactorReversals,
   compareUncertaintyPolicies,
   createUncertaintyPrototype as create,
   summarizeUncertainty,
   viewUncertainty,
 } from './uncertaintyCheck';
 import comparison from '../../docs/prototypes/uncertainty-check-comparison.json';
+import factors from '../../docs/prototypes/uncertainty-check-factor-comparison.json';
 
 describe('RI-196 不確実な出力の確認', () => {
   it('兆候は確認対象だけで、同じseedの表示を繰り返しても実リスクを出さない', () => {
@@ -128,6 +130,297 @@ describe('RI-196 不確実な出力の確認', () => {
         expect(saved).toEqual(live);
       }
       expect(summarizeUncertainty(live)).toEqual(row.result);
+    }
+  });
+});
+
+function changedSignals(
+  left: { alarm: string; flagged: string; miss: string },
+  right: { alarm: string; flagged: string; miss: string },
+) {
+  return (['alarm', 'flagged', 'miss'] as const).filter((id) => left[id] !== right[id]);
+}
+
+describe('RI-196 要因の反転', () => {
+  it('初回と同じ資源で要因を一つずつ動かし、記録した反転と再計算が一致する', () => {
+    const data = compareUncertaintyFactorReversals();
+    expect(data).toEqual(factors);
+    expect(data.conditions).toMatchObject({
+      seed: 196,
+      horizons: [5, 10],
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      allPolicyRecomputed: false,
+      productionAdoption: false,
+    });
+    expect(comparison.results.filter((row) => row.policy === 'all')).toHaveLength(4);
+    const nets = (axis: keyof typeof data.sweeps) =>
+      data.sweeps[axis].map((item) => [
+        item.parameter,
+        item.cells.map((cell) => [
+          cell.resource,
+          cell.horizon,
+          cell.ship.result.netValue,
+          cell.check.result.netValue,
+          cell.preference,
+        ]),
+      ]);
+    expect(nets('hitRate')).toEqual([
+      [
+        '0/3',
+        [
+          ['thin', 5, 20, 11, 'ship'],
+          ['thin', 10, 20, 20, 'tie'],
+          ['thick', 5, 20, 20, 'tie'],
+          ['thick', 10, 20, 20, 'tie'],
+        ],
+      ],
+      [
+        '1/3',
+        [
+          ['thin', 5, 20, -9, 'ship'],
+          ['thin', 10, 20, 26, 'check'],
+          ['thick', 5, 20, 26, 'check'],
+          ['thick', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '2/3',
+        [
+          ['thin', 5, 20, 17, 'ship'],
+          ['thin', 10, 20, 26, 'check'],
+          ['thick', 5, 20, 26, 'check'],
+          ['thick', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '3/3',
+        [
+          ['thin', 5, 20, -9, 'ship'],
+          ['thin', 10, 20, 30, 'check'],
+          ['thick', 5, 20, 30, 'check'],
+          ['thick', 10, 20, 30, 'check'],
+        ],
+      ],
+    ]);
+    expect(nets('checkTicks')).toEqual([
+      [
+        '1',
+        [
+          ['ticks', 5, 20, 26, 'check'],
+          ['ticks', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '2',
+        [
+          ['ticks', 5, 20, 4, 'ship'],
+          ['ticks', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '3',
+        [
+          ['ticks', 5, 20, -9, 'ship'],
+          ['ticks', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '4',
+        [
+          ['ticks', 5, 20, -9, 'ship'],
+          ['ticks', 10, 20, 17, 'ship'],
+        ],
+      ],
+      [
+        '5',
+        [
+          ['ticks', 5, 20, -9, 'ship'],
+          ['ticks', 10, 20, -9, 'ship'],
+        ],
+      ],
+    ]);
+    expect(nets('unfinishedPenalty')).toEqual([
+      [
+        '0',
+        [
+          ['thin', 5, 20, 0, 'ship'],
+          ['thin', 10, 20, 26, 'check'],
+          ['thick', 5, 20, 26, 'check'],
+          ['thick', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '1',
+        [
+          ['thin', 5, 20, -3, 'ship'],
+          ['thin', 10, 20, 26, 'check'],
+          ['thick', 5, 20, 26, 'check'],
+          ['thick', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '3',
+        [
+          ['thin', 5, 20, -9, 'ship'],
+          ['thin', 10, 20, 26, 'check'],
+          ['thick', 5, 20, 26, 'check'],
+          ['thick', 10, 20, 26, 'check'],
+        ],
+      ],
+      [
+        '6',
+        [
+          ['thin', 5, 20, -18, 'ship'],
+          ['thin', 10, 20, 26, 'check'],
+          ['thick', 5, 20, 26, 'check'],
+          ['thick', 10, 20, 26, 'check'],
+        ],
+      ],
+    ]);
+    expect(
+      data.reversals.map((item) => [
+        item.axis,
+        item.resource,
+        item.horizon,
+        item.before.parameter,
+        item.before.preference,
+        item.before.ship,
+        item.before.check,
+        item.after.parameter,
+        item.after.preference,
+        item.after.ship,
+        item.after.check,
+      ]),
+    ).toEqual([
+      ['hitRate', 'thin', 10, '0/3', 'tie', 20, 20, '1/3', 'check', 20, 26],
+      ['hitRate', 'thick', 5, '0/3', 'tie', 20, 20, '1/3', 'check', 20, 26],
+      ['hitRate', 'thick', 10, '0/3', 'tie', 20, 20, '1/3', 'check', 20, 26],
+      ['checkTicks', 'ticks', 5, '1', 'check', 20, 26, '2', 'ship', 20, 4],
+      ['checkTicks', 'ticks', 10, '3', 'check', 20, 26, '4', 'ship', 20, 17],
+    ]);
+    expect(data.reversals.some((item) => item.axis === 'unfinishedPenalty')).toBe(false);
+  });
+
+  it('基準行は初回のそのまま出す判断と確認してから出す判断に一致し、動かした要因は一つである', () => {
+    const data = compareUncertaintyFactorReversals();
+    const first = (verifier: string, horizon: number, policy: string) => {
+      const row = comparison.results.find(
+        (item) => item.verifier === verifier && item.horizon === horizon && item.policy === policy,
+      );
+      if (!row) throw new Error(`${verifier}:${horizon}:${policy}`);
+      return row;
+    };
+    const baselineSignals = { alarm: 'uncertain', flagged: 'uncertain', miss: 'clear' };
+    for (const point of [
+      data.sweeps.hitRate.find((item) => item.parameter === '1/3'),
+      data.sweeps.unfinishedPenalty.find((item) => item.parameter === '3'),
+    ]) {
+      if (!point) throw new Error('baseline');
+      expect(point.signals).toEqual(baselineSignals);
+      expect(point.hits).toBe(1);
+      expect(point.unfinishedPenalty).toBe(3);
+      for (const cell of point.cells) {
+        expect(cell.resource === 'thin' || cell.resource === 'thick').toBe(true);
+        expect(cell.checkTicks).toBe(cell.resource === 'thin' ? 3 : 1);
+        const ship = first(cell.resource, cell.horizon, 'ship');
+        const flagged = first(cell.resource, cell.horizon, 'flagged');
+        expect(cell.ship.inputs).toEqual(ship.inputs);
+        expect(cell.ship.result).toEqual(ship.result);
+        expect(cell.check.inputs).toEqual(flagged.inputs);
+        expect(cell.check.result).toEqual(flagged.result);
+      }
+    }
+    for (const entry of [
+      { parameter: '1', verifier: 'thick' },
+      { parameter: '3', verifier: 'thin' },
+    ] as const) {
+      const point = data.sweeps.checkTicks.find((item) => item.parameter === entry.parameter);
+      if (!point) throw new Error(entry.parameter);
+      expect(point.signals).toEqual(baselineSignals);
+      expect(point.unfinishedPenalty).toBe(3);
+      for (const cell of point.cells) {
+        expect(cell.resource).toBe('ticks');
+        expect(cell.checkTicks).toBe(Number(entry.parameter));
+        const ship = first(entry.verifier, cell.horizon, 'ship');
+        const flagged = first(entry.verifier, cell.horizon, 'flagged');
+        expect(cell.ship.inputs).toEqual(ship.inputs);
+        expect(cell.ship.result).toEqual(ship.result);
+        expect(cell.check.inputs).toEqual(flagged.inputs);
+        expect(cell.check.result).toEqual(flagged.result);
+      }
+    }
+    for (const point of data.sweeps.checkTicks.concat(data.sweeps.unfinishedPenalty)) {
+      expect(point.signals).toEqual(baselineSignals);
+      expect(point.hits).toBe(1);
+    }
+    for (const point of data.sweeps.hitRate.concat(data.sweeps.checkTicks)) {
+      expect(point.unfinishedPenalty).toBe(3);
+    }
+    for (let index = 1; index < data.sweeps.hitRate.length; index += 1) {
+      const before = data.sweeps.hitRate[index - 1];
+      const after = data.sweeps.hitRate[index];
+      if (!before || !after) throw new Error('hit rate');
+      expect(changedSignals(before.signals, after.signals)).toHaveLength(1);
+      expect(after.hits).toBe(before.hits + 1);
+    }
+    const shipInputs = new Map<number, { type: string; id?: string }[]>();
+    for (const point of Object.values(data.sweeps).flat()) {
+      for (const cell of point.cells) {
+        expect(cell.margin).toBe(cell.check.result.netValue - cell.ship.result.netValue);
+        expect(cell.ship.result.netValue).toBe(20);
+        expect(cell.ship.inputs.every((input) => input.type !== 'check')).toBe(true);
+        const seen = shipInputs.get(cell.horizon);
+        if (seen) expect(cell.ship.inputs).toEqual(seen);
+        else shipInputs.set(cell.horizon, cell.ship.inputs);
+      }
+    }
+  });
+
+  it('要因比較の入力を再生すると差引が一致し、期末では同じ状態を返す', () => {
+    const data = compareUncertaintyFactorReversals();
+    for (const point of Object.values(data.sweeps).flat()) {
+      for (const cell of point.cells) {
+        const overrides = {
+          checkTicks: cell.checkTicks,
+          unfinishedPenalty: point.unfinishedPenalty,
+          signals: point.signals,
+        };
+        const verifier = cell.resource === 'thick' ? 'thick' : 'thin';
+        for (const policy of ['ship', 'check'] as const) {
+          const run = cell[policy];
+          let state = create(data.conditions.seed, cell.horizon, verifier, overrides);
+          expect(state.tasks.map((task) => [task.id, task.actualRisk, task.value])).toEqual([
+            ['alarm', 0, 10],
+            ['flagged', 6, 10],
+            ['miss', 4, 10],
+          ]);
+          expect(state.tasks.map((task) => task.signal)).toEqual([
+            point.signals.alarm,
+            point.signals.flagged,
+            point.signals.miss,
+          ]);
+          for (const input of run.inputs) {
+            const previous = state;
+            const before = structuredClone(state);
+            expect(
+              chooseUncertaintyAction(previous, policy === 'check' ? 'flagged' : 'ship'),
+            ).toEqual(input);
+            if (input.type === 'check') {
+              expect(previous.tasks.find((task) => task.id === input.id)!.signal).toBe('uncertain');
+            }
+            state = apply(state, input, overrides);
+            const restored = apply(JSON.parse(JSON.stringify(before)), input, overrides);
+            expect(previous).toEqual(before);
+            expect(restored).toEqual(state);
+          }
+          expect(summarizeUncertainty(state, overrides)).toEqual(run.result);
+          expect(state.inputs).toEqual(run.inputs);
+          expect(apply(state, { type: 'ship', id: 'alarm' }, overrides)).toBe(state);
+        }
+      }
     }
   });
 });

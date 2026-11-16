@@ -199,3 +199,216 @@ export function compareMentorshipStrategies(seed: string | number, periods: numb
     };
   });
 }
+
+/** 初回の8期間・需要12・師弟能力を固定し、要因を一つずつ動かす。 */
+const FACTOR_SEED = 'RI-206';
+const FACTOR_HORIZON = 8;
+const FACTOR_DEMAND = 12;
+
+type MentorshipFactorAxis = 'load' | 'deadline' | 'return';
+type MentorshipPreference = 'concentrate' | 'mentor' | 'tie';
+type MentorshipStrategyName = 'concentrate' | 'mentor';
+
+interface MentorshipFactorStep {
+  demand: number;
+  mentorPresent: boolean;
+  expireBacklog: boolean;
+}
+
+function withMentorPresence(state: MentorshipState, present: boolean): MentorshipState {
+  return {
+    ...state,
+    roster: {
+      ...state.roster,
+      members: state.roster.members.map((member) =>
+        member.id === state.mentorId
+          ? {
+              ...member,
+              stats: { ...member.stats },
+              traits: [...member.traits],
+              onLeave: !present,
+            }
+          : member,
+      ),
+    },
+  };
+}
+
+function runMentorshipFactor(
+  strategy: MentorshipStrategyName,
+  steps: readonly MentorshipFactorStep[],
+) {
+  let state = createMentorshipPrototype(FACTOR_SEED);
+  let expired = 0;
+  const teach: boolean[] = [];
+  for (const step of steps) {
+    const requested = strategy === 'mentor' && state.lessons < 2;
+    teach.push(requested);
+    state = advanceMentorshipPeriod(
+      withMentorPresence(state, step.mentorPresent),
+      requested,
+      step.demand,
+    );
+    if (step.expireBacklog) {
+      expired += state.backlog;
+      state = { ...state, backlog: 0 };
+    }
+  }
+  return {
+    strategy,
+    teach,
+    delivered: state.delivered,
+    backlog: state.backlog,
+    expired,
+    apprenticeReview: state.roster.members.find((member) => member.id === state.apprenticeId)!.stats
+      .review,
+    apprenticeGrowthWork: state.history.reduce(
+      (sum, period) => sum + period.apprenticeGrowthWork,
+      0,
+    ),
+    history: state.history,
+  };
+}
+
+function factorSchedule(at: (period: number) => MentorshipFactorStep) {
+  const steps: MentorshipFactorStep[] = [];
+  for (let period = 1; period <= FACTOR_HORIZON; period += 1) steps.push(at(period));
+  return steps;
+}
+
+function preference(concentrate: number, mentor: number): MentorshipPreference {
+  if (concentrate > mentor) return 'concentrate';
+  if (mentor > concentrate) return 'mentor';
+  return 'tie';
+}
+
+function factorPoint(axis: MentorshipFactorAxis, parameter: string, steps: MentorshipFactorStep[]) {
+  const concentrate = runMentorshipFactor('concentrate', steps);
+  const mentor = runMentorshipFactor('mentor', steps);
+  return {
+    axis,
+    parameter,
+    schedule: steps.map((step, index) => ({ period: index + 1, ...step })),
+    preference: preference(concentrate.delivered, mentor.delivered),
+    runs: { concentrate, mentor },
+  };
+}
+
+function reversalsOf<T extends ReturnType<typeof factorPoint>>(rows: readonly T[]) {
+  const found: {
+    axis: MentorshipFactorAxis;
+    before: {
+      parameter: string;
+      preference: MentorshipPreference;
+      concentrate: number;
+      mentor: number;
+    };
+    after: {
+      parameter: string;
+      preference: MentorshipPreference;
+      concentrate: number;
+      mentor: number;
+    };
+  }[] = [];
+  for (let index = 1; index < rows.length; index += 1) {
+    const before = rows[index - 1];
+    const after = rows[index];
+    if (!before || !after || before.preference === after.preference) continue;
+    found.push({
+      axis: before.axis,
+      before: {
+        parameter: before.parameter,
+        preference: before.preference,
+        concentrate: before.runs.concentrate.delivered,
+        mentor: before.runs.mentor.delivered,
+      },
+      after: {
+        parameter: after.parameter,
+        preference: after.preference,
+        concentrate: after.runs.concentrate.delivered,
+        mentor: after.runs.mentor.delivered,
+      },
+    });
+  }
+  return found;
+}
+
+/**
+ * 初回と同じ師弟・8期間の上で、需要、期限の失効、師匠の復帰を一つずつ動かす。
+ * 固定戦略の計算。2期間と4期間の比較は再実行しない。
+ */
+export function compareMentorshipFactorReversals() {
+  const load = Array.from({ length: FACTOR_DEMAND + 1 }, (_, demand) =>
+    factorPoint(
+      'load',
+      String(demand),
+      factorSchedule(() => ({ demand, mentorPresent: true, expireBacklog: false })),
+    ),
+  );
+  const deadline = [
+    factorPoint(
+      'deadline',
+      'none',
+      factorSchedule(() => ({
+        demand: FACTOR_DEMAND,
+        mentorPresent: true,
+        expireBacklog: false,
+      })),
+    ),
+    ...Array.from({ length: FACTOR_HORIZON }, (_, index) =>
+      factorPoint(
+        'deadline',
+        String(index + 1),
+        factorSchedule((period) => ({
+          demand: FACTOR_DEMAND,
+          mentorPresent: true,
+          expireBacklog: period === index + 1,
+        })),
+      ),
+    ),
+  ];
+  const returnPeriods = [
+    ...Array.from({ length: FACTOR_HORIZON }, (_, index) => index + 1),
+    FACTOR_HORIZON + 1,
+  ];
+  const mentorReturn = returnPeriods.map((returnPeriod) =>
+    factorPoint(
+      'return',
+      returnPeriod > FACTOR_HORIZON ? 'absent' : String(returnPeriod),
+      factorSchedule((period) => ({
+        demand: FACTOR_DEMAND,
+        mentorPresent: period >= returnPeriod,
+        expireBacklog: false,
+      })),
+    ),
+  );
+  const sweeps = { load, deadline, return: mentorReturn };
+  return {
+    conditions: {
+      seed: FACTOR_SEED,
+      horizon: FACTOR_HORIZON,
+      baselineDemand: FACTOR_DEMAND,
+      score: 'delivered',
+      strategies: {
+        concentrate: '毎期教えない',
+        mentor: '実施済みが2回未満なら教える。休職中は進まず回数も消費しない',
+      },
+      held: {
+        load: '8期間、師匠は全期間稼働。需要だけを0から12まで動かす',
+        deadline:
+          '8期間、毎期需要12、師匠は全期間稼働。指定期間の処理後に未処理を失効させる。noneは失効なし',
+        return:
+          '8期間、毎期需要12。師匠が復帰する期間だけを動かす。それ以前は休職。absentは期末まで不在',
+      },
+      controls: ['load:12', 'deadline:none', 'return:1'],
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionIntegration: false,
+      traitsStaminaGrowth: false,
+    },
+    sweeps,
+    reversals: [load, deadline, mentorReturn].flatMap((rows) => reversalsOf(rows)),
+  };
+}

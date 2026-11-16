@@ -35,6 +35,101 @@ async function advanceToNextDelivery(page: Page): Promise<number> {
   });
 }
 
+/** 短いポップの寿命内に、通信を挟まず実DOMを待って次の出荷へ進む。 */
+async function observeConsecutivePops(page: Page) {
+  return page.evaluate(async () => {
+    const game = (window as PublicGameWindow).game;
+    if (!game) throw new Error('window.game が公開されていない');
+    // getState()の介入試算を演出の寿命内に挟まず、step()が返す公開状態を引き継ぐ。
+    let state = game.getState();
+    const nextDelivery = () => {
+      const before = state.org.deliveryScore;
+      for (let guard = 0; state.phase === 'sprint' && guard < 4_000; guard += 1) {
+        state = game.step(500);
+        const delta = state.org.deliveryScore - before;
+        if (delta > 0) return delta;
+      }
+      throw new Error(`次の出荷へ到達しない: phase=${state.phase}`);
+    };
+    const layer = document.querySelector('.point-pops');
+    if (!layer) throw new Error('得点ポップのレイヤーがない');
+    const readPops = () => [...layer.querySelectorAll<HTMLElement>('.point-pop')];
+    const waitForAmounts = (amounts: number[]) =>
+      new Promise<HTMLElement[]>((resolve, reject) => {
+        const observer = new MutationObserver(check);
+        const timer = window.setTimeout(() => {
+          observer.disconnect();
+          reject(new Error(`得点ポップが出現しない: ${amounts.join(',')}`));
+        }, 5_000);
+        function check() {
+          const elements = readPops();
+          if (
+            elements.length === amounts.length &&
+            elements.every((element, index) => element.textContent === `+${amounts[index]}`)
+          ) {
+            window.clearTimeout(timer);
+            observer.disconnect();
+            resolve(elements);
+          }
+        }
+        observer.observe(layer, { childList: true, characterData: true, subtree: true });
+        check();
+      });
+
+    const timings = { firstObservedAt: 0, secondObservedAt: 0 };
+    const waitForOpacity = (count: number, minimum: number) =>
+      new Promise<number>((resolve, reject) => {
+        let frame = 0;
+        let maximumOpacity = 0;
+        let samples = 0;
+        const timer = window.setTimeout(() => {
+          window.cancelAnimationFrame(frame);
+          reject(
+            new Error(
+              `${count}件の得点ポップが不透明にならない: ${JSON.stringify({ ...timings, maximumOpacity, samples, visibility: document.visibilityState })}`,
+            ),
+          );
+        }, 5_000);
+        const sample = () => {
+          const elements = readPops();
+          const opacity =
+            elements.length === count
+              ? Math.min(...elements.map((element) => Number(getComputedStyle(element).opacity)))
+              : 0;
+          samples += 1;
+          maximumOpacity = Math.max(maximumOpacity, opacity);
+          if (opacity > minimum) {
+            window.clearTimeout(timer);
+            resolve(opacity);
+          } else {
+            frame = window.requestAnimationFrame(sample);
+          }
+        };
+        sample();
+      });
+
+    const startedAt = performance.now();
+    const firstDelta = nextDelivery();
+    const [firstPop] = await waitForAmounts([firstDelta]);
+    timings.firstObservedAt = performance.now() - startedAt;
+    const style = getComputedStyle(firstPop);
+    const transform = new DOMMatrixReadOnly(style.transform);
+    const initialStyle = {
+      opacity: style.opacity,
+      scaleX: transform.a,
+      scaleY: transform.d,
+      translateY: transform.f,
+    };
+    // DOM追加直後のmicrotaskで次を進めず、実フレームでintroが始まったことを待つ。
+    await waitForOpacity(1, 0.01);
+    const secondDelta = nextDelivery();
+    await waitForAmounts([firstDelta, secondDelta]);
+    timings.secondObservedAt = performance.now() - startedAt;
+    const visibleOpacity = await waitForOpacity(2, 0.5);
+    return { initialStyle, visibleOpacity };
+  });
+}
+
 for (const viewport of HUD_VIEWPORTS) {
   for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     const motionLabel = reducedMotion === 'reduce' ? '動きを減らす' : '通常の動き';
@@ -216,38 +311,20 @@ for (const viewport of VIEWPORTS) {
       await expect(pops).toHaveCount(0);
       await expect(page.locator('.point-pops')).toHaveAttribute('aria-hidden', 'true');
 
-      const firstDelta = await advanceToNextDelivery(page);
-      // 公開状態の revision を React が読み、最初のポップを描画したことを待つ。
-      await expect(pops).toHaveText([`+${firstDelta}`]);
+      // 実DOM出現後にブラウザ内で次を出荷し、1100msの寿命を通信待ちで消費しない。
+      const observation = await observeConsecutivePops(page);
 
       if (reducedMotion === 'reduce') {
         // 最終フレームまでリトライせず、最初に描かれた得点が静止・不透明か確認する。
-        expect(
-          await pops.first().evaluate((element) => {
-            const style = getComputedStyle(element);
-            const transform = new DOMMatrixReadOnly(style.transform);
-            return {
-              opacity: style.opacity,
-              scaleX: transform.a,
-              scaleY: transform.d,
-              translateY: transform.f,
-            };
-          }),
-        ).toEqual({ opacity: '1', scaleX: 1, scaleY: 1, translateY: 0 });
+        expect(observation.initialStyle).toEqual({
+          opacity: '1',
+          scaleX: 1,
+          scaleY: 1,
+          translateY: 0,
+        });
       }
 
-      // 最初の 1100 ms の寿命内に次の出荷を描画する。
-      const secondDelta = await advanceToNextDelivery(page);
-      await expect(pops).toHaveText([`+${firstDelta}`, `+${secondDelta}`]);
-      await expect
-        .poll(() =>
-          pops.evaluateAll((elements) =>
-            elements.length === 2
-              ? Math.min(...elements.map((element) => Number(getComputedStyle(element).opacity)))
-              : 0,
-          ),
-        )
-        .toBeGreaterThan(0.5);
+      expect(observation.visibleOpacity).toBeGreaterThan(0.5);
       await page.screenshot({ path: testInfo.outputPath('連続出荷のポップ表示中.png') });
 
       // タイマーや WAAPI を mock / 強制完了せず、実際の exit 演出完了を待つ。

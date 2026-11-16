@@ -1,0 +1,3643 @@
+{
+  "conditions": {
+    "seed": "RI-157",
+    "initial": {
+      "version": 1,
+      "seed": "RI-157",
+      "tick": 0,
+      "horizon": 12,
+      "slots": 2,
+      "tasks": [
+        {
+          "id": "a",
+          "domain": "product",
+          "codingLeft": 3,
+          "integrationLeft": 0,
+          "value": 6,
+          "completedTick": null
+        },
+        {
+          "id": "b",
+          "domain": "product",
+          "codingLeft": 3,
+          "integrationLeft": 0,
+          "value": 6,
+          "completedTick": null
+        },
+        {
+          "id": "c",
+          "domain": "platform",
+          "codingLeft": 4,
+          "integrationLeft": 0,
+          "value": 6,
+          "completedTick": null
+        }
+      ],
+      "conflicts": [],
+      "history": []
+    },
+    "baseline": {
+      "deadline": 12,
+      "slots": 2,
+      "conflictEffort": 2,
+      "integrationRate": 1
+    },
+    "levels": {
+      "deadline": [3, 4, 5, 6, 7, 12],
+      "integrationRate": [1, 2, 3],
+      "conflictEffort": [1, 2, 3],
+      "slots": [2, 3, 4]
+    },
+    "resources": "初回と同じ。a/bはproductで各3工数・価値6。cはplatformで、このseedでは4工数・価値6。",
+    "judgments": {
+      "parallel": "未完了をa、b、cの順に、枠の数だけ選ぶ",
+      "split": "同領域を同時に選ばない。混合は領域ごとに1件。同領域だけの構成は1件ずつ"
+    },
+    "metrics": {
+      "value": "締切までに完成した価値の合計",
+      "completion": "全件完成したtick。未完了はnull",
+      "work": "選択した枠の延べ数"
+    },
+    "held": {
+      "deadline": "締切だけをhorizonにする。枠2、競合工数2、統合進捗1",
+      "integrationRate": "統合tickの進捗だけ。締切12、枠2、競合工数2。Coding中は統合を進めない",
+      "conflictEffort": "同領域の同時Codingで足す統合工数だけ。締切12、枠2、統合進捗1",
+      "slots": "作業枠だけ。締切12、競合工数2、統合進捗1。分ける判断は余った枠を同領域に使わない"
+    },
+    "codingBlocksIntegration": true,
+    "owner": "IDの辞書順で後のタスク",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "oneFactorAtATime": true,
+    "repeatedFirstComparison": false,
+    "normalRun": false,
+    "personalAssignment": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "deadline": [
+      {
+        "factor": "deadline",
+        "parameter": "3",
+        "setting": {
+          "deadline": 3,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": ["deadline"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              }
+            ],
+            "tick": 3,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 6,
+            "completedAll": false,
+            "remainingIds": ["b"],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              }
+            ],
+            "tick": 3,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 3,
+            "completedAll": false,
+            "remainingIds": ["b"],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "neither",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              }
+            ],
+            "tick": 3,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 6,
+            "completedAll": false,
+            "remainingIds": ["b", "c"],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              }
+            ],
+            "tick": 3,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": false,
+            "remainingIds": ["b", "c"],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "neither",
+            "work": "tie"
+          }
+        }
+      },
+      {
+        "factor": "deadline",
+        "parameter": "4",
+        "setting": {
+          "deadline": 4,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": ["deadline"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              }
+            ],
+            "tick": 4,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 7,
+            "completedAll": false,
+            "remainingIds": ["b"],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              }
+            ],
+            "tick": 4,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 4,
+            "completedAll": false,
+            "remainingIds": ["b"],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "neither",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              }
+            ],
+            "tick": 4,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": false,
+            "remainingIds": ["b", "c"],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              }
+            ],
+            "tick": 4,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 8,
+            "completedAll": false,
+            "remainingIds": ["b"],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "split",
+            "completion": "neither",
+            "work": "tie"
+          }
+        }
+      },
+      {
+        "factor": "deadline",
+        "parameter": "5",
+        "setting": {
+          "deadline": 5,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": ["deadline"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 6,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 5,
+            "completedAll": false,
+            "remainingIds": ["b"],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "parallel",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 10,
+            "completedAll": false,
+            "remainingIds": ["c"],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 9,
+            "completedAll": false,
+            "remainingIds": ["b"],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "neither",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "deadline",
+        "parameter": "6",
+        "setting": {
+          "deadline": 6,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": ["deadline"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 11,
+            "completedAll": false,
+            "remainingIds": ["c"],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "split",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "deadline",
+        "parameter": "7",
+        "setting": {
+          "deadline": 7,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": ["deadline"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 12,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "deadline",
+        "parameter": "12",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": [],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 12,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      }
+    ],
+    "integrationRate": [
+      {
+        "factor": "integrationRate",
+        "parameter": "1",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": [],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 12,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "integrationRate",
+        "parameter": "2",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 2
+        },
+        "changed": ["integrationRate"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              }
+            ],
+            "tick": 4,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 7,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 4,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 11,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "integrationRate",
+        "parameter": "3",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 3
+        },
+        "changed": ["integrationRate"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              }
+            ],
+            "tick": 4,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 7,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 4,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 11,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      }
+    ],
+    "conflictEffort": [
+      {
+        "factor": "conflictEffort",
+        "parameter": "1",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 1,
+          "integrationRate": 1
+        },
+        "changed": ["conflictEffort"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              }
+            ],
+            "tick": 4,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 1,
+            "workSpent": 7,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 1
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 4,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 1,
+            "workSpent": 11,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 1
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "conflictEffort",
+        "parameter": "2",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": [],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 12,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "conflictEffort",
+        "parameter": "3",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 3,
+          "integrationRate": 1
+        },
+        "changed": ["conflictEffort"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 3,
+            "workSpent": 9,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 3
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "tie",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 3,
+            "workSpent": 13,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 3
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      }
+    ],
+    "slots": [
+      {
+        "factor": "slots",
+        "parameter": "2",
+        "setting": {
+          "deadline": 12,
+          "slots": 2,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": [],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 5
+              },
+              {
+                "ids": ["c"],
+                "tick": 6
+              },
+              {
+                "ids": ["c"],
+                "tick": 7
+              }
+            ],
+            "tick": 7,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 7,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 12,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "split",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "slots",
+        "parameter": "3",
+        "setting": {
+          "deadline": 12,
+          "slots": 3,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": ["slots"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 12,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        }
+      },
+      {
+        "factor": "slots",
+        "parameter": "4",
+        "setting": {
+          "deadline": 12,
+          "slots": 4,
+          "conflictEffort": 2,
+          "integrationRate": 1
+        },
+        "changed": ["slots"],
+        "sameDomain": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 8,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a"],
+                "tick": 1
+              },
+              {
+                "ids": ["a"],
+                "tick": 2
+              },
+              {
+                "ids": ["a"],
+                "tick": 3
+              },
+              {
+                "ids": ["b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 12,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 6,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        },
+        "mixed": {
+          "parallel": {
+            "history": [
+              {
+                "ids": ["a", "b", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "b", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "b", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["b", "c"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              }
+            ],
+            "tick": 5,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 5,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 2,
+            "workSpent": 12,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": [
+              {
+                "pair": ["a", "b"],
+                "owner": "b",
+                "tick": 1,
+                "effort": 2
+              }
+            ]
+          },
+          "split": {
+            "history": [
+              {
+                "ids": ["a", "c"],
+                "tick": 1
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 2
+              },
+              {
+                "ids": ["a", "c"],
+                "tick": 3
+              },
+              {
+                "ids": ["c", "b"],
+                "tick": 4
+              },
+              {
+                "ids": ["b"],
+                "tick": 5
+              },
+              {
+                "ids": ["b"],
+                "tick": 6
+              }
+            ],
+            "tick": 6,
+            "shippedValue": 18,
+            "shipped": [
+              {
+                "id": "a",
+                "tick": 3,
+                "value": 6
+              },
+              {
+                "id": "b",
+                "tick": 6,
+                "value": 6
+              },
+              {
+                "id": "c",
+                "tick": 4,
+                "value": 6
+              }
+            ],
+            "integrationEffort": 0,
+            "workSpent": 10,
+            "completedAll": true,
+            "remainingIds": [],
+            "conflicts": []
+          },
+          "outcome": {
+            "value": "tie",
+            "completion": "parallel",
+            "work": "split"
+          }
+        }
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "factor": "deadline",
+      "composition": "mixed-domains",
+      "metric": "value",
+      "kind": "appear",
+      "before": {
+        "parameter": "3",
+        "winner": "tie",
+        "parallel": 6,
+        "split": 6
+      },
+      "after": {
+        "parameter": "4",
+        "winner": "split",
+        "parallel": 6,
+        "split": 12
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "same-domain",
+      "metric": "value",
+      "kind": "appear",
+      "before": {
+        "parameter": "4",
+        "winner": "tie",
+        "parallel": 6,
+        "split": 6
+      },
+      "after": {
+        "parameter": "5",
+        "winner": "parallel",
+        "parallel": 12,
+        "split": 6
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "same-domain",
+      "metric": "completion",
+      "kind": "appear",
+      "before": {
+        "parameter": "4",
+        "winner": "neither",
+        "parallel": null,
+        "split": null
+      },
+      "after": {
+        "parameter": "5",
+        "winner": "parallel",
+        "parallel": 5,
+        "split": null
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "mixed-domains",
+      "metric": "value",
+      "kind": "vanish",
+      "before": {
+        "parameter": "4",
+        "winner": "split",
+        "parallel": 6,
+        "split": 12
+      },
+      "after": {
+        "parameter": "5",
+        "winner": "tie",
+        "parallel": 12,
+        "split": 12
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "mixed-domains",
+      "metric": "work",
+      "kind": "appear",
+      "before": {
+        "parameter": "4",
+        "winner": "tie",
+        "parallel": 8,
+        "split": 8
+      },
+      "after": {
+        "parameter": "5",
+        "winner": "split",
+        "parallel": 10,
+        "split": 9
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "same-domain",
+      "metric": "value",
+      "kind": "vanish",
+      "before": {
+        "parameter": "5",
+        "winner": "parallel",
+        "parallel": 12,
+        "split": 6
+      },
+      "after": {
+        "parameter": "6",
+        "winner": "tie",
+        "parallel": 12,
+        "split": 12
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "mixed-domains",
+      "metric": "value",
+      "kind": "appear",
+      "before": {
+        "parameter": "5",
+        "winner": "tie",
+        "parallel": 12,
+        "split": 12
+      },
+      "after": {
+        "parameter": "6",
+        "winner": "split",
+        "parallel": 12,
+        "split": 18
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "mixed-domains",
+      "metric": "completion",
+      "kind": "appear",
+      "before": {
+        "parameter": "5",
+        "winner": "neither",
+        "parallel": null,
+        "split": null
+      },
+      "after": {
+        "parameter": "6",
+        "winner": "split",
+        "parallel": null,
+        "split": 6
+      }
+    },
+    {
+      "factor": "deadline",
+      "composition": "mixed-domains",
+      "metric": "value",
+      "kind": "vanish",
+      "before": {
+        "parameter": "6",
+        "winner": "split",
+        "parallel": 12,
+        "split": 18
+      },
+      "after": {
+        "parameter": "7",
+        "winner": "tie",
+        "parallel": 18,
+        "split": 18
+      }
+    },
+    {
+      "factor": "conflictEffort",
+      "composition": "same-domain",
+      "metric": "completion",
+      "kind": "vanish",
+      "before": {
+        "parameter": "2",
+        "winner": "parallel",
+        "parallel": 5,
+        "split": 6
+      },
+      "after": {
+        "parameter": "3",
+        "winner": "tie",
+        "parallel": 6,
+        "split": 6
+      }
+    },
+    {
+      "factor": "slots",
+      "composition": "mixed-domains",
+      "metric": "completion",
+      "kind": "switch",
+      "before": {
+        "parameter": "2",
+        "winner": "split",
+        "parallel": 7,
+        "split": 6
+      },
+      "after": {
+        "parameter": "3",
+        "winner": "parallel",
+        "parallel": 5,
+        "split": 6
+      }
+    }
+  ]
+}

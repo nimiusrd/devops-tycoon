@@ -1,0 +1,3465 @@
+{
+  "conditions": {
+    "seed": "RI-155",
+    "pressures": ["recoverable", "missed"],
+    "resources": {
+      "seed": "RI-155",
+      "horizon": 8,
+      "focus": 2,
+      "stamina": 10,
+      "deadlineTick": 3,
+      "onTimeValue": 12,
+      "lateValue": 5,
+      "boostFocus": 1,
+      "boostStamina": 3,
+      "otherWork": 4,
+      "campaignWork": {
+        "recoverable": 4,
+        "missed": 6
+      }
+    },
+    "decision": {
+      "deadline": "campaign を終えてから steady",
+      "other": "steady を終えてから campaign",
+      "score": "shippedValue - nextPeriodStaminaCost * staminaSpent",
+      "tieBreak": "less staminaSpent"
+    },
+    "baseline": {
+      "otherValue": 5,
+      "nextPeriodStaminaCost": 0,
+      "preview": "accurate"
+    },
+    "otherWork": 4,
+    "held": {
+      "overdueVersusOther": "別案件の試作価値だけを動かす。工数4、翌期費用0、予告は正しい文",
+      "nextPeriodStaminaCost": "消費体力1あたりの翌期費用だけを動かす。入力は変えない。別案件価値5、予告は正しい文",
+      "preview": "予告文だけを動かす。別案件価値5、翌期費用0。画面には出さない"
+    },
+    "boostCostsUnchanged": {
+      "focus": 1,
+      "stamina": 3
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false,
+    "productionScreen": false,
+    "nextUncertainty": "4工数では翌期費用が体力1あたり2まで期限案件優先が上で3から別案件優先に反転し、6工数では別案件価値が期限後の5を超えると別案件優先に反転するが、この二つを同時にずらしたときどちらが残るか、予告文を人が読んで選べるかは未検証。"
+  },
+  "sweeps": {
+    "overdueVersusOther": [
+      {
+        "axis": "overdueVersusOther",
+        "parameter": "0",
+        "rules": {
+          "otherValue": 0,
+          "nextPeriodStaminaCost": 0,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 12,
+                "staminaSpent": 3,
+                "net": 12,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 0
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 0
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "deadline",
+            "margin": 5,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 0,
+                "staminaSpent": 0,
+                "net": 0,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 0
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "overdueVersusOther",
+        "parameter": "4",
+        "rules": {
+          "otherValue": 4,
+          "nextPeriodStaminaCost": 0,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 16,
+                "staminaSpent": 3,
+                "net": 16,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 4
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 9,
+                "staminaSpent": 0,
+                "net": 9,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 4
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "deadline",
+            "margin": 1,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 4,
+                "staminaSpent": 0,
+                "net": 4,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 4
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "overdueVersusOther",
+        "parameter": "5",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 0,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 17,
+                "staminaSpent": 3,
+                "net": 17,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "overdueVersusOther",
+        "parameter": "6",
+        "rules": {
+          "otherValue": 6,
+          "nextPeriodStaminaCost": 0,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 18,
+                "staminaSpent": 3,
+                "net": 18,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 6
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 11,
+                "staminaSpent": 0,
+                "net": 11,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 6
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "other",
+            "margin": -1,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 6,
+                "staminaSpent": 0,
+                "net": 6,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 6
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "overdueVersusOther",
+        "parameter": "12",
+        "rules": {
+          "otherValue": 12,
+          "nextPeriodStaminaCost": 0,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 24,
+                "staminaSpent": 3,
+                "net": 24,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 12
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 17,
+                "staminaSpent": 0,
+                "net": 17,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 12
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "other",
+            "margin": -7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 12,
+                "staminaSpent": 0,
+                "net": 12,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 12
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "nextPeriodStaminaCost": [
+      {
+        "axis": "nextPeriodStaminaCost",
+        "parameter": "0",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 0,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 17,
+                "staminaSpent": 3,
+                "net": 17,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "nextPeriodStaminaCost",
+        "parameter": "1",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 1,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 4,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 17,
+                "staminaSpent": 3,
+                "net": 14,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "nextPeriodStaminaCost",
+        "parameter": "2",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 2,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 1,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 17,
+                "staminaSpent": 3,
+                "net": 11,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "nextPeriodStaminaCost",
+        "parameter": "3",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 3,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "other",
+            "margin": -2,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 17,
+                "staminaSpent": 3,
+                "net": 8,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "preview": [
+      {
+        "axis": "preview",
+        "parameter": "accurate",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 0,
+          "preview": "accurate"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 17,
+                "staminaSpent": 3,
+                "net": 17,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回では期限内に届かない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "preview",
+        "parameter": "none",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 0,
+          "preview": "none"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "予告はない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "予告はない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "preview",
+        "parameter": "swapped",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 0,
+          "preview": "swapped"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値5、過ぎると12。追加作業1回で期限内に届く。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値5、過ぎると12。追加作業1回では期限内に届かない。",
+            "preference": "tie",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 6,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "preview",
+        "parameter": "falseMeet",
+        "rules": {
+          "otherValue": 5,
+          "nextPeriodStaminaCost": 0,
+          "preview": "falseMeet"
+        },
+        "pressures": [
+          {
+            "pressure": "recoverable",
+            "campaignWork": 4,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "deadline",
+            "margin": 7,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 7,
+                "shippedValue": 17,
+                "staminaSpent": 3,
+                "net": 17,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 3,
+                    "value": 12
+                  },
+                  {
+                    "id": "steady",
+                    "tick": 7,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 10,
+                "staminaSpent": 0,
+                "net": 10,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  },
+                  {
+                    "id": "campaign",
+                    "tick": 8,
+                    "value": 5
+                  }
+                ],
+                "remaining": []
+              }
+            }
+          },
+          {
+            "pressure": "missed",
+            "campaignWork": 6,
+            "previewText": "tick 3までに出荷すると価値12、過ぎると5。追加作業1回で期限内に届く。",
+            "preference": "other",
+            "margin": 0,
+            "deadline": {
+              "inputs": [
+                {
+                  "type": "boost"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 3,
+                "net": 5,
+                "focus": 1,
+                "stamina": 7,
+                "boosts": [1],
+                "shipped": [
+                  {
+                    "id": "campaign",
+                    "tick": 5,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "steady",
+                    "workLeft": 1
+                  }
+                ]
+              }
+            },
+            "other": {
+              "inputs": [
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "steady"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                },
+                {
+                  "type": "work",
+                  "id": "campaign"
+                }
+              ],
+              "result": {
+                "tick": 8,
+                "shippedValue": 5,
+                "staminaSpent": 0,
+                "net": 5,
+                "focus": 2,
+                "stamina": 10,
+                "boosts": [],
+                "shipped": [
+                  {
+                    "id": "steady",
+                    "tick": 4,
+                    "value": 5
+                  }
+                ],
+                "remaining": [
+                  {
+                    "id": "campaign",
+                    "workLeft": 2
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "overdueVersusOther",
+      "pressure": "missed",
+      "before": {
+        "parameter": "4",
+        "preference": "deadline",
+        "deadlineNet": 5,
+        "otherNet": 4,
+        "deadlineStamina": 0,
+        "otherStamina": 0
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie",
+        "deadlineNet": 5,
+        "otherNet": 5,
+        "deadlineStamina": 0,
+        "otherStamina": 0
+      }
+    },
+    {
+      "axis": "overdueVersusOther",
+      "pressure": "missed",
+      "before": {
+        "parameter": "5",
+        "preference": "tie",
+        "deadlineNet": 5,
+        "otherNet": 5,
+        "deadlineStamina": 0,
+        "otherStamina": 0
+      },
+      "after": {
+        "parameter": "6",
+        "preference": "other",
+        "deadlineNet": 5,
+        "otherNet": 6,
+        "deadlineStamina": 0,
+        "otherStamina": 0
+      }
+    },
+    {
+      "axis": "nextPeriodStaminaCost",
+      "pressure": "recoverable",
+      "before": {
+        "parameter": "2",
+        "preference": "deadline",
+        "deadlineNet": 11,
+        "otherNet": 10,
+        "deadlineStamina": 3,
+        "otherStamina": 0
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "other",
+        "deadlineNet": 8,
+        "otherNet": 10,
+        "deadlineStamina": 3,
+        "otherStamina": 0
+      }
+    },
+    {
+      "axis": "preview",
+      "pressure": "recoverable",
+      "before": {
+        "parameter": "accurate",
+        "preference": "deadline",
+        "deadlineNet": 17,
+        "otherNet": 10,
+        "deadlineStamina": 3,
+        "otherStamina": 0
+      },
+      "after": {
+        "parameter": "none",
+        "preference": "tie",
+        "deadlineNet": 10,
+        "otherNet": 10,
+        "deadlineStamina": 0,
+        "otherStamina": 0
+      }
+    },
+    {
+      "axis": "preview",
+      "pressure": "recoverable",
+      "before": {
+        "parameter": "swapped",
+        "preference": "tie",
+        "deadlineNet": 10,
+        "otherNet": 10,
+        "deadlineStamina": 0,
+        "otherStamina": 0
+      },
+      "after": {
+        "parameter": "falseMeet",
+        "preference": "deadline",
+        "deadlineNet": 17,
+        "otherNet": 10,
+        "deadlineStamina": 3,
+        "otherStamina": 0
+      }
+    },
+    {
+      "axis": "preview",
+      "pressure": "missed",
+      "before": {
+        "parameter": "swapped",
+        "preference": "tie",
+        "deadlineNet": 5,
+        "otherNet": 5,
+        "deadlineStamina": 0,
+        "otherStamina": 0
+      },
+      "after": {
+        "parameter": "falseMeet",
+        "preference": "other",
+        "deadlineNet": 5,
+        "otherNet": 5,
+        "deadlineStamina": 3,
+        "otherStamina": 0
+      }
+    }
+  ]
+}

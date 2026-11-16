@@ -1,0 +1,1748 @@
+{
+  "conditions": {
+    "seed": "RI-192",
+    "scenario": "changed",
+    "horizon": 8,
+    "decision": {
+      "takeNew": "refresh",
+      "keepOld": "add",
+      "score": "netValue"
+    },
+    "baseline": {
+      "changeAt": 3,
+      "fresh": 5,
+      "none": 2,
+      "stale": -4
+    },
+    "held": {
+      "changeAt": "変更tickだけを動かす。古い資料の得点は-4。新しい5、資料なし2、期末8",
+      "staleScore": "古い資料の得点だけを動かす。変更tickは3。新しい5、資料なし2、期末8"
+    },
+    "quantityCap": 2,
+    "addTickScores": false,
+    "refreshTickScores": false,
+    "specChangeBeforeAction": true,
+    "omitted": "安定盤面、資料なし、2枚までは初回JSONのまま再出力しない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "changeAt": [
+      {
+        "axis": "changeAt",
+        "parameter": "1",
+        "rules": {
+          "changeAt": 1,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "tie",
+        "margin": 0,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 35,
+            "resolutions": [
+              "t1:add,change:no-doc,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 35
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 35,
+            "resolutions": [
+              "t1:add,change:no-doc,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 35
+          }
+        }
+      },
+      {
+        "axis": "changeAt",
+        "parameter": "2",
+        "rules": {
+          "changeAt": 2,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "refresh",
+        "margin": 49,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 21,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,stale:spec-change,score:-4,freshness:stale",
+              "t3:refresh,qty:1,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 21
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": -28,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,stale:spec-change,score:-4,freshness:stale",
+              "t3:use,score:-4,freshness:stale",
+              "t4:use,score:-4,freshness:stale",
+              "t5:use,score:-4,freshness:stale",
+              "t6:use,score:-4,freshness:stale",
+              "t7:use,score:-4,freshness:stale",
+              "t8:use,score:-4,freshness:stale"
+            ],
+            "netValue": -28
+          }
+        }
+      },
+      {
+        "axis": "changeAt",
+        "parameter": "3",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "refresh",
+        "margin": 40,
+        "sameAsFirstComparison": true,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 21,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-4,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 21
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": -19,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-4,freshness:stale",
+              "t4:use,score:-4,freshness:stale",
+              "t5:use,score:-4,freshness:stale",
+              "t6:use,score:-4,freshness:stale",
+              "t7:use,score:-4,freshness:stale",
+              "t8:use,score:-4,freshness:stale"
+            ],
+            "netValue": -19
+          }
+        }
+      },
+      {
+        "axis": "changeAt",
+        "parameter": "4",
+        "rules": {
+          "changeAt": 4,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "refresh",
+        "margin": 31,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 21,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,stale:spec-change,score:-4,freshness:stale",
+              "t5:refresh,qty:1,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 21
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": -10,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,stale:spec-change,score:-4,freshness:stale",
+              "t5:use,score:-4,freshness:stale",
+              "t6:use,score:-4,freshness:stale",
+              "t7:use,score:-4,freshness:stale",
+              "t8:use,score:-4,freshness:stale"
+            ],
+            "netValue": -10
+          }
+        }
+      },
+      {
+        "axis": "changeAt",
+        "parameter": "5",
+        "rules": {
+          "changeAt": 5,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "refresh",
+        "margin": 22,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 21,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,stale:spec-change,score:-4,freshness:stale",
+              "t6:refresh,qty:1,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 21
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": -1,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,stale:spec-change,score:-4,freshness:stale",
+              "t6:use,score:-4,freshness:stale",
+              "t7:use,score:-4,freshness:stale",
+              "t8:use,score:-4,freshness:stale"
+            ],
+            "netValue": -1
+          }
+        }
+      },
+      {
+        "axis": "changeAt",
+        "parameter": "6",
+        "rules": {
+          "changeAt": 6,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "refresh",
+        "margin": 13,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 21,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,stale:spec-change,score:-4,freshness:stale",
+              "t7:refresh,qty:1,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 21
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 8,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,stale:spec-change,score:-4,freshness:stale",
+              "t7:use,score:-4,freshness:stale",
+              "t8:use,score:-4,freshness:stale"
+            ],
+            "netValue": 8
+          }
+        }
+      },
+      {
+        "axis": "changeAt",
+        "parameter": "7",
+        "rules": {
+          "changeAt": 7,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "refresh",
+        "margin": 4,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 21,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,stale:spec-change,score:-4,freshness:stale",
+              "t8:refresh,qty:1,freshness:fresh"
+            ],
+            "netValue": 21
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 17,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,stale:spec-change,score:-4,freshness:stale",
+              "t8:use,score:-4,freshness:stale"
+            ],
+            "netValue": 17
+          }
+        }
+      },
+      {
+        "axis": "changeAt",
+        "parameter": "8",
+        "rules": {
+          "changeAt": 8,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "tie",
+        "margin": 0,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 26,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,stale:spec-change,score:-4,freshness:stale"
+            ],
+            "netValue": 26
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 26,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,score:5,freshness:fresh",
+              "t4:use,score:5,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,stale:spec-change,score:-4,freshness:stale"
+            ],
+            "netValue": 26
+          }
+        }
+      }
+    ],
+    "staleScore": [
+      {
+        "axis": "staleScore",
+        "parameter": "-8",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": -8
+        },
+        "preference": "refresh",
+        "margin": 60,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 17,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-8,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 17
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": -43,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-8,freshness:stale",
+              "t4:use,score:-8,freshness:stale",
+              "t5:use,score:-8,freshness:stale",
+              "t6:use,score:-8,freshness:stale",
+              "t7:use,score:-8,freshness:stale",
+              "t8:use,score:-8,freshness:stale"
+            ],
+            "netValue": -43
+          }
+        }
+      },
+      {
+        "axis": "staleScore",
+        "parameter": "-4",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": -4
+        },
+        "preference": "refresh",
+        "margin": 40,
+        "sameAsFirstComparison": true,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 21,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-4,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 21
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": -19,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-4,freshness:stale",
+              "t4:use,score:-4,freshness:stale",
+              "t5:use,score:-4,freshness:stale",
+              "t6:use,score:-4,freshness:stale",
+              "t7:use,score:-4,freshness:stale",
+              "t8:use,score:-4,freshness:stale"
+            ],
+            "netValue": -19
+          }
+        }
+      },
+      {
+        "axis": "staleScore",
+        "parameter": "-2",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": -2
+        },
+        "preference": "refresh",
+        "margin": 30,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 23,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-2,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 23
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": -7,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:-2,freshness:stale",
+              "t4:use,score:-2,freshness:stale",
+              "t5:use,score:-2,freshness:stale",
+              "t6:use,score:-2,freshness:stale",
+              "t7:use,score:-2,freshness:stale",
+              "t8:use,score:-2,freshness:stale"
+            ],
+            "netValue": -7
+          }
+        }
+      },
+      {
+        "axis": "staleScore",
+        "parameter": "0",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": 0
+        },
+        "preference": "refresh",
+        "margin": 20,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 25,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:0,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 25
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 5,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:0,freshness:stale",
+              "t4:use,score:0,freshness:stale",
+              "t5:use,score:0,freshness:stale",
+              "t6:use,score:0,freshness:stale",
+              "t7:use,score:0,freshness:stale",
+              "t8:use,score:0,freshness:stale"
+            ],
+            "netValue": 5
+          }
+        }
+      },
+      {
+        "axis": "staleScore",
+        "parameter": "2",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": 2
+        },
+        "preference": "refresh",
+        "margin": 10,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 27,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:2,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 27
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 17,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:2,freshness:stale",
+              "t4:use,score:2,freshness:stale",
+              "t5:use,score:2,freshness:stale",
+              "t6:use,score:2,freshness:stale",
+              "t7:use,score:2,freshness:stale",
+              "t8:use,score:2,freshness:stale"
+            ],
+            "netValue": 17
+          }
+        }
+      },
+      {
+        "axis": "staleScore",
+        "parameter": "3",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": 3
+        },
+        "preference": "refresh",
+        "margin": 5,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 28,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:3,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 28
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 23,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:3,freshness:stale",
+              "t4:use,score:3,freshness:stale",
+              "t5:use,score:3,freshness:stale",
+              "t6:use,score:3,freshness:stale",
+              "t7:use,score:3,freshness:stale",
+              "t8:use,score:3,freshness:stale"
+            ],
+            "netValue": 23
+          }
+        }
+      },
+      {
+        "axis": "staleScore",
+        "parameter": "4",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": 4
+        },
+        "preference": "tie",
+        "margin": 0,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 29,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:4,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 29
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 29,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:4,freshness:stale",
+              "t4:use,score:4,freshness:stale",
+              "t5:use,score:4,freshness:stale",
+              "t6:use,score:4,freshness:stale",
+              "t7:use,score:4,freshness:stale",
+              "t8:use,score:4,freshness:stale"
+            ],
+            "netValue": 29
+          }
+        }
+      },
+      {
+        "axis": "staleScore",
+        "parameter": "5",
+        "rules": {
+          "changeAt": 3,
+          "fresh": 5,
+          "none": 2,
+          "stale": 5
+        },
+        "preference": "add",
+        "margin": -5,
+        "sameAsFirstComparison": false,
+        "refresh": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "refresh"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "fresh",
+            "value": 30,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:5,freshness:stale",
+              "t4:refresh,qty:1,freshness:fresh",
+              "t5:use,score:5,freshness:fresh",
+              "t6:use,score:5,freshness:fresh",
+              "t7:use,score:5,freshness:fresh",
+              "t8:use,score:5,freshness:fresh"
+            ],
+            "netValue": 30
+          }
+        },
+        "add": {
+          "inputs": [
+            {
+              "type": "add"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            },
+            {
+              "type": "use"
+            }
+          ],
+          "result": {
+            "tick": 8,
+            "quantity": 1,
+            "freshness": "stale",
+            "value": 35,
+            "resolutions": [
+              "t1:add,qty:1,freshness:fresh",
+              "t2:use,score:5,freshness:fresh",
+              "t3:use,stale:spec-change,score:5,freshness:stale",
+              "t4:use,score:5,freshness:stale",
+              "t5:use,score:5,freshness:stale",
+              "t6:use,score:5,freshness:stale",
+              "t7:use,score:5,freshness:stale",
+              "t8:use,score:5,freshness:stale"
+            ],
+            "netValue": 35
+          }
+        }
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "changeAt",
+      "before": {
+        "parameter": "1",
+        "preference": "tie",
+        "refresh": 35,
+        "add": 35
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "refresh",
+        "refresh": 21,
+        "add": -28
+      }
+    },
+    {
+      "axis": "changeAt",
+      "before": {
+        "parameter": "7",
+        "preference": "refresh",
+        "refresh": 21,
+        "add": 17
+      },
+      "after": {
+        "parameter": "8",
+        "preference": "tie",
+        "refresh": 26,
+        "add": 26
+      }
+    },
+    {
+      "axis": "staleScore",
+      "before": {
+        "parameter": "3",
+        "preference": "refresh",
+        "refresh": 28,
+        "add": 23
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "refresh": 29,
+        "add": 29
+      }
+    },
+    {
+      "axis": "staleScore",
+      "before": {
+        "parameter": "4",
+        "preference": "tie",
+        "refresh": 29,
+        "add": 29
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "add",
+        "refresh": 30,
+        "add": 35
+      }
+    }
+  ]
+}

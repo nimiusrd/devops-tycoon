@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   applyIncidentRoles as apply,
   chooseIncidentAction,
+  compareIncidentInvestigationSwitch,
   compareIncidentRoles,
   createIncidentRoles as create,
   summarizeIncidentRoles,
   viewIncidentRoles,
 } from './incidentRoles';
 import comparison from '../../docs/prototypes/incident-roles-comparison.json';
+import investigation from '../../docs/prototypes/incident-roles-investigation-comparison.json';
 
 describe('RI-253 障害の役割分担', () => {
   it('担当枠と切替費用を先に示し、選択だけでは復旧しない', () => {
@@ -270,3 +272,132 @@ describe('RI-253 障害の役割分担', () => {
     }
   });
 });
+
+describe('RI-253 調査必要量と途中切替', () => {
+  it('必要量4と5のあいだで分担が上になり、6でもそのままで、失った枠の条件を再計算する', () => {
+    const report = compareIncidentInvestigationSwitch(investigation.seed);
+    expect(report).toEqual(investigation);
+    expect(report.evaluation).toEqual({
+      fixedStrategies: true,
+      humanPlay: false,
+      productionIntegration: false,
+    });
+    expect(report.resources).toEqual({
+      slots: 3,
+      progressPerPerson: 2,
+      baselineRecovery: 1,
+      reassignmentSlotCost: 1,
+      recoveryNeed: 6,
+      explanationNeed: 4,
+      investigationNeeds: [4, 5, 6, 7],
+    });
+    expect(report.reversals).toEqual([
+      { board: 'brief', lowerNeed: 4, higherNeed: 5, lower: 'tie', higher: 'split' },
+      { board: 'lasting', lowerNeed: 4, higherNeed: 5, lower: 'tie', higher: 'split' },
+    ]);
+    const row = (board: string, need: number) =>
+      report.summary.find((item) => item.board === board && item.investigationNeed === need)!;
+    for (const board of ['brief', 'lasting'] as const) {
+      expect(row(board, 4).advantage).toBe('tie');
+      expect(row(board, 4).slotLowersScore).toBe(false);
+      for (const need of [5, 6, 7]) expect(row(board, need).advantage).toBe('split');
+    }
+    expect(row('brief', 6)).toMatchObject({
+      split: 1,
+      switch: 0,
+      slotKept: 1,
+      slotLowersScore: true,
+    });
+    expect(row('lasting', 6)).toMatchObject({
+      split: -3,
+      switch: -13,
+      slotKept: -3,
+      slotLowersScore: true,
+      splitInvestigation: 6,
+      switchInvestigation: 4,
+      slotKeptInvestigation: 8,
+    });
+    expect(row('brief', 7).slotLowersScore).toBe(false);
+    expect(row('lasting', 7)).toMatchObject({
+      split: -8,
+      switch: -13,
+      slotKept: -8,
+      slotKeptAdvantage: 'tie',
+      slotLowersScore: true,
+    });
+    expect(row('brief', 4).split).toBe(2);
+    expect(row('lasting', 4).split).toBe(2);
+  });
+
+  it('切替費用1では3役割を同時に置けず、費用0の同じ開始だけが調査を残す', () => {
+    const opened = apply(create('RI-253', 'lasting', { investigationNeed: 6 }), { type: 'split' });
+    const heavy = apply(opened, { type: 'assign', recovery: 1, investigation: 2, explanation: 0 });
+    expect(apply(heavy, { type: 'assign', recovery: 1, investigation: 1, explanation: 1 })).toBe(
+      heavy,
+    );
+    const kept = apply(
+      apply(create('RI-253', 'lasting', { investigationNeed: 6, reassignmentSlotCost: 0 }), {
+        type: 'split',
+      }),
+      { type: 'assign', recovery: 1, investigation: 2, explanation: 0 },
+    );
+    expect(
+      apply(kept, { type: 'assign', recovery: 1, investigation: 1, explanation: 1 }),
+    ).toMatchObject({
+      investigation: 6,
+      reassignmentCost: 0,
+    });
+  });
+
+  it('調査必要量の全入力を再生し、JSON保存再開と元状態の不変が一致する', () => {
+    for (const point of compareIncidentInvestigationSwitch(investigation.seed).points) {
+      for (const play of Object.values(point.plays)) {
+        let live = play.initial;
+        let saved = structuredClone(live);
+        let sawSwitchTick = false;
+        for (const input of play.inputs) {
+          const previous = live;
+          const before = structuredClone(live);
+          live = apply(live, input);
+          saved = apply(JSON.parse(JSON.stringify(saved)), input);
+          expect(previous).toEqual(before);
+          expect(saved).toEqual(live);
+          expect(live).not.toBe(previous);
+        }
+        expect(live.tick).toBe(play.initial.horizon);
+        expect(toResult(live)).toEqual(play.result);
+        expect(live.inputs).toEqual(play.inputs);
+        for (const period of live.periods) {
+          const used =
+            period.assignment.recovery +
+            period.assignment.investigation +
+            period.assignment.explanation;
+          expect(used).toBeLessThanOrEqual(play.initial.slots);
+          if (period.action === 'assign' && play.decision === 'switch' && period.tick === 2) {
+            sawSwitchTick = true;
+            expect(used).toBeLessThanOrEqual(
+              play.initial.slots - play.initial.reassignmentSlotCost,
+            );
+          }
+        }
+        if (play.decision === 'switch') expect(sawSwitchTick).toBe(true);
+      }
+    }
+  });
+});
+
+function toResult(state: ReturnType<typeof create>) {
+  const summary = summarizeIncidentRoles(state);
+  return {
+    score: summary.score,
+    ship: summary.ship,
+    penalty: summary.penalty,
+    recoveryTime: summary.recoveryTime,
+    recurrence: summary.recurrence,
+    trustGap: summary.trustGap,
+    reassignmentCost: summary.reassignmentCost,
+    investigation: state.investigation,
+    explanation: state.explanation,
+    path: summary.path,
+  };
+}

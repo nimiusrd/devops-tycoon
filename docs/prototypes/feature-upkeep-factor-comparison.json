@@ -1,0 +1,3058 @@
+{
+  "conditions": {
+    "seed": "RI-234",
+    "anchor": "light",
+    "features": ["api", "screen", "billing"],
+    "capacity": 4,
+    "horizon": 3,
+    "featureValue": 6,
+    "score": "completedValue - shortfall * shortfallPenalty",
+    "strategies": ["rush", "staff"],
+    "decision": {
+      "preference": "体制の得点が大きいとき staff、急ぐが大きいとき rush、同じとき tie",
+      "margin": "staff の得点 - rush の得点",
+      "leaders": "得点が最大の戦略。同点は rush、staff の順で複数",
+      "ignored": "次期余力は結果に残すが、順序には使わない"
+    },
+    "baseline": {
+      "upkeepRate": 1,
+      "need": 4,
+      "shortfallPenalty": 1
+    },
+    "held": {
+      "upkeepRate": "保守単価だけを動かす。完成に必要な作業4、罰則1",
+      "need": "完成に必要な作業だけを動かす。保守単価1、罰則1",
+      "penalty": "罰則だけを動かす。保守単価1、完成に必要な作業4。入力列は軽い観測のまま"
+    },
+    "steps": {
+      "upkeepRate": [0, 1, 2, 3, 4, 5, 6],
+      "need": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      "penalty": [0, 1, 2, 3, 4, 5, 6]
+    },
+    "omitted": "初回の2観測表は再出力しない。基準行だけ軽い観測の急ぐ・体制と照合する。重い観測は単価2と罰則4の同時変更なので、この掃引の行にしない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "upkeepRate": {
+      "axis": "upkeepRate",
+      "anchor": "light",
+      "held": {
+        "need": 4,
+        "shortfallPenalty": 1
+      },
+      "rows": [
+        {
+          "axis": "upkeepRate",
+          "parameter": "0",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 0,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "tie",
+          "margin": 0,
+          "leaders": ["rush", "staff"],
+          "scores": {
+            "rush": 18,
+            "staff": 18
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 0,
+                "shortfall": 0,
+                "nextSlack": 4,
+                "score": 18,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 0,
+                "shortfall": 0,
+                "nextSlack": 4,
+                "score": 18,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 0,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "parameter": "1",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "rush",
+          "margin": -3,
+          "leaders": ["rush"],
+          "scores": {
+            "rush": 15,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "parameter": "2",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 2,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "tie",
+          "margin": 0,
+          "leaders": ["rush", "staff"],
+          "scores": {
+            "rush": 12,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 6,
+                "shortfall": 6,
+                "nextSlack": -2,
+                "score": 12,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 2
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 2
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 4,
+                "shortfall": 0,
+                "nextSlack": 0,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 2,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "parameter": "3",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 3,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "rush",
+          "margin": -3,
+          "leaders": ["rush"],
+          "scores": {
+            "rush": 9,
+            "staff": 6
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 9,
+                "shortfall": 9,
+                "nextSlack": -5,
+                "score": 9,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 3
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 3
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 3,
+                "shortfall": 0,
+                "nextSlack": 1,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 3,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "parameter": "4",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 4,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "tie",
+          "margin": 0,
+          "leaders": ["rush", "staff"],
+          "scores": {
+            "rush": 6,
+            "staff": 6
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 12,
+                "shortfall": 12,
+                "nextSlack": -8,
+                "score": 6,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 4
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 4
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 4,
+                "shortfall": 0,
+                "nextSlack": 0,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 4,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "parameter": "5",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 5,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 1,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 3,
+            "staff": 4
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 15,
+                "shortfall": 15,
+                "nextSlack": -11,
+                "score": 3,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 4
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 4
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 5,
+                "shortfall": 2,
+                "nextSlack": -1,
+                "score": 4,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 5,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "parameter": "6",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 6,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 2,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 0,
+            "staff": 2
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 18,
+                "shortfall": 18,
+                "nextSlack": -14,
+                "score": 0,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 4
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 4
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 6,
+                "shortfall": 4,
+                "nextSlack": -2,
+                "score": 2,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 6,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        }
+      ],
+      "reversals": [
+        {
+          "axis": "upkeepRate",
+          "held": {
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "0",
+            "preference": "tie",
+            "rush": 18,
+            "staff": 18
+          },
+          "after": {
+            "parameter": "1",
+            "preference": "rush",
+            "rush": 15,
+            "staff": 12
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "held": {
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "1",
+            "preference": "rush",
+            "rush": 15,
+            "staff": 12
+          },
+          "after": {
+            "parameter": "2",
+            "preference": "tie",
+            "rush": 12,
+            "staff": 12
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "held": {
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "2",
+            "preference": "tie",
+            "rush": 12,
+            "staff": 12
+          },
+          "after": {
+            "parameter": "3",
+            "preference": "rush",
+            "rush": 9,
+            "staff": 6
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "held": {
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "3",
+            "preference": "rush",
+            "rush": 9,
+            "staff": 6
+          },
+          "after": {
+            "parameter": "4",
+            "preference": "tie",
+            "rush": 6,
+            "staff": 6
+          }
+        },
+        {
+          "axis": "upkeepRate",
+          "held": {
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "4",
+            "preference": "tie",
+            "rush": 6,
+            "staff": 6
+          },
+          "after": {
+            "parameter": "5",
+            "preference": "staff",
+            "rush": 3,
+            "staff": 4
+          }
+        }
+      ]
+    },
+    "need": {
+      "axis": "need",
+      "anchor": "light",
+      "held": {
+        "upkeepRate": 1,
+        "shortfallPenalty": 1
+      },
+      "rows": [
+        {
+          "axis": "need",
+          "parameter": "1",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 1,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 3,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 15,
+            "staff": 18
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 2
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 0,
+                "nextSlack": 1,
+                "score": 18,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 1,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 1,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 1,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "2",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 2,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 3,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 15,
+            "staff": 18
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 2
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 0,
+                "nextSlack": 1,
+                "score": 18,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 2,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 2,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 2,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "3",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 3,
+            "shortfallPenalty": 1
+          },
+          "preference": "rush",
+          "margin": -3,
+          "leaders": ["rush"],
+          "scores": {
+            "rush": 15,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 2
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 3,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 3,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 3,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "4",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "rush",
+          "margin": -3,
+          "leaders": ["rush"],
+          "scores": {
+            "rush": 15,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "5",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 5,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 1,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 5,
+            "staff": 6
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 1,
+                "nextSlack": 3,
+                "score": 5,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 0,
+                "nextSlack": 3,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 5,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 5,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 5,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "6",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 6,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 1,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 5,
+            "staff": 6
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 1,
+                "nextSlack": 3,
+                "score": 5,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 0,
+                "nextSlack": 3,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 6,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 6,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 6,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "7",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 7,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 1,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 5,
+            "staff": 6
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 1,
+                "nextSlack": 3,
+                "score": 5,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 0,
+                "nextSlack": 3,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 7,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 7,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 7,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "8",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 8,
+            "shortfallPenalty": 1
+          },
+          "preference": "staff",
+          "margin": 1,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 5,
+            "staff": 6
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 1,
+                "nextSlack": 3,
+                "score": 5,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 0,
+                "nextSlack": 3,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 8,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 8,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 8,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "need",
+          "parameter": "9",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 9,
+            "shortfallPenalty": 1
+          },
+          "preference": "tie",
+          "margin": 0,
+          "leaders": ["rush", "staff"],
+          "scores": {
+            "rush": 6,
+            "staff": 6
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 0,
+                "nextSlack": 3,
+                "score": 6,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 6,
+                "completed": ["api"],
+                "maintenance": 1,
+                "shortfall": 0,
+                "nextSlack": 3,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 9,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 9,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 9,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        }
+      ],
+      "reversals": [
+        {
+          "axis": "need",
+          "held": {
+            "upkeepRate": 1,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "2",
+            "preference": "staff",
+            "rush": 15,
+            "staff": 18
+          },
+          "after": {
+            "parameter": "3",
+            "preference": "rush",
+            "rush": 15,
+            "staff": 12
+          }
+        },
+        {
+          "axis": "need",
+          "held": {
+            "upkeepRate": 1,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "4",
+            "preference": "rush",
+            "rush": 15,
+            "staff": 12
+          },
+          "after": {
+            "parameter": "5",
+            "preference": "staff",
+            "rush": 5,
+            "staff": 6
+          }
+        },
+        {
+          "axis": "need",
+          "held": {
+            "upkeepRate": 1,
+            "shortfallPenalty": 1
+          },
+          "before": {
+            "parameter": "8",
+            "preference": "staff",
+            "rush": 5,
+            "staff": 6
+          },
+          "after": {
+            "parameter": "9",
+            "preference": "tie",
+            "rush": 6,
+            "staff": 6
+          }
+        }
+      ]
+    },
+    "penalty": {
+      "axis": "penalty",
+      "anchor": "light",
+      "held": {
+        "upkeepRate": 1,
+        "need": 4
+      },
+      "rows": [
+        {
+          "axis": "penalty",
+          "parameter": "0",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 0
+          },
+          "preference": "rush",
+          "margin": -6,
+          "leaders": ["rush"],
+          "scores": {
+            "rush": 18,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 18,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 0,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "1",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 1
+          },
+          "preference": "rush",
+          "margin": -3,
+          "leaders": ["rush"],
+          "scores": {
+            "rush": 15,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 1,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "2",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 2
+          },
+          "preference": "tie",
+          "margin": 0,
+          "leaders": ["rush", "staff"],
+          "scores": {
+            "rush": 12,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 12,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 2,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "3",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 3
+          },
+          "preference": "staff",
+          "margin": 3,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 9,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 9,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 3,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "4",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 4
+          },
+          "preference": "staff",
+          "margin": 6,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 6,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 6,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 4,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "5",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 5
+          },
+          "preference": "staff",
+          "margin": 9,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 3,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 3,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 5,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        },
+        {
+          "axis": "penalty",
+          "parameter": "6",
+          "board": "light",
+          "rules": {
+            "upkeepRate": 1,
+            "need": 4,
+            "shortfallPenalty": 6
+          },
+          "preference": "staff",
+          "margin": 12,
+          "leaders": ["staff"],
+          "scores": {
+            "rush": 0,
+            "staff": 12
+          },
+          "runs": {
+            "rush": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "billing",
+                  "maintain": 0
+                }
+              ],
+              "result": {
+                "completedValue": 18,
+                "completed": ["api", "screen", "billing"],
+                "maintenance": 3,
+                "shortfall": 3,
+                "nextSlack": 1,
+                "score": 0,
+                "lost": false
+              }
+            },
+            "staff": {
+              "inputs": [
+                {
+                  "type": "assign",
+                  "feature": "api",
+                  "maintain": 0
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                },
+                {
+                  "type": "assign",
+                  "feature": "screen",
+                  "maintain": 1
+                }
+              ],
+              "result": {
+                "completedValue": 12,
+                "completed": ["api", "screen"],
+                "maintenance": 2,
+                "shortfall": 0,
+                "nextSlack": 2,
+                "score": 12,
+                "lost": false
+              }
+            }
+          },
+          "initial": {
+            "version": 1,
+            "seed": "RI-234",
+            "board": "light",
+            "tick": 0,
+            "horizon": 3,
+            "capacity": 4,
+            "upkeepRate": 1,
+            "shortfallPenalty": 6,
+            "featureValue": 6,
+            "features": [
+              {
+                "id": "api",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "screen",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              },
+              {
+                "id": "billing",
+                "need": 4,
+                "done": 0,
+                "complete": false,
+                "online": false
+              }
+            ],
+            "completedValue": 0,
+            "shortfall": 0,
+            "periods": [],
+            "inputs": []
+          }
+        }
+      ],
+      "reversals": [
+        {
+          "axis": "penalty",
+          "held": {
+            "upkeepRate": 1,
+            "need": 4
+          },
+          "before": {
+            "parameter": "1",
+            "preference": "rush",
+            "rush": 15,
+            "staff": 12
+          },
+          "after": {
+            "parameter": "2",
+            "preference": "tie",
+            "rush": 12,
+            "staff": 12
+          }
+        },
+        {
+          "axis": "penalty",
+          "held": {
+            "upkeepRate": 1,
+            "need": 4
+          },
+          "before": {
+            "parameter": "2",
+            "preference": "tie",
+            "rush": 12,
+            "staff": 12
+          },
+          "after": {
+            "parameter": "3",
+            "preference": "staff",
+            "rush": 9,
+            "staff": 12
+          }
+        }
+      ]
+    }
+  },
+  "reversals": [
+    {
+      "axis": "upkeepRate",
+      "held": {
+        "need": 4,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "rush": 18,
+        "staff": 18
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "rush",
+        "rush": 15,
+        "staff": 12
+      }
+    },
+    {
+      "axis": "upkeepRate",
+      "held": {
+        "need": 4,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "1",
+        "preference": "rush",
+        "rush": 15,
+        "staff": 12
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "tie",
+        "rush": 12,
+        "staff": 12
+      }
+    },
+    {
+      "axis": "upkeepRate",
+      "held": {
+        "need": 4,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "2",
+        "preference": "tie",
+        "rush": 12,
+        "staff": 12
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "rush",
+        "rush": 9,
+        "staff": 6
+      }
+    },
+    {
+      "axis": "upkeepRate",
+      "held": {
+        "need": 4,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "3",
+        "preference": "rush",
+        "rush": 9,
+        "staff": 6
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "rush": 6,
+        "staff": 6
+      }
+    },
+    {
+      "axis": "upkeepRate",
+      "held": {
+        "need": 4,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "4",
+        "preference": "tie",
+        "rush": 6,
+        "staff": 6
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "staff",
+        "rush": 3,
+        "staff": 4
+      }
+    },
+    {
+      "axis": "need",
+      "held": {
+        "upkeepRate": 1,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "2",
+        "preference": "staff",
+        "rush": 15,
+        "staff": 18
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "rush",
+        "rush": 15,
+        "staff": 12
+      }
+    },
+    {
+      "axis": "need",
+      "held": {
+        "upkeepRate": 1,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "4",
+        "preference": "rush",
+        "rush": 15,
+        "staff": 12
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "staff",
+        "rush": 5,
+        "staff": 6
+      }
+    },
+    {
+      "axis": "need",
+      "held": {
+        "upkeepRate": 1,
+        "shortfallPenalty": 1
+      },
+      "before": {
+        "parameter": "8",
+        "preference": "staff",
+        "rush": 5,
+        "staff": 6
+      },
+      "after": {
+        "parameter": "9",
+        "preference": "tie",
+        "rush": 6,
+        "staff": 6
+      }
+    },
+    {
+      "axis": "penalty",
+      "held": {
+        "upkeepRate": 1,
+        "need": 4
+      },
+      "before": {
+        "parameter": "1",
+        "preference": "rush",
+        "rush": 15,
+        "staff": 12
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "tie",
+        "rush": 12,
+        "staff": 12
+      }
+    },
+    {
+      "axis": "penalty",
+      "held": {
+        "upkeepRate": 1,
+        "need": 4
+      },
+      "before": {
+        "parameter": "2",
+        "preference": "tie",
+        "rush": 12,
+        "staff": 12
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "staff",
+        "rush": 9,
+        "staff": 12
+      }
+    }
+  ]
+}

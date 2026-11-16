@@ -1,0 +1,2939 @@
+{
+  "conditions": {
+    "seed": "RI-225",
+    "boards": [
+      {
+        "board": "mature",
+        "maturity": 3,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "board": "junior",
+        "maturity": 1,
+        "items": [
+          {
+            "id": "l1",
+            "risk": "low",
+            "value": 6
+          },
+          {
+            "id": "l2",
+            "risk": "low",
+            "value": 6
+          },
+          {
+            "id": "l3",
+            "risk": "low",
+            "value": 6
+          },
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "board": "heavy",
+        "maturity": 3,
+        "items": [
+          {
+            "id": "i1",
+            "risk": "important",
+            "value": 5
+          },
+          {
+            "id": "i2",
+            "risk": "important",
+            "value": 5
+          },
+          {
+            "id": "i3",
+            "risk": "important",
+            "value": 5
+          },
+          {
+            "id": "i4",
+            "risk": "important",
+            "value": 5
+          }
+        ]
+      }
+    ],
+    "audit": 1,
+    "rushFailure": 3,
+    "breach": 2,
+    "decision": {
+      "delegate": "低リスクを委譲する",
+      "human": "人間が確認する",
+      "score": "value - reviewCost - failure - audit - breach",
+      "preference": "委譲の差引が大きいとき委譲、人間確認が大きいとき人間、同じとき同点"
+    },
+    "baseline": {
+      "maturityLine": 2,
+      "residualFailure": 1,
+      "reviewCost": 2
+    },
+    "held": {
+      "maturityLine": "成熟線だけを0から4まで動かす。残存失敗は1、確認費用は2、監査は1。盤面の成熟と仕事は初回のまま。",
+      "residualFailure": "委譲で自動にした低リスクの残存失敗だけを0から3まで動かす。成熟線は2、確認費用は2、監査は1。急ぎの残存失敗3は動かさない。",
+      "reviewCost": "人間確認1件の確認費用だけを0から3まで動かす。成熟線は2、残存失敗は1、監査は1。"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "maturityLine": [
+      {
+        "axis": "maturityLine",
+        "parameter": "0",
+        "rules": {
+          "maturityLine": 0,
+          "residualFailure": 1,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "maturityLine",
+        "parameter": "1",
+        "rules": {
+          "maturityLine": 1,
+          "residualFailure": 1,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "maturityLine",
+        "parameter": "2",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 1,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "maturityLine",
+        "parameter": "3",
+        "rules": {
+          "maturityLine": 3,
+          "residualFailure": 1,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "maturityLine",
+        "parameter": "4",
+        "rules": {
+          "maturityLine": 4,
+          "residualFailure": 1,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      }
+    ],
+    "residualFailure": [
+      {
+        "axis": "residualFailure",
+        "parameter": "0",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 0,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 23,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 5
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "residualFailure",
+        "parameter": "1",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 1,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "residualFailure",
+        "parameter": "2",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 2,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 6,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "residualFailure",
+        "parameter": "3",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 3,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 9,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 14,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -4
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      }
+    ],
+    "reviewCost": [
+      {
+        "axis": "reviewCost",
+        "parameter": "0",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 1,
+          "reviewCost": 0
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 0,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 22,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 0,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 26,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -4
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 0,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 25,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 0,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 26,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 0,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 19,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 0,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "reviewCost",
+        "parameter": "1",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 1,
+          "reviewCost": 1
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 1,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 21,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 4,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 22,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 4,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 21,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 4,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 22,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 4,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 15,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 4,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 16,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "reviewCost",
+        "parameter": "2",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 1,
+          "reviewCost": 2
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 2,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 20,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 2
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 17,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 18,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 11,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 8,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 12,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "reviewCost",
+        "parameter": "3",
+        "rules": {
+          "maturityLine": 2,
+          "residualFailure": 1,
+          "reviewCost": 3
+        },
+        "boards": [
+          {
+            "board": "mature",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 3,
+                "failure": 3,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 19,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 12,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 14,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "delegate",
+            "margin": 5
+          },
+          {
+            "board": "junior",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 12,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 13,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 26,
+                "reviewCost": 12,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 14,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          },
+          {
+            "board": "heavy",
+            "delegate": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "delegate"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 12,
+                "failure": 0,
+                "audit": 1,
+                "breach": 0,
+                "blocked": 0,
+                "score": 7,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "human": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "policy": "human"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                },
+                {
+                  "type": "review"
+                }
+              ],
+              "result": {
+                "value": 20,
+                "reviewCost": 12,
+                "failure": 0,
+                "audit": 0,
+                "breach": 0,
+                "blocked": 0,
+                "score": 8,
+                "importantResidual": 0,
+                "lost": false
+              }
+            },
+            "preference": "human",
+            "margin": -1
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "maturityLine",
+      "board": "junior",
+      "before": {
+        "parameter": "1",
+        "preference": "delegate",
+        "delegate": 20,
+        "human": 18
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "human",
+        "delegate": 17,
+        "human": 18
+      }
+    },
+    {
+      "axis": "maturityLine",
+      "board": "mature",
+      "before": {
+        "parameter": "3",
+        "preference": "delegate",
+        "delegate": 20,
+        "human": 18
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "human",
+        "delegate": 17,
+        "human": 18
+      }
+    },
+    {
+      "axis": "residualFailure",
+      "board": "mature",
+      "before": {
+        "parameter": "1",
+        "preference": "delegate",
+        "delegate": 20,
+        "human": 18
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "human",
+        "delegate": 17,
+        "human": 18
+      }
+    },
+    {
+      "axis": "reviewCost",
+      "board": "mature",
+      "before": {
+        "parameter": "1",
+        "preference": "human",
+        "delegate": 21,
+        "human": 22
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "delegate",
+        "delegate": 20,
+        "human": 18
+      }
+    }
+  ]
+}

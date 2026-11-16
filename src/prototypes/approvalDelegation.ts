@@ -1,10 +1,17 @@
-/** RI-225: 低リスクだけを委譲する承認ルール。#538 の期間委任へは未接続。 */
+/** RI-225: 低リスクだけを委譲する承認ルール。感度比較だけ成熟線・残存失敗・確認費用を変える。#538 の期間委任へは未接続。 */
 
 export type ChangeRisk = 'low' | 'important';
 export type ApprovalBoard = 'mature' | 'junior' | 'heavy';
 export type ApprovalPolicy = 'human' | 'delegate' | 'rush';
 export type ApprovalInput =
   { type: 'adopt'; policy: ApprovalPolicy } | { type: 'review' } | { type: 'view' };
+export type ApprovalPreference = 'delegate' | 'human' | 'tie';
+/** 初回と同じ資源。感度では一つの欄だけを変える。急ぎの残存失敗と監査は動かさない。 */
+export interface ApprovalFactorRules {
+  maturityLine: number;
+  residualFailure: number;
+  reviewCost: number;
+}
 
 export interface ChangeItem {
   id: string;
@@ -42,6 +49,13 @@ const BREACH_COST = 2;
 const DELEGATE_FAILURE = 1;
 const RUSH_FAILURE = 3;
 export const MATURITY_LINE = 2;
+export const baselineApprovalRules: ApprovalFactorRules = {
+  maturityLine: MATURITY_LINE,
+  residualFailure: DELEGATE_FAILURE,
+  reviewCost: REVIEW_COST,
+};
+const FACTOR_BOARDS = ['mature', 'junior', 'heavy'] as const;
+const FACTOR_SEED = 'RI-225';
 
 const ITEMS: Record<
   ApprovalBoard,
@@ -86,7 +100,11 @@ function freshItems(board: ApprovalBoard): ChangeItem[] {
   }));
 }
 
-export function createApprovalDelegation(seed: string, board: ApprovalBoard): ApprovalState {
+export function createApprovalDelegation(
+  seed: string,
+  board: ApprovalBoard,
+  rules: ApprovalFactorRules = baselineApprovalRules,
+): ApprovalState {
   const preset = ITEMS[board];
   const items = freshItems(board);
   return {
@@ -96,7 +114,7 @@ export function createApprovalDelegation(seed: string, board: ApprovalBoard): Ap
     tick: 0,
     horizon: 1 + items.length,
     maturity: preset.maturity,
-    maturityLine: MATURITY_LINE,
+    maturityLine: rules.maturityLine,
     policy: null,
     index: 0,
     items,
@@ -137,7 +155,10 @@ export function adoptApproval(state: ApprovalState, policy: string): ApprovalSta
 }
 
 /** 重要変更は自動承認にしない。急ぎ承認はブロックしたうえで人間確認へ戻す。 */
-export function reviewNext(state: ApprovalState): ApprovalState {
+export function reviewNext(
+  state: ApprovalState,
+  rules: ApprovalFactorRules = baselineApprovalRules,
+): ApprovalState {
   const policy = state.policy;
   if (policy === null || state.index >= state.items.length) return state;
   const next = structuredClone(state);
@@ -148,10 +169,10 @@ export function reviewNext(state: ApprovalState): ApprovalState {
   next.value += item.value;
   if (route === 'auto') {
     item.residual = true;
-    next.failure += policy === 'rush' ? RUSH_FAILURE : DELEGATE_FAILURE;
+    next.failure += policy === 'rush' ? RUSH_FAILURE : rules.residualFailure;
   } else {
     item.reviewed = true;
-    next.reviewCost += REVIEW_COST;
+    next.reviewCost += rules.reviewCost;
     if (route === 'blocked') {
       item.blocked = true;
       next.blocked += 1;
@@ -164,10 +185,14 @@ export function reviewNext(state: ApprovalState): ApprovalState {
   return next;
 }
 
-export function applyApprovalDelegation(state: ApprovalState, input: ApprovalInput): ApprovalState {
+export function applyApprovalDelegation(
+  state: ApprovalState,
+  input: ApprovalInput,
+  rules: ApprovalFactorRules = baselineApprovalRules,
+): ApprovalState {
   if (input.type === 'view') return state;
   if (input.type === 'adopt') return adoptApproval(state, input.policy);
-  if (input.type === 'review') return reviewNext(state);
+  if (input.type === 'review') return reviewNext(state, rules);
   return state;
 }
 
@@ -239,4 +264,158 @@ export function compareApprovalDelegations(seed = 'RI-225') {
       };
     }),
   );
+}
+
+export interface ApprovalFactorRun {
+  inputs: ApprovalInput[];
+  result: ReturnType<typeof summarizeApprovalDelegation>;
+}
+export interface ApprovalFactorBoard {
+  board: ApprovalBoard;
+  delegate: ApprovalFactorRun;
+  human: ApprovalFactorRun;
+  preference: ApprovalPreference;
+  margin: number;
+}
+export interface ApprovalFactorPoint {
+  axis: keyof ApprovalFactorRules;
+  parameter: string;
+  rules: ApprovalFactorRules;
+  boards: ApprovalFactorBoard[];
+}
+export interface ApprovalFactorReversal {
+  axis: keyof ApprovalFactorRules;
+  board: ApprovalBoard;
+  before: { parameter: string; preference: ApprovalPreference; delegate: number; human: number };
+  after: { parameter: string; preference: ApprovalPreference; delegate: number; human: number };
+}
+
+function cloneRules(rules: ApprovalFactorRules): ApprovalFactorRules {
+  return { ...rules };
+}
+function withRules(patch: Partial<ApprovalFactorRules>): ApprovalFactorRules {
+  return { ...baselineApprovalRules, ...patch };
+}
+function preferenceOf(delegate: number, human: number): ApprovalPreference {
+  if (delegate > human) return 'delegate';
+  if (human > delegate) return 'human';
+  return 'tie';
+}
+function runApproval(
+  board: ApprovalBoard,
+  strategy: 'delegate' | 'human',
+  rules: ApprovalFactorRules,
+): ApprovalFactorRun {
+  const initial = createApprovalDelegation(FACTOR_SEED, board, rules);
+  let state = initial;
+  let guard = 0;
+  while (state.tick < state.horizon) {
+    if (++guard > 12) throw new Error(`${board}:${strategy}:${rules.maturityLine}`);
+    const next = applyApprovalDelegation(state, chooseApprovalAction(state, strategy), rules);
+    if (next === state) throw new Error(`${board}:${strategy}@${state.tick}`);
+    state = next;
+  }
+  return { inputs: state.inputs, result: summarizeApprovalDelegation(state) };
+}
+function factorPoint(
+  axis: keyof ApprovalFactorRules,
+  parameter: string,
+  rules: ApprovalFactorRules,
+): ApprovalFactorPoint {
+  const boards = FACTOR_BOARDS.map((board) => {
+    const delegate = runApproval(board, 'delegate', rules);
+    const human = runApproval(board, 'human', rules);
+    return {
+      board,
+      delegate,
+      human,
+      preference: preferenceOf(delegate.result.score, human.result.score),
+      margin: delegate.result.score - human.result.score,
+    };
+  });
+  return { axis, parameter, rules: cloneRules(rules), boards };
+}
+function reversalsOf(rows: ApprovalFactorPoint[]): ApprovalFactorReversal[] {
+  const found: ApprovalFactorReversal[] = [];
+  for (let index = 1; index < rows.length; index += 1) {
+    const before = rows[index - 1];
+    const after = rows[index];
+    if (!before || !after) continue;
+    for (const board of FACTOR_BOARDS) {
+      const earlier = before.boards.find((item) => item.board === board);
+      const later = after.boards.find((item) => item.board === board);
+      if (!earlier || !later || earlier.preference === later.preference) continue;
+      found.push({
+        axis: before.axis,
+        board,
+        before: {
+          parameter: before.parameter,
+          preference: earlier.preference,
+          delegate: earlier.delegate.result.score,
+          human: earlier.human.result.score,
+        },
+        after: {
+          parameter: after.parameter,
+          preference: later.preference,
+          delegate: later.delegate.result.score,
+          human: later.human.result.score,
+        },
+      });
+    }
+  }
+  return found;
+}
+
+/** 初回と同じ資源で、成熟線・残存失敗・確認費用を一つずつ動かす。固定戦略。 */
+export function compareApprovalFactorReversals() {
+  const sweeps = {
+    maturityLine: [0, 1, 2, 3, 4].map((maturityLine) =>
+      factorPoint('maturityLine', String(maturityLine), withRules({ maturityLine })),
+    ),
+    residualFailure: [0, 1, 2, 3].map((residualFailure) =>
+      factorPoint('residualFailure', String(residualFailure), withRules({ residualFailure })),
+    ),
+    reviewCost: [0, 1, 2, 3].map((reviewCost) =>
+      factorPoint('reviewCost', String(reviewCost), withRules({ reviewCost })),
+    ),
+  };
+  return {
+    conditions: {
+      seed: FACTOR_SEED,
+      boards: FACTOR_BOARDS.map((board) => ({
+        board,
+        maturity: ITEMS[board].maturity,
+        items: ITEMS[board].items.map((item) => ({
+          id: item.id,
+          risk: item.risk,
+          value: item.value,
+        })),
+      })),
+      audit: AUDIT_COST,
+      rushFailure: RUSH_FAILURE,
+      breach: BREACH_COST,
+      decision: {
+        delegate: '低リスクを委譲する',
+        human: '人間が確認する',
+        score: 'value - reviewCost - failure - audit - breach',
+        preference: '委譲の差引が大きいとき委譲、人間確認が大きいとき人間、同じとき同点',
+      },
+      baseline: cloneRules(baselineApprovalRules),
+      held: {
+        maturityLine:
+          '成熟線だけを0から4まで動かす。残存失敗は1、確認費用は2、監査は1。盤面の成熟と仕事は初回のまま。',
+        residualFailure:
+          '委譲で自動にした低リスクの残存失敗だけを0から3まで動かす。成熟線は2、確認費用は2、監査は1。急ぎの残存失敗3は動かさない。',
+        reviewCost:
+          '人間確認1件の確認費用だけを0から3まで動かす。成熟線は2、残存失敗は1、監査は1。',
+      },
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    },
+    sweeps,
+    reversals: Object.values(sweeps).flatMap((rows) => reversalsOf(rows)),
+  };
 }

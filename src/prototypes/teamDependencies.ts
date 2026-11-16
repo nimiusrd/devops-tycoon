@@ -4,6 +4,20 @@ export const TEAMS = ['platform', 'product', 'incident'] as const;
 export type TeamId = (typeof TEAMS)[number];
 export type DependencyBoard = 'tight' | 'open';
 export type DependencyStrategy = 'upstream' | 'crisis';
+export type DependencyJudgment = 'aware' | 'blind';
+
+/** 初回の資源を基準に、一つだけ動かして優劣の反転を見る。 */
+export interface DependencyRules {
+  passive: number;
+  split: number;
+  deadline: number;
+}
+
+export const baselineDependencyRules: DependencyRules = {
+  passive: 0,
+  split: 1,
+  deadline: 2,
+};
 
 export interface TeamJob {
   id: string;
@@ -204,7 +218,11 @@ export function supportMany(state: DependencyState, teams: readonly TeamId[]): D
 export function applyTeamDependency(
   state: DependencyState,
   input: DependencyInput,
+  rules: DependencyRules = baselineDependencyRules,
 ): DependencyState {
+  if (input.type !== 'view' && (rules.passive > 0 || rules.split > 1)) {
+    return applyRuledPeriod(state, input, rules);
+  }
   if (input.type === 'view') {
     if (state.viewed.includes(input.team)) return state;
     const next = structuredClone(state);
@@ -304,4 +322,355 @@ export function compareTeamDependencies(seed = 'RI-216') {
       };
     }),
   );
+}
+
+const FACTOR_SEED = 'RI-216';
+const BASE_HORIZONS = [3, 4] as const;
+const FOLLOWUP_HORIZONS = [3, 4, 5, 6, 7, 8] as const;
+
+/** 支援1を1・2・3等分しても工数がずれないように、6分の1単位で足す。 */
+const EFFORT_SCALE = 6;
+
+function effortUnits(value: number): number {
+  return Math.round(value * EFFORT_SCALE);
+}
+
+function copyInput(input: DependencyInput): DependencyInput {
+  if (input.type === 'support-batch') return { type: 'support-batch', teams: [...input.teams] };
+  return input;
+}
+
+function bestEligible(
+  state: DependencyState,
+  team: TeamId,
+  eligible: ReadonlySet<string>,
+  taken: ReadonlySet<string>,
+): TeamJob | undefined {
+  return state.jobs
+    .filter((job) => job.team === team && eligible.has(job.id) && !taken.has(job.id))
+    .sort((a, b) => b.value - a.value || a.id.localeCompare(b.id))[0];
+}
+
+function applyEfforts(state: DependencyState, effort: ReadonlyMap<string, number>): void {
+  for (const job of state.jobs) {
+    const amount = effort.get(job.id);
+    if (!amount) continue;
+    const left = effortUnits(job.workLeft) - amount;
+    job.workLeft = left > 0 ? left / EFFORT_SCALE : 0;
+    if (left > 0) continue;
+    job.doneTick = state.tick;
+    state.delivered.push({ id: job.id, tick: state.tick, value: deliveryValue(job, state.tick) });
+  }
+}
+
+/** 自チーム処理と分割支援。分割1・処理0の初回経路はここを通らない。 */
+function applyRuledPeriod(
+  state: DependencyState,
+  input: DependencyInput,
+  rules: DependencyRules,
+): DependencyState {
+  if (state.tick >= state.horizon) return state;
+  const teams =
+    input.type === 'support' ? [input.team] : input.type === 'support-batch' ? input.teams : [];
+  if (
+    input.type !== 'wait' &&
+    (teams.length === 0 || teams.some((team) => !TEAMS.includes(team)))
+  ) {
+    return state;
+  }
+  const next = structuredClone(state);
+  const eligible = new Set(
+    next.jobs.filter((job) => jobEligible(next, job.id)).map((job) => job.id),
+  );
+  const effort = new Map<string, number>();
+  const add = (id: string, amount: number) =>
+    effort.set(id, (effort.get(id) ?? 0) + effortUnits(amount));
+  if (rules.passive > 0) {
+    for (const team of TEAMS) {
+      const job = bestEligible(next, team, eligible, new Set());
+      if (job) add(job.id, rules.passive);
+    }
+  }
+  let wastedUnits = 0;
+  const allocations: { team: TeamId; effort: number }[] = [];
+  if (input.type !== 'wait') {
+    if (rules.split <= 1) {
+      allocations.push(...teams.map((team) => ({ team, effort: 1 })));
+    } else {
+      const piece = 1 / rules.split;
+      const used = teams.slice(0, rules.split);
+      allocations.push(...used.map((team) => ({ team, effort: piece })));
+      wastedUnits += effortUnits(Math.max(0, 1 - piece * used.length));
+    }
+  }
+  const taken = new Set<string>();
+  for (const allocation of allocations) {
+    const job = bestEligible(next, allocation.team, eligible, taken);
+    if (!job) {
+      wastedUnits += effortUnits(allocation.effort);
+      continue;
+    }
+    taken.add(job.id);
+    add(job.id, allocation.effort);
+  }
+  next.wasted = (effortUnits(next.wasted) + wastedUnits) / EFFORT_SCALE;
+  applyEfforts(next, effort);
+  next.tick += 1;
+  next.inputs.push(copyInput(input));
+  return next;
+}
+
+function eligibleTeams(state: DependencyState): Set<TeamId> {
+  const teams = new Set<TeamId>();
+  for (const job of state.jobs) {
+    if (jobEligible(state, job.id)) teams.add(job.team);
+  }
+  return teams;
+}
+
+/** 依存を見て支援先を並べる。先頭は初回の上流支援と同じ。 */
+function awareOrder(state: DependencyState): TeamId[] {
+  const eligible = eligibleTeams(state);
+  const order: TeamId[] = [];
+  if (!gateOpen(state) && eligible.has('platform')) order.push('platform');
+  if (eligible.has('product')) order.push('product');
+  if (eligible.has('incident')) order.push('incident');
+  return order;
+}
+
+/** 依存を見ずに進む。先頭は初回の危機支援と同じ。 */
+function blindOrder(state: DependencyState): TeamId[] {
+  const eligible = eligibleTeams(state);
+  const hot = jobById(state, 'hot');
+  const order: TeamId[] = [];
+  if (
+    hot.doneTick === null &&
+    (hot.deadline === null || state.tick <= hot.deadline) &&
+    eligible.has('incident')
+  ) {
+    order.push('incident');
+  }
+  if (!gateOpen(state) && eligible.has('platform')) order.push('platform');
+  if (eligible.has('product')) order.push('product');
+  if (eligible.has('incident') && !order.includes('incident')) order.push('incident');
+  return order;
+}
+
+export function chooseDependencyFactorInput(
+  state: DependencyState,
+  judgment: DependencyJudgment,
+  rules: DependencyRules = baselineDependencyRules,
+): DependencyInput {
+  const order = judgment === 'aware' ? awareOrder(state) : blindOrder(state);
+  const teams = order.slice(0, Math.max(1, rules.split));
+  if (teams.length === 0) return { type: 'wait' };
+  if (teams.length === 1) return { type: 'support', team: teams[0] };
+  return { type: 'support-batch', teams };
+}
+
+export function createTeamDependencyFactorState(
+  horizon: number,
+  rules: DependencyRules = baselineDependencyRules,
+): DependencyState {
+  const state = createTeamDependencyPrototype(FACTOR_SEED, horizon === 3 ? 'tight' : 'open');
+  state.horizon = horizon;
+  const hot = state.jobs.find((job) => job.id === 'hot');
+  if (!hot) throw new Error('hotの欠落');
+  hot.deadline = rules.deadline;
+  return state;
+}
+
+export interface DependencyFactorRun {
+  inputs: DependencyInput[];
+  result: ReturnType<typeof summarizeTeamDependency>;
+}
+
+export type DependencyPreference = 'aware' | 'blind' | 'tie';
+
+export interface DependencyFactorBoard {
+  horizon: number;
+  aware: DependencyFactorRun;
+  blind: DependencyFactorRun;
+  preference: DependencyPreference;
+  margin: number;
+}
+
+export interface DependencyFactorPoint {
+  axis: 'passive' | 'split' | 'horizon' | 'deadline';
+  parameter: string;
+  rules: DependencyRules;
+  boards: DependencyFactorBoard[];
+}
+
+export interface DependencyFactorReversal {
+  axis: DependencyFactorPoint['axis'];
+  before: {
+    parameter: string;
+    horizon: number;
+    preference: DependencyPreference;
+    aware: number;
+    blind: number;
+  };
+  after: {
+    parameter: string;
+    horizon: number;
+    preference: DependencyPreference;
+    aware: number;
+    blind: number;
+  };
+}
+
+function preferenceOf(aware: number, blind: number): DependencyPreference {
+  if (aware > blind) return 'aware';
+  if (blind > aware) return 'blind';
+  return 'tie';
+}
+
+function withRules(patch: Partial<DependencyRules>): DependencyRules {
+  return { ...baselineDependencyRules, ...patch };
+}
+
+function runJudgment(
+  horizon: number,
+  judgment: DependencyJudgment,
+  rules: DependencyRules,
+): DependencyFactorRun {
+  let state = createTeamDependencyFactorState(horizon, rules);
+  let guard = 0;
+  while (state.tick < state.horizon) {
+    if (++guard > 30) throw new Error(`${judgment}:${horizon}`);
+    const input = chooseDependencyFactorInput(state, judgment, rules);
+    const next = applyTeamDependency(state, input, rules);
+    if (next === state) throw new Error(`${judgment}:${horizon}@${state.tick}`);
+    state = next;
+  }
+  return { inputs: state.inputs, result: summarizeTeamDependency(state) };
+}
+
+function factorPoint(
+  axis: DependencyFactorPoint['axis'],
+  parameter: string,
+  rules: DependencyRules,
+  horizons: readonly number[],
+): DependencyFactorPoint {
+  return {
+    axis,
+    parameter,
+    rules: { ...rules },
+    boards: horizons.map((horizon) => {
+      const aware = runJudgment(horizon, 'aware', rules);
+      const blind = runJudgment(horizon, 'blind', rules);
+      return {
+        horizon,
+        aware,
+        blind,
+        preference: preferenceOf(aware.result.score, blind.result.score),
+        margin: aware.result.score - blind.result.score,
+      };
+    }),
+  };
+}
+
+function packReversal(
+  point: DependencyFactorPoint,
+  board: DependencyFactorBoard,
+): DependencyFactorReversal['before'] {
+  return {
+    parameter: point.parameter,
+    horizon: board.horizon,
+    preference: board.preference,
+    aware: board.aware.result.score,
+    blind: board.blind.result.score,
+  };
+}
+
+function reversalsOf(rows: DependencyFactorPoint[]): DependencyFactorReversal[] {
+  const found: DependencyFactorReversal[] = [];
+  for (let index = 1; index < rows.length; index += 1) {
+    const before = rows[index - 1];
+    const after = rows[index];
+    if (!before || !after) continue;
+    if (before.axis === 'horizon') {
+      const early = before.boards[0];
+      const late = after.boards[0];
+      if (!early || !late || early.preference === late.preference) continue;
+      found.push({
+        axis: 'horizon',
+        before: packReversal(before, early),
+        after: packReversal(after, late),
+      });
+      continue;
+    }
+    for (const horizon of BASE_HORIZONS) {
+      const early = before.boards.find((board) => board.horizon === horizon);
+      const late = after.boards.find((board) => board.horizon === horizon);
+      if (!early || !late || early.preference === late.preference) continue;
+      found.push({
+        axis: before.axis,
+        before: packReversal(before, early),
+        after: packReversal(after, late),
+      });
+    }
+  }
+  return found;
+}
+
+/** 初回と同じ資源で、自チーム処理・支援の分割・期末・期限を一つずつ動かす。固定戦略。 */
+export function compareTeamDependencyFactors() {
+  const sweeps = {
+    passive: [0, 1, 2].map((passive) =>
+      factorPoint('passive', String(passive), withRules({ passive }), BASE_HORIZONS),
+    ),
+    split: [1, 2, 3].map((split) =>
+      factorPoint('split', String(split), withRules({ split }), BASE_HORIZONS),
+    ),
+    horizon: FOLLOWUP_HORIZONS.map((horizon) =>
+      factorPoint('horizon', String(horizon), withRules({}), [horizon]),
+    ),
+    deadline: [0, 1, 2, 3].map((deadline) =>
+      factorPoint('deadline', String(deadline), withRules({ deadline }), BASE_HORIZONS),
+    ),
+  };
+  return {
+    conditions: {
+      seed: FACTOR_SEED,
+      horizons: [...BASE_HORIZONS],
+      followupHorizons: [...FOLLOWUP_HORIZONS],
+      jobs: {
+        gate: { work: 2, value: 1 },
+        feature: { work: 2, value: 8, requires: 'gate' },
+        followup: { work: 2, value: 4, requires: 'gate' },
+        hot: { work: 2, value: 6, lateValue: 0 },
+      },
+      support: 1,
+      decision: {
+        aware:
+          '依存を見て、前提が閉じていれば platform、feature が対象なら product、それ以外は incident',
+        blind: '依存を見ず、期限内の hot が残っていれば incident、その後は同じ順',
+        score: '納品した価値の合計',
+        preference: '依存を見る差引が大きいとき aware、見ない方が大きいとき blind、同じとき tie',
+      },
+      baseline: { ...baselineDependencyRules },
+      held: {
+        passive:
+          '自チームが支援なしで進める工数だけを動かす。支援は1チームへ1、期限は2、期末は3と4',
+        split:
+          '1工数を等分する数だけを動かす。自チーム処理は0、期限は2、期末は3と4。余った分割は空振り',
+        horizon: '期末だけを動かす。自チーム処理は0、支援は分割しない、期限は2。仕事量は初回と同じ',
+        deadline: 'hot の期限 tick だけを動かす。自チーム処理は0、支援は分割しない、期末は3と4',
+      },
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    },
+    sweeps,
+    reversals: [
+      ...reversalsOf(sweeps.passive),
+      ...reversalsOf(sweeps.split),
+      ...reversalsOf(sweeps.horizon),
+      ...reversalsOf(sweeps.deadline),
+    ],
+  };
 }

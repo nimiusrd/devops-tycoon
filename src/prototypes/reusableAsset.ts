@@ -3,7 +3,28 @@ export type WorkKind = 'matching' | 'other';
 export type AssetStatus = 'none' | 'fresh' | 'stale-held' | 'stale-used' | 'retired';
 export type AssetScenario = 'single' | 'repeat' | 'stale-many' | 'stale-few';
 export type AssetStrategy = 'direct' | 'build' | 'update' | 'retire' | 'continue';
+export type AssetDecision = 'skip' | 'maintain';
+export type AssetFactor = 'buildTicks' | 'matchingSpeed' | 'stalePenalty' | 'premiseChangeAt';
 export type AssetInput = { type: 'build' | 'update' | 'retire' | 'continue-stale' | 'tick' };
+/** 初回の規則。状態に rules が無いときはこの値。感度はここから一つだけ動かす。 */
+export interface AssetRules {
+  buildTicks: number;
+  matchingSpeed: number;
+  stalePenalty: number;
+}
+export const baselineAssetRules: AssetRules = {
+  buildTicks: 4,
+  matchingSpeed: 2,
+  stalePenalty: 2,
+};
+/** 要因比較で固定する初回の資源。工数・価値・集中力・更新tickは動かさない。 */
+export const reusableFactorResources = {
+  seed: 1,
+  effort: 4,
+  value: 6,
+  focus: 2,
+  updateTicks: 4,
+} as const;
 export interface AssetJob {
   id: string;
   kind: WorkKind;
@@ -29,16 +50,32 @@ export interface AssetState {
   stalePenalty: number;
   jobs: AssetJob[];
   inputs: AssetInput[];
+  /** 無いときは初回の規則。初回の比較JSONはこのフィールドを持たない。 */
+  rules?: AssetRules;
 }
-const JOB_EFFORT = 4;
-const JOB_VALUE = 6;
-const BUILD_TICKS = 4;
-const UPDATE_TICKS = 4;
-const MATCHING_SPEED = 2;
-const STALE_PENALTY = 2;
+const SCENARIOS: AssetScenario[] = ['single', 'repeat', 'stale-many', 'stale-few'];
+const FACTORS: AssetFactor[] = ['buildTicks', 'matchingSpeed', 'stalePenalty', 'premiseChangeAt'];
+const SPEED_LEVELS = [1, 2, 3, 4, 5, 6];
+const PENALTY_LEVELS = [0, 1, 2, 3, 4, 5, 6];
 
+function assetRules(state: AssetState): AssetRules {
+  return state.rules ?? baselineAssetRules;
+}
+/** 速度ボーナスは同種かつ新鮮か継続利用のときだけ。無関係な仕事と整備中は対象外。 */
+function workSpeed(state: AssetState, kind: WorkKind): number {
+  if (state.busy) return 0;
+  if (kind === 'matching' && (state.asset === 'fresh' || state.asset === 'stale-used'))
+    return assetRules(state).matchingSpeed;
+  return 1;
+}
 function job(id: string, kind: WorkKind): AssetJob {
-  return { id, kind, effort: JOB_EFFORT, progress: 0, value: JOB_VALUE };
+  return {
+    id,
+    kind,
+    effort: reusableFactorResources.effort,
+    progress: 0,
+    value: reusableFactorResources.value,
+  };
 }
 function scenarioJobs(scenario: AssetScenario): AssetJob[] {
   const matching = scenario === 'single' ? 2 : scenario === 'stale-few' ? 3 : 8;
@@ -57,7 +94,7 @@ export function createReusablePrototype(seed: number, scenario: AssetScenario): 
     asset: 'none',
     assetPremise: null,
     busy: null,
-    focus: 2,
+    focus: reusableFactorResources.focus,
     focusSpent: 0,
     buildTicksSpent: 0,
     updateTicksSpent: 0,
@@ -85,11 +122,7 @@ export function viewReusable(state: AssetState) {
       kind: item.kind,
       progress: item.progress,
       effort: item.effort,
-      speed: state.busy
-        ? 0
-        : item.kind === 'matching' && (state.asset === 'fresh' || state.asset === 'stale-used')
-          ? MATCHING_SPEED
-          : 1,
+      speed: workSpeed(state, item.kind),
     })),
   };
 }
@@ -116,7 +149,8 @@ export function applyReusableInput(state: AssetState, input: AssetInput): AssetS
     next.focusSpent += 1;
     next.busy = {
       kind: input.type,
-      remaining: input.type === 'build' ? BUILD_TICKS : UPDATE_TICKS,
+      remaining:
+        input.type === 'build' ? assetRules(next).buildTicks : reusableFactorResources.updateTicks,
     };
   } else if (input.type === 'retire') next.asset = 'retired';
   else if (input.type === 'continue-stale') next.asset = 'stale-used';
@@ -139,15 +173,14 @@ export function applyReusableInput(state: AssetState, input: AssetInput): AssetS
     } else {
       const current = next.jobs.find((item) => item.progress < item.effort);
       if (current) {
-        const speed =
-          current.kind === 'matching' && (next.asset === 'fresh' || next.asset === 'stale-used')
-            ? MATCHING_SPEED
-            : 1;
-        current.progress = Math.min(current.effort, current.progress + speed);
+        current.progress = Math.min(
+          current.effort,
+          current.progress + workSpeed(next, current.kind),
+        );
         if (current.progress === current.effort) {
           next.earnedValue += current.value;
           if (current.kind === 'matching' && next.asset === 'stale-used')
-            next.stalePenalty += STALE_PENALTY;
+            next.stalePenalty += assetRules(next).stalePenalty;
         }
       }
     }
@@ -209,4 +242,148 @@ export function compareReusableStrategies() {
       result: summarizeReusable(state),
     };
   });
+}
+function range(first: number, last: number) {
+  return Array.from({ length: last - first + 1 }, (_, index) => first + index);
+}
+function factorLevels(factor: AssetFactor, horizon: number): (number | null)[] {
+  if (factor === 'buildTicks') return range(1, horizon);
+  if (factor === 'matchingSpeed') return [...SPEED_LEVELS];
+  if (factor === 'stalePenalty') return [...PENALTY_LEVELS];
+  return [null, ...range(1, horizon)];
+}
+function rulesFor(factor: AssetFactor, level: number | null): AssetRules {
+  if (factor === 'premiseChangeAt' || level === null) return { ...baselineAssetRules };
+  return { ...baselineAssetRules, [factor]: level };
+}
+function levelLabel(level: number | null) {
+  return level === null ? 'none' : String(level);
+}
+/** 整備するは build のあと、古くなった資産を一度だけ使い続ける。整備しないは tick だけ。 */
+export function runReusableDecision(
+  scenario: AssetScenario,
+  decision: AssetDecision,
+  rules: AssetRules,
+  premiseChangeAt: number | null,
+) {
+  const initial = createReusablePrototype(reusableFactorResources.seed, scenario);
+  initial.premiseChangeAt = premiseChangeAt;
+  initial.rules = { ...rules };
+  let state = decision === 'skip' ? initial : applyReusableInput(initial, { type: 'build' });
+  while (state.tick < state.horizon) {
+    if (decision === 'maintain' && state.asset === 'stale-held' && !state.busy)
+      state = applyReusableInput(state, { type: 'continue-stale' });
+    state = applyReusableInput(state, { type: 'tick' });
+  }
+  return { initial, inputs: state.inputs, result: summarizeReusable(state) };
+}
+export type AssetFactorWinner = 'maintain' | 'skip' | 'tie';
+export interface AssetFactorPoint {
+  factor: AssetFactor;
+  level: string;
+  scenario: AssetScenario;
+  decision: AssetDecision;
+  rules: AssetRules;
+  premiseChangeAt: number | null;
+  initial: AssetState;
+  inputs: AssetInput[];
+  result: ReturnType<typeof summarizeReusable>;
+}
+export interface AssetFactorReversal {
+  factor: AssetFactor;
+  scenario: AssetScenario;
+  from: { level: string; winner: AssetFactorWinner; maintain: number; skip: number };
+  to: { level: string; winner: AssetFactorWinner; maintain: number; skip: number };
+}
+function decisionWinner(maintain: number, skip: number): AssetFactorWinner {
+  if (maintain > skip) return 'maintain';
+  if (maintain < skip) return 'skip';
+  return 'tie';
+}
+function pairAt(list: AssetFactorPoint[], level: string) {
+  const maintain = list.find((row) => row.level === level && row.decision === 'maintain');
+  const skip = list.find((row) => row.level === level && row.decision === 'skip');
+  if (!maintain || !skip) return null;
+  return {
+    level,
+    winner: decisionWinner(maintain.result.netValue, skip.result.netValue),
+    maintain: maintain.result.netValue,
+    skip: skip.result.netValue,
+  };
+}
+function reversalsOf(rows: AssetFactorPoint[]): AssetFactorReversal[] {
+  const grouped = new Map<string, AssetFactorPoint[]>();
+  for (const row of rows) {
+    const key = `${row.factor}:${row.scenario}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), row]);
+  }
+  const reversals: AssetFactorReversal[] = [];
+  for (const list of grouped.values()) {
+    const levels: string[] = [];
+    for (const row of list) if (!levels.includes(row.level)) levels.push(row.level);
+    for (let index = 1; index < levels.length; index += 1) {
+      const from = pairAt(list, levels[index - 1]);
+      const to = pairAt(list, levels[index]);
+      if (!from || !to || from.winner === to.winner) continue;
+      reversals.push({ factor: list[0].factor, scenario: list[0].scenario, from, to });
+    }
+  }
+  return reversals;
+}
+/** 初回と同じ資源で要因を一つずつ動かし、整備すると整備しないだけを再計算する。 */
+export function compareReusableFactorReversals() {
+  const rows: AssetFactorPoint[] = [];
+  for (const scenario of SCENARIOS) {
+    const sample = createReusablePrototype(reusableFactorResources.seed, scenario);
+    for (const factor of FACTORS) {
+      for (const level of factorLevels(factor, sample.horizon)) {
+        const rules = rulesFor(factor, level);
+        const premiseChangeAt = factor === 'premiseChangeAt' ? level : sample.premiseChangeAt;
+        for (const decision of ['skip', 'maintain'] as const) {
+          rows.push({
+            factor,
+            level: levelLabel(level),
+            scenario,
+            decision,
+            rules,
+            premiseChangeAt,
+            ...runReusableDecision(scenario, decision, rules, premiseChangeAt),
+          });
+        }
+      }
+    }
+  }
+  return {
+    conditions: {
+      seed: reusableFactorResources.seed,
+      resources: reusableFactorResources,
+      baseline: baselineAssetRules,
+      scenarios: Object.fromEntries(
+        SCENARIOS.map((scenario) => {
+          const sample = createReusablePrototype(reusableFactorResources.seed, scenario);
+          return [
+            scenario,
+            {
+              horizon: sample.horizon,
+              premiseChangeAt: sample.premiseChangeAt,
+              matching: sample.jobs.filter((item) => item.kind === 'matching').length,
+              other: sample.jobs.filter((item) => item.kind === 'other').length,
+            },
+          ];
+        }),
+      ),
+      speedLevels: SPEED_LEVELS,
+      penaltyLevels: PENALTY_LEVELS,
+      decisions: {
+        skip: 'tick-only',
+        maintain: 'build-then-continue-stale-once',
+      },
+      fixedStrategies: true,
+      humanPlaytest: false,
+      productionIntegration: false,
+      inputEncoding: 'type',
+    },
+    rows,
+    reversals: reversalsOf(rows),
+  };
 }

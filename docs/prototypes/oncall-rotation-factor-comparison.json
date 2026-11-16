@@ -1,0 +1,5948 @@
+{
+  "conditions": {
+    "seed": "RI-221",
+    "boards": {
+      "quiet": {
+        "horizon": 2,
+        "incident": 0,
+        "penalty": 0,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1
+          }
+        ]
+      },
+      "severe": {
+        "horizon": 2,
+        "incident": 5,
+        "penalty": 12,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1
+          }
+        ]
+      },
+      "mixed": {
+        "horizon": 2,
+        "incident": 4,
+        "penalty": 8,
+        "people": [
+          {
+            "id": "ace",
+            "ship": 4,
+            "recover": 3,
+            "fatigueRate": 2
+          },
+          {
+            "id": "jun",
+            "ship": 2,
+            "recover": 1,
+            "fatigueRate": 1
+          }
+        ]
+      }
+    },
+    "decision": {
+      "strategies": ["ace", "junior", "rotate"],
+      "score": "shipped - fatigue - unresolved",
+      "order": "差引の高い順。同点は ace、junior、rotate の並び"
+    },
+    "baseline": {
+      "occurTick": 0,
+      "juniorRecover": 1,
+      "aceFatigue": 2
+    },
+    "held": {
+      "occurTick": "発生tickだけを動かす。新人の復旧1、主力の復旧3、主力の消耗2、新人の消耗1",
+      "recover": "新人の復旧だけを動かす。主力の復旧はその2上。発生tick0、主力の消耗2、新人の消耗1",
+      "fatigue": "主力の消耗だけを動かす。新人の消耗1。発生tick0、新人の復旧1、主力の復旧3"
+    },
+    "occurDefinition": "障害が発生する期間の開始tick。そのtick未満の当番は復旧しない。消耗・出荷・経験は付く。0は初回。2は期末で2期間とも復旧しない",
+    "recoverDefinition": "新人の1期間の復旧。主力は常にその2上で、状態へ保存した復旧量は書き換えない",
+    "fatigueDefinition": "主力の1期間の待機消耗。新人の消耗率は1のまま。両者へ同じ増分を足すと当番はどの戦略も2人期で差引が同じだけ下がり順序は動かないため、その増分は掃引しない",
+    "steps": {
+      "occurTick": [0, 1, 2],
+      "recover": [0, 1, 2, 3, 4],
+      "fatigue": [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    },
+    "omitted": "初回の3盤面×3戦略の表は再出力しない。基準行だけ初回JSONと照合する",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "occurTick": [
+      {
+        "axis": "occurTick",
+        "parameter": "0",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 0,
+              "junior": -6,
+              "rotate": -9
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 12,
+                  "score": -9,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 0,
+              "junior": -2,
+              "rotate": 3
+            },
+            "order": [["rotate"], ["ace"], ["junior"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "occurTick",
+        "parameter": "1",
+        "rules": {
+          "occurTick": 1,
+          "juniorRecover": 1,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -12,
+              "junior": -6,
+              "rotate": -9
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 12,
+                  "score": -12,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 4,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 12,
+                  "score": -9,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -8,
+              "junior": -2,
+              "rotate": -5
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 8,
+                  "score": -8,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 8,
+                  "score": -5,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "occurTick",
+        "parameter": "2",
+        "rules": {
+          "occurTick": 2,
+          "juniorRecover": 1,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -12,
+              "junior": -6,
+              "rotate": -9
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 12,
+                  "score": -12,
+                  "incidentLeft": 5,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 5,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 12,
+                  "score": -9,
+                  "incidentLeft": 5,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -8,
+              "junior": -2,
+              "rotate": -5
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 8,
+                  "score": -8,
+                  "incidentLeft": 4,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 4,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 8,
+                  "score": -5,
+                  "incidentLeft": 4,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "recover": [
+      {
+        "axis": "recover",
+        "parameter": "0",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 0,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -12,
+              "junior": -6,
+              "rotate": -9
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 12,
+                  "score": -12,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 5,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 12,
+                  "score": -9,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 0,
+              "junior": -2,
+              "rotate": -5
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 4,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 8,
+                  "score": -5,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "recover",
+        "parameter": "1",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 0,
+              "junior": -6,
+              "rotate": -9
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 12,
+                  "score": -9,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 0,
+              "junior": -2,
+              "rotate": 3
+            },
+            "order": [["rotate"], ["ace"], ["junior"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "recover",
+        "parameter": "2",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 2,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 0,
+              "junior": -6,
+              "rotate": 3
+            },
+            "order": [["rotate"], ["ace"], ["junior"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "recover",
+        "parameter": "3",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 3,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "recover",
+        "parameter": "4",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 4,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "fatigue": [
+      {
+        "axis": "fatigue",
+        "parameter": "0",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 0
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 4,
+              "junior": 6,
+              "rotate": 5
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 0,
+                  "unresolved": 0,
+                  "score": 4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 1,
+                  "unresolved": 0,
+                  "score": 5,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 4,
+              "junior": -6,
+              "rotate": -7
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 0,
+                  "unresolved": 0,
+                  "score": 4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 1,
+                  "unresolved": 12,
+                  "score": -7,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 4,
+              "junior": -2,
+              "rotate": 5
+            },
+            "order": [["rotate"], ["ace"], ["junior"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 0,
+                  "unresolved": 0,
+                  "score": 4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 1,
+                  "unresolved": 0,
+                  "score": 5,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "1",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 1
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 2,
+              "junior": 6,
+              "rotate": 4
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 2,
+              "junior": -6,
+              "rotate": -8
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -8,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 2,
+              "junior": -2,
+              "rotate": 4
+            },
+            "order": [["rotate"], ["ace"], ["junior"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "2",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 2
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": 0,
+              "junior": 6,
+              "rotate": 3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": 0,
+              "junior": -6,
+              "rotate": -9
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 12,
+                  "score": -9,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": 0,
+              "junior": -2,
+              "rotate": 3
+            },
+            "order": [["rotate"], ["ace"], ["junior"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 3,
+                  "unresolved": 0,
+                  "score": 3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "3",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": -2,
+              "junior": 6,
+              "rotate": 2
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 6,
+                  "unresolved": 0,
+                  "score": -2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -2,
+              "junior": -6,
+              "rotate": -10
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 6,
+                  "unresolved": 0,
+                  "score": -2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 4,
+                  "unresolved": 12,
+                  "score": -10,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -2,
+              "junior": -2,
+              "rotate": 2
+            },
+            "order": [["rotate"], ["ace", "junior"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 6,
+                  "unresolved": 0,
+                  "score": -2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 4,
+                  "unresolved": 0,
+                  "score": 2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "4",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 4
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": -4,
+              "junior": 6,
+              "rotate": 1
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 8,
+                  "unresolved": 0,
+                  "score": -4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 5,
+                  "unresolved": 0,
+                  "score": 1,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -4,
+              "junior": -6,
+              "rotate": -11
+            },
+            "order": [["ace"], ["junior"], ["rotate"]],
+            "leader": "ace",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 8,
+                  "unresolved": 0,
+                  "score": -4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 5,
+                  "unresolved": 12,
+                  "score": -11,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -4,
+              "junior": -2,
+              "rotate": 1
+            },
+            "order": [["rotate"], ["junior"], ["ace"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 8,
+                  "unresolved": 0,
+                  "score": -4,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 5,
+                  "unresolved": 0,
+                  "score": 1,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "5",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 5
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": -6,
+              "junior": 6,
+              "rotate": 0
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 10,
+                  "unresolved": 0,
+                  "score": -6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 6,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -6,
+              "junior": -6,
+              "rotate": -12
+            },
+            "order": [["ace", "junior"], ["rotate"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 10,
+                  "unresolved": 0,
+                  "score": -6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 6,
+                  "unresolved": 12,
+                  "score": -12,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -6,
+              "junior": -2,
+              "rotate": 0
+            },
+            "order": [["rotate"], ["junior"], ["ace"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 10,
+                  "unresolved": 0,
+                  "score": -6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 6,
+                  "unresolved": 0,
+                  "score": 0,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "6",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": -8,
+              "junior": 6,
+              "rotate": -1
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 12,
+                  "unresolved": 0,
+                  "score": -8,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 7,
+                  "unresolved": 0,
+                  "score": -1,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -8,
+              "junior": -6,
+              "rotate": -13
+            },
+            "order": [["junior"], ["ace"], ["rotate"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 12,
+                  "unresolved": 0,
+                  "score": -8,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 7,
+                  "unresolved": 12,
+                  "score": -13,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -8,
+              "junior": -2,
+              "rotate": -1
+            },
+            "order": [["rotate"], ["junior"], ["ace"]],
+            "leader": "rotate",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 12,
+                  "unresolved": 0,
+                  "score": -8,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 7,
+                  "unresolved": 0,
+                  "score": -1,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "7",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 7
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": -10,
+              "junior": 6,
+              "rotate": -2
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 14,
+                  "unresolved": 0,
+                  "score": -10,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 8,
+                  "unresolved": 0,
+                  "score": -2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -10,
+              "junior": -6,
+              "rotate": -14
+            },
+            "order": [["junior"], ["ace"], ["rotate"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 14,
+                  "unresolved": 0,
+                  "score": -10,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 8,
+                  "unresolved": 12,
+                  "score": -14,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -10,
+              "junior": -2,
+              "rotate": -2
+            },
+            "order": [["junior", "rotate"], ["ace"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 14,
+                  "unresolved": 0,
+                  "score": -10,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 8,
+                  "unresolved": 0,
+                  "score": -2,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "fatigue",
+        "parameter": "8",
+        "rules": {
+          "occurTick": 0,
+          "juniorRecover": 1,
+          "aceFatigue": 8
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "quiet",
+            "scores": {
+              "ace": -12,
+              "junior": 6,
+              "rotate": -3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 16,
+                  "unresolved": 0,
+                  "score": -12,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 0,
+                  "score": 6,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 9,
+                  "unresolved": 0,
+                  "score": -3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "severe",
+            "scores": {
+              "ace": -12,
+              "junior": -6,
+              "rotate": -15
+            },
+            "order": [["junior"], ["ace"], ["rotate"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 16,
+                  "unresolved": 0,
+                  "score": -12,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 12,
+                  "score": -6,
+                  "incidentLeft": 3,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 9,
+                  "unresolved": 12,
+                  "score": -15,
+                  "incidentLeft": 1,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "mixed",
+            "scores": {
+              "ace": -12,
+              "junior": -2,
+              "rotate": -3
+            },
+            "order": [["junior"], ["rotate"], ["ace"]],
+            "leader": "junior",
+            "runs": [
+              {
+                "strategy": "ace",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 4,
+                  "fatigue": 16,
+                  "unresolved": 0,
+                  "score": -12,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 0
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "junior",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fatigue": 2,
+                  "unresolved": 8,
+                  "score": -2,
+                  "incidentLeft": 2,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 2
+                    }
+                  ],
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "rotate",
+                "inputs": [
+                  {
+                    "type": "assign",
+                    "id": "jun"
+                  },
+                  {
+                    "type": "assign",
+                    "id": "ace"
+                  }
+                ],
+                "result": {
+                  "shipped": 6,
+                  "fatigue": 9,
+                  "unresolved": 0,
+                  "score": -3,
+                  "incidentLeft": 0,
+                  "experience": [
+                    {
+                      "id": "ace",
+                      "experience": 0
+                    },
+                    {
+                      "id": "jun",
+                      "experience": 1
+                    }
+                  ],
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "occurTick",
+      "board": "severe",
+      "before": {
+        "parameter": "0",
+        "order": [["ace"], ["junior"], ["rotate"]],
+        "scores": {
+          "ace": 0,
+          "junior": -6,
+          "rotate": -9
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "order": [["junior"], ["rotate"], ["ace"]],
+        "scores": {
+          "ace": -12,
+          "junior": -6,
+          "rotate": -9
+        }
+      }
+    },
+    {
+      "axis": "occurTick",
+      "board": "mixed",
+      "before": {
+        "parameter": "0",
+        "order": [["rotate"], ["ace"], ["junior"]],
+        "scores": {
+          "ace": 0,
+          "junior": -2,
+          "rotate": 3
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "order": [["junior"], ["rotate"], ["ace"]],
+        "scores": {
+          "ace": -8,
+          "junior": -2,
+          "rotate": -5
+        }
+      }
+    },
+    {
+      "axis": "recover",
+      "board": "severe",
+      "before": {
+        "parameter": "0",
+        "order": [["junior"], ["rotate"], ["ace"]],
+        "scores": {
+          "ace": -12,
+          "junior": -6,
+          "rotate": -9
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "order": [["ace"], ["junior"], ["rotate"]],
+        "scores": {
+          "ace": 0,
+          "junior": -6,
+          "rotate": -9
+        }
+      }
+    },
+    {
+      "axis": "recover",
+      "board": "mixed",
+      "before": {
+        "parameter": "0",
+        "order": [["ace"], ["junior"], ["rotate"]],
+        "scores": {
+          "ace": 0,
+          "junior": -2,
+          "rotate": -5
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "order": [["rotate"], ["ace"], ["junior"]],
+        "scores": {
+          "ace": 0,
+          "junior": -2,
+          "rotate": 3
+        }
+      }
+    },
+    {
+      "axis": "recover",
+      "board": "severe",
+      "before": {
+        "parameter": "1",
+        "order": [["ace"], ["junior"], ["rotate"]],
+        "scores": {
+          "ace": 0,
+          "junior": -6,
+          "rotate": -9
+        }
+      },
+      "after": {
+        "parameter": "2",
+        "order": [["rotate"], ["ace"], ["junior"]],
+        "scores": {
+          "ace": 0,
+          "junior": -6,
+          "rotate": 3
+        }
+      }
+    },
+    {
+      "axis": "recover",
+      "board": "mixed",
+      "before": {
+        "parameter": "1",
+        "order": [["rotate"], ["ace"], ["junior"]],
+        "scores": {
+          "ace": 0,
+          "junior": -2,
+          "rotate": 3
+        }
+      },
+      "after": {
+        "parameter": "2",
+        "order": [["junior"], ["rotate"], ["ace"]],
+        "scores": {
+          "ace": 0,
+          "junior": 6,
+          "rotate": 3
+        }
+      }
+    },
+    {
+      "axis": "recover",
+      "board": "severe",
+      "before": {
+        "parameter": "2",
+        "order": [["rotate"], ["ace"], ["junior"]],
+        "scores": {
+          "ace": 0,
+          "junior": -6,
+          "rotate": 3
+        }
+      },
+      "after": {
+        "parameter": "3",
+        "order": [["junior"], ["rotate"], ["ace"]],
+        "scores": {
+          "ace": 0,
+          "junior": 6,
+          "rotate": 3
+        }
+      }
+    },
+    {
+      "axis": "fatigue",
+      "board": "mixed",
+      "before": {
+        "parameter": "2",
+        "order": [["rotate"], ["ace"], ["junior"]],
+        "scores": {
+          "ace": 0,
+          "junior": -2,
+          "rotate": 3
+        }
+      },
+      "after": {
+        "parameter": "3",
+        "order": [["rotate"], ["ace", "junior"]],
+        "scores": {
+          "ace": -2,
+          "junior": -2,
+          "rotate": 2
+        }
+      }
+    },
+    {
+      "axis": "fatigue",
+      "board": "mixed",
+      "before": {
+        "parameter": "3",
+        "order": [["rotate"], ["ace", "junior"]],
+        "scores": {
+          "ace": -2,
+          "junior": -2,
+          "rotate": 2
+        }
+      },
+      "after": {
+        "parameter": "4",
+        "order": [["rotate"], ["junior"], ["ace"]],
+        "scores": {
+          "ace": -4,
+          "junior": -2,
+          "rotate": 1
+        }
+      }
+    },
+    {
+      "axis": "fatigue",
+      "board": "severe",
+      "before": {
+        "parameter": "4",
+        "order": [["ace"], ["junior"], ["rotate"]],
+        "scores": {
+          "ace": -4,
+          "junior": -6,
+          "rotate": -11
+        }
+      },
+      "after": {
+        "parameter": "5",
+        "order": [["ace", "junior"], ["rotate"]],
+        "scores": {
+          "ace": -6,
+          "junior": -6,
+          "rotate": -12
+        }
+      }
+    },
+    {
+      "axis": "fatigue",
+      "board": "severe",
+      "before": {
+        "parameter": "5",
+        "order": [["ace", "junior"], ["rotate"]],
+        "scores": {
+          "ace": -6,
+          "junior": -6,
+          "rotate": -12
+        }
+      },
+      "after": {
+        "parameter": "6",
+        "order": [["junior"], ["ace"], ["rotate"]],
+        "scores": {
+          "ace": -8,
+          "junior": -6,
+          "rotate": -13
+        }
+      }
+    },
+    {
+      "axis": "fatigue",
+      "board": "mixed",
+      "before": {
+        "parameter": "6",
+        "order": [["rotate"], ["junior"], ["ace"]],
+        "scores": {
+          "ace": -8,
+          "junior": -2,
+          "rotate": -1
+        }
+      },
+      "after": {
+        "parameter": "7",
+        "order": [["junior", "rotate"], ["ace"]],
+        "scores": {
+          "ace": -10,
+          "junior": -2,
+          "rotate": -2
+        }
+      }
+    },
+    {
+      "axis": "fatigue",
+      "board": "mixed",
+      "before": {
+        "parameter": "7",
+        "order": [["junior", "rotate"], ["ace"]],
+        "scores": {
+          "ace": -10,
+          "junior": -2,
+          "rotate": -2
+        }
+      },
+      "after": {
+        "parameter": "8",
+        "order": [["junior"], ["rotate"], ["ace"]],
+        "scores": {
+          "ace": -12,
+          "junior": -2,
+          "rotate": -3
+        }
+      }
+    }
+  ]
+}

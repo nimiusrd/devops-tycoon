@@ -1,0 +1,4433 @@
+{
+  "conditions": {
+    "seed": 198,
+    "horizons": [4, 10],
+    "freshValue": 6,
+    "externalFee": 2,
+    "decision": {
+      "maintain": "on-time",
+      "skip": "skip",
+      "score": "netValue"
+    },
+    "baseline": {
+      "grace": 4,
+      "updateTicks": 2,
+      "freshValue": 6,
+      "staleValue": 2,
+      "externalFee": 2
+    },
+    "held": {
+      "grace": "猶予だけを1から10まで動かす。更新tickは2、失効後の効果は2。満額は6、外部利用費は2。期末は4と10",
+      "updateTicks": "更新tickだけを1から6まで動かす。猶予は4、失効後の効果は2。満額は6、外部利用費は2。期末は4と10",
+      "staleValue": "失効後の効果だけを0から6まで動かす。猶予は4、更新tickは2。満額は6、外部利用費は2。期末は4と10"
+    },
+    "updateRestoresGrace": true,
+    "staleStartsAfterDue": true,
+    "omitted": "外部道具と序盤更新は初回JSONのまま再出力しない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "grace": [
+      {
+        "axis": "grace",
+        "parameter": "1",
+        "rules": {
+          "grace": 1,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 2,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 12,
+                "fees": 0,
+                "netValue": 12
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 1,
+                "staleTicks": 3,
+                "upkeepTicks": 0,
+                "value": 12,
+                "fees": 0,
+                "netValue": 12
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 6,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 1,
+                "staleTicks": 9,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "2",
+        "rules": {
+          "grace": 2,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "skip",
+            "margin": -4,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 2,
+                "freshTicks": 2,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 12,
+                "fees": 0,
+                "netValue": 12
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 2,
+                "staleTicks": 2,
+                "upkeepTicks": 0,
+                "value": 16,
+                "fees": 0,
+                "netValue": 16
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 8,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 6,
+                "staleTicks": 0,
+                "upkeepTicks": 4,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 2,
+                "staleTicks": 8,
+                "upkeepTicks": 0,
+                "value": 28,
+                "fees": 0,
+                "netValue": 28
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "3",
+        "rules": {
+          "grace": 3,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "skip",
+            "margin": -2,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 3,
+                "staleTicks": 0,
+                "upkeepTicks": 1,
+                "value": 18,
+                "fees": 0,
+                "netValue": 18
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 3,
+                "staleTicks": 1,
+                "upkeepTicks": 0,
+                "value": 20,
+                "fees": 0,
+                "netValue": 20
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 4,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 3,
+                "freshTicks": 6,
+                "staleTicks": 0,
+                "upkeepTicks": 4,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 3,
+                "staleTicks": 7,
+                "upkeepTicks": 0,
+                "value": 32,
+                "fees": 0,
+                "netValue": 32
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "4",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": true,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 12,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "5",
+        "rules": {
+          "grace": 5,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 1,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 1,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 8,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 2,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 5,
+                "staleTicks": 5,
+                "upkeepTicks": 0,
+                "value": 40,
+                "fees": 0,
+                "netValue": 40
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "6",
+        "rules": {
+          "grace": 6,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 2,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 2,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 4,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 4,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 6,
+                "staleTicks": 4,
+                "upkeepTicks": 0,
+                "value": 44,
+                "fees": 0,
+                "netValue": 44
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "7",
+        "rules": {
+          "grace": 7,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 3,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 3,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 6,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 7,
+                "staleTicks": 3,
+                "upkeepTicks": 0,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "8",
+        "rules": {
+          "grace": 8,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 4,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 4,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "skip",
+            "margin": -4,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 8,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 2,
+                "upkeepTicks": 0,
+                "value": 52,
+                "fees": 0,
+                "netValue": 52
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "9",
+        "rules": {
+          "grace": 9,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 5,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 5,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "skip",
+            "margin": -2,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 9,
+                "staleTicks": 0,
+                "upkeepTicks": 1,
+                "value": 54,
+                "fees": 0,
+                "netValue": 54
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 9,
+                "staleTicks": 1,
+                "upkeepTicks": 0,
+                "value": 56,
+                "fees": 0,
+                "netValue": 56
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "grace",
+        "parameter": "10",
+        "rules": {
+          "grace": 10,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 6,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 6,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 10,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 60,
+                "fees": 0,
+                "netValue": 60
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 10,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 60,
+                "fees": 0,
+                "netValue": 60
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "updateTicks": [
+      {
+        "axis": "updateTicks",
+        "parameter": "1",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 1,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 12,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 4,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "updateTicks",
+        "parameter": "2",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": true,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 12,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "updateTicks",
+        "parameter": "3",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 3,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 6,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 1,
+                "freshTicks": 7,
+                "staleTicks": 0,
+                "upkeepTicks": 3,
+                "value": 42,
+                "fees": 0,
+                "netValue": 42
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "updateTicks",
+        "parameter": "4",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 4,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 2,
+                "freshTicks": 6,
+                "staleTicks": 0,
+                "upkeepTicks": 4,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "updateTicks",
+        "parameter": "5",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 5,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "skip",
+            "margin": -6,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 3,
+                "freshTicks": 5,
+                "staleTicks": 0,
+                "upkeepTicks": 5,
+                "value": 30,
+                "fees": 0,
+                "netValue": 30
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "updateTicks",
+        "parameter": "6",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 6,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "skip",
+            "margin": -12,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 4,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 6,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "staleValue": [
+      {
+        "axis": "staleValue",
+        "parameter": "0",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 0,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 24,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "staleValue",
+        "parameter": "1",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 1,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 18,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 30,
+                "fees": 0,
+                "netValue": 30
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "staleValue",
+        "parameter": "2",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 2,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": true,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 12,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 36,
+                "fees": 0,
+                "netValue": 36
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "staleValue",
+        "parameter": "3",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 3,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "maintain",
+            "margin": 6,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 42,
+                "fees": 0,
+                "netValue": 42
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "staleValue",
+        "parameter": "4",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 4,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "staleValue",
+        "parameter": "5",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 5,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "skip",
+            "margin": -6,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 54,
+                "fees": 0,
+                "netValue": 54
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "staleValue",
+        "parameter": "6",
+        "rules": {
+          "grace": 4,
+          "updateTicks": 2,
+          "freshValue": 6,
+          "staleValue": 6,
+          "externalFee": 2
+        },
+        "sameAsFirstComparison": false,
+        "horizons": [
+          {
+            "horizon": 4,
+            "preference": "tie",
+            "margin": 0,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 0,
+                "upkeepTicks": 0,
+                "value": 24,
+                "fees": 0,
+                "netValue": 24
+              }
+            }
+          },
+          {
+            "horizon": 10,
+            "preference": "skip",
+            "margin": -12,
+            "maintain": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "update"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 8,
+                "staleTicks": 0,
+                "upkeepTicks": 2,
+                "value": 48,
+                "fees": 0,
+                "netValue": 48
+              }
+            },
+            "skip": {
+              "inputs": [
+                {
+                  "type": "choose",
+                  "kind": "inhouse"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "kind": "inhouse",
+                "dueIn": 0,
+                "freshTicks": 4,
+                "staleTicks": 6,
+                "upkeepTicks": 0,
+                "value": 60,
+                "fees": 0,
+                "netValue": 60
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "grace",
+      "horizon": 4,
+      "before": {
+        "parameter": "1",
+        "preference": "tie",
+        "maintain": 12,
+        "skip": 12
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "skip",
+        "maintain": 12,
+        "skip": 16
+      }
+    },
+    {
+      "axis": "grace",
+      "horizon": 4,
+      "before": {
+        "parameter": "3",
+        "preference": "skip",
+        "maintain": 18,
+        "skip": 20
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "maintain": 24,
+        "skip": 24
+      }
+    },
+    {
+      "axis": "grace",
+      "horizon": 10,
+      "before": {
+        "parameter": "1",
+        "preference": "tie",
+        "maintain": 24,
+        "skip": 24
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "maintain",
+        "maintain": 36,
+        "skip": 28
+      }
+    },
+    {
+      "axis": "grace",
+      "horizon": 10,
+      "before": {
+        "parameter": "6",
+        "preference": "maintain",
+        "maintain": 48,
+        "skip": 44
+      },
+      "after": {
+        "parameter": "7",
+        "preference": "tie",
+        "maintain": 48,
+        "skip": 48
+      }
+    },
+    {
+      "axis": "grace",
+      "horizon": 10,
+      "before": {
+        "parameter": "7",
+        "preference": "tie",
+        "maintain": 48,
+        "skip": 48
+      },
+      "after": {
+        "parameter": "8",
+        "preference": "skip",
+        "maintain": 48,
+        "skip": 52
+      }
+    },
+    {
+      "axis": "grace",
+      "horizon": 10,
+      "before": {
+        "parameter": "9",
+        "preference": "skip",
+        "maintain": 54,
+        "skip": 56
+      },
+      "after": {
+        "parameter": "10",
+        "preference": "tie",
+        "maintain": 60,
+        "skip": 60
+      }
+    },
+    {
+      "axis": "updateTicks",
+      "horizon": 10,
+      "before": {
+        "parameter": "3",
+        "preference": "maintain",
+        "maintain": 42,
+        "skip": 36
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "maintain": 36,
+        "skip": 36
+      }
+    },
+    {
+      "axis": "updateTicks",
+      "horizon": 10,
+      "before": {
+        "parameter": "4",
+        "preference": "tie",
+        "maintain": 36,
+        "skip": 36
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "skip",
+        "maintain": 30,
+        "skip": 36
+      }
+    },
+    {
+      "axis": "staleValue",
+      "horizon": 10,
+      "before": {
+        "parameter": "3",
+        "preference": "maintain",
+        "maintain": 48,
+        "skip": 42
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "maintain": 48,
+        "skip": 48
+      }
+    },
+    {
+      "axis": "staleValue",
+      "horizon": 10,
+      "before": {
+        "parameter": "4",
+        "preference": "tie",
+        "maintain": 48,
+        "skip": 48
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "skip",
+        "maintain": 48,
+        "skip": 54
+      }
+    }
+  ]
+}

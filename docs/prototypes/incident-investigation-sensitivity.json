@@ -1,0 +1,7995 @@
+{
+  "humanPlaytest": false,
+  "note": "固定戦略の再計算用。人間のプレイ評価は含まない。本番の評価式ではない。",
+  "baseline": {
+    "wrongFixWork": 6,
+    "rollbackLostValue": 14,
+    "unresolvedPenalty": 10,
+    "priorConfigurationPercent": 50,
+    "interruptFocus": null
+  },
+  "resources": {
+    "shippedValue": 20,
+    "focus": 4,
+    "customerLossPerTick": 4,
+    "otherValuePerTick": 2,
+    "investigationTicks": 2,
+    "correctFixTicks": 1,
+    "horizons": [2, 8],
+    "seeds": [0, 1]
+  },
+  "results": [
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 3,
+        "outstandingImpact": 12,
+        "unresolvedPenalty": 10,
+        "netValue": -11
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 5,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 6,
+        "customerLoss": 20,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 5
+      }
+    },
+    {
+      "factor": "wrongFixWork",
+      "level": 5,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 5,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 8,
+        "lostValue": 12,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 5
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 10,
+        "netValue": -15
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 8,
+        "lostValue": 12,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 5
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 8,
+        "lostValue": 12,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 12,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 12,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 8,
+        "lostValue": 12,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 7,
+        "lostValue": 13,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 4
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 10,
+        "netValue": -15
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 7,
+        "lostValue": 13,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 4
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 7,
+        "lostValue": 13,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "rollbackLostValue",
+      "level": 13,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 13,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 7,
+        "lostValue": 13,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 0,
+        "netValue": 7
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 0,
+        "netValue": 7
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 0,
+        "netValue": -5
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 0,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 2,
+        "netValue": 5
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 2,
+        "netValue": 5
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 2,
+        "netValue": -7
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 2,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 2,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 4,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 4,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 4,
+        "netValue": -9
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "unresolvedPenalty",
+      "level": 4,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 4,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 10,
+        "netValue": -15
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 56,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 56,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 10,
+        "netValue": -15
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "priorConfigurationPercent",
+      "level": 57,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 57,
+          "interruptFocus": null
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 17
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "interrupt-guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 2,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 10
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 0,
+      "strategy": "interrupt-rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 2,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -4
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "active",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 1,
+        "outstandingImpact": 4,
+        "unresolvedPenalty": 10,
+        "netValue": -3
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 1,
+        "remainingWork": 4,
+        "outstandingImpact": 16,
+        "unresolvedPenalty": 10,
+        "netValue": -15
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 2,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 3
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "interrupt-guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "recovering",
+        "resolvedTick": null,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 2,
+        "remainingWork": 5,
+        "outstandingImpact": 20,
+        "unresolvedPenalty": 10,
+        "netValue": -20
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 2,
+      "seed": 1,
+      "strategy": "interrupt-rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 2,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 2,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 0,
+        "customerLoss": 8,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -4
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "configuration",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 29
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "interrupt-guess",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 2,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 12,
+        "customerLoss": 8,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 22
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 0,
+      "strategy": "interrupt-rollback",
+      "initial": {
+        "version": 1,
+        "seed": 0,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "configuration",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 2,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 12,
+        "customerLoss": 8,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 8
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "investigate",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "recover",
+          "method": "code"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": "code",
+        "phase": "resolved",
+        "resolvedTick": 3,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 10,
+        "customerLoss": 12,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 16
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 6,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 4,
+        "customerLoss": 24,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -1
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 1,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 14,
+        "customerLoss": 4,
+        "focusSpent": 1,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 15
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "interrupt-guess",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "configuration"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 7,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 2,
+        "customerLoss": 28,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": -8
+      }
+    },
+    {
+      "factor": "interruptFocus",
+      "level": 0,
+      "horizon": 8,
+      "seed": 1,
+      "strategy": "interrupt-rollback",
+      "initial": {
+        "version": 1,
+        "seed": 1,
+        "tick": 0,
+        "horizon": 8,
+        "cause": "code",
+        "knownCause": null,
+        "phase": "active",
+        "workLeft": 0,
+        "method": null,
+        "focus": 4,
+        "focusSpent": 0,
+        "customerLoss": 0,
+        "shippedValue": 20,
+        "lostValue": 0,
+        "otherValue": 0,
+        "resolvedTick": null,
+        "inputs": [],
+        "rules": {
+          "wrongFixWork": 6,
+          "rollbackLostValue": 14,
+          "unresolvedPenalty": 10,
+          "priorConfigurationPercent": 50,
+          "interruptFocus": 0
+        }
+      },
+      "inputs": [
+        {
+          "type": "investigate"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "interrupt"
+        },
+        {
+          "type": "recover",
+          "method": "rollback"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        },
+        {
+          "type": "tick"
+        }
+      ],
+      "result": {
+        "knownCause": null,
+        "phase": "resolved",
+        "resolvedTick": 2,
+        "shippedValue": 6,
+        "lostValue": 14,
+        "otherValue": 12,
+        "customerLoss": 8,
+        "focusSpent": 2,
+        "remainingWork": 0,
+        "outstandingImpact": 0,
+        "unresolvedPenalty": 0,
+        "netValue": 8
+      }
+    }
+  ]
+}

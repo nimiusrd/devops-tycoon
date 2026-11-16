@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import comparison from '../../docs/prototypes/sprint-loadout-comparison.json';
+import factorComparison from '../../docs/prototypes/sprint-loadout-factor-comparison.json';
 import {
   beginSprintLoadout,
+  compareSprintLoadoutFactors,
   compareSprintLoadouts,
   createSprintLoadoutPrototype,
   exchangeSprintLoadoutCard,
   playSprintLoadoutCard,
   selectSprintLoadout,
   tickSprintLoadout,
+  type SprintLoadoutFactorRow,
 } from './sprintLoadout';
 
 describe('所持カードのスプリント持ち込み試作', () => {
@@ -138,5 +141,80 @@ describe('所持カードのスプリント持ち込み試作', () => {
     const audit = compareSprintLoadouts('RI-187', 'security-audit');
     expect(audit[1].auditQualityMet).toBe(true);
     expect(audit[0].auditQualityMet).toBe(false);
+  });
+
+  it('要因を一つずつ動かした固定戦略を再計算し、優劣の反転位置を固定する', () => {
+    const rows = compareSprintLoadoutFactors();
+    expect(rows).toEqual(factorComparison);
+    expect(rows.every((row) => row.taskKind === 'routine' && row.narrow.timedOut)).toBe(true);
+    const at = (
+      factor: SprintLoadoutFactorRow['factor'],
+      value: string | number,
+      seed: string,
+      forecast: 'big-release' | 'security-audit',
+    ) => {
+      const row = rows.find(
+        (item) =>
+          item.factor === factor &&
+          item.value === value &&
+          item.seed === seed &&
+          item.forecast === forecast,
+      );
+      expect(row).toBeDefined();
+      return row!;
+    };
+    for (const row of rows.filter((item) => item.factor === 'control')) {
+      const base = compareSprintLoadouts(row.seed, row.forecast);
+      const matched = base.find(
+        (item) => item.strategy === (row.forecast === 'big-release' ? 'speed' : 'quality'),
+      )!;
+      const wide = base.find((item) => item.strategy === 'broad')!;
+      expect(row.narrow.delivered).toBe(matched.delivered);
+      expect(row.narrow.quality).toBe(matched.quality);
+      expect(row.narrow.focusSpent).toBe(matched.focusSpent);
+      expect(row.narrow.played[0]).toBe(matched.selected);
+      expect(row.broad.delivered).toBe(wide.delivered);
+      expect(row.broad.quality).toBe(wide.quality);
+      expect(row.broad.focusSpent).toBe(wide.focusSpent);
+      expect(row.broad.played[0]).toBe(wide.selected);
+    }
+    expect(at('control', 'big-release', 'RI-187:2', 'big-release').verdict).toBe('narrow');
+    expect(at('plays', 2, 'RI-187:1', 'big-release').verdict).toBe('broad');
+    expect(at('plays', 3, 'RI-187:1', 'big-release').verdict).toBe('tie');
+    expect(at('plays', 3, 'RI-187:2', 'big-release').verdict).toBe('broad');
+    expect(at('plays', 2, 'RI-187', 'security-audit').verdict).toBe('narrow');
+    for (const burning of [0, 1, 2, 3, 4]) {
+      expect(at('burning', burning, 'RI-187:2', 'big-release').verdict).toBe('broad');
+    }
+    for (const burning of [5, 6, 7, 8]) {
+      expect(at('burning', burning, 'RI-187:2', 'big-release').verdict).toBe('narrow');
+    }
+    expect(at('burning', 4, 'RI-187:2', 'big-release').narrow.delivered).toBe(44);
+    expect(at('burning', 5, 'RI-187:2', 'big-release').narrow.delivered).toBe(43);
+    expect(at('burning', 5, 'RI-187:2', 'big-release').broad.delivered).toBe(38);
+    const release = at('control', 'big-release', 'RI-187', 'big-release');
+    expect(at('shop', 'auto-test', 'RI-187', 'big-release').narrow).toEqual(release.narrow);
+    expect(at('shop', 'copilot', 'RI-187:2', 'big-release').verdict).toBe('tie');
+    const crowded = at('shop', 'copilot', 'RI-187', 'security-audit');
+    expect(crowded.verdict).toBe('narrow');
+    expect(crowded.broad.played).toEqual(['review-bot']);
+    expect(crowded.broad.delivered).toBe(62);
+    expect(crowded.broad.auditQualityMet).toBe(false);
+    expect(at('shop', 'auto-test', 'RI-187', 'security-audit').verdict).toBe('tie');
+    expect(at('shop', 'pr-size-limit', 'RI-187:2', 'security-audit').verdict).toBe('narrow');
+    const weakCopy = at('level', 2, 'RI-187:1', 'security-audit');
+    expect(at('level', 1, 'RI-187:1', 'security-audit').verdict).toBe('tie');
+    expect(weakCopy.verdict).toBe('narrow');
+    expect(weakCopy.narrow.playedLevels).toEqual([2]);
+    expect(weakCopy.broad.playedLevels).toEqual([1]);
+    const surprise = at('surprise', 1, 'RI-187', 'security-audit');
+    expect(surprise.narrow.inputs[0]).toBe('surprise-interrupt');
+    expect(surprise.verdict).toBe(
+      at('control', 'security-audit', 'RI-187', 'security-audit').verdict,
+    );
+    expect(at('surprise', 1, 'RI-187', 'big-release').narrow.inputs[0]).toBe('surprise-rejected');
+    expect(at('surprise', 2, 'RI-187', 'security-audit').narrow.inputs[1]).toBe(
+      'surprise-rejected',
+    );
   });
 });

@@ -1,0 +1,6096 @@
+{
+  "conditions": {
+    "seed": "RI-175",
+    "progresses": [4, 1],
+    "horizon": 8,
+    "focus": 4,
+    "decision": {
+      "continue": "continue",
+      "checkpoint": "checkpoint",
+      "reset": "reset",
+      "score": "netValue"
+    },
+    "baseline": {
+      "saveCapacity": 6,
+      "resumeTicks": 1,
+      "urgentAppears": 0
+    },
+    "saveCapacityDefinition": "チェックポイント時に残す進捗の上限。超えた分は捨てる。集中力は1",
+    "resumeTicksDefinition": "Codingへ戻るまでのtick。進捗は増えない。集中力は開始時に1。追加tickは時間だけ。0は時間を進めない",
+    "urgentAppearsDefinition": "そのtickの操作後にbacklogへ出る。期限3は動かさない。出る前の固定戦略は機能を進める",
+    "held": {
+      "saveCapacity": "容量だけを動かす。再開tick1、出現0。期末8、集中力4、期限3",
+      "resumeTicks": "再開tickだけを動かす。容量6、出現0。集中力は再開開始時の1のまま",
+      "urgentAppears": "出現tickだけを動かす。容量6、再開tick1。緊急の期限は3"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "saveCapacity": [
+      {
+        "axis": "saveCapacity",
+        "parameter": "0",
+        "rules": {
+          "saveCapacity": 0,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 4,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 4,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "saveCapacity",
+        "parameter": "1",
+        "rules": {
+          "saveCapacity": 1,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "saveCapacity",
+        "parameter": "2",
+        "rules": {
+          "saveCapacity": 2,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "tie:continue,checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 18,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "saveCapacity",
+        "parameter": "3",
+        "rules": {
+          "saveCapacity": 3,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "saveCapacity",
+        "parameter": "4",
+        "rules": {
+          "saveCapacity": 4,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "saveCapacity",
+        "parameter": "5",
+        "rules": {
+          "saveCapacity": 5,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "saveCapacity",
+        "parameter": "6",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "resumeTicks": [
+      {
+        "axis": "resumeTicks",
+        "parameter": "0",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 0,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "tie:continue,checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 18,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "resumeTicks",
+        "parameter": "1",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "resumeTicks",
+        "parameter": "2",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 2,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 4,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "resumeTicks",
+        "parameter": "3",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 3,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "tie:continue,checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 18,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 3,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "resumeTicks",
+        "parameter": "4",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 4,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 2,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "resumeTicks",
+        "parameter": "5",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 5,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 4,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "resume"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 1,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "urgentAppears": [
+      {
+        "axis": "urgentAppears",
+        "parameter": "0",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 0
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "checkpoint",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 36,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 0,
+                  "netValue": 34
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 12
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 14,
+                  "penalty": 0,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 3,
+                  "unfinishedValue": 22,
+                  "netValue": 14
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "urgentAppears",
+        "parameter": "1",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 1
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 2,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 14
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 4,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 22,
+                  "netValue": -6
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 22,
+                  "netValue": -8
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 4,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 22,
+                  "netValue": -6
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "urgentAppears",
+        "parameter": "2",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 2
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "tie:continue,checkpoint,reset",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 4,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 5,
+                  "unfinishedValue": 22,
+                  "netValue": -8
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 3,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 5,
+                  "unfinishedValue": 22,
+                  "netValue": -6
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "urgentAppears",
+        "parameter": "3",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 3
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "tie:continue,checkpoint,reset",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 5,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 5,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 5,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 6,
+                  "unfinishedValue": 22,
+                  "netValue": -8
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 2,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 6,
+                  "unfinishedValue": 22,
+                  "netValue": -6
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "urgentAppears",
+        "parameter": "4",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 4
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "tie:continue,checkpoint,reset",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 6,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 6,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 6,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "continue",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "checkpoint"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "resume"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 2,
+                  "slotFree": false,
+                  "featureProgress": 5,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 22,
+                  "netValue": -8
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "reset"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "feature"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 0,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": false,
+                  "featureProgress": 1,
+                  "featureStage": "coding",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 22,
+                  "netValue": -6
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "urgentAppears",
+        "parameter": "5",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 5
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "tie:continue,checkpoint,reset",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "tie:continue,checkpoint,reset",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 7,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "urgentAppears",
+        "parameter": "6",
+        "rules": {
+          "saveCapacity": 6,
+          "resumeTicks": 1,
+          "urgentAppears": 6
+        },
+        "boards": [
+          {
+            "progress": 4,
+            "preference": "tie:continue,checkpoint,reset",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 8,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 8,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 8,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              }
+            ]
+          },
+          {
+            "progress": 1,
+            "preference": "tie:continue,checkpoint,reset",
+            "runs": [
+              {
+                "strategy": "continue",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 8,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "checkpoint",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 8,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              },
+              {
+                "strategy": "reset",
+                "inputs": [
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "wait"
+                  },
+                  {
+                    "type": "start",
+                    "id": "urgent"
+                  },
+                  {
+                    "type": "work"
+                  },
+                  {
+                    "type": "work"
+                  }
+                ],
+                "result": {
+                  "value": 22,
+                  "penalty": 6,
+                  "focusSpent": 0,
+                  "slotFree": true,
+                  "featureProgress": 6,
+                  "featureStage": "done",
+                  "urgentCompletedTick": 8,
+                  "unfinishedValue": 0,
+                  "netValue": 16
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "saveCapacity",
+      "progress": 4,
+      "before": {
+        "parameter": "1",
+        "preference": "continue",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 12,
+          "reset": 14
+        }
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "tie:continue,checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 16,
+          "reset": 14
+        }
+      }
+    },
+    {
+      "axis": "saveCapacity",
+      "progress": 4,
+      "before": {
+        "parameter": "2",
+        "preference": "tie:continue,checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 16,
+          "reset": 14
+        }
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 34,
+          "reset": 14
+        }
+      }
+    },
+    {
+      "axis": "resumeTicks",
+      "progress": 1,
+      "before": {
+        "parameter": "0",
+        "preference": "tie:continue,checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 16,
+          "reset": 14
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "continue",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 12,
+          "reset": 14
+        }
+      }
+    },
+    {
+      "axis": "resumeTicks",
+      "progress": 4,
+      "before": {
+        "parameter": "2",
+        "preference": "checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 34,
+          "reset": 14
+        }
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "tie:continue,checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 16,
+          "reset": 14
+        }
+      }
+    },
+    {
+      "axis": "resumeTicks",
+      "progress": 4,
+      "before": {
+        "parameter": "3",
+        "preference": "tie:continue,checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 16,
+          "reset": 14
+        }
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "continue",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 12,
+          "reset": 14
+        }
+      }
+    },
+    {
+      "axis": "urgentAppears",
+      "progress": 4,
+      "before": {
+        "parameter": "0",
+        "preference": "checkpoint",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 34,
+          "reset": 14
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "continue",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 14,
+          "reset": -6
+        }
+      }
+    },
+    {
+      "axis": "urgentAppears",
+      "progress": 4,
+      "before": {
+        "parameter": "1",
+        "preference": "continue",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 14,
+          "reset": -6
+        }
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "tie:continue,checkpoint,reset",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 16,
+          "reset": 16
+        }
+      }
+    },
+    {
+      "axis": "urgentAppears",
+      "progress": 1,
+      "before": {
+        "parameter": "4",
+        "preference": "continue",
+        "nets": {
+          "continue": 16,
+          "checkpoint": -8,
+          "reset": -6
+        }
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "tie:continue,checkpoint,reset",
+        "nets": {
+          "continue": 16,
+          "checkpoint": 16,
+          "reset": 16
+        }
+      }
+    }
+  ]
+}

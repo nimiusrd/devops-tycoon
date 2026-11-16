@@ -1,0 +1,6921 @@
+{
+  "seed": "RI-163",
+  "baseline": {
+    "debt": {
+      "payment": 4,
+      "auth": 4
+    },
+    "domains": ["payment", "payment", "auth"],
+    "crossIndexes": [],
+    "horizon": 12,
+    "repairCost": 2,
+    "repairReduction": 4
+  },
+  "resources": {
+    "horizon": 12,
+    "jobValue": 8,
+    "jobCount": 3,
+    "initialDebt": {
+      "payment": 4,
+      "auth": 4
+    },
+    "repairCost": 2,
+    "repairReduction": 4,
+    "demand": "payment",
+    "announcedJobs": ["payment", "payment", "auth"]
+  },
+  "scoring": "出荷価値が高い方を上とする。同じなら同点とし、会社負債では順位を割らない。",
+  "fixedStrategies": true,
+  "humanPlaytest": false,
+  "productionIntegration": false,
+  "randomDraws": false,
+  "numbersAreProductionBalance": false,
+  "control": {
+    "matchesFirstComparison": true,
+    "demand": "payment",
+    "values": {
+      "skip": 16,
+      "payment": 24,
+      "auth": 16
+    }
+  },
+  "factors": {
+    "forecastAccuracy": {
+      "changed": ["domains"],
+      "front": [
+        {
+          "level": 0,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"],
+          "actualMajority": "payment"
+        },
+        {
+          "level": 1,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["auth", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 5
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 1,
+                  "auth": 5
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 2
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 24
+          },
+          "leaders": ["auth"],
+          "actualMajority": "auth"
+        },
+        {
+          "level": 2,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["auth", "auth", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 4,
+                  "auth": 6
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 0,
+                  "auth": 6
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 4,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": ["auth", "work", "work", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 4,
+                  "auth": 3
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 8,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 24
+          },
+          "leaders": ["auth"],
+          "actualMajority": "auth"
+        },
+        {
+          "level": 3,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["auth", "auth", "payment"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 4,
+                  "auth": 6
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 0,
+                  "auth": 6
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 2
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 24
+          },
+          "leaders": ["auth"],
+          "actualMajority": "auth"
+        }
+      ],
+      "tail": [
+        {
+          "level": 0,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"],
+          "actualMajority": "payment"
+        },
+        {
+          "level": 1,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "payment"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": ["payment", "work", "work", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 3,
+                  "auth": 4
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 8,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 4,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"],
+          "actualMajority": "payment"
+        }
+      ]
+    },
+    "initialDebtSkew": {
+      "changed": ["debt"],
+      "totalDebt": 8,
+      "points": [
+        {
+          "level": 0,
+          "board": {
+            "debt": {
+              "payment": 0,
+              "auth": 8
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 9
+                },
+                "techDebt": 11,
+                "repairEffort": 0,
+                "workEffort": 11,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 8
+                },
+                "techDebt": 10,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 24,
+            "payment": 16,
+            "auth": 24
+          },
+          "leaders": ["skip", "auth"]
+        },
+        {
+          "level": 1,
+          "board": {
+            "debt": {
+              "payment": 1,
+              "auth": 7
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 3,
+                  "auth": 8
+                },
+                "techDebt": 11,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 7
+                },
+                "techDebt": 9,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 3,
+                  "auth": 4
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 24,
+            "payment": 16,
+            "auth": 24
+          },
+          "leaders": ["skip", "auth"]
+        },
+        {
+          "level": 2,
+          "board": {
+            "debt": {
+              "payment": 2,
+              "auth": 6
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 4,
+                  "auth": 7
+                },
+                "techDebt": 11,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 7
+                },
+                "techDebt": 9,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 4,
+                  "auth": 3
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 24,
+            "payment": 24,
+            "auth": 24
+          },
+          "leaders": ["skip", "payment", "auth"]
+        },
+        {
+          "level": 3,
+          "board": {
+            "debt": {
+              "payment": 3,
+              "auth": 5
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 5
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 6
+                },
+                "techDebt": 8,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 1
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": 4,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": 6,
+          "board": {
+            "debt": {
+              "payment": 6,
+              "auth": 2
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 8,
+                  "auth": 2
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 4,
+                  "auth": 3
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 7,
+                  "auth": 0
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 8
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": 8,
+          "board": {
+            "debt": {
+              "payment": 8,
+              "auth": 0
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 9,
+                  "auth": 0
+                },
+                "techDebt": 9,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 9,
+                  "auth": 0
+                },
+                "techDebt": 9,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 3,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 8,
+            "payment": 16,
+            "auth": 8
+          },
+          "leaders": ["payment"]
+        }
+      ]
+    },
+    "repairEffort": {
+      "changed": ["repairCost"],
+      "points": [
+        {
+          "level": 0,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 0,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 0,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 1
+                },
+                "techDebt": 7,
+                "repairEffort": 0,
+                "workEffort": 11,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 24
+          },
+          "leaders": ["payment", "auth"]
+        },
+        {
+          "level": 1,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 1,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 1,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 1
+                },
+                "techDebt": 7,
+                "repairEffort": 1,
+                "workEffort": 11,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 24
+          },
+          "leaders": ["payment", "auth"]
+        },
+        {
+          "level": 2,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": 3,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 3,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 3,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 3,
+                "workEffort": 9,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": 4,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 4,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": ["payment", "work", "work", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 4
+                },
+                "techDebt": 6,
+                "repairEffort": 4,
+                "workEffort": 8,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": ["auth", "work", "work", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 0
+                },
+                "techDebt": 5,
+                "repairEffort": 4,
+                "workEffort": 8,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 8
+          },
+          "leaders": ["skip", "payment"]
+        },
+        {
+          "level": 5,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 5,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": ["payment", "work", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 4
+                },
+                "techDebt": 6,
+                "repairEffort": 5,
+                "workEffort": 7,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": ["auth", "work", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 0
+                },
+                "techDebt": 5,
+                "repairEffort": 5,
+                "workEffort": 7,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 2,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 8
+          },
+          "leaders": ["skip", "payment"]
+        },
+        {
+          "level": 6,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 6,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": ["payment", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 4
+                },
+                "techDebt": 6,
+                "repairEffort": 6,
+                "workEffort": 6,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 3,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": ["auth", "work", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 0
+                },
+                "techDebt": 5,
+                "repairEffort": 6,
+                "workEffort": 6,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 3,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 8
+          },
+          "leaders": ["skip", "payment"]
+        },
+        {
+          "level": 7,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 7,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": ["payment", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 4
+                },
+                "techDebt": 6,
+                "repairEffort": 7,
+                "workEffort": 5,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": ["auth", "work", "work", "work", "work", "work"],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 0
+                },
+                "techDebt": 5,
+                "repairEffort": 7,
+                "workEffort": 5,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 4,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 8
+          },
+          "leaders": ["skip", "payment"]
+        },
+        {
+          "level": 8,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 8,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": ["payment", "work", "work", "work", "work"],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 1,
+                  "auth": 4
+                },
+                "techDebt": 5,
+                "repairEffort": 8,
+                "workEffort": 4,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": ["auth", "work", "work", "work", "work"],
+              "result": {
+                "value": 8,
+                "done": ["job-0"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 0
+                },
+                "techDebt": 5,
+                "repairEffort": 8,
+                "workEffort": 4,
+                "pending": [
+                  {
+                    "id": "job-1",
+                    "domain": "payment",
+                    "remaining": null,
+                    "done": false
+                  },
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": null,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 8,
+            "auth": 8
+          },
+          "leaders": ["skip"]
+        }
+      ]
+    },
+    "repairReduction": {
+      "changed": ["repairReduction"],
+      "points": [
+        {
+          "level": 0,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 0
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 3,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 3,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 16
+          },
+          "leaders": ["skip", "payment", "auth"]
+        },
+        {
+          "level": 1,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 1
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 4
+                },
+                "techDebt": 9,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 3
+                },
+                "techDebt": 9,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 3,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 16
+          },
+          "leaders": ["skip", "payment", "auth"]
+        },
+        {
+          "level": 2,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 2
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 4,
+                  "auth": 4
+                },
+                "techDebt": 8,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 2
+                },
+                "techDebt": 8,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 16
+          },
+          "leaders": ["skip", "payment", "auth"]
+        },
+        {
+          "level": 3,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 3
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 3,
+                  "auth": 5
+                },
+                "techDebt": 8,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 1
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": 4,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": 5,
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 5
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        }
+      ]
+    },
+    "jobOrder": {
+      "changed": ["domains"],
+      "points": [
+        {
+          "level": "payment,payment,auth",
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": "payment,auth,payment",
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "auth", "payment"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 5
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 1
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": "auth,payment,payment",
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["auth", "payment", "payment"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 5
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 5,
+                  "auth": 1
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "payment",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        }
+      ]
+    },
+    "crossDomain": {
+      "changed": ["crossIndexes"],
+      "cost": "2 + ceil(payment/2) + ceil(auth/2)",
+      "points": [
+        {
+          "level": "none",
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 9,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 1,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        },
+        {
+          "level": "0",
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [0],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 5
+                },
+                "techDebt": 11,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 4,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 1
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-0",
+                    "domain": "auth",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 16
+          },
+          "leaders": ["skip", "payment", "auth"]
+        },
+        {
+          "level": "1",
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [1],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 5
+                },
+                "techDebt": 11,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 4,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 2,
+                  "auth": 5
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 1
+                },
+                "techDebt": 7,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 2,
+                    "done": false
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 16,
+            "auth": 16
+          },
+          "leaders": ["skip", "payment", "auth"]
+        },
+        {
+          "level": "2",
+          "board": {
+            "debt": {
+              "payment": 4,
+              "auth": 4
+            },
+            "domains": ["payment", "payment", "auth"],
+            "crossIndexes": [2],
+            "horizon": 12,
+            "repairCost": 2,
+            "repairReduction": 4
+          },
+          "plays": [
+            {
+              "choice": "skip",
+              "inputs": [
+                "skip",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 4
+                },
+                "techDebt": 10,
+                "repairEffort": 0,
+                "workEffort": 12,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 4,
+                    "done": false,
+                    "spans": ["payment", "auth"]
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "payment",
+              "inputs": [
+                "payment",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 24,
+                "done": ["job-0", "job-1", "job-2"],
+                "debt": {
+                  "payment": 3,
+                  "auth": 5
+                },
+                "techDebt": 8,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-2",
+                    "domain": "auth",
+                    "added": 1
+                  }
+                ]
+              }
+            },
+            {
+              "choice": "auth",
+              "inputs": [
+                "auth",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work",
+                "work"
+              ],
+              "result": {
+                "value": 16,
+                "done": ["job-0", "job-1"],
+                "debt": {
+                  "payment": 6,
+                  "auth": 0
+                },
+                "techDebt": 6,
+                "repairEffort": 2,
+                "workEffort": 10,
+                "pending": [
+                  {
+                    "id": "job-2",
+                    "domain": "auth",
+                    "remaining": 4,
+                    "done": false,
+                    "spans": ["payment", "auth"]
+                  }
+                ],
+                "ledger": [
+                  {
+                    "jobId": "job-0",
+                    "domain": "payment",
+                    "added": 1
+                  },
+                  {
+                    "jobId": "job-1",
+                    "domain": "payment",
+                    "added": 1
+                  }
+                ]
+              }
+            }
+          ],
+          "values": {
+            "skip": 16,
+            "payment": 24,
+            "auth": 16
+          },
+          "leaders": ["payment"]
+        }
+      ]
+    },
+    "carriedPeriod": {
+      "changed": ["secondPeriodDemand"],
+      "perPeriodResourcesMatchBaseline": true,
+      "unfinishedJobsCarry": false,
+      "rule": "各期の開始時に、その期の仕事が多い領域を返す",
+      "ruleReversed": false,
+      "points": [
+        {
+          "level": "payment",
+          "secondDemand": "payment",
+          "plans": [
+            {
+              "plan": "skip",
+              "choices": ["skip", "skip"],
+              "value": 32,
+              "finalDebt": {
+                "payment": 8,
+                "auth": 4
+              },
+              "finalTechDebt": 12,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "skip",
+                  "inputs": [
+                    "skip",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 16,
+                    "done": ["job-0", "job-1"],
+                    "debt": {
+                      "payment": 6,
+                      "auth": 4
+                    },
+                    "techDebt": 10,
+                    "repairEffort": 0,
+                    "workEffort": 12,
+                    "pending": [
+                      {
+                        "id": "job-2",
+                        "domain": "auth",
+                        "remaining": 1,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 6,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "skip",
+                  "inputs": [
+                    "skip",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 16,
+                    "done": ["job-0", "job-1"],
+                    "debt": {
+                      "payment": 8,
+                      "auth": 4
+                    },
+                    "techDebt": 12,
+                    "repairEffort": 0,
+                    "workEffort": 12,
+                    "pending": [
+                      {
+                        "id": "job-2",
+                        "domain": "auth",
+                        "remaining": 3,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "plan": "payment",
+              "choices": ["payment", "payment"],
+              "value": 48,
+              "finalDebt": {
+                "payment": 2,
+                "auth": 6
+              },
+              "finalTechDebt": 8,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "payment",
+                  "inputs": [
+                    "payment",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "techDebt": 7,
+                    "repairEffort": 2,
+                    "workEffort": 9,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "payment",
+                  "inputs": [
+                    "payment",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 2,
+                      "auth": 6
+                    },
+                    "techDebt": 8,
+                    "repairEffort": 2,
+                    "workEffort": 10,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "plan": "auth",
+              "choices": ["auth", "auth"],
+              "value": 24,
+              "finalDebt": {
+                "payment": 7,
+                "auth": 0
+              },
+              "finalTechDebt": 7,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "auth",
+                  "inputs": [
+                    "auth",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 16,
+                    "done": ["job-0", "job-1"],
+                    "debt": {
+                      "payment": 6,
+                      "auth": 0
+                    },
+                    "techDebt": 6,
+                    "repairEffort": 2,
+                    "workEffort": 10,
+                    "pending": [
+                      {
+                        "id": "job-2",
+                        "domain": "auth",
+                        "remaining": 1,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 6,
+                      "auth": 0
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "auth",
+                  "inputs": [
+                    "auth",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 8,
+                    "done": ["job-0"],
+                    "debt": {
+                      "payment": 7,
+                      "auth": 0
+                    },
+                    "techDebt": 7,
+                    "repairEffort": 2,
+                    "workEffort": 10,
+                    "pending": [
+                      {
+                        "id": "job-1",
+                        "domain": "payment",
+                        "remaining": 1,
+                        "done": false
+                      },
+                      {
+                        "id": "job-2",
+                        "domain": "auth",
+                        "remaining": null,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "plan": "match",
+              "choices": ["payment", "payment"],
+              "value": 48,
+              "finalDebt": {
+                "payment": 2,
+                "auth": 6
+              },
+              "finalTechDebt": 8,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "payment",
+                  "inputs": [
+                    "payment",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "techDebt": 7,
+                    "repairEffort": 2,
+                    "workEffort": 9,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "payment",
+                  "inputs": [
+                    "payment",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 2,
+                      "auth": 6
+                    },
+                    "techDebt": 8,
+                    "repairEffort": 2,
+                    "workEffort": 10,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "values": {
+            "skip": 32,
+            "payment": 48,
+            "auth": 24,
+            "match": 48
+          },
+          "lockedLeaders": ["payment"],
+          "ruleLeaders": ["payment", "match"],
+          "sameInputsAsRepeatingPayment": true,
+          "ruleReversed": false
+        },
+        {
+          "level": "auth",
+          "secondDemand": "auth",
+          "plans": [
+            {
+              "plan": "skip",
+              "choices": ["skip", "skip"],
+              "value": 32,
+              "finalDebt": {
+                "payment": 6,
+                "auth": 6
+              },
+              "finalTechDebt": 12,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "skip",
+                  "inputs": [
+                    "skip",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 16,
+                    "done": ["job-0", "job-1"],
+                    "debt": {
+                      "payment": 6,
+                      "auth": 4
+                    },
+                    "techDebt": 10,
+                    "repairEffort": 0,
+                    "workEffort": 12,
+                    "pending": [
+                      {
+                        "id": "job-2",
+                        "domain": "auth",
+                        "remaining": 1,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 6,
+                      "auth": 4
+                    },
+                    "domains": ["auth", "auth", "payment"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "skip",
+                  "inputs": [
+                    "skip",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 16,
+                    "done": ["job-0", "job-1"],
+                    "debt": {
+                      "payment": 6,
+                      "auth": 6
+                    },
+                    "techDebt": 12,
+                    "repairEffort": 0,
+                    "workEffort": 12,
+                    "pending": [
+                      {
+                        "id": "job-2",
+                        "domain": "payment",
+                        "remaining": 2,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "auth",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "plan": "payment",
+              "choices": ["payment", "payment"],
+              "value": 40,
+              "finalDebt": {
+                "payment": 0,
+                "auth": 7
+              },
+              "finalTechDebt": 7,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "payment",
+                  "inputs": [
+                    "payment",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "techDebt": 7,
+                    "repairEffort": 2,
+                    "workEffort": 9,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "domains": ["auth", "auth", "payment"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "payment",
+                  "inputs": [
+                    "payment",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 16,
+                    "done": ["job-0", "job-1"],
+                    "debt": {
+                      "payment": 0,
+                      "auth": 7
+                    },
+                    "techDebt": 7,
+                    "repairEffort": 2,
+                    "workEffort": 10,
+                    "pending": [
+                      {
+                        "id": "job-2",
+                        "domain": "payment",
+                        "remaining": null,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "auth",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "plan": "auth",
+              "choices": ["auth", "auth"],
+              "value": 40,
+              "finalDebt": {
+                "payment": 7,
+                "auth": 2
+              },
+              "finalTechDebt": 9,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "auth",
+                  "inputs": [
+                    "auth",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 16,
+                    "done": ["job-0", "job-1"],
+                    "debt": {
+                      "payment": 6,
+                      "auth": 0
+                    },
+                    "techDebt": 6,
+                    "repairEffort": 2,
+                    "workEffort": 10,
+                    "pending": [
+                      {
+                        "id": "job-2",
+                        "domain": "auth",
+                        "remaining": 1,
+                        "done": false
+                      }
+                    ],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 6,
+                      "auth": 0
+                    },
+                    "domains": ["auth", "auth", "payment"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "auth",
+                  "inputs": [
+                    "auth",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 7,
+                      "auth": 2
+                    },
+                    "techDebt": 9,
+                    "repairEffort": 2,
+                    "workEffort": 10,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "auth",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "auth",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "plan": "match",
+              "choices": ["payment", "auth"],
+              "value": 48,
+              "finalDebt": {
+                "payment": 3,
+                "auth": 3
+              },
+              "finalTechDebt": 6,
+              "periods": [
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 4,
+                      "auth": 4
+                    },
+                    "domains": ["payment", "payment", "auth"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "payment",
+                  "inputs": [
+                    "payment",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "techDebt": 7,
+                    "repairEffort": 2,
+                    "workEffort": 9,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "payment",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "auth",
+                        "added": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "board": {
+                    "debt": {
+                      "payment": 2,
+                      "auth": 5
+                    },
+                    "domains": ["auth", "auth", "payment"],
+                    "crossIndexes": [],
+                    "horizon": 12,
+                    "repairCost": 2,
+                    "repairReduction": 4
+                  },
+                  "choice": "auth",
+                  "inputs": [
+                    "auth",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work",
+                    "work"
+                  ],
+                  "result": {
+                    "value": 24,
+                    "done": ["job-0", "job-1", "job-2"],
+                    "debt": {
+                      "payment": 3,
+                      "auth": 3
+                    },
+                    "techDebt": 6,
+                    "repairEffort": 2,
+                    "workEffort": 9,
+                    "pending": [],
+                    "ledger": [
+                      {
+                        "jobId": "job-0",
+                        "domain": "auth",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-1",
+                        "domain": "auth",
+                        "added": 1
+                      },
+                      {
+                        "jobId": "job-2",
+                        "domain": "payment",
+                        "added": 1
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "values": {
+            "skip": 32,
+            "payment": 40,
+            "auth": 40,
+            "match": 48
+          },
+          "lockedLeaders": ["payment", "auth"],
+          "ruleLeaders": ["match"],
+          "sameInputsAsRepeatingPayment": false,
+          "ruleReversed": false
+        }
+      ]
+    }
+  },
+  "reversals": [
+    {
+      "factor": "forecastAccuracy",
+      "pattern": "front",
+      "beforeLevel": 0,
+      "afterLevel": 1,
+      "beforeLeaders": ["payment"],
+      "afterLeaders": ["auth"],
+      "beforeValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 16
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 16,
+        "auth": 24
+      }
+    },
+    {
+      "factor": "initialDebtSkew",
+      "pattern": null,
+      "beforeLevel": 1,
+      "afterLevel": 2,
+      "beforeLeaders": ["skip", "auth"],
+      "afterLeaders": ["skip", "payment", "auth"],
+      "beforeValues": {
+        "skip": 24,
+        "payment": 16,
+        "auth": 24
+      },
+      "afterValues": {
+        "skip": 24,
+        "payment": 24,
+        "auth": 24
+      }
+    },
+    {
+      "factor": "initialDebtSkew",
+      "pattern": null,
+      "beforeLevel": 2,
+      "afterLevel": 3,
+      "beforeLeaders": ["skip", "payment", "auth"],
+      "afterLeaders": ["payment"],
+      "beforeValues": {
+        "skip": 24,
+        "payment": 24,
+        "auth": 24
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 16
+      }
+    },
+    {
+      "factor": "repairEffort",
+      "pattern": null,
+      "beforeLevel": 1,
+      "afterLevel": 2,
+      "beforeLeaders": ["payment", "auth"],
+      "afterLeaders": ["payment"],
+      "beforeValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 24
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 16
+      }
+    },
+    {
+      "factor": "repairEffort",
+      "pattern": null,
+      "beforeLevel": 3,
+      "afterLevel": 4,
+      "beforeLeaders": ["payment"],
+      "afterLeaders": ["skip", "payment"],
+      "beforeValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 16
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 16,
+        "auth": 8
+      }
+    },
+    {
+      "factor": "repairEffort",
+      "pattern": null,
+      "beforeLevel": 7,
+      "afterLevel": 8,
+      "beforeLeaders": ["skip", "payment"],
+      "afterLeaders": ["skip"],
+      "beforeValues": {
+        "skip": 16,
+        "payment": 16,
+        "auth": 8
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 8,
+        "auth": 8
+      }
+    },
+    {
+      "factor": "repairReduction",
+      "pattern": null,
+      "beforeLevel": 2,
+      "afterLevel": 3,
+      "beforeLeaders": ["skip", "payment", "auth"],
+      "afterLeaders": ["payment"],
+      "beforeValues": {
+        "skip": 16,
+        "payment": 16,
+        "auth": 16
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 16
+      }
+    },
+    {
+      "factor": "crossDomain",
+      "pattern": null,
+      "beforeLevel": "none",
+      "afterLevel": "0",
+      "beforeLeaders": ["payment"],
+      "afterLeaders": ["skip", "payment", "auth"],
+      "beforeValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 16
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 16,
+        "auth": 16
+      }
+    },
+    {
+      "factor": "crossDomain",
+      "pattern": null,
+      "beforeLevel": "1",
+      "afterLevel": "2",
+      "beforeLeaders": ["skip", "payment", "auth"],
+      "afterLeaders": ["payment"],
+      "beforeValues": {
+        "skip": 16,
+        "payment": 16,
+        "auth": 16
+      },
+      "afterValues": {
+        "skip": 16,
+        "payment": 24,
+        "auth": 16
+      }
+    },
+    {
+      "factor": "carriedPeriod",
+      "pattern": "repeat-same-domain",
+      "beforeLevel": "payment",
+      "afterLevel": "auth",
+      "beforeLeaders": ["payment"],
+      "afterLeaders": ["payment", "auth"],
+      "beforeValues": {
+        "skip": 32,
+        "payment": 48,
+        "auth": 24
+      },
+      "afterValues": {
+        "skip": 32,
+        "payment": 40,
+        "auth": 40
+      }
+    }
+  ],
+  "unresolved": "未完了仕事の残工数は期の境で捨てている。需要が入れ替わる次期へその残工数を繰り越したとき、決済返済の繰り返しと認証返済の繰り返しの出荷40対40がどちらへ崩れるかは未計算。"
+}

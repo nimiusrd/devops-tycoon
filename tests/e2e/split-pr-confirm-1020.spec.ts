@@ -7,6 +7,7 @@ import {
 } from '../../src/render/splitPrConfirmView';
 
 type GameWindow = Window & {
+  splitPrConfirmationObserved?: boolean;
   game?: {
     getState(): {
       sprint?: {
@@ -57,28 +58,47 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(page.getByTestId('action-target-picker')).toBeVisible();
     const option = page.getByTestId(`action-target-option-${taskId}`);
     await expect(option).toBeEnabled();
+
+    const announce = formatSplitPrConfirmAnnouncement(taskId);
+    // 通常の強調は175msだけなので、通信を挟まず同じDOM更新で3値を観測する。
+    // 操作後のpollだけではCI負荷で演出の寿命を過ぎ、表示済みの一致を見逃す。
+    await page.evaluate(
+      ({ expectedId, announcement }) => {
+        (window as GameWindow).splitPrConfirmationObserved = false;
+        const observer = new MutationObserver(() => {
+          const boardId = document
+            .querySelector('[data-testid="board"]')
+            ?.getAttribute('data-split-confirm-task-id');
+          const pixiId = document
+            .querySelector('[data-testid="board-pixi-mount"]')
+            ?.getAttribute('data-split-confirm-task-id');
+          const spoken = document
+            .querySelector('[data-testid="split-pr-confirm-announce"]')
+            ?.textContent?.trim();
+          if (boardId === expectedId && pixiId === expectedId && spoken === announcement) {
+            (window as GameWindow).splitPrConfirmationObserved = true;
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.body, {
+          attributes: true,
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      },
+      { expectedId: String(taskId), announcement: announce },
+    );
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('action-target-picker')).toHaveCount(0);
 
-    const announce = formatSplitPrConfirmAnnouncement(taskId);
-    const taskIdText = String(taskId);
+    // 通信が演出より遅くても、寿命内に観測した一致をあとから確認できる。
+    await page.waitForTimeout(splitPrConfirmDurationMs() + 40);
     await expect
-      .poll(
-        async () => {
-          const boardId = await page
-            .getByTestId('board')
-            .getAttribute('data-split-confirm-task-id');
-          const pixiId = await page
-            .getByTestId('board-pixi-mount')
-            .getAttribute('data-split-confirm-task-id');
-          const spoken = (await page.getByTestId('split-pr-confirm-announce').innerText()).trim();
-          return boardId === taskIdText && pixiId === taskIdText && spoken === announce;
-        },
-        {
-          timeout: splitPrConfirmDurationMs() + 3_000,
-          intervals: [16, 32, 48, 64, 96],
-        },
-      )
+      .poll(() => page.evaluate(() => (window as GameWindow).splitPrConfirmationObserved), {
+        timeout: splitPrConfirmDurationMs() + 3_000,
+        intervals: [16, 32, 48, 64, 96],
+      })
       .toBe(true);
 
     const event = await page.evaluate(() => {
@@ -88,7 +108,6 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     });
     expect(event).toBe(taskId);
 
-    await page.waitForTimeout(splitPrConfirmDurationMs() + 40);
     await expect(page.getByTestId('board')).not.toHaveAttribute('data-split-confirm-task-id');
     await expect(page.getByTestId('board-pixi-mount')).not.toHaveAttribute(
       'data-split-confirm-task-id',

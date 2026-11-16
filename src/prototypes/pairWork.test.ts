@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   applyPairInput as apply,
   choosePairAction,
+  comparePairFollowUp,
   comparePairStrategies,
+  createPairMix,
   createPairPrototype as create,
+  pairFollowUpRuns,
   summarizePair,
+  type PairState,
 } from './pairWork';
 import comparison from '../../docs/prototypes/pair-work-comparison.json';
+import followUp from '../../docs/prototypes/pair-work-followup-comparison.json';
 
 describe('RI-178 ペア作業', () => {
   it('ペアは2枠で進捗1だけ進み、空きが足りないと2件処理と両立しない', () => {
@@ -141,4 +146,129 @@ describe('RI-178 ペア作業', () => {
       expect(summarizePair(live)).toEqual(row.result);
     }
   });
+  it('複雑だけペアは空き2枠の複雑を優先し、1枠では複雑を単独で始めない', () => {
+    const mixed = createPairMix('RI-178', 1);
+    expect(choosePairAction(mixed, 'mixed')).toEqual({ type: 'pair', id: 'c1' });
+    expect(choosePairAction(mixed, 'pair')).toEqual({ type: 'pair', id: 'r1' });
+    expect(choosePairAction(mixed, 'solo')).toEqual({ type: 'solo', id: 'r1' });
+    const busy = apply(mixed, { type: 'solo', id: 'r1' });
+    expect(choosePairAction(busy, 'mixed')).toEqual({ type: 'tick' });
+    expect(apply(busy, { type: 'solo', id: 'c1' }).jobs[1]).toMatchObject({
+      stage: 'active',
+      slots: 1,
+    });
+  });
+  it('進捗2はペアの作業tickだけを進め、完成時に確保した2枠だけを戻す', () => {
+    const fast = { ...create('RI-178', 'complex'), pairPace: 2 as const };
+    const paired = apply(apply(fast, { type: 'pair', id: 'c1' }), { type: 'tick' });
+    expect(paired.jobs[0]).toMatchObject({
+      stage: 'done',
+      progress: 2,
+      slots: 0,
+      acquired: 2,
+      released: 2,
+      reworkSpent: 0,
+    });
+    expect(paired.freeSlots).toBe(2);
+    let solo = apply(fast, { type: 'solo', id: 'c1' });
+    solo = apply(apply(solo, { type: 'tick' }), { type: 'tick' });
+    expect(solo.jobs[0]).toMatchObject({ stage: 'rework', progress: 2, slots: 1, released: 0 });
+    const plain = create('RI-178', 'routine');
+    const explicit: PairState = { ...create('RI-178', 'routine'), pairPace: 1 };
+    let fromPlain: PairState = plain;
+    let fromExplicit: PairState = explicit;
+    while (fromPlain.tick < fromPlain.horizon) {
+      fromPlain = apply(fromPlain, choosePairAction(fromPlain, 'pair'));
+      fromExplicit = apply(fromExplicit, choosePairAction(fromExplicit, 'pair'));
+    }
+    expect(fromPlain.inputs).toEqual(fromExplicit.inputs);
+    expect(summarizePair(fromPlain)).toEqual(summarizePair(fromExplicit));
+    expect(fromPlain.jobs).toEqual(fromExplicit.jobs);
+  });
+  it('混合方針と速度を分けて動かし、ペアと単独の優劣が反転する位置を再計算できる', () => {
+    const report = comparePairFollowUp(followUp.conditions.seed);
+    expect(report).toEqual(followUp);
+    const at = (count: number) =>
+      report.leadingRoutines.points.find((point) => point.leadingRoutines === count)!;
+    expect(at(1)).toMatchObject({ solo: 36, pair: 36, mixed: 42, mixedVsSolo: 'mixed' });
+    expect(at(2)).toMatchObject({ solo: 44, pair: 30, mixed: 42, mixedVsSolo: 'solo' });
+    expect(at(3)).toMatchObject({ solo: 38, pair: 24, mixed: 42, mixedVsSolo: 'mixed' });
+    expect(
+      report.leadingRoutines.reversals.filter((row) => row.strict).map((row) => row.decision),
+    ).toEqual(['mixed', 'mixed']);
+    const routine = report.firstBoardPace.points.find((point) => point.board === 'routine')!;
+    const complex = report.firstBoardPace.points.find((point) => point.board === 'complex')!;
+    expect(routine).toMatchObject({
+      baselineSolo: 48,
+      baselinePair: 24,
+      solo: 48,
+      pair: 48,
+      preferenceAtPace2: 'tie',
+      strictReversal: false,
+    });
+    expect(complex).toMatchObject({
+      solo: 28,
+      pair: 42,
+      preferenceAtPace2: 'pair',
+      strictReversal: false,
+    });
+    expect(report.twoRoutinePace).toMatchObject({
+      solo: 44,
+      pair: 58,
+      mixed: 58,
+      pairVsSolo: 'pair',
+      mixedVsSolo: 'mixed',
+      pairVsMixed: 'tie',
+      strictReversals: { pair: true, mixed: true, pairVsMixed: false },
+    });
+    expect(report.conditions).toMatchObject({
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionIntegration: false,
+    });
+    for (const board of ['complex', 'routine'] as const) {
+      const baseline = comparison.results.find(
+        (row) => row.board === board && row.strategy === 'solo',
+      )!;
+      const paced = complex.board === board ? complex : routine;
+      const solo = paced.runs.find((run) => run.strategy === 'solo')!;
+      expect(solo.inputs).toEqual(baseline.inputs);
+      expect(solo.result).toEqual(baseline.result);
+    }
+  });
+  it('追加比較の再生と保存再開が一致し、枠の確保と解放は着手分だけ', () => {
+    for (const run of pairFollowUpRuns(comparePairFollowUp(followUp.conditions.seed))) {
+      let live = run.initial;
+      expect(held(live)).toBe(live.slotCapacity);
+      for (const input of run.inputs) {
+        const before = live;
+        live = apply(live, input);
+        const saved = apply(JSON.parse(JSON.stringify(before)) as PairState, input);
+        expect(saved).toEqual(live);
+        expect(choosePairAction(before, run.strategy)).toEqual(input);
+        expect(held(live)).toBe(live.slotCapacity);
+        for (const job of live.jobs) {
+          const previous = before.jobs.find((item) => item.id === job.id)!;
+          expect(job.acquired).toBe(job.released + job.slots);
+          if (job.released !== previous.released) {
+            expect(job.released - previous.released).toBe(previous.slots);
+            expect(job.slots).toBe(0);
+          }
+        }
+      }
+      expect(summarizePair(live)).toEqual(run.result);
+      if (run.strategy === 'mixed') {
+        for (const input of run.inputs) {
+          if (input.type === 'pair') expect(input.id.startsWith('c')).toBe(true);
+          if (input.type === 'solo') expect(input.id.startsWith('r')).toBe(true);
+        }
+      }
+    }
+  });
 });
+
+function held(state: PairState) {
+  return state.freeSlots + state.jobs.reduce((sum, job) => sum + job.slots, 0);
+}

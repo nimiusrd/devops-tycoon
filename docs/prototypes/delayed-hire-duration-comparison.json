@@ -1,0 +1,940 @@
+{
+  "conditions": {
+    "seed": "RI-250",
+    "board": "next",
+    "excludedBoards": ["boss", "blocked"],
+    "workTicks": 6,
+    "slots": 1,
+    "horizon": 7,
+    "fee": 6,
+    "hirePower": 4,
+    "tacticPower": 5,
+    "joinAfterTicks": 2,
+    "quarterAt": 3,
+    "baselineTacticTicks": 3,
+    "extendedTacticTicks": 4,
+    "durations": [1, 2, 3, 4, 5, 6, 7],
+    "held": "費用、両戦力、入社までの作業、四半期、空き枠、作業期間は初回の次期と同じ。動かすのは即時施策の持続だけ。",
+    "score": "power - fee",
+    "repeatedFirstComparison": false,
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "productionIntegration": false
+  },
+  "extended": {
+    "tacticTicks": 4,
+    "hireScore": 10,
+    "tacticScore": 14,
+    "preference": "tactic",
+    "hireStillWins": false
+  },
+  "points": [
+    {
+      "tacticTicks": 1,
+      "hireScore": 10,
+      "tacticScore": -1,
+      "preference": "hire",
+      "hireStillWins": true,
+      "runs": [
+        {
+          "strategy": "hire",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 1,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "hire"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 10,
+            "fee": 6,
+            "power": 16,
+            "waiting": 0,
+            "roster": 1,
+            "joined": true,
+            "slots": 0,
+            "quarterCrossed": true,
+            "path": [-6, -6, -6, -2, 2, 6, 10],
+            "lost": false
+          }
+        },
+        {
+          "strategy": "tactic",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 1,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "tactic"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": -1,
+            "fee": 6,
+            "power": 5,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "slots": 1,
+            "quarterCrossed": true,
+            "path": [-6, -1, -1, -1, -1, -1, -1],
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "tacticTicks": 2,
+      "hireScore": 10,
+      "tacticScore": 4,
+      "preference": "hire",
+      "hireStillWins": true,
+      "runs": [
+        {
+          "strategy": "hire",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 2,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "hire"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 10,
+            "fee": 6,
+            "power": 16,
+            "waiting": 0,
+            "roster": 1,
+            "joined": true,
+            "slots": 0,
+            "quarterCrossed": true,
+            "path": [-6, -6, -6, -2, 2, 6, 10],
+            "lost": false
+          }
+        },
+        {
+          "strategy": "tactic",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 2,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "tactic"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 4,
+            "fee": 6,
+            "power": 10,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "slots": 1,
+            "quarterCrossed": true,
+            "path": [-6, -1, 4, 4, 4, 4, 4],
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "tacticTicks": 3,
+      "hireScore": 10,
+      "tacticScore": 9,
+      "preference": "hire",
+      "hireStillWins": true,
+      "runs": [
+        {
+          "strategy": "hire",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 3,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "hire"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 10,
+            "fee": 6,
+            "power": 16,
+            "waiting": 0,
+            "roster": 1,
+            "joined": true,
+            "slots": 0,
+            "quarterCrossed": true,
+            "path": [-6, -6, -6, -2, 2, 6, 10],
+            "lost": false
+          }
+        },
+        {
+          "strategy": "tactic",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 3,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "tactic"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 9,
+            "fee": 6,
+            "power": 15,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "slots": 1,
+            "quarterCrossed": true,
+            "path": [-6, -1, 4, 9, 9, 9, 9],
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "tacticTicks": 4,
+      "hireScore": 10,
+      "tacticScore": 14,
+      "preference": "tactic",
+      "hireStillWins": false,
+      "runs": [
+        {
+          "strategy": "hire",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 4,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "hire"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 10,
+            "fee": 6,
+            "power": 16,
+            "waiting": 0,
+            "roster": 1,
+            "joined": true,
+            "slots": 0,
+            "quarterCrossed": true,
+            "path": [-6, -6, -6, -2, 2, 6, 10],
+            "lost": false
+          }
+        },
+        {
+          "strategy": "tactic",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 4,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "tactic"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 14,
+            "fee": 6,
+            "power": 20,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "slots": 1,
+            "quarterCrossed": true,
+            "path": [-6, -1, 4, 9, 14, 14, 14],
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "tacticTicks": 5,
+      "hireScore": 10,
+      "tacticScore": 19,
+      "preference": "tactic",
+      "hireStillWins": false,
+      "runs": [
+        {
+          "strategy": "hire",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 5,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "hire"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 10,
+            "fee": 6,
+            "power": 16,
+            "waiting": 0,
+            "roster": 1,
+            "joined": true,
+            "slots": 0,
+            "quarterCrossed": true,
+            "path": [-6, -6, -6, -2, 2, 6, 10],
+            "lost": false
+          }
+        },
+        {
+          "strategy": "tactic",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 5,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "tactic"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 19,
+            "fee": 6,
+            "power": 25,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "slots": 1,
+            "quarterCrossed": true,
+            "path": [-6, -1, 4, 9, 14, 19, 19],
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "tacticTicks": 6,
+      "hireScore": 10,
+      "tacticScore": 24,
+      "preference": "tactic",
+      "hireStillWins": false,
+      "runs": [
+        {
+          "strategy": "hire",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 6,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "hire"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 10,
+            "fee": 6,
+            "power": 16,
+            "waiting": 0,
+            "roster": 1,
+            "joined": true,
+            "slots": 0,
+            "quarterCrossed": true,
+            "path": [-6, -6, -6, -2, 2, 6, 10],
+            "lost": false
+          }
+        },
+        {
+          "strategy": "tactic",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 6,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "tactic"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 24,
+            "fee": 6,
+            "power": 30,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "slots": 1,
+            "quarterCrossed": true,
+            "path": [-6, -1, 4, 9, 14, 19, 24],
+            "lost": false
+          }
+        }
+      ]
+    },
+    {
+      "tacticTicks": 7,
+      "hireScore": 10,
+      "tacticScore": 24,
+      "preference": "tactic",
+      "hireStillWins": false,
+      "runs": [
+        {
+          "strategy": "hire",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 7,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "hire"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 10,
+            "fee": 6,
+            "power": 16,
+            "waiting": 0,
+            "roster": 1,
+            "joined": true,
+            "slots": 0,
+            "quarterCrossed": true,
+            "path": [-6, -6, -6, -2, 2, 6, 10],
+            "lost": false
+          }
+        },
+        {
+          "strategy": "tactic",
+          "initial": {
+            "version": 1,
+            "seed": "RI-250",
+            "board": "next",
+            "tick": 0,
+            "horizon": 7,
+            "slots": 1,
+            "strategy": null,
+            "worked": 0,
+            "quarterAt": 3,
+            "quarterCrossed": false,
+            "fee": 0,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "power": 0,
+            "tacticLeft": 0,
+            "tacticTicks": 7,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "tactic"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 24,
+            "fee": 6,
+            "power": 30,
+            "waiting": 0,
+            "roster": 0,
+            "joined": false,
+            "slots": 1,
+            "quarterCrossed": true,
+            "path": [-6, -1, 4, 9, 14, 19, 24],
+            "lost": false
+          }
+        }
+      ]
+    }
+  ],
+  "reversals": [
+    {
+      "before": {
+        "tacticTicks": 3,
+        "preference": "hire",
+        "hireScore": 10,
+        "tacticScore": 9
+      },
+      "after": {
+        "tacticTicks": 4,
+        "preference": "tactic",
+        "hireScore": 10,
+        "tacticScore": 14
+      },
+      "strict": true
+    }
+  ]
+}

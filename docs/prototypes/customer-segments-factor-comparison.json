@@ -1,0 +1,1442 @@
+{
+  "conditions": {
+    "seed": "RI-229",
+    "board": "blocked",
+    "horizon": 3,
+    "capacity": 4,
+    "featureNeed": 5,
+    "incidentIfIdle": 6,
+    "totalHeadcount": 4,
+    "pioneerIfNoFeature": -3,
+    "keeperPerSafe": 2,
+    "baseline": {
+      "pioneerPerFeature": 10,
+      "keeperPerIncident": -4,
+      "rosters": [
+        {
+          "pioneers": 3,
+          "keepers": 1
+        },
+        {
+          "pioneers": 1,
+          "keepers": 3
+        }
+      ]
+    },
+    "inputs": {
+      "focus": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 4,
+            "screen": 0,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 3,
+            "billing": 0,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 2,
+            "billing": 2,
+            "ops": 0
+          }
+        }
+      ],
+      "spread": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 1,
+            "ops": 0
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 1,
+            "screen": 2,
+            "billing": 1,
+            "ops": 0
+          }
+        }
+      ],
+      "ops": [
+        {
+          "type": "spend",
+          "spend": {
+            "api": 3,
+            "screen": 0,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 2,
+            "screen": 1,
+            "billing": 0,
+            "ops": 1
+          }
+        },
+        {
+          "type": "spend",
+          "spend": {
+            "api": 0,
+            "screen": 3,
+            "billing": 0,
+            "ops": 1
+          }
+        }
+      ]
+    },
+    "held": {
+      "featurePoints": "完成点数だけを動かす。事故の不満は-4、人数は3対1と1対3、未投入の失敗は-3、無事故は2",
+      "incidentDissatisfaction": "事故の不満だけを動かす。完成点数は10、人数は3対1と1対3、未投入の失敗は-3、無事故は2。不満は0以下",
+      "headcountRatio": "人数比だけを動かす。合計は4人。完成点数は10、事故の不満は-4、未投入の失敗は-3、無事故は2"
+    },
+    "decision": {
+      "focus": "focus",
+      "stability": "ops",
+      "score": "pioneerScore + keeperScore",
+      "preference": "集中の差引が大きいとき新機能層を優先、運用枠が大きいとき安定層を優先、同じとき同点"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "featurePoints": [
+      {
+        "axis": "featurePoints",
+        "parameter": "0",
+        "pioneerPerFeature": 0,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 0,
+              "keeperScore": -12,
+              "score": -12,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 0,
+              "keeperScore": 6,
+              "score": 6,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 0,
+              "keeperScore": -12,
+              "score": -12,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -18
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 0,
+              "keeperScore": -36,
+              "score": -36,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 0,
+              "keeperScore": 18,
+              "score": 18,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 0,
+              "keeperScore": -36,
+              "score": -36,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -54
+          }
+        ]
+      },
+      {
+        "axis": "featurePoints",
+        "parameter": "5",
+        "pioneerPerFeature": 5,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 30,
+              "keeperScore": -12,
+              "score": 18,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 15,
+              "keeperScore": 6,
+              "score": 21,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 15,
+              "keeperScore": -12,
+              "score": 3,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -3
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 10,
+              "keeperScore": -36,
+              "score": -26,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 5,
+              "keeperScore": 18,
+              "score": 23,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 5,
+              "keeperScore": -36,
+              "score": -31,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -49
+          }
+        ]
+      },
+      {
+        "axis": "featurePoints",
+        "parameter": "6",
+        "pioneerPerFeature": 6,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 36,
+              "keeperScore": -12,
+              "score": 24,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 18,
+              "keeperScore": 6,
+              "score": 24,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 18,
+              "keeperScore": -12,
+              "score": 6,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 12,
+              "keeperScore": -36,
+              "score": -24,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 6,
+              "keeperScore": 18,
+              "score": 24,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 6,
+              "keeperScore": -36,
+              "score": -30,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -48
+          }
+        ]
+      },
+      {
+        "axis": "featurePoints",
+        "parameter": "7",
+        "pioneerPerFeature": 7,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 42,
+              "keeperScore": -12,
+              "score": 30,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 21,
+              "keeperScore": 6,
+              "score": 27,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 21,
+              "keeperScore": -12,
+              "score": 9,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 3
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 14,
+              "keeperScore": -36,
+              "score": -22,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 7,
+              "keeperScore": 18,
+              "score": 25,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 7,
+              "keeperScore": -36,
+              "score": -29,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -47
+          }
+        ]
+      },
+      {
+        "axis": "featurePoints",
+        "parameter": "10",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 60,
+              "keeperScore": -12,
+              "score": 48,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 30,
+              "keeperScore": 6,
+              "score": 36,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 30,
+              "keeperScore": -12,
+              "score": 18,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 12
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 20,
+              "keeperScore": -36,
+              "score": -16,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 10,
+              "keeperScore": 18,
+              "score": 28,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 10,
+              "keeperScore": -36,
+              "score": -26,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -44
+          }
+        ]
+      },
+      {
+        "axis": "featurePoints",
+        "parameter": "53",
+        "pioneerPerFeature": 53,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 318,
+              "keeperScore": -12,
+              "score": 306,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 159,
+              "keeperScore": 6,
+              "score": 165,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 159,
+              "keeperScore": -12,
+              "score": 147,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 141
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 106,
+              "keeperScore": -36,
+              "score": 70,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 53,
+              "keeperScore": 18,
+              "score": 71,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 53,
+              "keeperScore": -36,
+              "score": 17,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -1
+          }
+        ]
+      },
+      {
+        "axis": "featurePoints",
+        "parameter": "54",
+        "pioneerPerFeature": 54,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 324,
+              "keeperScore": -12,
+              "score": 312,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 162,
+              "keeperScore": 6,
+              "score": 168,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 162,
+              "keeperScore": -12,
+              "score": 150,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 144
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 108,
+              "keeperScore": -36,
+              "score": 72,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 54,
+              "keeperScore": 18,
+              "score": 72,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 54,
+              "keeperScore": -36,
+              "score": 18,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "tie",
+            "margin": 0
+          }
+        ]
+      },
+      {
+        "axis": "featurePoints",
+        "parameter": "55",
+        "pioneerPerFeature": 55,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 330,
+              "keeperScore": -12,
+              "score": 318,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 165,
+              "keeperScore": 6,
+              "score": 171,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 165,
+              "keeperScore": -12,
+              "score": 153,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 147
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 110,
+              "keeperScore": -36,
+              "score": 74,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 55,
+              "keeperScore": 18,
+              "score": 73,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 55,
+              "keeperScore": -36,
+              "score": 19,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 1
+          }
+        ]
+      }
+    ],
+    "incidentDissatisfaction": [
+      {
+        "axis": "incidentDissatisfaction",
+        "parameter": "-9",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -9,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 60,
+              "keeperScore": -27,
+              "score": 33,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 30,
+              "keeperScore": 6,
+              "score": 36,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 30,
+              "keeperScore": -27,
+              "score": 3,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -3
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 20,
+              "keeperScore": -81,
+              "score": -61,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 10,
+              "keeperScore": 18,
+              "score": 28,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 10,
+              "keeperScore": -81,
+              "score": -71,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -89
+          }
+        ]
+      },
+      {
+        "axis": "incidentDissatisfaction",
+        "parameter": "-8",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -8,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 60,
+              "keeperScore": -24,
+              "score": 36,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 30,
+              "keeperScore": 6,
+              "score": 36,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 30,
+              "keeperScore": -24,
+              "score": 6,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 20,
+              "keeperScore": -72,
+              "score": -52,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 10,
+              "keeperScore": 18,
+              "score": 28,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 10,
+              "keeperScore": -72,
+              "score": -62,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -80
+          }
+        ]
+      },
+      {
+        "axis": "incidentDissatisfaction",
+        "parameter": "-7",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -7,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 60,
+              "keeperScore": -21,
+              "score": 39,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 30,
+              "keeperScore": 6,
+              "score": 36,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 30,
+              "keeperScore": -21,
+              "score": 9,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 3
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 20,
+              "keeperScore": -63,
+              "score": -43,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 10,
+              "keeperScore": 18,
+              "score": 28,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 10,
+              "keeperScore": -63,
+              "score": -53,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -71
+          }
+        ]
+      },
+      {
+        "axis": "incidentDissatisfaction",
+        "parameter": "-4",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 60,
+              "keeperScore": -12,
+              "score": 48,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 30,
+              "keeperScore": 6,
+              "score": 36,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 30,
+              "keeperScore": -12,
+              "score": 18,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 12
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 20,
+              "keeperScore": -36,
+              "score": -16,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 10,
+              "keeperScore": 18,
+              "score": 28,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 10,
+              "keeperScore": -36,
+              "score": -26,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -44
+          }
+        ]
+      },
+      {
+        "axis": "incidentDissatisfaction",
+        "parameter": "0",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": 0,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 60,
+              "keeperScore": 0,
+              "score": 60,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 30,
+              "keeperScore": 6,
+              "score": 36,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 30,
+              "keeperScore": 0,
+              "score": 30,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 24
+          },
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 20,
+              "keeperScore": 0,
+              "score": 20,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 10,
+              "keeperScore": 18,
+              "score": 28,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 10,
+              "keeperScore": 0,
+              "score": 10,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -8
+          }
+        ]
+      }
+    ],
+    "headcountRatio": [
+      {
+        "axis": "headcountRatio",
+        "parameter": "4:0",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 4,
+            "keepers": 0,
+            "focus": {
+              "pioneerScore": 80,
+              "keeperScore": 0,
+              "score": 80,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 40,
+              "keeperScore": 0,
+              "score": 40,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 40,
+              "keeperScore": 0,
+              "score": 40,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 40
+          }
+        ]
+      },
+      {
+        "axis": "headcountRatio",
+        "parameter": "3:1",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 3,
+            "keepers": 1,
+            "focus": {
+              "pioneerScore": 60,
+              "keeperScore": -12,
+              "score": 48,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 30,
+              "keeperScore": 6,
+              "score": 36,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 30,
+              "keeperScore": -12,
+              "score": 18,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "focus",
+            "margin": 12
+          }
+        ]
+      },
+      {
+        "axis": "headcountRatio",
+        "parameter": "2:2",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 2,
+            "keepers": 2,
+            "focus": {
+              "pioneerScore": 40,
+              "keeperScore": -24,
+              "score": 16,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 20,
+              "keeperScore": 12,
+              "score": 32,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 20,
+              "keeperScore": -24,
+              "score": -4,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -16
+          }
+        ]
+      },
+      {
+        "axis": "headcountRatio",
+        "parameter": "1:3",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 1,
+            "keepers": 3,
+            "focus": {
+              "pioneerScore": 20,
+              "keeperScore": -36,
+              "score": -16,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 10,
+              "keeperScore": 18,
+              "score": 28,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 10,
+              "keeperScore": -36,
+              "score": -26,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -44
+          }
+        ]
+      },
+      {
+        "axis": "headcountRatio",
+        "parameter": "0:4",
+        "pioneerPerFeature": 10,
+        "keeperPerIncident": -4,
+        "rosters": [
+          {
+            "pioneers": 0,
+            "keepers": 4,
+            "focus": {
+              "pioneerScore": 0,
+              "keeperScore": -48,
+              "score": -48,
+              "shippedWork": 12,
+              "completed": ["api", "screen"],
+              "incident": 18,
+              "lost": false
+            },
+            "ops": {
+              "pioneerScore": 0,
+              "keeperScore": 24,
+              "score": 24,
+              "shippedWork": 9,
+              "completed": ["api"],
+              "incident": 0,
+              "lost": false
+            },
+            "spread": {
+              "pioneerScore": 0,
+              "keeperScore": -48,
+              "score": -48,
+              "shippedWork": 12,
+              "completed": ["api"],
+              "incident": 18,
+              "lost": false
+            },
+            "preference": "ops",
+            "margin": -72
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "featurePoints",
+      "before": {
+        "parameter": "5",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "ops",
+        "focus": 18,
+        "ops": 21
+      },
+      "after": {
+        "parameter": "6",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "tie",
+        "focus": 24,
+        "ops": 24
+      }
+    },
+    {
+      "axis": "featurePoints",
+      "before": {
+        "parameter": "6",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "tie",
+        "focus": 24,
+        "ops": 24
+      },
+      "after": {
+        "parameter": "7",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "focus",
+        "focus": 30,
+        "ops": 27
+      }
+    },
+    {
+      "axis": "featurePoints",
+      "before": {
+        "parameter": "53",
+        "pioneers": 1,
+        "keepers": 3,
+        "preference": "ops",
+        "focus": 70,
+        "ops": 71
+      },
+      "after": {
+        "parameter": "54",
+        "pioneers": 1,
+        "keepers": 3,
+        "preference": "tie",
+        "focus": 72,
+        "ops": 72
+      }
+    },
+    {
+      "axis": "featurePoints",
+      "before": {
+        "parameter": "54",
+        "pioneers": 1,
+        "keepers": 3,
+        "preference": "tie",
+        "focus": 72,
+        "ops": 72
+      },
+      "after": {
+        "parameter": "55",
+        "pioneers": 1,
+        "keepers": 3,
+        "preference": "focus",
+        "focus": 74,
+        "ops": 73
+      }
+    },
+    {
+      "axis": "incidentDissatisfaction",
+      "before": {
+        "parameter": "-9",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "ops",
+        "focus": 33,
+        "ops": 36
+      },
+      "after": {
+        "parameter": "-8",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "tie",
+        "focus": 36,
+        "ops": 36
+      }
+    },
+    {
+      "axis": "incidentDissatisfaction",
+      "before": {
+        "parameter": "-8",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "tie",
+        "focus": 36,
+        "ops": 36
+      },
+      "after": {
+        "parameter": "-7",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "focus",
+        "focus": 39,
+        "ops": 36
+      }
+    },
+    {
+      "axis": "headcountRatio",
+      "before": {
+        "parameter": "3:1",
+        "pioneers": 3,
+        "keepers": 1,
+        "preference": "focus",
+        "focus": 48,
+        "ops": 36
+      },
+      "after": {
+        "parameter": "2:2",
+        "pioneers": 2,
+        "keepers": 2,
+        "preference": "ops",
+        "focus": 16,
+        "ops": 32
+      }
+    }
+  ]
+}

@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   applyDocInput as apply,
   chooseDocAction,
+  compareDocFactorReversals,
   compareDocStrategies,
   createDocPrototype as create,
   summarizeDoc,
   viewDoc,
 } from './docFreshness';
 import comparison from '../../docs/prototypes/doc-freshness-comparison.json';
+import factors from '../../docs/prototypes/doc-freshness-factor-comparison.json';
 
 describe('RI-192 古いドキュメントの罠', () => {
   it('仕様変更だけが仕様書を古くし、時間経過や増刷では鮮度が戻らない', () => {
@@ -108,6 +110,145 @@ describe('RI-192 古いドキュメントの罠', () => {
       expect(summarizeDoc(live)).toEqual(row.result);
       const again = row.inputs.reduce((state, input) => apply(state, input), row.initial);
       expect(again).toEqual(live);
+    }
+  });
+});
+
+describe('RI-192 要因の反転', () => {
+  it('初回と同じ資源で要因を一つずつ動かし、記録した反転と再計算が一致する', () => {
+    const data = compareDocFactorReversals();
+    expect(data).toEqual(factors);
+    expect(data.conditions).toMatchObject({
+      seed: 'RI-192',
+      scenario: 'changed',
+      horizon: 8,
+      quantityCap: 2,
+      addTickScores: false,
+      refreshTickScores: false,
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    });
+    const nets = (axis: keyof typeof data.sweeps) =>
+      data.sweeps[axis].map((item) => [
+        item.parameter,
+        item.refresh.result.netValue,
+        item.add.result.netValue,
+        item.preference,
+      ]);
+    expect(nets('changeAt')).toEqual([
+      ['1', 35, 35, 'tie'],
+      ['2', 21, -28, 'refresh'],
+      ['3', 21, -19, 'refresh'],
+      ['4', 21, -10, 'refresh'],
+      ['5', 21, -1, 'refresh'],
+      ['6', 21, 8, 'refresh'],
+      ['7', 21, 17, 'refresh'],
+      ['8', 26, 26, 'tie'],
+    ]);
+    expect(nets('staleScore')).toEqual([
+      ['-8', 17, -43, 'refresh'],
+      ['-4', 21, -19, 'refresh'],
+      ['-2', 23, -7, 'refresh'],
+      ['0', 25, 5, 'refresh'],
+      ['2', 27, 17, 'refresh'],
+      ['3', 28, 23, 'refresh'],
+      ['4', 29, 29, 'tie'],
+      ['5', 30, 35, 'add'],
+    ]);
+    expect(
+      data.reversals.map((item) => [
+        item.axis,
+        item.before.parameter,
+        item.before.preference,
+        item.after.parameter,
+        item.after.preference,
+      ]),
+    ).toEqual([
+      ['changeAt', '1', 'tie', '2', 'refresh'],
+      ['changeAt', '7', 'refresh', '8', 'tie'],
+      ['staleScore', '3', 'refresh', '4', 'tie'],
+      ['staleScore', '4', 'tie', '5', 'add'],
+    ]);
+    expect(
+      data.reversals.some((item) => item.after.preference === 'add' && item.axis === 'changeAt'),
+    ).toBe(false);
+  });
+
+  it('基準行は初回の更新と1枚のままと一致し、動かした規則は一つである', () => {
+    const data = compareDocFactorReversals();
+    const first = compareDocStrategies(comparison.seed);
+    for (const point of [
+      data.sweeps.changeAt.find((item) => item.parameter === '3'),
+      data.sweeps.staleScore.find((item) => item.parameter === '-4'),
+    ]) {
+      if (!point) throw new Error('baseline');
+      expect(point.sameAsFirstComparison).toBe(true);
+      expect(point.rules).toEqual({ changeAt: 3, fresh: 5, none: 2, stale: -4 });
+      for (const strategy of ['refresh', 'add'] as const) {
+        const row = first.find((item) => item.scenario === 'changed' && item.strategy === strategy);
+        if (!row) throw new Error('first');
+        expect(point[strategy].inputs).toEqual(row.inputs);
+        expect(point[strategy].result).toEqual(row.result);
+      }
+    }
+    expect(first.some((row) => row.scenario === 'stable' && row.strategy === 'expand')).toBe(true);
+    expect(first.some((row) => row.strategy === 'ignore')).toBe(true);
+    expect(Object.keys(data.sweeps)).toEqual(['changeAt', 'staleScore']);
+    for (const item of data.sweeps.changeAt) {
+      expect(item.rules).toMatchObject({ fresh: 5, none: 2, stale: -4 });
+      expect(item.rules.changeAt).toBe(Number(item.parameter));
+      expect(item.refresh.result.tick).toBe(8);
+      expect(item.add.result.quantity).toBe(1);
+    }
+    for (const item of data.sweeps.staleScore) {
+      expect(item.rules).toMatchObject({ changeAt: 3, fresh: 5, none: 2 });
+      expect(item.rules.stale).toBe(Number(item.parameter));
+      expect(item.sameAsFirstComparison).toBe(item.parameter === '-4');
+    }
+    const early = data.sweeps.changeAt.find((item) => item.parameter === '1');
+    expect(early?.refresh.inputs).toEqual(early?.add.inputs);
+    expect(early?.refresh.result.freshness).toBe('fresh');
+    expect(early?.refresh.result.resolutions.some((line) => line.includes('stale'))).toBe(false);
+    expect(early?.refresh.result.resolutions[0]).toBe('t1:add,change:no-doc,qty:1,freshness:fresh');
+    const late = data.sweeps.changeAt.find((item) => item.parameter === '8');
+    expect(late?.refresh.inputs).toEqual(late?.add.inputs);
+    expect(late?.refresh.inputs.some((input) => input.type === 'refresh')).toBe(false);
+    expect(late?.add.result.freshness).toBe('stale');
+    const harsh = data.sweeps.staleScore.find((item) => item.parameter === '-8');
+    const flipped = data.sweeps.staleScore.find((item) => item.parameter === '5');
+    expect(harsh?.preference).toBe('refresh');
+    expect(flipped?.refresh.inputs).toEqual(harsh?.refresh.inputs);
+    expect(flipped?.refresh.inputs.filter((input) => input.type === 'refresh')).toHaveLength(1);
+    expect(create('RI-192', 'stable', 4).changeAt).toBe(0);
+    expect(create('RI-192', 'changed').changeAt).toBe(3);
+  });
+
+  it('要因比較の入力を再生すると差引が一致し、期末では同じ状態を返す', () => {
+    const data = compareDocFactorReversals();
+    for (const item of Object.values(data.sweeps).flat()) {
+      const scores = { fresh: item.rules.fresh, none: item.rules.none, stale: item.rules.stale };
+      for (const strategy of ['refresh', 'add'] as const) {
+        const run = item[strategy];
+        let state = create(data.conditions.seed, 'changed', item.rules.changeAt);
+        const snapshot = structuredClone(state);
+        for (const input of run.inputs) {
+          const previous = state;
+          const before = structuredClone(state);
+          expect(chooseDocAction(state, strategy)).toEqual(input);
+          state = apply(state, input, scores);
+          const restored = apply(JSON.parse(JSON.stringify(before)), input, scores);
+          expect(previous).toEqual(before);
+          expect(restored).toEqual(state);
+        }
+        expect(snapshot.tick).toBe(0);
+        expect(snapshot.horizon).toBe(8);
+        expect(summarizeDoc(state)).toEqual(run.result);
+        expect(state.inputs).toEqual(run.inputs);
+        expect(apply(state, { type: 'use' }, scores)).toBe(state);
+      }
     }
   });
 });

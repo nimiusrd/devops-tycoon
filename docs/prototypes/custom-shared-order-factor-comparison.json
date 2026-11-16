@@ -1,0 +1,4124 @@
+{
+  "conditions": {
+    "seed": "RI-230",
+    "boards": {
+      "cash": {
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "bill": 10,
+        "missPenalty": 8,
+        "slack": 1,
+        "upkeepWeight": 0
+      },
+      "upkeep": {
+        "horizon": 3,
+        "capacity": 4,
+        "customNeed": 4,
+        "sharedNeed": 6,
+        "customReward": 12,
+        "sharedReward": 4,
+        "customUpkeep": 3,
+        "sharedUpkeep": 1,
+        "customReach": 1,
+        "sharedReach": 4,
+        "bill": 0,
+        "missPenalty": 8,
+        "slack": 1,
+        "upkeepWeight": 4
+      }
+    },
+    "decision": {
+      "strategies": ["customFirst", "sharedFirst", "customOnly"],
+      "score": "cash - miss - upkeepPenalty",
+      "order": "差引の高い順。同点は customFirst、sharedFirst、customOnly の並び"
+    },
+    "baseline": {
+      "customReward": 12,
+      "customUpkeep": 3,
+      "earlyBill": 10
+    },
+    "held": {
+      "reward": "個別の報酬だけを動かす。共通の報酬4、個別の保守3、共通の保守1。初期支払は資金不足10、保守不足0",
+      "upkeep": "個別の保守だけを動かす。共通の保守1、個別の報酬12、共通の報酬4。初期支払は盤面のまま",
+      "earlyBill": "資金不足の初期支払だけを動かす。保守不足の初期支払は0。個別の報酬12、共通の報酬4、個別の保守3、共通の保守1"
+    },
+    "rewardDefinition": "個別受注を完成したときに一度だけ入る報酬。共通の報酬は状態の4のまま。両方を完成する手順は共通の報酬を同じだけ受け取るので、個別先行と共通先行の差は共通の報酬では動かない。その増分は掃引しない",
+    "upkeepDefinition": "個別受注を完成した期間から毎期足す保守。共通の保守は状態の1のまま。余力1を超えた分に盤面の保守罰を掛ける。資金不足の保守罰は0なので、この軸では資金不足の差引は動かない",
+    "earlyBillDefinition": "資金不足の最初の期間に、その時点の資金が届かないと支払不足8を一度引く額。0は支払がない。保守不足の支払は0のまま。状態へ保存した支払額は書き換えない",
+    "steps": {
+      "reward": [0, 9, 10, 12, 16],
+      "upkeep": [0, 1, 2, 3, 4],
+      "earlyBill": [0, 1, 10, 12, 13, 16]
+    },
+    "omitted": "初回の2盤面×3戦略の表は再出力しない。基準行だけ初回JSONと照合する。共通の報酬と共通の保守は掃引しない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "reward": [
+      {
+        "axis": "reward",
+        "parameter": "0",
+        "rules": {
+          "customReward": 0,
+          "customUpkeep": 3,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": -4,
+              "sharedFirst": -4,
+              "customOnly": -8
+            },
+            "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 4,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 4,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 0,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -8,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -24,
+              "sharedFirst": -8,
+              "customOnly": -24
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 4,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -24,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 4,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 0,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -24,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "reward",
+        "parameter": "9",
+        "rules": {
+          "customReward": 9,
+          "customUpkeep": 3,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 5,
+              "sharedFirst": 5,
+              "customOnly": 1
+            },
+            "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 13,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 5,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 13,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 5,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 9,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 1,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -15,
+              "sharedFirst": 1,
+              "customOnly": -15
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 13,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -15,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 13,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 1,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 9,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -15,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "reward",
+        "parameter": "10",
+        "rules": {
+          "customReward": 10,
+          "customUpkeep": 3,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 14,
+              "sharedFirst": 6,
+              "customOnly": 10
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 14,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 14,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 14,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 6,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 10,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 10,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -14,
+              "sharedFirst": 2,
+              "customOnly": -14
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 14,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -14,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 14,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 10,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -14,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "reward",
+        "parameter": "12",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "reward",
+        "parameter": "16",
+        "rules": {
+          "customReward": 16,
+          "customUpkeep": 3,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 20,
+              "sharedFirst": 12,
+              "customOnly": 16
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 20,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 20,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 20,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -8,
+              "sharedFirst": 8,
+              "customOnly": -8
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 20,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 20,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -8,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "upkeep": [
+      {
+        "axis": "upkeep",
+        "parameter": "0",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 0,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 16,
+              "customOnly": 12
+            },
+            "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "upkeep",
+        "parameter": "1",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 1,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": 12,
+              "sharedFirst": 12,
+              "customOnly": 12
+            },
+            "order": [["customFirst", "sharedFirst", "customOnly"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 4,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 4,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "upkeep",
+        "parameter": "2",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 2,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": 0,
+              "sharedFirst": 8,
+              "customOnly": 0
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 16,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 0,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 8,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "upkeep",
+        "parameter": "3",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "upkeep",
+        "parameter": "4",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 4,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -24,
+              "sharedFirst": 0,
+              "customOnly": -24
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 40,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -24,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 16,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 0,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 36,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -24,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "earlyBill": [
+      {
+        "axis": "earlyBill",
+        "parameter": "0",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 0
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 16,
+              "customOnly": 12
+            },
+            "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "earlyBill",
+        "parameter": "1",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 1
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "earlyBill",
+        "parameter": "10",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 10
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "earlyBill",
+        "parameter": "12",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 12
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 16,
+              "sharedFirst": 8,
+              "customOnly": 12
+            },
+            "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+            "leader": "customFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 12,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "earlyBill",
+        "parameter": "13",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 13
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 8,
+              "sharedFirst": 8,
+              "customOnly": 4
+            },
+            "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 4,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "axis": "earlyBill",
+        "parameter": "16",
+        "rules": {
+          "customReward": 12,
+          "customUpkeep": 3,
+          "earlyBill": 16
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "cash",
+            "scores": {
+              "customFirst": 8,
+              "sharedFirst": 8,
+              "customOnly": 4
+            },
+            "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+            "leader": "tie",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 8,
+                  "upkeepPenalty": 0,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": 4,
+                  "lost": false
+                }
+              }
+            ]
+          },
+          {
+            "board": "upkeep",
+            "scores": {
+              "customFirst": -12,
+              "sharedFirst": 4,
+              "customOnly": -12
+            },
+            "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+            "leader": "sharedFirst",
+            "runs": [
+              {
+                "strategy": "customFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 28,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": -12,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "sharedFirst",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 0,
+                      "shared": 4
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 16,
+                  "miss": 0,
+                  "upkeepPenalty": 12,
+                  "servedCustom": 1,
+                  "servedShared": 4,
+                  "score": 4,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "customOnly",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "custom": 4,
+                      "shared": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "cash": 12,
+                  "miss": 0,
+                  "upkeepPenalty": 24,
+                  "servedCustom": 1,
+                  "servedShared": 0,
+                  "score": -12,
+                  "lost": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "reward",
+      "board": "cash",
+      "before": {
+        "parameter": "9",
+        "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+        "scores": {
+          "customFirst": 5,
+          "sharedFirst": 5,
+          "customOnly": 1
+        }
+      },
+      "after": {
+        "parameter": "10",
+        "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+        "scores": {
+          "customFirst": 14,
+          "sharedFirst": 6,
+          "customOnly": 10
+        }
+      }
+    },
+    {
+      "axis": "upkeep",
+      "board": "upkeep",
+      "before": {
+        "parameter": "0",
+        "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+        "scores": {
+          "customFirst": 16,
+          "sharedFirst": 16,
+          "customOnly": 12
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "order": [["customFirst", "sharedFirst", "customOnly"]],
+        "scores": {
+          "customFirst": 12,
+          "sharedFirst": 12,
+          "customOnly": 12
+        }
+      }
+    },
+    {
+      "axis": "upkeep",
+      "board": "upkeep",
+      "before": {
+        "parameter": "1",
+        "order": [["customFirst", "sharedFirst", "customOnly"]],
+        "scores": {
+          "customFirst": 12,
+          "sharedFirst": 12,
+          "customOnly": 12
+        }
+      },
+      "after": {
+        "parameter": "2",
+        "order": [["sharedFirst"], ["customFirst", "customOnly"]],
+        "scores": {
+          "customFirst": 0,
+          "sharedFirst": 8,
+          "customOnly": 0
+        }
+      }
+    },
+    {
+      "axis": "earlyBill",
+      "board": "cash",
+      "before": {
+        "parameter": "0",
+        "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+        "scores": {
+          "customFirst": 16,
+          "sharedFirst": 16,
+          "customOnly": 12
+        }
+      },
+      "after": {
+        "parameter": "1",
+        "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+        "scores": {
+          "customFirst": 16,
+          "sharedFirst": 8,
+          "customOnly": 12
+        }
+      }
+    },
+    {
+      "axis": "earlyBill",
+      "board": "cash",
+      "before": {
+        "parameter": "12",
+        "order": [["customFirst"], ["customOnly"], ["sharedFirst"]],
+        "scores": {
+          "customFirst": 16,
+          "sharedFirst": 8,
+          "customOnly": 12
+        }
+      },
+      "after": {
+        "parameter": "13",
+        "order": [["customFirst", "sharedFirst"], ["customOnly"]],
+        "scores": {
+          "customFirst": 8,
+          "sharedFirst": 8,
+          "customOnly": 4
+        }
+      }
+    }
+  ]
+}

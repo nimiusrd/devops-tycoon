@@ -1,0 +1,4389 @@
+{
+  "conditions": {
+    "seed": "RI-226",
+    "teams": ["pilot", "north", "south"],
+    "base": 5,
+    "horizon": 3,
+    "score": "shipped - fee",
+    "strategies": {
+      "now": ["all", "all", "all"],
+      "expand": ["pilot", "all", "all"],
+      "stop": ["pilot", "stop", "stop"]
+    },
+    "decision": {
+      "compared": ["expand", "now"],
+      "preference": "展開の差引が大きいとき展開、即全社が大きいとき即全社、同じとき同点",
+      "margin": "展開の差引 - 即全社の差引",
+      "leaders": "三つの差引が最大の戦略。同点は複数"
+    },
+    "baselines": {
+      "good": {
+        "effect": 4,
+        "incidentIfAll": 0,
+        "expandFee": 2
+      },
+      "harm": {
+        "effect": -3,
+        "incidentIfAll": 0,
+        "expandFee": 2
+      },
+      "spike": {
+        "effect": 4,
+        "incidentIfAll": 20,
+        "expandFee": 2
+      }
+    },
+    "held": {
+      "effect": "効果だけを動かす。展開費用2。事故0の列は良い効果と悪い効果の資源、事故20の列は一斉事故の資源",
+      "expandFee": "展開費用だけを動かす。良い効果は効果4・事故0、悪い効果は効果-3・事故0、一斉事故は効果4・事故20",
+      "incident": "事故だけを動かす。効果4・展開費用2の列と、効果-3・展開費用2の列。事故は0未満にしない"
+    },
+    "relation": "固定手順では展開の差引 - 即全社の差引 = 事故 - 展開費用 - 2×効果。2×効果は試験1期間に north と south へ効果が乗らない分",
+    "observation": "試験の観測差は効果。事故は試験を飛ばした即全社だけが払い、観測には出ない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "effect": [
+      {
+        "axis": "effect",
+        "anchor": "good",
+        "held": {
+          "incidentIfAll": 0,
+          "expandFee": 2
+        },
+        "rows": [
+          {
+            "axis": "effect",
+            "parameter": "-4",
+            "board": "good",
+            "rules": {
+              "effect": -4,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 6,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 9,
+              "expand": 15,
+              "stop": 41
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 9,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 9,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 17,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -4,
+                  "score": 15,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 41,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -4,
+                  "score": 41,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -4,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "-3",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 4,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 18,
+              "expand": 22,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 18,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 22,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "-2",
+            "board": "good",
+            "rules": {
+              "effect": -2,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 2,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 27,
+              "expand": 29,
+              "stop": 43
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 27,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 27,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 31,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -2,
+                  "score": 29,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 43,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -2,
+                  "score": 43,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -2,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "-1",
+            "board": "good",
+            "rules": {
+              "effect": -1,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "tie",
+            "margin": 0,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 36,
+              "expand": 36,
+              "stop": 44
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 36,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 36,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 38,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -1,
+                  "score": 36,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 44,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -1,
+                  "score": 44,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -1,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "0",
+            "board": "good",
+            "rules": {
+              "effect": 0,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "now",
+            "margin": -2,
+            "leaders": ["now", "stop"],
+            "scores": {
+              "now": 45,
+              "expand": 43,
+              "stop": 45
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 45,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 45,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 45,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 43,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 45,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 45,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 0,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "1",
+            "board": "good",
+            "rules": {
+              "effect": 1,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "now",
+            "margin": -4,
+            "leaders": ["now"],
+            "scores": {
+              "now": 54,
+              "expand": 50,
+              "stop": 46
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 54,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 54,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 52,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 1,
+                  "score": 50,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 46,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 1,
+                  "score": 46,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 1,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "4",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "now",
+            "margin": -10,
+            "leaders": ["now"],
+            "scores": {
+              "now": 81,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 81,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 81,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          }
+        ],
+        "reversals": [
+          {
+            "axis": "effect",
+            "held": {
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "before": {
+              "parameter": "-2",
+              "preference": "expand",
+              "now": 27,
+              "expand": 29,
+              "stop": 43
+            },
+            "after": {
+              "parameter": "-1",
+              "preference": "tie",
+              "now": 36,
+              "expand": 36,
+              "stop": 44
+            }
+          },
+          {
+            "axis": "effect",
+            "held": {
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "before": {
+              "parameter": "-1",
+              "preference": "tie",
+              "now": 36,
+              "expand": 36,
+              "stop": 44
+            },
+            "after": {
+              "parameter": "0",
+              "preference": "now",
+              "now": 45,
+              "expand": 43,
+              "stop": 45
+            }
+          }
+        ]
+      },
+      {
+        "axis": "effect",
+        "anchor": "spike",
+        "held": {
+          "incidentIfAll": 20,
+          "expandFee": 2
+        },
+        "rows": [
+          {
+            "axis": "effect",
+            "parameter": "4",
+            "board": "spike",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 10,
+            "leaders": ["expand"],
+            "scores": {
+              "now": 61,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 61,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "8",
+            "board": "spike",
+            "rules": {
+              "effect": 8,
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 2,
+            "leaders": ["expand"],
+            "scores": {
+              "now": 97,
+              "expand": 99,
+              "stop": 53
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 97,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 97,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 101,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 8,
+                  "score": 99,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 53,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 8,
+                  "score": 53,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 8,
+              "incidentIfAll": 20,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "9",
+            "board": "spike",
+            "rules": {
+              "effect": 9,
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "preference": "tie",
+            "margin": 0,
+            "leaders": ["now", "expand"],
+            "scores": {
+              "now": 106,
+              "expand": 106,
+              "stop": 54
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 106,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 106,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 108,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 9,
+                  "score": 106,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 54,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 9,
+                  "score": 54,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 9,
+              "incidentIfAll": 20,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "effect",
+            "parameter": "10",
+            "board": "spike",
+            "rules": {
+              "effect": 10,
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "preference": "now",
+            "margin": -2,
+            "leaders": ["now"],
+            "scores": {
+              "now": 115,
+              "expand": 113,
+              "stop": 55
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 115,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 115,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 115,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 10,
+                  "score": 113,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 55,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 10,
+                  "score": 55,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 10,
+              "incidentIfAll": 20,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          }
+        ],
+        "reversals": [
+          {
+            "axis": "effect",
+            "held": {
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "before": {
+              "parameter": "8",
+              "preference": "expand",
+              "now": 97,
+              "expand": 99,
+              "stop": 53
+            },
+            "after": {
+              "parameter": "9",
+              "preference": "tie",
+              "now": 106,
+              "expand": 106,
+              "stop": 54
+            }
+          },
+          {
+            "axis": "effect",
+            "held": {
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "before": {
+              "parameter": "9",
+              "preference": "tie",
+              "now": 106,
+              "expand": 106,
+              "stop": 54
+            },
+            "after": {
+              "parameter": "10",
+              "preference": "now",
+              "now": 115,
+              "expand": 113,
+              "stop": 55
+            }
+          }
+        ]
+      }
+    ],
+    "expandFee": [
+      {
+        "axis": "expandFee",
+        "anchor": "good",
+        "held": {
+          "effect": 4,
+          "incidentIfAll": 0
+        },
+        "rows": [
+          {
+            "axis": "expandFee",
+            "parameter": "0",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 0
+            },
+            "preference": "now",
+            "margin": -8,
+            "leaders": ["now"],
+            "scores": {
+              "now": 81,
+              "expand": 73,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 81,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 81,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 73,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 0,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "2",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "now",
+            "margin": -10,
+            "leaders": ["now"],
+            "scores": {
+              "now": 81,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 81,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 81,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "8",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 8
+            },
+            "preference": "now",
+            "margin": -16,
+            "leaders": ["now"],
+            "scores": {
+              "now": 81,
+              "expand": 65,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 81,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 81,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 8,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 65,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 8,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "12",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 12
+            },
+            "preference": "now",
+            "margin": -20,
+            "leaders": ["now"],
+            "scores": {
+              "now": 81,
+              "expand": 61,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 81,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 81,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 12,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 12,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          }
+        ],
+        "reversals": []
+      },
+      {
+        "axis": "expandFee",
+        "anchor": "harm",
+        "held": {
+          "effect": -3,
+          "incidentIfAll": 0
+        },
+        "rows": [
+          {
+            "axis": "expandFee",
+            "parameter": "0",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 0
+            },
+            "preference": "expand",
+            "margin": 6,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 18,
+              "expand": 24,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 18,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 24,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 0,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "2",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 4,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 18,
+              "expand": 22,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 18,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 22,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "5",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 5
+            },
+            "preference": "expand",
+            "margin": 1,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 18,
+              "expand": 19,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 18,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 5,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 19,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 5,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "6",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 6
+            },
+            "preference": "tie",
+            "margin": 0,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 18,
+              "expand": 18,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 18,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 6,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 6,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "7",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 7
+            },
+            "preference": "now",
+            "margin": -1,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 18,
+              "expand": 17,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 18,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 7,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 17,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 7,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          }
+        ],
+        "reversals": [
+          {
+            "axis": "expandFee",
+            "held": {
+              "effect": -3,
+              "incidentIfAll": 0
+            },
+            "before": {
+              "parameter": "5",
+              "preference": "expand",
+              "now": 18,
+              "expand": 19,
+              "stop": 42
+            },
+            "after": {
+              "parameter": "6",
+              "preference": "tie",
+              "now": 18,
+              "expand": 18,
+              "stop": 42
+            }
+          },
+          {
+            "axis": "expandFee",
+            "held": {
+              "effect": -3,
+              "incidentIfAll": 0
+            },
+            "before": {
+              "parameter": "6",
+              "preference": "tie",
+              "now": 18,
+              "expand": 18,
+              "stop": 42
+            },
+            "after": {
+              "parameter": "7",
+              "preference": "now",
+              "now": 18,
+              "expand": 17,
+              "stop": 42
+            }
+          }
+        ]
+      },
+      {
+        "axis": "expandFee",
+        "anchor": "spike",
+        "held": {
+          "effect": 4,
+          "incidentIfAll": 20
+        },
+        "rows": [
+          {
+            "axis": "expandFee",
+            "parameter": "0",
+            "board": "spike",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 0
+            },
+            "preference": "expand",
+            "margin": 12,
+            "leaders": ["expand"],
+            "scores": {
+              "now": 61,
+              "expand": 73,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 61,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 73,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 0,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "2",
+            "board": "spike",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 10,
+            "leaders": ["expand"],
+            "scores": {
+              "now": 61,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 61,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "11",
+            "board": "spike",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 11
+            },
+            "preference": "expand",
+            "margin": 1,
+            "leaders": ["expand"],
+            "scores": {
+              "now": 61,
+              "expand": 62,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 61,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 11,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 62,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 11,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "12",
+            "board": "spike",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 12
+            },
+            "preference": "tie",
+            "margin": 0,
+            "leaders": ["now", "expand"],
+            "scores": {
+              "now": 61,
+              "expand": 61,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 61,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 12,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 12,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "expandFee",
+            "parameter": "13",
+            "board": "spike",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 13
+            },
+            "preference": "now",
+            "margin": -1,
+            "leaders": ["now"],
+            "scores": {
+              "now": 61,
+              "expand": 60,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 61,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 13,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 60,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 13,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          }
+        ],
+        "reversals": [
+          {
+            "axis": "expandFee",
+            "held": {
+              "effect": 4,
+              "incidentIfAll": 20
+            },
+            "before": {
+              "parameter": "11",
+              "preference": "expand",
+              "now": 61,
+              "expand": 62,
+              "stop": 49
+            },
+            "after": {
+              "parameter": "12",
+              "preference": "tie",
+              "now": 61,
+              "expand": 61,
+              "stop": 49
+            }
+          },
+          {
+            "axis": "expandFee",
+            "held": {
+              "effect": 4,
+              "incidentIfAll": 20
+            },
+            "before": {
+              "parameter": "12",
+              "preference": "tie",
+              "now": 61,
+              "expand": 61,
+              "stop": 49
+            },
+            "after": {
+              "parameter": "13",
+              "preference": "now",
+              "now": 61,
+              "expand": 60,
+              "stop": 49
+            }
+          }
+        ]
+      }
+    ],
+    "incident": [
+      {
+        "axis": "incident",
+        "anchor": "good",
+        "held": {
+          "effect": 4,
+          "expandFee": 2
+        },
+        "rows": [
+          {
+            "axis": "incident",
+            "parameter": "0",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "now",
+            "margin": -10,
+            "leaders": ["now"],
+            "scores": {
+              "now": 81,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 81,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 81,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "incident",
+            "parameter": "9",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 9,
+              "expandFee": 2
+            },
+            "preference": "now",
+            "margin": -1,
+            "leaders": ["now"],
+            "scores": {
+              "now": 72,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 72,
+                  "fee": 0,
+                  "incident": 9,
+                  "observed": 0,
+                  "score": 72,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 9,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "incident",
+            "parameter": "10",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 10,
+              "expandFee": 2
+            },
+            "preference": "tie",
+            "margin": 0,
+            "leaders": ["now", "expand"],
+            "scores": {
+              "now": 71,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 71,
+                  "fee": 0,
+                  "incident": 10,
+                  "observed": 0,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 10,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "incident",
+            "parameter": "11",
+            "board": "good",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 11,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 1,
+            "leaders": ["expand"],
+            "scores": {
+              "now": 70,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 70,
+                  "fee": 0,
+                  "incident": 11,
+                  "observed": 0,
+                  "score": 70,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "good",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 11,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "incident",
+            "parameter": "20",
+            "board": "spike",
+            "rules": {
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 10,
+            "leaders": ["expand"],
+            "scores": {
+              "now": 61,
+              "expand": 71,
+              "stop": 49
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 61,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": 61,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 73,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 71,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 49,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 4,
+                  "score": 49,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "spike",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": 4,
+              "incidentIfAll": 20,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          }
+        ],
+        "reversals": [
+          {
+            "axis": "incident",
+            "held": {
+              "effect": 4,
+              "expandFee": 2
+            },
+            "before": {
+              "parameter": "9",
+              "preference": "now",
+              "now": 72,
+              "expand": 71,
+              "stop": 49
+            },
+            "after": {
+              "parameter": "10",
+              "preference": "tie",
+              "now": 71,
+              "expand": 71,
+              "stop": 49
+            }
+          },
+          {
+            "axis": "incident",
+            "held": {
+              "effect": 4,
+              "expandFee": 2
+            },
+            "before": {
+              "parameter": "10",
+              "preference": "tie",
+              "now": 71,
+              "expand": 71,
+              "stop": 49
+            },
+            "after": {
+              "parameter": "11",
+              "preference": "expand",
+              "now": 70,
+              "expand": 71,
+              "stop": 49
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "anchor": "harm",
+        "held": {
+          "effect": -3,
+          "expandFee": 2
+        },
+        "rows": [
+          {
+            "axis": "incident",
+            "parameter": "0",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 4,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 18,
+              "expand": 22,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 18,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 22,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 0,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "incident",
+            "parameter": "10",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 10,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 14,
+            "leaders": ["stop"],
+            "scores": {
+              "now": 8,
+              "expand": 22,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 8,
+                  "fee": 0,
+                  "incident": 10,
+                  "observed": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 22,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 10,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          },
+          {
+            "axis": "incident",
+            "parameter": "20",
+            "board": "harm",
+            "rules": {
+              "effect": -3,
+              "incidentIfAll": 20,
+              "expandFee": 2
+            },
+            "preference": "expand",
+            "margin": 24,
+            "leaders": ["stop"],
+            "scores": {
+              "now": -2,
+              "expand": 22,
+              "stop": 42
+            },
+            "runs": {
+              "now": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": -2,
+                  "fee": 0,
+                  "incident": 20,
+                  "observed": 0,
+                  "score": -2,
+                  "lost": false
+                }
+              },
+              "expand": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "all"
+                  }
+                ],
+                "result": {
+                  "shipped": 24,
+                  "fee": 2,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 22,
+                  "lost": false
+                }
+              },
+              "stop": {
+                "inputs": [
+                  {
+                    "type": "scope",
+                    "scope": "pilot"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  },
+                  {
+                    "type": "scope",
+                    "scope": "stop"
+                  }
+                ],
+                "result": {
+                  "shipped": 42,
+                  "fee": 0,
+                  "incident": 0,
+                  "observed": -3,
+                  "score": 42,
+                  "lost": false
+                }
+              }
+            },
+            "initial": {
+              "version": 1,
+              "seed": "RI-226",
+              "board": "harm",
+              "tick": 0,
+              "horizon": 3,
+              "base": 5,
+              "effect": -3,
+              "incidentIfAll": 20,
+              "expandFee": 2,
+              "adopted": [],
+              "sawPilot": false,
+              "incidentPaid": false,
+              "feePaid": 0,
+              "incident": 0,
+              "shipped": 0,
+              "periodShip": {
+                "pilot": 0,
+                "north": 0,
+                "south": 0
+              },
+              "observations": [],
+              "inputs": []
+            }
+          }
+        ],
+        "reversals": []
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "effect",
+      "held": {
+        "incidentIfAll": 0,
+        "expandFee": 2
+      },
+      "before": {
+        "parameter": "-2",
+        "preference": "expand",
+        "now": 27,
+        "expand": 29,
+        "stop": 43
+      },
+      "after": {
+        "parameter": "-1",
+        "preference": "tie",
+        "now": 36,
+        "expand": 36,
+        "stop": 44
+      }
+    },
+    {
+      "axis": "effect",
+      "held": {
+        "incidentIfAll": 0,
+        "expandFee": 2
+      },
+      "before": {
+        "parameter": "-1",
+        "preference": "tie",
+        "now": 36,
+        "expand": 36,
+        "stop": 44
+      },
+      "after": {
+        "parameter": "0",
+        "preference": "now",
+        "now": 45,
+        "expand": 43,
+        "stop": 45
+      }
+    },
+    {
+      "axis": "effect",
+      "held": {
+        "incidentIfAll": 20,
+        "expandFee": 2
+      },
+      "before": {
+        "parameter": "8",
+        "preference": "expand",
+        "now": 97,
+        "expand": 99,
+        "stop": 53
+      },
+      "after": {
+        "parameter": "9",
+        "preference": "tie",
+        "now": 106,
+        "expand": 106,
+        "stop": 54
+      }
+    },
+    {
+      "axis": "effect",
+      "held": {
+        "incidentIfAll": 20,
+        "expandFee": 2
+      },
+      "before": {
+        "parameter": "9",
+        "preference": "tie",
+        "now": 106,
+        "expand": 106,
+        "stop": 54
+      },
+      "after": {
+        "parameter": "10",
+        "preference": "now",
+        "now": 115,
+        "expand": 113,
+        "stop": 55
+      }
+    },
+    {
+      "axis": "expandFee",
+      "held": {
+        "effect": -3,
+        "incidentIfAll": 0
+      },
+      "before": {
+        "parameter": "5",
+        "preference": "expand",
+        "now": 18,
+        "expand": 19,
+        "stop": 42
+      },
+      "after": {
+        "parameter": "6",
+        "preference": "tie",
+        "now": 18,
+        "expand": 18,
+        "stop": 42
+      }
+    },
+    {
+      "axis": "expandFee",
+      "held": {
+        "effect": -3,
+        "incidentIfAll": 0
+      },
+      "before": {
+        "parameter": "6",
+        "preference": "tie",
+        "now": 18,
+        "expand": 18,
+        "stop": 42
+      },
+      "after": {
+        "parameter": "7",
+        "preference": "now",
+        "now": 18,
+        "expand": 17,
+        "stop": 42
+      }
+    },
+    {
+      "axis": "expandFee",
+      "held": {
+        "effect": 4,
+        "incidentIfAll": 20
+      },
+      "before": {
+        "parameter": "11",
+        "preference": "expand",
+        "now": 61,
+        "expand": 62,
+        "stop": 49
+      },
+      "after": {
+        "parameter": "12",
+        "preference": "tie",
+        "now": 61,
+        "expand": 61,
+        "stop": 49
+      }
+    },
+    {
+      "axis": "expandFee",
+      "held": {
+        "effect": 4,
+        "incidentIfAll": 20
+      },
+      "before": {
+        "parameter": "12",
+        "preference": "tie",
+        "now": 61,
+        "expand": 61,
+        "stop": 49
+      },
+      "after": {
+        "parameter": "13",
+        "preference": "now",
+        "now": 61,
+        "expand": 60,
+        "stop": 49
+      }
+    },
+    {
+      "axis": "incident",
+      "held": {
+        "effect": 4,
+        "expandFee": 2
+      },
+      "before": {
+        "parameter": "9",
+        "preference": "now",
+        "now": 72,
+        "expand": 71,
+        "stop": 49
+      },
+      "after": {
+        "parameter": "10",
+        "preference": "tie",
+        "now": 71,
+        "expand": 71,
+        "stop": 49
+      }
+    },
+    {
+      "axis": "incident",
+      "held": {
+        "effect": 4,
+        "expandFee": 2
+      },
+      "before": {
+        "parameter": "10",
+        "preference": "tie",
+        "now": 71,
+        "expand": 71,
+        "stop": 49
+      },
+      "after": {
+        "parameter": "11",
+        "preference": "expand",
+        "now": 70,
+        "expand": 71,
+        "stop": 49
+      }
+    }
+  ]
+}

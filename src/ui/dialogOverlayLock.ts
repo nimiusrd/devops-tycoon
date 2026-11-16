@@ -197,6 +197,11 @@ export interface LockBackgroundOptions {
   inertExempt?: boolean;
 }
 
+const backgroundLocks = new WeakMap<
+  HTMLElement,
+  { owners: number; previousInert: boolean; previousAriaHidden: string | null }
+>();
+
 /** ダイアログの兄弟を inert / aria-hidden にし、解除関数を返す。 */
 export function lockBackgroundSiblings(
   dialog: HTMLElement,
@@ -211,14 +216,23 @@ export function lockBackgroundSiblings(
 
   const lockTarget = (target: HTMLElement) => {
     if (restores.has(target) || (!inertExempt && isOverlayLockExempt(target))) return;
-    const previousInert = target.inert;
-    const previousAriaHidden = target.getAttribute('aria-hidden');
+    // 別モーダルのロック中属性を元の値として保存しない。最後の所有者だけが復元する。
+    const lock = backgroundLocks.get(target) ?? {
+      owners: 0,
+      previousInert: target.inert,
+      previousAriaHidden: target.getAttribute('aria-hidden'),
+    };
+    lock.owners += 1;
+    backgroundLocks.set(target, lock);
     target.inert = true;
     target.setAttribute('aria-hidden', 'true');
     restores.set(target, () => {
-      target.inert = previousInert;
-      if (previousAriaHidden === null) target.removeAttribute('aria-hidden');
-      else target.setAttribute('aria-hidden', previousAriaHidden);
+      lock.owners -= 1;
+      if (lock.owners > 0) return;
+      backgroundLocks.delete(target);
+      target.inert = lock.previousInert;
+      if (lock.previousAriaHidden === null) target.removeAttribute('aria-hidden');
+      else target.setAttribute('aria-hidden', lock.previousAriaHidden);
     });
   };
 

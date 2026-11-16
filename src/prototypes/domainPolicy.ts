@@ -4,6 +4,12 @@ export type TaskKind = 'routine' | 'complex';
 export type AiPolicy = 'all' | 'routine' | 'off';
 export type DomainBoard = 'routine' | 'important';
 export type DomainStrategy = 'all' | 'routine' | 'off' | 'no-member';
+/** 感度で一つだけ動かす係数。人の速度は含めない。 */
+export interface DomainFactorRules {
+  fee: number;
+  aiSpeed: number;
+  incident: number;
+}
 export interface DomainJob {
   id: string;
   kind: TaskKind;
@@ -37,6 +43,13 @@ const FEE = 1;
 const INCIDENT = 6;
 const HUMAN = 1;
 const AI = 2;
+
+/** 初回比較の係数。感度ではこのうち一つだけを変える。 */
+export const baselineDomainRules: DomainFactorRules = {
+  fee: FEE,
+  aiSpeed: AI,
+  incident: INCIDENT,
+};
 
 const BOARDS: Record<
   DomainBoard,
@@ -130,14 +143,18 @@ function openJob(state: DomainState): DomainJob | undefined {
   return state.jobs.find((job) => job.shipped === null);
 }
 
-export function applyDomainPolicyInput(state: DomainState, input: DomainInput): DomainState {
+export function applyDomainPolicyInput(
+  state: DomainState,
+  input: DomainInput,
+  rules: DomainFactorRules = baselineDomainRules,
+): DomainState {
   if (state.tick >= state.horizon) return state;
   if (input.type === 'configure') return configure(state, input.policy, input.memberAi);
   if (state.policy === null || state.memberAi === null) return state;
   const next = structuredClone(state);
   next.tick += 1;
   const job = openJob(next);
-  if (job) work(next, job);
+  if (job) work(next, job, rules);
   next.inputs.push({ type: 'tick' });
   return next;
 }
@@ -151,12 +168,12 @@ function configure(state: DomainState, policy: string, memberAi: boolean): Domai
   return next;
 }
 
-function work(state: DomainState, job: DomainJob): void {
+function work(state: DomainState, job: DomainJob, rules: DomainFactorRules): void {
   const assisted = state.memberAi === true && policyAllows(state.policy!, job.kind);
   job.aiAssisted = assisted;
-  job.progress += assisted ? AI : HUMAN;
+  job.progress += assisted ? rules.aiSpeed : HUMAN;
   if (assisted) {
-    state.fees += FEE;
+    state.fees += rules.fee;
     state.aiTicks += 1;
   } else {
     state.humanTicks += 1;
@@ -165,8 +182,8 @@ function work(state: DomainState, job: DomainJob): void {
   job.shipped = state.tick;
   state.value += job.value;
   if (assisted && job.kind === 'complex') {
-    job.incident = INCIDENT;
-    state.incidents += INCIDENT;
+    job.incident = rules.incident;
+    state.incidents += rules.incident;
   }
 }
 
@@ -224,4 +241,207 @@ export function compareDomainPolicies(seed = 'RI-199') {
       };
     }),
   );
+}
+
+const FACTOR_SEED = 'RI-199';
+const FACTOR_BOARDS = ['routine', 'important'] as const;
+/** 初回に使わない判断を上回った方針。定型中心は定型だけ、重要仕事中心は全許可。 */
+const FACTOR_USE = { routine: 'routine', important: 'all' } as const satisfies Record<
+  DomainBoard,
+  DomainStrategy
+>;
+const FEE_STEPS = [0, 1, 2, 3, 4, 5] as const;
+const AI_SPEED_STEPS = [1, 2, 3, 4] as const;
+const INCIDENT_STEPS = [0, 4, 6, 7, 8, 9, 12] as const;
+type DomainFactorAxis = 'fee' | 'aiSpeed' | 'incident';
+type DomainFactorPreference = 'use' | 'off' | 'tie';
+type DomainFactorStrategy = (typeof FACTOR_USE)[DomainBoard] | 'off';
+interface DomainFactorRun {
+  inputs: DomainInput[];
+  result: ReturnType<typeof summarizeDomainPolicy>;
+}
+interface DomainFactorBoard {
+  board: DomainBoard;
+  useStrategy: (typeof FACTOR_USE)[DomainBoard];
+  preference: DomainFactorPreference;
+  margin: number;
+  use: DomainFactorRun;
+  off: DomainFactorRun;
+}
+interface DomainFactorPoint {
+  axis: DomainFactorAxis;
+  parameter: string;
+  rules: DomainFactorRules;
+  sameAsFirstComparison: boolean;
+  boards: DomainFactorBoard[];
+}
+interface DomainFactorReversal {
+  axis: DomainFactorAxis;
+  board: DomainBoard;
+  before: { parameter: string; preference: DomainFactorPreference; use: number; off: number };
+  after: { parameter: string; preference: DomainFactorPreference; use: number; off: number };
+}
+
+function rulesMatchBaseline(rules: DomainFactorRules) {
+  return (
+    rules.fee === baselineDomainRules.fee &&
+    rules.aiSpeed === baselineDomainRules.aiSpeed &&
+    rules.incident === baselineDomainRules.incident
+  );
+}
+
+function preferenceOf(useNet: number, offNet: number): DomainFactorPreference {
+  if (useNet > offNet) return 'use';
+  if (offNet > useNet) return 'off';
+  return 'tie';
+}
+
+function runDomainFactor(
+  board: DomainBoard,
+  strategy: DomainFactorStrategy,
+  rules: DomainFactorRules,
+): DomainFactorRun {
+  let state = createDomainPolicyPrototype(FACTOR_SEED, board);
+  let guard = 0;
+  while (state.tick < state.horizon) {
+    if (++guard > 20) throw new Error(`${board}:${strategy}`);
+    const next = applyDomainPolicyInput(state, chooseDomainPolicyAction(state, strategy), rules);
+    if (next === state) throw new Error(`${board}:${strategy}@${state.tick}`);
+    state = next;
+  }
+  return { inputs: state.inputs, result: summarizeDomainPolicy(state) };
+}
+
+function factorBoard(board: DomainBoard, rules: DomainFactorRules): DomainFactorBoard {
+  const useStrategy = FACTOR_USE[board];
+  const use = runDomainFactor(board, useStrategy, rules);
+  const off = runDomainFactor(board, 'off', rules);
+  return {
+    board,
+    useStrategy,
+    preference: preferenceOf(use.result.netValue, off.result.netValue),
+    margin: use.result.netValue - off.result.netValue,
+    use,
+    off,
+  };
+}
+
+function factorPoint(
+  axis: DomainFactorAxis,
+  parameter: string,
+  rules: DomainFactorRules,
+): DomainFactorPoint {
+  return {
+    axis,
+    parameter,
+    rules: { ...rules },
+    sameAsFirstComparison: rulesMatchBaseline(rules),
+    boards: FACTOR_BOARDS.map((board) => factorBoard(board, rules)),
+  };
+}
+
+function boardAt(point: DomainFactorPoint, board: DomainBoard): DomainFactorBoard {
+  const found = point.boards.find((item) => item.board === board);
+  if (!found) throw new Error(board);
+  return found;
+}
+
+function reversalsOf(rows: DomainFactorPoint[]): DomainFactorReversal[] {
+  const found: DomainFactorReversal[] = [];
+  for (let index = 1; index < rows.length; index += 1) {
+    const before = rows[index - 1];
+    const after = rows[index];
+    if (!before || !after) continue;
+    for (const board of FACTOR_BOARDS) {
+      const earlier = boardAt(before, board);
+      const later = boardAt(after, board);
+      if (earlier.preference === later.preference) continue;
+      found.push({
+        axis: before.axis,
+        board,
+        before: {
+          parameter: before.parameter,
+          preference: earlier.preference,
+          use: earlier.use.result.netValue,
+          off: earlier.off.result.netValue,
+        },
+        after: {
+          parameter: after.parameter,
+          preference: later.preference,
+          use: later.use.result.netValue,
+          off: later.off.result.netValue,
+        },
+      });
+    }
+  }
+  return found;
+}
+
+function factorResources(board: DomainBoard) {
+  const state = createDomainPolicyPrototype(FACTOR_SEED, board);
+  return {
+    horizon: state.horizon,
+    use: FACTOR_USE[board],
+    off: 'off' as const,
+    jobs: state.jobs.map((job) => ({
+      id: job.id,
+      kind: job.kind,
+      work: job.work,
+      value: job.value,
+    })),
+  };
+}
+
+/** 初回と同じ資源で、利用費・AI速度・複雑作業の影響を一つずつ動かす。固定戦略。 */
+export function compareDomainFactorReversals() {
+  const sweeps = {
+    fee: FEE_STEPS.map((fee) => factorPoint('fee', String(fee), { ...baselineDomainRules, fee })),
+    aiSpeed: AI_SPEED_STEPS.map((aiSpeed) =>
+      factorPoint('aiSpeed', String(aiSpeed), { ...baselineDomainRules, aiSpeed }),
+    ),
+    incident: INCIDENT_STEPS.map((incident) =>
+      factorPoint('incident', String(incident), { ...baselineDomainRules, incident }),
+    ),
+  };
+  return {
+    conditions: {
+      seed: FACTOR_SEED,
+      humanSpeed: HUMAN,
+      boards: {
+        routine: factorResources('routine'),
+        important: factorResources('important'),
+      },
+      decision: {
+        use: '初回に使わない判断を上回った固定方針。定型中心は定型だけ、重要仕事中心は全許可',
+        off: '方針off。配布があってもaiAssistedにならない',
+        score: 'netValue' as const,
+      },
+      baseline: { ...baselineDomainRules },
+      held: {
+        fee: '利用費だけを動かす。AI速度2、影響6。人の速度1',
+        aiSpeed: 'AI速度だけを動かす。利用費1、影響6。人の速度1',
+        incident: '複雑作業の影響だけを動かす。利用費1、AI速度2。人の速度1',
+      },
+      feeDefinition: 'AIのtickごとに足す。完了件数には掛けない',
+      aiSpeedDefinition: 'AIのtickが進める進捗。人の速度は1のまま',
+      incidentDefinition: '複雑な仕事をAIのtickで完了したとき一度だけ引く。定型の完了では出ない',
+      steps: {
+        fee: [...FEE_STEPS],
+        aiSpeed: [...AI_SPEED_STEPS],
+        incident: [...INCIDENT_STEPS],
+      },
+      omitted: '定型中心の全許可、重要仕事中心の定型だけ、未配布は初回JSONのまま再出力しない',
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    },
+    sweeps,
+    reversals: [
+      ...reversalsOf(sweeps.fee),
+      ...reversalsOf(sweeps.aiSpeed),
+      ...reversalsOf(sweeps.incident),
+    ],
+  };
 }

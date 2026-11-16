@@ -2,14 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { JOB_WORK, type ModelJob } from './modelAssignment';
 import {
   applyPlanInput as apply,
+  BASELINE_PLAN_FACTORS,
   choosePlanAction,
+  comparePlanFactorReversals,
   comparePlanStrategies,
+  createPlanFactorState,
   createPlanPrototype as create,
   summarizePlan,
   viewPlan,
+  WANDER_PENALTY,
+  WANDER_WORK,
+  type PlanFactors,
+  type PlanInput,
+  type PlanScenario,
   type PlanState,
+  type PlanStrategy,
 } from './implementationPlan';
 import comparison from '../../docs/prototypes/implementation-plan-comparison.json';
+import factorComparison from '../../docs/prototypes/implementation-plan-factor-comparison.json';
 
 function withSibling(state: PlanState, job: ModelJob): PlanState {
   const next = structuredClone(state);
@@ -137,6 +147,325 @@ describe('RI-190 計画してから実装', () => {
       expect(summarizePlan(live)).toEqual(row.result);
       const again = row.inputs.reduce((state, input) => apply(state, input), row.initial);
       expect(again).toEqual(live);
+    }
+  });
+});
+
+describe('RI-190 計画tickと迷走量の感度', () => {
+  const report = comparePlanFactorReversals(comparison.seed);
+  const rows = [
+    ...report.sweeps.planTicks,
+    ...report.sweeps.wanderWork,
+    ...report.sweeps.wanderPenalty,
+  ];
+
+  function playOf(
+    row: (typeof rows)[number],
+    strategy: PlanStrategy,
+  ): (typeof rows)[number]['plays'][number] {
+    const found = row.plays.find((play) => play.strategy === strategy);
+    if (found === undefined) throw new Error(strategy);
+    return found;
+  }
+
+  function replay(
+    scenario: PlanScenario,
+    factors: PlanFactors,
+    inputs: PlanInput[],
+    strategy: PlanStrategy,
+  ) {
+    let live = createPlanFactorState(comparison.seed, scenario, factors);
+    let saved = structuredClone(live);
+    for (const input of inputs) {
+      const previous = live;
+      const before = structuredClone(live);
+      live = apply(live, input);
+      saved = apply(JSON.parse(JSON.stringify(saved)), input);
+      expect(previous).toEqual(before);
+      expect(saved).toEqual(live);
+      expect(choosePlanAction(previous, strategy)).toEqual(input);
+      expect(live.board.spent).toBe(0);
+      expect(live.board.jobs.reduce((sum, job) => sum + (job.shipped ?? 0), 0)).toBe(
+        live.board.shippedValue,
+      );
+    }
+    return live;
+  }
+
+  it('記録した要因比較を再計算し、初回の盤面と係数を対照のまま残す', () => {
+    expect(report).toEqual(factorComparison);
+    expect(report.conditions).toMatchObject({
+      anchor: BASELINE_PLAN_FACTORS,
+      variedOneAtATime: true,
+      fixedStrategies: true,
+      humanPlaytest: false,
+      productionAdoption: false,
+      repeatedFirstComparison: false,
+    });
+    expect(report.conditions.ranges).toEqual({
+      planTicks: [1, 2, 3, 4, 5, 6, 7, 8],
+      wanderWork: [0, 1, 2, 3, 4, 5, 6, 7],
+      wanderPenalty: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    });
+    expect(report.reversals).toEqual([
+      {
+        factor: 'planTicks',
+        scenario: 'complexTight',
+        before: {
+          factors: { planTicks: 2, wanderWork: 3, wanderPenalty: 6 },
+          relation: 'plan',
+          gap: 18,
+        },
+        after: {
+          factors: { planTicks: 3, wanderWork: 3, wanderPenalty: 6 },
+          relation: 'tie',
+          gap: 0,
+        },
+      },
+      {
+        factor: 'planTicks',
+        scenario: 'complexLong',
+        before: {
+          factors: { planTicks: 6, wanderWork: 3, wanderPenalty: 6 },
+          relation: 'plan',
+          gap: 6,
+        },
+        after: {
+          factors: { planTicks: 7, wanderWork: 3, wanderPenalty: 6 },
+          relation: 'rush',
+          gap: -12,
+        },
+      },
+      {
+        factor: 'wanderPenalty',
+        scenario: 'complexLong',
+        before: {
+          factors: { planTicks: 2, wanderWork: 3, wanderPenalty: 0 },
+          relation: 'tie',
+          gap: 0,
+        },
+        after: {
+          factors: { planTicks: 2, wanderWork: 3, wanderPenalty: 1 },
+          relation: 'plan',
+          gap: 1,
+        },
+      },
+    ]);
+    const untouched = createPlanFactorState(comparison.seed, 'complexLong', {
+      ...BASELINE_PLAN_FACTORS,
+    });
+    expect(untouched).not.toHaveProperty('factors');
+    expect(untouched).toEqual(create(comparison.seed, 'complexLong'));
+    const custom = { planTicks: 1, wanderWork: WANDER_WORK, wanderPenalty: WANDER_PENALTY };
+    const quick = createPlanFactorState(comparison.seed, 'complexLong', custom);
+    custom.planTicks = 9;
+    expect(quick.factors).toEqual({ planTicks: 1, wanderWork: 3, wanderPenalty: 6 });
+    const planned = apply(quick, { type: 'plan' });
+    expect(planned.planned).toEqual(['c1']);
+    expect(planned.findings).toEqual(['c1:dependency:ledger-order']);
+    expect(quick.planned).toEqual([]);
+    const heavy = apply(
+      createPlanFactorState(comparison.seed, 'complexLong', {
+        planTicks: 2,
+        wanderWork: 0,
+        wanderPenalty: 6,
+      }),
+      { type: 'tick' },
+    );
+    expect(heavy.board.jobs[0].work).toBe(JOB_WORK);
+    expect(heavy.board.resolutions[0]).toBe('wander:c1+0');
+  });
+
+  it('各行は対照から要因を一つだけ動かし、初回の入力と結果に一致する', () => {
+    expect(
+      report.sweeps.planTicks
+        .filter((row) => row.scenario === 'complexLong')
+        .map((row) => row.factors.planTicks),
+    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(
+      report.sweeps.wanderWork
+        .filter((row) => row.scenario === 'complexTight')
+        .map((row) => row.factors.wanderWork),
+    ).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(
+      report.sweeps.wanderPenalty
+        .filter((row) => row.scenario === 'complexLong')
+        .map((row) => row.factors.wanderPenalty),
+    ).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    for (const [axis, series] of Object.entries(report.sweeps) as [
+      keyof typeof report.sweeps,
+      typeof rows,
+    ][]) {
+      for (const row of series) {
+        const changed = (['planTicks', 'wanderWork', 'wanderPenalty'] as const).filter(
+          (name) => row.factors[name] !== BASELINE_PLAN_FACTORS[name],
+        );
+        expect(changed.length).toBeLessThanOrEqual(1);
+        expect(changed.every((name) => name === axis)).toBe(true);
+        expect(row.differsFromAnchor).toEqual(changed);
+        expect(row.sameAsFirstComparison).toBe(changed.length === 0);
+        expect(row.gap).toBe(row.planNet - row.rushNet);
+        const originalBoard = comparison.results.find((item) => item.scenario === row.scenario);
+        const initial = createPlanFactorState(comparison.seed, row.scenario, row.factors);
+        expect(initial.board.jobs).toEqual(originalBoard?.initial.board.jobs);
+        expect(initial.board.horizon).toBe(originalBoard?.initial.board.horizon);
+        expect(initial.board.budget).toBe(0);
+        expect(initial.board.seed).toBe(comparison.seed);
+        if (!row.sameAsFirstComparison) continue;
+        for (const play of row.plays) {
+          const original = comparison.results.find(
+            (item) => item.scenario === row.scenario && item.strategy === play.strategy,
+          );
+          expect(play.inputs).toEqual(original?.inputs);
+          expect(play.result).toEqual(original?.result);
+        }
+      }
+    }
+  });
+
+  it('計画tickは期末8で同点へ、期末12で即着手へ反転し、追加作業では反転しない', () => {
+    const nets = (
+      series: typeof rows,
+      scenario: PlanScenario,
+      factor: keyof PlanFactors,
+    ): [number, string, number, number][] =>
+      series
+        .filter((row) => row.scenario === scenario)
+        .map((row): [number, string, number, number] => [
+          row.factors[factor],
+          row.relation,
+          row.rushNet,
+          row.planNet,
+        ]);
+    expect(nets(report.sweeps.planTicks, 'simpleShort', 'planTicks')).toEqual([
+      [1, 'rush', 10, 0],
+      [2, 'rush', 10, 0],
+      [3, 'rush', 10, 0],
+      [4, 'rush', 10, 0],
+      [5, 'rush', 10, 0],
+      [6, 'rush', 10, 0],
+      [7, 'rush', 10, 0],
+      [8, 'rush', 10, 0],
+    ]);
+    expect(nets(report.sweeps.planTicks, 'complexTight', 'planTicks')).toEqual([
+      [1, 'plan', 0, 18],
+      [2, 'plan', 0, 18],
+      [3, 'tie', 0, 0],
+      [4, 'tie', 0, 0],
+      [5, 'tie', 0, 0],
+      [6, 'tie', 0, 0],
+      [7, 'tie', 0, 0],
+      [8, 'tie', 0, 0],
+    ]);
+    expect(nets(report.sweeps.planTicks, 'complexLong', 'planTicks')).toEqual([
+      [1, 'plan', 12, 18],
+      [2, 'plan', 12, 18],
+      [3, 'plan', 12, 18],
+      [4, 'plan', 12, 18],
+      [5, 'plan', 12, 18],
+      [6, 'plan', 12, 18],
+      [7, 'rush', 12, 0],
+      [8, 'rush', 12, 0],
+    ]);
+    expect(nets(report.sweeps.wanderWork, 'complexTight', 'wanderWork')).toEqual([
+      [0, 'plan', 12, 18],
+      [1, 'plan', 12, 18],
+      [2, 'plan', 12, 18],
+      [3, 'plan', 0, 18],
+      [4, 'plan', 0, 18],
+      [5, 'plan', 0, 18],
+      [6, 'plan', 0, 18],
+      [7, 'plan', 0, 18],
+    ]);
+    expect(nets(report.sweeps.wanderWork, 'complexLong', 'wanderWork')).toEqual([
+      [0, 'plan', 12, 18],
+      [1, 'plan', 12, 18],
+      [2, 'plan', 12, 18],
+      [3, 'plan', 12, 18],
+      [4, 'plan', 12, 18],
+      [5, 'plan', 12, 18],
+      [6, 'plan', 12, 18],
+      [7, 'plan', 0, 18],
+    ]);
+    expect(
+      report.sweeps.wanderWork
+        .filter((row) => row.scenario === 'simpleShort')
+        .every((row) => row.relation === 'rush' && row.rushNet === 10 && row.planNet === 0),
+    ).toBe(true);
+    expect(nets(report.sweeps.wanderPenalty, 'complexLong', 'wanderPenalty')).toEqual([
+      [0, 'tie', 18, 18],
+      [1, 'plan', 17, 18],
+      [2, 'plan', 16, 18],
+      [3, 'plan', 15, 18],
+      [4, 'plan', 14, 18],
+      [5, 'plan', 13, 18],
+      [6, 'plan', 12, 18],
+      [7, 'plan', 11, 18],
+      [8, 'plan', 10, 18],
+    ]);
+    expect(
+      report.sweeps.wanderPenalty
+        .filter((row) => row.scenario === 'complexTight')
+        .every((row) => row.relation === 'plan' && row.rushNet === 0 && row.planNet === 18),
+    ).toBe(true);
+    const finding = (ticks: number) =>
+      playOf(
+        report.sweeps.planTicks.find(
+          (row) => row.scenario === 'simpleShort' && row.factors.planTicks === ticks,
+        )!,
+        'plan',
+      ).result.findings;
+    expect(finding(6)).toEqual(['s1:no-hidden-scope']);
+    expect(finding(7)).toEqual([]);
+    const tightTie = report.sweeps.planTicks.find(
+      (row) => row.scenario === 'complexTight' && row.factors.planTicks === 3,
+    )!;
+    expect(playOf(tightTie, 'plan').result.findings).toEqual(['c1:dependency:ledger-order']);
+    expect(playOf(tightTie, 'plan').result.wandered).toEqual([]);
+    expect(playOf(tightTie, 'rush').result.wandered).toEqual(['c1']);
+    expect(playOf(tightTie, 'rush').result.shippedValue).toBe(0);
+  });
+
+  it('全行の再生と毎入力JSON保存再開が一致し、迷走は複雑仕事だけに乗る', () => {
+    for (const row of rows) {
+      const horizon = comparison.results.find((item) => item.scenario === row.scenario)?.initial
+        .board.horizon;
+      const plan = playOf(row, 'plan');
+      const rush = playOf(row, 'rush');
+      expect(plan.inputs).toHaveLength(horizon ?? 0);
+      expect(rush.inputs).toHaveLength(horizon ?? 0);
+      expect(plan.inputs.filter((input) => input.type === 'plan')).toHaveLength(
+        Math.min(row.factors.planTicks, horizon ?? 0),
+      );
+      expect(rush.inputs.every((input) => input.type === 'tick')).toBe(true);
+      for (const play of row.plays) {
+        const live = replay(row.scenario, row.factors, play.inputs, play.strategy);
+        expect(summarizePlan(live)).toEqual(play.result);
+        if (row.scenario === 'simpleShort') {
+          expect(live.wandered).toEqual([]);
+          expect(live.board.jobs[0]?.work).toBe(JOB_WORK);
+          continue;
+        }
+        if (play.strategy === 'plan') {
+          expect(live.wandered).toEqual([]);
+          expect(live.board.jobs[0]?.work).toBe(JOB_WORK);
+          continue;
+        }
+        expect(live.wandered).toEqual(['c1']);
+        expect(live.board.jobs[0]?.work).toBe(JOB_WORK + row.factors.wanderWork);
+        expect(live.board.resolutions[0]).toBe(`wander:c1+${row.factors.wanderWork}`);
+        const shipped = live.board.jobs[0]?.shipped;
+        if (shipped === null || shipped === undefined) {
+          expect(live.board.resolutions.some((line) => line.startsWith('wander-penalty'))).toBe(
+            false,
+          );
+        } else {
+          expect(shipped).toBe(18 - row.factors.wanderPenalty);
+          expect(live.board.resolutions).toContain(
+            `wander-penalty:c1-${row.factors.wanderPenalty}`,
+          );
+        }
+      }
     }
   });
 });

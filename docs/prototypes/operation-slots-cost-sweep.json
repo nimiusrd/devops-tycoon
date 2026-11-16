@@ -1,0 +1,606 @@
+{
+  "conditions": {
+    "seed": 1,
+    "ticksPerSprint": 6,
+    "sprints": ["routine", "migration"],
+    "focus": 30,
+    "openingToggleCost": 1,
+    "switchCostAppliesWhenTickAtLeast": 1,
+    "heldWhenSweepingUpkeep": {
+      "switchCost": 1
+    },
+    "heldWhenSweepingSwitchCost": {
+      "platformUpkeep": 1
+    },
+    "upkeepValues": [0, 1, 2, 3, 4],
+    "switchCosts": [1, 2, 3, 4],
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false
+  },
+  "inputs": {
+    "keep-lights": [
+      {
+        "type": "enable",
+        "id": "lint"
+      },
+      {
+        "type": "enable",
+        "id": "tests"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "workload",
+        "workload": "migration"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      }
+    ],
+    "keep-platform": [
+      {
+        "type": "enable",
+        "id": "platform"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "workload",
+        "workload": "migration"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      }
+    ],
+    "switch-to-platform": [
+      {
+        "type": "enable",
+        "id": "lint"
+      },
+      {
+        "type": "enable",
+        "id": "tests"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "workload",
+        "workload": "migration"
+      },
+      {
+        "type": "disable",
+        "id": "lint"
+      },
+      {
+        "type": "disable",
+        "id": "tests"
+      },
+      {
+        "type": "enable",
+        "id": "platform"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      },
+      {
+        "type": "tick"
+      }
+    ]
+  },
+  "upkeepSweep": [
+    {
+      "platformUpkeep": 0,
+      "switchCost": 1,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 0,
+          "focusSpent": 1,
+          "netValue": 47
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 0,
+          "focusSpent": 5,
+          "netValue": 43
+        }
+      },
+      "lightsVersusPlatform": "platform",
+      "leaders": ["keep-platform"]
+    },
+    {
+      "platformUpkeep": 1,
+      "switchCost": 1,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 12,
+          "focusSpent": 1,
+          "netValue": 35
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 6,
+          "focusSpent": 5,
+          "netValue": 37
+        }
+      },
+      "lightsVersusPlatform": "platform",
+      "leaders": ["switch-to-platform"]
+    },
+    {
+      "platformUpkeep": 2,
+      "switchCost": 1,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 24,
+          "focusSpent": 1,
+          "netValue": 23
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 12,
+          "focusSpent": 5,
+          "netValue": 31
+        }
+      },
+      "lightsVersusPlatform": "platform",
+      "leaders": ["switch-to-platform"]
+    },
+    {
+      "platformUpkeep": 3,
+      "switchCost": 1,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 36,
+          "focusSpent": 1,
+          "netValue": 11
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 18,
+          "focusSpent": 5,
+          "netValue": 25
+        }
+      },
+      "lightsVersusPlatform": "lights",
+      "leaders": ["switch-to-platform"]
+    },
+    {
+      "platformUpkeep": 4,
+      "switchCost": 1,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 48,
+          "focusSpent": 1,
+          "netValue": -1
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 24,
+          "focusSpent": 5,
+          "netValue": 19
+        }
+      },
+      "lightsVersusPlatform": "lights",
+      "leaders": ["keep-lights"]
+    }
+  ],
+  "switchCostSweep": [
+    {
+      "platformUpkeep": 1,
+      "switchCost": 1,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 12,
+          "focusSpent": 1,
+          "netValue": 35
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 6,
+          "focusSpent": 5,
+          "netValue": 37
+        }
+      },
+      "lightsVersusPlatform": "platform",
+      "leaders": ["switch-to-platform"]
+    },
+    {
+      "platformUpkeep": 1,
+      "switchCost": 2,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 12,
+          "focusSpent": 1,
+          "netValue": 35
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 6,
+          "focusSpent": 8,
+          "netValue": 34
+        }
+      },
+      "lightsVersusPlatform": "platform",
+      "leaders": ["keep-platform"]
+    },
+    {
+      "platformUpkeep": 1,
+      "switchCost": 3,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 12,
+          "focusSpent": 1,
+          "netValue": 35
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 6,
+          "focusSpent": 11,
+          "netValue": 31
+        }
+      },
+      "lightsVersusPlatform": "platform",
+      "leaders": ["keep-platform"]
+    },
+    {
+      "platformUpkeep": 1,
+      "switchCost": 4,
+      "results": {
+        "keep-lights": {
+          "active": ["lint", "tests"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 24,
+          "upkeepPaid": 0,
+          "focusSpent": 2,
+          "netValue": 22
+        },
+        "keep-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 12,
+          "focusSpent": 1,
+          "netValue": 35
+        },
+        "switch-to-platform": {
+          "active": ["platform"],
+          "usedSlots": 2,
+          "ownedCount": 3,
+          "earnedValue": 48,
+          "upkeepPaid": 6,
+          "focusSpent": 14,
+          "netValue": 28
+        }
+      },
+      "lightsVersusPlatform": "platform",
+      "leaders": ["keep-platform"]
+    }
+  ],
+  "reversals": [
+    {
+      "axis": "platformUpkeep",
+      "question": "leaders",
+      "before": {
+        "platformUpkeep": 0,
+        "switchCost": 1,
+        "lightsVersusPlatform": "platform",
+        "leaders": ["keep-platform"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": 47,
+          "switch-to-platform": 43
+        }
+      },
+      "after": {
+        "platformUpkeep": 1,
+        "switchCost": 1,
+        "lightsVersusPlatform": "platform",
+        "leaders": ["switch-to-platform"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": 35,
+          "switch-to-platform": 37
+        }
+      }
+    },
+    {
+      "axis": "platformUpkeep",
+      "question": "lights-versus-platform",
+      "before": {
+        "platformUpkeep": 2,
+        "switchCost": 1,
+        "lightsVersusPlatform": "platform",
+        "leaders": ["switch-to-platform"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": 23,
+          "switch-to-platform": 31
+        }
+      },
+      "after": {
+        "platformUpkeep": 3,
+        "switchCost": 1,
+        "lightsVersusPlatform": "lights",
+        "leaders": ["switch-to-platform"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": 11,
+          "switch-to-platform": 25
+        }
+      }
+    },
+    {
+      "axis": "platformUpkeep",
+      "question": "leaders",
+      "before": {
+        "platformUpkeep": 3,
+        "switchCost": 1,
+        "lightsVersusPlatform": "lights",
+        "leaders": ["switch-to-platform"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": 11,
+          "switch-to-platform": 25
+        }
+      },
+      "after": {
+        "platformUpkeep": 4,
+        "switchCost": 1,
+        "lightsVersusPlatform": "lights",
+        "leaders": ["keep-lights"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": -1,
+          "switch-to-platform": 19
+        }
+      }
+    },
+    {
+      "axis": "switchCost",
+      "question": "leaders",
+      "before": {
+        "platformUpkeep": 1,
+        "switchCost": 1,
+        "lightsVersusPlatform": "platform",
+        "leaders": ["switch-to-platform"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": 35,
+          "switch-to-platform": 37
+        }
+      },
+      "after": {
+        "platformUpkeep": 1,
+        "switchCost": 2,
+        "lightsVersusPlatform": "platform",
+        "leaders": ["keep-platform"],
+        "nets": {
+          "keep-lights": 22,
+          "keep-platform": 35,
+          "switch-to-platform": 34
+        }
+      }
+    }
+  ]
+}

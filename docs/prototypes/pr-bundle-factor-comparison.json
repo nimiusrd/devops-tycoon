@@ -1,0 +1,7319 @@
+{
+  "conditions": {
+    "seed": "RI-167",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "productionIntegrated": false,
+    "failure": "bの初回確認だけ失敗し、再確認は成功する。失敗する仕事と再確認の成功は比較開始前の公開値で、この段では変えない。",
+    "preference": "出荷価値が高い方を上とする。出荷価値が同じなら投入工数が少ない方を上とする。固定費は投入工数の内訳であり、同点を割らない。",
+    "contentPerJob": 1,
+    "strategies": {
+      "separate": "残工数のあるレビューをa、bの順に進める",
+      "bundle": "最初にaとbを束ね、その後は束の残工数を進める"
+    },
+    "assignment": "担当が複数のとき、同じtickでは残工数のあるレビューへ先に1工数ずつ配り、余りは起点のレビューに積む。入力idは起点だけで、余った担当の進行は入力に分けて書かない。",
+    "baseline": {
+      "horizon": 7,
+      "valueA": 6,
+      "valueB": 6,
+      "precursorTicks": 0,
+      "partialSuccess": false,
+      "bundleOpCost": 0,
+      "fixedCost": 2,
+      "fixedBasis": "shared-recheck",
+      "assignees": 1
+    },
+    "oneAtATime": true,
+    "factorNotes": {
+      "horizon": "期末tick。初回は7。",
+      "valueA": "aの出荷価値。bは6のまま。",
+      "valueB": "bの出荷価値。aは6のまま。",
+      "precursor": "失敗する初回確認を、残工数がこの値以下になった時点で打ち切る。0は最後まで行う。失敗する仕事は変えない。",
+      "partialSuccess": "yesのとき、初回確認で失敗しなかった仕事は出荷し、失敗した仕事だけ再確認する。noは束全体を再確認する。",
+      "bundleOpCost": "束ね操作が消費するtick。その間はレビューを進めず、担当人数ぶんを投入工数に数える。残りtickが足りない操作は無消費で拒否する。",
+      "fixedCost": "レビュー開始時の固定工数。計上の仕方はセッション共有のまま。",
+      "fixedBasis": "shared-recheckは束で1回、再確認でもう1回。shared-onceは再確認では払わない。per-jobは束でも件数分払う。額は2。",
+      "assignees": "1tickに投入できる工数。初回は1。"
+    }
+  },
+  "series": [
+    {
+      "factor": "horizon",
+      "board": "safe",
+      "points": [
+        {
+          "level": 1,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 1,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 5,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 1,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 2,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 4,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 2,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 3,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [3, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 3,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 4,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 4,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 5,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 5,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 7,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 8,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 9,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 10,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 11,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 12,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "horizon",
+      "board": "fail",
+      "points": [
+        {
+          "level": 1,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 1,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 5,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 1,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 2,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 4,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 2,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 3,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [3, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 3,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 4,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 4,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 4,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 5,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 5,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 5,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 7,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 8,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 8,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 8,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [8, 8],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 9,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 9,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 9],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 8,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [8, 8],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 10,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 9,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 9],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 8,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [8, 8],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 11,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 9,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 9],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 8,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [8, 8],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 12,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 9,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 9],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 8,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [8, 8],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "valueA",
+      "board": "safe",
+      "points": [
+        {
+          "level": 0,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 6,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "bundle",
+          "separate": {
+            "value": 7,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 7,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 12,
+          "preference": "bundle",
+          "separate": {
+            "value": 18,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 18,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "valueA",
+      "board": "fail",
+      "points": [
+        {
+          "level": 0,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "separate",
+          "separate": {
+            "value": 1,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 12,
+          "preference": "separate",
+          "separate": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "valueB",
+      "board": "safe",
+      "points": [
+        {
+          "level": 0,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 6,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 12,
+          "preference": "bundle",
+          "separate": {
+            "value": 18,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 18,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "valueB",
+      "board": "fail",
+      "points": [
+        {
+          "level": 0,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 12,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "precursor",
+      "board": "safe",
+      "points": [
+        {
+          "level": 0,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "precursor",
+      "board": "fail",
+      "points": [
+        {
+          "level": 0,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [7, 7],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 7],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [6, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 7],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 5,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [5, 5],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "partialSuccess",
+      "board": "safe",
+      "points": [
+        {
+          "level": "no",
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": "yes",
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "partialSuccess",
+      "board": "fail",
+      "points": [
+        {
+          "level": "no",
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": "yes",
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [0, 1],
+            "doneTicks": [4, 7],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "bundleOpCost",
+      "board": "safe",
+      "points": [
+        {
+          "level": 0,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 5,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [5, 5],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "tie",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [6, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "separate",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [7, 7],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 4,
+          "preference": "separate",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 5,
+          "preference": "separate",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "bundleOpCost",
+      "board": "fail",
+      "points": [
+        {
+          "level": 0,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 2,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 4,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 4,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 5,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "fixedCost",
+      "board": "safe",
+      "points": [
+        {
+          "level": 0,
+          "preference": "tie",
+          "separate": {
+            "value": 12,
+            "workSpent": 2,
+            "fixedCost": 0,
+            "rechecks": [0, 0],
+            "doneTicks": [1, 2],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 2,
+            "fixedCost": 0,
+            "rechecks": [0, 0],
+            "doneTicks": [2, 2],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [2, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 3,
+            "fixedCost": 1,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 3],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 0],
+            "doneTicks": [4, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 5,
+            "fixedCost": 3,
+            "rechecks": [0, 0],
+            "doneTicks": [5, 5],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 4,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [0, 0],
+            "doneTicks": [5, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [6, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 5,
+          "preference": "bundle",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 10,
+            "rechecks": [0, 0],
+            "doneTicks": [6, null],
+            "remainingWork": 5,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 5,
+            "rechecks": [0, 0],
+            "doneTicks": [7, 7],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 0],
+            "doneTicks": [7, null],
+            "remainingWork": 7,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 7,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 7,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 9,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 7,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 8,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 11,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "fixedCost",
+      "board": "fail",
+      "points": [
+        {
+          "level": 0,
+          "preference": "separate",
+          "separate": {
+            "value": 12,
+            "workSpent": 3,
+            "fixedCost": 0,
+            "rechecks": [0, 1],
+            "doneTicks": [1, 3],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 0,
+            "rechecks": [1, 1],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "preference": "tie",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 3,
+            "rechecks": [0, 1],
+            "doneTicks": [2, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 2,
+            "rechecks": [1, 1],
+            "doneTicks": [6, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 0],
+            "doneTicks": [4, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 4,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [0, 0],
+            "doneTicks": [5, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 5,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 5,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 10,
+            "rechecks": [0, 0],
+            "doneTicks": [6, null],
+            "remainingWork": 5,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 5,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 7,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 6,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 0],
+            "doneTicks": [7, null],
+            "remainingWork": 7,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 7,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 7,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 9,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 7,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 8,
+          "preference": "tie",
+          "separate": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 11,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [0, 0],
+            "doneTicks": [null, null],
+            "remainingWork": 3,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "fixedBasis",
+      "board": "safe",
+      "points": [
+        {
+          "level": "shared-recheck",
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": "shared-once",
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": "per-job",
+          "preference": "tie",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [6, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "fixedBasis",
+      "board": "fail",
+      "points": [
+        {
+          "level": "shared-recheck",
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": "shared-once",
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 7],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 2,
+            "rechecks": [1, 1],
+            "doneTicks": [6, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": "per-job",
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 8,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 5,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "assignees",
+      "board": "safe",
+      "points": [
+        {
+          "level": 1,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 6],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [3, 3],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [2, 2],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 6,
+            "fixedCost": 4,
+            "rechecks": [0, 0],
+            "doneTicks": [2, 2],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 4,
+            "fixedCost": 2,
+            "rechecks": [0, 0],
+            "doneTicks": [2, 2],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "factor": "assignees",
+      "board": "fail",
+      "points": [
+        {
+          "level": 1,
+          "preference": "separate",
+          "separate": {
+            "value": 6,
+            "workSpent": 7,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, null],
+            "remainingWork": 2,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 0,
+            "workSpent": 7,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [null, null],
+            "remainingWork": 1,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 9,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [3, 5],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 8,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        },
+        {
+          "level": 3,
+          "preference": "bundle",
+          "separate": {
+            "value": 12,
+            "workSpent": 9,
+            "fixedCost": 6,
+            "rechecks": [0, 1],
+            "doneTicks": [2, 3],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "b"
+              }
+            ]
+          },
+          "bundle": {
+            "value": 12,
+            "workSpent": 8,
+            "fixedCost": 4,
+            "rechecks": [1, 1],
+            "doneTicks": [4, 4],
+            "remainingWork": 0,
+            "inputs": [
+              {
+                "type": "bundle",
+                "ids": ["a", "b"]
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              },
+              {
+                "type": "work",
+                "id": "a"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "reversals": [
+    {
+      "factor": "horizon",
+      "board": "safe",
+      "before": {
+        "level": 2,
+        "preference": "tie",
+        "separate": {
+          "value": 0,
+          "workSpent": 2
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 2
+        }
+      },
+      "after": {
+        "level": 3,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 3
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 3
+        }
+      }
+    },
+    {
+      "factor": "horizon",
+      "board": "safe",
+      "before": {
+        "level": 3,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 3
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 3
+        }
+      },
+      "after": {
+        "level": 4,
+        "preference": "bundle",
+        "separate": {
+          "value": 6,
+          "workSpent": 4
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 4
+        }
+      }
+    },
+    {
+      "factor": "horizon",
+      "board": "fail",
+      "before": {
+        "level": 2,
+        "preference": "tie",
+        "separate": {
+          "value": 0,
+          "workSpent": 2
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 2
+        }
+      },
+      "after": {
+        "level": 3,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 3
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 3
+        }
+      }
+    },
+    {
+      "factor": "horizon",
+      "board": "fail",
+      "before": {
+        "level": 7,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": 8,
+        "preference": "bundle",
+        "separate": {
+          "value": 6,
+          "workSpent": 8
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 8
+        }
+      }
+    },
+    {
+      "factor": "valueA",
+      "board": "fail",
+      "before": {
+        "level": 0,
+        "preference": "tie",
+        "separate": {
+          "value": 0,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": 1,
+        "preference": "separate",
+        "separate": {
+          "value": 1,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "precursor",
+      "board": "fail",
+      "before": {
+        "level": 0,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": 1,
+        "preference": "bundle",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "partialSuccess",
+      "board": "fail",
+      "before": {
+        "level": "no",
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": "yes",
+        "preference": "bundle",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "bundleOpCost",
+      "board": "safe",
+      "before": {
+        "level": 1,
+        "preference": "bundle",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 5
+        }
+      },
+      "after": {
+        "level": 2,
+        "preference": "tie",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 6
+        }
+      }
+    },
+    {
+      "factor": "bundleOpCost",
+      "board": "safe",
+      "before": {
+        "level": 2,
+        "preference": "tie",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 6
+        }
+      },
+      "after": {
+        "level": 3,
+        "preference": "separate",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "fixedCost",
+      "board": "safe",
+      "before": {
+        "level": 0,
+        "preference": "tie",
+        "separate": {
+          "value": 12,
+          "workSpent": 2
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 2
+        }
+      },
+      "after": {
+        "level": 1,
+        "preference": "bundle",
+        "separate": {
+          "value": 12,
+          "workSpent": 4
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 3
+        }
+      }
+    },
+    {
+      "factor": "fixedCost",
+      "board": "safe",
+      "before": {
+        "level": 5,
+        "preference": "bundle",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": 6,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "fixedCost",
+      "board": "safe",
+      "before": {
+        "level": 6,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": 7,
+        "preference": "tie",
+        "separate": {
+          "value": 0,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "fixedCost",
+      "board": "fail",
+      "before": {
+        "level": 0,
+        "preference": "separate",
+        "separate": {
+          "value": 12,
+          "workSpent": 3
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 4
+        }
+      },
+      "after": {
+        "level": 1,
+        "preference": "tie",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 6
+        }
+      }
+    },
+    {
+      "factor": "fixedCost",
+      "board": "fail",
+      "before": {
+        "level": 1,
+        "preference": "tie",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 6
+        }
+      },
+      "after": {
+        "level": 2,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "fixedCost",
+      "board": "fail",
+      "before": {
+        "level": 6,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": 7,
+        "preference": "tie",
+        "separate": {
+          "value": 0,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "fixedBasis",
+      "board": "safe",
+      "before": {
+        "level": "shared-once",
+        "preference": "bundle",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 4
+        }
+      },
+      "after": {
+        "level": "per-job",
+        "preference": "tie",
+        "separate": {
+          "value": 12,
+          "workSpent": 6
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 6
+        }
+      }
+    },
+    {
+      "factor": "fixedBasis",
+      "board": "fail",
+      "before": {
+        "level": "shared-recheck",
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": "shared-once",
+        "preference": "bundle",
+        "separate": {
+          "value": 12,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 6
+        }
+      }
+    },
+    {
+      "factor": "fixedBasis",
+      "board": "fail",
+      "before": {
+        "level": "shared-once",
+        "preference": "bundle",
+        "separate": {
+          "value": 12,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 6
+        }
+      },
+      "after": {
+        "level": "per-job",
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      }
+    },
+    {
+      "factor": "assignees",
+      "board": "fail",
+      "before": {
+        "level": 1,
+        "preference": "separate",
+        "separate": {
+          "value": 6,
+          "workSpent": 7
+        },
+        "bundle": {
+          "value": 0,
+          "workSpent": 7
+        }
+      },
+      "after": {
+        "level": 2,
+        "preference": "bundle",
+        "separate": {
+          "value": 12,
+          "workSpent": 9
+        },
+        "bundle": {
+          "value": 12,
+          "workSpent": 8
+        }
+      }
+    }
+  ]
+}

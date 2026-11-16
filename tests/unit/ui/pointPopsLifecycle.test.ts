@@ -92,7 +92,7 @@ function unmount() {
 function mountPops(initial: PointPopsProps) {
   let props = initial;
   let tree: ReactNode;
-  const render = () => {
+  const render = (pendingRenderDelayMs = 0) => {
     let count = 0;
     do {
       if (++count > 10) throw new Error('PointPops の更新が収束しませんでした');
@@ -100,15 +100,19 @@ function mountPops(initial: PointPopsProps) {
       hooks.dirty = false;
       tree = PointPops(props);
       for (const effect of hooks.effects.splice(0)) effect();
+      if (hooks.dirty && pendingRenderDelayMs > 0) {
+        vi.advanceTimersByTime(pendingRenderDelayMs);
+        pendingRenderDelayMs = 0;
+      }
     } while (hooks.dirty);
   };
   render();
   return {
     all: () => elements(tree).filter((node) => node.type === 'span'),
     root: () => elements(tree)[0],
-    update(next: Partial<PointPopsProps>) {
+    update(next: Partial<PointPopsProps>, pendingRenderDelayMs = 0) {
       props = { ...props, ...next };
-      render();
+      render(pendingRenderDelayMs);
     },
     advance(ms: number) {
       vi.advanceTimersByTime(ms);
@@ -175,6 +179,17 @@ afterEach(() => {
 });
 
 describe('PointPops の増分とライフサイクル', () => {
+  it('数字のDOM反映が遅れても、描画されてから1100msの寿命を保つ', () => {
+    const screen = mountPops({ deliveryScore: 0 });
+    screen.update({ deliveryScore: 5 }, 1500);
+    expect(screen.all().map(content)).toEqual(['+5']);
+    screen.advance(1099);
+    expect(screen.all().map(content)).toEqual(['+5']);
+    screen.advance(1);
+    expect(screen.all()).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('狭い盤面では古い得点から消し、リサイズ後も収まる最新の得点だけを残す', () => {
     hooks.reducedMotion = true;
     const layer = mockLayer(151.9, 32);

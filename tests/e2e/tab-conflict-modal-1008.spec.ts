@@ -31,10 +31,31 @@ async function seedBoth(page: Page, other: Page) {
   await seedMeta(other, initialMeta);
 }
 
+async function storedMeta(page: Page): Promise<MetaState | null> {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('devops-tycoon');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<MetaState | null>((resolve, reject) => {
+        const request = db.transaction('meta', 'readonly').objectStore('meta').get('current');
+        request.onsuccess = () => resolve((request.result as MetaState | undefined) ?? null);
+        request.onerror = () => reject(request.error);
+      });
+    } finally {
+      db.close();
+    }
+  });
+}
+
 async function triggerMetaConflict(other: Page, page: Page) {
   expect(
     await page.evaluate(() => (window as TabGameWindow).game?.purchaseMetaUnlock('unlock-devin')),
   ).toEqual({ ok: true });
+  // 保存完了前に別タブが先に書くと、競合するタブが逆転してしまう。
+  await expect.poll(() => storedMeta(page)).toMatchObject({ unlockedCards: ['devin'] });
   await other.evaluate(() => (window as TabGameWindow).game?.setSoundMuted(false));
 }
 
@@ -164,6 +185,9 @@ for (const width of [320, 390, 1280] as const) {
     );
     expect(fontSize).toBeGreaterThanOrEqual(11);
 
+    const formationButton = other.getByTestId('open-formation');
+    // 被覆を測る前にスクロールし、閉じたモーダルの背面を実際に操作できるか確認する。
+    await formationButton.click({ trial: true });
     const formationReachable = await other.evaluate(() => {
       const button = document.querySelector('[data-testid="open-formation"]');
       const chip = document.querySelector('[data-testid="tab-conflict-quiet"]');
@@ -192,9 +216,7 @@ for (const width of [320, 390, 1280] as const) {
       return { ok: false, reason: label };
     });
     expect(formationReachable.ok, JSON.stringify(formationReachable)).toBe(true);
-    await other.getByTestId('open-formation').evaluate((button) => {
-      if (button instanceof HTMLButtonElement) button.click();
-    });
+    await formationButton.click();
     await expect(other.getByTestId('formation')).toBeVisible();
     await expect(chip).toHaveJSProperty('inert', true);
     await other.getByTestId('formation-close').click({ trial: true });

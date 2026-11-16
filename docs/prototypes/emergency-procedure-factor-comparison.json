@@ -1,0 +1,4114 @@
+{
+  "conditions": {
+    "seed": "RI-176",
+    "horizon": 6,
+    "focus": 6,
+    "manualCost": 2,
+    "shipValue": 9,
+    "lossPerIncident": 5,
+    "arrivals": {
+      "calm": [0, 0, 0, 0, 1, 0, 0],
+      "crisis": [0, 0, 2, 0, 0, 0, 0],
+      "untargetable": [0, 0, 2, 0, 0, 0, 0]
+    },
+    "decision": {
+      "manual": "react",
+      "reserved": "reserve",
+      "score": "shippedValue - incidentLoss",
+      "leaveManualSlot": "対象を消せる盤面で残件が無いとき、利用可能集中力が手動費用を超える場合だけ出荷する",
+      "noDelayForTrigger": "手動が先でも、条件件数を残すために火消しを遅らせない"
+    },
+    "baseline": {
+      "reserveAmount": 2,
+      "incidentThreshold": 2,
+      "resolveOrder": "auto-first"
+    },
+    "held": {
+      "reserveAmount": "予約額だけを動かす。条件2件、自動が先。手動費用2、出荷9、損失5",
+      "incidentThreshold": "条件件数だけを動かす。予約額2、自動が先",
+      "resolveOrder": "手動との順序だけを動かす。予約額2、条件2件"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "reserveAmount": [
+      {
+        "axis": "reserveAmount",
+        "parameter": "0",
+        "rules": {
+          "reserveAmount": 0,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "tie",
+            "margin": 0,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "reserved",
+            "margin": 5,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 2,
+                "reservedFocus": 0,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto,manual:firefight,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "tie",
+            "margin": 0,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,manual:ship,loss:10",
+                  "t3:arrive+0,auto:hold,manual:ship,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -23
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "reserveAmount",
+        "parameter": "1",
+        "rules": {
+          "reserveAmount": 1,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -15,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 1,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 1,
+                "incidentLoss": 15,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": 3
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "reserved",
+            "margin": 5,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 0,
+                "availableSpent": 4,
+                "reservedSpent": 1,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto,manual:firefight,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 1,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,manual:ship,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "reserveAmount",
+        "parameter": "2",
+        "rules": {
+          "reserveAmount": 2,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "reserved",
+            "margin": 5,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 4,
+                "reservedSpent": 2,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto,manual:firefight,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,manual:ship,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "reserveAmount",
+        "parameter": "3",
+        "rules": {
+          "reserveAmount": 3,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -24,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 3,
+                "availableSpent": 2,
+                "reservedSpent": 0,
+                "incidents": 1,
+                "incidentLoss": 15,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -6
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "manual",
+            "margin": -20,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 0,
+                "availableSpent": 2,
+                "reservedSpent": 3,
+                "incidents": 1,
+                "incidentLoss": 25,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto,loss:5",
+                  "t3:arrive+0,auto:skip,loss:5",
+                  "t4:arrive+0,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -16
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -18,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 3,
+                "availableSpent": 2,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -41
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "reserveAmount",
+        "parameter": "4",
+        "rules": {
+          "reserveAmount": 4,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -18,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 4,
+                "availableSpent": 2,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 0,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 0
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "manual",
+            "margin": -4,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 2,
+                "reservedSpent": 4,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 0,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+2,auto,manual:firefight,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 0
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -18,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 4,
+                "availableSpent": 2,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -41
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "reserveAmount",
+        "parameter": "5",
+        "rules": {
+          "reserveAmount": 5,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -33,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 5,
+                "availableSpent": 0,
+                "reservedSpent": 0,
+                "incidents": 1,
+                "incidentLoss": 15,
+                "shippedValue": 0,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -15
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "manual",
+            "margin": -29,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 0,
+                "availableSpent": 0,
+                "reservedSpent": 5,
+                "incidents": 1,
+                "incidentLoss": 25,
+                "shippedValue": 0,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+2,auto,loss:5",
+                  "t3:arrive+0,auto:skip,loss:5",
+                  "t4:arrive+0,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -25
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -27,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 1,
+                "reservedFocus": 5,
+                "availableSpent": 0,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 0,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+2,auto:hold,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -50
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "reserveAmount",
+        "parameter": "6",
+        "rules": {
+          "reserveAmount": 6,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -33,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 6,
+                "availableSpent": 0,
+                "reservedSpent": 0,
+                "incidents": 1,
+                "incidentLoss": 15,
+                "shippedValue": 0,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -15
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "manual",
+            "margin": -29,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 0,
+                "reservedSpent": 6,
+                "incidents": 1,
+                "incidentLoss": 25,
+                "shippedValue": 0,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+2,auto,loss:5",
+                  "t3:arrive+0,auto:skip,loss:5",
+                  "t4:arrive+0,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -25
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -27,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 6,
+                "availableSpent": 0,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 0,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,loss:0",
+                  "t2:arrive+2,auto:hold,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -50
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "incidentThreshold": [
+      {
+        "axis": "incidentThreshold",
+        "parameter": "1",
+        "rules": {
+          "reserveAmount": 2,
+          "incidentThreshold": 1,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 2,
+                "reservedFocus": 0,
+                "availableSpent": 2,
+                "reservedSpent": 2,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 4,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "reserved",
+            "margin": 5,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 4,
+                "reservedSpent": 2,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto,manual:firefight,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,manual:ship,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incidentThreshold",
+        "parameter": "2",
+        "rules": {
+          "reserveAmount": 2,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "reserved",
+            "margin": 5,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 4,
+                "reservedSpent": 2,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto,manual:firefight,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,manual:ship,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incidentThreshold",
+        "parameter": "3",
+        "rules": {
+          "reserveAmount": 2,
+          "incidentThreshold": 3,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "manual",
+            "margin": -20,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 1,
+                "incidentLoss": 25,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,loss:5",
+                  "t4:arrive+0,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -16
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "incidentThreshold",
+        "parameter": "4",
+        "rules": {
+          "reserveAmount": 2,
+          "incidentThreshold": 4,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "manual",
+            "margin": -20,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 1,
+                "incidentLoss": 25,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,loss:5",
+                  "t4:arrive+0,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -16
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "resolveOrder": [
+      {
+        "axis": "resolveOrder",
+        "parameter": "auto-first",
+        "rules": {
+          "reserveAmount": 2,
+          "incidentThreshold": 2,
+          "resolveOrder": "auto-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,auto:skip,manual:firefight,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "reserved",
+            "margin": 5,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:firefight,loss:5",
+                  "t3:arrive+0,auto:skip,manual:firefight,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 4,
+                "reservedSpent": 2,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": true,
+                "firedTick": 2,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto,manual:firefight,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:skip,manual:ship,loss:10",
+                  "t3:arrive+0,auto:skip,manual:ship,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,auto:skip,manual:ship,loss:0",
+                  "t2:arrive+2,auto:hold,manual:ship,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "resolveOrder",
+        "parameter": "manual-first",
+        "rules": {
+          "reserveAmount": 2,
+          "incidentThreshold": 2,
+          "resolveOrder": "manual-first"
+        },
+        "scenarios": [
+          {
+            "scenario": "calm",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,manual:ship,auto:skip,loss:0",
+                  "t2:arrive+0,manual:ship,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,manual:firefight,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 18
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 0,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,manual:ship,auto:skip,loss:0",
+                  "t2:arrive+0,auto:skip,loss:0",
+                  "t3:arrive+0,auto:skip,loss:0",
+                  "t4:arrive+1,manual:firefight,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 9
+              }
+            }
+          },
+          {
+            "scenario": "crisis",
+            "preference": "manual",
+            "margin": -20,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 0,
+                "incidentLoss": 5,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,manual:ship,auto:skip,loss:0",
+                  "t2:arrive+2,manual:firefight,auto:skip,loss:5",
+                  "t3:arrive+0,manual:firefight,auto:skip,loss:0",
+                  "t4:arrive+0,auto:skip,loss:0",
+                  "t5:arrive+0,auto:skip,loss:0",
+                  "t6:arrive+0,auto:skip,loss:0"
+                ],
+                "netValue": 4
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "firefight"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 1,
+                "incidentLoss": 25,
+                "shippedValue": 9,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,manual:ship,auto:skip,loss:0",
+                  "t2:arrive+2,manual:firefight,auto:skip,loss:5",
+                  "t3:arrive+0,auto:skip,loss:5",
+                  "t4:arrive+0,auto:skip,loss:5",
+                  "t5:arrive+0,auto:skip,loss:5",
+                  "t6:arrive+0,auto:skip,loss:5"
+                ],
+                "netValue": -16
+              }
+            }
+          },
+          {
+            "scenario": "untargetable",
+            "preference": "manual",
+            "margin": -9,
+            "manual": {
+              "inputs": [
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 0,
+                "availableSpent": 6,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 27,
+                "fired": false,
+                "firedTick": null,
+                "held": false,
+                "resolutions": [
+                  "t1:arrive+0,manual:ship,auto:skip,loss:0",
+                  "t2:arrive+2,manual:ship,auto:skip,loss:10",
+                  "t3:arrive+0,manual:ship,auto:skip,loss:10",
+                  "t4:arrive+0,auto:skip,loss:10",
+                  "t5:arrive+0,auto:skip,loss:10",
+                  "t6:arrive+0,auto:skip,loss:10"
+                ],
+                "netValue": -23
+              }
+            },
+            "reserved": {
+              "inputs": [
+                {
+                  "type": "reserve"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick",
+                  "manual": "ship"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "availableFocus": 0,
+                "reservedFocus": 2,
+                "availableSpent": 4,
+                "reservedSpent": 0,
+                "incidents": 2,
+                "incidentLoss": 50,
+                "shippedValue": 18,
+                "fired": false,
+                "firedTick": null,
+                "held": true,
+                "resolutions": [
+                  "t1:arrive+0,manual:ship,auto:skip,loss:0",
+                  "t2:arrive+2,manual:ship,auto:hold,loss:10",
+                  "t3:arrive+0,auto:hold,loss:10",
+                  "t4:arrive+0,auto:hold,loss:10",
+                  "t5:arrive+0,auto:hold,loss:10",
+                  "t6:arrive+0,auto:hold,loss:10"
+                ],
+                "netValue": -32
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "reserveAmount",
+      "scenario": "calm",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "manual": 18,
+        "reserved": 18
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "manual",
+        "manual": 18,
+        "reserved": 3
+      }
+    },
+    {
+      "axis": "reserveAmount",
+      "scenario": "untargetable",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "manual": -23,
+        "reserved": -23
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "manual",
+        "manual": -23,
+        "reserved": -32
+      }
+    },
+    {
+      "axis": "reserveAmount",
+      "scenario": "crisis",
+      "before": {
+        "parameter": "2",
+        "preference": "reserved",
+        "manual": 4,
+        "reserved": 9
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "manual",
+        "manual": 4,
+        "reserved": -16
+      }
+    },
+    {
+      "axis": "incidentThreshold",
+      "scenario": "crisis",
+      "before": {
+        "parameter": "2",
+        "preference": "reserved",
+        "manual": 4,
+        "reserved": 9
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "manual",
+        "manual": 4,
+        "reserved": -16
+      }
+    },
+    {
+      "axis": "resolveOrder",
+      "scenario": "crisis",
+      "before": {
+        "parameter": "auto-first",
+        "preference": "reserved",
+        "manual": 4,
+        "reserved": 9
+      },
+      "after": {
+        "parameter": "manual-first",
+        "preference": "manual",
+        "manual": 4,
+        "reserved": -16
+      }
+    }
+  ]
+}

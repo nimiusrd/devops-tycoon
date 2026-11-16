@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyLegacyInput as apply,
+  baselineLegacyRules,
   chooseLegacyAction,
+  compareLegacyFactorReversals,
   compareLegacyStrategies,
   createLegacyPrototype as create,
   summarizeLegacy,
+  type LegacyRules,
 } from './legacyReplacement';
 import comparison from '../../docs/prototypes/legacy-replacement-comparison.json';
+import factors from '../../docs/prototypes/legacy-replacement-factor-comparison.json';
 
 describe('RI-179 レガシーの段階置換', () => {
   it('3件が揃う前は二重負担が残り、部分完了では新系の改善が出ない', () => {
@@ -101,6 +105,269 @@ describe('RI-179 レガシーの段階置換', () => {
         );
       }
       expect(summarizeLegacy(live)).toEqual(row.result);
+    }
+  });
+});
+
+function changedKeys(rules: LegacyRules): (keyof LegacyRules)[] {
+  return (Object.keys(baselineLegacyRules) as (keyof LegacyRules)[]).filter(
+    (key) => rules[key] !== baselineLegacyRules[key],
+  );
+}
+
+describe('RI-179 要因の反転', () => {
+  it('初回と同じ資源で要因を一つずつ動かし、記録した反転と再計算が一致する', () => {
+    const data = compareLegacyFactorReversals();
+    expect(data).toEqual(factors);
+    expect(data.conditions).toMatchObject({
+      seed: 'RI-179',
+      horizons: [5, 10],
+      migrationYield: 0,
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    });
+    const nets = (axis: keyof typeof data.sweeps) =>
+      data.sweeps[axis].map((item) => [
+        item.parameter,
+        item.horizons.map((horizon) => [
+          horizon.horizon,
+          horizon.keep.result.netValue,
+          horizon.replace.result.netValue,
+          horizon.preference,
+        ]),
+      ]);
+    expect(nets('migrationTicks')).toEqual([
+      [
+        '1',
+        [
+          [5, 20, 32, 'replace'],
+          [10, 40, 72, 'replace'],
+        ],
+      ],
+      [
+        '2',
+        [
+          [5, 20, 24, 'replace'],
+          [10, 40, 64, 'replace'],
+        ],
+      ],
+      [
+        '3',
+        [
+          [5, 20, 16, 'keep'],
+          [10, 40, 56, 'replace'],
+        ],
+      ],
+      [
+        '4',
+        [
+          [5, 20, 8, 'keep'],
+          [10, 40, 48, 'replace'],
+        ],
+      ],
+      [
+        '5',
+        [
+          [5, 20, 0, 'keep'],
+          [10, 40, 40, 'tie'],
+        ],
+      ],
+      [
+        '6',
+        [
+          [5, 20, 0, 'keep'],
+          [10, 40, 32, 'keep'],
+        ],
+      ],
+    ]);
+    expect(nets('dualBurden')).toEqual([
+      [
+        '0',
+        [
+          [5, 20, 16, 'keep'],
+          [10, 40, 56, 'replace'],
+        ],
+      ],
+      [
+        '2',
+        [
+          [5, 20, 16, 'keep'],
+          [10, 40, 56, 'replace'],
+        ],
+      ],
+      [
+        '4',
+        [
+          [5, 20, 16, 'keep'],
+          [10, 40, 56, 'replace'],
+        ],
+      ],
+    ]);
+    expect(nets('modernMultiplier')).toEqual([
+      [
+        '1',
+        [
+          [5, 20, 8, 'keep'],
+          [10, 40, 28, 'keep'],
+        ],
+      ],
+      [
+        '1.5',
+        [
+          [5, 20, 12, 'keep'],
+          [10, 40, 42, 'replace'],
+        ],
+      ],
+      [
+        '2',
+        [
+          [5, 20, 16, 'keep'],
+          [10, 40, 56, 'replace'],
+        ],
+      ],
+      [
+        '2.5',
+        [
+          [5, 20, 20, 'tie'],
+          [10, 40, 70, 'replace'],
+        ],
+      ],
+      [
+        '3',
+        [
+          [5, 20, 24, 'replace'],
+          [10, 40, 84, 'replace'],
+        ],
+      ],
+    ]);
+    expect(
+      data.reversals.map((item) => [
+        item.axis,
+        item.horizon,
+        item.before.parameter,
+        item.before.preference,
+        item.after.parameter,
+        item.after.preference,
+      ]),
+    ).toEqual([
+      ['migrationTicks', 5, '2', 'replace', '3', 'keep'],
+      ['migrationTicks', 10, '4', 'replace', '5', 'tie'],
+      ['migrationTicks', 10, '5', 'tie', '6', 'keep'],
+      ['modernMultiplier', 10, '1', 'keep', '1.5', 'replace'],
+      ['modernMultiplier', 5, '2', 'keep', '2.5', 'tie'],
+      ['modernMultiplier', 5, '2.5', 'tie', '3', 'replace'],
+    ]);
+    expect(data.reversals.some((item) => item.axis === 'dualBurden')).toBe(false);
+  });
+
+  it('基準行は初回の残す・置換と一致し、動かした規則は一つである', () => {
+    const data = compareLegacyFactorReversals();
+    const first = compareLegacyStrategies(comparison.seed);
+    for (const point of [
+      data.sweeps.migrationTicks.find((item) => item.parameter === '3'),
+      data.sweeps.dualBurden.find((item) => item.parameter === '2'),
+      data.sweeps.modernMultiplier.find((item) => item.parameter === '2'),
+    ]) {
+      if (!point) throw new Error('baseline');
+      expect(changedKeys(point.rules)).toEqual([]);
+      for (const horizon of point.horizons) {
+        const ship = first.find(
+          (row) => row.horizon === horizon.horizon && row.strategy === 'ship',
+        );
+        const replaced = first.find(
+          (row) => row.horizon === horizon.horizon && row.strategy === 'replace',
+        );
+        if (!ship || !replaced) throw new Error('first');
+        expect(horizon.keep.inputs).toEqual(ship.inputs);
+        expect(horizon.keep.result).toEqual(ship.result);
+        expect(horizon.replace.inputs).toEqual(replaced.inputs);
+        expect(horizon.replace.result).toEqual(replaced.result);
+        expect(first.some((row) => row.strategy === 'partial')).toBe(true);
+      }
+    }
+    const only: Record<string, keyof LegacyRules> = {
+      migrationTicks: 'migrationTicks',
+      dualBurden: 'dualPerTick',
+      modernMultiplier: 'modernMultiplier',
+    };
+    for (const [axis, key] of Object.entries(only)) {
+      for (const item of data.sweeps[axis as keyof typeof data.sweeps])
+        expect(changedKeys(item.rules).every((name) => name === key)).toBe(true);
+    }
+    for (const item of data.sweeps.dualBurden)
+      expect(item.rules.dualPerTick).toBe(
+        baselineLegacyRules.legacyPerTick - Number(item.parameter),
+      );
+    const unfinished = data.sweeps.migrationTicks.find((item) => item.parameter === '5');
+    const short = unfinished?.horizons.find((item) => item.horizon === 5);
+    expect(short?.replace.result).toMatchObject({
+      mode: 'dual',
+      doneTasks: 5,
+      modernValue: 0,
+      netValue: 0,
+    });
+    expect(short?.replace.inputs.some((input) => input.type === 'cutover')).toBe(false);
+    const finished = data.sweeps.migrationTicks.find((item) => item.parameter === '6');
+    const long = finished?.horizons.find((item) => item.horizon === 10);
+    expect(long?.replace.inputs.filter((input) => input.type === 'ship')).toHaveLength(4);
+    expect(long?.replace.result).toMatchObject({ mode: 'modern', doneTasks: 6, modernValue: 32 });
+    const slow = data.sweeps.modernMultiplier.find((item) => item.parameter === '1');
+    const fast = data.sweeps.modernMultiplier.find((item) => item.parameter === '3');
+    expect(slow?.horizons[1]?.replace.inputs).toEqual(fast?.horizons[1]?.replace.inputs);
+    expect(slow?.horizons[1]?.replace.result.modernValue).toBe(28);
+    expect(fast?.horizons[1]?.replace.result.modernValue).toBe(84);
+  });
+
+  it('二重運用の出荷だけが負担で変わり、移行tickは0のまま', () => {
+    for (const dualPerTick of [0, 2, 4]) {
+      const rules = { ...baselineLegacyRules, dualPerTick };
+      let state = apply(
+        apply(create('RI-179', 5, rules), { type: 'start' }, rules),
+        {
+          type: 'migrate',
+        },
+        rules,
+      );
+      expect(state).toMatchObject({ tick: 1, dualValue: 0, legacyValue: 0, modernValue: 0 });
+      state = apply(state, { type: 'ship' }, rules);
+      expect(state.dualValue).toBe(dualPerTick);
+      expect(state.legacyValue).toBe(0);
+      expect(state.modernValue).toBe(0);
+    }
+  });
+
+  it('要因比較の入力を再生すると差引が一致し、期末では同じ状態を返す', () => {
+    const data = compareLegacyFactorReversals();
+    for (const item of Object.values(data.sweeps).flat()) {
+      expect(item.rules.legacyPerTick).toBe(4);
+      for (const horizon of item.horizons) {
+        for (const strategy of ['keep', 'replace'] as const) {
+          const run = horizon[strategy];
+          let state = create(data.conditions.seed, horizon.horizon, item.rules);
+          const snapshot = structuredClone(state);
+          expect(state.tasks).toHaveLength(item.rules.migrationTicks);
+          const chosen = strategy === 'keep' ? 'ship' : 'replace';
+          for (const input of run.inputs) {
+            const previous = state;
+            const before = structuredClone(state);
+            expect(chooseLegacyAction(state, chosen)).toEqual(input);
+            state = apply(state, input, item.rules);
+            const restored = apply(JSON.parse(JSON.stringify(before)), input, item.rules);
+            expect(previous).toEqual(before);
+            expect(restored).toEqual(state);
+            expect(state.legacyValue + state.dualValue + state.modernValue).toBe(
+              summarizeLegacy(state).netValue,
+            );
+          }
+          expect(snapshot.tick).toBe(0);
+          expect(summarizeLegacy(state)).toEqual(run.result);
+          expect(state.inputs).toEqual(run.inputs);
+          expect(apply(state, { type: 'ship' }, item.rules)).toBe(state);
+        }
+      }
     }
   });
 });

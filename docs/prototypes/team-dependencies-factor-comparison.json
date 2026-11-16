@@ -1,0 +1,2492 @@
+{
+  "conditions": {
+    "seed": "RI-216",
+    "horizons": [3, 4],
+    "followupHorizons": [3, 4, 5, 6, 7, 8],
+    "jobs": {
+      "gate": {
+        "work": 2,
+        "value": 1
+      },
+      "feature": {
+        "work": 2,
+        "value": 8,
+        "requires": "gate"
+      },
+      "followup": {
+        "work": 2,
+        "value": 4,
+        "requires": "gate"
+      },
+      "hot": {
+        "work": 2,
+        "value": 6,
+        "lateValue": 0
+      }
+    },
+    "support": 1,
+    "decision": {
+      "aware": "依存を見て、前提が閉じていれば platform、feature が対象なら product、それ以外は incident",
+      "blind": "依存を見ず、期限内の hot が残っていれば incident、その後は同じ順",
+      "score": "納品した価値の合計",
+      "preference": "依存を見る差引が大きいとき aware、見ない方が大きいとき blind、同じとき tie"
+    },
+    "baseline": {
+      "passive": 0,
+      "split": 1,
+      "deadline": 2
+    },
+    "held": {
+      "passive": "自チームが支援なしで進める工数だけを動かす。支援は1チームへ1、期限は2、期末は3と4",
+      "split": "1工数を等分する数だけを動かす。自チーム処理は0、期限は2、期末は3と4。余った分割は空振り",
+      "horizon": "期末だけを動かす。自チーム処理は0、支援は分割しない、期限は2。仕事量は初回と同じ",
+      "deadline": "hot の期限 tick だけを動かす。自チーム処理は0、支援は分割しない、期末は3と4"
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "passive": [
+      {
+        "axis": "passive",
+        "parameter": "0",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 6,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  }
+                ],
+                "pending": ["gate", "feature", "followup"],
+                "score": 6,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -5
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 7,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 7,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 2
+          }
+        ]
+      },
+      {
+        "axis": "passive",
+        "parameter": "1",
+        "rules": {
+          "passive": 1,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 0,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 1,
+                    "value": 8
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 2,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 15,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 0,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 2,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup"],
+                "score": 15,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 4
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 0,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 1,
+                    "value": 8
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 2,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 0,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 2,
+                    "value": 8
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 3,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          }
+        ]
+      },
+      {
+        "axis": "passive",
+        "parameter": "2",
+        "rules": {
+          "passive": 2,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 0,
+                    "value": 1
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 0,
+                    "value": 6
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 1,
+                    "value": 8
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 1,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 0,
+                    "value": 1
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 0,
+                    "value": 6
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 1,
+                    "value": 8
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 1,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 0,
+                    "value": 1
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 0,
+                    "value": 6
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 1,
+                    "value": 8
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 1,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "wait"
+                },
+                {
+                  "type": "wait"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 0,
+                    "value": 1
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 0,
+                    "value": 6
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 1,
+                    "value": 8
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 1,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          }
+        ]
+      }
+    ],
+    "split": [
+      {
+        "axis": "split",
+        "parameter": "1",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 6,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  }
+                ],
+                "pending": ["gate", "feature", "followup"],
+                "score": 6,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -5
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 7,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 7,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 2
+          }
+        ]
+      },
+      {
+        "axis": "split",
+        "parameter": "2",
+        "rules": {
+          "passive": 0,
+          "split": 2,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                }
+              ],
+              "result": {
+                "value": 0,
+                "wasted": 0,
+                "delivered": [],
+                "pending": ["gate", "feature", "followup", "hot"],
+                "score": 0,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                }
+              ],
+              "result": {
+                "value": 0,
+                "wasted": 0,
+                "delivered": [],
+                "pending": ["gate", "feature", "followup", "hot"],
+                "score": 0,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 3,
+                    "value": 0
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 3,
+                    "value": 0
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          }
+        ]
+      },
+      {
+        "axis": "split",
+        "parameter": "3",
+        "rules": {
+          "passive": 0,
+          "split": 3,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                }
+              ],
+              "result": {
+                "value": 0,
+                "wasted": 1,
+                "delivered": [],
+                "pending": ["gate", "feature", "followup", "hot"],
+                "score": 0,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                }
+              ],
+              "result": {
+                "value": 0,
+                "wasted": 1,
+                "delivered": [],
+                "pending": ["gate", "feature", "followup", "hot"],
+                "score": 0,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                }
+              ],
+              "result": {
+                "value": 0,
+                "wasted": 1.3333333333333333,
+                "delivered": [],
+                "pending": ["gate", "feature", "followup", "hot"],
+                "score": 0,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["incident", "platform"]
+                },
+                {
+                  "type": "support-batch",
+                  "teams": ["platform", "incident"]
+                }
+              ],
+              "result": {
+                "value": 0,
+                "wasted": 1.3333333333333333,
+                "delivered": [],
+                "pending": ["gate", "feature", "followup", "hot"],
+                "score": 0,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          }
+        ]
+      }
+    ],
+    "horizon": [
+      {
+        "axis": "horizon",
+        "parameter": "3",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 6,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  }
+                ],
+                "pending": ["gate", "feature", "followup"],
+                "score": 6,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -5
+          }
+        ]
+      },
+      {
+        "axis": "horizon",
+        "parameter": "4",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 7,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 7,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 2
+          }
+        ]
+      },
+      {
+        "axis": "horizon",
+        "parameter": "5",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 5,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 7,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 7,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 2
+          }
+        ]
+      },
+      {
+        "axis": "horizon",
+        "parameter": "6",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 6,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 5,
+                    "value": 0
+                  }
+                ],
+                "pending": ["followup"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 15,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup"],
+                "score": 15,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -6
+          }
+        ]
+      },
+      {
+        "axis": "horizon",
+        "parameter": "7",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 7,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 5,
+                    "value": 0
+                  }
+                ],
+                "pending": ["followup"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 15,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 5,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup"],
+                "score": 15,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -6
+          }
+        ]
+      },
+      {
+        "axis": "horizon",
+        "parameter": "8",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 8,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 13,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  },
+                  {
+                    "id": "hot",
+                    "tick": 5,
+                    "value": 0
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 7,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 13,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                }
+              ],
+              "result": {
+                "value": 19,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 5,
+                    "value": 8
+                  },
+                  {
+                    "id": "followup",
+                    "tick": 7,
+                    "value": 4
+                  }
+                ],
+                "pending": [],
+                "score": 19,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -6
+          }
+        ]
+      }
+    ],
+    "deadline": [
+      {
+        "axis": "deadline",
+        "parameter": "0",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 0
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 2,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "preference": "tie",
+            "margin": 0
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 2,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 8
+          }
+        ]
+      },
+      {
+        "axis": "deadline",
+        "parameter": "1",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 1
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 6,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  }
+                ],
+                "pending": ["gate", "feature", "followup"],
+                "score": 6,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -5
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 7,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 7,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 2
+          }
+        ]
+      },
+      {
+        "axis": "deadline",
+        "parameter": "2",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 2
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 6,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  }
+                ],
+                "pending": ["gate", "feature", "followup"],
+                "score": 6,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -5
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 7,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 7,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 2
+          }
+        ]
+      },
+      {
+        "axis": "deadline",
+        "parameter": "3",
+        "rules": {
+          "passive": 0,
+          "split": 1,
+          "deadline": 3
+        },
+        "boards": [
+          {
+            "horizon": 3,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 1,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup", "hot"],
+                "score": 1,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 6,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  }
+                ],
+                "pending": ["gate", "feature", "followup"],
+                "score": 6,
+                "lost": false
+              }
+            },
+            "preference": "blind",
+            "margin": -5
+          },
+          {
+            "horizon": 4,
+            "aware": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                },
+                {
+                  "type": "support",
+                  "team": "product"
+                }
+              ],
+              "result": {
+                "value": 9,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "gate",
+                    "tick": 1,
+                    "value": 1
+                  },
+                  {
+                    "id": "feature",
+                    "tick": 3,
+                    "value": 8
+                  }
+                ],
+                "pending": ["followup", "hot"],
+                "score": 9,
+                "lost": false
+              }
+            },
+            "blind": {
+              "inputs": [
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "incident"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                },
+                {
+                  "type": "support",
+                  "team": "platform"
+                }
+              ],
+              "result": {
+                "value": 7,
+                "wasted": 0,
+                "delivered": [
+                  {
+                    "id": "hot",
+                    "tick": 1,
+                    "value": 6
+                  },
+                  {
+                    "id": "gate",
+                    "tick": 3,
+                    "value": 1
+                  }
+                ],
+                "pending": ["feature", "followup"],
+                "score": 7,
+                "lost": false
+              }
+            },
+            "preference": "aware",
+            "margin": 2
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "passive",
+      "before": {
+        "parameter": "0",
+        "horizon": 3,
+        "preference": "blind",
+        "aware": 1,
+        "blind": 6
+      },
+      "after": {
+        "parameter": "1",
+        "horizon": 3,
+        "preference": "aware",
+        "aware": 19,
+        "blind": 15
+      }
+    },
+    {
+      "axis": "passive",
+      "before": {
+        "parameter": "0",
+        "horizon": 4,
+        "preference": "aware",
+        "aware": 9,
+        "blind": 7
+      },
+      "after": {
+        "parameter": "1",
+        "horizon": 4,
+        "preference": "tie",
+        "aware": 19,
+        "blind": 19
+      }
+    },
+    {
+      "axis": "passive",
+      "before": {
+        "parameter": "1",
+        "horizon": 3,
+        "preference": "aware",
+        "aware": 19,
+        "blind": 15
+      },
+      "after": {
+        "parameter": "2",
+        "horizon": 3,
+        "preference": "tie",
+        "aware": 19,
+        "blind": 19
+      }
+    },
+    {
+      "axis": "split",
+      "before": {
+        "parameter": "1",
+        "horizon": 3,
+        "preference": "blind",
+        "aware": 1,
+        "blind": 6
+      },
+      "after": {
+        "parameter": "2",
+        "horizon": 3,
+        "preference": "tie",
+        "aware": 0,
+        "blind": 0
+      }
+    },
+    {
+      "axis": "split",
+      "before": {
+        "parameter": "1",
+        "horizon": 4,
+        "preference": "aware",
+        "aware": 9,
+        "blind": 7
+      },
+      "after": {
+        "parameter": "2",
+        "horizon": 4,
+        "preference": "tie",
+        "aware": 1,
+        "blind": 1
+      }
+    },
+    {
+      "axis": "horizon",
+      "before": {
+        "parameter": "3",
+        "horizon": 3,
+        "preference": "blind",
+        "aware": 1,
+        "blind": 6
+      },
+      "after": {
+        "parameter": "4",
+        "horizon": 4,
+        "preference": "aware",
+        "aware": 9,
+        "blind": 7
+      }
+    },
+    {
+      "axis": "horizon",
+      "before": {
+        "parameter": "5",
+        "horizon": 5,
+        "preference": "aware",
+        "aware": 9,
+        "blind": 7
+      },
+      "after": {
+        "parameter": "6",
+        "horizon": 6,
+        "preference": "blind",
+        "aware": 9,
+        "blind": 15
+      }
+    },
+    {
+      "axis": "deadline",
+      "before": {
+        "parameter": "0",
+        "horizon": 3,
+        "preference": "tie",
+        "aware": 1,
+        "blind": 1
+      },
+      "after": {
+        "parameter": "1",
+        "horizon": 3,
+        "preference": "blind",
+        "aware": 1,
+        "blind": 6
+      }
+    }
+  ]
+}

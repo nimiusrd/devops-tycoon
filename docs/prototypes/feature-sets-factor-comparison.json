@@ -1,0 +1,3670 @@
+{
+  "seed": "RI-153",
+  "conditions": {
+    "anchor": {
+      "deadline": 8,
+      "alertsRework": false,
+      "needed": ["reports", "alerts"]
+    },
+    "orders": {
+      "immediate": [0, 1, 3, 4, 5, 2],
+      "complete-feature": [3, 4, 5, 0, 1, 2]
+    },
+    "integration": [
+      {
+        "id": "reports",
+        "integrationValue": 8
+      },
+      {
+        "id": "alerts",
+        "integrationValue": 5
+      }
+    ],
+    "integrationAdjusted": false,
+    "featureCompletionAlwaysAhead": false,
+    "score": "個別価値と計上した統合価値は別欄のまま。合計点は作らない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "productionAdoption": false,
+    "repeatedFirstComparison": false
+  },
+  "sweeps": {
+    "deadline": [
+      {
+        "parameter": {
+          "deadline": 1,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 1,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0],
+            "individualValue": 0,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 3,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 4,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 1,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3],
+            "individualValue": 2,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [3],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 4,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 1,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "complete-feature",
+        "individualGap": -2,
+        "integrationGap": 0
+      },
+      {
+        "parameter": {
+          "deadline": 2,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 2,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0],
+            "individualValue": 4,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 3,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 4,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 2,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4],
+            "individualValue": 4,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [3, 4],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 2,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "tie",
+        "individualGap": 0,
+        "integrationGap": 0
+      },
+      {
+        "parameter": {
+          "deadline": 3,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 3,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1],
+            "individualValue": 4,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 3,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 4,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 3,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5],
+            "individualValue": 4,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [3, 4],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 3,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 3,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          }
+        ],
+        "relation": "tie",
+        "individualGap": 0,
+        "integrationGap": 0
+      },
+      {
+        "parameter": {
+          "deadline": 4,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 4,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1],
+            "individualValue": 8,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 3,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 4,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 4,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5],
+            "individualValue": 4,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [3, 4],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 2,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 4,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          }
+        ],
+        "relation": "immediate",
+        "individualGap": 4,
+        "integrationGap": 0
+      },
+      {
+        "parameter": {
+          "deadline": 5,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 5,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3],
+            "individualValue": 10,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 4,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 5,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5],
+            "individualValue": 4,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [3, 4],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 1,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 5,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          }
+        ],
+        "relation": "immediate",
+        "individualGap": 6,
+        "integrationGap": 0
+      },
+      {
+        "parameter": {
+          "deadline": 6,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 6,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 6,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5],
+            "individualValue": 7,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 6,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 5,
+        "integrationGap": 5
+      },
+      {
+        "parameter": {
+          "deadline": 7,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 7,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 3,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 7,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0],
+            "individualValue": 7,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 7,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 5,
+        "integrationGap": 5
+      },
+      {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": [],
+        "sameAsFirstComparison": true,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 8,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 2,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0, 0],
+            "individualValue": 11,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 1,
+        "integrationGap": 5
+      },
+      {
+        "parameter": {
+          "deadline": 9,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 9,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 1,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 9,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 9,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0, 0, 1],
+            "individualValue": 11,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 9,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 9,
+                "taskId": 1,
+                "result": "progress"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 1,
+        "integrationGap": 5
+      },
+      {
+        "parameter": {
+          "deadline": 10,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 10,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5, 5, 5],
+            "individualValue": 15,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 10,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 1, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 10,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 9,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 10,
+                "taskId": 5,
+                "result": "done"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0, 0, 1, 1],
+            "individualValue": 15,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 1, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 10,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 9,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 10,
+                "taskId": 1,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "tie",
+        "individualGap": 0,
+        "integrationGap": 0
+      }
+    ],
+    "reworkOnDeadline": [
+      {
+        "parameter": {
+          "deadline": 6,
+          "alertsRework": true,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline", "alertsRework"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 6,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": true
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 4,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 6,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5],
+            "individualValue": 4,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [3, 4],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 1,
+                "reworkPending": false
+              }
+            ],
+            "rework": 1,
+            "tick": 6,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "rework"
+              }
+            ]
+          }
+        ],
+        "relation": "immediate",
+        "individualGap": 8,
+        "integrationGap": 0
+      },
+      {
+        "parameter": {
+          "deadline": 7,
+          "alertsRework": true,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["deadline", "alertsRework"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 7,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": true
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 3,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 7,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 5],
+            "individualValue": 7,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 7,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 1,
+            "tick": 7,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "rework"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 5,
+        "integrationGap": 5
+      },
+      {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": true,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": ["alertsRework"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 8,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": true
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 2,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 5, 0],
+            "individualValue": 7,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 7,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 0,
+                "workLeft": 1,
+                "reworkPending": false
+              },
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 1,
+            "tick": 8,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "rework"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "progress"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 5,
+        "integrationGap": 5
+      }
+    ],
+    "customerNeed": [
+      {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "differsFromAnchor": [],
+        "sameAsFirstComparison": true,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 8,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 2,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0, 0],
+            "individualValue": 11,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 1,
+        "integrationGap": 5
+      },
+      {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": false,
+          "needed": ["alerts"]
+        },
+        "differsFromAnchor": ["needed"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 8,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 2,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0, 0],
+            "individualValue": 11,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 5,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "tradeoff",
+        "individualGap": 1,
+        "integrationGap": 5
+      },
+      {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": false,
+          "needed": ["reports"]
+        },
+        "differsFromAnchor": ["needed"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 8,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 2,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0, 0],
+            "individualValue": 11,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "immediate",
+        "individualGap": 1,
+        "integrationGap": 0
+      },
+      {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": false,
+          "needed": []
+        },
+        "differsFromAnchor": ["needed"],
+        "sameAsFirstComparison": false,
+        "initial": {
+          "version": 1,
+          "tick": 0,
+          "deadline": 8,
+          "tasks": [
+            {
+              "id": 0,
+              "featureId": "reports",
+              "role": "api",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 1,
+              "featureId": "reports",
+              "role": "screen",
+              "workLeft": 2,
+              "value": 4,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 2,
+              "featureId": "reports",
+              "role": "migration",
+              "workLeft": 5,
+              "value": 4,
+              "done": false,
+              "reworkPending": true
+            },
+            {
+              "id": 3,
+              "featureId": "alerts",
+              "role": "api",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 4,
+              "featureId": "alerts",
+              "role": "screen",
+              "workLeft": 1,
+              "value": 2,
+              "done": false,
+              "reworkPending": false
+            },
+            {
+              "id": 5,
+              "featureId": "alerts",
+              "role": "migration",
+              "workLeft": 4,
+              "value": 3,
+              "done": false,
+              "reworkPending": false
+            }
+          ],
+          "individualValue": 0,
+          "completions": [],
+          "history": []
+        },
+        "plays": [
+          {
+            "strategy": "immediate",
+            "inputs": [0, 0, 1, 1, 3, 4, 5, 5],
+            "individualValue": 12,
+            "integrationValue": 0,
+            "completedFeatures": [],
+            "completedTasks": [0, 1, 3, 4],
+            "pendingTasks": [
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              },
+              {
+                "id": 5,
+                "workLeft": 2,
+                "reworkPending": false
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 2,
+                "taskId": 0,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 1,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 1,
+                "result": "done"
+              },
+              {
+                "tick": 5,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 6,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 5,
+                "result": "progress"
+              }
+            ]
+          },
+          {
+            "strategy": "complete-feature",
+            "inputs": [3, 4, 5, 5, 5, 5, 0, 0],
+            "individualValue": 11,
+            "integrationValue": 5,
+            "completedFeatures": [
+              {
+                "featureId": "alerts",
+                "tick": 6,
+                "integrationValue": 5
+              }
+            ],
+            "completedTasks": [0, 3, 4, 5],
+            "pendingTasks": [
+              {
+                "id": 1,
+                "workLeft": 2,
+                "reworkPending": false
+              },
+              {
+                "id": 2,
+                "workLeft": 5,
+                "reworkPending": true
+              }
+            ],
+            "rework": 0,
+            "tick": 8,
+            "countedIntegration": 0,
+            "history": [
+              {
+                "tick": 1,
+                "taskId": 3,
+                "result": "done"
+              },
+              {
+                "tick": 2,
+                "taskId": 4,
+                "result": "done"
+              },
+              {
+                "tick": 3,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 4,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 5,
+                "taskId": 5,
+                "result": "progress"
+              },
+              {
+                "tick": 6,
+                "taskId": 5,
+                "result": "done"
+              },
+              {
+                "tick": 7,
+                "taskId": 0,
+                "result": "progress"
+              },
+              {
+                "tick": 8,
+                "taskId": 0,
+                "result": "done"
+              }
+            ]
+          }
+        ],
+        "relation": "immediate",
+        "individualGap": 1,
+        "integrationGap": 0
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "factor": "deadline",
+      "before": {
+        "parameter": {
+          "deadline": 1,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "complete-feature",
+        "individualGap": -2,
+        "integrationGap": 0
+      },
+      "after": {
+        "parameter": {
+          "deadline": 2,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "tie",
+        "individualGap": 0,
+        "integrationGap": 0
+      }
+    },
+    {
+      "factor": "deadline",
+      "before": {
+        "parameter": {
+          "deadline": 3,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "tie",
+        "individualGap": 0,
+        "integrationGap": 0
+      },
+      "after": {
+        "parameter": {
+          "deadline": 4,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "immediate",
+        "individualGap": 4,
+        "integrationGap": 0
+      }
+    },
+    {
+      "factor": "deadline",
+      "before": {
+        "parameter": {
+          "deadline": 5,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "immediate",
+        "individualGap": 6,
+        "integrationGap": 0
+      },
+      "after": {
+        "parameter": {
+          "deadline": 6,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "tradeoff",
+        "individualGap": 5,
+        "integrationGap": 5
+      }
+    },
+    {
+      "factor": "deadline",
+      "before": {
+        "parameter": {
+          "deadline": 9,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "tradeoff",
+        "individualGap": 1,
+        "integrationGap": 5
+      },
+      "after": {
+        "parameter": {
+          "deadline": 10,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "tie",
+        "individualGap": 0,
+        "integrationGap": 0
+      }
+    },
+    {
+      "factor": "reworkOnDeadline",
+      "before": {
+        "parameter": {
+          "deadline": 6,
+          "alertsRework": true,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "immediate",
+        "individualGap": 8,
+        "integrationGap": 0
+      },
+      "after": {
+        "parameter": {
+          "deadline": 7,
+          "alertsRework": true,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "tradeoff",
+        "individualGap": 5,
+        "integrationGap": 5
+      }
+    },
+    {
+      "factor": "customerNeed",
+      "before": {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": false,
+          "needed": ["alerts"]
+        },
+        "relation": "tradeoff",
+        "individualGap": 1,
+        "integrationGap": 5
+      },
+      "after": {
+        "parameter": {
+          "deadline": 8,
+          "alertsRework": false,
+          "needed": ["reports"]
+        },
+        "relation": "immediate",
+        "individualGap": 1,
+        "integrationGap": 0
+      }
+    },
+    {
+      "factor": "reworkVersusSameDeadline",
+      "before": {
+        "parameter": {
+          "deadline": 6,
+          "alertsRework": false,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "tradeoff",
+        "individualGap": 5,
+        "integrationGap": 5
+      },
+      "after": {
+        "parameter": {
+          "deadline": 6,
+          "alertsRework": true,
+          "needed": ["reports", "alerts"]
+        },
+        "relation": "immediate",
+        "individualGap": 8,
+        "integrationGap": 0
+      }
+    }
+  ]
+}

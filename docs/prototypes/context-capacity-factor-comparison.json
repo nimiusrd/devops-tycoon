@@ -1,0 +1,3097 @@
+{
+  "conditions": {
+    "seed": "RI-191",
+    "horizon": 8,
+    "work": 6,
+    "progress": 1,
+    "cost": 0,
+    "penalty": 5,
+    "featureValue": 10,
+    "migrationValue": 18,
+    "docs": {
+      "spec": "requirement",
+      "example": "implementation",
+      "history": "change"
+    },
+    "narrow": "公開された危険の先頭を1枠だけ覆う。枠が余っても足さない。危険が無ければ空",
+    "wide": "危険を見ず、spec、history、exampleの順に枠を埋める",
+    "wideOrder": ["spec", "history", "example"],
+    "featureDangerOrder": ["implementation", "requirement", "change"],
+    "migrationDangerOrder": ["requirement", "change", "implementation"],
+    "capacityLevels": [1, 2, 3],
+    "dangerCounts": [0, 1, 2, 3],
+    "baselineCapacity": 2,
+    "baselineDangerCount": {
+      "feature": 1,
+      "migration": 2
+    },
+    "score": "netValue。未カバー1つにつき5を出荷時に一度だけ引く",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionIntegration": false
+  },
+  "capacity": {
+    "held": "危険の数は機能1、移行2。枠だけを1、2、3にする",
+    "points": [
+      {
+        "scenario": "feature",
+        "capacity": 1,
+        "dangerCount": 1,
+        "dangers": ["implementation"],
+        "narrow": 10,
+        "wide": 5,
+        "preference": "narrow",
+        "runs": [
+          {
+            "scenario": "feature",
+            "width": "narrow",
+            "capacity": 1,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 1,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 10,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["example"]
+              },
+              "uncovered": {
+                "feature": []
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=example:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 10
+            }
+          },
+          {
+            "scenario": "feature",
+            "width": "wide",
+            "capacity": 1,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 1,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 5,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["spec"]
+              },
+              "uncovered": {
+                "feature": ["implementation"]
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=spec:missing=implementation",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 5
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "migration",
+        "capacity": 1,
+        "dangerCount": 2,
+        "dangers": ["requirement", "change"],
+        "narrow": 13,
+        "wide": 13,
+        "preference": "tie",
+        "runs": [
+          {
+            "scenario": "migration",
+            "width": "narrow",
+            "capacity": 1,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 1,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 13,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec"]
+              },
+              "uncovered": {
+                "migration": ["change"]
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec:missing=change",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 13
+            }
+          },
+          {
+            "scenario": "migration",
+            "width": "wide",
+            "capacity": 1,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 1,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 13,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec"]
+              },
+              "uncovered": {
+                "migration": ["change"]
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec:missing=change",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 13
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "feature",
+        "capacity": 2,
+        "dangerCount": 1,
+        "dangers": ["implementation"],
+        "narrow": 10,
+        "wide": 5,
+        "preference": "narrow",
+        "runs": [
+          {
+            "scenario": "feature",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 10,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["example"]
+              },
+              "uncovered": {
+                "feature": []
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=example:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 10
+            }
+          },
+          {
+            "scenario": "feature",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 5,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["spec", "history"]
+              },
+              "uncovered": {
+                "feature": ["implementation"]
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=spec+history:missing=implementation",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 5
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "migration",
+        "capacity": 2,
+        "dangerCount": 2,
+        "dangers": ["requirement", "change"],
+        "narrow": 13,
+        "wide": 18,
+        "preference": "wide",
+        "runs": [
+          {
+            "scenario": "migration",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 13,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec"]
+              },
+              "uncovered": {
+                "migration": ["change"]
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec:missing=change",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 13
+            }
+          },
+          {
+            "scenario": "migration",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 18,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec", "history"]
+              },
+              "uncovered": {
+                "migration": []
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec+history:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 18
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "feature",
+        "capacity": 3,
+        "dangerCount": 1,
+        "dangers": ["implementation"],
+        "narrow": 10,
+        "wide": 10,
+        "preference": "tie",
+        "runs": [
+          {
+            "scenario": "feature",
+            "width": "narrow",
+            "capacity": 3,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 3,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 10,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["example"]
+              },
+              "uncovered": {
+                "feature": []
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=example:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 10
+            }
+          },
+          {
+            "scenario": "feature",
+            "width": "wide",
+            "capacity": 3,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 3,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history", "example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 10,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["spec", "history", "example"]
+              },
+              "uncovered": {
+                "feature": []
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=spec+history+example:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 10
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "migration",
+        "capacity": 3,
+        "dangerCount": 2,
+        "dangers": ["requirement", "change"],
+        "narrow": 13,
+        "wide": 18,
+        "preference": "wide",
+        "runs": [
+          {
+            "scenario": "migration",
+            "width": "narrow",
+            "capacity": 3,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 3,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 13,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec"]
+              },
+              "uncovered": {
+                "migration": ["change"]
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec:missing=change",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 13
+            }
+          },
+          {
+            "scenario": "migration",
+            "width": "wide",
+            "capacity": 3,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 3,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history", "example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 18,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec", "history", "example"]
+              },
+              "uncovered": {
+                "migration": []
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec+history+example:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 18
+            }
+          }
+        ]
+      }
+    ],
+    "reversals": [
+      {
+        "factor": "capacity",
+        "scenario": "feature",
+        "before": {
+          "level": 2,
+          "preference": "narrow",
+          "narrow": 10,
+          "wide": 5
+        },
+        "after": {
+          "level": 3,
+          "preference": "tie",
+          "narrow": 10,
+          "wide": 10
+        },
+        "strict": false
+      },
+      {
+        "factor": "capacity",
+        "scenario": "migration",
+        "before": {
+          "level": 1,
+          "preference": "tie",
+          "narrow": 13,
+          "wide": 13
+        },
+        "after": {
+          "level": 2,
+          "preference": "wide",
+          "narrow": 13,
+          "wide": 18
+        },
+        "strict": false
+      }
+    ]
+  },
+  "dangerCount": {
+    "held": "枠は2。危険の数だけを0、1、2、3にする",
+    "points": [
+      {
+        "scenario": "feature",
+        "capacity": 2,
+        "dangerCount": 0,
+        "dangers": [],
+        "narrow": 10,
+        "wide": 10,
+        "preference": "tie",
+        "runs": [
+          {
+            "scenario": "feature",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 0,
+            "dangers": [],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": []
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 10,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": []
+              },
+              "uncovered": {
+                "feature": []
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=none:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 10
+            }
+          },
+          {
+            "scenario": "feature",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 0,
+            "dangers": [],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": []
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 10,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["spec", "history"]
+              },
+              "uncovered": {
+                "feature": []
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=spec+history:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 10
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "migration",
+        "capacity": 2,
+        "dangerCount": 0,
+        "dangers": [],
+        "narrow": 18,
+        "wide": 18,
+        "preference": "tie",
+        "runs": [
+          {
+            "scenario": "migration",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 0,
+            "dangers": [],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": []
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 18,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": []
+              },
+              "uncovered": {
+                "migration": []
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=none:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 18
+            }
+          },
+          {
+            "scenario": "migration",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 0,
+            "dangers": [],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": []
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 18,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec", "history"]
+              },
+              "uncovered": {
+                "migration": []
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec+history:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 18
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "feature",
+        "capacity": 2,
+        "dangerCount": 1,
+        "dangers": ["implementation"],
+        "narrow": 10,
+        "wide": 5,
+        "preference": "narrow",
+        "runs": [
+          {
+            "scenario": "feature",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 10,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["example"]
+              },
+              "uncovered": {
+                "feature": []
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=example:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 10
+            }
+          },
+          {
+            "scenario": "feature",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 1,
+            "dangers": ["implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 5,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["spec", "history"]
+              },
+              "uncovered": {
+                "feature": ["implementation"]
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=spec+history:missing=implementation",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 5
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "migration",
+        "capacity": 2,
+        "dangerCount": 1,
+        "dangers": ["requirement"],
+        "narrow": 18,
+        "wide": 18,
+        "preference": "tie",
+        "runs": [
+          {
+            "scenario": "migration",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 1,
+            "dangers": ["requirement"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 18,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec"]
+              },
+              "uncovered": {
+                "migration": []
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 18
+            }
+          },
+          {
+            "scenario": "migration",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 1,
+            "dangers": ["requirement"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 18,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec", "history"]
+              },
+              "uncovered": {
+                "migration": []
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec+history:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 18
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "feature",
+        "capacity": 2,
+        "dangerCount": 2,
+        "dangers": ["implementation", "requirement"],
+        "narrow": 5,
+        "wide": 5,
+        "preference": "tie",
+        "runs": [
+          {
+            "scenario": "feature",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 2,
+            "dangers": ["implementation", "requirement"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation", "requirement"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 5,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["example"]
+              },
+              "uncovered": {
+                "feature": ["requirement"]
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=example:missing=requirement",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 5
+            }
+          },
+          {
+            "scenario": "feature",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 2,
+            "dangers": ["implementation", "requirement"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation", "requirement"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 5,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["spec", "history"]
+              },
+              "uncovered": {
+                "feature": ["implementation"]
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=spec+history:missing=implementation",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 5
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "migration",
+        "capacity": 2,
+        "dangerCount": 2,
+        "dangers": ["requirement", "change"],
+        "narrow": 13,
+        "wide": 18,
+        "preference": "wide",
+        "runs": [
+          {
+            "scenario": "migration",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 13,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec"]
+              },
+              "uncovered": {
+                "migration": ["change"]
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec:missing=change",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 13
+            }
+          },
+          {
+            "scenario": "migration",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 2,
+            "dangers": ["requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 18,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec", "history"]
+              },
+              "uncovered": {
+                "migration": []
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec+history:covered",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 18
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "feature",
+        "capacity": 2,
+        "dangerCount": 3,
+        "dangers": ["implementation", "requirement", "change"],
+        "narrow": 0,
+        "wide": 5,
+        "preference": "wide",
+        "runs": [
+          {
+            "scenario": "feature",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 3,
+            "dangers": ["implementation", "requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation", "requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["example"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 0,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["example"]
+              },
+              "uncovered": {
+                "feature": ["requirement", "change"]
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=example:missing=requirement+change",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 0
+            }
+          },
+          {
+            "scenario": "feature",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 3,
+            "dangers": ["implementation", "requirement", "change"],
+            "initial": {
+              "version": 1,
+              "scenario": "feature",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "feature",
+                    "kind": "simple",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 10,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "feature": ["implementation", "requirement", "change"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 5,
+              "spent": 0,
+              "assignedDocs": {
+                "feature": ["spec", "history"]
+              },
+              "uncovered": {
+                "feature": ["implementation"]
+              },
+              "resolutions": [
+                "t1:feature:default-none+1",
+                "t2:feature:none+1",
+                "t3:feature:none+1",
+                "t4:feature:none+1",
+                "t5:feature:none+1",
+                "t6:feature:none+1,ship:10",
+                "context:feature:docs=spec+history:missing=implementation",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 5
+            }
+          }
+        ]
+      },
+      {
+        "scenario": "migration",
+        "capacity": 2,
+        "dangerCount": 3,
+        "dangers": ["requirement", "change", "implementation"],
+        "narrow": 8,
+        "wide": 13,
+        "preference": "wide",
+        "runs": [
+          {
+            "scenario": "migration",
+            "width": "narrow",
+            "capacity": 2,
+            "dangerCount": 3,
+            "dangers": ["requirement", "change", "implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement", "change", "implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 8,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec"]
+              },
+              "uncovered": {
+                "migration": ["change", "implementation"]
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec:missing=change+implementation",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 8
+            }
+          },
+          {
+            "scenario": "migration",
+            "width": "wide",
+            "capacity": 2,
+            "dangerCount": 3,
+            "dangers": ["requirement", "change", "implementation"],
+            "initial": {
+              "version": 1,
+              "scenario": "migration",
+              "board": {
+                "version": 1,
+                "seed": "RI-191",
+                "scenario": "custom",
+                "tick": 0,
+                "horizon": 8,
+                "budget": 0,
+                "spent": 0,
+                "pendingModel": null,
+                "reviewLoad": 0,
+                "shippedValue": 0,
+                "jobs": [
+                  {
+                    "id": "migration",
+                    "kind": "complex",
+                    "work": 6,
+                    "progress": 0,
+                    "value": 18,
+                    "model": null,
+                    "shipped": null,
+                    "defect": false
+                  }
+                ],
+                "resolutions": [],
+                "inputs": []
+              },
+              "loaded": [],
+              "assignedDocs": {},
+              "uncovered": {},
+              "inputs": [],
+              "rules": {
+                "capacity": 2,
+                "risks": {
+                  "migration": ["requirement", "change", "implementation"]
+                }
+              }
+            },
+            "inputs": [
+              {
+                "type": "set",
+                "docs": ["spec", "history"]
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              },
+              {
+                "type": "tick"
+              }
+            ],
+            "result": {
+              "tick": 8,
+              "shippedValue": 13,
+              "spent": 0,
+              "assignedDocs": {
+                "migration": ["spec", "history"]
+              },
+              "uncovered": {
+                "migration": ["implementation"]
+              },
+              "resolutions": [
+                "t1:migration:default-none+1",
+                "t2:migration:none+1",
+                "t3:migration:none+1",
+                "t4:migration:none+1",
+                "t5:migration:none+1",
+                "t6:migration:none+1,ship:18",
+                "context:migration:docs=spec+history:missing=implementation",
+                "t7:idle",
+                "t8:idle"
+              ],
+              "netValue": 13
+            }
+          }
+        ]
+      }
+    ],
+    "reversals": [
+      {
+        "factor": "dangerCount",
+        "scenario": "feature",
+        "before": {
+          "level": 0,
+          "preference": "tie",
+          "narrow": 10,
+          "wide": 10
+        },
+        "after": {
+          "level": 1,
+          "preference": "narrow",
+          "narrow": 10,
+          "wide": 5
+        },
+        "strict": false
+      },
+      {
+        "factor": "dangerCount",
+        "scenario": "feature",
+        "before": {
+          "level": 1,
+          "preference": "narrow",
+          "narrow": 10,
+          "wide": 5
+        },
+        "after": {
+          "level": 2,
+          "preference": "tie",
+          "narrow": 5,
+          "wide": 5
+        },
+        "strict": false
+      },
+      {
+        "factor": "dangerCount",
+        "scenario": "feature",
+        "before": {
+          "level": 2,
+          "preference": "tie",
+          "narrow": 5,
+          "wide": 5
+        },
+        "after": {
+          "level": 3,
+          "preference": "wide",
+          "narrow": 0,
+          "wide": 5
+        },
+        "strict": false
+      },
+      {
+        "factor": "dangerCount",
+        "scenario": "migration",
+        "before": {
+          "level": 1,
+          "preference": "tie",
+          "narrow": 18,
+          "wide": 18
+        },
+        "after": {
+          "level": 2,
+          "preference": "wide",
+          "narrow": 13,
+          "wide": 18
+        },
+        "strict": false
+      }
+    ]
+  }
+}

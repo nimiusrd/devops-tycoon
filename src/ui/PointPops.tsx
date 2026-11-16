@@ -40,7 +40,7 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
   const prev = useRef(deliveryScore);
   const prevTeamId = useRef(teamId);
   const nextId = useRef(0);
-  const timers = useRef(new Set<number>());
+  const timers = useRef(new Map<number, number>());
   const [pops, setPops] = useState<Pop[]>([]);
   const [reservedTopPx, setReservedTopPx] = useState(0);
   const [layerHeight, setLayerHeight] = useState(0);
@@ -116,7 +116,7 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
   useEffect(() => {
     const pendingTimers = timers.current;
     return () => {
-      for (const timer of pendingTimers) window.clearTimeout(timer);
+      for (const timer of pendingTimers.values()) window.clearTimeout(timer);
       pendingTimers.clear();
     };
   }, []);
@@ -141,12 +141,20 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
       while (occupied.has(row)) row += 1;
       return [...retained, { ...pop, row }];
     });
-    const timer = window.setTimeout(() => {
-      timers.current.delete(timer);
-      setPops((cur) => cur.filter((p) => p.id !== pop.id));
-    }, 1100);
-    timers.current.add(timer);
   }, [deliveryScore, teamId, playSfx]);
+
+  // 新しい数字がDOMへ反映されてから寿命を数える。後続の出荷で既存IDの期限は延ばさない。
+  useEffect(() => {
+    const pendingTimers = timers.current;
+    for (const pop of pops) {
+      if (pendingTimers.has(pop.id)) continue;
+      const timer = window.setTimeout(() => {
+        pendingTimers.delete(pop.id);
+        setPops((cur) => cur.filter((p) => p.id !== pop.id));
+      }, 1100);
+      pendingTimers.set(pop.id, timer);
+    }
+  }, [pops]);
 
   const riseLimit = pointPopMaxRise(layerHeight, reservedTopPx);
   const popRise = Math.min(POP_LAYOUT.baseOffset, riseLimit);

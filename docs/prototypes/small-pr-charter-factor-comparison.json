@@ -1,0 +1,2317 @@
+{
+  "conditions": {
+    "seed": "RI-219",
+    "horizon": 3,
+    "jobs": [
+      {
+        "id": "small",
+        "size": 2,
+        "value": 4,
+        "risk": 0
+      },
+      {
+        "id": "large",
+        "size": 4,
+        "value": 10,
+        "risk": 6
+      }
+    ],
+    "baseline": {
+      "limit": 2,
+      "splitPieceValue": 5,
+      "riskWeight": {
+        "safe": 0,
+        "risky": 1
+      }
+    },
+    "score": "出荷価値からリスク×重みを引く。分割した断片のリスクは0。敗北は置かない",
+    "preference": "差引が大きい方を上とする。同じなら同点",
+    "reversalKind": {
+      "switch": "禁止する判断と禁止しない判断が入れ替わる",
+      "appear": "同点から一方が上回る",
+      "vanish": "一方の優位が同点に戻る"
+    },
+    "strategies": {
+      "free": "憲章を採らず、差引の高い未完了から出荷する",
+      "charter": "開始時に憲章を採り、上限を超える未完了を配列順に分割してから、差引の高い未完了を出荷する"
+    },
+    "held": {
+      "limit": "上限以外を動かすときは2。断片のsizeは上限。水準2は初回の状態のまま",
+      "splitPieceValue": "分割価値以外を動かすときは元の価値の半分。大きい仕事は5。水準5は初回の状態のまま",
+      "riskWeight": "重み以外を動かすときは盤面どおり。0は安全、1は危険の初回状態。適用値は riskWeight / (riskDenominator ?? 1)"
+    },
+    "levels": {
+      "limit": [1, 2, 3, 4],
+      "splitPieceValue": [3, 4, 5, 6, 7, 8],
+      "riskWeight": ["0", "1/2", "2/3", "1", "2"]
+    },
+    "oneAtATime": true,
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "repeatedFirstComparison": false,
+    "productionIntegrated": false,
+    "sharedProhibition": "charterBlocksの第3引数を省略すると上限2。RI-220はこの形のまま"
+  },
+  "sweeps": {
+    "limit": {
+      "safe": [
+        {
+          "factor": "limit",
+          "board": "safe",
+          "level": 1,
+          "changed": ["limit"],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "limit": 1
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "small"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              }
+            ],
+            "result": {
+              "value": 5,
+              "score": 5,
+              "charter": true,
+              "pending": ["small-a", "small-b", "large-b"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "limit",
+          "board": "safe",
+          "level": 2,
+          "changed": [],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": []
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "score": 10,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "limit",
+          "board": "safe",
+          "level": 3,
+          "changed": ["limit"],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "limit": 3
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "score": 10,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "limit",
+          "board": "safe",
+          "level": 4,
+          "changed": ["limit"],
+          "preference": "tie",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "limit": 4
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": true,
+              "pending": [],
+              "lost": false
+            }
+          }
+        }
+      ],
+      "risky": [
+        {
+          "factor": "limit",
+          "board": "risky",
+          "level": 1,
+          "changed": ["limit"],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "limit": 1
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "small"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              }
+            ],
+            "result": {
+              "value": 5,
+              "score": 5,
+              "charter": true,
+              "pending": ["small-a", "small-b", "large-b"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "limit",
+          "board": "risky",
+          "level": 2,
+          "changed": [],
+          "preference": "charter",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": []
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "score": 10,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "limit",
+          "board": "risky",
+          "level": 3,
+          "changed": ["limit"],
+          "preference": "charter",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "limit": 3
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "score": 10,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "limit",
+          "board": "risky",
+          "level": 4,
+          "changed": ["limit"],
+          "preference": "tie",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "limit": 4
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": true,
+              "pending": [],
+              "lost": false
+            }
+          }
+        }
+      ]
+    },
+    "splitPieceValue": {
+      "safe": [
+        {
+          "factor": "splitPieceValue",
+          "board": "safe",
+          "level": 3,
+          "changed": ["splitPieceValue"],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 3
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              }
+            ],
+            "result": {
+              "value": 7,
+              "score": 7,
+              "charter": true,
+              "pending": ["large-b"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "safe",
+          "level": 4,
+          "changed": ["splitPieceValue"],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 4
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "safe",
+          "level": 5,
+          "changed": [],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": []
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "score": 10,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "safe",
+          "level": 6,
+          "changed": ["splitPieceValue"],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 6
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 12,
+              "score": 12,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "safe",
+          "level": 7,
+          "changed": ["splitPieceValue"],
+          "preference": "tie",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 7
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "safe",
+          "level": 8,
+          "changed": ["splitPieceValue"],
+          "preference": "charter",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "safe",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 0,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 8
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 16,
+              "score": 16,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        }
+      ],
+      "risky": [
+        {
+          "factor": "splitPieceValue",
+          "board": "risky",
+          "level": 3,
+          "changed": ["splitPieceValue"],
+          "preference": "free",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 3
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              }
+            ],
+            "result": {
+              "value": 7,
+              "score": 7,
+              "charter": true,
+              "pending": ["large-b"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "risky",
+          "level": 4,
+          "changed": ["splitPieceValue"],
+          "preference": "tie",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 4
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "risky",
+          "level": 5,
+          "changed": [],
+          "preference": "charter",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": []
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 10,
+              "score": 10,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "risky",
+          "level": 6,
+          "changed": ["splitPieceValue"],
+          "preference": "charter",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 6
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 12,
+              "score": 12,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "risky",
+          "level": 7,
+          "changed": ["splitPieceValue"],
+          "preference": "charter",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 7
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 14,
+              "score": 14,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        },
+        {
+          "factor": "splitPieceValue",
+          "board": "risky",
+          "level": 8,
+          "changed": ["splitPieceValue"],
+          "preference": "charter",
+          "initial": {
+            "version": 1,
+            "seed": "RI-219",
+            "board": "risky",
+            "tick": 0,
+            "horizon": 3,
+            "riskWeight": 1,
+            "charter": false,
+            "adoptedAt": null,
+            "jobs": [
+              {
+                "id": "small",
+                "size": 2,
+                "value": 4,
+                "risk": 0,
+                "done": false
+              },
+              {
+                "id": "large",
+                "size": 4,
+                "value": 10,
+                "risk": 6,
+                "done": false
+              }
+            ],
+            "value": 0,
+            "inputs": [],
+            "splitPieceValue": 8
+          },
+          "free": {
+            "inputs": [
+              {
+                "type": "ship",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "small"
+              },
+              {
+                "type": "wait"
+              }
+            ],
+            "result": {
+              "value": 8,
+              "score": 8,
+              "charter": false,
+              "pending": [],
+              "lost": false
+            }
+          },
+          "charter": {
+            "inputs": [
+              {
+                "type": "adopt"
+              },
+              {
+                "type": "split",
+                "id": "large"
+              },
+              {
+                "type": "ship",
+                "id": "large-a"
+              },
+              {
+                "type": "ship",
+                "id": "large-b"
+              }
+            ],
+            "result": {
+              "value": 16,
+              "score": 16,
+              "charter": true,
+              "pending": ["small"],
+              "lost": false
+            }
+          }
+        }
+      ]
+    },
+    "riskWeight": [
+      {
+        "factor": "riskWeight",
+        "board": "jobs",
+        "level": "0",
+        "changed": [],
+        "preference": "free",
+        "initial": {
+          "version": 1,
+          "seed": "RI-219",
+          "board": "safe",
+          "tick": 0,
+          "horizon": 3,
+          "riskWeight": 0,
+          "charter": false,
+          "adoptedAt": null,
+          "jobs": [
+            {
+              "id": "small",
+              "size": 2,
+              "value": 4,
+              "risk": 0,
+              "done": false
+            },
+            {
+              "id": "large",
+              "size": 4,
+              "value": 10,
+              "risk": 6,
+              "done": false
+            }
+          ],
+          "value": 0,
+          "inputs": []
+        },
+        "free": {
+          "inputs": [
+            {
+              "type": "ship",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "small"
+            },
+            {
+              "type": "wait"
+            }
+          ],
+          "result": {
+            "value": 14,
+            "score": 14,
+            "charter": false,
+            "pending": [],
+            "lost": false
+          }
+        },
+        "charter": {
+          "inputs": [
+            {
+              "type": "adopt"
+            },
+            {
+              "type": "split",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "large-a"
+            },
+            {
+              "type": "ship",
+              "id": "large-b"
+            }
+          ],
+          "result": {
+            "value": 10,
+            "score": 10,
+            "charter": true,
+            "pending": ["small"],
+            "lost": false
+          }
+        }
+      },
+      {
+        "factor": "riskWeight",
+        "board": "jobs",
+        "level": "1/2",
+        "changed": ["riskWeight"],
+        "preference": "free",
+        "initial": {
+          "version": 1,
+          "seed": "RI-219",
+          "board": "safe",
+          "tick": 0,
+          "horizon": 3,
+          "riskWeight": 1,
+          "charter": false,
+          "adoptedAt": null,
+          "jobs": [
+            {
+              "id": "small",
+              "size": 2,
+              "value": 4,
+              "risk": 0,
+              "done": false
+            },
+            {
+              "id": "large",
+              "size": 4,
+              "value": 10,
+              "risk": 6,
+              "done": false
+            }
+          ],
+          "value": 0,
+          "inputs": [],
+          "riskDenominator": 2
+        },
+        "free": {
+          "inputs": [
+            {
+              "type": "ship",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "small"
+            },
+            {
+              "type": "wait"
+            }
+          ],
+          "result": {
+            "value": 11,
+            "score": 11,
+            "charter": false,
+            "pending": [],
+            "lost": false
+          }
+        },
+        "charter": {
+          "inputs": [
+            {
+              "type": "adopt"
+            },
+            {
+              "type": "split",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "large-a"
+            },
+            {
+              "type": "ship",
+              "id": "large-b"
+            }
+          ],
+          "result": {
+            "value": 10,
+            "score": 10,
+            "charter": true,
+            "pending": ["small"],
+            "lost": false
+          }
+        }
+      },
+      {
+        "factor": "riskWeight",
+        "board": "jobs",
+        "level": "2/3",
+        "changed": ["riskWeight"],
+        "preference": "tie",
+        "initial": {
+          "version": 1,
+          "seed": "RI-219",
+          "board": "safe",
+          "tick": 0,
+          "horizon": 3,
+          "riskWeight": 2,
+          "charter": false,
+          "adoptedAt": null,
+          "jobs": [
+            {
+              "id": "small",
+              "size": 2,
+              "value": 4,
+              "risk": 0,
+              "done": false
+            },
+            {
+              "id": "large",
+              "size": 4,
+              "value": 10,
+              "risk": 6,
+              "done": false
+            }
+          ],
+          "value": 0,
+          "inputs": [],
+          "riskDenominator": 3
+        },
+        "free": {
+          "inputs": [
+            {
+              "type": "ship",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "small"
+            },
+            {
+              "type": "wait"
+            }
+          ],
+          "result": {
+            "value": 10,
+            "score": 10,
+            "charter": false,
+            "pending": [],
+            "lost": false
+          }
+        },
+        "charter": {
+          "inputs": [
+            {
+              "type": "adopt"
+            },
+            {
+              "type": "split",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "large-a"
+            },
+            {
+              "type": "ship",
+              "id": "large-b"
+            }
+          ],
+          "result": {
+            "value": 10,
+            "score": 10,
+            "charter": true,
+            "pending": ["small"],
+            "lost": false
+          }
+        }
+      },
+      {
+        "factor": "riskWeight",
+        "board": "jobs",
+        "level": "1",
+        "changed": [],
+        "preference": "charter",
+        "initial": {
+          "version": 1,
+          "seed": "RI-219",
+          "board": "risky",
+          "tick": 0,
+          "horizon": 3,
+          "riskWeight": 1,
+          "charter": false,
+          "adoptedAt": null,
+          "jobs": [
+            {
+              "id": "small",
+              "size": 2,
+              "value": 4,
+              "risk": 0,
+              "done": false
+            },
+            {
+              "id": "large",
+              "size": 4,
+              "value": 10,
+              "risk": 6,
+              "done": false
+            }
+          ],
+          "value": 0,
+          "inputs": []
+        },
+        "free": {
+          "inputs": [
+            {
+              "type": "ship",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "small"
+            },
+            {
+              "type": "wait"
+            }
+          ],
+          "result": {
+            "value": 8,
+            "score": 8,
+            "charter": false,
+            "pending": [],
+            "lost": false
+          }
+        },
+        "charter": {
+          "inputs": [
+            {
+              "type": "adopt"
+            },
+            {
+              "type": "split",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "large-a"
+            },
+            {
+              "type": "ship",
+              "id": "large-b"
+            }
+          ],
+          "result": {
+            "value": 10,
+            "score": 10,
+            "charter": true,
+            "pending": ["small"],
+            "lost": false
+          }
+        }
+      },
+      {
+        "factor": "riskWeight",
+        "board": "jobs",
+        "level": "2",
+        "changed": ["riskWeight"],
+        "preference": "charter",
+        "initial": {
+          "version": 1,
+          "seed": "RI-219",
+          "board": "safe",
+          "tick": 0,
+          "horizon": 3,
+          "riskWeight": 2,
+          "charter": false,
+          "adoptedAt": null,
+          "jobs": [
+            {
+              "id": "small",
+              "size": 2,
+              "value": 4,
+              "risk": 0,
+              "done": false
+            },
+            {
+              "id": "large",
+              "size": 4,
+              "value": 10,
+              "risk": 6,
+              "done": false
+            }
+          ],
+          "value": 0,
+          "inputs": []
+        },
+        "free": {
+          "inputs": [
+            {
+              "type": "ship",
+              "id": "small"
+            },
+            {
+              "type": "ship",
+              "id": "large"
+            },
+            {
+              "type": "wait"
+            }
+          ],
+          "result": {
+            "value": 2,
+            "score": 2,
+            "charter": false,
+            "pending": [],
+            "lost": false
+          }
+        },
+        "charter": {
+          "inputs": [
+            {
+              "type": "adopt"
+            },
+            {
+              "type": "split",
+              "id": "large"
+            },
+            {
+              "type": "ship",
+              "id": "large-a"
+            },
+            {
+              "type": "ship",
+              "id": "large-b"
+            }
+          ],
+          "result": {
+            "value": 10,
+            "score": 10,
+            "charter": true,
+            "pending": ["small"],
+            "lost": false
+          }
+        }
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "factor": "limit",
+      "board": "safe",
+      "kind": "vanish",
+      "before": {
+        "level": 3,
+        "preference": "free",
+        "free": 14,
+        "charter": 10
+      },
+      "after": {
+        "level": 4,
+        "preference": "tie",
+        "free": 14,
+        "charter": 14
+      }
+    },
+    {
+      "factor": "limit",
+      "board": "risky",
+      "kind": "switch",
+      "before": {
+        "level": 1,
+        "preference": "free",
+        "free": 8,
+        "charter": 5
+      },
+      "after": {
+        "level": 2,
+        "preference": "charter",
+        "free": 8,
+        "charter": 10
+      }
+    },
+    {
+      "factor": "limit",
+      "board": "risky",
+      "kind": "vanish",
+      "before": {
+        "level": 3,
+        "preference": "charter",
+        "free": 8,
+        "charter": 10
+      },
+      "after": {
+        "level": 4,
+        "preference": "tie",
+        "free": 8,
+        "charter": 8
+      }
+    },
+    {
+      "factor": "splitPieceValue",
+      "board": "safe",
+      "kind": "vanish",
+      "before": {
+        "level": 6,
+        "preference": "free",
+        "free": 14,
+        "charter": 12
+      },
+      "after": {
+        "level": 7,
+        "preference": "tie",
+        "free": 14,
+        "charter": 14
+      }
+    },
+    {
+      "factor": "splitPieceValue",
+      "board": "safe",
+      "kind": "appear",
+      "before": {
+        "level": 7,
+        "preference": "tie",
+        "free": 14,
+        "charter": 14
+      },
+      "after": {
+        "level": 8,
+        "preference": "charter",
+        "free": 14,
+        "charter": 16
+      }
+    },
+    {
+      "factor": "splitPieceValue",
+      "board": "risky",
+      "kind": "vanish",
+      "before": {
+        "level": 3,
+        "preference": "free",
+        "free": 8,
+        "charter": 7
+      },
+      "after": {
+        "level": 4,
+        "preference": "tie",
+        "free": 8,
+        "charter": 8
+      }
+    },
+    {
+      "factor": "splitPieceValue",
+      "board": "risky",
+      "kind": "appear",
+      "before": {
+        "level": 4,
+        "preference": "tie",
+        "free": 8,
+        "charter": 8
+      },
+      "after": {
+        "level": 5,
+        "preference": "charter",
+        "free": 8,
+        "charter": 10
+      }
+    },
+    {
+      "factor": "riskWeight",
+      "board": "jobs",
+      "kind": "vanish",
+      "before": {
+        "level": "1/2",
+        "preference": "free",
+        "free": 11,
+        "charter": 10
+      },
+      "after": {
+        "level": "2/3",
+        "preference": "tie",
+        "free": 10,
+        "charter": 10
+      }
+    },
+    {
+      "factor": "riskWeight",
+      "board": "jobs",
+      "kind": "appear",
+      "before": {
+        "level": "2/3",
+        "preference": "tie",
+        "free": 10,
+        "charter": 10
+      },
+      "after": {
+        "level": "1",
+        "preference": "charter",
+        "free": 8,
+        "charter": 10
+      }
+    }
+  ]
+}

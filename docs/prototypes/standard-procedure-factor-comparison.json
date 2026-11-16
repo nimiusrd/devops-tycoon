@@ -1,0 +1,2381 @@
+{
+  "conditions": {
+    "seed": "RI-227",
+    "horizon": 3,
+    "blocker": 5,
+    "supportSame": 1,
+    "missShip": 3,
+    "boards": {
+      "same": [
+        {
+          "id": "alpha",
+          "procedure": "kit",
+          "work": "batch"
+        },
+        {
+          "id": "beta",
+          "procedure": "local",
+          "work": "batch"
+        }
+      ],
+      "different": [
+        {
+          "id": "alpha",
+          "procedure": "kit",
+          "work": "batch"
+        },
+        {
+          "id": "beta",
+          "procedure": "local",
+          "work": "custom"
+        }
+      ]
+    },
+    "plans": {
+      "standardize": ["migrate", "support", "support"],
+      "experiment": ["support", "support", "support"]
+    },
+    "decision": {
+      "standardize": "最初に移行し、その後2期間支援する固定方針",
+      "experiment": "現場手順のまま3期間支援する固定方針",
+      "score": "shipped - supportPaid - migrationPaid - penalty",
+      "preference": "標準化の差引が大きいとき標準化、現場手順が大きいとき現場手順、同じとき同点"
+    },
+    "baseline": {
+      "supportDiff": 4,
+      "migrationFee": 5,
+      "fitGap": 3
+    },
+    "held": {
+      "supportDiff": "違う手順の支援費用だけを動かす。移行費用5、適合差3、同じ手順の支援費用1、罰5、不適合出荷3",
+      "migrationFee": "移行費用だけを動かす。違う手順の支援費用4、適合差3、同じ手順の支援費用1、罰5、不適合出荷3",
+      "fitGap": "適合差だけを動かす。不適合出荷3に差を足して適合出荷にする。違う手順の支援費用4、同じ手順の支援費用1、移行費用5、罰5"
+    },
+    "supportDiffDefinition": "手順が違う期間に支援する費用。同じ手順の支援費用は1のまま",
+    "migrationFeeDefinition": "betaをkitへ移す一度だけの費用。移行した期間は支援せず罰5",
+    "fitGapDefinition": "適合出荷から不適合出荷3を引いた差。適合出荷は3+適合差",
+    "steps": {
+      "supportDiff": [0, 1, 2, 4, 6, 7, 8],
+      "migrationFee": [0, 5, 13, 14, 15],
+      "fitGap": [-1, 0, 1, 3, 6]
+    },
+    "omitted": "様子見は初回JSONのまま再出力しない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "supportDiff": [
+      {
+        "axis": "supportDiff",
+        "parameter": "0",
+        "rules": {
+          "supportDiff": 0,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "experiment",
+            "margin": -3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 0,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 27,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -21,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 0,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 36,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "supportDiff",
+        "parameter": "1",
+        "rules": {
+          "supportDiff": 1,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "tie",
+            "margin": 0,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 3,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 24,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -18,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 3,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 33,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "supportDiff",
+        "parameter": "2",
+        "rules": {
+          "supportDiff": 2,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 6,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 21,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -15,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 6,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 30,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "supportDiff",
+        "parameter": "4",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 9,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -9,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "supportDiff",
+        "parameter": "6",
+        "rules": {
+          "supportDiff": 6,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 15,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 18,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 9,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 18,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 18,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "supportDiff",
+        "parameter": "7",
+        "rules": {
+          "supportDiff": 7,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 18,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 21,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "tie",
+            "margin": 0,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 21,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 15,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "supportDiff",
+        "parameter": "8",
+        "rules": {
+          "supportDiff": 8,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 21,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 24,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 3,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "standardize",
+            "margin": 3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 24,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 12,
+                "lost": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "migrationFee": [
+      {
+        "axis": "migrationFee",
+        "parameter": "0",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 0,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 14,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 0,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 29,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -4,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 0,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 20,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationFee",
+        "parameter": "5",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 9,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -9,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationFee",
+        "parameter": "13",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 13,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 1,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 13,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 16,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -17,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 13,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 7,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationFee",
+        "parameter": "14",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 14,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "tie",
+            "margin": 0,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 14,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -18,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 14,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 6,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "migrationFee",
+        "parameter": "15",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 15,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "experiment",
+            "margin": -1,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 15,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 14,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -19,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 15,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 5,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "fitGap": [
+      {
+        "axis": "fitGap",
+        "parameter": "-1",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 5,
+          "fitGap": -1
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "experiment",
+            "margin": -3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 6,
+                "betaShip": 6,
+                "score": 0,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 15,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 6,
+                "betaShip": 9,
+                "score": 3,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "standardize",
+            "margin": 3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 15,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 6,
+                "betaShip": 9,
+                "score": 3,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 6,
+                "betaShip": 6,
+                "score": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fitGap",
+        "parameter": "0",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 5,
+          "fitGap": 0
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "tie",
+            "margin": 0,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 9,
+                "betaShip": 9,
+                "score": 6,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 9,
+                "betaShip": 9,
+                "score": 6,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "tie",
+            "margin": 0,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 9,
+                "betaShip": 9,
+                "score": 6,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 9,
+                "betaShip": 9,
+                "score": 6,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fitGap",
+        "parameter": "1",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 5,
+          "fitGap": 1
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 24,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 12,
+                "betaShip": 12,
+                "score": 12,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 21,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 12,
+                "betaShip": 9,
+                "score": 9,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -3,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 21,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 12,
+                "betaShip": 9,
+                "score": 9,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 24,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 12,
+                "betaShip": 12,
+                "score": 12,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fitGap",
+        "parameter": "3",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 5,
+          "fitGap": 3
+        },
+        "sameAsFirstComparison": true,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 9,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -9,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 27,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 18,
+                "betaShip": 9,
+                "score": 15,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 18,
+                "betaShip": 18,
+                "score": 24,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "fitGap",
+        "parameter": "6",
+        "rules": {
+          "supportDiff": 4,
+          "migrationFee": 5,
+          "fitGap": 6
+        },
+        "sameAsFirstComparison": false,
+        "boards": [
+          {
+            "board": "same",
+            "preference": "standardize",
+            "margin": 18,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 54,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 27,
+                "betaShip": 27,
+                "score": 42,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 27,
+                "betaShip": 9,
+                "score": 24,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "different",
+            "preference": "experiment",
+            "margin": -18,
+            "standardize": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "migrate"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 36,
+                "support": 2,
+                "migration": 5,
+                "penalty": 5,
+                "alphaShip": 27,
+                "betaShip": 9,
+                "score": 24,
+                "lost": false
+              }
+            },
+            "experiment": {
+              "inputs": [
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                },
+                {
+                  "type": "act",
+                  "action": "support"
+                }
+              ],
+              "result": {
+                "shipped": 54,
+                "support": 12,
+                "migration": 0,
+                "penalty": 0,
+                "alphaShip": 27,
+                "betaShip": 27,
+                "score": 42,
+                "lost": false
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "supportDiff",
+      "board": "same",
+      "before": {
+        "parameter": "0",
+        "preference": "experiment",
+        "standardize": 24,
+        "experiment": 27
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "tie",
+        "standardize": 24,
+        "experiment": 24
+      }
+    },
+    {
+      "axis": "supportDiff",
+      "board": "same",
+      "before": {
+        "parameter": "1",
+        "preference": "tie",
+        "standardize": 24,
+        "experiment": 24
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "standardize",
+        "standardize": 24,
+        "experiment": 21
+      }
+    },
+    {
+      "axis": "supportDiff",
+      "board": "different",
+      "before": {
+        "parameter": "6",
+        "preference": "experiment",
+        "standardize": 15,
+        "experiment": 18
+      },
+      "after": {
+        "parameter": "7",
+        "preference": "tie",
+        "standardize": 15,
+        "experiment": 15
+      }
+    },
+    {
+      "axis": "supportDiff",
+      "board": "different",
+      "before": {
+        "parameter": "7",
+        "preference": "tie",
+        "standardize": 15,
+        "experiment": 15
+      },
+      "after": {
+        "parameter": "8",
+        "preference": "standardize",
+        "standardize": 15,
+        "experiment": 12
+      }
+    },
+    {
+      "axis": "migrationFee",
+      "board": "same",
+      "before": {
+        "parameter": "13",
+        "preference": "standardize",
+        "standardize": 16,
+        "experiment": 15
+      },
+      "after": {
+        "parameter": "14",
+        "preference": "tie",
+        "standardize": 15,
+        "experiment": 15
+      }
+    },
+    {
+      "axis": "migrationFee",
+      "board": "same",
+      "before": {
+        "parameter": "14",
+        "preference": "tie",
+        "standardize": 15,
+        "experiment": 15
+      },
+      "after": {
+        "parameter": "15",
+        "preference": "experiment",
+        "standardize": 14,
+        "experiment": 15
+      }
+    },
+    {
+      "axis": "fitGap",
+      "board": "same",
+      "before": {
+        "parameter": "-1",
+        "preference": "experiment",
+        "standardize": 0,
+        "experiment": 3
+      },
+      "after": {
+        "parameter": "0",
+        "preference": "tie",
+        "standardize": 6,
+        "experiment": 6
+      }
+    },
+    {
+      "axis": "fitGap",
+      "board": "different",
+      "before": {
+        "parameter": "-1",
+        "preference": "standardize",
+        "standardize": 3,
+        "experiment": 0
+      },
+      "after": {
+        "parameter": "0",
+        "preference": "tie",
+        "standardize": 6,
+        "experiment": 6
+      }
+    },
+    {
+      "axis": "fitGap",
+      "board": "same",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "standardize": 6,
+        "experiment": 6
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "standardize",
+        "standardize": 12,
+        "experiment": 9
+      }
+    },
+    {
+      "axis": "fitGap",
+      "board": "different",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "standardize": 6,
+        "experiment": 6
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "experiment",
+        "standardize": 9,
+        "experiment": 12
+      }
+    }
+  ]
+}

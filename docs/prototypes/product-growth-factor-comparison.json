@@ -1,0 +1,5335 @@
+{
+  "conditions": {
+    "seed": "RI-228",
+    "horizon": 3,
+    "capacity": 4,
+    "features": ["api", "screen", "billing"],
+    "plans": "初回と同じ集中・分散・運用枠の投入列。必要量が変わっても列は組み直さない",
+    "discard": "必要量を超えた投入は捨て、他の機能へ移さない",
+    "incident": "運用が1未満の期間だけ incidentIfIdle を足す。集中と分散は3期間、運用枠は0",
+    "score": "completedValue - incident",
+    "boards": {
+      "open": {
+        "need": 5,
+        "completeValue": 8,
+        "incidentIfIdle": 0
+      },
+      "blocked": {
+        "need": 5,
+        "completeValue": 8,
+        "incidentIfIdle": 6
+      }
+    },
+    "decision": {
+      "pairs": ["focus-spread", "focus-ops", "spread-ops"],
+      "preference": "差引が大きい構成。同じときは同点"
+    },
+    "sampled": {
+      "need": [1, 2, 3, 4, 5, 6],
+      "completeValue": [0, 1, 8, 17, 18, 19],
+      "incidentIfIdle": [0, 1, 2, 3, 6]
+    },
+    "held": {
+      "need": "三機能の必要量だけを同じ値で動かす。完成価値8。余力ありの事故は0、障害対応が要る事故は6",
+      "completeValue": "完成した機能1つの価値だけを動かす。必要量5。事故は盤面の0と6",
+      "incident": "運用を空けた1期間の事故だけを動かす。必要量5、完成価値8。0は余力あり、6は障害対応が要る盤面"
+    },
+    "baseline": {
+      "need": 5,
+      "completeValue": 8,
+      "openIncident": 0,
+      "blockedIncident": 6
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "need": [
+      {
+        "axis": "need",
+        "parameter": "1",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 1,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 3,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 0,
+                  "score": 24,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 3,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 0,
+                  "score": 24,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 2,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 24,
+                "rightScore": 24,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen", "billing"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 24,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "spread",
+                "margin": 8,
+                "leftScore": 24,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["focus", "spread"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 1,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 3,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 18,
+                  "score": 6,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 3,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 18,
+                  "score": 6,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 2,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 6,
+                "rightScore": 6,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen", "billing"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": 6,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": 6,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "need",
+        "parameter": "2",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 2,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 6,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 0,
+                  "score": 24,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 6,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 0,
+                  "score": 24,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 4,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 24,
+                "rightScore": 24,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen", "billing"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 24,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "spread",
+                "margin": 8,
+                "leftScore": 24,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["focus", "spread"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 2,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 6,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 18,
+                  "score": 6,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 6,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 18,
+                  "score": 6,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 4,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 6,
+                "rightScore": 6,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen", "billing"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": 6,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": 6,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "need",
+        "parameter": "3",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 3,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 8,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 0,
+                  "score": 24,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 6,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "spread",
+                "margin": -8,
+                "leftScore": 16,
+                "rightScore": 24,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen", "billing"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 16,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "spread",
+                "margin": 8,
+                "leftScore": 24,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["spread"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 3,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 8,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 18,
+                  "score": -2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api", "screen", "billing"],
+                  "completedValue": 24,
+                  "incident": 18,
+                  "score": 6,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 6,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "spread",
+                "margin": -8,
+                "leftScore": -2,
+                "rightScore": 6,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen", "billing"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -2,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": 6,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen", "billing"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "need",
+        "parameter": "4",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 4,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 10,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 11,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 8,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 16,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 16,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 16,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["focus", "spread", "ops"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 4,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 10,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 18,
+                  "score": -2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 11,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 18,
+                  "score": -2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 8,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": -2,
+                "rightScore": -2,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -2,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -2,
+                "rightScore": 16,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api", "screen"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "need",
+        "parameter": "5",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 16,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 16,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 8,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 18,
+                  "score": -2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 18,
+                  "score": -10,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": -2,
+                "rightScore": -10,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": -2,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -10,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "need",
+        "parameter": "6",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 6,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": [],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": [],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": [],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 0,
+                "rightScore": 0,
+                "leftCompleted": [],
+                "rightCompleted": []
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 0,
+                "rightScore": 0,
+                "leftCompleted": [],
+                "rightCompleted": []
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 0,
+                "rightScore": 0,
+                "leftCompleted": [],
+                "rightCompleted": []
+              }
+            ],
+            "leaders": ["focus", "spread", "ops"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 6,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": [],
+                  "completedValue": 0,
+                  "incident": 18,
+                  "score": -18,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": [],
+                  "completedValue": 0,
+                  "incident": 18,
+                  "score": -18,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": [],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": -18,
+                "rightScore": -18,
+                "leftCompleted": [],
+                "rightCompleted": []
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -18,
+                "rightScore": 0,
+                "leftCompleted": [],
+                "rightCompleted": []
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -18,
+                "rightScore": 0,
+                "leftCompleted": [],
+                "rightCompleted": []
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      }
+    ],
+    "completeValue": [
+      {
+        "axis": "completeValue",
+        "parameter": "0",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 0,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 0,
+                "rightScore": 0,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 0,
+                "rightScore": 0,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 0,
+                "rightScore": 0,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus", "spread", "ops"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 0,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 0,
+                  "incident": 18,
+                  "score": -18,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 0,
+                  "incident": 18,
+                  "score": -18,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 0,
+                  "incident": 0,
+                  "score": 0,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": -18,
+                "rightScore": -18,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -18,
+                "rightScore": 0,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -18,
+                "rightScore": 0,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "completeValue",
+        "parameter": "1",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 1,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 2,
+                  "incident": 0,
+                  "score": 2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 1,
+                  "incident": 0,
+                  "score": 1,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 1,
+                  "incident": 0,
+                  "score": 1,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 1,
+                "leftScore": 2,
+                "rightScore": 1,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 1,
+                "leftScore": 2,
+                "rightScore": 1,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 1,
+                "rightScore": 1,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 1,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 2,
+                  "incident": 18,
+                  "score": -16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 1,
+                  "incident": 18,
+                  "score": -17,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 1,
+                  "incident": 0,
+                  "score": 1,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 1,
+                "leftScore": -16,
+                "rightScore": -17,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -17,
+                "leftScore": -16,
+                "rightScore": 1,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -17,
+                "rightScore": 1,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "completeValue",
+        "parameter": "8",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 16,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 16,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 8,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 18,
+                  "score": -2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 18,
+                  "score": -10,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": -2,
+                "rightScore": -10,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": -2,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -10,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "completeValue",
+        "parameter": "17",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 17,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 34,
+                  "incident": 0,
+                  "score": 34,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 17,
+                  "incident": 0,
+                  "score": 17,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 17,
+                  "incident": 0,
+                  "score": 17,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 17,
+                "leftScore": 34,
+                "rightScore": 17,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 17,
+                "leftScore": 34,
+                "rightScore": 17,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 17,
+                "rightScore": 17,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 17,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 34,
+                  "incident": 18,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 17,
+                  "incident": 18,
+                  "score": -1,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 17,
+                  "incident": 0,
+                  "score": 17,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 17,
+                "leftScore": 16,
+                "rightScore": -1,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -1,
+                "leftScore": 16,
+                "rightScore": 17,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -1,
+                "rightScore": 17,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "completeValue",
+        "parameter": "18",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 18,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 36,
+                  "incident": 0,
+                  "score": 36,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 18,
+                  "incident": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 18,
+                  "incident": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 18,
+                "leftScore": 36,
+                "rightScore": 18,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 18,
+                "leftScore": 36,
+                "rightScore": 18,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 18,
+                "rightScore": 18,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 18,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 36,
+                  "incident": 18,
+                  "score": 18,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 18,
+                  "incident": 18,
+                  "score": 0,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 18,
+                  "incident": 0,
+                  "score": 18,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 18,
+                "leftScore": 18,
+                "rightScore": 0,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 18,
+                "rightScore": 18,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": 0,
+                "rightScore": 18,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus", "ops"]
+          }
+        ]
+      },
+      {
+        "axis": "completeValue",
+        "parameter": "19",
+        "scenarios": [
+          {
+            "lane": "open",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 19,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 38,
+                  "incident": 0,
+                  "score": 38,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 19,
+                  "incident": 0,
+                  "score": 19,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 19,
+                  "incident": 0,
+                  "score": 19,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 19,
+                "leftScore": 38,
+                "rightScore": 19,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 19,
+                "leftScore": 38,
+                "rightScore": 19,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 19,
+                "rightScore": 19,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          },
+          {
+            "lane": "blocked",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 19,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 38,
+                  "incident": 18,
+                  "score": 20,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 19,
+                  "incident": 18,
+                  "score": 1,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 19,
+                  "incident": 0,
+                  "score": 19,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 19,
+                "leftScore": 20,
+                "rightScore": 1,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 1,
+                "leftScore": 20,
+                "rightScore": 19,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": 1,
+                "rightScore": 19,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          }
+        ]
+      }
+    ],
+    "incident": [
+      {
+        "axis": "incident",
+        "parameter": "0",
+        "scenarios": [
+          {
+            "lane": "incident",
+            "board": "open",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 0
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 0,
+                  "score": 16,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 16,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 16,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "tie",
+                "margin": 0,
+                "leftScore": 8,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "1",
+        "scenarios": [
+          {
+            "lane": "incident",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 1
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 3,
+                  "score": 13,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 3,
+                  "score": 5,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 13,
+                "rightScore": 5,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 5,
+                "leftScore": 13,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -3,
+                "leftScore": 5,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "2",
+        "scenarios": [
+          {
+            "lane": "incident",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 2
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 6,
+                  "score": 10,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 6,
+                  "score": 2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 10,
+                "rightScore": 2,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "focus",
+                "margin": 2,
+                "leftScore": 10,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -6,
+                "leftScore": 2,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["focus"]
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "3",
+        "scenarios": [
+          {
+            "lane": "incident",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 3
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 9,
+                  "score": 7,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 9,
+                  "score": -1,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": 7,
+                "rightScore": -1,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -1,
+                "leftScore": 7,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -9,
+                "leftScore": -1,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      },
+      {
+        "axis": "incident",
+        "parameter": "6",
+        "scenarios": [
+          {
+            "lane": "incident",
+            "board": "blocked",
+            "rules": {
+              "need": 5,
+              "completeValue": 8,
+              "incidentIfIdle": 6
+            },
+            "runs": [
+              {
+                "strategy": "focus",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 4,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 2,
+                      "billing": 2,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api", "screen"],
+                  "completedValue": 16,
+                  "incident": 18,
+                  "score": -2,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "spread",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 1,
+                      "screen": 2,
+                      "billing": 1,
+                      "ops": 0
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 12,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 18,
+                  "score": -10,
+                  "lost": false
+                }
+              },
+              {
+                "strategy": "ops",
+                "inputs": [
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 3,
+                      "screen": 0,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 2,
+                      "screen": 1,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  },
+                  {
+                    "type": "spend",
+                    "spend": {
+                      "api": 0,
+                      "screen": 3,
+                      "billing": 0,
+                      "ops": 1
+                    }
+                  }
+                ],
+                "result": {
+                  "shippedWork": 9,
+                  "completed": ["api"],
+                  "completedValue": 8,
+                  "incident": 0,
+                  "score": 8,
+                  "lost": false
+                }
+              }
+            ],
+            "pairs": [
+              {
+                "left": "focus",
+                "right": "spread",
+                "preference": "focus",
+                "margin": 8,
+                "leftScore": -2,
+                "rightScore": -10,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "focus",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -10,
+                "leftScore": -2,
+                "rightScore": 8,
+                "leftCompleted": ["api", "screen"],
+                "rightCompleted": ["api"]
+              },
+              {
+                "left": "spread",
+                "right": "ops",
+                "preference": "ops",
+                "margin": -18,
+                "leftScore": -10,
+                "rightScore": 8,
+                "leftCompleted": ["api"],
+                "rightCompleted": ["api"]
+              }
+            ],
+            "leaders": ["ops"]
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "2",
+        "preference": "tie",
+        "leftScore": 24,
+        "rightScore": 24,
+        "leftCompleted": ["api", "screen", "billing"],
+        "rightCompleted": ["api", "screen", "billing"]
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "spread",
+        "leftScore": 16,
+        "rightScore": 24,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen", "billing"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "focus",
+      "right": "ops",
+      "before": {
+        "parameter": "2",
+        "preference": "focus",
+        "leftScore": 24,
+        "rightScore": 16,
+        "leftCompleted": ["api", "screen", "billing"],
+        "rightCompleted": ["api", "screen"]
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "tie",
+        "leftScore": 16,
+        "rightScore": 16,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "blocked",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "2",
+        "preference": "tie",
+        "leftScore": 6,
+        "rightScore": 6,
+        "leftCompleted": ["api", "screen", "billing"],
+        "rightCompleted": ["api", "screen", "billing"]
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "spread",
+        "leftScore": -2,
+        "rightScore": 6,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen", "billing"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "3",
+        "preference": "spread",
+        "leftScore": 16,
+        "rightScore": 24,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen", "billing"]
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "leftScore": 16,
+        "rightScore": 16,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "spread",
+      "right": "ops",
+      "before": {
+        "parameter": "3",
+        "preference": "spread",
+        "leftScore": 24,
+        "rightScore": 16,
+        "leftCompleted": ["api", "screen", "billing"],
+        "rightCompleted": ["api", "screen"]
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "leftScore": 16,
+        "rightScore": 16,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "blocked",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "3",
+        "preference": "spread",
+        "leftScore": -2,
+        "rightScore": 6,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen", "billing"]
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "tie",
+        "leftScore": -2,
+        "rightScore": -2,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "4",
+        "preference": "tie",
+        "leftScore": 16,
+        "rightScore": 16,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen"]
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "focus",
+        "leftScore": 16,
+        "rightScore": 8,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "focus",
+      "right": "ops",
+      "before": {
+        "parameter": "4",
+        "preference": "tie",
+        "leftScore": 16,
+        "rightScore": 16,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen"]
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "focus",
+        "leftScore": 16,
+        "rightScore": 8,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "blocked",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "4",
+        "preference": "tie",
+        "leftScore": -2,
+        "rightScore": -2,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api", "screen"]
+      },
+      "after": {
+        "parameter": "5",
+        "preference": "focus",
+        "leftScore": -2,
+        "rightScore": -10,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "5",
+        "preference": "focus",
+        "leftScore": 16,
+        "rightScore": 8,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "6",
+        "preference": "tie",
+        "leftScore": 0,
+        "rightScore": 0,
+        "leftCompleted": [],
+        "rightCompleted": []
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "open",
+      "left": "focus",
+      "right": "ops",
+      "before": {
+        "parameter": "5",
+        "preference": "focus",
+        "leftScore": 16,
+        "rightScore": 8,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "6",
+        "preference": "tie",
+        "leftScore": 0,
+        "rightScore": 0,
+        "leftCompleted": [],
+        "rightCompleted": []
+      }
+    },
+    {
+      "axis": "need",
+      "lane": "blocked",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "5",
+        "preference": "focus",
+        "leftScore": -2,
+        "rightScore": -10,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "6",
+        "preference": "tie",
+        "leftScore": -18,
+        "rightScore": -18,
+        "leftCompleted": [],
+        "rightCompleted": []
+      }
+    },
+    {
+      "axis": "completeValue",
+      "lane": "open",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "leftScore": 0,
+        "rightScore": 0,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "focus",
+        "leftScore": 2,
+        "rightScore": 1,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "completeValue",
+      "lane": "open",
+      "left": "focus",
+      "right": "ops",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "leftScore": 0,
+        "rightScore": 0,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "focus",
+        "leftScore": 2,
+        "rightScore": 1,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "completeValue",
+      "lane": "blocked",
+      "left": "focus",
+      "right": "spread",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "leftScore": -18,
+        "rightScore": -18,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "focus",
+        "leftScore": -16,
+        "rightScore": -17,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "completeValue",
+      "lane": "blocked",
+      "left": "focus",
+      "right": "ops",
+      "before": {
+        "parameter": "17",
+        "preference": "ops",
+        "leftScore": 16,
+        "rightScore": 17,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "18",
+        "preference": "tie",
+        "leftScore": 18,
+        "rightScore": 18,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "completeValue",
+      "lane": "blocked",
+      "left": "focus",
+      "right": "ops",
+      "before": {
+        "parameter": "18",
+        "preference": "tie",
+        "leftScore": 18,
+        "rightScore": 18,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "19",
+        "preference": "focus",
+        "leftScore": 20,
+        "rightScore": 19,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "incident",
+      "lane": "incident",
+      "left": "spread",
+      "right": "ops",
+      "before": {
+        "parameter": "0",
+        "preference": "tie",
+        "leftScore": 8,
+        "rightScore": 8,
+        "leftCompleted": ["api"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "1",
+        "preference": "ops",
+        "leftScore": 5,
+        "rightScore": 8,
+        "leftCompleted": ["api"],
+        "rightCompleted": ["api"]
+      }
+    },
+    {
+      "axis": "incident",
+      "lane": "incident",
+      "left": "focus",
+      "right": "ops",
+      "before": {
+        "parameter": "2",
+        "preference": "focus",
+        "leftScore": 10,
+        "rightScore": 8,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "ops",
+        "leftScore": 7,
+        "rightScore": 8,
+        "leftCompleted": ["api", "screen"],
+        "rightCompleted": ["api"]
+      }
+    }
+  ]
+}

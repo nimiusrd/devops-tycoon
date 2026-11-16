@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   applyOnCallRotation as apply,
   assignOnCall,
+  baselineOnCallRules,
   chooseOnCallAction,
+  compareOnCallFactorReversals,
   compareOnCallRotations,
   createOnCallRotation as create,
   summarizeOnCallRotation,
   viewOnCallRotation,
 } from './onCallRotation';
 import comparison from '../../docs/prototypes/oncall-rotation-comparison.json';
+import factors from '../../docs/prototypes/oncall-rotation-factor-comparison.json';
 
 describe('RI-221 当番の持ち回り', () => {
   it('当番、期間、通常作業へ残る余力を事前に示す', () => {
@@ -111,6 +114,484 @@ describe('RI-221 当番の持ち回り', () => {
         expect(saved).toEqual(live);
       }
       expect(summarizeOnCallRotation(live)).toEqual(row.result);
+    }
+  });
+});
+
+describe('RI-221 要因の反転', () => {
+  const orderText = (order: readonly (readonly string[])[]) =>
+    order.map((group) => group.join('=')).join('>');
+
+  const scoresOf = (axis: keyof typeof factors.sweeps) =>
+    factors.sweeps[axis].map((point) => [
+      point.parameter,
+      ...point.boards.flatMap((board) => [
+        board.scores.ace,
+        board.scores.junior,
+        board.scores.rotate,
+        orderText(board.order),
+      ]),
+    ]);
+
+  it('初回と同じ資源で要因を一つずつ動かし、記録した反転と再計算が一致する', () => {
+    const data = compareOnCallFactorReversals();
+    expect(data).toEqual(factors);
+    expect(data.conditions).toMatchObject({
+      seed: 'RI-221',
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    });
+    expect(data.conditions.baseline).toEqual(baselineOnCallRules);
+    expect(scoresOf('occurTick')).toEqual([
+      [
+        '0',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        -6,
+        -9,
+        'ace>junior>rotate',
+        0,
+        -2,
+        3,
+        'rotate>ace>junior',
+      ],
+      [
+        '1',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        -12,
+        -6,
+        -9,
+        'junior>rotate>ace',
+        -8,
+        -2,
+        -5,
+        'junior>rotate>ace',
+      ],
+      [
+        '2',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        -12,
+        -6,
+        -9,
+        'junior>rotate>ace',
+        -8,
+        -2,
+        -5,
+        'junior>rotate>ace',
+      ],
+    ]);
+    expect(scoresOf('recover')).toEqual([
+      [
+        '0',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        -12,
+        -6,
+        -9,
+        'junior>rotate>ace',
+        0,
+        -2,
+        -5,
+        'ace>junior>rotate',
+      ],
+      [
+        '1',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        -6,
+        -9,
+        'ace>junior>rotate',
+        0,
+        -2,
+        3,
+        'rotate>ace>junior',
+      ],
+      [
+        '2',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        -6,
+        3,
+        'rotate>ace>junior',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+      ],
+      [
+        '3',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+      ],
+      [
+        '4',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+      ],
+    ]);
+    expect(scoresOf('fatigue')).toEqual([
+      [
+        '0',
+        4,
+        6,
+        5,
+        'junior>rotate>ace',
+        4,
+        -6,
+        -7,
+        'ace>junior>rotate',
+        4,
+        -2,
+        5,
+        'rotate>ace>junior',
+      ],
+      [
+        '1',
+        2,
+        6,
+        4,
+        'junior>rotate>ace',
+        2,
+        -6,
+        -8,
+        'ace>junior>rotate',
+        2,
+        -2,
+        4,
+        'rotate>ace>junior',
+      ],
+      [
+        '2',
+        0,
+        6,
+        3,
+        'junior>rotate>ace',
+        0,
+        -6,
+        -9,
+        'ace>junior>rotate',
+        0,
+        -2,
+        3,
+        'rotate>ace>junior',
+      ],
+      [
+        '3',
+        -2,
+        6,
+        2,
+        'junior>rotate>ace',
+        -2,
+        -6,
+        -10,
+        'ace>junior>rotate',
+        -2,
+        -2,
+        2,
+        'rotate>ace=junior',
+      ],
+      [
+        '4',
+        -4,
+        6,
+        1,
+        'junior>rotate>ace',
+        -4,
+        -6,
+        -11,
+        'ace>junior>rotate',
+        -4,
+        -2,
+        1,
+        'rotate>junior>ace',
+      ],
+      [
+        '5',
+        -6,
+        6,
+        0,
+        'junior>rotate>ace',
+        -6,
+        -6,
+        -12,
+        'ace=junior>rotate',
+        -6,
+        -2,
+        0,
+        'rotate>junior>ace',
+      ],
+      [
+        '6',
+        -8,
+        6,
+        -1,
+        'junior>rotate>ace',
+        -8,
+        -6,
+        -13,
+        'junior>ace>rotate',
+        -8,
+        -2,
+        -1,
+        'rotate>junior>ace',
+      ],
+      [
+        '7',
+        -10,
+        6,
+        -2,
+        'junior>rotate>ace',
+        -10,
+        -6,
+        -14,
+        'junior>ace>rotate',
+        -10,
+        -2,
+        -2,
+        'junior=rotate>ace',
+      ],
+      [
+        '8',
+        -12,
+        6,
+        -3,
+        'junior>rotate>ace',
+        -12,
+        -6,
+        -15,
+        'junior>ace>rotate',
+        -12,
+        -2,
+        -3,
+        'junior>rotate>ace',
+      ],
+    ]);
+    expect(
+      data.reversals.map((item) => [
+        item.axis,
+        item.board,
+        item.before.parameter,
+        orderText(item.before.order),
+        item.after.parameter,
+        orderText(item.after.order),
+      ]),
+    ).toEqual([
+      ['occurTick', 'severe', '0', 'ace>junior>rotate', '1', 'junior>rotate>ace'],
+      ['occurTick', 'mixed', '0', 'rotate>ace>junior', '1', 'junior>rotate>ace'],
+      ['recover', 'severe', '0', 'junior>rotate>ace', '1', 'ace>junior>rotate'],
+      ['recover', 'mixed', '0', 'ace>junior>rotate', '1', 'rotate>ace>junior'],
+      ['recover', 'severe', '1', 'ace>junior>rotate', '2', 'rotate>ace>junior'],
+      ['recover', 'mixed', '1', 'rotate>ace>junior', '2', 'junior>rotate>ace'],
+      ['recover', 'severe', '2', 'rotate>ace>junior', '3', 'junior>rotate>ace'],
+      ['fatigue', 'mixed', '2', 'rotate>ace>junior', '3', 'rotate>ace=junior'],
+      ['fatigue', 'mixed', '3', 'rotate>ace=junior', '4', 'rotate>junior>ace'],
+      ['fatigue', 'severe', '4', 'ace>junior>rotate', '5', 'ace=junior>rotate'],
+      ['fatigue', 'severe', '5', 'ace=junior>rotate', '6', 'junior>ace>rotate'],
+      ['fatigue', 'mixed', '6', 'rotate>junior>ace', '7', 'junior=rotate>ace'],
+      ['fatigue', 'mixed', '7', 'junior=rotate>ace', '8', 'junior>rotate>ace'],
+    ]);
+    expect(data.reversals.some((item) => item.board === 'quiet')).toBe(false);
+  });
+
+  it('基準行は初回の3戦略と一致し、動かした規則は一つである', () => {
+    const data = compareOnCallFactorReversals();
+    const first = compareOnCallRotations(comparison.seed);
+    const baselines = [
+      data.sweeps.occurTick.find((item) => item.parameter === '0'),
+      data.sweeps.recover.find((item) => item.parameter === '1'),
+      data.sweeps.fatigue.find((item) => item.parameter === '2'),
+    ];
+    for (const point of baselines) {
+      if (!point) throw new Error('baseline');
+      expect(point.sameAsFirstComparison).toBe(true);
+      expect(point.rules).toEqual({ occurTick: 0, juniorRecover: 1, aceFatigue: 2 });
+      for (const board of point.boards) {
+        for (const run of board.runs) {
+          const original = first.find(
+            (row) => row.board === board.board && row.strategy === run.strategy,
+          );
+          if (!original) throw new Error(`${board.board}:${run.strategy}`);
+          expect(run.inputs).toEqual(original.inputs);
+          expect(run.result).toEqual(original.result);
+        }
+      }
+    }
+    expect(Object.keys(data.sweeps)).toEqual(['occurTick', 'recover', 'fatigue']);
+    for (const point of data.sweeps.occurTick) {
+      expect(point.rules).toEqual({
+        occurTick: Number(point.parameter),
+        juniorRecover: 1,
+        aceFatigue: 2,
+      });
+      expect(point.sameAsFirstComparison).toBe(point.parameter === '0');
+    }
+    for (const point of data.sweeps.recover) {
+      expect(point.rules).toEqual({
+        occurTick: 0,
+        juniorRecover: Number(point.parameter),
+        aceFatigue: 2,
+      });
+      expect(point.sameAsFirstComparison).toBe(point.parameter === '1');
+    }
+    for (const point of data.sweeps.fatigue) {
+      expect(point.rules).toEqual({
+        occurTick: 0,
+        juniorRecover: 1,
+        aceFatigue: Number(point.parameter),
+      });
+      expect(point.sameAsFirstComparison).toBe(point.parameter === '2');
+    }
+    for (const board of ['quiet', 'severe', 'mixed'] as const) {
+      const initial = create(comparison.seed, board);
+      const recorded = data.conditions.boards[board];
+      expect(initial.horizon).toBe(recorded.horizon);
+      expect(initial.incidentTotal).toBe(recorded.incident);
+      expect(initial.penalty).toBe(recorded.penalty);
+      expect(recorded.people).toEqual(
+        initial.people.map((candidate) => ({
+          id: candidate.id,
+          ship: candidate.ship,
+          recover: candidate.recover,
+          fatigueRate: candidate.fatigueRate,
+        })),
+      );
+    }
+  });
+
+  it('発生前は復旧せず、復旧の差と主力の消耗だけが計算に入る', () => {
+    const data = compareOnCallFactorReversals();
+    for (const point of data.sweeps.occurTick) {
+      const periods = [0, 1].filter((tick) => tick >= Number(point.parameter)).length;
+      const severe = point.boards.find((board) => board.board === 'severe');
+      const ace = severe?.runs.find((run) => run.strategy === 'ace');
+      if (!ace) throw new Error(point.parameter);
+      expect(ace.result.incidentLeft).toBe(Math.max(0, 5 - periods * 3));
+      expect(ace.result.shipped).toBe(4);
+      expect(ace.result.fatigue).toBe(4);
+    }
+    for (const point of data.sweeps.recover) {
+      const aceRecover = Number(point.parameter) + 2;
+      const severe = point.boards.find((board) => board.board === 'severe');
+      const ace = severe?.runs.find((run) => run.strategy === 'ace');
+      if (!ace) throw new Error(point.parameter);
+      expect(ace.result.incidentLeft).toBe(Math.max(0, 5 - 2 * aceRecover));
+    }
+    for (const point of Object.values(data.sweeps).flat()) {
+      for (const board of point.boards) {
+        for (const run of board.runs) {
+          const shipped = run.strategy === 'ace' ? 4 : run.strategy === 'junior' ? 8 : 6;
+          expect(run.result.shipped).toBe(shipped);
+          expect(run.result.lost).toBe(false);
+        }
+      }
+    }
+    for (const point of data.sweeps.fatigue) {
+      const fatigue = Number(point.parameter);
+      for (const board of point.boards) {
+        expect(board.runs.find((run) => run.strategy === 'ace')?.result.fatigue).toBe(2 * fatigue);
+        expect(board.runs.find((run) => run.strategy === 'junior')?.result.fatigue).toBe(2);
+        expect(board.runs.find((run) => run.strategy === 'rotate')?.result.fatigue).toBe(
+          1 + fatigue,
+        );
+      }
+    }
+  });
+
+  it('閲覧の消耗率は初回のままで、不正な係数は基準へ戻る', () => {
+    const rules = { occurTick: 1, juniorRecover: 4, aceFatigue: 8 };
+    const first = apply(create('RI-221', 'severe'), { type: 'assign', id: 'ace' }, rules);
+    expect(first.incidentLeft).toBe(5);
+    expect(first.people).toEqual([
+      expect.objectContaining({ id: 'ace', ship: 4, recover: 3, fatigueRate: 2, fatigue: 8 }),
+      expect.objectContaining({ id: 'jun', ship: 2, recover: 1, fatigueRate: 1, fatigue: 0 }),
+    ]);
+    expect(viewOnCallRotation(first).activeFatigueRate).toBe(2);
+    const second = apply(first, { type: 'assign', id: 'ace' }, rules);
+    expect(second.incidentLeft).toBe(0);
+    expect(second.people[0]).toMatchObject({ recover: 3, fatigueRate: 2, fatigue: 16 });
+    const fallback = apply(
+      create('RI-221', 'severe'),
+      { type: 'assign', id: 'ace' },
+      {
+        occurTick: -1,
+        juniorRecover: 1.5,
+        aceFatigue: Number.NaN,
+      },
+    );
+    const baseline = apply(create('RI-221', 'severe'), { type: 'assign', id: 'ace' });
+    expect(fallback.incidentLeft).toBe(baseline.incidentLeft);
+    expect(fallback.people).toEqual(baseline.people);
+  });
+
+  it('要因比較の入力を再生すると差引が一致し、元状態は変わらない', () => {
+    const data = compareOnCallFactorReversals();
+    const first = compareOnCallRotations(comparison.seed);
+    for (const point of Object.values(data.sweeps).flat()) {
+      for (const board of point.boards) {
+        for (const run of board.runs) {
+          const original = first.find(
+            (row) => row.board === board.board && row.strategy === run.strategy,
+          );
+          expect(original?.inputs).toEqual(run.inputs);
+          let state = create(data.conditions.seed, board.board);
+          const snapshot = structuredClone(state);
+          for (const input of run.inputs) {
+            const previous = state;
+            const before = structuredClone(state);
+            expect(chooseOnCallAction(state, run.strategy)).toEqual(input);
+            state = apply(state, input, point.rules);
+            const restored = apply(JSON.parse(JSON.stringify(before)), input, point.rules);
+            expect(previous).toEqual(before);
+            expect(restored).toEqual(state);
+          }
+          expect(snapshot.tick).toBe(0);
+          expect(summarizeOnCallRotation(state)).toEqual(run.result);
+          expect(state.inputs).toEqual(run.inputs);
+          expect(apply(state, { type: 'assign', id: 'ace' }, point.rules)).toBe(state);
+          expect(state.people.map((candidate) => candidate.fatigueRate)).toEqual([2, 1]);
+          expect(state.people.map((candidate) => candidate.recover)).toEqual([3, 1]);
+        }
+      }
     }
   });
 });

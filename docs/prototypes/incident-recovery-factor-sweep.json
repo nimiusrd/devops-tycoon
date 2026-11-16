@@ -1,0 +1,2878 @@
+{
+  "conditions": {
+    "seed": "RI-169",
+    "base": "severe",
+    "repeatedLightComparison": false,
+    "strategies": ["fix", "rollback", "disable"],
+    "excludedStrategies": ["none"],
+    "shippedValue": 20,
+    "featureValue": 8,
+    "focus": 4,
+    "otherPerTick": 2,
+    "fixWork": 6,
+    "held": {
+      "horizon": 3,
+      "lossPerTick": 4,
+      "rollbackValue": 4,
+      "disableUpkeep": 0,
+      "workError": 0
+    },
+    "values": {
+      "horizon": [2, 3, 4, 5, 6, 8],
+      "lossPerTick": [0, 1, 2, 3, 4],
+      "rollbackValue": [0, 1, 2, 3, 4],
+      "disableUpkeep": [0, 1, 2, 3],
+      "workError": [-1, 0, 1, 2]
+    },
+    "workFloor": 1,
+    "upkeepAfterResolvedTicks": true,
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "productionIntegration": false
+  },
+  "points": [
+    {
+      "axis": "horizon",
+      "value": 2,
+      "factors": {
+        "horizon": 2,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 8,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 4,
+          "outstandingImpact": 16,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 0,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 5
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 2,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "horizon",
+      "value": 3,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "horizon",
+      "value": 4,
+      "factors": {
+        "horizon": 4,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 16,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 2,
+          "outstandingImpact": 8,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 4,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 6,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 11
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "horizon",
+      "value": 5,
+      "factors": {
+        "horizon": 5,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 20,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 1,
+          "outstandingImpact": 4,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 6,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 11
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 8,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 13
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "horizon",
+      "value": 6,
+      "factors": {
+        "horizon": 6,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": 6,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 24,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 8,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 13
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 10,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 15
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "horizon",
+      "value": 8,
+      "factors": {
+        "horizon": 8,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": 6,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 24,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": -1
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 12,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 17
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 14,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 19
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "lossPerTick",
+      "value": 0,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 0,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 0,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 0,
+          "netValue": 19
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 0,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 15
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 0,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 13
+        }
+      },
+      "leaders": ["fix"],
+      "leadersAmongResolved": ["rollback"]
+    },
+    {
+      "axis": "lossPerTick",
+      "value": 1,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 1,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 3,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 3,
+          "netValue": 13
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 2,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 13
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 1,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 12
+        }
+      },
+      "leaders": ["fix", "rollback"],
+      "leadersAmongResolved": ["rollback"]
+    },
+    {
+      "axis": "lossPerTick",
+      "value": 2,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 2,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 6,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 6,
+          "netValue": 7
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 4,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 11
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 2,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 11
+        }
+      },
+      "leaders": ["rollback", "disable"],
+      "leadersAmongResolved": ["rollback", "disable"]
+    },
+    {
+      "axis": "lossPerTick",
+      "value": 3,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 3,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 9,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 9,
+          "netValue": 1
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 6,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 3,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 10
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "lossPerTick",
+      "value": 4,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "rollbackValue",
+      "value": 0,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 0,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 11
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["rollback"],
+      "leadersAmongResolved": ["rollback"]
+    },
+    {
+      "axis": "rollbackValue",
+      "value": 1,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 1,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 19,
+          "lostValue": 1,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 10
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["rollback"],
+      "leadersAmongResolved": ["rollback"]
+    },
+    {
+      "axis": "rollbackValue",
+      "value": 2,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 2,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 18,
+          "lostValue": 2,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["rollback", "disable"],
+      "leadersAmongResolved": ["rollback", "disable"]
+    },
+    {
+      "axis": "rollbackValue",
+      "value": 3,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 3,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 17,
+          "lostValue": 3,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 8
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "rollbackValue",
+      "value": 4,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "disableUpkeep",
+      "value": 0,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "disableUpkeep",
+      "value": 1,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 1,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 2,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        }
+      },
+      "leaders": ["rollback", "disable"],
+      "leadersAmongResolved": ["rollback", "disable"]
+    },
+    {
+      "axis": "disableUpkeep",
+      "value": 2,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 2,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 4,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 5
+        }
+      },
+      "leaders": ["rollback"],
+      "leadersAmongResolved": ["rollback"]
+    },
+    {
+      "axis": "disableUpkeep",
+      "value": 3,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 3,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 6,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 3
+        }
+      },
+      "leaders": ["rollback"],
+      "leadersAmongResolved": ["rollback"]
+    },
+    {
+      "axis": "workError",
+      "value": -1,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": -1
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 5,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 2,
+          "outstandingImpact": 8,
+          "netValue": -1
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 4,
+          "focusSpent": 2,
+          "customerLoss": 4,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 13
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["rollback"],
+      "leadersAmongResolved": ["rollback"]
+    },
+    {
+      "axis": "workError",
+      "value": 0,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 0
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 6,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 3,
+          "outstandingImpact": 12,
+          "netValue": -5
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 2,
+          "focusSpent": 2,
+          "customerLoss": 8,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 7
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 1,
+          "resolvedTick": 1,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 4,
+          "focusSpent": 1,
+          "customerLoss": 4,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 9
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "workError",
+      "value": 1,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 1
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 7,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 4,
+          "outstandingImpact": 16,
+          "netValue": -9
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 3,
+          "resolvedTick": 3,
+          "shippedValue": 16,
+          "lostValue": 4,
+          "otherValue": 0,
+          "focusSpent": 2,
+          "customerLoss": 12,
+          "trustCost": 1,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 1
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 2,
+          "resolvedTick": 2,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 2,
+          "focusSpent": 1,
+          "customerLoss": 8,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": 3
+        }
+      },
+      "leaders": ["disable"],
+      "leadersAmongResolved": ["disable"]
+    },
+    {
+      "axis": "workError",
+      "value": 2,
+      "factors": {
+        "horizon": 3,
+        "lossPerTick": 4,
+        "rollbackValue": 4,
+        "disableUpkeep": 0,
+        "workError": 2
+      },
+      "inputs": {
+        "fix": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "fix"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "rollback": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "rollback"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ],
+        "disable": [
+          {
+            "type": "recover",
+            "id": "incident-1",
+            "method": "disable"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          },
+          {
+            "type": "tick"
+          }
+        ]
+      },
+      "results": {
+        "fix": {
+          "quotedWork": 6,
+          "actualWork": 8,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 5,
+          "outstandingImpact": 20,
+          "netValue": -13
+        },
+        "rollback": {
+          "quotedWork": 2,
+          "actualWork": 4,
+          "resolvedTick": null,
+          "shippedValue": 20,
+          "lostValue": 0,
+          "otherValue": 0,
+          "focusSpent": 2,
+          "customerLoss": 12,
+          "trustCost": 0,
+          "maintenancePaid": 0,
+          "remainingWork": 1,
+          "outstandingImpact": 4,
+          "netValue": 2
+        },
+        "disable": {
+          "quotedWork": 1,
+          "actualWork": 3,
+          "resolvedTick": 3,
+          "shippedValue": 12,
+          "lostValue": 8,
+          "otherValue": 0,
+          "focusSpent": 1,
+          "customerLoss": 12,
+          "trustCost": 2,
+          "maintenancePaid": 0,
+          "remainingWork": 0,
+          "outstandingImpact": 0,
+          "netValue": -3
+        }
+      },
+      "leaders": ["rollback"],
+      "leadersAmongResolved": ["disable"]
+    }
+  ],
+  "boundaries": [
+    {
+      "axis": "horizon",
+      "completedRollbackLeads": [],
+      "rollbackTies": [],
+      "unfinishedRollbackLeads": [],
+      "edges": []
+    },
+    {
+      "axis": "lossPerTick",
+      "completedRollbackLeads": [],
+      "rollbackTies": [1, 2],
+      "unfinishedRollbackLeads": [],
+      "edges": [
+        {
+          "before": 0,
+          "after": 1,
+          "beforeLeaders": ["fix"],
+          "afterLeaders": ["fix", "rollback"],
+          "beforeResolved": ["rollback"],
+          "afterResolved": ["rollback"]
+        },
+        {
+          "before": 1,
+          "after": 2,
+          "beforeLeaders": ["fix", "rollback"],
+          "afterLeaders": ["rollback", "disable"],
+          "beforeResolved": ["rollback"],
+          "afterResolved": ["rollback", "disable"]
+        },
+        {
+          "before": 2,
+          "after": 3,
+          "beforeLeaders": ["rollback", "disable"],
+          "afterLeaders": ["disable"],
+          "beforeResolved": ["rollback", "disable"],
+          "afterResolved": ["disable"]
+        }
+      ]
+    },
+    {
+      "axis": "rollbackValue",
+      "completedRollbackLeads": [0, 1],
+      "rollbackTies": [2],
+      "unfinishedRollbackLeads": [],
+      "edges": [
+        {
+          "before": 1,
+          "after": 2,
+          "beforeLeaders": ["rollback"],
+          "afterLeaders": ["rollback", "disable"],
+          "beforeResolved": ["rollback"],
+          "afterResolved": ["rollback", "disable"]
+        },
+        {
+          "before": 2,
+          "after": 3,
+          "beforeLeaders": ["rollback", "disable"],
+          "afterLeaders": ["disable"],
+          "beforeResolved": ["rollback", "disable"],
+          "afterResolved": ["disable"]
+        }
+      ]
+    },
+    {
+      "axis": "disableUpkeep",
+      "completedRollbackLeads": [2, 3],
+      "rollbackTies": [1],
+      "unfinishedRollbackLeads": [],
+      "edges": [
+        {
+          "before": 0,
+          "after": 1,
+          "beforeLeaders": ["disable"],
+          "afterLeaders": ["rollback", "disable"],
+          "beforeResolved": ["disable"],
+          "afterResolved": ["rollback", "disable"]
+        },
+        {
+          "before": 1,
+          "after": 2,
+          "beforeLeaders": ["rollback", "disable"],
+          "afterLeaders": ["rollback"],
+          "beforeResolved": ["rollback", "disable"],
+          "afterResolved": ["rollback"]
+        }
+      ]
+    },
+    {
+      "axis": "workError",
+      "completedRollbackLeads": [-1],
+      "rollbackTies": [],
+      "unfinishedRollbackLeads": [2],
+      "edges": [
+        {
+          "before": -1,
+          "after": 0,
+          "beforeLeaders": ["rollback"],
+          "afterLeaders": ["disable"],
+          "beforeResolved": ["rollback"],
+          "afterResolved": ["disable"]
+        },
+        {
+          "before": 1,
+          "after": 2,
+          "beforeLeaders": ["disable"],
+          "afterLeaders": ["rollback"],
+          "beforeResolved": ["disable"],
+          "afterResolved": ["disable"]
+        }
+      ]
+    }
+  ]
+}

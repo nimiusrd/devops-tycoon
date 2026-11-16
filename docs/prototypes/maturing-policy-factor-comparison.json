@@ -1,0 +1,3202 @@
+{
+  "conditions": {
+    "seed": 1,
+    "horizons": [4, 10],
+    "focus": 1,
+    "adoptCost": 1,
+    "adoptAdvancesTime": false,
+    "valuePerCompletion": 1,
+    "stage0Throughput": 1,
+    "noneThroughput": 1,
+    "plan": "adopt-then-tick",
+    "score": "netValue",
+    "baseline": {
+      "matureAt": 3,
+      "stage1Throughput": 3,
+      "steadyThroughput": 2
+    },
+    "swept": {
+      "matureAt": [1, 2, 3, 4, 5, 6, 7],
+      "stage1Throughput": [1, 2, 3, 4, 5, 6],
+      "steadyThroughput": [1, 2, 3]
+    },
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false
+  },
+  "sweeps": {
+    "matureAt": {
+      "4": [
+        {
+          "axis": "matureAt",
+          "horizon": 4,
+          "parameter": 1,
+          "factors": {
+            "matureAt": 1,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 2,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 1,
+                "completed": 10,
+                "reworks": 0,
+                "earnedValue": 10,
+                "focusSpent": 1,
+                "netValue": 9
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 4,
+          "parameter": 2,
+          "factors": {
+            "matureAt": 2,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "tie",
+          "margin": 0,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 2,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 4,
+          "parameter": 3,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -2,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 6,
+                "reworks": 0,
+                "earnedValue": 6,
+                "focusSpent": 1,
+                "netValue": 5
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 4,
+          "parameter": 4,
+          "factors": {
+            "matureAt": 4,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 4,
+                "completed": 4,
+                "reworks": 0,
+                "earnedValue": 4,
+                "focusSpent": 1,
+                "netValue": 3
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 4,
+          "parameter": 5,
+          "factors": {
+            "matureAt": 5,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 4,
+                "completed": 4,
+                "reworks": 0,
+                "earnedValue": 4,
+                "focusSpent": 1,
+                "netValue": 3
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 4,
+          "parameter": 6,
+          "factors": {
+            "matureAt": 6,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 4,
+                "completed": 4,
+                "reworks": 0,
+                "earnedValue": 4,
+                "focusSpent": 1,
+                "netValue": 3
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 4,
+          "parameter": 7,
+          "factors": {
+            "matureAt": 7,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 4,
+                "completed": 4,
+                "reworks": 0,
+                "earnedValue": 4,
+                "focusSpent": 1,
+                "netValue": 3
+              }
+            }
+          }
+        }
+      ],
+      "10": [
+        {
+          "axis": "matureAt",
+          "horizon": 10,
+          "parameter": 1,
+          "factors": {
+            "matureAt": 1,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 8,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 1,
+                "completed": 28,
+                "reworks": 0,
+                "earnedValue": 28,
+                "focusSpent": 1,
+                "netValue": 27
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 10,
+          "parameter": 2,
+          "factors": {
+            "matureAt": 2,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 6,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 2,
+                "completed": 26,
+                "reworks": 0,
+                "earnedValue": 26,
+                "focusSpent": 1,
+                "netValue": 25
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 10,
+          "parameter": 3,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 24,
+                "reworks": 0,
+                "earnedValue": 24,
+                "focusSpent": 1,
+                "netValue": 23
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 10,
+          "parameter": 4,
+          "factors": {
+            "matureAt": 4,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 2,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 4,
+                "completed": 22,
+                "reworks": 0,
+                "earnedValue": 22,
+                "focusSpent": 1,
+                "netValue": 21
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 10,
+          "parameter": 5,
+          "factors": {
+            "matureAt": 5,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "tie",
+          "margin": 0,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 5,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 10,
+          "parameter": 6,
+          "factors": {
+            "matureAt": 6,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -2,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 6,
+                "completed": 18,
+                "reworks": 0,
+                "earnedValue": 18,
+                "focusSpent": 1,
+                "netValue": 17
+              }
+            }
+          }
+        },
+        {
+          "axis": "matureAt",
+          "horizon": 10,
+          "parameter": 7,
+          "factors": {
+            "matureAt": 7,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 7,
+                "completed": 16,
+                "reworks": 0,
+                "earnedValue": 16,
+                "focusSpent": 1,
+                "netValue": 15
+              }
+            }
+          }
+        }
+      ]
+    },
+    "stage1Throughput": {
+      "4": [
+        {
+          "axis": "stage1Throughput",
+          "horizon": 4,
+          "parameter": 1,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 1,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 4,
+                "reworks": 0,
+                "earnedValue": 4,
+                "focusSpent": 1,
+                "netValue": 3
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 4,
+          "parameter": 2,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 2,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -3,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 5,
+                "reworks": 0,
+                "earnedValue": 5,
+                "focusSpent": 1,
+                "netValue": 4
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 4,
+          "parameter": 3,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -2,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 6,
+                "reworks": 0,
+                "earnedValue": 6,
+                "focusSpent": 1,
+                "netValue": 5
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 4,
+          "parameter": 4,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 4,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -1,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 7,
+                "reworks": 0,
+                "earnedValue": 7,
+                "focusSpent": 1,
+                "netValue": 6
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 4,
+          "parameter": 5,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 5,
+            "steadyThroughput": 2
+          },
+          "preference": "tie",
+          "margin": 0,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 4,
+          "parameter": 6,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 6,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 1,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 9,
+                "reworks": 0,
+                "earnedValue": 9,
+                "focusSpent": 1,
+                "netValue": 8
+              }
+            }
+          }
+        }
+      ],
+      "10": [
+        {
+          "axis": "stage1Throughput",
+          "horizon": 10,
+          "parameter": 1,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 1,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -10,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 10,
+                "reworks": 0,
+                "earnedValue": 10,
+                "focusSpent": 1,
+                "netValue": 9
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 10,
+          "parameter": 2,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 2,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -3,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 17,
+                "reworks": 0,
+                "earnedValue": 17,
+                "focusSpent": 1,
+                "netValue": 16
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 10,
+          "parameter": 3,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 24,
+                "reworks": 0,
+                "earnedValue": 24,
+                "focusSpent": 1,
+                "netValue": 23
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 10,
+          "parameter": 4,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 4,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 11,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 31,
+                "reworks": 0,
+                "earnedValue": 31,
+                "focusSpent": 1,
+                "netValue": 30
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 10,
+          "parameter": 5,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 5,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 18,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 38,
+                "reworks": 0,
+                "earnedValue": 38,
+                "focusSpent": 1,
+                "netValue": 37
+              }
+            }
+          }
+        },
+        {
+          "axis": "stage1Throughput",
+          "horizon": 10,
+          "parameter": 6,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 6,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 25,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 45,
+                "reworks": 0,
+                "earnedValue": 45,
+                "focusSpent": 1,
+                "netValue": 44
+              }
+            }
+          }
+        }
+      ]
+    },
+    "steadyThroughput": {
+      "4": [
+        {
+          "axis": "steadyThroughput",
+          "horizon": 4,
+          "parameter": 1,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 1
+          },
+          "preference": "growing",
+          "margin": 2,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 4,
+                "reworks": 0,
+                "earnedValue": 4,
+                "focusSpent": 1,
+                "netValue": 3
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 6,
+                "reworks": 0,
+                "earnedValue": 6,
+                "focusSpent": 1,
+                "netValue": 5
+              }
+            }
+          }
+        },
+        {
+          "axis": "steadyThroughput",
+          "horizon": 4,
+          "parameter": 2,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "steady",
+          "margin": -2,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 8,
+                "reworks": 0,
+                "earnedValue": 8,
+                "focusSpent": 1,
+                "netValue": 7
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 6,
+                "reworks": 0,
+                "earnedValue": 6,
+                "focusSpent": 1,
+                "netValue": 5
+              }
+            }
+          }
+        },
+        {
+          "axis": "steadyThroughput",
+          "horizon": 4,
+          "parameter": 3,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 3
+          },
+          "preference": "steady",
+          "margin": -6,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 12,
+                "reworks": 0,
+                "earnedValue": 12,
+                "focusSpent": 1,
+                "netValue": 11
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 6,
+                "reworks": 0,
+                "earnedValue": 6,
+                "focusSpent": 1,
+                "netValue": 5
+              }
+            }
+          }
+        }
+      ],
+      "10": [
+        {
+          "axis": "steadyThroughput",
+          "horizon": 10,
+          "parameter": 1,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 1
+          },
+          "preference": "growing",
+          "margin": 14,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 10,
+                "reworks": 0,
+                "earnedValue": 10,
+                "focusSpent": 1,
+                "netValue": 9
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 24,
+                "reworks": 0,
+                "earnedValue": 24,
+                "focusSpent": 1,
+                "netValue": 23
+              }
+            }
+          }
+        },
+        {
+          "axis": "steadyThroughput",
+          "horizon": 10,
+          "parameter": 2,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 2
+          },
+          "preference": "growing",
+          "margin": 4,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 20,
+                "reworks": 0,
+                "earnedValue": 20,
+                "focusSpent": 1,
+                "netValue": 19
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 24,
+                "reworks": 0,
+                "earnedValue": 24,
+                "focusSpent": 1,
+                "netValue": 23
+              }
+            }
+          }
+        },
+        {
+          "axis": "steadyThroughput",
+          "horizon": 10,
+          "parameter": 3,
+          "factors": {
+            "matureAt": 3,
+            "stage1Throughput": 3,
+            "steadyThroughput": 3
+          },
+          "preference": "steady",
+          "margin": -6,
+          "runs": {
+            "steady": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "steady"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "steady",
+                "cardLevel": 0,
+                "stage": 0,
+                "progress": 0,
+                "completed": 30,
+                "reworks": 0,
+                "earnedValue": 30,
+                "focusSpent": 1,
+                "netValue": 29
+              }
+            },
+            "growing": {
+              "inputs": [
+                {
+                  "type": "adopt",
+                  "card": "growing"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                },
+                {
+                  "type": "tick"
+                }
+              ],
+              "result": {
+                "card": "growing",
+                "cardLevel": 0,
+                "stage": 1,
+                "progress": 3,
+                "completed": 24,
+                "reworks": 0,
+                "earnedValue": 24,
+                "focusSpent": 1,
+                "netValue": 23
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "reversals": [
+    {
+      "axis": "matureAt",
+      "horizon": 4,
+      "before": {
+        "parameter": 1,
+        "preference": "growing",
+        "steady": 7,
+        "growing": 9
+      },
+      "after": {
+        "parameter": 2,
+        "preference": "tie",
+        "steady": 7,
+        "growing": 7
+      }
+    },
+    {
+      "axis": "matureAt",
+      "horizon": 4,
+      "before": {
+        "parameter": 2,
+        "preference": "tie",
+        "steady": 7,
+        "growing": 7
+      },
+      "after": {
+        "parameter": 3,
+        "preference": "steady",
+        "steady": 7,
+        "growing": 5
+      }
+    },
+    {
+      "axis": "matureAt",
+      "horizon": 10,
+      "before": {
+        "parameter": 4,
+        "preference": "growing",
+        "steady": 19,
+        "growing": 21
+      },
+      "after": {
+        "parameter": 5,
+        "preference": "tie",
+        "steady": 19,
+        "growing": 19
+      }
+    },
+    {
+      "axis": "matureAt",
+      "horizon": 10,
+      "before": {
+        "parameter": 5,
+        "preference": "tie",
+        "steady": 19,
+        "growing": 19
+      },
+      "after": {
+        "parameter": 6,
+        "preference": "steady",
+        "steady": 19,
+        "growing": 17
+      }
+    },
+    {
+      "axis": "stage1Throughput",
+      "horizon": 4,
+      "before": {
+        "parameter": 4,
+        "preference": "steady",
+        "steady": 7,
+        "growing": 6
+      },
+      "after": {
+        "parameter": 5,
+        "preference": "tie",
+        "steady": 7,
+        "growing": 7
+      }
+    },
+    {
+      "axis": "stage1Throughput",
+      "horizon": 4,
+      "before": {
+        "parameter": 5,
+        "preference": "tie",
+        "steady": 7,
+        "growing": 7
+      },
+      "after": {
+        "parameter": 6,
+        "preference": "growing",
+        "steady": 7,
+        "growing": 8
+      }
+    },
+    {
+      "axis": "stage1Throughput",
+      "horizon": 10,
+      "before": {
+        "parameter": 2,
+        "preference": "steady",
+        "steady": 19,
+        "growing": 16
+      },
+      "after": {
+        "parameter": 3,
+        "preference": "growing",
+        "steady": 19,
+        "growing": 23
+      }
+    },
+    {
+      "axis": "steadyThroughput",
+      "horizon": 4,
+      "before": {
+        "parameter": 1,
+        "preference": "growing",
+        "steady": 3,
+        "growing": 5
+      },
+      "after": {
+        "parameter": 2,
+        "preference": "steady",
+        "steady": 7,
+        "growing": 5
+      }
+    },
+    {
+      "axis": "steadyThroughput",
+      "horizon": 10,
+      "before": {
+        "parameter": 2,
+        "preference": "growing",
+        "steady": 19,
+        "growing": 23
+      },
+      "after": {
+        "parameter": 3,
+        "preference": "steady",
+        "steady": 29,
+        "growing": 23
+      }
+    }
+  ]
+}

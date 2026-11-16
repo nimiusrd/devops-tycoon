@@ -1,0 +1,1293 @@
+{
+  "seed": "RI-154",
+  "baseline": {
+    "horizon": 6,
+    "successorValue": 6,
+    "successorDeadlineTick": null,
+    "valueLeader": "direct-first"
+  },
+  "boards": [
+    {
+      "factor": "horizon",
+      "role": "requested",
+      "horizon": 7,
+      "successorValue": 6,
+      "successorDeadlineTick": null,
+      "tasks": [
+        {
+          "id": "foundation",
+          "requires": [],
+          "workLeft": 3,
+          "value": 1,
+          "done": false
+        },
+        {
+          "id": "a",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "b",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "direct",
+          "requires": [],
+          "workLeft": 3,
+          "value": 7,
+          "done": false
+        }
+      ],
+      "results": [
+        {
+          "strategy": "foundation-first",
+          "order": ["foundation", "a", "b", "direct"],
+          "inputs": ["foundation", "foundation", "foundation", "a", "a", "b", "b"],
+          "tick": 7,
+          "countedValue": 13,
+          "waitingTaskTicks": 6,
+          "shipped": [
+            {
+              "id": "foundation",
+              "tick": 3,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 5,
+              "value": 6,
+              "counted": true
+            },
+            {
+              "id": "b",
+              "tick": 7,
+              "value": 6,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "direct",
+              "workLeft": 3
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 5,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 6,
+              "id": "b",
+              "blocked": []
+            },
+            {
+              "tick": 7,
+              "id": "b",
+              "blocked": []
+            }
+          ]
+        },
+        {
+          "strategy": "direct-first",
+          "order": ["direct", "foundation", "a", "b"],
+          "inputs": ["direct", "direct", "direct", "foundation", "foundation", "foundation", "a"],
+          "tick": 7,
+          "countedValue": 8,
+          "waitingTaskTicks": 12,
+          "shipped": [
+            {
+              "id": "direct",
+              "tick": 3,
+              "value": 7,
+              "counted": true
+            },
+            {
+              "id": "foundation",
+              "tick": 6,
+              "value": 1,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "a",
+              "workLeft": 1
+            },
+            {
+              "id": "b",
+              "workLeft": 2
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 5,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 6,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 7,
+              "id": "a",
+              "blocked": []
+            }
+          ]
+        }
+      ],
+      "valueLeader": "foundation-first",
+      "verdict": "foundation-first"
+    },
+    {
+      "factor": "horizon",
+      "role": "boundary",
+      "horizon": 8,
+      "successorValue": 6,
+      "successorDeadlineTick": null,
+      "tasks": [
+        {
+          "id": "foundation",
+          "requires": [],
+          "workLeft": 3,
+          "value": 1,
+          "done": false
+        },
+        {
+          "id": "a",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "b",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "direct",
+          "requires": [],
+          "workLeft": 3,
+          "value": 7,
+          "done": false
+        }
+      ],
+      "results": [
+        {
+          "strategy": "foundation-first",
+          "order": ["foundation", "a", "b", "direct"],
+          "inputs": ["foundation", "foundation", "foundation", "a", "a", "b", "b", "direct"],
+          "tick": 8,
+          "countedValue": 13,
+          "waitingTaskTicks": 6,
+          "shipped": [
+            {
+              "id": "foundation",
+              "tick": 3,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 5,
+              "value": 6,
+              "counted": true
+            },
+            {
+              "id": "b",
+              "tick": 7,
+              "value": 6,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "direct",
+              "workLeft": 2
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 5,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 6,
+              "id": "b",
+              "blocked": []
+            },
+            {
+              "tick": 7,
+              "id": "b",
+              "blocked": []
+            },
+            {
+              "tick": 8,
+              "id": "direct",
+              "blocked": []
+            }
+          ]
+        },
+        {
+          "strategy": "direct-first",
+          "order": ["direct", "foundation", "a", "b"],
+          "inputs": [
+            "direct",
+            "direct",
+            "direct",
+            "foundation",
+            "foundation",
+            "foundation",
+            "a",
+            "a"
+          ],
+          "tick": 8,
+          "countedValue": 14,
+          "waitingTaskTicks": 12,
+          "shipped": [
+            {
+              "id": "direct",
+              "tick": 3,
+              "value": 7,
+              "counted": true
+            },
+            {
+              "id": "foundation",
+              "tick": 6,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 8,
+              "value": 6,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "b",
+              "workLeft": 2
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 5,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 6,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 7,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 8,
+              "id": "a",
+              "blocked": []
+            }
+          ]
+        }
+      ],
+      "valueLeader": "direct-first",
+      "verdict": "direct-first"
+    },
+    {
+      "factor": "horizon",
+      "role": "requested",
+      "horizon": 9,
+      "successorValue": 6,
+      "successorDeadlineTick": null,
+      "tasks": [
+        {
+          "id": "foundation",
+          "requires": [],
+          "workLeft": 3,
+          "value": 1,
+          "done": false
+        },
+        {
+          "id": "a",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "b",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "direct",
+          "requires": [],
+          "workLeft": 3,
+          "value": 7,
+          "done": false
+        }
+      ],
+      "results": [
+        {
+          "strategy": "foundation-first",
+          "order": ["foundation", "a", "b", "direct"],
+          "inputs": [
+            "foundation",
+            "foundation",
+            "foundation",
+            "a",
+            "a",
+            "b",
+            "b",
+            "direct",
+            "direct"
+          ],
+          "tick": 9,
+          "countedValue": 13,
+          "waitingTaskTicks": 6,
+          "shipped": [
+            {
+              "id": "foundation",
+              "tick": 3,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 5,
+              "value": 6,
+              "counted": true
+            },
+            {
+              "id": "b",
+              "tick": 7,
+              "value": 6,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "direct",
+              "workLeft": 1
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 5,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 6,
+              "id": "b",
+              "blocked": []
+            },
+            {
+              "tick": 7,
+              "id": "b",
+              "blocked": []
+            },
+            {
+              "tick": 8,
+              "id": "direct",
+              "blocked": []
+            },
+            {
+              "tick": 9,
+              "id": "direct",
+              "blocked": []
+            }
+          ]
+        },
+        {
+          "strategy": "direct-first",
+          "order": ["direct", "foundation", "a", "b"],
+          "inputs": [
+            "direct",
+            "direct",
+            "direct",
+            "foundation",
+            "foundation",
+            "foundation",
+            "a",
+            "a",
+            "b"
+          ],
+          "tick": 9,
+          "countedValue": 14,
+          "waitingTaskTicks": 12,
+          "shipped": [
+            {
+              "id": "direct",
+              "tick": 3,
+              "value": 7,
+              "counted": true
+            },
+            {
+              "id": "foundation",
+              "tick": 6,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 8,
+              "value": 6,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "b",
+              "workLeft": 1
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 5,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 6,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 7,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 8,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 9,
+              "id": "b",
+              "blocked": []
+            }
+          ]
+        }
+      ],
+      "valueLeader": "direct-first",
+      "verdict": "direct-first"
+    },
+    {
+      "factor": "successor-value",
+      "role": "requested",
+      "horizon": 6,
+      "successorValue": 3,
+      "successorDeadlineTick": null,
+      "tasks": [
+        {
+          "id": "foundation",
+          "requires": [],
+          "workLeft": 3,
+          "value": 1,
+          "done": false
+        },
+        {
+          "id": "a",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 3,
+          "done": false
+        },
+        {
+          "id": "b",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 3,
+          "done": false
+        },
+        {
+          "id": "direct",
+          "requires": [],
+          "workLeft": 3,
+          "value": 7,
+          "done": false
+        }
+      ],
+      "results": [
+        {
+          "strategy": "foundation-first",
+          "order": ["foundation", "a", "b", "direct"],
+          "inputs": ["foundation", "foundation", "foundation", "a", "a", "b"],
+          "tick": 6,
+          "countedValue": 4,
+          "waitingTaskTicks": 6,
+          "shipped": [
+            {
+              "id": "foundation",
+              "tick": 3,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 5,
+              "value": 3,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "b",
+              "workLeft": 1
+            },
+            {
+              "id": "direct",
+              "workLeft": 3
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 5,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 6,
+              "id": "b",
+              "blocked": []
+            }
+          ]
+        },
+        {
+          "strategy": "direct-first",
+          "order": ["direct", "foundation", "a", "b"],
+          "inputs": ["direct", "direct", "direct", "foundation", "foundation", "foundation"],
+          "tick": 6,
+          "countedValue": 8,
+          "waitingTaskTicks": 12,
+          "shipped": [
+            {
+              "id": "direct",
+              "tick": 3,
+              "value": 7,
+              "counted": true
+            },
+            {
+              "id": "foundation",
+              "tick": 6,
+              "value": 1,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "a",
+              "workLeft": 2
+            },
+            {
+              "id": "b",
+              "workLeft": 2
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 5,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 6,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            }
+          ]
+        }
+      ],
+      "valueLeader": "direct-first",
+      "verdict": "direct-first"
+    },
+    {
+      "factor": "successor-value",
+      "role": "boundary",
+      "horizon": 6,
+      "successorValue": 7,
+      "successorDeadlineTick": null,
+      "tasks": [
+        {
+          "id": "foundation",
+          "requires": [],
+          "workLeft": 3,
+          "value": 1,
+          "done": false
+        },
+        {
+          "id": "a",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 7,
+          "done": false
+        },
+        {
+          "id": "b",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 7,
+          "done": false
+        },
+        {
+          "id": "direct",
+          "requires": [],
+          "workLeft": 3,
+          "value": 7,
+          "done": false
+        }
+      ],
+      "results": [
+        {
+          "strategy": "foundation-first",
+          "order": ["foundation", "a", "b", "direct"],
+          "inputs": ["foundation", "foundation", "foundation", "a", "a", "b"],
+          "tick": 6,
+          "countedValue": 8,
+          "waitingTaskTicks": 6,
+          "shipped": [
+            {
+              "id": "foundation",
+              "tick": 3,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 5,
+              "value": 7,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "b",
+              "workLeft": 1
+            },
+            {
+              "id": "direct",
+              "workLeft": 3
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 5,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 6,
+              "id": "b",
+              "blocked": []
+            }
+          ]
+        },
+        {
+          "strategy": "direct-first",
+          "order": ["direct", "foundation", "a", "b"],
+          "inputs": ["direct", "direct", "direct", "foundation", "foundation", "foundation"],
+          "tick": 6,
+          "countedValue": 8,
+          "waitingTaskTicks": 12,
+          "shipped": [
+            {
+              "id": "direct",
+              "tick": 3,
+              "value": 7,
+              "counted": true
+            },
+            {
+              "id": "foundation",
+              "tick": 6,
+              "value": 1,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "a",
+              "workLeft": 2
+            },
+            {
+              "id": "b",
+              "workLeft": 2
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 5,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 6,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            }
+          ]
+        }
+      ],
+      "valueLeader": "tie",
+      "verdict": "foundation-first"
+    },
+    {
+      "factor": "successor-value",
+      "role": "boundary",
+      "horizon": 6,
+      "successorValue": 8,
+      "successorDeadlineTick": null,
+      "tasks": [
+        {
+          "id": "foundation",
+          "requires": [],
+          "workLeft": 3,
+          "value": 1,
+          "done": false
+        },
+        {
+          "id": "a",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 8,
+          "done": false
+        },
+        {
+          "id": "b",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 8,
+          "done": false
+        },
+        {
+          "id": "direct",
+          "requires": [],
+          "workLeft": 3,
+          "value": 7,
+          "done": false
+        }
+      ],
+      "results": [
+        {
+          "strategy": "foundation-first",
+          "order": ["foundation", "a", "b", "direct"],
+          "inputs": ["foundation", "foundation", "foundation", "a", "a", "b"],
+          "tick": 6,
+          "countedValue": 9,
+          "waitingTaskTicks": 6,
+          "shipped": [
+            {
+              "id": "foundation",
+              "tick": 3,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 5,
+              "value": 8,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "b",
+              "workLeft": 1
+            },
+            {
+              "id": "direct",
+              "workLeft": 3
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 5,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 6,
+              "id": "b",
+              "blocked": []
+            }
+          ]
+        },
+        {
+          "strategy": "direct-first",
+          "order": ["direct", "foundation", "a", "b"],
+          "inputs": ["direct", "direct", "direct", "foundation", "foundation", "foundation"],
+          "tick": 6,
+          "countedValue": 8,
+          "waitingTaskTicks": 12,
+          "shipped": [
+            {
+              "id": "direct",
+              "tick": 3,
+              "value": 7,
+              "counted": true
+            },
+            {
+              "id": "foundation",
+              "tick": 6,
+              "value": 1,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "a",
+              "workLeft": 2
+            },
+            {
+              "id": "b",
+              "workLeft": 2
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 5,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 6,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            }
+          ]
+        }
+      ],
+      "valueLeader": "foundation-first",
+      "verdict": "foundation-first"
+    },
+    {
+      "factor": "successor-deadline",
+      "role": "requested",
+      "horizon": 6,
+      "successorValue": 6,
+      "successorDeadlineTick": 2,
+      "tasks": [
+        {
+          "id": "foundation",
+          "requires": [],
+          "workLeft": 3,
+          "value": 1,
+          "done": false
+        },
+        {
+          "id": "a",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "b",
+          "requires": ["foundation"],
+          "workLeft": 2,
+          "value": 6,
+          "done": false
+        },
+        {
+          "id": "direct",
+          "requires": [],
+          "workLeft": 3,
+          "value": 7,
+          "done": false
+        }
+      ],
+      "results": [
+        {
+          "strategy": "foundation-first",
+          "order": ["foundation", "a", "b", "direct"],
+          "inputs": ["foundation", "foundation", "foundation", "a", "a", "b"],
+          "tick": 6,
+          "countedValue": 1,
+          "waitingTaskTicks": 6,
+          "shipped": [
+            {
+              "id": "foundation",
+              "tick": 3,
+              "value": 1,
+              "counted": true
+            },
+            {
+              "id": "a",
+              "tick": 5,
+              "value": 6,
+              "counted": false
+            }
+          ],
+          "remaining": [
+            {
+              "id": "b",
+              "workLeft": 1
+            },
+            {
+              "id": "direct",
+              "workLeft": 3
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 5,
+              "id": "a",
+              "blocked": []
+            },
+            {
+              "tick": 6,
+              "id": "b",
+              "blocked": []
+            }
+          ]
+        },
+        {
+          "strategy": "direct-first",
+          "order": ["direct", "foundation", "a", "b"],
+          "inputs": ["direct", "direct", "direct", "foundation", "foundation", "foundation"],
+          "tick": 6,
+          "countedValue": 8,
+          "waitingTaskTicks": 12,
+          "shipped": [
+            {
+              "id": "direct",
+              "tick": 3,
+              "value": 7,
+              "counted": true
+            },
+            {
+              "id": "foundation",
+              "tick": 6,
+              "value": 1,
+              "counted": true
+            }
+          ],
+          "remaining": [
+            {
+              "id": "a",
+              "workLeft": 2
+            },
+            {
+              "id": "b",
+              "workLeft": 2
+            }
+          ],
+          "history": [
+            {
+              "tick": 1,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 2,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 3,
+              "id": "direct",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 4,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 5,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            },
+            {
+              "tick": 6,
+              "id": "foundation",
+              "blocked": ["a", "b"]
+            }
+          ]
+        }
+      ],
+      "valueLeader": "direct-first",
+      "verdict": "direct-first"
+    }
+  ]
+}

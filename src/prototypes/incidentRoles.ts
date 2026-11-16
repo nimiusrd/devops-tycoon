@@ -128,7 +128,11 @@ function pushPeriod(
   state.tick += 1;
 }
 
-export function createIncidentRoles(seed: string, board: IncidentBoard): IncidentState {
+export function createIncidentRoles(
+  seed: string,
+  board: IncidentBoard,
+  options?: { investigationNeed?: number; reassignmentSlotCost?: number },
+): IncidentState {
   const spec = BOARDS[board];
   return {
     version: 1,
@@ -139,9 +143,9 @@ export function createIncidentRoles(seed: string, board: IncidentBoard): Inciden
     slots: SLOTS,
     progressPerPerson: PROGRESS_PER_PERSON,
     baselineRecovery: BASELINE_RECOVERY,
-    reassignmentSlotCost: 1,
+    reassignmentSlotCost: options?.reassignmentSlotCost ?? 1,
     recoveryNeed: RECOVERY_NEED,
-    investigationNeed: INVESTIGATION_NEED,
+    investigationNeed: options?.investigationNeed ?? INVESTIGATION_NEED,
     explanationNeed: EXPLANATION_NEED,
     earlyShipTick: spec.earlyShipTick,
     earlyShip: spec.earlyShip,
@@ -411,5 +415,192 @@ export function viewIncidentRoles(state: IncidentState) {
       state.strategy === null && state.tick === 0
         ? (['recovery', 'split'] as const).map((strategy) => preview(state, strategy))
         : [],
+  };
+}
+
+const INVESTIGATION_NEEDS = [4, 5, 6, 7] as const;
+
+/** 調査を先に厚くし、次のtickで説明へ役割を変える。切替で調査担当が外れる。 */
+const SWITCH_PLAN: readonly RoleAssignment[] = [
+  { recovery: 1, investigation: 2, explanation: 0 },
+  { recovery: 1, investigation: 0, explanation: 1 },
+  { recovery: 2, investigation: 0, explanation: 1 },
+];
+
+/** 同じ開始のあと、失った枠を調査に残して3役割を続ける。費用0の反実仮想。 */
+const SLOT_KEPT_PLAN: readonly RoleAssignment[] = [
+  { recovery: 1, investigation: 2, explanation: 0 },
+  { recovery: 1, investigation: 1, explanation: 1 },
+  { recovery: 1, investigation: 1, explanation: 1 },
+];
+
+export type IncidentSwitchDecision = 'split' | 'switch' | 'slotKept';
+export type IncidentSwitchAdvantage = 'split' | 'switch' | 'tie';
+
+export interface IncidentSwitchResult {
+  score: number;
+  ship: number;
+  penalty: number;
+  recoveryTime: number | null;
+  recurrence: number;
+  trustGap: number;
+  reassignmentCost: number;
+  investigation: number;
+  explanation: number;
+  path: number[];
+}
+
+export interface IncidentSwitchPlay {
+  decision: IncidentSwitchDecision;
+  initial: IncidentState;
+  inputs: IncidentInput[];
+  result: IncidentSwitchResult;
+}
+
+export interface IncidentSwitchPoint {
+  board: IncidentBoard;
+  investigationNeed: number;
+  advantage: IncidentSwitchAdvantage;
+  slotKeptAdvantage: IncidentSwitchAdvantage;
+  slotLowersScore: boolean;
+  plays: Record<IncidentSwitchDecision, IncidentSwitchPlay>;
+}
+
+function workTicksOf(state: IncidentState): number {
+  return state.horizon - 1;
+}
+
+function assignInput(assignment: RoleAssignment): IncidentInput {
+  return {
+    type: 'assign',
+    recovery: assignment.recovery,
+    investigation: assignment.investigation,
+    explanation: assignment.explanation,
+  };
+}
+
+function playInputs(initial: IncidentState, inputs: readonly IncidentInput[]): IncidentState {
+  let state = initial;
+  for (const input of inputs) {
+    const next = applyIncidentRoles(state, input);
+    if (next === state) throw new Error(`${initial.board}:${initial.investigationNeed}`);
+    state = next;
+  }
+  if (state.tick !== initial.horizon)
+    throw new Error(`${initial.board}:${initial.investigationNeed}`);
+  return state;
+}
+
+function toSwitchResult(state: IncidentState): IncidentSwitchResult {
+  const summary = summarizeIncidentRoles(state);
+  return {
+    score: summary.score,
+    ship: summary.ship,
+    penalty: summary.penalty,
+    recoveryTime: summary.recoveryTime,
+    recurrence: summary.recurrence,
+    trustGap: summary.trustGap,
+    reassignmentCost: summary.reassignmentCost,
+    investigation: state.investigation,
+    explanation: state.explanation,
+    path: summary.path,
+  };
+}
+
+function splitInputs(workTicks: number): IncidentInput[] {
+  return [
+    { type: 'split' },
+    ...Array.from({ length: workTicks }, () => ({ type: 'work' as const })),
+  ];
+}
+
+function planInputs(plan: readonly RoleAssignment[], workTicks: number): IncidentInput[] {
+  return [{ type: 'split' }, ...plan.slice(0, workTicks).map(assignInput)];
+}
+
+function playDecision(
+  seed: string,
+  board: IncidentBoard,
+  investigationNeed: number,
+  decision: IncidentSwitchDecision,
+): IncidentSwitchPlay {
+  const initial = createIncidentRoles(seed, board, {
+    investigationNeed,
+    ...(decision === 'slotKept' ? { reassignmentSlotCost: 0 } : {}),
+  });
+  const workTicks = workTicksOf(initial);
+  const inputs =
+    decision === 'split'
+      ? splitInputs(workTicks)
+      : planInputs(decision === 'switch' ? SWITCH_PLAN : SLOT_KEPT_PLAN, workTicks);
+  return { decision, initial, inputs, result: toSwitchResult(playInputs(initial, inputs)) };
+}
+
+function rankScores(switchScore: number, splitScore: number): IncidentSwitchAdvantage {
+  if (switchScore > splitScore) return 'switch';
+  if (switchScore < splitScore) return 'split';
+  return 'tie';
+}
+
+export function compareIncidentInvestigationSwitch(seed = 'RI-253') {
+  const baseline = createIncidentRoles(seed, 'brief');
+  const points: IncidentSwitchPoint[] = INVESTIGATION_NEEDS.flatMap((investigationNeed) =>
+    (['brief', 'lasting'] as const).map((board) => {
+      const split = playDecision(seed, board, investigationNeed, 'split');
+      const switched = playDecision(seed, board, investigationNeed, 'switch');
+      const slotKept = playDecision(seed, board, investigationNeed, 'slotKept');
+      return {
+        board,
+        investigationNeed,
+        advantage: rankScores(switched.result.score, split.result.score),
+        slotKeptAdvantage: rankScores(slotKept.result.score, split.result.score),
+        slotLowersScore: switched.result.score < slotKept.result.score,
+        plays: { split, switch: switched, slotKept },
+      };
+    }),
+  );
+  const reversals = (['brief', 'lasting'] as const).flatMap((board) => {
+    const rows = points.filter((point) => point.board === board);
+    return rows.slice(1).flatMap((point, index) => {
+      const previous = rows[index];
+      if (!previous || previous.advantage === point.advantage) return [];
+      return [
+        {
+          board,
+          lowerNeed: previous.investigationNeed,
+          higherNeed: point.investigationNeed,
+          lower: previous.advantage,
+          higher: point.advantage,
+        },
+      ];
+    });
+  });
+  return {
+    seed,
+    evaluation: { fixedStrategies: true, humanPlay: false, productionIntegration: false },
+    resources: {
+      slots: baseline.slots,
+      progressPerPerson: baseline.progressPerPerson,
+      baselineRecovery: baseline.baselineRecovery,
+      reassignmentSlotCost: baseline.reassignmentSlotCost,
+      recoveryNeed: baseline.recoveryNeed,
+      explanationNeed: baseline.explanationNeed,
+      investigationNeeds: [...INVESTIGATION_NEEDS],
+    },
+    summary: points.map((point) => ({
+      board: point.board,
+      investigationNeed: point.investigationNeed,
+      split: point.plays.split.result.score,
+      switch: point.plays.switch.result.score,
+      slotKept: point.plays.slotKept.result.score,
+      advantage: point.advantage,
+      slotKeptAdvantage: point.slotKeptAdvantage,
+      slotLowersScore: point.slotLowersScore,
+      splitInvestigation: point.plays.split.result.investigation,
+      switchInvestigation: point.plays.switch.result.investigation,
+      slotKeptInvestigation: point.plays.slotKept.result.investigation,
+    })),
+    reversals,
+    points,
   };
 }

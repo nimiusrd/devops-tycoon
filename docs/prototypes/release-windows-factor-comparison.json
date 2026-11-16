@@ -1,0 +1,7537 @@
+{
+  "seed": "RI-160",
+  "results": [
+    {
+      "factor": "deadline",
+      "parameter": "1",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 1,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 2,
+        "netValue": 4,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 1,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "1",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 1,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 1,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "1",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 1,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 8,
+        "netValue": -2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 1,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "1",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 1,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 1,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "2",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "2",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "2",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "2",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "4",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 4,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 4,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "4",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 4,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 4,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "4",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 4,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 4,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "4",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 4,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 4,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "5",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 5,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 5,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "5",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 5,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 0,
+        "netValue": 10,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 5,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 10,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "5",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 5,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 5,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "deadline",
+      "parameter": "5",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 5,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 0,
+        "netValue": 10,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 5,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 10,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "2",
+      "impact": null,
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "2",
+      "impact": null,
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "3",
+      "impact": null,
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 3,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 3,
+        "netValue": 7,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 3,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 3
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "3",
+      "impact": null,
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 3,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 3,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "4",
+      "impact": null,
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 4,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 4,
+        "netValue": 6,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 4,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 4
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "4",
+      "impact": null,
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 4,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 4,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "5",
+      "impact": null,
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 5,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 5,
+        "netValue": 5,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 5,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 5
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "5",
+      "impact": null,
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 5,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 5,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "8",
+      "impact": null,
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "riskLoss",
+      "parameter": "8",
+      "impact": null,
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,3",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 3],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,3",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 3],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 2,
+        "netValue": 4,
+        "verificationWork": 1
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 3,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,3",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 3],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,3",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 3],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 8,
+        "netValue": -2,
+        "verificationWork": 1
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 3,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,4",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 4],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,4",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 4],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 4,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,4",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 4],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,4",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 4],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 4,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,6",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 6],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,6",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 6],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 6,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,6",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 6],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,6",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 6],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 6,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,7",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 7],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,7",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 7],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 0,
+        "carryover": ["change"],
+        "value": 0,
+        "loss": 0,
+        "netValue": 0,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "awaitingRelease",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": null,
+          "value": 0,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,7",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 7],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "2,7",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 7],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 0,
+        "carryover": ["change"],
+        "value": 0,
+        "loss": 0,
+        "netValue": 0,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "awaitingRelease",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": null,
+          "value": 0,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "3,5",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [3, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 2,
+        "netValue": 4,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 3,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "3,5",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [3, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "3,5",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [3, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 8,
+        "netValue": -2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 3,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "3,5",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [3, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "4,5",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [4, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 2,
+        "netValue": 4,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 4,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "4,5",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [4, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 2,
+        "netValue": 4,
+        "verificationWork": 1
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "4,5",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [4, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 8,
+        "netValue": -2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 4,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "departure",
+      "parameter": "4,5",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [4, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 8,
+        "netValue": -2,
+        "verificationWork": 1
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "0",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "0",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "2",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 2,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "2",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 2,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 2,
+        "netValue": 4,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "0",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "0",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "3",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 3,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "3",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 3,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 3,
+        "netValue": 3,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 3
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "4",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 4,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "4",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 4,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 4,
+        "netValue": 2,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 4
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "5",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 5,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "5",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 5,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 5,
+        "netValue": 1,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 5
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "8",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 8,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "verificationFailure",
+      "parameter": "8",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 8,
+          "reviewBeforeDeparture": true
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 8,
+        "netValue": -2,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review1-after",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review1-after",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-before",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-before",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-after",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 2,
+        "netValue": 4,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-after",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review1-after",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review1-after",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-before",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-before",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-after",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 8,
+        "netValue": -2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "sameDayOrder",
+      "parameter": "review2-after",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 2,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ],
+        "rules": {
+          "verifiedLoss": 0,
+          "reviewBeforeDeparture": false
+        }
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 2,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "1",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 2,
+        "netValue": 8,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "1",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "1",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 8,
+        "netValue": 2,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "1",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "0",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 0,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 0,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 0,
+        "netValue": 10,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 0,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "0",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 0,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 0,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 0,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "0",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 0,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 0,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 0,
+        "netValue": 10,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 0,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "0",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 0,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 0,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 0,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "-1",
+      "impact": "low",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": -1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": -1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 0,
+        "netValue": 10,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": -1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "-1",
+      "impact": "low",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": -1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": -1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": -1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "-1",
+      "impact": "high",
+      "strategy": "early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": -1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": -1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 10,
+        "loss": 0,
+        "netValue": 10,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": -1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "earlyReview",
+      "parameter": "-1",
+      "impact": "high",
+      "strategy": "verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": -1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": -1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 1,
+        "published": 1,
+        "carryover": [],
+        "value": 6,
+        "loss": 0,
+        "netValue": 6,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": -1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "low",
+      "strategy": "all-early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 20,
+        "loss": 4,
+        "netValue": 16,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "low",
+      "strategy": "verify-change",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 16,
+        "loss": 2,
+        "netValue": 14,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "low",
+      "strategy": "verify-other",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["other"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "other"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "other"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 16,
+        "loss": 2,
+        "netValue": 14,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 2
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "low",
+      "strategy": "all-verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change", "other"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 12,
+        "loss": 2,
+        "netValue": 10,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "low",
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 2,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change", "other"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "other"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 12,
+        "loss": 4,
+        "netValue": 8,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 2
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 2,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 2
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "high",
+      "strategy": "all-early",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 20,
+        "loss": 16,
+        "netValue": 4,
+        "verificationWork": 0
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "high",
+      "strategy": "verify-change",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 16,
+        "loss": 8,
+        "netValue": 8,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "high",
+      "strategy": "verify-other",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["other"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "other"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "other"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 16,
+        "loss": 8,
+        "netValue": 8,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 2,
+          "value": 10,
+          "loss": 8
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "high",
+      "strategy": "all-verify",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change", "other"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 12,
+        "loss": 8,
+        "netValue": 4,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 0,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 0
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 2,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    },
+    {
+      "factor": "contention",
+      "parameter": "rival",
+      "impact": "high",
+      "strategy": "split",
+      "initial": {
+        "version": 1,
+        "seed": "RI-160",
+        "tick": 1,
+        "horizon": 6,
+        "departures": [2, 5],
+        "verificationWork": 0,
+        "inputs": [],
+        "tasks": [
+          {
+            "id": "change",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          },
+          {
+            "id": "other",
+            "reviewCompletedTick": 1,
+            "status": "awaitingRelease",
+            "verificationLeft": 2,
+            "riskLoss": 8,
+            "deadlineTick": 2,
+            "onTimeValue": 10,
+            "lateValue": 6,
+            "publishedTick": null,
+            "value": 0,
+            "loss": 0
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "holdIds": ["change", "other"]
+        },
+        {
+          "holdIds": [],
+          "verifyId": "change"
+        },
+        {
+          "holdIds": [],
+          "verifyId": "other"
+        },
+        {
+          "holdIds": []
+        },
+        {
+          "holdIds": []
+        }
+      ],
+      "result": {
+        "tick": 6,
+        "reviewed": 2,
+        "published": 2,
+        "carryover": [],
+        "value": 12,
+        "loss": 16,
+        "netValue": -4,
+        "verificationWork": 2
+      },
+      "tasks": [
+        {
+          "id": "change",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 8
+        },
+        {
+          "id": "other",
+          "reviewCompletedTick": 1,
+          "status": "published",
+          "verificationLeft": 1,
+          "riskLoss": 8,
+          "deadlineTick": 2,
+          "onTimeValue": 10,
+          "lateValue": 6,
+          "publishedTick": 5,
+          "value": 6,
+          "loss": 8
+        }
+      ]
+    }
+  ]
+}

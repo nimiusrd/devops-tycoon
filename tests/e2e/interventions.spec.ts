@@ -297,7 +297,7 @@ test('Review が空のとき割り込みレビューは無効＋理由表示（R
   const btn = page.getByTestId('action-interruptReview');
   await expect(btn).toBeDisabled();
   await expect(btn).toHaveAttribute('data-block-reason', 'no-target');
-  await expect(page.getByTestId('action-reason-interruptReview')).toContainText('Review が空');
+  await expect(page.getByTestId('action-reason-interruptReview')).toContainText('レビュー待ちなし');
 });
 
 test('Review に対象があるとき対象数バッジを表示する（RI-51）', async ({ page }) => {

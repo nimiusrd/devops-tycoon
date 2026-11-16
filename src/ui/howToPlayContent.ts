@@ -33,7 +33,7 @@ export const HOW_TO_PLAY_SECTIONS: readonly HowToPlaySection[] = [
   {
     id: 'jam',
     title: 'レビュー渋滞を見る',
-    body: 'Review レーンにタスクが溜まると渋滞メーターが上がります。枠を超える前にレビューを回し、手戻りや士気の低下を防ぎます。',
+    body: 'レビュー レーンにタスクが溜まると渋滞メーターが上がります。枠を超える前にレビューを回し、手戻りや士気の低下を防ぎます。',
   },
   {
     id: 'combo',

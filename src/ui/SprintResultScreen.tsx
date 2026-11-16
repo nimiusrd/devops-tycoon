@@ -122,7 +122,41 @@ export function SprintResultScreen({
       tabIndex={-1}
     >
       <div className="result-card sprint-result-card">
-        <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={0}>
+        <div className="sprint-result-footer overlay-actions">
+          <div className="result-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onContinue}
+              disabled={continueDisabled}
+              title={continueDisabledReason}
+              data-testid="result-continue"
+            >
+              {continueLabel}
+            </button>
+            {onAbandon && (
+              <button
+                type="button"
+                className="btn"
+                onClick={onAbandon}
+                data-testid="result-restart"
+                title={
+                  replayMode
+                    ? undefined
+                    : '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません'
+                }
+              >
+                {resolvedAbandonLabel}
+              </button>
+            )}
+          </div>
+          {continueDisabled && continueDisabledReason ? (
+            <p className="result-continue-hint" data-testid="result-continue-hint">
+              {continueDisabledReason}
+            </p>
+          ) : null}
+        </div>
+        <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={-1}>
           <div className="result-hero" data-testid="result-hero">
             <p className="result-eyebrow">スプリント結果</p>
             {contextLine.show ? (
@@ -213,9 +247,19 @@ export function SprintResultScreen({
                     </li>
                   ))}
                   {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
-                    <li className="growth-level">
-                      <VisualIcon name="ceremonyLevelUp" size="hud" />
-                      {growth.leveledUp.length}人がレベルアップ
+                    <li
+                      className={
+                        result.done > 0 ? 'growth-level' : 'growth-level growth-level-muted'
+                      }
+                    >
+                      {result.done > 0 ? (
+                        <>
+                          <VisualIcon name="ceremonyLevelUp" size="hud" />
+                          {growth.leveledUp.length}人がレベルアップ
+                        </>
+                      ) : (
+                        <>レベルが上がった（{growth.leveledUp.length}人）</>
+                      )}
                     </li>
                   )}
                 </ul>
@@ -310,40 +354,6 @@ export function SprintResultScreen({
             <SprintTimelineChart timeline={result.timeline} events={result.events} />
             <BaselineComparisonChart result={result} />
           </details>
-        </div>
-        <div className="sprint-result-footer overlay-actions">
-          <div className="result-actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={onContinue}
-              disabled={continueDisabled}
-              title={continueDisabledReason}
-              data-testid="result-continue"
-            >
-              {continueLabel}
-            </button>
-            {onAbandon && (
-              <button
-                type="button"
-                className="btn"
-                onClick={onAbandon}
-                data-testid="result-restart"
-                title={
-                  replayMode
-                    ? undefined
-                    : '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません'
-                }
-              >
-                {resolvedAbandonLabel}
-              </button>
-            )}
-          </div>
-          {continueDisabled && continueDisabledReason ? (
-            <p className="result-continue-hint" data-testid="result-continue-hint">
-              {continueDisabledReason}
-            </p>
-          ) : null}
         </div>
       </div>
     </div>

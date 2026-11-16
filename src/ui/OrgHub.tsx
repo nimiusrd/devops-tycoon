@@ -28,7 +28,7 @@ export function OrgInfraHubPill({
       <span className="org-infra-title">共通基盤</span>
       {warn ? <span className="org-infra-warn">注意</span> : null}
       <span className="org-infra-meta">
-        CI {ci} / Docs {docs} / AI {aiGuideline}
+        CI {ci} / 文書 {docs} / AI {aiGuideline}
       </span>
     </div>
   );

@@ -23,6 +23,7 @@ import {
   planBoardDotsForRender,
   presentBoardDot,
   presentBoardDots,
+  presentBoardDotsAtStrength,
   presentBoardEffectPoint,
   presentBoardReviewTrail,
   presentedDotHitsOtherStation,
@@ -35,7 +36,13 @@ import {
   type BoardDotPlan,
 } from '../../../src/render/boardScene';
 import type { Lane, Task } from '../../../src/sim/types';
-import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
+import {
+  DESIGN_SPACES,
+  VISUAL_TOKENS,
+  designToHostTransform,
+} from '../../../src/render/visualTokens';
+import { reviewPilePresentationScales } from '../../../src/render/boardPileLayout';
+import { makeTask } from '../helpers/sprintFixtures';
 
 const STATIONS = (Object.keys(BOARD_STATION_CENTERS) as Lane[]).map((lane) => ({
   lane,
@@ -183,6 +190,20 @@ describe('boardDotReadability', () => {
     expect(presentBoardDot(entry, 0.208)).toMatchObject({ x: 100, y: 80 });
   });
 
+  it('presentBoardDotsAtStrength は 0 で計画位置、1 で武装後と一致し、中間を線形補間する（#982）', () => {
+    const narrowScale = 0.208;
+    const dots = [
+      dot({ id: 1, size: 'small', x: 840, y: 315, clusterX: 828, clusterY: 327 }),
+      dot({ id: 2, size: 'small', x: 862, y: 315, clusterX: 828, clusterY: 327 }),
+    ];
+    const armed = presentBoardDots(dots, narrowScale);
+    expect(presentBoardDotsAtStrength(dots, narrowScale, 0)).toEqual(dots);
+    expect(presentBoardDotsAtStrength(dots, narrowScale, 1)).toEqual(armed);
+    const half = presentBoardDotsAtStrength(dots, narrowScale, 0.5);
+    expect(half[0].x).toBeCloseTo((dots[0].x + armed[0].x) / 2, 5);
+    expect(half[1].x).toBeCloseTo((dots[1].x + armed[1].x) / 2, 5);
+  });
+
   it('山の中心でも隣の工程に入る大きい粒は、自分の工程の中心へ寄せる', () => {
     const scale = 0.2006980802792321;
     const entry = dot({
@@ -304,6 +325,69 @@ describe('boardDotReadability', () => {
     }
   });
 
+  it('倍率1でも押し離した粒の演出起点を提示座標へ寄せる（#994）', () => {
+    const tasks = Array.from({ length: 8 }, (_, index) =>
+      makeTask(index + 1, {
+        lane: 'review',
+        kind: index % 4 === 0 ? 'complex' : 'normal',
+      }),
+    );
+    const planned = planBoardScene(tasks).dots;
+    const scale = designToHostTransform(1024, 409.6, DESIGN_SPACES.sprint).scale;
+    const presented = presentBoardDots(planned, scale);
+    const moving = presented.find(
+      (dot, index) =>
+        dot.lane === 'review' &&
+        Math.hypot(dot.x - planned[index].x, dot.y - planned[index].y) > 0.5,
+    );
+    expect(moving).toBeDefined();
+    const index = presented.indexOf(moving!);
+    const anchor = { x: planned[index].x, y: planned[index].y };
+    expect(presentBoardEffectPoint(anchor, planned, presented, scale)).toEqual({
+      x: moving!.x,
+      y: moving!.y,
+    });
+  });
+
+  it('中と大の粒は 320/390/1024 で CSS 上重ならない（#994）', { timeout: 60_000 }, () => {
+    const tasks = [
+      ...Array.from({ length: 12 }, (_, index) =>
+        makeTask(index + 1, {
+          lane: 'review',
+          kind: index % 5 === 0 ? 'complex' : index % 3 === 0 ? 'routine' : 'normal',
+        }),
+      ),
+      makeTask(90, { lane: 'coding', kind: 'complex', progress: 0.4 }),
+    ];
+    const { dots } = planBoardScene(tasks);
+    const ids = new Set(dots.map((dot) => dot.id));
+    const scales = reviewPilePresentationScales();
+    for (const scale of scales) {
+      const presented = presentBoardDots(dots, scale);
+      const mediumLarge: number[] = [];
+      for (let left = 0; left < presented.length; left += 1) {
+        const dot = presented[left];
+        if (dot.size === 'medium' || dot.size === 'large') mediumLarge.push(left);
+      }
+      for (let li = 0; li < mediumLarge.length; li += 1) {
+        for (let ri = li + 1; ri < mediumLarge.length; ri += 1) {
+          const a = presented[mediumLarge[li]!];
+          const b = presented[mediumLarge[ri]!];
+          const sizes = new Set([a.size, b.size]);
+          if (!sizes.has('medium') || !sizes.has('large')) continue;
+          const dist = Math.hypot(a.x - b.x, a.y - b.y) * scale;
+          const need =
+            (presentedDotRadius(a.size, scale) + presentedDotRadius(b.size, scale)) * scale;
+          expect(dist, `粒 ${a.id} と ${b.id}`).toBeGreaterThanOrEqual(need - 0.05);
+        }
+      }
+      for (const index of mediumLarge) {
+        const dot = presented[index];
+        expect(hitTestBoardDot(dot, dots, ids, { x: scale, y: scale })).toBe(dot.id);
+      }
+    }
+  });
+
   it('緊急対応の開始位置は、拡大後の粒の中心へ移る', () => {
     const scale = 0.208;
     const tasks: Task[] = Array.from({ length: 12 }, (_, index) => ({
@@ -330,7 +414,12 @@ describe('boardDotReadability', () => {
       y: shown.y,
     });
     expect(Math.hypot(shown.x - anchor.x, shown.y - anchor.y) * scale).toBeGreaterThan(10);
-    expect(presentBoardEffectPoint(anchor, planned, presented, 1)).toEqual(anchor);
+    const presentedAt1 = presentBoardDots(planned, 1);
+    const shownAt1 = presentedAt1[planned.indexOf(raw!)];
+    expect(presentBoardEffectPoint(anchor, planned, presentedAt1, 1)).toEqual({
+      x: shownAt1.x,
+      y: shownAt1.y,
+    });
     expect(presentBoardEffectPoint({ x: 10, y: 20 }, planned, presented, scale)).toEqual({
       x: 10,
       y: 20,
@@ -495,6 +584,15 @@ describe('hitTestBoardDot', () => {
     expect(hitTestBoardDot({ x: 715, y: 300 }, small, draggable)).toBeNull();
     const large = [dot({ id: 1, size: 'large' })]; // 直径 34 → 半径 17 + 6 = 23
     expect(hitTestBoardDot({ x: 722, y: 300 }, large, draggable)).toBe(1);
+  });
+
+  it('提示中心から 1px 超でも、円内ならその粒を返す（#978）', () => {
+    const scale = 0.56;
+    const dots = [dot({ id: 23, size: 'large', x: 576.61, y: 325.76 })];
+    const ids = new Set([23]);
+    const presented = presentBoardDots(dots, scale)[0]!;
+    const tap = { x: Math.floor(presented.x), y: Math.floor(presented.y) };
+    expect(hitTestBoardDot(tap, dots, ids, { x: scale, y: scale })).toBe(23);
   });
 });
 

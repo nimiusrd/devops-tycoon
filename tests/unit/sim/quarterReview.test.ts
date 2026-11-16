@@ -1231,7 +1231,7 @@ describe('diagnoseMissedReasons（RI-42: AI 診断のメッセージ分割）', 
 /** diagnoseMissedReasons が返す文言（ソースの REASON_LABELS と一致させる）。 */
 const REASON = {
   scopeOverload: 'スコープ過多: 出荷目標に対して Delivery が不足している。',
-  reviewJam: 'レビュー詰まり: Review 待ち行列が限界に近づいた。',
+  reviewJam: 'レビュー詰まり: レビュー待ち行列が限界に近づいた。',
   qualityIssue: '品質問題: Quality / Tech Debt が目標を下回っている。',
   aiAdoptionShortfall: 'AI Adoption 未達: 経営が求める AI 利用率に届いていない。',
   aiOverconfidence: 'AI 過信: AI 利用率は高いが手戻り・品質が追いついていない。',

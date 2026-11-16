@@ -1306,7 +1306,7 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     const overlay = page.getByTestId('sprint-result');
     await expect(overlay).toBeVisible();
     await expect(overlay).toHaveClass(/overlay-contained/);
-    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
+    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '-1');
     await expect(page.getByTestId('result-title')).toBeVisible();
     await expect(page.getByTestId('reward-ceremony-title')).toBeVisible();
     await expect(page.getByTestId('result-diagnosis-text')).toBeVisible();
@@ -1482,11 +1482,11 @@ type SpreadGameWindow = Window & {
   };
 };
 
-const SPREAD_TICKER_CHAIN = '延焼! 隣の Review 待ち PR に連鎖（負債 +6 / 士気 -5）';
+const SPREAD_TICKER_CHAIN = '延焼! 隣のレビュー待ち PR に連鎖（負債 +6 / 士気 -5）';
 const SPREAD_TICKER_IMPACT = '延焼! 負債 +6 / 士気 -5';
 const SPREAD_RESULT_CHAIN =
-  't12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火';
-const SPREAD_RESULT_IMPACT = 't12: PR#7 が Review 落ちで点火 → t18 延焼（負債 +6 / 士気 -5）';
+  't12: PR#3 が レビュー落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火';
+const SPREAD_RESULT_IMPACT = 't12: PR#7 が レビュー落ちで点火 → t18 延焼（負債 +6 / 士気 -5）';
 
 async function injectSpreadTickerEvents(page: Page): Promise<void> {
   await page.evaluate(() => {

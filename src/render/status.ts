@@ -323,10 +323,10 @@ export function fireRiskHudCopy(risk: RiskLevel): {
   detail: string;
 } {
   if (risk === 'HIGH') {
-    return { tone: 'danger', detail: 'Review渋滞かシニア体力低下' };
+    return { tone: 'danger', detail: 'レビュー渋滞かシニア体力低下' };
   }
   if (risk === 'MED') {
-    return { tone: 'watch', detail: 'Review渋滞か体力注意' };
+    return { tone: 'watch', detail: 'レビュー渋滞か体力注意' };
   }
   return { tone: 'good', detail: '渋滞と体力が安定' };
 }

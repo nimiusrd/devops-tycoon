@@ -77,6 +77,11 @@ function OrgLeverSpendOverlay({
       aria-modal="true"
       aria-label="予算枯渇の確認"
       tabIndex={-1}
+      onClick={(event) => {
+        // 確認パネルの外（オーバーレイ自身）をタップしたときは取消と同じ。
+        if (event.target !== event.currentTarget) return;
+        onCancel();
+      }}
     >
       <SpendConfirm
         subject={pending.lever.name}
@@ -84,10 +89,35 @@ function OrgLeverSpendOverlay({
         returnTestId={pending.returnTestId}
         onConfirm={onConfirm}
         onCancel={onCancel}
+        groupLabel={null}
       />
     </div>
   );
   return typeof document === 'undefined' ? layer : createPortal(layer, document.body);
+}
+
+/** 可視の 💰支払→残高 と枯渇警告。aria-label が本文を上書きしても残す。 */
+function spendAccessibleSuffix(lever: LeverDef, risk: SpendRiskView): string | null {
+  if (risk.blocked !== null) return null;
+  const balance = `💰${lever.cost}→${risk.balanceAfter}`;
+  return risk.warningLabel ? `${balance}。${risk.warningLabel}` : balance;
+}
+
+function leverAccessibleLabel(
+  lever: LeverDef,
+  risk: SpendRiskView,
+  scopeLabel: string | undefined,
+  interactionGated: boolean,
+  blockedReason: string | undefined,
+): string | undefined {
+  const spend = spendAccessibleSuffix(lever, risk);
+  if (interactionGated) {
+    const base = scopeLabel ?? lever.name;
+    const withSpend = scopeLabel && spend ? `${base}。${spend}` : base;
+    return `${withSpend}。${blockedReason}`;
+  }
+  if (!scopeLabel) return undefined;
+  return spend ? `${scopeLabel}。${spend}` : scopeLabel;
 }
 
 export function OrgLeverList({
@@ -178,11 +208,13 @@ export function OrgLeverList({
             data-testid={leverTestId}
             disabled={budgetBlocked}
             aria-disabled={interactionGated ? true : undefined}
-            aria-label={
-              interactionGated
-                ? `${leverAriaLabel?.(lever) ?? lever.name}。${sprintInteractionBlockedReason}`
-                : leverAriaLabel?.(lever)
-            }
+            aria-label={leverAccessibleLabel(
+              lever,
+              risk,
+              leverAriaLabel?.(lever),
+              interactionGated,
+              sprintInteractionBlockedReason,
+            )}
             onClick={() => requestLever(lever)}
             title={interactionGated ? sprintInteractionBlockedReason : formatLeverTooltip(lever)}
           >

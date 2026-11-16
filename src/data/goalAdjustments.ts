@@ -110,7 +110,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'quality_pivot',
     label: '品質改善ピボット',
-    description: 'Tech Debt / Incident を下げる。短期の出荷評価は下がる。',
+    description: '技術的負債とインシデントを下げる。短期の出荷評価は下がる。',
     negotiator: 'customers',
     trustDelta: { customers: -5 },
     budgetDelta: 0,
@@ -144,7 +144,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'pause_ai_rollout',
     label: 'AI 導入一時停止',
-    description: 'Review / Rework を安定化する。AI Adoption 評価と短期速度が下がる。',
+    description: 'レビュー / Rework を安定化する。AI Adoption 評価と短期速度が下がる。',
     negotiator: 'management',
     trustDelta: { management: -8 },
     budgetDelta: 0,

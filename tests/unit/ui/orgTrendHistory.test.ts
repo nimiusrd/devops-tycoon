@@ -124,7 +124,7 @@ describe('OrgTrendHistory', () => {
       departmentNames: { product: 'プロダクト開発' },
     });
     expect(content(screen.find('org-trend-q1'))).toBe('Q1Healthy Acceleration 型');
-    expect(content(screen.find('org-trend-q3'))).toBe('Q3Review Hell 型');
+    expect(content(screen.find('org-trend-q3'))).toBe('Q3レビュー地獄型');
     expect(screen.find('org-trend-q3').props['data-diagnosis']).toBe('reviewHell');
     expect(content(screen.find('org-trend-company'))).toBe('出荷300超過品質70達成士気30未達');
     expect(screen.find('org-trend-series-delivery').props).toMatchObject({
@@ -142,8 +142,8 @@ describe('OrgTrendHistory', () => {
     const badges = elements(screen.find('org-trend-dept-product-health')).filter(
       (node) => node.props['data-health'],
     );
-    expect(badges.map((node) => node.props.title)).toEqual(['Q1 健全', 'Q3 Review Hell']);
-    expect(badges.map(content)).toEqual(['Q1 健全', 'Q3 Review Hell']);
+    expect(badges.map((node) => node.props.title)).toEqual(['Q1 健全', 'Q3 レビュー地獄']);
+    expect(badges.map(content)).toEqual(['Q1 健全', 'Q3 レビュー地獄']);
     expect(content(screen.find('org-trend-dept-platform-health'))).toBe('Q2 渋滞');
     expect(screen.find('org-trend-metric-all').props['aria-selected']).toBe(true);
     expect(screen.find('org-trend-metric-tabs').props).toMatchObject({
@@ -192,7 +192,7 @@ describe('OrgTrendHistory', () => {
     expect(
       elements(screen.find('org-trend-depts')).filter((node) => node.type === 'svg'),
     ).toHaveLength(0);
-    expect(content(screen.find('org-trend-dept-product-health'))).toBe('Q1 健全Q3 Review Hell');
+    expect(content(screen.find('org-trend-dept-product-health'))).toBe('Q1 健全Q3 レビュー地獄');
     expect(content(screen.find('org-trend-dept-platform-health'))).toBe('Q2 渋滞');
   });
 

@@ -22,7 +22,7 @@ const makeSprint = (org: OrgState, tasks: Task[]): SprintState => makeSprintWith
 
 /** actions.test.ts の NO_TARGET_CASES と整合する fixture。 */
 const NO_TARGET_CASES: { id: ActionId; tasks: Task[]; message: string }[] = [
-  { id: 'interruptReview', tasks: [], message: 'Review が空' },
+  { id: 'interruptReview', tasks: [], message: 'レビュー待ちなし' },
   {
     id: 'splitPr',
     tasks: [makeTask(0, { split: true, lane: 'coding' })],

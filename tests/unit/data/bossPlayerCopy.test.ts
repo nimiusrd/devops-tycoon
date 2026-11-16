@@ -20,8 +20,8 @@ describe('bossPlayerCopy（#1011）', () => {
   it('セキュリティ監査は負債上限と品質下限を突破条件として述べる', () => {
     const boss = getBoss('security-audit')!;
     const text = planBossPlayerDescription(boss, 'normal');
-    expect(text).toContain('Tech Debt 40 以下');
-    expect(text).toContain('Quality 50 以上');
+    expect(text).toContain('技術的負債 40 以下');
+    expect(text).toContain('品質 50 以上');
     expect(text).not.toContain('高いほど失点');
   });
 

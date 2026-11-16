@@ -183,9 +183,24 @@ body {
   min-width: 0;
   padding-right: 78px;
 }
-/* 狭幅で KPI が 2 行になっても HUD 高さが変わらず盤面を押さない（#986）。 */
+/*
+ * 狭幅で KPI の段数が変わっても HUD 高さが変わらず盤面を押さない（#975 / #986）。
+ * チップ 1 段の高さは font-size 11px・line-height 1.2・padding 8px、段間は gap 6px。
+ */
 :root[data-responsive-width='narrow'] .hud.hud-compact {
   min-height: calc(2 * (11px * 1.2 + 8px) + 6px);
+}
+/* 430 以下: 体力注意などで 3 段まで行き来する。 */
+@media (max-width: 430px) {
+  :root[data-responsive-width='narrow'] .hud.hud-compact {
+    min-height: calc(4 * (11px * 1.2 + 8px) + 2 * 6px - 6px);
+  }
+}
+/* 360 以下: 4 枚が折り返して最大 4 段（Chromium 320 の fireRisk 入れ替え）。 */
+@media (max-width: 360px) {
+  :root[data-responsive-width='narrow'] .hud.hud-compact {
+    min-height: calc(5 * (11px * 1.2 + 8px) + 3 * 6px);
+  }
 }
 .hud-compact-chip {
   position: relative;
@@ -1142,6 +1157,29 @@ body {
   overflow: visible;
   text-overflow: unset;
 }
+
+/*
+ * 320〜900px（narrow）でも工程列名を省略せず読めるようにする（#963）。
+ * 列幅が足りないときは 8px まで縮め、単語の途中改行はしない。
+ */
+:root[data-responsive-width='narrow'] .board-flow-summary {
+  right: 6px;
+  left: 6px;
+  width: auto;
+}
+:root[data-responsive-width='narrow'] .board-flow-list {
+  grid-template-columns: repeat(5, minmax(0, max-content));
+}
+:root[data-responsive-width='narrow'] .board-flow-list li {
+  grid-template-columns: auto max-content auto;
+  gap: 2px;
+  padding-inline: 2px 4px;
+  font-size: 8px;
+}
+:root[data-responsive-width='narrow'] .board-flow-name {
+  overflow: visible;
+  text-overflow: unset;
+}
 .board-flow-list strong {
   font-size: 1.1em;
   font-variant-numeric: tabular-nums;
@@ -1796,9 +1834,11 @@ body:has(.overlay-contained) {
   overflow: hidden;
 }
 .overlay-contained .sprint-result-card > .overlay-scroll {
+  order: 1;
   padding-bottom: 0.25rem;
 }
 .overlay-contained .sprint-result-card > .sprint-result-footer {
+  order: 2;
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
@@ -1813,12 +1853,28 @@ body:has(.overlay-contained) {
   > .sprint-result-footer {
   padding-top: 0.55rem;
 }
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
 :root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
   min-height: 44px;
   font-size: 11px;
   line-height: 1.25;
-  white-space: normal;
   text-align: center;
+}
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn-primary {
+  white-space: nowrap;
+}
+:root[data-responsive-width='narrow'] .sprint-result-card .result-actions .btn:not(.btn-primary) {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .sprint-result-card .result-eyebrow {
   letter-spacing: 0.08em;
@@ -2690,6 +2746,13 @@ body:has(.overlay-contained) {
   padding-right: 8px;
   border-right: 2px solid var(--line);
 }
+/* 1024 幅かつ低い viewport でタスク差配武装時のバー伸びを吸収する（#1023）。 */
+@media (max-width: 1024px) and (min-height: 760px) and (max-height: 800px) {
+  .actionbar[data-responsive-width='wide'] {
+    min-height: 246px;
+    box-sizing: border-box;
+  }
+}
 .assign-assignee-label {
   font-size: 9px;
   font-weight: 800;
@@ -3533,6 +3596,23 @@ body[data-tutorial-step='combo-gauge']
 }
 .actionbar[data-responsive-width='wide'] .action .cd {
   margin-top: 0;
+}
+/* 1024×768 付近では grid stretch が WebKit で行高を揺らし盤面が 1〜2 フレーム動く（#1023）。 */
+@media (max-width: 1024px) and (min-height: 760px) and (max-height: 800px) {
+  .actionbar[data-responsive-width='wide'] .action-heading {
+    min-height: 27px;
+  }
+  .actionbar[data-responsive-width='wide'] .actions {
+    align-items: start;
+  }
+  .actionbar[data-responsive-width='wide'] .action-resources {
+    margin-top: 0;
+  }
+  .actionbar[data-responsive-width='wide'] .action-target,
+  .actionbar[data-responsive-width='wide'] .action-summary,
+  .actionbar[data-responsive-width='wide'] .action-tradeoff {
+    min-height: calc(9.5px * 1.2 * 2);
+  }
 }
 :root[data-responsive-width='narrow'] .action-panel {
   flex: 1 1 100%;
@@ -6361,6 +6441,17 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   background: var(--visual-color-banner-ok-bg);
   color: var(--visual-color-banner-ok-text);
 }
+/* HUD と静かな保存案内をまとめ、保存中は下へ重ねて KPI を隠さない（#998）。 */
+.sprint-header-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+/* 保存中は HUD の次の行へ。狭幅でも RunBar の要約を左で覆わない。 */
+.sprint-header-stack .persistence-quiet-slot[data-quiet-state='saving'] {
+  justify-content: flex-end;
+}
 /* 復旧チップは HUD の操作列を覆わない（#546）。
    広幅はヘッダー右端、狭幅は見出しだけを左へ。いずれも HUD の次の行。
    常駐バナーと違い、タイトル余白用の高さ変数は増やさない。 */
@@ -6383,6 +6474,13 @@ html:has(.title-screen.title-command) .title-screen.title-command {
 }
 :root[data-responsive-width='narrow'] .persistence-quiet-slot .persistence-notice-detail {
   display: none;
+}
+/* 保存中チップの詳細は狭幅で隠すが、競合後の「保存停止中」は残す（#1008）。 */
+:root[data-responsive-width='narrow']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-detail {
+  display: block;
 }
 .persistence-notice-headline,
 .persistence-notice-detail {
@@ -6490,6 +6588,66 @@ html:has(.title-screen.title-command) .title-screen.title-command {
   .persistence-notice-actions
   .btn[data-testid='tab-conflict-reload'] {
   grid-column: auto;
+}
+/*
+ * 常駐チップは文書フローに置き、編成（20）や全社（30）より前面に出さない。
+ * 狭幅は書き出しと再読込を縦に積み、44px 以上を枠内へ収める。1280 では横並び。
+ */
+.persistence-quiet-slot .tab-conflict-quiet {
+  z-index: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+:root[data-responsive-width='narrow'] .persistence-quiet-slot .tab-conflict-quiet {
+  width: 100%;
+}
+:root[data-responsive-width='narrow']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+}
+:root[data-responsive-width='narrow']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions
+  .btn {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: min(320px, 100%);
+  min-width: var(--visual-interaction-min-touch-target);
+  min-height: var(--visual-interaction-min-touch-target);
+  margin: 0;
+}
+:root[data-responsive-width='wide'] .persistence-quiet-slot .tab-conflict-quiet {
+  width: max-content;
+}
+:root[data-responsive-width='wide']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  justify-content: flex-end;
+  width: max-content;
+  max-width: 100%;
+}
+:root[data-responsive-width='wide']
+  .persistence-quiet-slot
+  .tab-conflict-quiet
+  .persistence-notice-actions
+  .btn {
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: 320px;
+  min-width: var(--visual-interaction-min-touch-target);
+  min-height: var(--visual-interaction-min-touch-target);
+  margin: 0;
 }
 /* 競合はモーダル＋コンパクトバナー。スクリムだけ全面、当たり判定はバナー本体に限定。 */
 .tab-conflict-overlay.result-overlay {
@@ -8067,6 +8225,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .growth-level {
   color: var(--mint);
 }
+.growth-level-muted {
+  color: var(--text-dim);
+}
 
 :root[data-responsive-width='narrow'] .difficulty-grid,
 :root[data-responsive-width='narrow'] .shop-grid,
@@ -9518,7 +9679,50 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .term-tip-term {
   white-space: nowrap;
 }
-/* 短い確認文でも、狭幅では長い選択肢を全幅へ折り返して読めるようにする。 */
-.setup-coder-confirm .result-actions .btn {
+/* コーダー0人の開始確認: 背面の編成と重ね、狭幅ではボタン全文を折り返す（#990）。 */
+.setup-coder-confirm {
+  padding: 1rem;
+}
+.setup-coder-confirm-card {
+  width: min(100%, 26rem);
+  box-sizing: border-box;
+  overflow: hidden;
+  text-align: left;
+}
+.setup-coder-confirm-card .draft-title {
+  text-wrap: balance;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.setup-coder-confirm-body {
+  margin: 0 0 1.25rem;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+:root[data-responsive-width='narrow'] .setup-coder-confirm-card {
+  padding: 1.1rem 0.85rem 1.25rem;
+}
+:root[data-responsive-width='narrow'] .setup-coder-confirm-card .draft-title {
+  font-size: 0.95rem;
+  margin-bottom: 0.65rem;
+}
+.setup-coder-confirm-actions {
+  flex-wrap: wrap;
+}
+.setup-coder-confirm-actions .btn {
   flex: 1 1 10rem;
+  min-height: 44px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
+}
+:root[data-responsive-width='narrow'] .setup-coder-confirm {
+  padding: 0.75rem;
+}
+:root[data-responsive-width='narrow'][data-responsive-height='short'] .setup-coder-confirm {
+  padding: 0.5rem;
 }

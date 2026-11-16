@@ -6,7 +6,7 @@
  */
 import type { KeyboardEvent } from 'react';
 import { listFocusable, wrapTabIfNeeded } from './dialogOverlayLock';
-import { focusByTestId } from './focusByTestId';
+import { focusByTestId, focusGameOverPrimaryAction } from './focusByTestId';
 
 export interface SpendConfirmProps {
   subject: string;
@@ -15,6 +15,11 @@ export interface SpendConfirmProps {
   returnTestId: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /**
+   * 内側 group の名前。親ダイアログが同じ名前を持つときは null にして重複を外す。
+   * 省略時はショップなど、親が別の名前の確認で使う。
+   */
+  groupLabel?: string | null;
 }
 
 export function SpendConfirm({
@@ -23,11 +28,17 @@ export function SpendConfirm({
   returnTestId,
   onConfirm,
   onCancel,
+  groupLabel = '予算枯渇の確認',
 }: SpendConfirmProps) {
   const cancel = () => {
     onCancel();
     // 確認ボタンのアンマウント後に、再び有効になった元の操作へ戻す。
     setTimeout(() => focusByTestId(returnTestId), 0);
+  };
+  const confirm = () => {
+    onConfirm();
+    // 起点はアンマウントされる。GAME OVER の主操作が載ってから移す。
+    focusGameOverPrimaryAction();
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -48,8 +59,8 @@ export function SpendConfirm({
   return (
     <div
       className="spend-confirm"
-      role="group"
-      aria-label="予算枯渇の確認"
+      role={groupLabel ? 'group' : undefined}
+      aria-label={groupLabel ?? undefined}
       data-testid="spend-confirm"
       onKeyDown={onKeyDown}
     >
@@ -71,7 +82,7 @@ export function SpendConfirm({
           type="button"
           className="btn btn-danger"
           data-testid="spend-confirm-accept"
-          onClick={onConfirm}
+          onClick={confirm}
         >
           このまま実行する
         </button>

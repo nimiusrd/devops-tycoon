@@ -303,7 +303,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     expect(moraleHudCopy(50).warningChip).toBe('士気注意');
     expect(fireRiskHudCopy('MED')).toMatchObject({
       tone: 'watch',
-      detail: 'Review渋滞か体力注意',
+      detail: 'レビュー渋滞か体力注意',
     });
 
     const metrics = deriveHudMetrics(withOrg({ morale: 100, seniorHp: 27, techDebt: 0 }).org, []);

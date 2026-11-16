@@ -17,7 +17,7 @@ export function badgeTone(health: TeamHealth): 'ok' | 'warn' | 'hell' {
 
 /** バッジ tag 文言。 */
 export function healthTag(health: TeamHealth): string {
-  if (health === 'reviewHell') return 'Review Hell';
+  if (health === 'reviewHell') return 'レビュー地獄';
   if (health === 'congested') return '渋滞ぎみ';
   return 'Healthy';
 }

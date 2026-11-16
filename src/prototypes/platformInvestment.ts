@@ -6,6 +6,21 @@ export const INVEST_YIELD: Record<TeamId, number> = { platform: 2, product: 3, i
 export const JOB_TOTAL = 4;
 export const START_COST = 2;
 export const INSTANT_TICKS = 2;
+/** 即時レバーの費用。初回の2。着工費用の感度では動かさない。 */
+export const INSTANT_COST = 2;
+
+/** 初回比較の規則。感度ではこの三つを一つずつ動かす。 */
+export interface InvestRules {
+  startCost: number;
+  jobTotal: number;
+  instantTicks: number;
+}
+
+export const baselineInvestRules: InvestRules = {
+  startCost: START_COST,
+  jobTotal: JOB_TOTAL,
+  instantTicks: INSTANT_TICKS,
+};
 
 export type InvestBoard = 'sprint' | 'quarter';
 export type InvestStrategy = 'ship' | 'invest' | 'late' | 'immediate';
@@ -34,7 +49,11 @@ export interface InvestState {
 
 const HORIZON: Record<InvestBoard, number> = { sprint: 4, quarter: 8 };
 
-export function createPlatformInvestment(seed: string, board: InvestBoard): InvestState {
+export function createPlatformInvestment(
+  seed: string,
+  board: InvestBoard,
+  rules: InvestRules = baselineInvestRules,
+): InvestState {
   return {
     version: 1,
     seed,
@@ -44,8 +63,8 @@ export function createPlatformInvestment(seed: string, board: InvestBoard): Inve
     budgetPaid: 0,
     started: false,
     assignee: 'platform',
-    jobWorkLeft: JOB_TOTAL,
-    jobTotal: JOB_TOTAL,
+    jobWorkLeft: rules.jobTotal,
+    jobTotal: rules.jobTotal,
     jobDoneTick: null,
     effectApplied: false,
     bonusTicks: 0,
@@ -88,7 +107,11 @@ export function produceValue(
   }, 0);
 }
 
-export function applyPlatformInvestment(state: InvestState, input: InvestInput): InvestState {
+export function applyPlatformInvestment(
+  state: InvestState,
+  input: InvestInput,
+  rules: InvestRules = baselineInvestRules,
+): InvestState {
   if (input.type === 'start') {
     if (
       state.started ||
@@ -100,7 +123,7 @@ export function applyPlatformInvestment(state: InvestState, input: InvestInput):
     }
     const next = structuredClone(state);
     next.started = true;
-    next.budgetPaid = START_COST;
+    next.budgetPaid = rules.startCost;
     next.inputs.push({ type: 'start' });
     return next;
   }
@@ -114,8 +137,8 @@ export function applyPlatformInvestment(state: InvestState, input: InvestInput):
       return state;
     }
     const next = structuredClone(state);
-    next.budgetPaid = START_COST;
-    next.instantLeft = INSTANT_TICKS;
+    next.budgetPaid = INSTANT_COST;
+    next.instantLeft = rules.instantTicks;
     next.inputs.push({ type: 'immediate' });
     return next;
   }
@@ -142,11 +165,14 @@ export function applyPlatformInvestment(state: InvestState, input: InvestInput):
   return next;
 }
 
-export function viewPlatformInvestment(state: InvestState) {
+export function viewPlatformInvestment(
+  state: InvestState,
+  rules: InvestRules = baselineInvestRules,
+) {
   return {
     tick: state.tick,
     horizon: state.horizon,
-    startCost: START_COST,
+    startCost: rules.startCost,
     assignee: state.assignee,
     workLeft: state.jobWorkLeft,
     jobTotal: state.jobTotal,
@@ -207,4 +233,179 @@ export function comparePlatformInvestments(seed = 'RI-217') {
       };
     }),
   );
+}
+
+const FACTOR_SEED = 'RI-217';
+const FACTOR_BOARDS = ['sprint', 'quarter'] as const;
+type FrontStrategy = 'ship' | 'immediate';
+type FactorStrategy = 'invest' | FrontStrategy;
+export type InvestPreference = 'invest' | 'ship' | 'immediate' | 'tie';
+
+export interface InvestFactorRun {
+  inputs: InvestInput[];
+  result: ReturnType<typeof summarizePlatformInvestment>;
+}
+
+export interface InvestOpponentComparison {
+  opponent: FrontStrategy;
+  preference: InvestPreference;
+  margin: number;
+  front: InvestFactorRun;
+}
+
+export interface InvestFactorBoard {
+  board: InvestBoard;
+  invest: InvestFactorRun;
+  opponents: InvestOpponentComparison[];
+}
+
+export interface InvestFactorPoint {
+  axis: string;
+  parameter: string;
+  rules: InvestRules;
+  boards: InvestFactorBoard[];
+}
+
+export interface InvestFactorReversal {
+  axis: string;
+  board: InvestBoard;
+  opponent: FrontStrategy;
+  before: { parameter: string; preference: InvestPreference; invest: number; front: number };
+  after: { parameter: string; preference: InvestPreference; invest: number; front: number };
+}
+
+function cloneRules(rules: InvestRules): InvestRules {
+  return { ...rules };
+}
+
+function withRules(patch: Partial<InvestRules>): InvestRules {
+  return { ...baselineInvestRules, ...patch };
+}
+
+function preferenceOf(invest: number, front: number, opponent: FrontStrategy): InvestPreference {
+  if (invest > front) return 'invest';
+  if (front > invest) return opponent;
+  return 'tie';
+}
+
+function runInvest(
+  board: InvestBoard,
+  strategy: FactorStrategy,
+  rules: InvestRules,
+): InvestFactorRun {
+  let state = createPlatformInvestment(FACTOR_SEED, board, rules);
+  let guard = 0;
+  while (state.tick < state.horizon) {
+    if (++guard > 30) throw new Error(`${board}:${strategy}`);
+    const input = chooseInvestmentAction(state, strategy);
+    const next = applyPlatformInvestment(state, input, rules);
+    if (next === state) throw new Error(`${board}:${strategy}@${state.tick}`);
+    state = next;
+  }
+  return { inputs: state.inputs, result: summarizePlatformInvestment(state) };
+}
+
+function factorPoint(axis: string, parameter: string, rules: InvestRules): InvestFactorPoint {
+  const boards = FACTOR_BOARDS.map((board) => {
+    const invest = runInvest(board, 'invest', rules);
+    const opponents = (['ship', 'immediate'] as const).map((opponent) => {
+      const front = runInvest(board, opponent, rules);
+      const investScore = invest.result.score;
+      const frontScore = front.result.score;
+      return {
+        opponent,
+        preference: preferenceOf(investScore, frontScore, opponent),
+        margin: investScore - frontScore,
+        front,
+      };
+    });
+    return { board, invest, opponents };
+  });
+  return { axis, parameter, rules: cloneRules(rules), boards };
+}
+
+function reversalsOf(rows: InvestFactorPoint[]): InvestFactorReversal[] {
+  const found: InvestFactorReversal[] = [];
+  for (let index = 1; index < rows.length; index += 1) {
+    const before = rows[index - 1];
+    const after = rows[index];
+    if (!before || !after) continue;
+    for (const board of FACTOR_BOARDS) {
+      const earlier = before.boards.find((item) => item.board === board);
+      const later = after.boards.find((item) => item.board === board);
+      if (!earlier || !later) continue;
+      for (const opponent of ['ship', 'immediate'] as const) {
+        const early = earlier.opponents.find((item) => item.opponent === opponent);
+        const late = later.opponents.find((item) => item.opponent === opponent);
+        if (!early || !late || early.preference === late.preference) continue;
+        found.push({
+          axis: before.axis,
+          board,
+          opponent,
+          before: {
+            parameter: before.parameter,
+            preference: early.preference,
+            invest: earlier.invest.result.score,
+            front: early.front.result.score,
+          },
+          after: {
+            parameter: after.parameter,
+            preference: late.preference,
+            invest: later.invest.result.score,
+            front: late.front.result.score,
+          },
+        });
+      }
+    }
+  }
+  return found;
+}
+
+/** 初回と同じ資源で、着工費用・残作業・即時の持続期間を一つずつ動かす。固定戦略。 */
+export function comparePlatformInvestmentFactorReversals() {
+  const sweeps = {
+    startCost: [0, 2, 8, 15, 16, 17, 19, 20, 21].map((startCost) =>
+      factorPoint('startCost', String(startCost), withRules({ startCost })),
+    ),
+    jobTotal: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((jobTotal) =>
+      factorPoint('jobTotal', String(jobTotal), withRules({ jobTotal })),
+    ),
+    instantTicks: [0, 1, 2, 3, 4, 5, 6, 7, 8].map((instantTicks) =>
+      factorPoint('instantTicks', String(instantTicks), withRules({ instantTicks })),
+    ),
+  };
+  return {
+    conditions: {
+      seed: FACTOR_SEED,
+      boards: [...FACTOR_BOARDS],
+      horizons: { sprint: 4, quarter: 8 },
+      yields: {
+        platform: INVEST_YIELD.platform,
+        product: INVEST_YIELD.product,
+        incident: INVEST_YIELD.incident,
+      },
+      baseCapacity: 1,
+      targets: ['product', 'incident'] as TeamId[],
+      instantCost: INSTANT_COST,
+      decision: {
+        invest: 'invest',
+        front: ['ship', 'immediate'] as FrontStrategy[],
+        score: 'value - budgetPaid',
+        preference: '投資の差引が大きいとき投資、目の前が大きいとき出荷または即時、同じとき同点',
+      },
+      baseline: cloneRules(baselineInvestRules),
+      held: {
+        startCost: '着工費用だけを動かす。残作業4、即時は2期間、即時の費用は2',
+        jobTotal: '残作業だけを動かす。着工費用2、即時は2期間、即時の費用は2',
+        instantTicks: '即時の持続期間だけを動かす。着工費用2、残作業4、即時の費用は2',
+      },
+      fixedStrategies: true,
+      humanPlaytest: false,
+      normalRun: false,
+      repeatedFirstComparison: false,
+      productionAdoption: false,
+    },
+    sweeps,
+    reversals: Object.values(sweeps).flatMap((rows) => reversalsOf(rows)),
+  };
 }

@@ -2,21 +2,17 @@ import { useEffect, useState } from 'react';
 import { ORG_LEVER_HINT_MESSAGE } from '../render/orgLeverHintView';
 
 /**
- * 編成を開いた時点の判定だけを行にする。
+ * 編成を開いた時点の判定だけを行にする（#966 / #985）。
  * 開いている途中で条件が揃っても行は足さない。
- * 消すのは、レバーを開いたときか予算が 0 になったときだけ。
+ * 予算 0 やレバー開閉でセッションが消去されても、閉じるまで行は残す。
+ * 次に同じ画面を開いたときに出すかどうかを決め直す。
  *
+ * 黄色い点の出入りは RunBar がライブ判定する（#969）。
  * 読み上げ用 live region は RunBar から body へ1つだけ出す（#1019）。
  */
-export function OrgLeverHintRow({
-  eligible,
-  dismissed,
-}: {
-  eligible: boolean;
-  dismissed: boolean;
-}) {
+export function OrgLeverHintRow({ eligible }: { eligible: boolean }) {
   const [includedAtOpen] = useState(eligible);
-  if (!includedAtOpen || dismissed) return null;
+  if (!includedAtOpen) return null;
   return (
     <p className="org-lever-hint" data-testid="org-lever-hint">
       {ORG_LEVER_HINT_MESSAGE}

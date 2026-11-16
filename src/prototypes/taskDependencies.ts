@@ -123,14 +123,180 @@ export function summarizeDependencies(state: DependencyState) {
   };
 }
 
+export const DEPENDENCY_STRATEGY_ORDERS = {
+  'foundation-first': ['foundation', 'a', 'b', 'direct'],
+  'direct-first': ['direct', 'foundation', 'a', 'b'],
+} as const;
+
+export type DependencyStrategyName = keyof typeof DEPENDENCY_STRATEGY_ORDERS;
+
 export function compareDependencyStrategies(seed: string | number) {
-  return [
-    { strategy: 'foundation-first', order: ['foundation', 'a', 'b', 'direct'] },
-    { strategy: 'direct-first', order: ['direct', 'foundation', 'a', 'b'] },
-  ].map(({ strategy, order }) => {
+  return (Object.keys(DEPENDENCY_STRATEGY_ORDERS) as DependencyStrategyName[]).map((strategy) => {
     let state = createDependencyPrototype(seed);
-    while (state.tick < state.horizon)
-      state = tickDependencyPrototype(state, { kind: 'auto', order });
+    while (state.tick < state.horizon) {
+      state = tickDependencyPrototype(state, {
+        kind: 'auto',
+        order: [...DEPENDENCY_STRATEGY_ORDERS[strategy]],
+      });
+    }
     return { strategy, ...summarizeDependencies(state), history: state.history };
   });
+}
+
+export type DependencyFactorName = 'horizon' | 'successor-value' | 'successor-deadline';
+
+export interface DependencyFactorInput {
+  factor: DependencyFactorName;
+  role: 'requested' | 'boundary';
+  horizon: number;
+  successorValue: number;
+  successorDeadlineTick: number | null;
+}
+
+/** 初回seedの工数・基盤価値・直接価値を保ち、指定した期末と後続価値だけを載せる。 */
+export function createDependencyFactorState(input: DependencyFactorInput): DependencyState {
+  const state = createDependencyPrototype('RI-154');
+  return {
+    ...state,
+    horizon: input.horizon,
+    tasks: state.tasks.map((task) => ({
+      ...task,
+      requires: [...task.requires],
+      value: task.id === 'a' || task.id === 'b' ? input.successorValue : task.value,
+    })),
+  };
+}
+
+function successorValueCounts(id: string, tick: number, deadline: number | null): boolean {
+  if (deadline === null || (id !== 'a' && id !== 'b')) return true;
+  return tick <= deadline;
+}
+
+function judgeDependencyOutcomes(
+  foundation: { countedValue: number; waitingTaskTicks: number },
+  direct: { countedValue: number; waitingTaskTicks: number },
+): { valueLeader: DependencyStrategyName | 'tie'; verdict: DependencyStrategyName | 'tie' } {
+  const valueLeader =
+    foundation.countedValue === direct.countedValue
+      ? 'tie'
+      : foundation.countedValue > direct.countedValue
+        ? 'foundation-first'
+        : 'direct-first';
+  if (valueLeader !== 'tie') return { valueLeader, verdict: valueLeader };
+  if (foundation.waitingTaskTicks === direct.waitingTaskTicks) {
+    return { valueLeader, verdict: 'tie' };
+  }
+  return {
+    valueLeader,
+    verdict:
+      foundation.waitingTaskTicks < direct.waitingTaskTicks ? 'foundation-first' : 'direct-first',
+  };
+}
+
+// 指定は期末7・9、後続価値3（初回6の半分）、納期2（基盤完了tick 3より前）。
+// 期末8と後続価値7・8は、そのあいだで順位が動く境界。
+const REVERSAL_BOARDS: DependencyFactorInput[] = [
+  {
+    factor: 'horizon',
+    role: 'requested',
+    horizon: 7,
+    successorValue: 6,
+    successorDeadlineTick: null,
+  },
+  {
+    factor: 'horizon',
+    role: 'boundary',
+    horizon: 8,
+    successorValue: 6,
+    successorDeadlineTick: null,
+  },
+  {
+    factor: 'horizon',
+    role: 'requested',
+    horizon: 9,
+    successorValue: 6,
+    successorDeadlineTick: null,
+  },
+  {
+    factor: 'successor-value',
+    role: 'requested',
+    horizon: 6,
+    successorValue: 3,
+    successorDeadlineTick: null,
+  },
+  {
+    factor: 'successor-value',
+    role: 'boundary',
+    horizon: 6,
+    successorValue: 7,
+    successorDeadlineTick: null,
+  },
+  {
+    factor: 'successor-value',
+    role: 'boundary',
+    horizon: 6,
+    successorValue: 8,
+    successorDeadlineTick: null,
+  },
+  {
+    factor: 'successor-deadline',
+    role: 'requested',
+    horizon: 6,
+    successorValue: 6,
+    successorDeadlineTick: 2,
+  },
+];
+
+/**
+ * 初回と同じ資源・固定順で、期末・後続価値・後続納期を一つずつ動かす。
+ * 納期は後続の出荷tickだけに掛け、エンジンの進行は変えない。
+ */
+export function compareDependencyFactorReversals() {
+  const boards = REVERSAL_BOARDS.map((input) => {
+    const initial = createDependencyFactorState(input);
+    const results = (Object.keys(DEPENDENCY_STRATEGY_ORDERS) as DependencyStrategyName[]).map(
+      (strategy) => {
+        const order = [...DEPENDENCY_STRATEGY_ORDERS[strategy]];
+        let state = structuredClone(initial);
+        while (state.tick < state.horizon) {
+          state = tickDependencyPrototype(state, { kind: 'auto', order });
+        }
+        const shipped = state.shipped.map((shipment) => ({
+          ...shipment,
+          counted: successorValueCounts(shipment.id, shipment.tick, input.successorDeadlineTick),
+        }));
+        const summary = summarizeDependencies(state);
+        return {
+          strategy,
+          order,
+          inputs: state.history.map((entry) => entry.id),
+          tick: summary.tick,
+          countedValue: shipped.reduce((sum, item) => sum + (item.counted ? item.value : 0), 0),
+          waitingTaskTicks: summary.waitingTaskTicks,
+          shipped,
+          remaining: summary.remaining,
+          history: state.history,
+        };
+      },
+    );
+    const foundation = results[0];
+    const direct = results[1];
+    if (foundation === undefined || direct === undefined) throw new Error('戦略が不足');
+    return {
+      ...input,
+      tasks: initial.tasks,
+      results,
+      ...judgeDependencyOutcomes(foundation, direct),
+    };
+  });
+  return {
+    seed: 'RI-154' as const,
+    baseline: {
+      horizon: 6,
+      successorValue: 6,
+      successorDeadlineTick: null,
+      valueLeader: 'direct-first' as const,
+    },
+    boards,
+  };
 }

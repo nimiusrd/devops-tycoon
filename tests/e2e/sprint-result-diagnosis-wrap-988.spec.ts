@@ -47,7 +47,7 @@ async function beginNoCoderSprint(page: Page): Promise<void> {
     await setup.getByTestId(`assign-${id}-review`).click();
   }
   await setup.getByTestId('begin-sprint').click();
-  const dialog = page.getByRole('dialog', { name: 'コーダーが0人です' });
+  const dialog = page.getByRole('dialog', { name: 'コーダー0人で始めますか' });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'このまま開始' }).click();
   await expect(page.getByTestId('board')).toBeVisible();

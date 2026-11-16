@@ -65,7 +65,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
     expect(view.headline).toBe('点火 1 / 鎮火 1 / 自動鎮火 0 / 延焼 0');
     expect(view.entries).toHaveLength(1);
     expect(view.entries[0].tone).toBe('good');
-    expect(view.entries[0].text).toBe('t12: PR#3 が Review 落ちで点火 → t18 緊急対応で鎮火');
+    expect(view.entries[0].text).toBe('t12: PR#3 が レビュー落ちで点火 → t18 緊急対応で鎮火');
     expect(view.tip).toContain('緊急対応で鎮火');
   });
 
@@ -126,7 +126,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
 
     expect(view.entries).toHaveLength(1);
     expect(view.entries[0].tone).toBe('bad');
-    expect(view.entries[0].text).toBe('t12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5');
+    expect(view.entries[0].text).toBe('t12: PR#3 が レビュー落ちで点火 → t18 延焼 → PR#5');
   });
 
   it('対応する点火がない孤立鎮火・延焼イベントはエントリにしない', () => {
@@ -154,7 +154,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
     );
     expect(view.entries).toHaveLength(1);
     expect(view.entries[0].text).toBe(
-      't12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5 → t22 緊急対応で鎮火',
+      't12: PR#3 が レビュー落ちで点火 → t18 延焼 → PR#5 → t22 緊急対応で鎮火',
     );
     expect(view.entries[0].tone).toBe('good');
     expect(view.tip).toContain('延焼が発生した');
@@ -167,7 +167,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
     ];
     const view = planBurnCauseLog(makeResult({ incidents: 1, spread: 1, fireEvents }));
     expect(view.entries[0].text).toBe(
-      't12: PR#3 が Review 落ちで点火 → t18 延焼（負債 +6 / 士気 -5）',
+      't12: PR#3 が レビュー落ちで点火 → t18 延焼（負債 +6 / 士気 -5）',
     );
     expect(view.entries[0].tone).toBe('bad');
   });
@@ -181,7 +181,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
       makeResult({ incidents: 1, spread: 1, fireEvents: missingImpact }),
     );
     expect(missingView.entries[0].text).toBe(
-      't1: PR#1 が Review 落ちで点火 → t2 延焼（負債・士気に波及）',
+      't1: PR#1 が レビュー落ちで点火 → t2 延焼（負債・士気に波及）',
     );
 
     const zeroImpact: FireSprintEvent[] = [
@@ -191,7 +191,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
     const zeroView = planBurnCauseLog(
       makeResult({ incidents: 1, spread: 1, fireEvents: zeroImpact }),
     );
-    expect(zeroView.entries[0].text).toBe('t3: PR#2 が Review 落ちで点火 → t4 延焼');
+    expect(zeroView.entries[0].text).toBe('t3: PR#2 が レビュー落ちで点火 → t4 延焼');
   });
 
   it('連鎖延焼も実測の負債・士気増減を括弧で添える', () => {
@@ -212,7 +212,7 @@ describe('sprintBurnCauseView（RI-34′）', () => {
       makeResult({ incidents: 2, contained: 1, spread: 1, fireEvents }),
     );
     expect(view.entries[0].text).toBe(
-      't12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火',
+      't12: PR#3 が レビュー落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火',
     );
   });
 

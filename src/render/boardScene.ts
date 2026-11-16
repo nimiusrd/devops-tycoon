@@ -93,7 +93,7 @@ const STATIONS: readonly StationLayout[] = [
   },
   {
     lane: 'review',
-    label: 'Review',
+    label: 'レビュー',
     icon: '🔍',
     anchor: BOARD_STATION_CENTERS.review,
     label_at: { x: 840, y: 260 },

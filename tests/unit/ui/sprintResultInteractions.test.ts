@@ -158,7 +158,7 @@ describe('SprintResultScreen の結果表示と進行', () => {
     expect(content(screen.find('result-grade-caption'))).toContain('100%');
     expect(screen.row('シニア体力')).toBe('58');
     expect(content(screen.find('result-burn-cause-entry'))).toContain(
-      't10: PR#7 が Review 落ちで点火 → t12 緊急対応で鎮火',
+      't10: PR#7 が レビュー落ちで点火 → t12 緊急対応で鎮火',
     );
     expect(content(screen.find('result-burn-cause-tip'))).toContain(
       '点火した火をすべて緊急対応で鎮火',
@@ -224,8 +224,19 @@ describe('SprintResultScreen の成長ニュース', () => {
 
   it('昇格がなければレベルアップ人数を表示する', () => {
     const screen = mountResult({
+      result: makeResult({ done: 3 }),
       growth: { ...emptyGrowth, leveledUp: ['member-1', 'member-2'] },
     });
     expect(content(screen.find('result-growth'))).toContain('2人がレベルアップ');
+  });
+
+  it('完了 0 件ではレベルアップを褒め言葉にせず、控えめに事実だけ出す', () => {
+    const screen = mountResult({
+      result: makeResult({ done: 0, delivered: 0 }),
+      growth: { ...emptyGrowth, leveledUp: ['member-1'] },
+    });
+    const news = content(screen.find('result-growth'));
+    expect(news).toContain('レベルが上がった（1人）');
+    expect(news).not.toContain('人がレベルアップ');
   });
 });

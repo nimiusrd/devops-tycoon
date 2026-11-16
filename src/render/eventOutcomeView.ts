@@ -99,10 +99,10 @@ const NUMERIC_LABELS: Record<(typeof NUMERIC_OUTCOME_KEYS)[number], string> = {
   delivered: '出荷',
   morale: '士気',
   seniorHp: 'シニアHP',
-  techDebt: 'Tech Debt',
+  techDebt: '技術的負債',
   budget: '予算',
   quality: '品質',
-  testCoverage: 'Test Coverage',
+  testCoverage: 'テストカバレッジ',
   aiLiteracy: 'AIリテラシー',
   aiDependency: 'AI依存度',
 };
@@ -115,7 +115,7 @@ const TRUST_LABELS = {
 
 const LOSE_LABELS: Record<LoseReason, string> = {
   seniorBurnout: 'シニア燃え尽きでラン終了',
-  techDebt: 'Tech Debt 限界でラン終了',
+  techDebt: '技術的負債 限界でラン終了',
   moraleCollapse: '士気崩壊でラン終了',
   reviewFreeze: REVIEW_FREEZE_LOSE_EVENT_PHRASE,
   incidentCascade: '障害連鎖でリリース停止',
@@ -296,7 +296,7 @@ const CARD_ADD_EFFECTS = [
   { key: 'aiLiteracyAdd' as const, label: 'AIリテラシー' },
   { key: 'aiDependencyAdd' as const, label: 'AI依存度', inverse: true },
   { key: 'qualityAdd' as const, label: '品質' },
-  { key: 'testCoverageAdd' as const, label: 'Test Coverage' },
+  { key: 'testCoverageAdd' as const, label: 'テストカバレッジ' },
   // RI-87: セキュリティ水準の増減。
   { key: 'securityAdd' as const, label: 'セキュリティ' },
 ];
@@ -445,7 +445,7 @@ const ORG_ADJUST_SPECS = [
   { key: 'reviewQueueDelta' as const, label: 'レビュー行列', inverse: true },
   { key: 'incidentDelta' as const, label: '炎上', inverse: true },
   { key: 'moraleDelta' as const, label: '士気', inverse: false },
-  { key: 'techDebtDelta' as const, label: 'Tech Debt', inverse: true },
+  { key: 'techDebtDelta' as const, label: '技術的負債', inverse: true },
   { key: 'extraTeams' as const, label: 'チーム', inverse: false },
   { key: 'infraBoost' as const, label: '共通基盤', inverse: false },
 ] as const;
@@ -529,7 +529,7 @@ function formatGoalEffectTags(
   if (goalEffects.techDebtLimitAdd !== undefined && goalEffects.techDebtLimitAdd !== 0) {
     pushTag(
       tags,
-      `Tech Debt上限 ${formatSignedDelta(goalEffects.techDebtLimitAdd)}`,
+      `技術的負債上限 ${formatSignedDelta(goalEffects.techDebtLimitAdd)}`,
       toneFromDelta(goalEffects.techDebtLimitAdd),
     );
   }
@@ -566,7 +566,7 @@ function formatGoalOrgEffectTags(
   if (orgEffects.techDebtDelta !== undefined && orgEffects.techDebtDelta !== 0) {
     pushTag(
       tags,
-      `Tech Debt ${formatSignedDelta(orgEffects.techDebtDelta)}`,
+      `技術的負債 ${formatSignedDelta(orgEffects.techDebtDelta)}`,
       toneFromAdd(orgEffects.techDebtDelta, true),
     );
   }
@@ -680,7 +680,7 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
   if (effects.techDebtDelta !== undefined && effects.techDebtDelta !== 0) {
     pushTag(
       tags,
-      `次四半期 Tech Debt ${formatSignedDelta(effects.techDebtDelta)}/スプリント`,
+      `次四半期 技術的負債 ${formatSignedDelta(effects.techDebtDelta)}/スプリント`,
       toneFromAdd(effects.techDebtDelta, true),
     );
   }
@@ -728,7 +728,7 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
 
   switch (def.id) {
     case 'interruptReview':
-      pushTag(tags, `Review 最大${INTERRUPT_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `レビュー最大${INTERRUPT_REVIEW_COUNT}件処理`, 'positive');
       pushTag(tags, `シニアHP -${INTERRUPT_HP_COST}`, 'negative');
       break;
     case 'splitPr':
@@ -753,13 +753,13 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       pushTag(tags, '出荷速度一時低下', 'negative');
       break;
     case 'pairReview':
-      pushTag(tags, `Review 最大${PAIR_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `レビュー最大${PAIR_REVIEW_COUNT}件処理`, 'positive');
       pushTag(tags, `AIリテラシー +${PAIR_LITERACY_GAIN}`, 'positive');
       break;
     case 'overtime':
       pushTag(tags, `スループット↑ ${OVERTIME_TICKS}tick`, 'positive');
       pushTag(tags, `Coding x${OVERTIME_CODING_MUL}`, 'positive');
-      pushTag(tags, `Review x${OVERTIME_REVIEW_MUL}`, 'positive');
+      pushTag(tags, `レビュー x${OVERTIME_REVIEW_MUL}`, 'positive');
       pushTag(tags, `士気 -${OVERTIME_MORALE_COST}`, 'negative');
       pushTag(tags, `シニアHP -${OVERTIME_HP_COST}`, 'negative');
       break;
@@ -802,7 +802,7 @@ export function formatRestOptionTags(
       break;
     }
     case 'repay':
-      pushTag(tags, `Tech Debt -${REST_REPAY}`, 'positive');
+      pushTag(tags, `技術的負債 -${REST_REPAY}`, 'positive');
       pushTag(
         tags,
         `次スプリント 手戻り率 ${formatPercentDelta(REST_REPAY_REWORK_RATE)}`,
@@ -848,7 +848,7 @@ function formatActionTooltipExtraTags(def: ActionDef): EffectTag[] {
     case 'andon':
       pushTag(
         tags,
-        `Review未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}・シニアHP -${ANDON_HP_COST}`,
+        `レビュー未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}・シニアHP -${ANDON_HP_COST}`,
         'negative',
       );
       break;

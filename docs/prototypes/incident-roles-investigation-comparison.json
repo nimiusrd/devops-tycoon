@@ -1,0 +1,1761 @@
+{
+  "seed": "RI-253",
+  "evaluation": {
+    "fixedStrategies": true,
+    "humanPlay": false,
+    "productionIntegration": false
+  },
+  "resources": {
+    "slots": 3,
+    "progressPerPerson": 2,
+    "baselineRecovery": 1,
+    "reassignmentSlotCost": 1,
+    "recoveryNeed": 6,
+    "explanationNeed": 4,
+    "investigationNeeds": [4, 5, 6, 7]
+  },
+  "summary": [
+    {
+      "board": "brief",
+      "investigationNeed": 4,
+      "split": 2,
+      "switch": 2,
+      "slotKept": 2,
+      "advantage": "tie",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": false,
+      "splitInvestigation": 4,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 6
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 4,
+      "split": 2,
+      "switch": 2,
+      "slotKept": 2,
+      "advantage": "tie",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": false,
+      "splitInvestigation": 6,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 8
+    },
+    {
+      "board": "brief",
+      "investigationNeed": 5,
+      "split": 1,
+      "switch": 0,
+      "slotKept": 1,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "splitInvestigation": 4,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 6
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 5,
+      "split": -3,
+      "switch": -13,
+      "slotKept": -3,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "splitInvestigation": 6,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 8
+    },
+    {
+      "board": "brief",
+      "investigationNeed": 6,
+      "split": 1,
+      "switch": 0,
+      "slotKept": 1,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "splitInvestigation": 4,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 6
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 6,
+      "split": -3,
+      "switch": -13,
+      "slotKept": -3,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "splitInvestigation": 6,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 8
+    },
+    {
+      "board": "brief",
+      "investigationNeed": 7,
+      "split": 1,
+      "switch": 0,
+      "slotKept": 0,
+      "advantage": "split",
+      "slotKeptAdvantage": "split",
+      "slotLowersScore": false,
+      "splitInvestigation": 4,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 6
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 7,
+      "split": -8,
+      "switch": -13,
+      "slotKept": -8,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "splitInvestigation": 6,
+      "switchInvestigation": 4,
+      "slotKeptInvestigation": 8
+    }
+  ],
+  "reversals": [
+    {
+      "board": "brief",
+      "lowerNeed": 4,
+      "higherNeed": 5,
+      "lower": "tie",
+      "higher": "split"
+    },
+    {
+      "board": "lasting",
+      "lowerNeed": 4,
+      "higherNeed": 5,
+      "lower": "tie",
+      "higher": "split"
+    }
+  ],
+  "points": [
+    {
+      "board": "brief",
+      "investigationNeed": 4,
+      "advantage": "tie",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": false,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 4,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 2,
+            "ship": 4,
+            "penalty": 2,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -2, 2]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 4,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 2,
+            "ship": 4,
+            "penalty": 2,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 2,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 2,
+            "path": [0, -1, 2]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 4,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 2,
+            "ship": 4,
+            "penalty": 2,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 2,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 2,
+            "path": [0, -1, 2]
+          }
+        }
+      }
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 4,
+      "advantage": "tie",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": false,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 4,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 2,
+            "ship": 12,
+            "penalty": 10,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 6,
+            "path": [0, -10, 2, 2]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 4,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 2,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 2,
+            "ship": 12,
+            "penalty": 10,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -5, 2, 2]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 4,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 2,
+            "ship": 12,
+            "penalty": 10,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 8,
+            "explanation": 4,
+            "path": [0, -5, 2, 2]
+          }
+        }
+      }
+    },
+    {
+      "board": "brief",
+      "investigationNeed": 5,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 5,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 1,
+            "ship": 4,
+            "penalty": 3,
+            "recoveryTime": 2,
+            "recurrence": 1,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -2, 1]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 5,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 0,
+            "ship": 4,
+            "penalty": 4,
+            "recoveryTime": 2,
+            "recurrence": 1,
+            "trustGap": 2,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 2,
+            "path": [0, -2, 0]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 5,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 1,
+            "ship": 4,
+            "penalty": 3,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 2,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 2,
+            "path": [0, -2, 1]
+          }
+        }
+      }
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 5,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 5,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": -3,
+            "ship": 12,
+            "penalty": 15,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 6,
+            "path": [0, -10, -3, -3]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 5,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 2,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": -13,
+            "ship": 12,
+            "penalty": 25,
+            "recoveryTime": 2,
+            "recurrence": 1,
+            "trustGap": 0,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -10, -8, -13]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 5,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": -3,
+            "ship": 12,
+            "penalty": 15,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 8,
+            "explanation": 4,
+            "path": [0, -10, -3, -3]
+          }
+        }
+      }
+    },
+    {
+      "board": "brief",
+      "investigationNeed": 6,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 6,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 1,
+            "ship": 4,
+            "penalty": 3,
+            "recoveryTime": 2,
+            "recurrence": 2,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -2, 1]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 6,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 0,
+            "ship": 4,
+            "penalty": 4,
+            "recoveryTime": 2,
+            "recurrence": 2,
+            "trustGap": 2,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 2,
+            "path": [0, -2, 0]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 6,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 1,
+            "ship": 4,
+            "penalty": 3,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 2,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 2,
+            "path": [0, -2, 1]
+          }
+        }
+      }
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 6,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 6,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": -3,
+            "ship": 12,
+            "penalty": 15,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 6,
+            "path": [0, -10, -3, -3]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 6,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 2,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": -13,
+            "ship": 12,
+            "penalty": 25,
+            "recoveryTime": 2,
+            "recurrence": 2,
+            "trustGap": 0,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -10, -8, -13]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 6,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": -3,
+            "ship": 12,
+            "penalty": 15,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 8,
+            "explanation": 4,
+            "path": [0, -10, -3, -3]
+          }
+        }
+      }
+    },
+    {
+      "board": "brief",
+      "investigationNeed": 7,
+      "advantage": "split",
+      "slotKeptAdvantage": "split",
+      "slotLowersScore": false,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 7,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": 1,
+            "ship": 4,
+            "penalty": 3,
+            "recoveryTime": 2,
+            "recurrence": 3,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -2, 1]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 7,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 0,
+            "ship": 4,
+            "penalty": 4,
+            "recoveryTime": 2,
+            "recurrence": 3,
+            "trustGap": 2,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 2,
+            "path": [0, -2, 0]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "brief",
+            "tick": 0,
+            "horizon": 3,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 7,
+            "explanationNeed": 4,
+            "earlyShipTick": 1,
+            "earlyShip": 16,
+            "lateShip": 4,
+            "incompleteRate": 1,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": 0,
+            "ship": 4,
+            "penalty": 4,
+            "recoveryTime": 2,
+            "recurrence": 1,
+            "trustGap": 2,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 2,
+            "path": [0, -2, 0]
+          }
+        }
+      }
+    },
+    {
+      "board": "lasting",
+      "investigationNeed": 7,
+      "advantage": "split",
+      "slotKeptAdvantage": "tie",
+      "slotLowersScore": true,
+      "plays": {
+        "split": {
+          "decision": "split",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 7,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            },
+            {
+              "type": "work"
+            }
+          ],
+          "result": {
+            "score": -8,
+            "ship": 12,
+            "penalty": 20,
+            "recoveryTime": 2,
+            "recurrence": 1,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 6,
+            "explanation": 6,
+            "path": [0, -10, -3, -8]
+          }
+        },
+        "switch": {
+          "decision": "switch",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 1,
+            "recoveryNeed": 6,
+            "investigationNeed": 7,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 0,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 2,
+              "investigation": 0,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": -13,
+            "ship": 12,
+            "penalty": 25,
+            "recoveryTime": 2,
+            "recurrence": 3,
+            "trustGap": 0,
+            "reassignmentCost": 1,
+            "investigation": 4,
+            "explanation": 4,
+            "path": [0, -10, -8, -13]
+          }
+        },
+        "slotKept": {
+          "decision": "slotKept",
+          "initial": {
+            "version": 1,
+            "seed": "RI-253",
+            "board": "lasting",
+            "tick": 0,
+            "horizon": 4,
+            "slots": 3,
+            "progressPerPerson": 2,
+            "baselineRecovery": 1,
+            "reassignmentSlotCost": 0,
+            "recoveryNeed": 6,
+            "investigationNeed": 7,
+            "explanationNeed": 4,
+            "earlyShipTick": 3,
+            "earlyShip": 12,
+            "lateShip": 12,
+            "incompleteRate": 5,
+            "strategy": null,
+            "recovery": 0,
+            "investigation": 0,
+            "explanation": 0,
+            "recoveryTime": null,
+            "ship": 0,
+            "penalty": 0,
+            "recurrencePenalty": 0,
+            "trustPenalty": 0,
+            "reassignmentCost": 0,
+            "previous": null,
+            "switchIntent": null,
+            "periods": [],
+            "inputs": []
+          },
+          "inputs": [
+            {
+              "type": "split"
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 2,
+              "explanation": 0
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            },
+            {
+              "type": "assign",
+              "recovery": 1,
+              "investigation": 1,
+              "explanation": 1
+            }
+          ],
+          "result": {
+            "score": -8,
+            "ship": 12,
+            "penalty": 20,
+            "recoveryTime": 2,
+            "recurrence": 0,
+            "trustGap": 0,
+            "reassignmentCost": 0,
+            "investigation": 8,
+            "explanation": 4,
+            "path": [0, -10, -8, -8]
+          }
+        }
+      }
+    }
+  ]
+}

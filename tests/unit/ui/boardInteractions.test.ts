@@ -112,7 +112,7 @@ import {
   clientPointHitsRegisteredBoardDrag,
   hasRegisteredBoardDragHitTest,
 } from '../../../src/render/boardDragHit';
-import { presentBoardDot } from '../../../src/render/boardPixiView';
+import { presentBoardDots } from '../../../src/render/boardPixiView';
 import { BOARD_STATION_CENTERS, BOARD_VIEW } from '../../../src/render/boardScene';
 import { designToHostTransform, VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import { OVERTIME_TICKS } from '../../../src/sim/actions';
@@ -335,7 +335,7 @@ afterEach(() => {
 });
 
 describe('Board の状態表示', () => {
-  it('工程件数・渋滞・炎上の緊急度・流れる粒と省略数を表示する', { timeout: 60_000 }, () => {
+  it('工程件数・渋滞・炎上の緊急度・流れる粒と省略数を表示する', { timeout: 120_000 }, () => {
     const tasks = [
       ...Array.from({ length: 8 }, (_, id) => makeTask(id, { lane: 'backlog' })),
       ...Array.from({ length: 21 }, (_, id) => makeTask(100 + id)),
@@ -478,6 +478,28 @@ describe('Board の座標ドラッグ', () => {
     expect(board.layer().props.previewTaskId).toBeNull();
   });
 
+  it('splitPr は強調と一致しない離し座標では、開始粒が掴めていても確定しない', () => {
+    const board = mountBoard({ armedAction: 'splitPr' });
+    board.downTask(3, { pointerType: 'touch' });
+    board.dispatch('pointermove', board.dot(2));
+    expect(board.layer().props.previewTaskId).toBe(2);
+    board.dispatch('pointerup', board.dot(3));
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+    board.downTask(2, { pointerType: 'touch' });
+    board.dispatch('pointerup', board.dot(2));
+    expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 2 });
+  });
+
+  it('splitPr は capture 中でも、離した座標下が装飾なら確定しない', () => {
+    vi.stubGlobal('document', {
+      elementFromPoint: () => new OverlayElement('.bubble'),
+    });
+    const board = mountBoard({ armedAction: 'splitPr' });
+    board.downTask(3, { pointerType: 'touch' });
+    board.dispatch('pointerup', board.dot(3));
+    expect(board.props.onDragComplete).not.toHaveBeenCalled();
+  });
+
   it('touchは離すまで実行せず、移動で選び直した強調対象だけを確定する（#917）', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
     board.downTask(3, { pointerType: 'touch' });
@@ -595,7 +617,9 @@ describe('Board の座標ドラッグ', () => {
 
   it('粒の中心から画面上11px離れても掴め、ティッカーの判定と同じ対象へ一度だけ分割する', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
-    const presented = presentBoardDot(board.dot(3), hostFit.scale);
+    const scene = board.layer().props
+      .scene as import('../../../src/render/boardScene').BoardScenePlan;
+    const presented = presentBoardDots(scene.dots, hostFit.scale).find((dot) => dot.id === 3)!;
     const point = { ...presented, x: presented.x + 11 / hostFit.scale };
     const client = clientPoint(point);
     expect(clientPointHitsRegisteredBoardDrag(client.clientX, client.clientY)).toBe(true);

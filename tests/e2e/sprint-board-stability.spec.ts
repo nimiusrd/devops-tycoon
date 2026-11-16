@@ -2,7 +2,7 @@
  * Review Hell・出来事・KPI・炎上ラベルが出ても盤面が動かない（#975 / #986）。
  */
 import type { Page } from '@playwright/test';
-import { beginPublicSprint, expect, test } from './fixtures';
+import { beginPublicSprint, expect, test, type PublicGameWindow } from './fixtures';
 
 const VIEWPORTS = [
   { name: 'phone-se', width: 320, height: 568 },
@@ -237,8 +237,8 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
       await publish(page);
       const alert = page.getByTestId('jam-alert');
       await expect(alert).toBeVisible();
-      await expect(alert).toContainText('Review Hell');
-      await expect(page.getByTestId('review-hell-announcement')).toHaveText('Review Hell に入った');
+      await expect(alert).toContainText('レビュー地獄');
+      await expect(page.getByTestId('review-hell-announcement')).toHaveText('レビュー地獄に入った');
       expect(Math.abs((await boardY(page)) - initial), 'Review Hell に入った').toBeLessThan(0.5);
 
       const presentation = await page.evaluate(() => {
@@ -278,7 +278,7 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
           throw new Error('背景色を決められない');
         };
         const contrastTargets: Array<[string, Element | null]> = [
-          ['Review Hell', alertEl],
+          ['レビュー地獄', alertEl],
           ['渋滞ラベル', label ?? null],
           ['渋滞件数', document.querySelector('[data-testid="jam-count"]')],
           ['炎上件数', document.querySelector('[data-testid="fire-count"]')],
@@ -401,10 +401,10 @@ test.describe('スプリント中の表示の出し入れで盤面が動かな�
       });
       await publish(page);
       await expect(page.getByTestId('jam-alert')).toHaveCount(0);
-      await expect(page.getByTestId('review-hell-announcement')).toHaveText('Review Hell を出た');
+      await expect(page.getByTestId('review-hell-announcement')).toHaveText('レビュー地獄を出た');
       expect(Math.abs((await boardY(page)) - initial), 'Review Hell を出た').toBeLessThan(0.5);
       await publish(page);
-      await expect(page.getByTestId('review-hell-announcement')).toHaveText('Review Hell を出た');
+      await expect(page.getByTestId('review-hell-announcement')).toHaveText('レビュー地獄を出た');
 
       if (viewport.width === 390) {
         await page.screenshot({
@@ -485,4 +485,92 @@ test.describe('ボススプリントのラベル折り返しで盤面が動か�
       }
     });
   }
+});
+
+test.describe('KPI チップの段数が変わっても盤面が動かない（#975）', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  async function compactHudHeight(page: Page): Promise<number> {
+    return page.evaluate(() => {
+      const hud = document.querySelector('.hud.hud-compact');
+      if (!(hud instanceof HTMLElement)) throw new Error('コンパクト HUD が無い');
+      return hud.getBoundingClientRect().height;
+    });
+  }
+
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+  ] as const) {
+    test(`${viewport.width}px: qa-seed-1031 の各 tick で盤面 y が 0px`, async ({ page }) => {
+      test.setTimeout(180_000);
+      await page.setViewportSize(viewport);
+      await beginPublicSprint(page, { seed: 'qa-seed-1031', difficulty: 'easy', renderer: 'pixi' });
+      await page.evaluate(() => document.fonts.ready);
+      const baselineY = await boardY(page);
+      const baselineHud = await compactHudHeight(page);
+      const failures: string[] = [];
+      for (let step = 0; step < 55; step += 1) {
+        await page.evaluate(() => (window as PublicGameWindow).game!.step(100));
+        await publish(page);
+        const y = await boardY(page);
+        const hudH = await compactHudHeight(page);
+        const dy = Math.abs(y - baselineY);
+        const dh = Math.abs(hudH - baselineHud);
+        if (dy >= 0.5) {
+          failures.push(`tick=${step} boardΔ=${dy.toFixed(2)} hudH=${hudH.toFixed(1)}`);
+        }
+        expect(dh, `tick=${step} の HUD 高さ`).toBeLessThan(0.5);
+      }
+      expect(failures, failures.join('\n')).toEqual([]);
+    });
+  }
+
+  test('430px: 3 段予約と体力注意で盤面が 0px', async ({ page }) => {
+    await page.setViewportSize({ width: 430, height: 932 });
+    await beginPublicSprint(page, { seed: 'board-stable-430', renderer: 'pixi' });
+    await page.evaluate(() => document.fonts.ready);
+    const initialBoardY = await boardY(page);
+    const initialHudH = await compactHudHeight(page);
+    expect(initialHudH, '2 段表示でも 3 段ぶんの高さを確保する').toBeGreaterThanOrEqual(88);
+
+    await page.evaluate(() => {
+      const game = (window as PublicGameWindow).game;
+      if (!game) throw new Error('game が無い');
+      const engine = (
+        game as unknown as {
+          engine: {
+            org: { aiDependency: number; seniorHp: number };
+            sprint: {
+              tasks: Array<{ id: number; lane: string; incident?: boolean }>;
+            } | null;
+          };
+        }
+      ).engine;
+      engine.org.aiDependency = 72;
+      engine.org.seniorHp = 80;
+      const sprint = engine.sprint;
+      if (!sprint) throw new Error('sprint が無い');
+      let nextId = Math.max(...sprint.tasks.map((task) => task.id)) + 1;
+      const sample = sprint.tasks[0];
+      if (!sample) throw new Error('task が無い');
+      while (sprint.tasks.filter((task) => task.lane === 'review').length < 12) {
+        sprint.tasks.push({ ...sample, id: nextId, lane: 'review', incident: false });
+        nextId += 1;
+      }
+    });
+    await publish(page);
+    expect(Math.abs((await boardY(page)) - initialBoardY), 'KPI 入れ替え').toBeLessThan(0.5);
+    expect(Math.abs((await compactHudHeight(page)) - initialHudH), 'HUD 高さ').toBeLessThan(0.5);
+
+    await page.evaluate(() => {
+      const game = (window as PublicGameWindow).game;
+      if (!game) throw new Error('game が無い');
+      (game as unknown as { engine: { org: { seniorHp: number } } }).engine.org.seniorHp = 45;
+    });
+    await publish(page);
+    await expect(page.getByTestId('senior-burnout-warning')).toBeVisible();
+    expect(Math.abs((await boardY(page)) - initialBoardY), '体力注意').toBeLessThan(0.5);
+    expect(Math.abs((await compactHudHeight(page)) - initialHudH), 'HUD 高さ').toBeLessThan(0.5);
+  });
 });

@@ -118,7 +118,7 @@ describe('目標修正の効果表示', () => {
     ).toEqual([
       { label: '品質目標 -5', tone: 'positive' },
       { label: '士気目標 -3', tone: 'positive' },
-      { label: 'Tech Debt上限 -10', tone: 'negative' },
+      { label: '技術的負債上限 -10', tone: 'negative' },
       { label: 'Incident上限 -1', tone: 'negative' },
     ]);
   });
@@ -154,7 +154,7 @@ describe('目標修正の効果表示', () => {
       { label: '次四半期 障害率 +25%', tone: 'negative' },
       { label: '次四半期 Rework +5pt', tone: 'negative' },
       { label: '次四半期 品質 -2/スプリント', tone: 'negative' },
-      { label: '次四半期 Tech Debt +3/スプリント', tone: 'negative' },
+      { label: '次四半期 技術的負債 +3/スプリント', tone: 'negative' },
       { label: '次四半期 シニアHP -4/スプリント', tone: 'negative' },
     ]);
   });

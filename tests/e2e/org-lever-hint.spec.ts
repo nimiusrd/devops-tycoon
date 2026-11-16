@@ -25,6 +25,16 @@ async function startQ1(page: Page): Promise<void> {
   await expect(page.getByTestId('open-org')).toBeVisible();
 }
 
+async function exhaustBudgetInPlace(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const game = (window as PublicGameWindow).game;
+    if (!game) throw new Error('window.game が公開されていない');
+    const engine = (game as unknown as { engine: { budget: number } }).engine;
+    engine.budget = 0;
+    game.playCard(-1);
+  });
+}
+
 async function fontSize(locator: Locator): Promise<number> {
   return locator.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
 }
@@ -192,15 +202,18 @@ for (const viewport of VIEWPORTS) {
 
     await opener.click();
     await expect(page.getByTestId('org-levers')).toBeVisible();
-    await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
     await expect(page.getByTestId('org-lever-hint-mark')).toHaveCount(0);
 
     await page.getByTestId('crumb-team').click();
     await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
     await expect(page.getByTestId('setup')).toBeVisible();
-    await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
+    await expect(setupHint).toBeVisible();
     await expect(opener).toHaveAttribute('data-org-lever-hint', 'false');
     await expect(opener).toContainText('組織レバー');
+
+    await page.getByTestId('open-formation').click();
+    await expect(page.getByTestId('formation').getByTestId('org-lever-hint')).toHaveCount(0);
+    await page.getByTestId('formation-close').click();
 
     const after = await otherRunbarButtons(page, 'viewport');
     expectSamePositions(before, after);
@@ -239,6 +252,32 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
+test('予算が尽きても開いている画面の案内行は残り、点だけ消える (#985)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await startQ1(page);
+
+  const setupHint = page.getByTestId('setup').getByTestId('org-lever-hint');
+  const opener = page.getByTestId('open-org');
+  await expect(setupHint).toBeVisible();
+  await expect(page.getByTestId('org-lever-hint-mark')).toBeVisible();
+
+  await page.getByTestId('open-formation').click();
+  const formationHint = page.getByTestId('formation').getByTestId('org-lever-hint');
+  await expect(formationHint).toBeVisible();
+
+  await exhaustBudgetInPlace(page);
+  await expect(formationHint).toBeVisible();
+  await expect(page.getByTestId('org-lever-hint-mark')).toHaveCount(0);
+  await expect(opener).toHaveAttribute('data-org-lever-hint', 'false');
+
+  await page.getByTestId('formation-close').click();
+  await expect(setupHint).toBeVisible();
+
+  await page.getByTestId('open-formation').click();
+  await expect(page.getByTestId('formation').getByTestId('org-lever-hint')).toHaveCount(0);
+  await page.getByTestId('formation-close').click();
+});
+
 test('レバーを開いたあとリロードして再開しても案内と点が出ない', async ({ page }) => {
   await seedMeta(page, { points: 1 });
   await page.setViewportSize({ width: 320, height: 568 });
@@ -256,7 +295,6 @@ test('レバーを開いたあとリロードして再開しても案内と点�
   await expect(page.getByTestId('org-levers')).toBeVisible();
   await page.getByTestId('crumb-team').click();
   await expect(page.getByTestId('setup')).toBeVisible();
-  await expect(page.getByTestId('org-lever-hint')).toHaveCount(0);
   await expect(page.getByTestId('org-lever-hint-mark')).toHaveCount(0);
   await expect.poll(() => storedOrgLeverHintDismissed(page)).toBe(true);
 

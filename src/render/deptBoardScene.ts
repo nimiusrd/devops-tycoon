@@ -250,7 +250,7 @@ function planStageLabels(dept: DepartmentState): DeptStageLabelPlan[] {
       lane: s.lane,
       x: s.x,
       y: s.y,
-      label: s.lane === 'coding' ? '💻 Coding' : s.lane === 'review' ? '🔍 Review' : '📦 Done',
+      label: s.lane === 'coding' ? '💻 Coding' : s.lane === 'review' ? '🔍 レビュー' : '📦 Done',
       hot: s.lane === 'review' && reviewHot,
     }));
   }
@@ -262,7 +262,7 @@ function planStageLabels(dept: DepartmentState): DeptStageLabelPlan[] {
       lane: 'review',
       x: cx,
       y: cy - 4,
-      label: '🔍 Review',
+      label: '🔍 レビュー',
       hot: reviewHot,
     },
     { lane: 'done', x: cx + 150, y: cy + 14, label: '📦 Done', hot: false },

@@ -272,6 +272,8 @@ export const VISUAL_TOKENS = {
         outlineCssWidth: 1,
         insetCssWidth: 2,
       },
+      /** 対象構え・解除時の山押し広げ（#982）。150〜200ms。 */
+      dotArmedPresentation: { durationMs: 175 },
       /**
        * 小さいタスク粒の画面上の最小直径（CSS px）。
        *

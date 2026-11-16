@@ -31,6 +31,63 @@ function piledReviewWithCodingFlowTasks() {
 }
 
 describe('boardPileLayout（Review 山の寄せ）', { timeout: 60_000 }, () => {
+  it.each([0.48, 0.5])('フロー進捗 %s でも最適化前と同じ配置を選ぶ（#1167）', (progress) => {
+    const tasks = piledReviewWithCodingFlowTasks();
+    tasks[tasks.length - 1].progress = progress;
+    const scene = planBoardScene(tasks);
+    const anchor = scene.dots.find((dot) => dot.lane === 'review' && !dot.motion)!;
+    expect([anchor.clusterX, anchor.clusterY]).toEqual([844, 209]);
+    expect(countReviewCrossStationOverlaps(scene.dots)).toBe(0);
+  });
+
+  // 7c45b0d5 の実行結果。compact / extended / 解なしを含め、同点時の選択も固定する。
+  it.each([
+    {
+      seed: 'qa-seed-1031',
+      anchors: [
+        [840, 95],
+        [842, 187],
+        [832, 107],
+        [840, 123],
+      ],
+    },
+    {
+      seed: 'qa-seed-1030',
+      anchors: [
+        [832, 107],
+        [840, 95],
+        [840, 315],
+        [832, 107],
+      ],
+    },
+    {
+      seed: 'devops-tycoon',
+      anchors: [
+        [922, 327],
+        [840, 181],
+        [840, 109],
+        [832, 107],
+      ],
+    },
+  ])('$seed の進行中も最適化前と同じ基準点を選ぶ（#1167）', ({ seed, anchors }) => {
+    const engine = new RunEngine({ seed, difficulty: 'easy' });
+    engine.startRun('easy', [], seed);
+    engine.beginSetupSprint();
+    const checkpoints = [20, 26, 30, 35];
+    for (let step = 0; step <= 35; step += 1) {
+      const index = checkpoints.indexOf(step);
+      if (index >= 0) {
+        const tasks = engine.snapshot().sprint!.tasks;
+        const scene = planBoardScene(tasks);
+        const anchor = scene.dots.find((dot) => dot.lane === 'review' && !dot.motion)!;
+        expect([anchor.clusterX, anchor.clusterY], `step ${step}`).toEqual(anchors[index]);
+        // 解がない状態も、同一入力の再探索で座標を変えない。
+        expect(planBoardScene(tasks)).toEqual(scene);
+      }
+      engine.step(100);
+    }
+  });
+
   it('320/390 の見分け縮尺で他工程粒と交差しない Review 山を返す', { timeout: 120_000 }, () => {
     const scene = planBoardScene(piledReviewWithCodingFlowTasks());
     for (const scale of boardPhonePresentationScales()) {

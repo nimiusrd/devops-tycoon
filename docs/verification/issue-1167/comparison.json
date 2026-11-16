@@ -1,0 +1,707 @@
+{
+  "baseCommit": "7c45b0d57f39f280bcd11b1048a41c8b416f0cab",
+  "node": "v24.16.0",
+  "chromium": "158.0.8127.18",
+  "environment": {
+    "container": "Node 24 Bookworm / Linux arm64",
+    "renderer": "headless Chromium / SwiftShader / real WebGL",
+    "viewport": [1024, 768],
+    "dpr": 1,
+    "seed": "qa-seed-1031",
+    "difficulty": "easy",
+    "speed": 1,
+    "motion": "normal",
+    "fpsRequestedDurationMs": 12000,
+    "profileRequestedDurationMs": 8000,
+    "coverage": false,
+    "trace": false,
+    "screenshots": false
+  },
+  "metrics": {
+    "before": {
+      "fps": [
+        {
+          "name": "normal-fps",
+          "steps": 0,
+          "before": {
+            "backlog": 58,
+            "coding": 0,
+            "review": 0,
+            "rework": 0,
+            "done": 0
+          },
+          "after": {
+            "backlog": 34,
+            "coding": 6,
+            "review": 5,
+            "rework": 0,
+            "done": 13
+          },
+          "elapsedMs": 12164.099999904633,
+          "frames": 444,
+          "fps": 36.500850864715105,
+          "maxRafMs": 766.7000000000007,
+          "longTaskMs": 2257,
+          "longTasks": [
+            {
+              "startTime": 14652.39999961853,
+              "duration": 118
+            },
+            {
+              "startTime": 15402.5,
+              "duration": 66
+            },
+            {
+              "startTime": 16202.299999713898,
+              "duration": 137
+            },
+            {
+              "startTime": 16952.099999904633,
+              "duration": 291
+            },
+            {
+              "startTime": 17753.299999713898,
+              "duration": 176
+            },
+            {
+              "startTime": 18503.5,
+              "duration": 226
+            },
+            {
+              "startTime": 19302.099999904633,
+              "duration": 115
+            },
+            {
+              "startTime": 20103.799999713898,
+              "duration": 222
+            },
+            {
+              "startTime": 20853.299999713898,
+              "duration": 252
+            },
+            {
+              "startTime": 21652.299999713898,
+              "duration": 254
+            },
+            {
+              "startTime": 22452.89999961853,
+              "duration": 400
+            }
+          ]
+        },
+        {
+          "name": "congested-fps",
+          "steps": 26,
+          "before": {
+            "backlog": 20,
+            "coding": 4,
+            "review": 10,
+            "rework": 0,
+            "done": 24
+          },
+          "after": {
+            "backlog": 1,
+            "coding": 7,
+            "review": 13,
+            "rework": 0,
+            "done": 37
+          },
+          "elapsedMs": 14188.699999809265,
+          "frames": 56,
+          "fps": 3.9468027374426686,
+          "maxRafMs": 1766.7000000000007,
+          "longTaskMs": 12276,
+          "longTasks": [
+            {
+              "startTime": 5481.5,
+              "duration": 1432
+            },
+            {
+              "startTime": 6950.299999713898,
+              "duration": 1247
+            },
+            {
+              "startTime": 8224.799999713898,
+              "duration": 1731
+            },
+            {
+              "startTime": 11687.699999809265,
+              "duration": 1765
+            },
+            {
+              "startTime": 13479.799999713898,
+              "duration": 1176
+            },
+            {
+              "startTime": 14669.599999904633,
+              "duration": 1602
+            },
+            {
+              "startTime": 16302.39999961853,
+              "duration": 1532
+            },
+            {
+              "startTime": 17856.89999961853,
+              "duration": 1791
+            }
+          ]
+        }
+      ],
+      "unit": [
+        {
+          "name": "normal-12",
+          "coldMs": 2.476707999999917,
+          "warmMs": [
+            0.6048749999999927, 0.49025000000006, 0.4751249999999345, 0.47824999999988904,
+            0.44708300000002055
+          ]
+        },
+        {
+          "name": "review-9-coding-9",
+          "coldMs": 1710.010084,
+          "warmMs": [
+            1.290458999999828, 0.9958339999998316, 0.9872499999996762, 0.9844579999999041,
+            0.9939159999998992
+          ]
+        },
+        {
+          "name": "review-15-flow-048",
+          "coldMs": 7129.784503000001,
+          "warmMs": [
+            3.3184999999994034, 2.7746250000000146, 2.855290999999852, 2.846417000000656,
+            2.8023750000011205
+          ]
+        },
+        {
+          "name": "review-15-flow-050",
+          "coldMs": 8296.036629000002,
+          "warmMs": [
+            4.632416999997076, 3.306749999999738, 2.9556250000023283, 2.948707999999897,
+            3.3875000000007276
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-0",
+          "coldMs": 0.2306669999998121,
+          "warmMs": [
+            0.043542000003071735, 0.044374999997671694, 0.039457999999285676, 0.03479200000219862,
+            0.03866599999673781
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-20",
+          "coldMs": 1107.7801680000011,
+          "warmMs": [
+            2.52983299999687, 2.576791999999841, 2.4903330000015558, 2.875, 2.4752499999995052
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-26",
+          "coldMs": 2790.395918000002,
+          "warmMs": [
+            3.7699999999967986, 3.344583000001876, 3.2463339999994787, 3.2113749999989523,
+            3.2793749999982538
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-30",
+          "coldMs": 2665.333251,
+          "warmMs": [
+            3.1767499999987194, 3.325874999998632, 2.5139579999995476, 2.7064579999969283,
+            2.5258340000000317
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-35",
+          "coldMs": 3135.5725850000017,
+          "warmMs": [
+            2.91320899999846, 13.60454099999697, 3.215959000001021, 2.998082999998587,
+            3.078208999999333
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-0",
+          "coldMs": 0.07066599999961909,
+          "warmMs": [
+            0.03491599999688333, 0.03604100000302424, 0.03250000000116415, 0.02391699999861885,
+            0.0404579999994894
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-20",
+          "coldMs": 1628.4709599999987,
+          "warmMs": [
+            2.5761249999995925, 2.521875000002183, 2.5170409999991534, 2.5256250000020373,
+            2.51929200000086
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-26",
+          "coldMs": 4439.328750999997,
+          "warmMs": [
+            3.4857909999991534, 3.1388329999972484, 3.2170419999965816, 3.1307919999962905,
+            3.1382080000039423
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-30",
+          "coldMs": 7141.934878,
+          "warmMs": [
+            7403.146629000003, 7235.6261280000035, 7307.234878000003, 7439.039796000005,
+            7357.525712000002
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-35",
+          "coldMs": 11374.184214000008,
+          "warmMs": [
+            5.2685830000118585, 4.454417000000831, 4.6209169999929145, 4.427125000001979,
+            5.155207999996492
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-0",
+          "coldMs": 0.20029200000863057,
+          "warmMs": [
+            0.037333000000217, 0.03091600000334438, 0.23270900000352412, 0.02579200000036508,
+            0.02262499999778811
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-20",
+          "coldMs": 204.30120899999747,
+          "warmMs": [
+            1.8890419999952428, 1.8392080000048736, 2.0440830000006827, 1.845458999989205,
+            1.8348750000004657
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-26",
+          "coldMs": 713.5227509999968,
+          "warmMs": [
+            1.8964169999962905, 1.8032919999968726, 1.8052910000114935, 1.8091669999994338,
+            1.8355420000007143
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-30",
+          "coldMs": 1485.5320420000062,
+          "warmMs": [
+            2.6202500000072177, 2.2328340000094613, 2.410791000002064, 2.2363749999931315,
+            2.2957079999905545
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-35",
+          "coldMs": 1466.364876000007,
+          "warmMs": [
+            2.307249999998021, 2.014458999998169, 1.9592919999995502, 1.9379580000095302,
+            2.03925000000163
+          ]
+        }
+      ],
+      "profiles": {
+        "normal": {
+          "timerElapsedMs": 8090,
+          "sampledRangeInclusiveMs": 939.38,
+          "sampledDurationMs": 8201.382,
+          "compiledRangeFunction": "Te",
+          "chunk": "splitPrConfirmView-e4BNoeOs.js",
+          "sha256": "eaa6cd38f3508e380fc94c34f409f5e35f0b714f82c656bfc0c606b208933539"
+        },
+        "congested": {
+          "timerElapsedMs": 9428.699999809265,
+          "sampledRangeInclusiveMs": 8269.788,
+          "sampledDurationMs": 11151.788,
+          "compiledRangeFunction": "Te",
+          "chunk": "splitPrConfirmView-e4BNoeOs.js",
+          "sha256": "ab204bd08b8e9f1e3c5d0c79d81f20c4538f7d062d410fab166b3d27b9369bf9"
+        }
+      }
+    },
+    "after": {
+      "fps": [
+        {
+          "name": "normal-fps",
+          "steps": 0,
+          "before": {
+            "backlog": 58,
+            "coding": 0,
+            "review": 0,
+            "rework": 0,
+            "done": 0
+          },
+          "after": {
+            "backlog": 34,
+            "coding": 6,
+            "review": 5,
+            "rework": 0,
+            "done": 13
+          },
+          "elapsedMs": 12000.599999904633,
+          "frames": 547,
+          "fps": 45.58105428098153,
+          "maxRafMs": 747.1999999046329,
+          "longTaskMs": 712,
+          "longTasks": [
+            {
+              "startTime": 12978.10000038147,
+              "duration": 238
+            },
+            {
+              "startTime": 14646.10000038147,
+              "duration": 80
+            },
+            {
+              "startTime": 15335.700000286102,
+              "duration": 68
+            },
+            {
+              "startTime": 17626.700000286102,
+              "duration": 113
+            },
+            {
+              "startTime": 20780.60000038147,
+              "duration": 57
+            },
+            {
+              "startTime": 21527.400000095367,
+              "duration": 70
+            },
+            {
+              "startTime": 23126.900000095367,
+              "duration": 86
+            }
+          ]
+        },
+        {
+          "name": "congested-fps",
+          "steps": 26,
+          "before": {
+            "backlog": 20,
+            "coding": 4,
+            "review": 10,
+            "rework": 0,
+            "done": 24
+          },
+          "after": {
+            "backlog": 1,
+            "coding": 7,
+            "review": 13,
+            "rework": 0,
+            "done": 37
+          },
+          "elapsedMs": 12000.799999713898,
+          "frames": 433,
+          "fps": 36.08092793899764,
+          "maxRafMs": 316.60000000000036,
+          "longTaskMs": 3534,
+          "longTasks": [
+            {
+              "startTime": 5494.099999904633,
+              "duration": 330
+            },
+            {
+              "startTime": 6295.799999713898,
+              "duration": 243
+            },
+            {
+              "startTime": 7044.099999904633,
+              "duration": 196
+            },
+            {
+              "startTime": 7843.699999809265,
+              "duration": 208
+            },
+            {
+              "startTime": 8593.799999713898,
+              "duration": 268
+            },
+            {
+              "startTime": 10543.400000095367,
+              "duration": 282
+            },
+            {
+              "startTime": 11343,
+              "duration": 334
+            },
+            {
+              "startTime": 12092.900000095367,
+              "duration": 247
+            },
+            {
+              "startTime": 12894.799999713898,
+              "duration": 278
+            },
+            {
+              "startTime": 13693.400000095367,
+              "duration": 286
+            },
+            {
+              "startTime": 14443.199999809265,
+              "duration": 225
+            },
+            {
+              "startTime": 15243.599999904633,
+              "duration": 327
+            },
+            {
+              "startTime": 15997.799999713898,
+              "duration": 310
+            }
+          ]
+        }
+      ],
+      "unit": [
+        {
+          "name": "normal-12",
+          "coldMs": 2.103458000000046,
+          "warmMs": [
+            0.5617919999999685, 0.4712090000000444, 0.36445800000001327, 0.454082999999855,
+            0.3802089999999225
+          ]
+        },
+        {
+          "name": "review-9-coding-9",
+          "coldMs": 118.53587500000003,
+          "warmMs": [
+            1.159750000000031, 0.3712920000000395, 0.374416999999994, 0.3639580000001388,
+            0.3899159999998574
+          ]
+        },
+        {
+          "name": "review-15-flow-048",
+          "coldMs": 815.2120420000001,
+          "warmMs": [
+            1.0887499999998909, 0.9962500000001455, 0.9672499999996944, 0.968000000000302,
+            0.9553750000000036
+          ]
+        },
+        {
+          "name": "review-15-flow-050",
+          "coldMs": 103.054666,
+          "warmMs": [
+            1.0386249999996835, 1.0147499999998217, 0.9909590000002026, 0.9722499999998035,
+            0.9627080000000205
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-0",
+          "coldMs": 0.07904199999984485,
+          "warmMs": [
+            0.023458000000118773, 0.021834000000126252, 0.02562500000021828, 0.0632500000001528,
+            0.14379200000030323
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-20",
+          "coldMs": 142.01424999999972,
+          "warmMs": [
+            0.7884579999999914, 0.7953749999996944, 0.7560000000003129, 0.7124590000003082,
+            0.7015000000001237
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-26",
+          "coldMs": 348.5105840000001,
+          "warmMs": [
+            1.1158340000001772, 1.0673329999999623, 1.02212499999996, 0.9917919999998048,
+            1.0291660000002594
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-30",
+          "coldMs": 332.18224999999984,
+          "warmMs": [
+            0.8279579999998532, 0.802791999999954, 0.7701250000000073, 0.818749999999909,
+            0.7693329999997331
+          ]
+        },
+        {
+          "name": "qa-seed-1031-step-35",
+          "coldMs": 465.03354100000024,
+          "warmMs": [
+            0.9137909999999465, 0.8334159999999429, 0.7965829999998277, 0.7712080000001151,
+            0.7845409999999902
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-0",
+          "coldMs": 0.05441700000028504,
+          "warmMs": [
+            0.03258300000015879, 0.020874999999705324, 0.02133400000002439, 0.01641699999981938,
+            0.040874999999687134
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-20",
+          "coldMs": 343.2841669999998,
+          "warmMs": [
+            1.173917000000074, 1.1375419999999394, 1.1535420000000158, 0.9512079999999514,
+            1.1441669999999249
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-26",
+          "coldMs": 606.7352510000001,
+          "warmMs": [
+            1.1728750000002037, 1.0982919999996739, 1.0634589999999662, 1.1047920000000886,
+            1.0583329999999478
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-30",
+          "coldMs": 924.0500840000004,
+          "warmMs": [
+            153.60129199999938, 141.74404200000026, 132.597667, 131.83249999999953,
+            180.79050000000007
+          ]
+        },
+        {
+          "name": "qa-seed-1030-step-35",
+          "coldMs": 1351.4543759999997,
+          "warmMs": [
+            1.626792000000023, 1.5682079999996859, 1.679374999999709, 1.5885000000007494,
+            1.588832999999795
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-0",
+          "coldMs": 0.04324999999971624,
+          "warmMs": [
+            0.02087500000016007, 0.041041999999833934, 0.1540419999992082, 0.05741599999964819,
+            0.026708000000326138
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-20",
+          "coldMs": 41.54374999999982,
+          "warmMs": [
+            0.5835829999996349, 0.5545839999995223, 0.5507500000003347, 0.5737500000004729,
+            0.5563329999995403
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-26",
+          "coldMs": 84.04858400000012,
+          "warmMs": [
+            0.6672910000006596, 0.5921670000006998, 0.5768749999997453, 0.5945830000000569,
+            0.5888750000003711
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-30",
+          "coldMs": 434.33795799999916,
+          "warmMs": [
+            0.9689589999998134, 0.7725410000002739, 0.7689999999984138, 0.6818750000002183,
+            0.6947500000005675
+          ]
+        },
+        {
+          "name": "devops-tycoon-step-35",
+          "coldMs": 213.73362499999894,
+          "warmMs": [
+            0.6982499999994616, 0.6397500000002765, 0.6250839999993332, 0.6279999999987922,
+            0.6265000000003056
+          ]
+        }
+      ],
+      "profiles": {
+        "normal": {
+          "timerElapsedMs": 8000.400000095367,
+          "sampledRangeInclusiveMs": 192.733,
+          "sampledDurationMs": 8098.569,
+          "compiledRangeFunction": "De",
+          "chunk": "splitPrConfirmView-Bw5PjEGk.js",
+          "sha256": "e4510d4ed5cd61812abc3269c050f892b4fcf464f0eb00f8279be6bb3210d58c"
+        },
+        "congested": {
+          "timerElapsedMs": 8000.400000095367,
+          "sampledRangeInclusiveMs": 1661.128,
+          "sampledDurationMs": 8100.17,
+          "compiledRangeFunction": "De",
+          "chunk": "splitPrConfirmView-Bw5PjEGk.js",
+          "sha256": "765a4f54910c764a06f9a1ef0b0cff0f8cca772f153c5d7bd653d31a4ec7ee90"
+        }
+      }
+    }
+  },
+  "exactEqualSceneAndPresentedOutputs": [
+    {
+      "case": "devops-tycoon-step-0",
+      "outputSha256": "d4287564f52cceaf5b0d2f3be8b8ee57ea84e4a82e0ddac77905cd3e5387108b"
+    },
+    {
+      "case": "devops-tycoon-step-20",
+      "outputSha256": "4fa296a2289ae90223b119f0cd22e07797defe81466eabbd7fbbe1da8bfa9275"
+    },
+    {
+      "case": "devops-tycoon-step-26",
+      "outputSha256": "b5c9429b9536fe88d1c34aa6bf484062bcfc90d34f7089fa408b7ca1fb39d31b"
+    },
+    {
+      "case": "devops-tycoon-step-30",
+      "outputSha256": "9af6e514b5b3fc2579ea92a1607d815b90d83b7e55ea02a262d27ff64d166c06"
+    },
+    {
+      "case": "devops-tycoon-step-35",
+      "outputSha256": "197db097ce90c5438bfc5aff7ba493fe7254714e4cdd410b60634abd2eb3c1e0"
+    },
+    {
+      "case": "normal-12",
+      "outputSha256": "2ae2c46579e6fd32613b1dc57f647cf4e175cceee6f97f4ebc345dc42e4fe905"
+    },
+    {
+      "case": "qa-seed-1030-step-0",
+      "outputSha256": "793fe2807109515c17cc1849e5d6709fa3af2eb4bd47e05a62c762cc093da82d"
+    },
+    {
+      "case": "qa-seed-1030-step-20",
+      "outputSha256": "5e27bce193fa9335ef7aebc519d77eda978b92e98b5ffc3ef8bb76b8c867e3ea"
+    },
+    {
+      "case": "qa-seed-1030-step-26",
+      "outputSha256": "0c2fc4e6231ed563e52bea9e26cec53802d67c91c45e2892b4ba37f1e12488ef"
+    },
+    {
+      "case": "qa-seed-1030-step-30",
+      "outputSha256": "e41df000ad06ef7f79d9415ee42d28696a9b7a34c38cf0dc1f14c8c45c84773e"
+    },
+    {
+      "case": "qa-seed-1030-step-35",
+      "outputSha256": "bf9fb5b4fd113b2e6519abe95f64070fcfa4ef080ce2008849b36dca00af3661"
+    },
+    {
+      "case": "qa-seed-1031-step-0",
+      "outputSha256": "3ca3a0af8c7097cecc09e98b2806d69d54876aedf93606b51b673edd7b220bd0"
+    },
+    {
+      "case": "qa-seed-1031-step-20",
+      "outputSha256": "f7b6d14290591a73bb07445cbd3bb0cc1571a87309fae5ce3e411a00402c8e12"
+    },
+    {
+      "case": "qa-seed-1031-step-26",
+      "outputSha256": "584cae1c69a20b789e9566954d4ced90625203c8325d2927d3c15b222164eb65"
+    },
+    {
+      "case": "qa-seed-1031-step-30",
+      "outputSha256": "23471a1ea695851068654020ede7806e82c8e13c4b5f8b53f20a2f14fe9dff94"
+    },
+    {
+      "case": "qa-seed-1031-step-35",
+      "outputSha256": "677fe4ca8cbbb23ead94cf94ce055e37f1d9692d266b3f58223445a25b836238"
+    },
+    {
+      "case": "review-15-flow-048",
+      "outputSha256": "358ba0a608fa4c80f797fc5da3e631b4cf76b4d258925bd744e2fcfd601f6b1d"
+    },
+    {
+      "case": "review-15-flow-050",
+      "outputSha256": "f792aa6df001375eb3a1279c6f22c0ea55f2bad4caf550d69ce9bcb535755f7f"
+    },
+    {
+      "case": "review-9-coding-9",
+      "outputSha256": "9c145c9bbe64b7029a6ea2433262db8174c5bb4ececf0bde666648e22c262464"
+    }
+  ]
+}

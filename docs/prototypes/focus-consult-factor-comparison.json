@@ -1,0 +1,3161 @@
+{
+  "conditions": {
+    "seed": "RI-222",
+    "capacity": 6,
+    "horizon": 4,
+    "plans": {
+      "focus": [0, 0, 0, 6],
+      "consult": [0, 6, 0, 6]
+    },
+    "boards": {
+      "quiet": {
+        "arrivals": [0, 0, 0, 0],
+        "resolveCost": 2,
+        "slack": 0,
+        "penaltyEach": 0
+      },
+      "burst": {
+        "arrivals": [0, 4, 0, 0],
+        "resolveCost": 2,
+        "slack": 1,
+        "penaltyEach": 5
+      },
+      "steady": {
+        "arrivals": [2, 2, 2, 2],
+        "resolveCost": 2,
+        "slack": 0,
+        "penaltyEach": 7
+      }
+    },
+    "decision": {
+      "focus": "長い集中。枠は0、0、0、6。集中帯を守る",
+      "consult": "短い集中。枠は0、6、0、6。相談帯を開く",
+      "score": "shipped - penalty"
+    },
+    "held": {
+      "arrivalTick": "集中割り込みの4件を置く期間だけを動かす。解消費用2、期限1、罰5",
+      "resolveCost": "解消費用だけを動かす。到着、期限、罰は盤面の初回のまま",
+      "slack": "期限だけを動かす。到着、解消費用、罰は盤面の初回のまま"
+    },
+    "arrivalTickDefinition": "0始まりの期間。集中割り込みの4件をその期間に置き、ほかは0。初回は1で、2期目と同じ",
+    "resolveCostDefinition": "相談1件の解消に使う余力。枠をこの数で割った整数件だけその期間に解消する。出荷は枠を引いた余力のまま",
+    "slackDefinition": "期間末の待ちがこの値を超えた件だけ罰を一度引き、取り除く。超えない件は期末でも罰しない",
+    "steps": {
+      "arrivalTick": [0, 1, 2, 3],
+      "resolveCost": [1, 2, 3, 4, 5, 6, 7],
+      "slack": [0, 1, 2, 3, 4]
+    },
+    "omitted": "常時相談は初回JSONのまま再出力しない。静穏と毎期到着は単一の到着tickを持たないので、到着tickの軸には置かない",
+    "fixedStrategies": true,
+    "humanPlaytest": false,
+    "normalRun": false,
+    "repeatedFirstComparison": false,
+    "productionAdoption": false
+  },
+  "sweeps": {
+    "arrivalTick": [
+      {
+        "axis": "arrivalTick",
+        "parameter": "0",
+        "boards": [
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [4, 0, 0, 0],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -9,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 6,
+                "waitPeriods": 5,
+                "score": 7,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "arrivalTick",
+        "parameter": "1",
+        "boards": [
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": true,
+            "preference": "consult",
+            "margin": -9,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 6,
+                "waitPeriods": 2,
+                "score": 7,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "arrivalTick",
+        "parameter": "2",
+        "boards": [
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 0, 4, 0],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 0,
+                "waitPeriods": 5,
+                "score": 13,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 6,
+                "waitPeriods": 5,
+                "score": 7,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "arrivalTick",
+        "parameter": "3",
+        "boards": [
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 0, 0, 4],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 1,
+                "score": 18,
+                "queue": 1,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 1,
+                "score": 12,
+                "queue": 1,
+                "lost": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "resolveCost": [
+      {
+        "axis": "resolveCost",
+        "parameter": "1",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 1,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 1,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -14,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 8,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 1,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -8,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 6,
+                "penalty": 42,
+                "wastedReserve": 4,
+                "waitPeriods": 6,
+                "score": -24,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 4,
+                "penalty": 28,
+                "wastedReserve": 8,
+                "waitPeriods": 4,
+                "score": -16,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "resolveCost",
+        "parameter": "2",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 2,
+              "slack": 0
+            },
+            "sameAsFirstComparison": true,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": true,
+            "preference": "consult",
+            "margin": -9,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 6,
+                "waitPeriods": 2,
+                "score": 7,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 2,
+              "slack": 0
+            },
+            "sameAsFirstComparison": true,
+            "preference": "consult",
+            "margin": -8,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 6,
+                "penalty": 42,
+                "wastedReserve": 2,
+                "waitPeriods": 6,
+                "score": -24,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 4,
+                "penalty": 28,
+                "wastedReserve": 4,
+                "waitPeriods": 4,
+                "score": -16,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "resolveCost",
+        "parameter": "3",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 3,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 3,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -4,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 2,
+                "penalty": 10,
+                "wastedReserve": 6,
+                "waitPeriods": 4,
+                "score": 2,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 3,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -8,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 6,
+                "penalty": 42,
+                "wastedReserve": 0,
+                "waitPeriods": 6,
+                "score": -24,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 4,
+                "penalty": 28,
+                "wastedReserve": 0,
+                "waitPeriods": 4,
+                "score": -16,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "resolveCost",
+        "parameter": "4",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 4,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 4,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 1,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 3,
+                "penalty": 15,
+                "wastedReserve": 8,
+                "waitPeriods": 6,
+                "score": -3,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 4,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -1,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 7,
+                "penalty": 49,
+                "wastedReserve": 2,
+                "waitPeriods": 7,
+                "score": -31,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 6,
+                "penalty": 42,
+                "wastedReserve": 4,
+                "waitPeriods": 6,
+                "score": -30,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "resolveCost",
+        "parameter": "5",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 5,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 5,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 1,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 3,
+                "penalty": 15,
+                "wastedReserve": 7,
+                "waitPeriods": 6,
+                "score": -3,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 5,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -1,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 7,
+                "penalty": 49,
+                "wastedReserve": 1,
+                "waitPeriods": 7,
+                "score": -31,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 6,
+                "penalty": 42,
+                "wastedReserve": 2,
+                "waitPeriods": 6,
+                "score": -30,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "resolveCost",
+        "parameter": "6",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 6,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 6,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 1,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 3,
+                "penalty": 15,
+                "wastedReserve": 6,
+                "waitPeriods": 6,
+                "score": -3,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 6,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -1,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 7,
+                "penalty": 49,
+                "wastedReserve": 0,
+                "waitPeriods": 7,
+                "score": -31,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 6,
+                "penalty": 42,
+                "wastedReserve": 0,
+                "waitPeriods": 6,
+                "score": -30,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "resolveCost",
+        "parameter": "7",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 7,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 7,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 12,
+                "waitPeriods": 8,
+                "score": -8,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 7,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 8,
+                "penalty": 56,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -38,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 8,
+                "penalty": 56,
+                "wastedReserve": 12,
+                "waitPeriods": 8,
+                "score": -44,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "slack": [
+      {
+        "axis": "slack",
+        "parameter": "0",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 2,
+              "slack": 0
+            },
+            "sameAsFirstComparison": true,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 2,
+              "slack": 0
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -9,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 4,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 6,
+                "waitPeriods": 1,
+                "score": 7,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 2,
+              "slack": 0
+            },
+            "sameAsFirstComparison": true,
+            "preference": "consult",
+            "margin": -8,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 6,
+                "penalty": 42,
+                "wastedReserve": 2,
+                "waitPeriods": 6,
+                "score": -24,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 4,
+                "penalty": 28,
+                "wastedReserve": 4,
+                "waitPeriods": 4,
+                "score": -16,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "slack",
+        "parameter": "1",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": true,
+            "preference": "consult",
+            "margin": -9,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 20,
+                "wastedReserve": 6,
+                "waitPeriods": 8,
+                "score": -2,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 6,
+                "waitPeriods": 2,
+                "score": 7,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 2,
+              "slack": 1
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -15,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 4,
+                "penalty": 28,
+                "wastedReserve": 0,
+                "waitPeriods": 11,
+                "score": -10,
+                "queue": 1,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 1,
+                "penalty": 7,
+                "wastedReserve": 0,
+                "waitPeriods": 7,
+                "score": 5,
+                "queue": 1,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "slack",
+        "parameter": "2",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 2,
+              "slack": 2
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 2,
+              "slack": 2
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 1,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 1,
+                "penalty": 5,
+                "wastedReserve": 0,
+                "waitPeriods": 9,
+                "score": 13,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 4,
+                "waitPeriods": 2,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 2,
+              "slack": 2
+            },
+            "sameAsFirstComparison": false,
+            "preference": "consult",
+            "margin": -8,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 2,
+                "penalty": 14,
+                "wastedReserve": 0,
+                "waitPeriods": 15,
+                "score": 4,
+                "queue": 3,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 8,
+                "score": 12,
+                "queue": 2,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "slack",
+        "parameter": "3",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 2,
+              "slack": 3
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 2,
+              "slack": 3
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 9,
+                "score": 18,
+                "queue": 1,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 4,
+                "waitPeriods": 2,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 2,
+              "slack": 3
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 17,
+                "score": 18,
+                "queue": 5,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 8,
+                "score": 12,
+                "queue": 2,
+                "lost": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "axis": "slack",
+        "parameter": "4",
+        "boards": [
+          {
+            "board": "quiet",
+            "rules": {
+              "arrivals": [0, 0, 0, 0],
+              "resolveCost": 2,
+              "slack": 4
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 6,
+                "waitPeriods": 0,
+                "score": 18,
+                "queue": 0,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 12,
+                "waitPeriods": 0,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "burst",
+            "rules": {
+              "arrivals": [0, 4, 0, 0],
+              "resolveCost": 2,
+              "slack": 4
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 9,
+                "score": 18,
+                "queue": 1,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 4,
+                "waitPeriods": 2,
+                "score": 12,
+                "queue": 0,
+                "lost": false
+              }
+            }
+          },
+          {
+            "board": "steady",
+            "rules": {
+              "arrivals": [2, 2, 2, 2],
+              "resolveCost": 2,
+              "slack": 4
+            },
+            "sameAsFirstComparison": false,
+            "preference": "focus",
+            "margin": 6,
+            "focus": {
+              "strategy": "long",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 18,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 17,
+                "score": 18,
+                "queue": 5,
+                "lost": false
+              }
+            },
+            "consult": {
+              "strategy": "short",
+              "inputs": [
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 0
+                },
+                {
+                  "type": "allocate",
+                  "reserve": 6
+                }
+              ],
+              "result": {
+                "shipped": 12,
+                "missed": 0,
+                "penalty": 0,
+                "wastedReserve": 0,
+                "waitPeriods": 8,
+                "score": 12,
+                "queue": 2,
+                "lost": false
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reversals": [
+    {
+      "axis": "arrivalTick",
+      "board": "burst",
+      "before": {
+        "parameter": "1",
+        "preference": "consult",
+        "focus": -2,
+        "consult": 7
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "focus",
+        "focus": 13,
+        "consult": 7
+      }
+    },
+    {
+      "axis": "resolveCost",
+      "board": "burst",
+      "before": {
+        "parameter": "3",
+        "preference": "consult",
+        "focus": -2,
+        "consult": 2
+      },
+      "after": {
+        "parameter": "4",
+        "preference": "focus",
+        "focus": -2,
+        "consult": -3
+      }
+    },
+    {
+      "axis": "resolveCost",
+      "board": "steady",
+      "before": {
+        "parameter": "6",
+        "preference": "consult",
+        "focus": -31,
+        "consult": -30
+      },
+      "after": {
+        "parameter": "7",
+        "preference": "focus",
+        "focus": -38,
+        "consult": -44
+      }
+    },
+    {
+      "axis": "slack",
+      "board": "burst",
+      "before": {
+        "parameter": "1",
+        "preference": "consult",
+        "focus": -2,
+        "consult": 7
+      },
+      "after": {
+        "parameter": "2",
+        "preference": "focus",
+        "focus": 13,
+        "consult": 12
+      }
+    },
+    {
+      "axis": "slack",
+      "board": "steady",
+      "before": {
+        "parameter": "2",
+        "preference": "consult",
+        "focus": 4,
+        "consult": 12
+      },
+      "after": {
+        "parameter": "3",
+        "preference": "focus",
+        "focus": 18,
+        "consult": 12
+      }
+    }
+  ]
+}

@@ -1,0 +1,1682 @@
+{
+  "note": "固定戦略の計算であり、人間のプレイ評価はしていない。方針は公開された作業領域と過去事例だけを見て、隠しリスクや高リスク件数は読まない。",
+  "conditions": {
+    "weight": "equal-per-seed",
+    "productionIntegrated": false,
+    "humanPlaytest": false,
+    "profiles": [
+      {
+        "id": "quiet",
+        "workArea": "familiar",
+        "pastCase": "matched",
+        "highCount": 1,
+        "count": 4
+      },
+      {
+        "id": "area",
+        "workArea": "unfamiliar",
+        "pastCase": "matched",
+        "highCount": 2,
+        "count": 4
+      },
+      {
+        "id": "past",
+        "workArea": "familiar",
+        "pastCase": "none",
+        "highCount": 2,
+        "count": 4
+      },
+      {
+        "id": "both",
+        "workArea": "unfamiliar",
+        "pastCase": "none",
+        "highCount": 3,
+        "count": 4
+      }
+    ],
+    "strategies": ["always-rush", "always-investigate", "prior-any-warning", "prior-both-warnings"],
+    "riskRule": "比較用 seed の添字が highCount 未満なら高リスク。同じ公開兆候に低リスクと高リスクの両方がある。",
+    "decisionCountRule": "事前情報を使う方針は seed ごとに公開兆候を1回見て1。固定方針は公開兆候を見ないので0。",
+    "opportunityCostRule": "調査を選んだ seed について、即着手の価値から調査の価値を引いた非負の差。評価側の集計で、方針の入力ではない。"
+  },
+  "seeds": [
+    "RI-156-quiet-0",
+    "RI-156-quiet-1",
+    "RI-156-quiet-2",
+    "RI-156-quiet-3",
+    "RI-156-area-0",
+    "RI-156-area-1",
+    "RI-156-area-2",
+    "RI-156-area-3",
+    "RI-156-past-0",
+    "RI-156-past-1",
+    "RI-156-past-2",
+    "RI-156-past-3",
+    "RI-156-both-0",
+    "RI-156-both-1",
+    "RI-156-both-2",
+    "RI-156-both-3"
+  ],
+  "results": [
+    {
+      "seed": "RI-156-quiet-0",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-0",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-0",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-0",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-1",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-1",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-1",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-1",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-2",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-2",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-2",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-2",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-3",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-3",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-3",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-quiet-3",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-0",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-0",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-0",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-0",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-1",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-1",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-1",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-1",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-2",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-2",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-2",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-2",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-3",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-3",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-3",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-area-3",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-0",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-0",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-0",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-0",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-1",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-1",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-1",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-1",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-2",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-2",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-2",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-2",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-3",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-3",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-3",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-past-3",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-0",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-0",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-0",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-0",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-1",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-1",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-1",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-1",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-2",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 0,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [],
+      "workLeft": 1,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-2",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-2",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-2",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "high",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 0,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-3",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "always-rush",
+      "decisionCount": 0,
+      "openingAction": "work",
+      "value": 12,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 0,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 4,
+          "value": 12
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 0,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-3",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "always-investigate",
+      "decisionCount": 0,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-3",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "prior-any-warning",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    },
+    {
+      "seed": "RI-156-both-3",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "risk": "low",
+      "strategy": "prior-both-warnings",
+      "decisionCount": 1,
+      "openingAction": "investigate",
+      "value": 5,
+      "rushValue": 12,
+      "investigateValue": 5,
+      "opportunityCost": 7,
+      "shipped": [
+        {
+          "id": "campaign",
+          "tick": 6,
+          "value": 5
+        }
+      ],
+      "workLeft": 0,
+      "researchTicks": 2,
+      "focus": 2,
+      "stamina": 10,
+      "history": ["investigate", "work", "work", "work", "work", "work"]
+    }
+  ],
+  "signalGroups": [
+    {
+      "id": "quiet",
+      "workArea": "familiar",
+      "pastCase": "matched",
+      "seedCount": 4,
+      "highRiskCount": 1,
+      "lowRiskCount": 3,
+      "rushExpectedValue": 9,
+      "investigateExpectedValue": 5,
+      "investigationAdvantage": -4
+    },
+    {
+      "id": "area",
+      "workArea": "unfamiliar",
+      "pastCase": "matched",
+      "seedCount": 4,
+      "highRiskCount": 2,
+      "lowRiskCount": 2,
+      "rushExpectedValue": 6,
+      "investigateExpectedValue": 5,
+      "investigationAdvantage": -1
+    },
+    {
+      "id": "past",
+      "workArea": "familiar",
+      "pastCase": "none",
+      "seedCount": 4,
+      "highRiskCount": 2,
+      "lowRiskCount": 2,
+      "rushExpectedValue": 6,
+      "investigateExpectedValue": 5,
+      "investigationAdvantage": -1
+    },
+    {
+      "id": "both",
+      "workArea": "unfamiliar",
+      "pastCase": "none",
+      "seedCount": 4,
+      "highRiskCount": 3,
+      "lowRiskCount": 1,
+      "rushExpectedValue": 3,
+      "investigateExpectedValue": 5,
+      "investigationAdvantage": 2
+    }
+  ],
+  "summary": [
+    {
+      "strategy": "always-rush",
+      "seedCount": 16,
+      "totalValue": 96,
+      "meanValue": 6,
+      "decisionCount": 0,
+      "investigationCount": 0,
+      "opportunityCost": 0,
+      "meanOpportunityCost": 0,
+      "lowRiskInvestigated": 0,
+      "highRiskInvestigated": 0,
+      "lowRiskRushed": 8,
+      "highRiskRushed": 8
+    },
+    {
+      "strategy": "always-investigate",
+      "seedCount": 16,
+      "totalValue": 80,
+      "meanValue": 5,
+      "decisionCount": 0,
+      "investigationCount": 16,
+      "opportunityCost": 56,
+      "meanOpportunityCost": 3.5,
+      "lowRiskInvestigated": 8,
+      "highRiskInvestigated": 8,
+      "lowRiskRushed": 0,
+      "highRiskRushed": 0
+    },
+    {
+      "strategy": "prior-any-warning",
+      "seedCount": 16,
+      "totalValue": 96,
+      "meanValue": 6,
+      "decisionCount": 16,
+      "investigationCount": 12,
+      "opportunityCost": 35,
+      "meanOpportunityCost": 2.1875,
+      "lowRiskInvestigated": 5,
+      "highRiskInvestigated": 7,
+      "lowRiskRushed": 3,
+      "highRiskRushed": 1
+    },
+    {
+      "strategy": "prior-both-warnings",
+      "seedCount": 16,
+      "totalValue": 104,
+      "meanValue": 6.5,
+      "decisionCount": 16,
+      "investigationCount": 4,
+      "opportunityCost": 7,
+      "meanOpportunityCost": 0.4375,
+      "lowRiskInvestigated": 1,
+      "highRiskInvestigated": 3,
+      "lowRiskRushed": 7,
+      "highRiskRushed": 5
+    }
+  ]
+}

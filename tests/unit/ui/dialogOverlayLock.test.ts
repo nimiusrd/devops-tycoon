@@ -178,6 +178,45 @@ describe('lockBackgroundSiblings', () => {
     expect(root.inert).toBe(true);
   });
 
+  for (const firstToClose of [0, 1] as const) {
+    it.each([false, true])(
+      `モーダル${firstToClose}を先に閉じても残るロックを保ち、最後に元のinert=%sへ戻す`,
+      (originalInert) => {
+        vi.stubGlobal('HTMLElement', ElementStub);
+        const body = new ElementStub();
+        const root = new ElementStub();
+        root.id = 'root';
+        root.inert = originalInert;
+        root.setAttribute('aria-hidden', 'menu');
+        const app = new ElementStub();
+        root.children = [app];
+        const dialogs = [new ElementStub(), new ElementStub()];
+        body.children = [root, ...dialogs];
+        for (const element of body.children) element.parentElement = body;
+        vi.stubGlobal('document', { body });
+
+        const restores = dialogs.map((dialog) =>
+          lockBackgroundSiblings(dialog as unknown as HTMLElement),
+        );
+        const firstRestore = restores[firstToClose]!;
+        const lastRestore = restores[1 - firstToClose]!;
+        firstRestore();
+        firstRestore();
+        expect(root.inert).toBe(true);
+        expect(root.getAttribute('aria-hidden')).toBe('true');
+        expect(app.inert).toBe(true);
+        expect(app.getAttribute('aria-hidden')).toBe('true');
+
+        lastRestore();
+        lastRestore();
+        expect(root.inert).toBe(originalInert);
+        expect(root.getAttribute('aria-hidden')).toBe('menu');
+        expect(app.inert).toBe(false);
+        expect(app.getAttribute('aria-hidden')).toBeNull();
+      },
+    );
+  }
+
   it('読み込み枠のあとに増えた兄弟もロックし、閉じると元へ戻す', () => {
     vi.stubGlobal('HTMLElement', ElementStub);
     const observers: Array<{
